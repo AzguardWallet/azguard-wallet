@@ -1,0 +1,110 @@
+import { dirname, relative } from "node:path"
+import { fileURLToPath, URL } from "node:url"
+import vue from "@vitejs/plugin-vue"
+import usePages from "vite-plugin-pages"
+import useAutoImport from "unplugin-auto-import/vite"
+import useComponents from "unplugin-vue-components/vite"
+import { defineConfig } from "vite"
+import vueDevTools from "vite-plugin-vue-devtools"
+import { defineViteConfig as define } from "./define.config"
+
+export default defineConfig({
+	server: {
+		port: 8080,
+		strictPort: true,
+		hmr: {
+			port: 8080,
+		},
+	},
+	resolve: {
+		alias: {
+			"@": fileURLToPath(new URL("./src", import.meta.url)),
+			"~": fileURLToPath(new URL("./src", import.meta.url)),
+			src: fileURLToPath(new URL("./src", import.meta.url)),
+			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
+		},
+	},
+	css: {
+		preprocessorOptions: {
+			scss: {
+				api: "modern",
+			},
+		},
+	},
+	plugins: [
+		vue(),
+		vueDevTools(),
+
+		usePages({
+			dirs: [
+				{
+					dir: "src/pages",
+					baseRoute: "common",
+				},
+				{
+					dir: "src/setup/pages",
+					baseRoute: "setup",
+				},
+				{
+					dir: "src/popup/pages",
+					baseRoute: "popup",
+				},
+				{
+					dir: "src/options/pages",
+					baseRoute: "options",
+				},
+				{
+					dir: "src/content-script/iframe/pages",
+					baseRoute: "iframe",
+				},
+			],
+		}),
+
+		useAutoImport({
+			imports: [
+				"vue",
+				"vue-router",
+				{
+					"webextension-polyfill": [["*", "browser"]],
+				},
+			],
+			dts: "src/types/auto-imports.d.ts",
+			dirs: ["src/composables/", "src/stores/", "src/utils/"],
+			eslintrc: {
+				enabled: true,
+				filepath: "src/types/.eslintrc-auto-import.json",
+			},
+		}),
+
+		useComponents({
+			dirs: ["src/components"],
+			dts: "src/types/components.d.ts",
+		}),
+
+		{
+			name: "assets-rewrite",
+			enforce: "post",
+			apply: "build",
+			transformIndexHtml(html, { path }) {
+				const assetsPath = relative(dirname(path), "/assets").replace(/\\/g, "/")
+				return html.replace(/"\/assets\//g, `"${assetsPath}/`)
+			},
+		},
+	],
+	build: {
+		rollupOptions: {
+			input: {
+				iframe: "src/content-script/iframe/index.html",
+				popup: "src/popup/index.html",
+				setup: "src/setup/index.html",
+				options: "src/options/index.html",
+			},
+		},
+	},
+	optimizeDeps: {
+		include: ["vue", "webextension-polyfill"],
+		exclude: ["vue-demi"],
+	},
+	assetsInclude: ["src/assets/*/**"],
+	define,
+})
