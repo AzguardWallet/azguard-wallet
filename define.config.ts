@@ -6,4 +6,8 @@ export const defineViteConfig = {
 	__DISPLAY_NAME__: JSON.stringify(packageJson.displayName),
 
 	"import.meta.env.HTML_TITLE": JSON.stringify(packageJson.displayName),
+
+	"process.env": process.env,
+	"process.version": JSON.stringify(process.version),
+	global: {},
 }

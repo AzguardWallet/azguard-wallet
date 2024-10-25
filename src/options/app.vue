@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useAppStore } from "@/stores/app.store"
-
 const store = useAppStore()
 
 const balance = computed(() => store.balance)
@@ -11,5 +10,7 @@ const balance = computed(() => store.balance)
 
 	<RouterView />
 
-	<span>your balance {{ balance }}</span>
+	<div>your balance {{ balance }}</div>
+
+	<button @click="store.balance += 1">Add +1 to balance</button>
 </template>
