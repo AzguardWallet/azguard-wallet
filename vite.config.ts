@@ -105,6 +105,7 @@ export default defineConfig({
 		},
 	],
 	build: {
+		target: "esnext",
 		rollupOptions: {
 			input: {
 				iframe: "src/content-script/iframe/index.html",
@@ -119,11 +120,6 @@ export default defineConfig({
 		exclude: ["vue-demi"],
 		esbuildOptions: {
 			target: "esnext",
-			// plugins: [
-			// 	NodeGlobalsPolyfillPlugin({
-			// 		buffer: true,
-			// 	}),
-			// ],
 		},
 	},
 	assetsInclude: ["src/assets/*/**"],
