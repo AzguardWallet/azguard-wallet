@@ -6,6 +6,7 @@ import useAutoImport from "unplugin-auto-import/vite"
 import useComponents from "unplugin-vue-components/vite"
 import { defineConfig } from "vite"
 import vueDevTools from "vite-plugin-vue-devtools"
+import { nodePolyfills } from "vite-plugin-node-polyfills"
 import { defineViteConfig as define } from "./define.config"
 
 export default defineConfig({
@@ -22,6 +23,7 @@ export default defineConfig({
 			"~": fileURLToPath(new URL("./src", import.meta.url)),
 			src: fileURLToPath(new URL("./src", import.meta.url)),
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
+			"fs/promises": "node-stdlib-browser/mock/empty",
 		},
 	},
 	css: {
@@ -32,6 +34,14 @@ export default defineConfig({
 		},
 	},
 	plugins: [
+		nodePolyfills({
+			globals: {
+				Buffer: true,
+				global: true,
+				process: true,
+			},
+		}),
+
 		vue(),
 		vueDevTools(),
 
@@ -86,12 +96,16 @@ export default defineConfig({
 			enforce: "post",
 			apply: "build",
 			transformIndexHtml(html, { path }) {
-				const assetsPath = relative(dirname(path), "/assets").replace(/\\/g, "/")
+				const assetsPath = relative(dirname(path), "/assets").replace(
+					/\\/g,
+					"/"
+				)
 				return html.replace(/"\/assets\//g, `"${assetsPath}/`)
 			},
 		},
 	],
 	build: {
+		target: "esnext",
 		rollupOptions: {
 			input: {
 				iframe: "src/content-script/iframe/index.html",
@@ -104,6 +118,9 @@ export default defineConfig({
 	optimizeDeps: {
 		include: ["vue", "webextension-polyfill"],
 		exclude: ["vue-demi"],
+		esbuildOptions: {
+			target: "esnext",
+		},
 	},
 	assetsInclude: ["src/assets/*/**"],
 	define,

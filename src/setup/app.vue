@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { createPXEClient } from "@aztec/aztec.js"
+console.log(createPXEClient)
+
 import { computed, defineAsyncComponent, onMounted, ref } from "vue"
 import { useRoute } from "vue-router"
 
