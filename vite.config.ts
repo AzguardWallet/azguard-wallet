@@ -40,6 +40,9 @@ export default defineConfig({
 				global: true,
 				process: true,
 			},
+			exclude:[
+				'fs',
+			],
 		}),
 
 		vue(),
