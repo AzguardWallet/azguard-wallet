@@ -1,8 +1,8 @@
 import { Fr } from '@aztec/foundation/fields';
-import { IProfile, IProfileInfo, IProfileManager } from '../abstract/profiles';
-import { EncryptionKey } from "./encryption_key";
+import { IProfile, IProfileInfo, IProfileManager } from '../abstract';
 import { EntityStorage, SimpleStorage, StorageType } from '../storage';
 import { array_equals, getRandomHex } from '../utils';
+import { EncryptionKey } from "./encryption_key";
 import { ProfileInfo } from './profile_info';
 import { Profile } from './profile';
 

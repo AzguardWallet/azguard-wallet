@@ -1,9 +1,42 @@
 <script setup lang="ts">
+import { AccountType } from '@/wallet/abstract';
+import { AccountManager } from '@/wallet/accounts';
+import { NetworkManager } from '@/wallet/networks';
 import { ProfileManager } from '@/wallet/profiles';
 
 (async function f() {
 	const pm = new ProfileManager();
-	
+    const nm = new NetworkManager();
+
+    await chrome.storage.local.clear();
+
+	console.log('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+    
+	console.log('local storage:', await chrome.storage.local.get());
+    let networks = await nm.getNetworks();
+	console.log('networks:', networks);
+	console.log('local storage:', await chrome.storage.local.get());
+    let network = await nm.getNetwork(networks[0].id);
+	console.log('network:', networks);
+
+    let newNetwork = await nm.addNetwork('qwe', 'https://rpc.tzkt.io/aztec/');
+	console.log('newNetwork:', newNetwork);
+    networks = await nm.getNetworks();
+	console.log('networks:', networks);
+	console.log('local storage:', await chrome.storage.local.get());
+
+    newNetwork = await nm.setNetwork(newNetwork.id, 'zxczxc', 'https://rpc.tzkt.io/aztec/');
+	console.log('newNetwork:', newNetwork);
+    networks = await nm.getNetworks();
+	console.log('networks:', networks);
+	console.log('local storage:', await chrome.storage.local.get());
+
+    console.log('deletion...');
+    await nm.deleteNetwork(newNetwork.id);
+	console.log('deleted');
+	console.log('networks:', await nm.getNetworks());
+	console.log('local storage:', await chrome.storage.local.get());
+
 	console.log('*********************************************************************************');
 	
 	// если висит активная сессия, мы ее "продолжаем"
@@ -27,7 +60,33 @@ import { ProfileManager } from '@/wallet/profiles';
 	// автоматом создается сессия
 	console.log('session storage:', await chrome.storage.session.get());
 
-	console.log('================');
+	console.log('///////////////////////////////////////////////////');
+
+    const am = new AccountManager(p, network!);
+
+    let accounts = await am.getAccounts();
+	console.log('accounts:', accounts);
+	console.log('local storage:', await chrome.storage.local.get());
+
+    let account = await am.createAccount(AccountType.SchnorrV0, 'Acc1');
+	console.log('created:', account);
+	console.log('accounts:', await am.getAccounts());
+
+    let acc = await am.getAccount(account.id);
+	console.log('get:', acc);
+
+    account = await am.changeAccountName(account, 'AAACCC111');
+	console.log('changed:', account);
+	console.log('accounts:', await am.getAccounts());
+
+    await am.deleteAccount(account);
+	console.log('deleted:', account);
+	console.log('accounts:', await am.getAccounts());
+	console.log('local storage:', await chrome.storage.local.get());
+
+    await nm.deleteNetwork(network!.id);
+
+	console.log('///////////////////////////////////////////////////');
 	
 	// если же профили есть, мы предлагаем войти
 	p = (await pm.signInProfile(p.id, 'qwerty'))!;

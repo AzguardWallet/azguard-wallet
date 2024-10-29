@@ -6,7 +6,7 @@ export interface IProfileInfo {
 }
 
 export interface IProfile extends IProfileInfo {
-    deriveChildSecret(chain: string, id: number): Promise<Fr>;
+    deriveChildSecret(chain: number, id: number): Promise<Fr>;
 }
 
 export interface IProfileManager {

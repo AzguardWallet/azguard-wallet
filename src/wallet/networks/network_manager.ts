@@ -1,12 +1,12 @@
 import { createPXEClient } from "@aztec/aztec.js";
-import { INetwork, INetworkManager } from "../abstract/networks";
+import { INetwork, INetworkManager } from "../abstract";
 import { EntityStorage, StorageType } from "../storage";
 import { getRandomHex } from "../utils";
 import { Network } from "./network";
 
 type NetworkDto = {
     name: string,
-    chainId: string,
+    chainId: number,
     rpcUrl: string,
 }
 
@@ -22,7 +22,7 @@ export class NetworkManager implements INetworkManager {
     public async getNetworks(): Promise<Array<INetwork>> {
         const networks = await this.networks.getAll();
         if (networks.length === 0) {
-            return [await this._addNetwork("Sandbox", "https://rpc.tzkt.io/aztec/", "31337")];
+            return [await this._addNetwork("Sandbox", "https://rpc.tzkt.io/aztec/", 31337)];
         }
         return networks.map(([id, dto]) => new Network(id, dto.name, dto.chainId, dto.rpcUrl));
     }
@@ -37,7 +37,7 @@ export class NetworkManager implements INetworkManager {
         return network !== null ? new Network(id, network.name, network.chainId, network.rpcUrl) : null;
     }
 
-    public async setNetwork(id: string, rpcUrl: string, name: string): Promise<INetwork> {
+    public async setNetwork(id: string, name: string, rpcUrl: string): Promise<INetwork> {
         const chainId = await this._getChainId(rpcUrl); // throws RpcError
         await this.networks.set(id, {name, chainId, rpcUrl});
         return new Network(id, name, chainId, rpcUrl);
@@ -47,7 +47,7 @@ export class NetworkManager implements INetworkManager {
         return this.networks.delete(id);
     }
 
-    private async _addNetwork(name: string, rpcUrl: string, chainId: string): Promise<INetwork> {
+    private async _addNetwork(name: string, rpcUrl: string, chainId: number): Promise<INetwork> {
         let id: string;
         do { id = getRandomHex(8); }
         while (await this.networks.contains(id));
@@ -55,11 +55,11 @@ export class NetworkManager implements INetworkManager {
         return new Network(id, name, chainId, rpcUrl);
     }
 
-    private async _getChainId(rpcUrl: string): Promise<string> {
+    private async _getChainId(rpcUrl: string): Promise<number> {
         try {
             const pxe = createPXEClient(rpcUrl);
             const nodeInfo = await pxe.getNodeInfo()
-            return `${nodeInfo.l1ChainId}`;
+            return nodeInfo.l1ChainId;
         } 
         catch {
             throw new RpcError();

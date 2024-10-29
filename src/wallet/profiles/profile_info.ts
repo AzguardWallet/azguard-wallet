@@ -1,4 +1,4 @@
-import { IProfileInfo } from '../abstract/profiles';
+import { IProfileInfo } from '../abstract';
 
 export class ProfileInfo implements IProfileInfo {
     public constructor(

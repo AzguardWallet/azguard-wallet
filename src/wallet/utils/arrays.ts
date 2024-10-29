@@ -1,4 +1,4 @@
-export const array_equal = (arr1: Uint8Array, arr2: Uint8Array): boolean => {
+export const array_equals = (arr1: Uint8Array, arr2: Uint8Array): boolean => {
     if (arr1.length !== arr2.length) {
         return false;
     }
@@ -8,4 +8,14 @@ export const array_equal = (arr1: Uint8Array, arr2: Uint8Array): boolean => {
         }
     }
     return true;
+}
+
+export const array_max = (arr: Array<number>): number => {
+    let res = 0;
+    for (const x of arr) {
+        if (x > res) {
+            res = x;
+        }
+    }
+    return res;
 }
