@@ -75,11 +75,21 @@ export class EncryptionKey {
         return this.fromPasshash(passhash);
     }
     
+    /**
+     * Creates EncryptionKey from user password hash
+     * @param passhash - Hash of the password
+     * @returns New instance of EncryptionKey
+     */
     public static async fromPasshash(passhash: ArrayBuffer): Promise<EncryptionKey> {
         const baseKey = await window.crypto.subtle.importKey("raw", passhash, "PBKDF2", false, ["deriveKey"]);
         return new EncryptionKey(baseKey);
     }
     
+    /**
+     * Calculates password hash
+     * @param password User password
+     * @returns Hash of the password
+     */
     public static async getPasshash(password: string): Promise<ArrayBuffer> {
         const utf8 = new TextEncoder();
         return await window.crypto.subtle.digest("SHA-256", utf8.encode(password));

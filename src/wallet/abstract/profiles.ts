@@ -2,11 +2,11 @@ import { Fr } from '@aztec/foundation/fields';
 
 export interface IProfileInfo {
     readonly id: string;
-    name: string;
+    readonly name: string;
 }
 
 export interface IProfile extends IProfileInfo {
-    deriveChildSecret(network: string, id: number): Promise<Fr>;
+    deriveChildSecret(chain: string, id: number): Promise<Fr>;
 }
 
 export interface IProfileManager {

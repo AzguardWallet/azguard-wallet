@@ -2,7 +2,7 @@ import { Fr } from '@aztec/foundation/fields';
 import { IProfile, IProfileInfo, IProfileManager } from '../abstract/profiles';
 import { EncryptionKey } from "./encryption_key";
 import { EntityStorage, SimpleStorage, StorageType } from '../storage';
-import { array_equal, getRandomHex } from '../utils';
+import { array_equals, getRandomHex } from '../utils';
 import { ProfileInfo } from './profile_info';
 import { Profile } from './profile';
 
@@ -25,25 +25,8 @@ export class ProfileManager implements IProfileManager {
     private readonly session: SimpleStorage<SessionDto>;
 
     constructor() {
-        this.profiles = new EntityStorage('core:profiles', StorageType.Local);
-        this.session = new SimpleStorage('core:profiles', StorageType.Session)
-    }
-
-    private async openSession(profile: string, passhash: ArrayBuffer): Promise<void> {
-        const session = {
-            profile,
-            passhash: Buffer.from(passhash).toString('base64'),
-            since: Date.now(),
-        };
-        await this.session.set('active_session', session);
-    }
-
-    private getActiveSession(): Promise<SessionDto | null> {
-        return this.session.get('active_session');
-    }
-    
-    private closeSession(): Promise<void> {
-        return this.session.delete('active_session');
+        this.profiles = new EntityStorage('azguard:core:profiles', StorageType.Local);
+        this.session = new SimpleStorage('azguard:core:profiles', StorageType.Session)
     }
 
     public async getProfiles(): Promise<Array<IProfileInfo>> {
@@ -68,20 +51,20 @@ export class ProfileManager implements IProfileManager {
         };
         await this.profiles.set(id, profileDto);
 
-        await this.openSession(id, passhash);
+        await this._openSession(id, passhash);
 
         return new Profile(id, name, secret, key);
     }
 
-    async signInProfile(id: string, password: string): Promise<IProfile | null> {
+    public async signInProfile(id: string, password: string): Promise<IProfile | null> {
         const profile = await this.profiles.get(id);
         if (profile !== null) {
             try {
                 const passhash = await EncryptionKey.getPasshash(password);
                 const key = await EncryptionKey.fromPasshash(passhash);
                 const guard = await key.decrypt(Buffer.from(profile.guard, 'base64'));
-                if (array_equal(guard, globalGuard)) {
-                    await this.openSession(id, passhash);
+                if (array_equals(guard, globalGuard)) {
+                    await this._openSession(id, passhash);
                     return new Profile(id, profile.name, Buffer.from(profile.secret, 'base64'), key);
                 }
             }
@@ -90,8 +73,8 @@ export class ProfileManager implements IProfileManager {
         return null;
     }
 
-    async getActiveProfile(): Promise<IProfile | null> {
-        const session = await this.getActiveSession();
+    public async getActiveProfile(): Promise<IProfile | null> {
+        const session = await this._getActiveSession();
         const day = 1000 * 60 * 60 * 24; // TODO: use settings
         if (session) {
             if (session.since > Date.now() - day) {
@@ -100,42 +83,59 @@ export class ProfileManager implements IProfileManager {
                     const passhash = Buffer.from(session.passhash, 'base64');
                     const key = await EncryptionKey.fromPasshash(passhash);
                     const guard = await key.decrypt(Buffer.from(profile.guard, 'base64'));
-                    if (array_equal(guard, globalGuard)) {
-                        await this.openSession(session.profile, passhash);
+                    if (array_equals(guard, globalGuard)) {
+                        await this._openSession(session.profile, passhash);
                         return new Profile(session.profile, profile.name, Buffer.from(profile.secret, 'base64'), key);
                     }
                 }
             }
-            await this.closeSession();
+            await this._closeSession();
         }
         return null;
     }
 
-    signOut(): Promise<void> {
-        return this.closeSession();
+    public signOut(): Promise<void> {
+        return this._closeSession();
     }
 
-    async deleteProfile(profile: IProfile): Promise<void> {
-        await this.closeSession();
+    public async deleteProfile(profile: IProfile): Promise<void> {
+        await this._closeSession();
         return this.profiles.delete(profile.id);
     }
 
-    changeProfileName(profile: IProfile, newName: string | null): Promise<IProfile> {
+    public changeProfileName(profile: IProfile, newName: string | null): Promise<IProfile> {
         throw new Error('not implemented');
     }
-    changeProfilePassword(profile: IProfile, newPassword: string): Promise<IProfile> {
+    public changeProfilePassword(profile: IProfile, newPassword: string): Promise<IProfile> {
         throw new Error('not implemented');
     }
-    importEncrypted(name: string, secret: Uint8Array): Promise<void> {
+    public importEncrypted(name: string, secret: Uint8Array): Promise<void> {
         throw new Error('not implemented');
     }
-    importPlain(name: string, secret: Uint8Array, password: string): Promise<void> {
+    public importPlain(name: string, secret: Uint8Array, password: string): Promise<void> {
         throw new Error('not implemented');
     }
-    exportEncrypted(): Promise<Uint8Array> {
+    public exportEncrypted(): Promise<Uint8Array> {
         throw new Error('not implemented');
     }
-    exportPlain(): Promise<Uint8Array> {
+    public exportPlain(): Promise<Uint8Array> {
         throw new Error('not implemented');
+    }
+
+    private async _openSession(profile: string, passhash: ArrayBuffer): Promise<void> {
+        const session = {
+            profile,
+            passhash: Buffer.from(passhash).toString('base64'),
+            since: Date.now(),
+        };
+        await this.session.set('active_session', session);
+    }
+
+    private _getActiveSession(): Promise<SessionDto | null> {
+        return this.session.get('active_session');
+    }
+    
+    private _closeSession(): Promise<void> {
+        return this.session.delete('active_session');
     }
 }

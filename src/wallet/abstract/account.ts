@@ -1,18 +1,18 @@
+import { AztecAddress } from "@aztec/aztec.js";
+
 export enum AccountType {
-    SchnorrAccount
+    SchnorrAccountV0
 }
 
 export interface IAccount {
     readonly id: number;
     readonly type: AccountType;
-    readonly address: string;
+    readonly address: AztecAddress;
     name: string;
 }
 
 export interface IAccountManager {
-    getActiveAccount(): Promise<IAccount | null>;
     getAccounts(): Promise<Array<IAccount>>;
-    createAccount(id: number, type: AccountType): Promise<IAccount>;
-    setActiveAccount(account: IAccount): Promise<IAccount>;
+    createAccount(type: AccountType, name: string): Promise<IAccount>;
     changeAccountName(account: IAccount, newName: string | null): Promise<IAccount>;
 }
