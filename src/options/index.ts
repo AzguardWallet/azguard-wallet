@@ -3,7 +3,7 @@ import { createApp } from "vue"
 import { createRouter, createWebHashHistory } from "vue-router/auto"
 import App from "./app.vue"
 import routes from "~pages"
-import "../assets/base.scss"
+import "@/assets/styles/base.scss"
 import "./index.scss"
 
 routes.push({
@@ -19,5 +19,7 @@ const router = createRouter({
 createApp(App).use(router).use(createPinia()).mount("#app")
 
 self.onerror = (message, source, lineno, colno, error) => {
-	console.info(`Error: ${message}\nSource: ${source}\nLine: ${lineno}\nColumn: ${colno}\nError object: ${error}`)
+	console.info(
+		`Error: ${message}\nSource: ${source}\nLine: ${lineno}\nColumn: ${colno}\nError object: ${error}`
+	)
 }

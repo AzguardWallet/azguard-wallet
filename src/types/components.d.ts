@@ -7,9 +7,15 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Button: typeof import('./../components/ui/Button.vue')['default']
+    Flex: typeof import('./../components/core/Flex.vue')['default']
+    Icon: typeof import('./../components/core/Icon.vue')['default']
     Install: typeof import('./../components/install.vue')['default']
+    LogoStar: typeof import('./../components/LogoStar.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Star: typeof import('./../components/star.vue')['default']
+    Text: typeof import('./../components/core/Text.vue')['default']
     Update: typeof import('./../components/update.vue')['default']
   }
 }

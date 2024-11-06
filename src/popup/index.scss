@@ -1,4 +1,16 @@
+#app {
+	display: flex;
+
+	height: 100%;
+}
+
 body {
-	width: 320px;
+	width: var(--base-width);
+	min-width: var(--base-width);
+	height: var(--base-height);
+	min-height: var(--base-height);
+
+	background: var(--app-bg);
+
 	margin: 0 auto;
 }

@@ -5,7 +5,6 @@ import usePages from "vite-plugin-pages"
 import useAutoImport from "unplugin-auto-import/vite"
 import useComponents from "unplugin-vue-components/vite"
 import { defineConfig } from "vite"
-import vueDevTools from "vite-plugin-vue-devtools"
 import { nodePolyfills } from "vite-plugin-node-polyfills"
 import { defineViteConfig as define } from "./define.config"
 
@@ -43,7 +42,6 @@ export default defineConfig({
 		}),
 
 		vue(),
-		vueDevTools(),
 
 		usePages({
 			dirs: [
@@ -122,6 +120,5 @@ export default defineConfig({
 			target: "esnext",
 		},
 	},
-	assetsInclude: ["src/assets/*/**"],
 	define,
 })
