@@ -41,6 +41,9 @@ export default {
 			resources: ["src/content-script/iframe/index.html"],
 		},
 	],
+	content_security_policy: {
+		extension_pages: "script-src 'self' 'wasm-unsafe-eval'",
+	},
 	icons: {
 		16: "src/assets/logo.png",
 		24: "src/assets/logo.png",
