@@ -24,7 +24,7 @@ $grayscale: (
 	--app-bg: #f5f5f7;
 
 	/* text */
-	--txt-primary: rgba(0, 0, 0, 90%);
+	--txt-primary: rgba(0, 0, 0, 88%);
 	--txt-secondary: rgba(0, 0, 0, 60%);
 	--txt-body: rgba(0, 0, 0, 45%);
 	--txt-tertiary: rgba(0, 0, 0, 35%);
@@ -95,7 +95,7 @@ body {
 
 .slide-enter-active,
 .slide-leave-active {
-	transition: all 0.5s var(--bezier);
+	transition: all 0.3s var(--bezier);
 }
 
 .slide-enter-from,

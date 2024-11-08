@@ -1,7 +1,20 @@
 <script setup>
 const model = defineModel()
 
-const types = ["Ecdsa", "Schnorr", "SingleKey"]
+const types = [
+	{
+		name: "Schnorr",
+		available: true,
+	},
+	{
+		name: "Ecdsa",
+		available: false,
+	},
+	{
+		name: "SingleKey",
+		available: false,
+	},
+]
 </script>
 
 <template>
@@ -20,10 +33,14 @@ const types = ["Ecdsa", "Schnorr", "SingleKey"]
 				align="center"
 				justify="center"
 				gap="6"
-				:class="[$style.item, type == model && $style.selected]"
+				:class="[
+					$style.item,
+					type.name === model && $style.selected,
+					!type.available && $style.disabled,
+				]"
 			>
 				<Icon
-					v-if="type === model"
+					v-if="type.name === model"
 					name="check-circle"
 					size="12"
 					color="white"
@@ -31,9 +48,10 @@ const types = ["Ecdsa", "Schnorr", "SingleKey"]
 				<Text
 					size="14"
 					weight="600"
-					:color="type === model ? 'white' : 'primary'"
-					>{{ type }}</Text
+					:color="type.name === model ? 'white' : 'primary'"
 				>
+					{{ type.name }}
+				</Text>
 			</Flex>
 		</Flex>
 
@@ -72,6 +90,11 @@ const types = ["Ecdsa", "Schnorr", "SingleKey"]
 
 	&.selected {
 		background: var(--green);
+	}
+
+	&.disabled {
+		opacity: 0.5;
+		pointer-events: none;
 	}
 }
 </style>

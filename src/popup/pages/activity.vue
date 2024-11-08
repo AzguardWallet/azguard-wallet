@@ -5,6 +5,10 @@ import Navigation from "../components/Navigation.vue"
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
+
+const router = useRouter()
+
+if (!appStore.isLogined) router.push("/popup/auth")
 </script>
 
 <template>

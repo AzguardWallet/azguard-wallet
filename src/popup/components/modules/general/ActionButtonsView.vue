@@ -1,13 +1,15 @@
 <script setup>
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
 </script>
 
 <template>
 	<Flex align="center" justify="between">
 		<Flex
-			@click="appStore.showSendPopup = true"
+			@click="popupStore.open('send')"
 			direction="column"
 			align="center"
 			gap="8"

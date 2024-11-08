@@ -1,8 +1,12 @@
 <script setup lang="ts">
 /** Local Components */
-import WalletNameContent from "./WalletNameContent.vue"
 import WalletPasswordContent from "./WalletPasswordContent.vue"
 import WalletTypeContent from "./WalletTypeContent.vue"
+
+/** Utils */
+import { managers } from "@/utils/core"
+import { AccountManager } from "@/wallet/accounts"
+import { AccountType } from "@/wallet/abstract"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -10,21 +14,45 @@ const appStore = useAppStore()
 
 const router = useRouter()
 
-const walletName = ref<string>("")
 const walletPassword = ref<string>("")
-const walletType = ref<string>("Ecdsa")
+const repeatedPassword = ref<string>("")
 
-const steps = ["name", "password", "type"]
+const walletType = ref<string>("Schnorr")
+
+const handleCreateProfile = async () => {
+	const profile = await managers.profile.createProfile(
+		"My Wallet",
+		walletPassword.value
+	)
+
+	managers.account = new AccountManager(profile, appStore.network)
+
+	const account = await managers.account.createAccount(
+		AccountType.SchnorrV0,
+		"Vault"
+	)
+
+	appStore.account = account
+	appStore.accounts = await managers.account.getAccounts()
+
+	await chrome.storage.local.set({ "azguard:ui:activeAccount": account.id })
+	await chrome.storage.local.set({
+		[`azguard:ui:profileCreatedAt@${profile.id}`]: new Date().getTime(),
+	})
+
+	router.push("/popup/general")
+}
+
 const stepIdx = ref<number>(0)
+watch(
+	() => stepIdx.value,
+	() => {
+		if (stepIdx.value !== 2) return
+		handleCreateProfile()
+	}
+)
 const handleNextStep = () => {
 	if (!isAllowedToContinue.value) return
-
-	if (stepIdx.value + 1 === steps.length) {
-		appStore._wallet.name = walletName.value
-		appStore._wallet.created_at = new Date().getTime()
-
-		router.push("/popup/general")
-	}
 
 	stepIdx.value += 1
 }
@@ -52,14 +80,15 @@ onUnmounted(() => {
 const isAllowedToContinue = computed(() => {
 	if (
 		stepIdx.value === 0 &&
-		(!walletName.value.length || walletName.value.length < 2)
+		(!walletPassword.value.length || walletPassword.value.length < 8)
 	) {
 		return false
 	}
 
 	if (
-		stepIdx.value === 1 &&
-		(!walletPassword.value.length || walletPassword.value.length < 8)
+		stepIdx.value === 0 &&
+		(!repeatedPassword.value ||
+			walletPassword.value !== repeatedPassword.value)
 	) {
 		return false
 	}
@@ -83,15 +112,10 @@ const isAllowedToContinue = computed(() => {
 					</Flex>
 					<Flex align="center" gap="8" :class="[$style.badge]">
 						<Icon name="user" size="16" color="white" />
-						<div v-if="!walletName.length" :class="$style.rect" />
-						<Text
-							v-else-if="!walletPassword.length"
-							size="14"
-							weight="600"
-							color="white"
-						>
-							{{ walletName }}
-						</Text>
+						<div
+							v-if="!walletPassword.length"
+							:class="$style.rect"
+						/>
 						<Flex v-else align="center" gap="2">
 							<Icon
 								v-for="_ in Math.min(8, walletPassword.length)"
@@ -114,16 +138,13 @@ const isAllowedToContinue = computed(() => {
 
 			<Flex direction="column" justify="between" :class="$style.content">
 				<Transition name="fade" mode="out-in">
-					<WalletNameContent
-						v-if="stepIdx === 0"
-						v-model="walletName"
-					/>
 					<WalletPasswordContent
-						v-else-if="stepIdx === 1"
-						v-model="walletPassword"
+						v-if="stepIdx === 0"
+						v-model:password="walletPassword"
+						v-model:repeatedPassword="repeatedPassword"
 					/>
 					<WalletTypeContent
-						v-else-if="stepIdx === 2"
+						v-else-if="stepIdx === 1"
 						v-model="walletType"
 					/>
 				</Transition>

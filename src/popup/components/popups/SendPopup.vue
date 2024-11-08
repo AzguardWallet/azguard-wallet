@@ -1,7 +1,13 @@
 <script setup>
+/** Components */
+import Popup from "@/components/ui/Popup/Popup.vue"
+import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
+
+const emit = defineEmits(["onClose"])
 
 const selectedSendType = ref("private")
 const selectedReceiverType = ref("private")
@@ -18,181 +24,137 @@ const handleSwitchReceiverType = () => {
 </script>
 
 <template>
-	<Flex direction="column" :class="$style.wrapper">
-		<div
-			@click="appStore.showSendPopup = false"
-			:class="$style.close_area"
-		/>
-
-		<Flex
-			direction="column"
-			align="center"
-			justify="between"
-			:class="$style.card"
-		>
-			<Flex align="center" direction="column" gap="32">
-				<Flex direction="column" align="center" gap="20">
-					<div :class="$style.bar" />
-
-					<Flex align="center" gap="6">
-						<Icon
-							name="arrow-top-right-circle"
-							size="16"
-							color="primary"
-						/>
-						<Text size="16" weight="600" color="primary">Send</Text>
-					</Flex>
-
-					<Flex align="center" gap="6" :class="$style.selector">
-						<Flex
-							@click="selectedSendType = 'private'"
-							align="center"
-							gap="6"
-							:class="[
-								$style.selector_item,
-								selectedSendType === 'private' &&
-									$style.selected,
-							]"
-						>
+	<Popup @onClose="emit('onClose')">
+		<PopupCard large>
+			<Flex
+				wide
+				direction="column"
+				justify="between"
+				:class="$style.wrapper"
+			>
+				<Flex align="center" direction="column" gap="32">
+					<Flex direction="column" align="center" gap="20">
+						<Flex align="center" gap="6">
 							<Icon
-								v-if="selectedSendType === 'private'"
-								name="key-square"
+								name="arrow-top-right-circle"
 								size="16"
-								color="blue"
-							/>
-							<Text size="13" weight="600" color="primary">
-								Private
-							</Text>
-						</Flex>
-						<Flex
-							@click="selectedSendType = 'public'"
-							align="center"
-							gap="6"
-							:class="[
-								$style.selector_item,
-								selectedSendType === 'public' &&
-									$style.selected,
-							]"
-						>
-							<Icon
-								v-if="selectedSendType === 'public'"
-								name="face"
-								size="16"
-								color="blue"
-							/>
-							<Text size="13" weight="600" color="primary">
-								Public
-							</Text>
-						</Flex>
-					</Flex>
-				</Flex>
-
-				<Flex direction="column" align="center" gap="10">
-					<Text size="13" weight="600" color="secondary">Amount</Text>
-					<Text size="32" weight="600" color="primary">$900</Text>
-					<Flex align="center" gap="4">
-						<Icon name="zap" size="12" color="blue" />
-						<Text size="12" weight="600" color="secondary">
-							529 AZT
-						</Text>
-					</Flex>
-				</Flex>
-			</Flex>
-
-			<Flex wide align="center" direction="column" gap="20">
-				<Flex align="center" gap="6" :class="$style.balance_badge">
-					<Icon name="vault" size="16" color="tertiary" />
-
-					<Text size="13" weight="600" color="secondary">
-						Balance: <Text color="primary">$5,629</Text>.14
-					</Text>
-				</Flex>
-
-				<Flex wide direction="column" gap="32" :class="$style.bottom">
-					<Flex align="center" gap="6">
-						<Text
-							size="13"
-							weight="600"
-							height="120"
-							color="secondary"
-						>
-							Using wallet
-						</Text>
-						<Flex align="center" gap="4">
-							<Icon name="vault" size="16" color="blue" />
-							<Text
-								size="13"
-								weight="600"
-								height="120"
 								color="primary"
-								:class="$style.wallet_name"
-							>
-								{{ appStore._wallet.name }}
-							</Text>
-						</Flex>
-						<Text
-							size="13"
-							weight="600"
-							height="120"
-							color="secondary"
-						>
-							with
-						</Text>
-						<Flex
-							@click="handleSwitchSendType"
-							align="center"
-							gap="4"
-						>
-							<Icon
-								:name="
-									selectedSendType === 'private'
-										? 'key-square'
-										: 'face'
-								"
-								size="16"
-								color="blue"
 							/>
-							<Text
-								size="13"
-								weight="600"
-								height="120"
-								color="primary"
+							<Text size="16" weight="600" color="primary"
+								>Send</Text
 							>
-								{{ selectedSendType }}
-							</Text>
 						</Flex>
-						<Text
-							size="13"
-							weight="600"
-							height="120"
-							color="secondary"
-						>
-							balance
-						</Text>
-					</Flex>
 
-					<Flex direction="column" gap="8">
-						<Text size="13" weight="600" color="primary"
-							>Destination</Text
-						>
-
-						<Flex
-							align="center"
-							justify="between"
-							:class="$style.input_field"
-						>
-							<Text size="13" weight="600" color="tertiary"
-								>0xABCD</Text
-							>
-
+						<Flex align="center" gap="6" :class="$style.selector">
 							<Flex
-								@click="handleSwitchReceiverType"
+								@click="selectedSendType = 'private'"
+								align="center"
+								gap="6"
+								:class="[
+									$style.selector_item,
+									selectedSendType === 'private' &&
+										$style.selected,
+								]"
+							>
+								<Icon
+									v-if="selectedSendType === 'private'"
+									name="key-square"
+									size="16"
+									color="blue"
+								/>
+								<Text size="13" weight="600" color="primary">
+									Private
+								</Text>
+							</Flex>
+							<Flex
+								@click="selectedSendType = 'public'"
+								align="center"
+								gap="6"
+								:class="[
+									$style.selector_item,
+									selectedSendType === 'public' &&
+										$style.selected,
+								]"
+							>
+								<Icon
+									v-if="selectedSendType === 'public'"
+									name="face"
+									size="16"
+									color="blue"
+								/>
+								<Text size="13" weight="600" color="primary">
+									Public
+								</Text>
+							</Flex>
+						</Flex>
+					</Flex>
+
+					<Flex direction="column" align="center" gap="10">
+						<Text size="13" weight="600" color="secondary"
+							>Amount</Text
+						>
+						<Text size="32" weight="600" color="primary">$900</Text>
+						<Flex align="center" gap="4">
+							<Icon name="zap" size="12" color="blue" />
+							<Text size="12" weight="600" color="secondary">
+								529 AZT
+							</Text>
+						</Flex>
+					</Flex>
+				</Flex>
+
+				<Flex wide align="center" direction="column" gap="20">
+					<Flex align="center" gap="6" :class="$style.balance_badge">
+						<Icon name="vault" size="16" color="tertiary" />
+
+						<Text size="13" weight="600" color="secondary">
+							Balance: <Text color="primary">$5,629</Text>.14
+						</Text>
+					</Flex>
+
+					<Flex
+						wide
+						direction="column"
+						gap="32"
+						:class="$style.bottom"
+					>
+						<Flex align="center" gap="6">
+							<Text
+								size="13"
+								weight="600"
+								height="120"
+								color="secondary"
+							>
+								Using wallet
+							</Text>
+							<Flex align="center" gap="4">
+								<Icon name="vault" size="16" color="blue" />
+								<Text
+									size="13"
+									weight="600"
+									height="120"
+									color="primary"
+									:class="$style.wallet_name"
+								>
+									{{ appStore.account.name }}
+								</Text>
+							</Flex>
+							<Text
+								size="13"
+								weight="600"
+								height="120"
+								color="secondary"
+							>
+								with
+							</Text>
+							<Flex
+								@click="handleSwitchSendType"
 								align="center"
 								gap="4"
 							>
 								<Icon
 									:name="
-										selectedReceiverType === 'private'
+										selectedSendType === 'private'
 											? 'key-square'
 											: 'face'
 									"
@@ -202,63 +164,80 @@ const handleSwitchReceiverType = () => {
 								<Text
 									size="13"
 									weight="600"
+									height="120"
 									color="primary"
-									style="text-transform: capitalize"
 								>
-									{{ selectedReceiverType }}
+									{{ selectedSendType }}
 								</Text>
 							</Flex>
+							<Text
+								size="13"
+								weight="600"
+								height="120"
+								color="secondary"
+							>
+								balance
+							</Text>
 						</Flex>
-					</Flex>
 
-					<Button
-						wide
-						type="primary"
-						size="medium"
-						rightIcon="arrow-right-circle"
-					>
-						<Text color="white">Continue to review</Text>
-					</Button>
+						<Flex direction="column" gap="8">
+							<Text size="13" weight="600" color="primary"
+								>Destination</Text
+							>
+
+							<Flex
+								align="center"
+								justify="between"
+								:class="$style.input_field"
+							>
+								<Text size="13" weight="600" color="tertiary"
+									>0xABCD</Text
+								>
+
+								<Flex
+									@click="handleSwitchReceiverType"
+									align="center"
+									gap="4"
+								>
+									<Icon
+										:name="
+											selectedReceiverType === 'private'
+												? 'key-square'
+												: 'face'
+										"
+										size="16"
+										color="blue"
+									/>
+									<Text
+										size="13"
+										weight="600"
+										color="primary"
+										style="text-transform: capitalize"
+									>
+										{{ selectedReceiverType }}
+									</Text>
+								</Flex>
+							</Flex>
+						</Flex>
+
+						<Button
+							wide
+							type="primary"
+							size="medium"
+							rightIcon="arrow-right-circle"
+						>
+							<Text color="white">Continue to review</Text>
+						</Button>
+					</Flex>
 				</Flex>
 			</Flex>
-		</Flex>
-	</Flex>
+		</PopupCard>
+	</Popup>
 </template>
 
 <style module>
 .wrapper {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-
-	z-index: 5;
-}
-
-.close_area {
-	width: 100%;
-	height: 60px;
-}
-
-.bar {
-	width: 80px;
-	height: 4px;
-
-	border-radius: 50px;
-	background: var(--gray-10);
-}
-
-.card {
 	flex: 1;
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	background: #fff;
-	box-shadow: 0 0 0 1px var(--gray-5), 0 -6px 16px var(--gray-5);
-
-	padding-top: 10px;
 }
 
 .selector {

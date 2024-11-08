@@ -26,8 +26,8 @@
 			</Flex>
 
 			<Flex direction="column" align="end" gap="6">
-				<Text size="13" weight="600" color="primary">5,235</Text>
-				<Text size="13" weight="600" color="tertiary">$71,652</Text>
+				<Text size="13" weight="600" color="primary">0</Text>
+				<Text size="13" weight="600" color="tertiary">$0.00</Text>
 			</Flex>
 		</Flex>
 	</Flex>
@@ -36,7 +36,7 @@
 <style module>
 .card {
 	background: #fff;
-	border: 1px solid var(--gray-5);
+	border: 1px solid var(--gray-10);
 	box-shadow: 0 1px 2px transparent;
 	border-radius: 12px;
 	cursor: pointer;

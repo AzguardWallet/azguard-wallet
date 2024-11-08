@@ -6,10 +6,18 @@ import WarningView from "../components/modules/general/WarningView.vue"
 import TokensView from "../components/modules/general/TokensView.vue"
 import RecentActivityView from "../components/modules/general/RecentActivityView.vue"
 import Navigation from "../components/Navigation.vue"
+
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+const appStore = useAppStore()
+
+const router = useRouter()
+
+if (!appStore.isLogined) router.push("/popup/auth")
 </script>
 
 <template>
-	<Flex direction="column" :class="$style.wrapper">
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
 		<BalanceView />
 
 		<Flex direction="column" gap="32" :class="$style.content">

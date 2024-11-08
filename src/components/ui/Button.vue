@@ -33,7 +33,19 @@ const props = defineProps({
 		type: String,
 		required: false,
 	},
+	leftIcon: {
+		type: String,
+		required: false,
+	},
+	leftIconColor: {
+		type: String,
+		required: false,
+	},
 	rightIcon: {
+		type: String,
+		required: false,
+	},
+	rightIconColor: {
 		type: String,
 		required: false,
 	},
@@ -68,13 +80,19 @@ const getStyles = () => {
 		:target="target"
 		:class="[...getStyles(), loading && $style.loading]"
 	>
+		<Icon
+			v-if="leftIcon"
+			:name="leftIcon"
+			size="16"
+			:color="leftIconColor ? leftIconColor : 'white'"
+			:class="$style.left_icon"
+		/>
 		<slot />
-
 		<Icon
 			v-if="rightIcon"
 			:name="rightIcon"
 			size="16"
-			color="white"
+			:color="rightIconColor ? rightIconColor : 'white'"
 			:class="$style.right_icon"
 		/>
 	</component>
@@ -152,12 +170,12 @@ const getStyles = () => {
 }
 
 .wrapper.small {
-	height: 28px;
-	padding: 0 10px;
-	font-size: 12px;
+	height: 32px;
 	gap: 6px;
 
-	border-radius: 6px;
+	border-radius: 10px;
+
+	padding: 0 12px;
 }
 
 .wrapper.mini {
@@ -200,26 +218,20 @@ const getStyles = () => {
 }
 
 .wrapper.secondary {
-	background: linear-gradient(var(--op-8), var(--op-5));
-	fill: var(--txt-secondary);
-	box-shadow: inset 0 0 0 1px var(--op-5), inset 0 0 8px var(--op-5);
+	background: var(--gray-5);
 }
 .wrapper.secondary:hover {
-	box-shadow: inset 0 0 0 1px var(--op-10), inset 0 0 8px var(--op-10);
+	background: var(--gray-10);
 }
 .wrapper.secondary:active {
-	box-shadow: inset 0 0 0 1px var(--op-10), inset 0 0 8px transparent;
-}
-.wrapper.secondary.outline:active {
-	background: var(--btn-secondary-bg-active);
+	background: var(--gray-5);
 }
 
 .wrapper.tertiary {
 	background: transparent;
-	box-shadow: inset 0 0 0 2px var(--gray-10);
 }
 .wrapper.tertiary:hover {
-	box-shadow: inset 0 0 0 2px var(--gray-15);
+	box-shadow: inset 0 0 0 2px var(--gray-10);
 }
 .wrapper.tertiary:active {
 	background: var(--gray-5);
@@ -256,10 +268,27 @@ const getStyles = () => {
 	border: 1px solid var(--border);
 }
 
+.left_icon {
+	position: absolute;
+	top: 50%;
+	left: 8px;
+	transform: translateY(-50%);
+}
+
 .right_icon {
 	position: absolute;
 	top: 50%;
-	right: 6px;
-	transform: translateX(-50%) translateY(-50%);
+	right: 8px;
+	transform: translateY(-50%);
+}
+
+.wrapper.medium {
+	& .left_icon {
+		left: 12px;
+	}
+
+	& .right_icon {
+		right: 12px;
+	}
 }
 </style>

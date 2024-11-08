@@ -4,6 +4,9 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 const isBalanceHovered = ref(false)
+
+const account = computed(() => appStore.account)
+const address = computed(() => appStore.account.address.toString())
 </script>
 
 <template>
@@ -17,19 +20,18 @@ const isBalanceHovered = ref(false)
 		<Transition name="opacity" mode="out-in">
 			<Flex v-if="!isBalanceHovered" align="center" gap="4">
 				<Text size="13" weight="600" color="secondary">
-					Total Balance
+					<Text :class="$style.wallet_name">
+						{{ account.name }}
+					</Text>
+					<Text color="support"> • </Text>
+					<Text color="tertiary">
+						{{ address.slice(0, 6) }}...{{ address.slice(-4) }}
+					</Text>
 				</Text>
-				<Icon name="" size="16" color="orange" />
 			</Flex>
 			<Flex v-else align="center" gap="4">
-				<Icon name="vault" size="16" color="blue" />
-				<Text
-					size="13"
-					weight="600"
-					color="secondary"
-					:class="$style.wallet_name"
-				>
-					{{ appStore._wallet.name }}
+				<Text size="13" weight="600" color="secondary">
+					Total Balance
 				</Text>
 			</Flex>
 		</Transition>
@@ -47,7 +49,7 @@ const isBalanceHovered = ref(false)
 				height="100"
 				color="primary"
 			>
-				$7,705<Text color="secondary" height="100">.52</Text>
+				$0<Text color="secondary" height="100">.00</Text>
 			</Text>
 			<Flex v-else align="center" gap="4" style="height: 28px">
 				<Icon
@@ -65,9 +67,9 @@ const isBalanceHovered = ref(false)
 			gap="6"
 			:class="$style.diff_badge"
 		>
-			<Text size="12" weight="600" color="green">$5.71</Text>
-			<Text size="12" weight="600" color="green">/</Text>
-			<Text size="12" weight="600" color="green">+2.61%</Text>
+			<Text size="13" weight="600" color="tertiary">$0.00</Text>
+			<Text size="13" weight="600" color="tertiary">/</Text>
+			<Text size="13" weight="600" color="tertiary">0.00%</Text>
 		</Flex>
 	</Flex>
 </template>
@@ -87,7 +89,8 @@ const isBalanceHovered = ref(false)
 	height: 20px;
 
 	border-radius: 50px;
-	background: rgba(20, 174, 92, 15%);
+	/* background: rgba(20, 174, 92, 15%); */
+	background: var(--gray-5);
 
 	padding: 0 8px;
 }

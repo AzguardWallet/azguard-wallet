@@ -1,18 +1,70 @@
-<script setup lang="ts">
-// import { AccountType } from "@/wallet/abstract"
-// import { AccountManager } from "@/wallet/accounts"
-// import { NetworkManager } from "@/wallet/networks"
-// import { ProfileManager } from "@/wallet/profiles"
-
+<script setup>
 /** Components */
 import LogoStar from "@/components/LogoStar.vue"
-import SendPopup from "./components/popups/SendPopup.vue"
+import PopupManager from "./components/popups/PopupManager.vue"
+
+/** Utils */
+import { managers, initNetworks } from "@/utils/core.js"
+import { AccountManager } from "@/wallet/accounts"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
 
 const route = useRoute()
+const router = useRouter()
+
+const initAccount = async () => {
+	appStore.setWalletCreatedAt()
+
+	managers.account = new AccountManager(appStore.profile, appStore.network)
+
+	appStore.accounts = await managers.account.getAccounts()
+	await appStore.setupActiveAccount()
+}
+
+const init = async () => {
+	const networks = await initNetworks()
+	appStore.networks = networks
+	appStore.network = networks[0]
+
+	const activeProfile = await managers.profile.getActiveProfile()
+	if (activeProfile) {
+		appStore.profile = activeProfile
+
+		await initAccount()
+
+		appStore.isLogined = true
+
+		router.push("/popup/general")
+		return
+	}
+
+	const profiles = await managers.profile.getProfiles()
+	if (profiles.length) {
+		appStore.profile = profiles[0]
+
+		await initAccount()
+
+		router.push("/popup/auth")
+		return
+	}
+
+	router.push("/popup/register")
+}
+init()
+
+const handleOpenAccountsPopup = () => {
+	if (!appStore.isLogined) return
+	popupStore.open("accounts")
+}
+
+const handleOpenNetworksPopup = () => {
+	if (!appStore.isLogined) return
+	popupStore.open("networks")
+}
 
 watch(
 	() => route.name,
@@ -167,10 +219,12 @@ watch(
 	<LogoStar />
 
 	<Flex wide direction="column" :class="$style.wrapper">
-		<!--  refactor  -->
-		<Transition name="slide">
-			<SendPopup v-if="appStore.showSendPopup" />
-		</Transition>
+		<!-- Popup Teleport -->
+		<div id="popup" />
+
+		<div>
+			<PopupManager />
+		</div>
 
 		<Flex
 			v-if="!appStore._isHomeScreenOpened"
@@ -178,11 +232,22 @@ watch(
 			justify="between"
 			:class="$style.header"
 		>
-			<Flex align="center" justify="center" :class="$style.button">
-				<Icon name="globe" size="18" color="secondary" />
+			<Flex
+				@click="handleOpenAccountsPopup"
+				align="center"
+				justify="center"
+				:class="[$style.button, !appStore.isLogined && $style.disabled]"
+			>
+				<Icon name="vault" size="18" color="blue" />
 			</Flex>
-			<Flex align="center" justify="center" :class="$style.button">
-				<Icon name="dots" size="18" color="secondary" />
+
+			<Flex
+				@click="handleOpenNetworksPopup"
+				align="center"
+				justify="center"
+				:class="[$style.button, !appStore.isLogined && $style.disabled]"
+			>
+				<Icon name="globe" size="18" color="secondary" />
 			</Flex>
 		</Flex>
 
@@ -221,6 +286,11 @@ watch(
 
 	&:active {
 		background: var(--gray-20);
+	}
+
+	&.disabled {
+		opacity: 0.5;
+		pointer-events: none;
 	}
 }
 </style>

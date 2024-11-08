@@ -57,7 +57,7 @@ const appStore = useAppStore()
 						</Text>
 					</Flex>
 				</Button>
-				<Button size="medium" type="tertiary" wide>
+				<Button size="medium" type="secondary" wide>
 					<Flex align="center" gap="6">
 						<Icon name="import" size="16" color="tertiary" />
 						Import Wallet

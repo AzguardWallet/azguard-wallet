@@ -1,5 +1,6 @@
 <script setup>
-const model = defineModel()
+const password = defineModel("password")
+const repeatedPassword = defineModel("repeatedPassword")
 
 const inputElement = useTemplateRef("inputElement")
 
@@ -21,8 +22,17 @@ onMounted(() => {
 
 		<input
 			ref="inputElement"
-			v-model="model"
+			v-model="password"
 			placeholder="Password"
+			:type="isPasswordType ? 'password' : 'text'"
+			autocomplete="false"
+			autofocus="true"
+			spellcheck="false"
+			:class="$style.password_input"
+		/>
+		<input
+			v-model="repeatedPassword"
+			placeholder="Repeat"
 			:type="isPasswordType ? 'password' : 'text'"
 			autocomplete="false"
 			autofocus="true"
@@ -35,9 +45,10 @@ onMounted(() => {
 				<Icon name="password" size="12" color="tertiary" />
 				<Text size="12" weight="600" color="tertiary">
 					{{
-						model.length < 8
-							? "At least 8 characters"
-							: "Looks... strong? "
+						(password.length < 8 && "At least 8 characters") ||
+						(password !== repeatedPassword && "Not repeated") ||
+						(password.length > 24 && "I hope you remember it") ||
+						"Looks.. strong?"
 					}}
 				</Text>
 			</Flex>
@@ -49,7 +60,9 @@ onMounted(() => {
 				style="cursor: pointer"
 			>
 				<Icon name="password-preview" size="12" color="blue" />
-				<Text size="12" weight="600" color="blue">Preview</Text>
+				<Text size="12" weight="600" color="blue">{{
+					isPasswordType ? "Preview" : "Hide"
+				}}</Text>
 			</Flex>
 		</Flex>
 	</Flex>
