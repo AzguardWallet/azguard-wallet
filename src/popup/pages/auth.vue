@@ -1,5 +1,6 @@
 <script setup>
 /** Utils */
+import { AccountManager } from "@/wallet/accounts"
 import { managers } from "@/utils/core"
 
 /** Store */
@@ -17,12 +18,18 @@ const handleUnlockWallet = async () => {
 	if (!password.value.length) return
 
 	try {
-		const test = await managers.profile.signInProfile(
+		const activeProfile = await managers.profile.signInProfile(
 			appStore.profile.id,
 			password.value
 		)
 
-		if (!test) return
+		if (!activeProfile) return
+
+		appStore.profile = activeProfile
+		managers.account = new AccountManager(
+			appStore.profile,
+			appStore.network
+		)
 
 		appStore.isLogined = true
 		router.push("/popup/general")
