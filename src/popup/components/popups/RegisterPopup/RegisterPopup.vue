@@ -32,8 +32,11 @@ const handleCreateProfile = async () => {
 		"Vault"
 	)
 
+	appStore.profile = profile
 	appStore.account = account
 	appStore.accounts = await managers.account.getAccounts()
+
+	appStore.isLogined = true
 
 	await chrome.storage.local.set({ "azguard:ui:activeAccount": account.id })
 	await chrome.storage.local.set({
