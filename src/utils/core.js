@@ -1,13 +1,13 @@
 
-import { ProfileManager } from "@/wallet/profiles"
-import { NetworkManager } from "@/wallet/networks"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { NetworkServiceClient } from "@/wallet/services/network/client"
 
-const profileManager = new ProfileManager()
-const networkManager = new NetworkManager()
+const profileService = new ProfileServiceClient()
+const networkService = new NetworkServiceClient()
 
 export const managers = {
-	profile: profileManager,
-	network: networkManager
+	profile: profileService,
+	network: networkService
 }
 
 export const initNetworks = async () => {

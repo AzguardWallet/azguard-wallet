@@ -1,4 +1,4 @@
-import type { IAccount } from "@/wallet/abstract"
+import type { Account } from "@/wallet/services/account/client"
 
 import { defineStore } from "pinia"
 
@@ -29,45 +29,45 @@ export const useAppStore = defineStore("app", () => {
 
 	const profile = ref()
 
-	const account = ref<IAccount>()
+	const account = ref<Account>()
 	const isLogined = ref<boolean>(false)
-	const accounts = ref<IAccount[]>([])
+	const accounts = ref<Account[]>([])
 	const setupActiveAccount = async () => {
 		const activeAccountResult = await chrome.storage.local.get(
 			"azguard:ui:activeAccount"
 		)
 		if ("azguard:ui:activeAccount" in activeAccountResult) {
-			const activeAccountIdx =
+			const activeAccountAddress =
 				activeAccountResult["azguard:ui:activeAccount"]
 			const activeAccount = accounts.value.find(
-				(a) => a.id === activeAccountIdx
+				(a) => a.address === activeAccountAddress
 			)
 			if (activeAccount) {
 				account.value = activeAccount
 			} else {
 				account.value = accounts.value[0]
 				await chrome.storage.local.set({
-					"azguard:ui:activeAccount": account.value?.id,
+					"azguard:ui:activeAccount": account.value?.address,
 				})
 			}
 		}
 	}
-	const selectAccount = async (acc: IAccount) => {
+	const selectAccount = async (acc: Account) => {
 		account.value = acc
 		await chrome.storage.local.set({
-			"azguard:ui:activeAccount": acc.id,
+			"azguard:ui:activeAccount": acc.address,
 		})
 	}
-	const deleteAccount = async (acc: IAccount) => {
-		const accIdx = accounts.value.findIndex((a) => acc.id === a.id)
+	const hideAccount = async (acc: Account) => {
+		const accIdx = accounts.value.findIndex((a) => acc.address === a.address)
 
-		managers.account.deleteAccount(acc)
+		managers.account.changeAccountVisibility(acc, false);
 		accounts.value.splice(accIdx, 1)
 
 		if (accounts.value.length) {
 			account.value = accounts.value[0]
 			await chrome.storage.local.set({
-				"azguard:ui:activeAccount": account.value?.id,
+				"azguard:ui:activeAccount": account.value?.address,
 			})
 		}
 	}
@@ -90,7 +90,7 @@ export const useAppStore = defineStore("app", () => {
 		accounts,
 		setupActiveAccount,
 		selectAccount,
-		deleteAccount,
+		hideAccount,
 		network,
 		networks,
 		showSendPopup,

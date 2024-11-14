@@ -5,8 +5,7 @@ import WalletTypeContent from "./WalletTypeContent.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
-import { AccountManager } from "@/wallet/accounts"
-import { AccountType } from "@/wallet/abstract"
+import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -25,10 +24,10 @@ const handleCreateProfile = async () => {
 		walletPassword.value
 	)
 
-	managers.account = new AccountManager(profile, appStore.network)
+	managers.account = new AccountServiceClient(profile, appStore.network)
 
 	const account = await managers.account.createAccount(
-		AccountType.SchnorrV0,
+		AccountType.Azguard_v0,
 		"Vault"
 	)
 
@@ -38,7 +37,7 @@ const handleCreateProfile = async () => {
 
 	appStore.isLogined = true
 
-	await chrome.storage.local.set({ "azguard:ui:activeAccount": account.id })
+	await chrome.storage.local.set({ "azguard:ui:activeAccount": account.address })
 	await chrome.storage.local.set({
 		[`azguard:ui:profileCreatedAt@${profile.id}`]: new Date().getTime(),
 	})

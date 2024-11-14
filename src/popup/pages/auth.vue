@@ -1,6 +1,6 @@
 <script setup>
 /** Utils */
-import { AccountManager } from "@/wallet/accounts"
+import { AccountServiceClient } from "@/wallet/services/account/client"
 import { managers } from "@/utils/core"
 
 /** Store */
@@ -18,7 +18,7 @@ const handleUnlockWallet = async () => {
 	if (!password.value.length) return
 
 	try {
-		const activeProfile = await managers.profile.signInProfile(
+		const activeProfile = await managers.profile.unlockProfile(
 			appStore.profile.id,
 			password.value
 		)
@@ -26,7 +26,7 @@ const handleUnlockWallet = async () => {
 		if (!activeProfile) return
 
 		appStore.profile = activeProfile
-		managers.account = new AccountManager(
+		managers.account = new AccountServiceClient(
 			appStore.profile,
 			appStore.network
 		)

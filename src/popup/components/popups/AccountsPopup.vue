@@ -23,8 +23,8 @@ const address = computed(() => appStore.account.address.toString())
 const handleSelectAccount = (acc) => {
 	appStore.selectAccount(acc)
 }
-const handleDeleteAccount = (acc) => {
-	appStore.deleteAccount(acc)
+const handleHideAccount = (acc) => {
+	appStore.hideAccount(acc)
 }
 </script>
 
@@ -79,7 +79,7 @@ const handleDeleteAccount = (acc) => {
 
 						<Flex align="center" gap="8" :class="$style.icons">
 							<Icon
-								@click.stop="handleDeleteAccount(acc)"
+								@click.stop="handleHideAccount(acc)"
 								name="close-circle"
 								size="14"
 								color="tertiary"

@@ -1,3 +1,5 @@
+import { init, start } from "@/wallet"
+
 chrome.runtime.onInstalled.addListener(async (opt) => {
 	if (opt.reason === "install") {
 		await chrome.storage.local.clear()
@@ -21,5 +23,10 @@ self.onerror = (message, source, lineno, colno, error) => {
 		`Error: ${message}\nSource: ${source}\nLine: ${lineno}\nColumn: ${colno}\nError object: ${error}`
 	)
 }
+
+(async function startWallet() {
+	await init();
+	start();
+})();
 
 export {}
