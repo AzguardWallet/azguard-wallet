@@ -18,7 +18,6 @@ declare module 'vue' {
     PopupCard: typeof import('./../components/ui/Popup/PopupCard.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Star: typeof import('./../components/star.vue')['default']
     Text: typeof import('./../components/core/Text.vue')['default']
     Update: typeof import('./../components/update.vue')['default']
   }

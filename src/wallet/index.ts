@@ -4,6 +4,8 @@ import { Service } from "./base/service";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
 import { AccountService } from "./services/account";
+import { InteractionService } from "./services/interaction";
+import { WalletConnectService } from "./services/wallet-connect";
 import { sleep } from "./utils";
 
 export async function init() {
@@ -28,7 +30,7 @@ export async function stop() {
     chrome.runtime.onConnect.removeListener(onConnect);
     while (ports.length) {
         console.debug("Drop client...");
-        ports.pop()!.disconnect();
+        ports.pop()?.disconnect();
         console.debug(`Client dropped. Total: ${ports.length}.`);
     }
     await worker;
@@ -39,11 +41,16 @@ export async function stop() {
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(broadcast);
 const accountService = new AccountService(profileService, broadcast);
+// const interactionService = new InteractionService(broadcast);
+// const walletConnectService = new WalletConnectService(broadcast);
+// walletConnectService.initialize()
 
 const services = new Map<string, Service>([
     [profileService.name, profileService],
     [networkService.name, networkService],
     [accountService.name, accountService],
+    // [interactionService.name, interactionService],
+    // [walletConnectService.name, walletConnectService]
 ]);
 
 // state

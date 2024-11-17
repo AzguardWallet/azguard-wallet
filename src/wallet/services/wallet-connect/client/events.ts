@@ -1,0 +1,17 @@
+import { EventMessage } from "@/wallet/base/messages";
+import { Network, NETWORK_SERVICE_NAME } from ".";
+
+export enum NetworkServiceEvent {
+    NetworkAdded,
+    NetworkUpdated,
+    NetworkDeleted,
+}
+
+export class NetworkServiceEventMessage extends EventMessage {
+    constructor(
+        event: NetworkServiceEvent,
+        public readonly network: Network
+    ) {
+        super(NETWORK_SERVICE_NAME, event);
+    }
+}
