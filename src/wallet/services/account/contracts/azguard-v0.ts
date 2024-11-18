@@ -28,6 +28,11 @@ export class AzguardV0 {
         return instance.address;
     }
 
+    public static signPayload(payload: Uint8Array, secret: Fr): string {
+        const signingKey = this._deriveSigningKey(secret);
+        return new Schnorr().constructSignature(payload, signingKey).toString();
+    }
+
     private static _deriveSigningKey(secret: Fr): GrumpkinScalar {
         return sha512ToGrumpkinScalar([secret, 257]);
     }
