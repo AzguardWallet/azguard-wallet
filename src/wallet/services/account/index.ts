@@ -166,6 +166,22 @@ export class AccountService extends Service {
         return undefined;
     }
 
+    public async signPayload(profileId: string, chainId: number, address: string, payload: string): Promise<string> {
+        const storage = this._getStorage(profileId, chainId);
+        const account = await storage.get(address);
+        if (!account) {
+            throw new Error("account doesn't exist");
+        }
+        switch (account.type) {
+            case AccountType.Azguard_v0: {
+                const secret = await this._deriveAccountSecret(profileId, chainId, account.type, account.index);
+                return AzguardV0.signPayload(Buffer.from(payload, 'hex'), secret);
+            }
+            default:
+                throw new Error('unsupported account type');
+        }
+    }
+
     private async _deriveAccountSecret(profileId: string, chainId: number, type: number, index: number): Promise<Fr> {
         const master = await this.profiles.GetProfileSecret(profileId);
         if (!master) {
