@@ -7,7 +7,7 @@ const inputElement = useTemplateRef("inputElement")
 const isPasswordType = ref(true)
 
 onMounted(() => {
-	inputElement.value.focus()
+	inputElement.value.inputEl.focus()
 })
 </script>
 
@@ -20,50 +20,41 @@ onMounted(() => {
 			</Text>
 		</Flex>
 
-		<input
-			ref="inputElement"
-			v-model="password"
-			placeholder="Password"
-			:type="isPasswordType ? 'password' : 'text'"
-			autocomplete="false"
-			autofocus="true"
-			spellcheck="false"
-			:class="$style.password_input"
-		/>
-		<input
-			v-model="repeatedPassword"
-			placeholder="Repeat"
-			:type="isPasswordType ? 'password' : 'text'"
-			autocomplete="false"
-			autofocus="true"
-			spellcheck="false"
-			:class="$style.password_input"
-		/>
-
-		<Flex align="center" justify="between">
-			<Flex align="center" gap="6">
-				<Icon name="password" size="12" color="tertiary" />
-				<Text size="12" weight="600" color="tertiary">
-					{{
-						(password.length < 8 && "At least 8 characters") ||
-						(password !== repeatedPassword && "Not repeated") ||
-						(password.length > 24 && "I hope you remember it") ||
-						"Looks.. strong?"
-					}}
-				</Text>
-			</Flex>
-
-			<Flex
-				@click="isPasswordType = !isPasswordType"
-				align="center"
-				gap="6"
-				style="cursor: pointer"
+		<Flex direction="column" gap="12">
+			<Input
+				ref="inputElement"
+				v-model="password"
+				placeholder="Strong password"
+				:type="isPasswordType ? 'password' : 'text'"
 			>
-				<Icon name="password-preview" size="12" color="blue" />
-				<Text size="12" weight="600" color="blue">{{
-					isPasswordType ? "Preview" : "Hide"
-				}}</Text>
-			</Flex>
+				<template #suffix>
+					<Icon
+						@click="isPasswordType = !isPasswordType"
+						:name="isPasswordType ? 'password' : 'text'"
+						size="16"
+						color="blue"
+						style="cursor: pointer"
+					/>
+				</template>
+			</Input>
+
+			<Input
+				v-model="repeatedPassword"
+				placeholder="Repeat password"
+				:type="isPasswordType ? 'password' : 'text'"
+			/>
+		</Flex>
+
+		<Flex align="center" gap="6">
+			<Icon name="password" size="12" color="tertiary" />
+			<Text size="12" weight="600" color="tertiary">
+				{{
+					(password.length < 8 && "At least 8 characters") ||
+					(password !== repeatedPassword && "Not repeated") ||
+					(password.length > 24 && "I hope you remember it") ||
+					"Looks.. strong?"
+				}}
+			</Text>
 		</Flex>
 	</Flex>
 </template>

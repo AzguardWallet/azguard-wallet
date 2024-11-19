@@ -22,7 +22,12 @@ export default defineConfig({
 			"~": fileURLToPath(new URL("./src", import.meta.url)),
 			src: fileURLToPath(new URL("./src", import.meta.url)),
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
-			"fs/promises": "node-stdlib-browser/mock/empty",
+			// "fs/promises": "node-stdlib-browser/mock/empty",
+			"@aztec/bb.js": fileURLToPath(
+				new URL("./src/external/dest/browser/index.js", import.meta.url)
+			),
+			comlink: "comlink",
+			debug: "debug",
 		},
 	},
 	css: {
@@ -39,9 +44,7 @@ export default defineConfig({
 				global: true,
 				process: true,
 			},
-			exclude:[
-				'fs',
-			],
+			exclude: ["fs"],
 		}),
 
 		vue(),
@@ -118,7 +121,7 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		include: ["vue", "webextension-polyfill"],
-		exclude: ["vue-demi"],
+		exclude: ["vue-demi", "@aztec/bb.js"],
 		esbuildOptions: {
 			target: "esnext",
 		},

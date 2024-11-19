@@ -1,5 +1,6 @@
 <script setup>
 /** Components */
+import Header from "@/components/Header.vue"
 import LogoStar from "@/components/LogoStar.vue"
 import PopupManager from "./components/popups/PopupManager.vue"
 
@@ -9,9 +10,7 @@ import { AccountServiceClient } from "@/wallet/services/account/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
-const popupStore = usePopupStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -19,13 +18,20 @@ const router = useRouter()
 const initAccount = async () => {
 	appStore.setWalletCreatedAt()
 
-	managers.account = new AccountServiceClient(appStore.profile, appStore.network)
+	managers.account = new AccountServiceClient(
+		appStore.profile,
+		appStore.network
+	)
 
 	appStore.accounts = await managers.account.getAccounts()
 	await appStore.setupActiveAccount()
 }
 
 const init = async () => {
+	await appStore.setTheme()
+	const root = document.querySelector("html")
+	if (appStore.theme) root.setAttribute("theme", appStore.theme)
+
 	const networks = await initNetworks()
 	appStore.networks = networks
 	appStore.network = networks[0]
@@ -56,16 +62,6 @@ const init = async () => {
 }
 init()
 
-const handleOpenAccountsPopup = () => {
-	if (!appStore.isLogined) return
-	popupStore.open("accounts")
-}
-
-const handleOpenNetworksPopup = () => {
-	if (!appStore.isLogined) return
-	popupStore.open("networks")
-}
-
 watch(
 	() => route.name,
 	() => {
@@ -80,35 +76,13 @@ watch(
 	<Flex wide direction="column" :class="$style.wrapper">
 		<!-- Popup Teleport -->
 		<div id="popup" />
+		<div id="tooltip" />
 
 		<div>
 			<PopupManager />
 		</div>
 
-		<Flex
-			v-if="!appStore._isHomeScreenOpened"
-			align="center"
-			justify="between"
-			:class="$style.header"
-		>
-			<Flex
-				@click="handleOpenAccountsPopup"
-				align="center"
-				justify="center"
-				:class="[$style.button, !appStore.isLogined && $style.disabled]"
-			>
-				<Icon name="vault" size="18" color="blue" />
-			</Flex>
-
-			<Flex
-				@click="handleOpenNetworksPopup"
-				align="center"
-				justify="center"
-				:class="[$style.button, !appStore.isLogined && $style.disabled]"
-			>
-				<Icon name="globe" size="18" color="secondary" />
-			</Flex>
-		</Flex>
+		<Header />
 
 		<RouterView v-slot="{ Component }">
 			<Transition name="navigation" mode="out-in">
@@ -123,33 +97,5 @@ watch(
 	position: relative;
 
 	overflow: hidden;
-}
-
-.header {
-	margin: 12px 20px;
-}
-
-.button {
-	width: 24px;
-	height: 24px;
-
-	border-radius: 50px;
-	background: var(--gray-10);
-	cursor: pointer;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--gray-15);
-	}
-
-	&:active {
-		background: var(--gray-20);
-	}
-
-	&.disabled {
-		opacity: 0.5;
-		pointer-events: none;
-	}
 }
 </style>

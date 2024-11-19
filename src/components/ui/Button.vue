@@ -29,6 +29,9 @@ const props = defineProps({
 		type: String,
 		required: false,
 	},
+	round: {
+		type: Boolean,
+	},
 	target: {
 		type: String,
 		required: false,
@@ -69,6 +72,7 @@ const getStyles = () => {
 		hasCorrectSize && style[props.size],
 		props.disabled && style.disabled,
 		props.border && style.border,
+		props.round && style.round,
 	]
 }
 </script>
@@ -161,8 +165,10 @@ const getStyles = () => {
 }
 
 .wrapper.medium {
-	height: 36px;
-	gap: 6px;
+	min-height: 36px;
+	gap: 8px;
+
+	font-size: 13px;
 
 	border-radius: 12px;
 
@@ -201,30 +207,24 @@ const getStyles = () => {
 	box-shadow: 0 0 0 0 transparent;
 }
 
-.wrapper.error {
-	background: var(--btn-error-bg);
-	fill: var(--txt-black);
-	color: var(--txt-black);
-}
-.wrapper.error:hover {
-	background: var(--btn-error-bg-hover);
-	box-shadow: 0 0 0 0 transparent;
+.wrapper.red {
+	background: var(--red);
 }
 
 .wrapper.primary {
-	background: linear-gradient(rgba(0, 0, 0, 90%), rgba(0, 0, 0, 70%));
+	background: var(--btn-primary-bg);
 	box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 20%);
 	fill: var(--txt-white);
 }
 
 .wrapper.secondary {
-	background: var(--gray-5);
+	background: var(--gray-8);
 }
 .wrapper.secondary:hover {
-	background: var(--gray-10);
+	background: var(--gray-15);
 }
 .wrapper.secondary:active {
-	background: var(--gray-5);
+	background: var(--gray-10);
 }
 
 .wrapper.tertiary {
@@ -266,6 +266,10 @@ const getStyles = () => {
 
 .wrapper.border {
 	border: 1px solid var(--border);
+}
+
+.wrapper.round {
+	border-radius: 500px;
 }
 
 .left_icon {

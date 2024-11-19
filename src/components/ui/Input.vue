@@ -151,7 +151,7 @@ const handlePaste = (e) => {
 				/>
 			</Flex>
 
-			<Text size="12" weight="600" color="tertiary">{{ suffix }}</Text>
+			<slot name="suffix" />
 		</div>
 	</Flex>
 </template>
@@ -164,7 +164,7 @@ const handlePaste = (e) => {
 
 	border-radius: 10px;
 	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 3px var(--gray-5);
-	background: #fff;
+	background: var(--card-bg);
 	padding: 0 12px;
 	cursor: text;
 

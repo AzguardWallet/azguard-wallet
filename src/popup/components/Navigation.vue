@@ -39,7 +39,7 @@ const navigationLinks = [
 	right: 0;
 	z-index: 1;
 
-	background: #fff;
+	background: var(--card-bg);
 	border-top: 2px solid var(--gray-5);
 
 	padding: 8px 0;

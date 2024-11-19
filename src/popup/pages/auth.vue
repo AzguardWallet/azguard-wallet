@@ -5,7 +5,9 @@ import { managers } from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store.ts"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
 
 const router = useRouter()
 
@@ -13,6 +15,7 @@ if (appStore.isLogined) router.push("/popup/general")
 
 const inputElement = useTemplateRef("inputElement")
 const password = ref("")
+const isPasswordType = ref(true)
 
 const handleUnlockWallet = async () => {
 	if (!password.value.length) return
@@ -43,7 +46,7 @@ const onKeydown = (e) => {
 }
 
 onMounted(() => {
-	inputElement.value.focus()
+	inputElement.value.inputEl.focus()
 
 	document.addEventListener("keydown", onKeydown)
 })
@@ -52,7 +55,7 @@ onMounted(() => {
 <template>
 	<Flex direction="column" jusitfy="between" :class="$style.wrapper">
 		<Flex direction="column" gap="32" style="flex: 1">
-			<Icon name="key-square" size="24" color="tertiary" />
+			<Icon name="lock" size="24" color="tertiary" />
 
 			<Flex direction="column" gap="12">
 				<Text
@@ -68,16 +71,23 @@ onMounted(() => {
 				</Text>
 			</Flex>
 
-			<input
+			<Input
 				ref="inputElement"
 				v-model="password"
+				:type="isPasswordType ? 'password' : 'text'"
 				placeholder="Enter password"
-				type="password"
-				autocomplete="false"
-				autofocus="true"
-				spellcheck="false"
-				:class="[$style.password_input]"
-			/>
+				label="Password"
+			>
+				<template #suffix>
+					<Icon
+						@click="isPasswordType = !isPasswordType"
+						:name="isPasswordType ? 'password' : 'text'"
+						size="16"
+						color="blue"
+						style="cursor: pointer"
+					/>
+				</template>
+			</Input>
 
 			<Button
 				@click="handleUnlockWallet"
@@ -90,12 +100,17 @@ onMounted(() => {
 			</Button>
 		</Flex>
 
-		<Flex direction="column" gap="16">
-			<Or />
-			<Button wide type="secondary" size="medium">
-				Forget Password?
-			</Button>
-		</Flex>
+		<Text
+			size="12"
+			weight="500"
+			color="tertiary"
+			height="140"
+			align="center"
+		>
+			If you forget your password, you can
+			<Text @click="popupStore.open('reset')" color="blue">reset</Text>
+			your wallet. This action cannot be undone.
+		</Text>
 	</Flex>
 </template>
 
@@ -103,7 +118,7 @@ onMounted(() => {
 .wrapper {
 	flex: 1;
 
-	background: #fff;
+	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--gray-5);
 
 	border-top-left-radius: 24px;

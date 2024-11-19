@@ -1,83 +1,69 @@
 <script setup>
+/** Components */
+import ActionButtonsView from "./ActionButtonsView.vue"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
-
-const isBalanceHovered = ref(false)
-
-const account = computed(() => appStore.account)
-const address = computed(() => appStore.account.address.toString())
 </script>
 
 <template>
-	<Flex
-		@mouseenter="isBalanceHovered = true"
-		@mouseleave="isBalanceHovered = false"
-		direction="column"
-		gap="12"
-		:class="$style.wrapper"
-	>
-		<Transition name="opacity" mode="out-in">
-			<Flex v-if="!isBalanceHovered" align="center" gap="4">
+	<Flex direction="column" align="center" gap="32" :class="$style.wrapper">
+		<Flex direction="column" align="center" gap="12">
+			<Flex align="center" gap="6">
 				<Text size="13" weight="600" color="secondary">
-					<Text :class="$style.wallet_name">
-						{{ account.name }}
-					</Text>
-					<Text color="support"> • </Text>
-					<Text color="tertiary">
-						{{ address.slice(0, 6) }}...{{ address.slice(-4) }}
-					</Text>
+					Account Balance
 				</Text>
+				<Icon name="key-square" size="16" color="tertiary" />
 			</Flex>
-			<Flex v-else align="center" gap="4">
-				<Text size="13" weight="600" color="secondary">
-					Total Balance
-				</Text>
-			</Flex>
-		</Transition>
 
-		<div
-			@click="
-				appStore.isPrivacyModeEnabled = !appStore.isPrivacyModeEnabled
-			"
-			:class="$style.balance"
-		>
-			<Text
-				v-if="!appStore.isPrivacyModeEnabled"
-				size="28"
-				weight="500"
-				height="100"
-				color="primary"
+			<div
+				@click="
+					appStore.isPrivacyModeEnabled =
+						!appStore.isPrivacyModeEnabled
+				"
+				:class="$style.balance"
 			>
-				$0<Text color="secondary" height="100">.00</Text>
-			</Text>
-			<Flex v-else align="center" gap="4" style="height: 28px">
-				<Icon
-					v-for="_ in 6"
-					name="asterisk"
-					size="12"
+				<Text
+					v-if="!appStore.isPrivacyModeEnabled"
+					size="28"
+					weight="500"
+					height="100"
 					color="primary"
-				/>
-			</Flex>
-		</div>
+				>
+					$0<Text color="secondary" height="100">.00</Text>
+				</Text>
+				<Flex v-else align="center" gap="4" style="height: 28px">
+					<Icon
+						v-for="_ in 6"
+						name="asterisk"
+						size="12"
+						color="primary"
+					/>
+				</Flex>
+			</div>
 
-		<Flex
-			align="center"
-			justify="center"
-			gap="6"
-			:class="$style.diff_badge"
-		>
-			<Text size="13" weight="600" color="tertiary">$0.00</Text>
-			<Text size="13" weight="600" color="tertiary">/</Text>
-			<Text size="13" weight="600" color="tertiary">0.00%</Text>
+			<Flex
+				align="center"
+				justify="center"
+				gap="6"
+				:class="$style.diff_badge"
+			>
+				<Text size="13" weight="600" color="tertiary">$0.00</Text>
+				<Text size="13" weight="600" color="tertiary">/</Text>
+				<Text size="13" weight="600" color="tertiary">0.00%</Text>
+			</Flex>
 		</Flex>
+
+		<ActionButtonsView />
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
 	margin: 0 24px;
-	padding-bottom: 24px;
+
+	padding: 28px 0 16px 0;
 }
 
 .balance {

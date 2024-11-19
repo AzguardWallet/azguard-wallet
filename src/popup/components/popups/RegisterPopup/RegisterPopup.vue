@@ -1,11 +1,14 @@
 <script setup lang="ts">
 /** Local Components */
 import WalletPasswordContent from "./WalletPasswordContent.vue"
-import WalletTypeContent from "./WalletTypeContent.vue"
+// import WalletTypeContent from "./WalletTypeContent.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
-import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
+import {
+	AccountServiceClient,
+	AccountType,
+} from "@/wallet/services/account/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -16,9 +19,11 @@ const router = useRouter()
 const walletPassword = ref<string>("")
 const repeatedPassword = ref<string>("")
 
-const walletType = ref<string>("Schnorr")
+// const walletType = ref<string>("Schnorr")
 
 const handleCreateProfile = async () => {
+	if (!isAllowedToContinue.value) return
+
 	const profile = await managers.profile.createProfile(
 		"My Wallet",
 		walletPassword.value
@@ -37,7 +42,9 @@ const handleCreateProfile = async () => {
 
 	appStore.isLogined = true
 
-	await chrome.storage.local.set({ "azguard:ui:activeAccount": account.address })
+	await chrome.storage.local.set({
+		"azguard:ui:activeAccount": account.address,
+	})
 	await chrome.storage.local.set({
 		[`azguard:ui:profileCreatedAt@${profile.id}`]: new Date().getTime(),
 	})
@@ -49,7 +56,7 @@ const stepIdx = ref<number>(0)
 watch(
 	() => stepIdx.value,
 	() => {
-		if (stepIdx.value !== 2) return
+		if (stepIdx.value !== 1) return
 		handleCreateProfile()
 	}
 )
@@ -145,29 +152,29 @@ const isAllowedToContinue = computed(() => {
 						v-model:password="walletPassword"
 						v-model:repeatedPassword="repeatedPassword"
 					/>
-					<WalletTypeContent
+					<!-- <WalletTypeContent
 						v-else-if="stepIdx === 1"
 						v-model="walletType"
-					/>
+					/> -->
 				</Transition>
 
 				<Flex direction="column" gap="8">
 					<Button
-						@click="handleNextStep"
+						@click="handleCreateProfile"
 						type="primary"
 						size="medium"
 						wide
 						:disabled="!isAllowedToContinue"
 					>
-						<Text color="white">Continue</Text>
+						<Text color="white">Create profile</Text>
 					</Button>
 					<Button
 						@click="handlePrevStep"
-						type="tertiary"
+						type="secondary"
 						size="medium"
 						wide
 					>
-						Back
+						Cancel
 					</Button>
 				</Flex>
 			</Flex>
@@ -189,7 +196,7 @@ const isAllowedToContinue = computed(() => {
 .card {
 	height: 100%;
 
-	background: #fff;
+	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--gray-5);
 
 	border-top-left-radius: 24px;
@@ -205,7 +212,7 @@ const isAllowedToContinue = computed(() => {
 .badges_wrapper {
 	height: 36px;
 
-	margin-top: 80px;
+	margin-top: 60px;
 	margin-bottom: 70px;
 }
 
@@ -252,6 +259,6 @@ const isAllowedToContinue = computed(() => {
 	height: 4px;
 
 	border-radius: 50px;
-	background: #fff;
+	background: var(--card-bg);
 }
 </style>

@@ -22,6 +22,7 @@ $grayscale: (
 
 	/** general */
 	--app-bg: #f5f5f7;
+	--card-bg: #fff;
 
 	/* text */
 	--txt-primary: rgba(0, 0, 0, 88%);
@@ -31,10 +32,15 @@ $grayscale: (
 	--txt-support: rgba(0, 0, 0, 25%);
 	--txt-white: rgba(255, 255, 255, 95%);
 
+	/** buttons */
+	--btn-primary-bg: linear-gradient(rgba(0, 0, 0, 90%), rgba(0, 0, 0, 70%));
+	--action-btn-bg: linear-gradient(#fff, var(--gray-5));
+
 	/** colors */
 	--blue: #007aff;
 	--green: #14ae5c;
 	--orange: #ff9500;
+	--red: #f03c3c;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(255, 255, 255, #{$value});
@@ -47,10 +53,44 @@ $grayscale: (
 	--bezier: cubic-bezier(0.19, 1, 0.22, 1);
 }
 
+[theme="dark"] {
+	/** general */
+	--app-bg: #000;
+	--card-bg: #1d1d1d;
+
+	/** text */
+	--txt-primary: rgba(255, 255, 255, 90%);
+	--txt-secondary: rgba(255, 255, 255, 60%);
+	--txt-body: rgba(255, 255, 255, 45%);
+	--txt-tertiary: rgba(255, 255, 255, 30%);
+	--txt-support: rgba(255, 255, 255, 25%);
+	--txt-white: rgba(0, 0, 0, 95%);
+
+	/** buttons */
+	--btn-primary-bg: linear-gradient(#fff, rgba(255, 255, 255, 80%));
+	--action-btn-bg: var(--gray-8);
+
+	@each $gray, $value in $grayscale {
+		--op-#{$gray}: rgba(0, 0, 0, #{$value});
+	}
+
+	@each $gray, $value in $grayscale {
+		--gray-#{$gray}: rgba(255, 255, 255, #{$value});
+	}
+}
+
 @font-face {
 	font-family: "ClashDisplay";
 	src: local("ClashDisplay-Medium"),
 		url("./assets/fonts/ClashDisplay-Medium.ttf");
+}
+
+@font-face {
+	font-family: InterVariable;
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url("@/assets/fonts/InterVariable.woff2") format("woff2");
 }
 
 *,
@@ -83,9 +123,9 @@ input {
 }
 
 body {
-	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-		Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue",
-		sans-serif;
+	font-family: "InterVariable", -apple-system, BlinkMacSystemFont, "Segoe UI",
+		Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+		"Helvetica Neue", sans-serif;
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
@@ -134,7 +174,7 @@ body {
 .navigation-enter-from,
 .navigation-leave-to {
 	opacity: 0.3;
-	transform: translateY(2px);
+	transform: scale(0.99);
 }
 
 .clickable {

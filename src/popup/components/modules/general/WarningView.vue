@@ -15,7 +15,7 @@
 
 <style module>
 .wrapper {
-	background: #fff;
+	background: var(--card-bg);
 	border-radius: 12px;
 	border: 1px solid var(--gray-10);
 

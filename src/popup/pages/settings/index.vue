@@ -107,7 +107,7 @@ if (!appStore.isLogined) router.push("/popup/auth")
 .wrapper {
 	flex: 1;
 
-	background: #fff;
+	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--gray-5);
 
 	border-top-left-radius: 24px;

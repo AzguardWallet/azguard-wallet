@@ -16,6 +16,9 @@ export const usePopupStore = defineStore("popup", () => {
 	const close = (target: string) => {
 		popups.value.splice(popups.value.indexOf(target), 1)
 	}
+	const closeAll = (target: string) => {
+		popups.value = []
+	}
 
-	return { popups, isOpened, open, close }
+	return { popups, isOpened, open, close, closeAll }
 })

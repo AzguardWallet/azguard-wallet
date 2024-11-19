@@ -17,6 +17,7 @@ declare global {
   const asyncComputed: typeof import("@vueuse/core")["asyncComputed"]
   const autoResetRef: typeof import("@vueuse/core")["autoResetRef"]
   const browser: typeof import('webextension-polyfill')
+  const comma: typeof import('../utils/amount.js')['comma']
   const computed: typeof import('vue')['computed']
   const computedAsync: typeof import("@vueuse/core")["computedAsync"]
   const computedEager: typeof import("@vueuse/core")["computedEager"]
@@ -146,6 +147,7 @@ declare global {
   const useBreakpoints: typeof import("@vueuse/core")["useBreakpoints"]
   const useBroadcastChannel: typeof import("@vueuse/core")["useBroadcastChannel"]
   const useBrowserLocation: typeof import("@vueuse/core")["useBrowserLocation"]
+  const useCacheStore: typeof import('../stores/cache.store')['useCacheStore']
   const useCached: typeof import("@vueuse/core")["useCached"]
   const useClipboard: typeof import("@vueuse/core")["useClipboard"]
   const useClipboardItems: typeof import("@vueuse/core")["useClipboardItems"]
