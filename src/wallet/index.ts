@@ -42,7 +42,7 @@ const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(broadcast);
 const accountService = new AccountService(profileService, broadcast);
 // const interactionService = new InteractionService(broadcast);
-const walletConnectService = new WalletConnectService(broadcast);
+const walletConnectService = new WalletConnectService(accountService, broadcast);
 walletConnectService.initialize()
 
 const services = new Map<string, Service>([

@@ -1,17 +1,16 @@
 import { EventMessage } from "@/wallet/base/messages";
-import { Network, NETWORK_SERVICE_NAME } from ".";
+import { Network, WALLET_CONNECT_SERVICE_NAME } from ".";
 
-export enum NetworkServiceEvent {
-    NetworkAdded,
-    NetworkUpdated,
-    NetworkDeleted,
+// biome-ignore lint/style/useEnumInitializers: <explanation>
+export enum WalletConnectServiceEvent {
+    DappConnected,
 }
 
-export class NetworkServiceEventMessage extends EventMessage {
+export class WalletConnectServiceEventMessage extends EventMessage {
     constructor(
-        event: NetworkServiceEvent,
-        public readonly network: Network
+        event: WalletConnectServiceEvent,
+        // public readonly network: Network
     ) {
-        super(NETWORK_SERVICE_NAME, event);
+        super(WALLET_CONNECT_SERVICE_NAME, event);
     }
 }
