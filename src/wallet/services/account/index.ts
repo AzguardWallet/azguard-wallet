@@ -23,7 +23,7 @@ import {
     GetAccountsRequest,
     GetAccountsResponse
 } from "./client";
-import { AzguardV0 } from "./contracts";
+import { AzguardV0, IAccountContract } from "./contracts";
 
 type AccountDto = {
     index: number,
@@ -134,7 +134,7 @@ export class AccountService extends Service {
         let address;
         switch (type) {
             case AccountType.Azguard_v0:
-                address = AzguardV0.getAddress(secret).toString();
+                address = new AzguardV0(secret).address.toString();
                 break;
             default:
                 throw new Error('unsupported account type');
@@ -175,11 +175,36 @@ export class AccountService extends Service {
         switch (account.type) {
             case AccountType.Azguard_v0: {
                 const secret = await this._deriveAccountSecret(profileId, chainId, account.type, account.index);
-                return AzguardV0.signPayload(Buffer.from(payload, 'hex'), secret);
+                return new AzguardV0(secret).signPayload(Buffer.from(payload, 'hex'));
             }
             default:
                 throw new Error('unsupported account type');
         }
+    }
+
+    public async getAccountContract(profileId: string, chainId: number, address: string): Promise<IAccountContract> {
+        const storage = this._getStorage(profileId, chainId);
+        const account = await storage.get(address);
+        if (!account) {
+            throw new Error("unknown account address");
+        }
+        
+        let accountContract: IAccountContract;
+        switch (account.type) {
+            case AccountType.Azguard_v0: {
+                const secret = await this._deriveAccountSecret(profileId, chainId, account.type, account.index);
+                accountContract = new AzguardV0(secret);
+                break;
+            }
+            default:
+                throw new Error("unknown account type");
+        }
+
+        if (accountContract.address.toString() !== address) {
+            throw new Error("account address inconsistency");
+        }
+
+        return accountContract;
     }
 
     private async _deriveAccountSecret(profileId: string, chainId: number, type: number, index: number): Promise<Fr> {
