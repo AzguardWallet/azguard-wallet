@@ -1,9 +1,10 @@
 import { BarretenbergSync } from "@aztec/bb.js"
 import { EventMessage, IMessage, MessageType, RequestMessage } from "./base/messages";
 import { Service } from "./base/service";
+import { AccountService } from "./services/account";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
-import { AccountService } from "./services/account";
+import { TokenService } from "./services/token";
 import { sleep } from "./utils";
 
 export async function init() {
@@ -39,11 +40,13 @@ export async function stop() {
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(broadcast);
 const accountService = new AccountService(profileService, broadcast);
+const tokenService = new TokenService(networkService, accountService, broadcast);
 
 const services = new Map<string, Service>([
     [profileService.name, profileService],
     [networkService.name, networkService],
     [accountService.name, accountService],
+    [tokenService.name, tokenService],
 ]);
 
 // state

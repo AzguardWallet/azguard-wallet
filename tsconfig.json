@@ -1,9 +1,9 @@
 {
 	"compilerOptions": {
 		"incremental": true,
-		"target": "ES6",
+		"target": "ESNext",
 		"jsx": "preserve",
-		"lib": ["ES6", "DOM", "WebWorker"],
+		"lib": ["ESNext", "DOM", "WebWorker"],
 		"useDefineForClassFields": true,
 		"module": "ESNext",
 		"moduleResolution": "Bundler",

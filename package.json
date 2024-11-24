@@ -18,6 +18,8 @@
 		"@aztec/accounts": "^0.62.0",
 		"@aztec/aztec.js": "^0.62.0",
 		"@aztec/bb.js": "^0.62.0",
+		"@aztec/circuit-types": "^0.62.0",
+		"@aztec/circuits.js": "^0.62.0",
 		"@aztec/foundation": "^0.62.0",
 		"lean-qr": "^2.3.4",
 		"pinia": "^2.2.4",
