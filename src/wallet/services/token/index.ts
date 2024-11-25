@@ -24,7 +24,7 @@ import {
     ParseInterfaceRequest,
     ParseInterfaceResponse
 } from "./client";
-import { AztecAddress, createPXEClient, PXE, TxReceipt, TxStatus } from "@aztec/aztec.js";
+import { AztecAddress, createPXEClient, PXE } from "@aztec/aztec.js";
 import {
     BalanceOfPrivateFn,
     BalanceOfPublicFn,
@@ -36,14 +36,12 @@ import {
     TransferPublicFn,
     TransferPublicToPrivateFn,
 } from "./functions";
-import { array_max, sleep } from "@/wallet/utils";
-import { Fn, FnImpl, ViewFn } from "@/wallet/utils/fn";
+import { array_max } from "@/wallet/utils";
+import { FnImpl, execute, simulate } from "@/wallet/utils/fn";
 import { AccountService } from "../account";
-import { AzguardFunctionCall, IAccountContract } from "../account/contracts";
-import { FunctionType } from "@aztec/foundation/abi";
-import { extractReturnValues } from "@/wallet/utils/simulation";
+import { IAccountContract } from "../account/contracts";
 
-type Token = {
+export type Token = {
     id: number,
     chainId: number,
     contract: string,
@@ -64,6 +62,10 @@ type Token = {
 }
 
 export class TokenService extends Service {
+    public readonly onTokenAdded: ((token: Token) => void)[] = [];
+    public readonly onTokenUpdated: ((token: Token) => void)[] = [];
+    public readonly onTokenDeleted: ((token: Token) => void)[] = [];
+
     private readonly tokens: EntityStorage<Token>;
 
     constructor(
@@ -80,7 +82,8 @@ export class TokenService extends Service {
             case TokenServiceMethod.GetTokens: {
                 const _request = request as GetTokensRequest;
                 try {
-                    return new GetTokensResponse(_request, await this.getTokens());
+                    const tokens = await this.getTokens();
+                    return new GetTokensResponse(_request, tokens.map(this.getTokenInfo));
                 }
                 catch (error: any) {
                     return new GetTokensResponse(_request, undefined, error.message);
@@ -100,7 +103,6 @@ export class TokenService extends Service {
                 const _request = request as AddTokenRequest;
                 try {
                     const token = await this.addToken(_request.tokenInterface);
-                    this.emit(new TokenServiceEventMessage(TokenServiceEvent.TokenAdded, token));
                     return new AddTokenResponse(_request, token);
                 }
                 catch (error: any) {
@@ -111,7 +113,6 @@ export class TokenService extends Service {
                 const _request = request as UpdateTokenRequest;
                 try {
                     const token = await this.updateToken(_request.tokenId, _request.tokenInterface);
-                    this.emit(new TokenServiceEventMessage(TokenServiceEvent.TokenUpdated, token));
                     return new UpdateTokenResponse(_request, token);
                 }
                 catch (error: any) {
@@ -122,7 +123,6 @@ export class TokenService extends Service {
                 const _request = request as DeleteTokenRequest;
                 try {
                     const token = await this.deleteToken(_request.tokenId);
-                    this.emit(new TokenServiceEventMessage(TokenServiceEvent.TokenDeleted, token));
                     return new DeleteTokenResponse(_request, token);
                 }
                 catch (error: any) {
@@ -156,11 +156,9 @@ export class TokenService extends Service {
         }
     }
 
-    public async getTokens(chainId?: number): Promise<Array<TokenInfo>> {
-        const tokens = await this.tokens.getAll();
-        return tokens.filter(([_, dto]) => chainId === undefined || dto.chainId === chainId)
-            .map(([_, token]) => this.getTokenInfo(token))
-            .toSorted((a, b) => a.id - b.id);
+    public async getTokens(chainId?: number): Promise<Array<Token>> {
+        const tokens = await this.tokens.getValues();
+        return tokens.filter(token => chainId === undefined || token.chainId === chainId);
     }
 
     public async getToken(id: number): Promise<TokenInfo> {
@@ -172,28 +170,28 @@ export class TokenService extends Service {
     }
 
     public async addToken(ti: TokenInterface): Promise<TokenInfo> {
-        const _token = await this.findToken(ti.chainId, ti.contract);
-        if (_token) {
-            throw new Error("token already added");
+        let token = await this.findToken(ti.chainId, ti.contract);
+        if (!token) {
+            token = {
+                id: array_max((await this.tokens.getKeys()).map(x => +x)) + 1,
+                chainId: ti.chainId,
+                contract: ti.contract,
+                name: ti.name,
+                symbol: ti.symbol,
+                decimals: ti.decimals,
+                getNameFn: ti.getNameFn,
+                getSymbolFn: ti.getSymbolFn,
+                getDecimalsFn: ti.getDecimalsFn,
+                balanceOfPublicFn: ti.balanceOfPublicFn,
+                balanceOfPrivateFn: ti.balanceOfPrivateFn,
+                transferPublicFn: ti.transferPublicFn,
+                transferPrivateFn: ti.balanceOfPrivateFn,
+                transferPublicToPrivateFn: ti.transferPublicToPrivateFn,
+                transferPrivateToPublicFn: ti.transferPrivateToPublicFn,
+            };
+            await this.tokens.set(`${token.id}`, token);
+            this.emitTokenAdded(token);
         }
-        const token: Token = {
-            id: array_max((await this.tokens.getKeys()).map(x => +x)) + 1,
-            chainId: ti.chainId,
-            contract: ti.contract,
-            name: ti.name,
-            symbol: ti.symbol,
-            decimals: ti.decimals,
-            getNameFn: ti.getNameFn,
-            getSymbolFn: ti.getSymbolFn,
-            getDecimalsFn: ti.getDecimalsFn,
-            balanceOfPublicFn: ti.balanceOfPublicFn,
-            balanceOfPrivateFn: ti.balanceOfPrivateFn,
-            transferPublicFn: ti.transferPublicFn,
-            transferPrivateFn: ti.balanceOfPrivateFn,
-            transferPublicToPrivateFn: ti.transferPublicToPrivateFn,
-            transferPrivateToPublicFn: ti.transferPrivateToPublicFn,
-        };
-        await this.tokens.set(`${token.id}`, token);
         return this.getTokenInfo(token);
     }
 
@@ -223,16 +221,18 @@ export class TokenService extends Service {
             transferPrivateToPublicFn: ti.transferPrivateToPublicFn,
         }
         await this.tokens.set(`${token.id}`, token);
+        this.emitTokenUpdated(token);
         return this.getTokenInfo(token);
     }
 
     public async deleteToken(id: number): Promise<TokenInfo> {
-        const token = await this.getToken(id);
+        const token = await this.tokens.get(`${id}`);
         if (!token) {
             throw new Error("unknown token id");
         }
         await this.tokens.delete(`${id}`);
-        return token;
+        this.emitTokenDeleted(token);
+        return this.getTokenInfo(token);
     }
 
     public async getTokenInterface(profileId: string, networkId: string, address: string, id: number): Promise<TokenInterface> {
@@ -292,13 +292,13 @@ export class TokenService extends Service {
         const account = await this.accounts.getAccountContract(profileId, network.chainId, address);
         const [name, symbol, decimals] = await Promise.all([
             _getNameFn
-                ? this.simulate(pxe, account, token.contract, _getNameFn, _getNameFn.buildArgs())
+                ? simulate(pxe, account, token.contract, _getNameFn, _getNameFn.buildArgs())
                 : Promise.resolve("<name>"),
             _getSymbolFn
-                ? this.simulate(pxe, account, token.contract, _getSymbolFn, _getSymbolFn.buildArgs())
+                ? simulate(pxe, account, token.contract, _getSymbolFn, _getSymbolFn.buildArgs())
                 : Promise.resolve("<symbol>"),
             _getDecimalsFn
-                ? this.simulate(pxe, account, token.contract, _getDecimalsFn, _getDecimalsFn.buildArgs())
+                ? simulate(pxe, account, token.contract, _getDecimalsFn, _getDecimalsFn.buildArgs())
                 : Promise.resolve(0),
         ]);
     
@@ -377,13 +377,13 @@ export class TokenService extends Service {
         const account = await this.accounts.getAccountContract(profileId, network.chainId, address);
         const [name, symbol, decimals] = await Promise.all([
             getNameFn
-                ? this.simulate(pxe, account, contract, getNameFn, getNameFn.buildArgs())
+                ? simulate(pxe, account, contract, getNameFn, getNameFn.buildArgs())
                 : Promise.resolve("<name>"),
             getSymbolFn
-                ? this.simulate(pxe, account, contract, getSymbolFn, getSymbolFn.buildArgs())
+                ? simulate(pxe, account, contract, getSymbolFn, getSymbolFn.buildArgs())
                 : Promise.resolve("<symbol>"),
             getDecimalsFn
-                ? this.simulate(pxe, account, contract, getDecimalsFn, getDecimalsFn.buildArgs())
+                ? simulate(pxe, account, contract, getDecimalsFn, getDecimalsFn.buildArgs())
                 : Promise.resolve(0),
         ]);
 
@@ -414,50 +414,22 @@ export class TokenService extends Service {
         );
     }
 
-    public async getPublicBalance(profileId: string, networkId: string, address: string, id: number): Promise<bigint> {
-        const token = await this.tokens.get(`${id}`);
-        if (!token) {
-            throw new Error("unknown token id");
-        }
-        
-        if (!token.balanceOfPublicFn) {
-            return 0n;
-        }
-
-        const network = await this.networks.getNetwork(networkId);
-        if (!network) {
-            throw new Error("unknown network id");
-        }
-
-        const pxe = createPXEClient(network.rpcUrl);
-        const account = await this.accounts.getAccountContract(profileId, network.chainId, address);
-        const viewFn = BalanceOfPublicFn.new(token.balanceOfPublicFn.name, token.balanceOfPublicFn.impl);
-        const args = viewFn.buildArgs(address);
-
-        return await this.simulate(pxe, account, token.contract, viewFn, args);
-    }
-
-    public async getPrivateBalance(profileId: string, networkId: string, address: string, id: number): Promise<bigint> {
-        const token = await this.tokens.get(`${id}`);
-        if (!token) {
-            throw new Error("unknown token id");
-        }
-        
+    public async getPrivateBalance(pxe: PXE, account: IAccountContract, token: Token): Promise<bigint> {
         if (!token.balanceOfPrivateFn) {
             return 0n;
         }
-
-        const network = await this.networks.getNetwork(networkId);
-        if (!network) {
-            throw new Error("unknown network id");
-        }
-
-        const pxe = createPXEClient(network.rpcUrl);
-        const account = await this.accounts.getAccountContract(profileId, network.chainId, address);
         const viewFn = BalanceOfPrivateFn.new(token.balanceOfPrivateFn.name, token.balanceOfPrivateFn.impl);
-        const args = viewFn.buildArgs(address);
+        const args = viewFn.buildArgs(account.address);
+        return await simulate(pxe, account, token.contract, viewFn, args);
+    }
 
-        return await this.simulate(pxe, account, token.contract, viewFn, args);
+    public async getPublicBalance(pxe: PXE, account: IAccountContract, token: Token): Promise<bigint> {
+        if (!token.balanceOfPublicFn) {
+            return 0n;
+        }
+        const viewFn = BalanceOfPublicFn.new(token.balanceOfPublicFn.name, token.balanceOfPublicFn.impl);
+        const args = viewFn.buildArgs(account.address);
+        return await simulate(pxe, account, token.contract, viewFn, args);
     }
 
     public async transferPublic(profileId: string, networkId: string, address: string, id: number, to: string, amount: bigint): Promise<string> {
@@ -480,7 +452,7 @@ export class TokenService extends Service {
         const fn = TransferPublicFn.new(token.transferPublicFn.name, token.transferPublicFn.impl);
         const args = fn.buildArgs(address, to, amount);
 
-        return await this.execute(pxe, account, token.contract, fn, args);
+        return await execute(pxe, account, token.contract, fn, args);
     }
 
     public async transferPrivate(profileId: string, networkId: string, address: string, id: number, to: string, amount: bigint): Promise<string> {
@@ -503,7 +475,7 @@ export class TokenService extends Service {
         const fn = TransferPrivateFn.new(token.transferPrivateFn.name, token.transferPrivateFn.impl);
         const args = fn.buildArgs(address, to, amount);
 
-        return await this.execute(pxe, account, token.contract, fn, args);
+        return await execute(pxe, account, token.contract, fn, args);
     }
 
     public async transferPublicToPrivate(profileId: string, networkId: string, address: string, id: number, to: string, amount: bigint): Promise<string> {
@@ -526,7 +498,7 @@ export class TokenService extends Service {
         const fn = TransferPublicToPrivateFn.new(token.transferPublicToPrivateFn.name, token.transferPublicToPrivateFn.impl);
         const args = fn.buildArgs(address, to, amount);
 
-        return await this.execute(pxe, account, token.contract, fn, args);
+        return await execute(pxe, account, token.contract, fn, args);
     }
 
     public async transferPrivateToPublic(profileId: string, networkId: string, address: string, id: number, to: string, amount: bigint): Promise<string> {
@@ -549,12 +521,12 @@ export class TokenService extends Service {
         const fn = TransferPrivateToPublicFn.new(token.transferPrivateToPublicFn.name, token.transferPrivateToPublicFn.impl);
         const args = fn.buildArgs(address, to, amount);
 
-        return await this.execute(pxe, account, token.contract, fn, args);
+        return await execute(pxe, account, token.contract, fn, args);
     }
 
     private async findToken(chainId: number, contract: string): Promise<Token | undefined> {
-        const tokens = await this.tokens.getAll();
-        return tokens.find(([_, token]) => token.chainId === chainId && token.contract === contract)?.[1];
+        const tokens = await this.tokens.getValues();
+        return tokens.find(token => token.chainId === chainId && token.contract === contract);
     }
 
     private getTokenInfo(token: Token): TokenInfo {
@@ -574,62 +546,24 @@ export class TokenService extends Service {
         );
     }
 
-    private async simulate(
-        pxe: PXE,
-        account: IAccountContract,
-        contract: string,
-        viewFn: ViewFn,
-        args: any[],
-    ): Promise<any> {
-        if (viewFn.type === FunctionType.UNCONSTRAINED) {
-            return await pxe.simulateUnconstrained(viewFn.name, args, AztecAddress.fromString(contract));
+    private emitTokenAdded(token: Token) {
+        this.emit(new TokenServiceEventMessage(TokenServiceEvent.TokenAdded, this.getTokenInfo(token)));
+        for (const emit of this.onTokenAdded) {
+            try {emit(token)} catch {}
         }
-
-        const packedArgs = viewFn.packArgs(args);
-        const call = new AzguardFunctionCall(
-            AztecAddress.fromString(contract),
-            viewFn.selector,
-            packedArgs.hash,
-            viewFn.type === FunctionType.PUBLIC,
-            viewFn.isStatic
-        );
-
-        const txRequest = await account.buildTxSimulationRequest(pxe, call, packedArgs);
-
-        const tx = await pxe.simulateTx(txRequest, true);
-
-        return viewFn.type === FunctionType.PUBLIC
-            ? viewFn.unpackResult(extractReturnValues(tx.getPublicReturnValues()))
-            : viewFn.unpackResult(extractReturnValues([tx.getPrivateReturnValues()]));
     }
 
-    private async execute(
-        pxe: PXE,
-        account: IAccountContract,
-        contract: string,
-        fn: Fn,
-        args: any[],
-    ): Promise<string> {
-        const packedArgs = fn.packArgs(args);
-        const call = new AzguardFunctionCall(
-            AztecAddress.fromString(contract),
-            fn.selector,
-            packedArgs.hash,
-            fn.type === FunctionType.PUBLIC,
-            fn.isStatic
-        );
+    private emitTokenUpdated(token: Token) {
+        this.emit(new TokenServiceEventMessage(TokenServiceEvent.TokenUpdated, this.getTokenInfo(token)));
+        for (const emit of this.onTokenUpdated) {
+            try {emit(token)} catch {}
+        }
+    }
 
-        const txRequest = await account.buildTxExecutionRequest(pxe, [call], [packedArgs]);
-
-        const tx = await pxe.simulateTx(txRequest, true);
-        const provenTx = await pxe.proveTx(txRequest, tx.privateExecutionResult);
-        const txHash = await pxe.sendTx(provenTx.toTx());
-
-        let tries = 100;
-        let txReceipt: TxReceipt;
-        do { await sleep(100); txReceipt = await pxe.getTxReceipt(txHash); }
-        while (txReceipt.status === TxStatus.PENDING && --tries >= 0);
-
-        return txReceipt.txHash.toString();
+    private emitTokenDeleted(token: Token) {
+        this.emit(new TokenServiceEventMessage(TokenServiceEvent.TokenDeleted, this.getTokenInfo(token)));
+        for (const emit of this.onTokenDeleted) {
+            try {emit(token)} catch {}
+        }
     }
 }

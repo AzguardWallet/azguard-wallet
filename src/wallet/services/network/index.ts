@@ -170,7 +170,7 @@ export class NetworkService extends Service {
         }
 
         const networks = (await this.networks.getAll())
-            .filter(([id, _network]) => _network.chainId === network.chainId && _network.isDefault);
+            .filter(([_, _network]) => _network.chainId === network.chainId && _network.isDefault);
         
         for (const [id, _network] of networks) {
             _network.isDefault = false;

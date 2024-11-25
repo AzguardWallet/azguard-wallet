@@ -6,6 +6,7 @@ import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
 import { TokenService } from "./services/token";
 import { sleep } from "./utils";
+import { TokenBalanceService } from "./services/token-balance";
 
 export async function init() {
     console.debug("Init BarretenbergSync...");
@@ -41,12 +42,20 @@ const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(broadcast);
 const accountService = new AccountService(profileService, broadcast);
 const tokenService = new TokenService(networkService, accountService, broadcast);
+const tokenBalanceService = new TokenBalanceService(
+    profileService,
+    networkService,
+    accountService,
+    tokenService,
+    broadcast,
+);
 
 const services = new Map<string, Service>([
     [profileService.name, profileService],
     [networkService.name, networkService],
     [accountService.name, accountService],
     [tokenService.name, tokenService],
+    [tokenBalanceService.name, tokenBalanceService],
 ]);
 
 // state
