@@ -75,7 +75,7 @@ const emit = defineEmits(["onClose"])
 .token {
 	border-radius: 12px;
 	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
 
 	padding: 12px 16px 12px 12px;
 
@@ -83,6 +83,8 @@ const emit = defineEmits(["onClose"])
 
 	&:hover {
 		background: var(--gray-3);
+		box-shadow: inset 0 0 0 1px var(--border-hovered),
+			0 1px 2px var(--shadow-5);
 	}
 
 	&:active {

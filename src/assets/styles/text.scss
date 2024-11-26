@@ -54,18 +54,13 @@ $textColors: (
 	"secondary": "--txt-secondary",
 	"tertiary": "--txt-tertiary",
 	"support": "--txt-support",
-	"black": "--txt-black",
-	"semiblack": "--txt-semiblack",
+	"inverse": "--txt-inverse",
 	"white": "--txt-white",
 	"blue": "--blue",
 	"orange": "--orange",
-	"light-orange": "--light-orange",
 	"green": "--green",
-	"brand": "--brand",
-	"neutral-green": "--neutral-green",
 	"red": "--red",
 	"yellow": "--yellow",
-	"purple": "--purple",
 );
 
 @each $key, $value in $textColors {

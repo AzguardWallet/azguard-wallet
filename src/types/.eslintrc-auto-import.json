@@ -303,6 +303,14 @@
     "managers": true,
     "initNetworks": true,
     "useCacheStore": true,
-    "comma": true
+    "comma": true,
+    "useTheme": true,
+    "useSettings": true,
+    "useEvent": true,
+    "useOutside": true,
+    "useToast": true,
+    "capitilize": true,
+    "capitalize": true,
+    "initTokenService": true
   }
 }

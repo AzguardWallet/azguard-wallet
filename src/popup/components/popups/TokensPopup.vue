@@ -3,24 +3,14 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
+/** Utils */
+import { managers } from "@/utils/core"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 const emit = defineEmits(["onClose"])
-
-const router = useRouter()
-
-const handleEdit = () => {}
-
-const handleDelete = (target) => {
-	appStore.removeNetwork(target)
-}
-
-const handleAddNetwork = () => {
-	emit("onClose")
-	router.push("/popup/settings/developer/networks/new")
-}
 </script>
 
 <template>
@@ -35,7 +25,7 @@ const handleAddNetwork = () => {
 			>
 				<Flex direction="column" gap="16">
 					<Text size="14" weight="600" color="primary">
-						Select network
+						Manage tokens
 					</Text>
 
 					<Flex direction="column" gap="6">
@@ -90,14 +80,13 @@ const handleAddNetwork = () => {
 
 				<Flex direction="column" gap="16">
 					<Button
-						@click="handleAddNetwork"
 						wide
 						type="secondary"
 						size="medium"
 						leftIcon="plus-circle"
 						leftIconColor="blue"
 					>
-						Add network
+						Add token
 					</Button>
 
 					<Text

@@ -2,10 +2,14 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import SendTypesCard from "../modules/send/SendTypesCard.vue"
 import AmountCard from "../modules/send/AmountCard.vue"
+import FeeJuiceCard from "../modules/send/FeeJuiceCard.vue"
+import AccountCard from "../modules/send/AccountCard.vue"
+import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 
 /** Utils */
-import { comma } from "@/utils/amount.js"
+import { capitalize } from "@/utils/string"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -24,21 +28,6 @@ const emit = defineEmits(["onClose"])
 
 const selectedSendType = ref("private")
 const selectedReceiverType = ref("private")
-
-const balance = reactive({
-	private: 762,
-	public: 5926,
-})
-
-const handleSwitchSendType = () => {
-	selectedSendType.value =
-		selectedSendType.value === "private" ? "public" : "private"
-}
-
-const handleSwitchReceiverType = () => {
-	selectedReceiverType.value =
-		selectedReceiverType.value === "private" ? "public" : "private"
-}
 </script>
 
 <template>
@@ -68,7 +57,7 @@ const handleSwitchReceiverType = () => {
 							</Text>
 						</Flex>
 
-						<Flex align="center" gap="6" :class="$style.selector">
+						<!-- <Flex align="center" gap="6" :class="$style.selector">
 							<Flex
 								@click="selectedSendType = 'private'"
 								align="center"
@@ -111,122 +100,44 @@ const handleSwitchReceiverType = () => {
 									Public
 								</Text>
 							</Flex>
-						</Flex>
+						</Flex> -->
 					</Flex>
 
-					<Flex wide direction="column" gap="8">
-						<AmountCard />
+					<Flex wide direction="column" gap="20">
+						<Flex direction="column" gap="8">
+							<SendTypesCard
+								v-model:sendType="selectedSendType"
+								v-model:receiverType="selectedReceiverType"
+							/>
 
-						<Flex
-							align="center"
-							justify="between"
-							:class="$style.card_wrapper"
-						>
-							<Flex align="center" gap="8">
-								<Icon name="vault" size="16" color="blue" />
-								<Text size="13" weight="600" color="primary">
-									{{ appStore.account.name }}
-								</Text>
-								<Text size="13" weight="600" color="body">
-									{{ appStore.account.address.slice(0, 6) }}
-									•••
-									{{ appStore.account.address.slice(-4) }}
-								</Text>
-							</Flex>
+							<SelectTokenCard />
+							<!-- <AccountCard :selectedSendType /> -->
 
-							<Tooltip position="end">
-								<Flex align="center" gap="6">
-									<Icon
-										:name="
-											selectedSendType === 'private'
-												? 'key-square'
-												: 'face'
-										"
-										size="14"
-										color="secondary"
-									/>
-									<Text
-										size="13"
-										weight="600"
-										color="primary"
-									>
-										{{ comma(balance[selectedSendType]) }}
-										AZT
-									</Text>
-								</Flex>
-
-								<template #content>
-									Your {{ selectedSendType }} balance
-								</template>
-							</Tooltip>
+							<AmountCard :selectedSendType />
 						</Flex>
 
-						<Flex
-							align="center"
-							justify="between"
-							:class="$style.card_wrapper"
-						>
-							<Flex align="center" gap="8">
-								<Icon
-									name="discount"
-									size="16"
-									color="orange"
-								/>
-								<Text size="13" weight="600" color="primary">
-									Fee Juice
-								</Text>
-								<Icon
-									name="chevron"
-									size="12"
-									color="secondary"
-								/>
-							</Flex>
-
-							<Text size="13" weight="600" color="primary">
-								1.52 FJC
-							</Text>
-						</Flex>
+						<Input
+							:label="`${capitalize(
+								selectedReceiverType
+							)} destination`"
+							placeholder="0xABCD"
+							wide
+						/>
 					</Flex>
-
-					<Input label="Destination" placeholder="0xABCD" wide>
-						<template #suffix>
-							<Flex
-								@click="handleSwitchReceiverType"
-								align="center"
-								gap="6"
-								:class="[$style.selector_item]"
-							>
-								<Icon
-									:name="
-										selectedReceiverType === 'private'
-											? 'key-square'
-											: 'face'
-									"
-									size="16"
-									color="blue"
-								/>
-								<Text
-									size="13"
-									weight="600"
-									color="primary"
-									style="text-transform: capitalize"
-								>
-									{{ selectedReceiverType }}
-								</Text>
-							</Flex>
-						</template>
-					</Input>
 				</Flex>
 
-				<Flex :class="$style.bottom">
+				<Flex direction="column" gap="12" :class="$style.bottom">
 					<Button
 						wide
 						type="primary"
 						size="medium"
 						rightIcon="arrow-right-circle"
+						rightIconColor="inverse"
 					>
-						<Text color="white">Send</Text>
+						<Text color="inverse">Send</Text>
 					</Button>
+
+					<FeeJuiceCard />
 				</Flex>
 			</Flex>
 		</PopupCard>
@@ -264,16 +175,6 @@ const handleSwitchReceiverType = () => {
 	&.selected {
 		background: var(--card-bg);
 	}
-}
-
-.card_wrapper {
-	width: 100%;
-
-	background: var(--card-bg);
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
-	border-radius: 12px;
-
-	padding: 12px;
 }
 
 .bottom {

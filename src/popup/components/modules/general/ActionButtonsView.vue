@@ -48,7 +48,7 @@ const popupStore = usePopupStore()
 
 	cursor: pointer;
 	background: var(--action-btn-bg);
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 3px var(--gray-5);
+	box-shadow: inset 0 0 0 1px var(--border), 0 1px 3px var(--shadow-5);
 	border-radius: 500px;
 
 	padding: 0 12px;
@@ -61,11 +61,8 @@ const popupStore = usePopupStore()
 	}
 
 	&:hover {
-		background: var(--gray-10);
-	}
-
-	&:active {
-		background: var(--gray-15);
+		box-shadow: inset 0 0 0 1px var(--border-hovered),
+			0 1px 3px var(--shadow-5);
 	}
 }
 </style>

@@ -5,8 +5,12 @@ import LogoStar from "@/components/LogoStar.vue"
 import PopupManager from "./components/popups/PopupManager.vue"
 
 /** Utils */
-import { managers, initNetworks } from "@/utils/core.js"
+import { managers, initNetworks, initTokenService } from "@/utils/core.js"
 import { AccountServiceClient } from "@/wallet/services/account/client"
+
+/** Composables */
+import { useSettings } from "@/composables/settings.js"
+const { syncLocalSettings } = useSettings()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -28,10 +32,14 @@ const initAccount = async () => {
 }
 
 const init = async () => {
-	await appStore.setTheme()
-	const root = document.querySelector("html")
-	if (appStore.theme) root.setAttribute("theme", appStore.theme)
+	/**
+	 * Settings: theme, side panel, ...
+	 */
+	await syncLocalSettings()
 
+	/**
+	 * Wallet init: networks, active profile, etc
+	 */
 	const networks = await initNetworks()
 	appStore.networks = networks
 	appStore.network = networks[0]
@@ -41,6 +49,13 @@ const init = async () => {
 		appStore.profile = activeProfile
 
 		await initAccount()
+
+		initTokenService({
+			profile: appStore.profile,
+			network: appStore.network,
+			account: appStore.account,
+		})
+		await appStore.syncLocalTokens()
 
 		appStore.isLogined = true
 
@@ -77,9 +92,12 @@ watch(
 		<!-- Popup Teleport -->
 		<div id="popup" />
 		<div id="tooltip" />
+		<div id="dropdown" />
+		<div id="toast" />
 
 		<div>
 			<PopupManager />
+			<ToastManager />
 		</div>
 
 		<Header />

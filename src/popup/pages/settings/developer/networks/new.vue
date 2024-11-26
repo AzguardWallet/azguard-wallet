@@ -91,7 +91,7 @@ const handleCreate = async () => {
 
 			<Flex direction="column" gap="8">
 				<Button @click="handleCreate" type="primary" size="medium" wide>
-					<Text color="white">Create</Text>
+					<Text color="inverse">Create</Text>
 				</Button>
 			</Flex>
 		</Flex>

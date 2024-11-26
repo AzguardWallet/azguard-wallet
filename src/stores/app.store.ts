@@ -7,14 +7,6 @@ type WalletMetadata = {
 }
 
 export const useAppStore = defineStore("app", () => {
-	const theme = ref()
-	const setTheme = async () => {
-		const themeResult = await chrome.storage.local.get("azguard:ui:theme")
-		if ("azguard:ui:theme" in themeResult) {
-			theme.value = themeResult["azguard:ui:theme"]
-		}
-	}
-
 	const _wallet = reactive<WalletMetadata>({
 		created_at: 0,
 	})
@@ -82,6 +74,11 @@ export const useAppStore = defineStore("app", () => {
 		}
 	}
 
+	const tokens = ref([])
+	const syncLocalTokens = async () => {
+		tokens.value = await managers.token.getTokens()
+	}
+
 	const network = ref()
 	const networks = ref([])
 
@@ -91,8 +88,6 @@ export const useAppStore = defineStore("app", () => {
 	const isPrivacyModeEnabled = ref(false)
 
 	return {
-		theme,
-		setTheme,
 		_wallet,
 		setWalletCreatedAt,
 		_isHomeScreenOpened,
@@ -103,6 +98,8 @@ export const useAppStore = defineStore("app", () => {
 		setupActiveAccount,
 		selectAccount,
 		hideAccount,
+		tokens,
+		syncLocalTokens,
 		network,
 		networks,
 		showSendPopup,

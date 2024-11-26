@@ -2,9 +2,21 @@
 /** Components */
 import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
 
+/** Composabled */
+import { useSettings } from "@/composables/settings.js"
+const { settings, updateSettings } = useSettings()
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
+
+const root = document.querySelector("html")
+
+const theme = computed(() => settings.value.appearance.theme)
+watch(
+	() => theme.value,
+	() => [root.setAttribute("theme", theme.value)]
+)
 </script>
 
 <template>
@@ -35,20 +47,21 @@ const appStore = useAppStore()
 			<Flex wide direction="column" gap="8">
 				<Button
 					@click="appStore.showRegisterPopup = true"
-					size="dynamic"
+					size="medium"
 					type="primary"
 					wide
 				>
 					<Flex align="center" gap="6">
-						<Icon name="plus-square" size="16" color="white" />
-						<Text size="13" color="white">Create profile</Text>
+						<Text size="13" color="inverse">Create Profile</Text>
+						<Icon
+							name="arrow-circle-broken-right"
+							size="16"
+							color="inverse"
+						/>
 					</Flex>
 				</Button>
-				<Button size="medium" type="secondary" wide>
-					<Flex align="center" gap="6">
-						<Icon name="import" size="16" color="tertiary" />
-						Import profile
-					</Flex>
+				<Button size="medium" type="secondary" wide disabled>
+					Import Profile
 				</Button>
 			</Flex>
 
@@ -63,6 +76,23 @@ const appStore = useAppStore()
 				<Text color="secondary">Terms of Use</Text> and
 				<Text color="secondary">Privacy Policy</Text>
 			</Text>
+
+			<Flex align="center" gap="4" :class="$style.theme_switcher">
+				<Icon
+					@click="updateSettings('appearance', 'theme', 'light')"
+					name="sun"
+					size="14"
+					color="tertiary"
+					:class="theme === 'light' && $style.active"
+				/>
+				<Icon
+					@click="updateSettings('appearance', 'theme', 'dark')"
+					name="moon"
+					size="14"
+					color="tertiary"
+					:class="theme === 'dark' && $style.active"
+				/>
+			</Flex>
 		</Flex>
 
 		<Transition name="slide">
@@ -87,7 +117,7 @@ const appStore = useAppStore()
 
 	font-family: "Clash Display";
 
-	background-image: linear-gradient(rgba(0, 0, 0, 90%), rgba(0, 0, 0, 60%));
+	background-image: linear-gradient(var(--txt-primary), var(--txt-secondary));
 	background-clip: text;
 	background-size: 100%;
 	-webkit-text-fill-color: transparent;
@@ -103,5 +133,24 @@ const appStore = useAppStore()
 	margin-bottom: 24px;
 
 	transition: all 0.5s var(--bezier);
+}
+
+.theme_switcher {
+	background: var(--gray-10);
+	border-radius: 50px;
+
+	& svg {
+		box-sizing: content-box;
+		border-radius: 50%;
+		cursor: pointer;
+
+		padding: 2px;
+
+		&.active {
+			fill: var(--txt-primary);
+		}
+	}
+
+	padding: 4px;
 }
 </style>

@@ -10,12 +10,9 @@ const appStore = useAppStore()
 <template>
 	<Flex direction="column" align="center" gap="32" :class="$style.wrapper">
 		<Flex direction="column" align="center" gap="12">
-			<Flex align="center" gap="6">
-				<Text size="13" weight="600" color="secondary">
-					Account Balance
-				</Text>
-				<Icon name="key-square" size="16" color="tertiary" />
-			</Flex>
+			<Text size="13" weight="600" color="secondary">
+				Account Balance
+			</Text>
 
 			<div
 				@click="

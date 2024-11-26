@@ -73,7 +73,6 @@ const appStore = useAppStore()
 	height: 32px;
 
 	border-radius: 50%;
-	background: linear-gradient(var(--gray-5), var(--gray-3));
-	box-shadow: inset 0 0 0 1px var(--gray-5);
+	background: linear-gradient(var(--gray-8), var(--gray-3));
 }
 </style>

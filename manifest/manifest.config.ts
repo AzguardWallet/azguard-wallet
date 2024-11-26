@@ -20,6 +20,9 @@ export default {
 		service_worker: "src/background/index.ts",
 		type: "module",
 	},
+	side_panel: {
+		default_path: "src/popup/index.html",
+	},
 	// content_scripts: [
 	// 	{
 	// 		all_frames: true,
@@ -30,7 +33,7 @@ export default {
 	// ],
 	options_page: "src/options/index.html",
 	offline_enabled: true,
-	permissions: ["storage", "tabs", "background"],
+	permissions: ["storage", "tabs", "background", "sidePanel"],
 	web_accessible_resources: [
 		{
 			matches: ["*://*/*"],

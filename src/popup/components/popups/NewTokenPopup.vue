@@ -1,10 +1,10 @@
 <script setup>
+// import { AztecAddress } from "@aztec/aztec.js"
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Utils */
-import { AccountType } from "@/wallet/services/account/client"
 import { managers } from "@/utils/core"
 
 /** Store */
@@ -13,37 +13,23 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const displaceIdx = computed(() => {
-	return (
-		popupStore.popups.length -
-		popupStore.popups.findIndex((p) => p === "new_account")
-	)
-})
-
 const emit = defineEmits(["onClose"])
 
-const name = ref("")
+const contractAddressTerm = ref("")
 
-const isAvailableToCreateAccount = computed(() => {
-	if (!name.value.length) return
+const isAvailableToCreateToken = computed(() => {
+	if (!contractAddressTerm.value.length) return
 
 	return true
 })
 
 const handleCreateAccount = async () => {
-	if (!isAvailableToCreateAccount.value) return
+	// const test = await managers.token.parseInterface(
+	// 	"0x2cee972228c1ca2f802e2c94cf2e98e642a38d44d646e53dbee210333747d34f"
+	// )
+	console.log(await managers.network.getNetworks())
 
-	const account = await managers.account.createAccount(
-		AccountType.Azguard_v0,
-		name.value.trim()
-	)
-
-	appStore.account = account
-	appStore.accounts.push(account)
-
-	await chrome.storage.local.set({
-		"azguard:ui:activeAccount": account.address,
-	})
+	if (!isAvailableToCreateToken.value) return
 
 	emit("onClose")
 }
@@ -51,16 +37,14 @@ const handleCreateAccount = async () => {
 
 <template>
 	<Popup @onClose="emit('onClose')">
-		<PopupCard :displaceIdx="displaceIdx">
+		<PopupCard>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary">
-					New account
-				</Text>
+				<Text size="14" weight="600" color="primary"> Add token </Text>
 
 				<Input
-					v-model="name"
-					label="Account name"
-					placeholder="My Vault"
+					v-model="contractAddressTerm"
+					label="Contract address"
+					placeholder="0x"
 				/>
 
 				<Button
@@ -68,7 +52,7 @@ const handleCreateAccount = async () => {
 					wide
 					type="primary"
 					size="medium"
-					:disabled="!isAvailableToCreateAccount"
+					:disabled="!isAvailableToCreateToken"
 				>
 					<Text color="inverse">Create</Text>
 				</Button>

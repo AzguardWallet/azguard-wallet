@@ -1,23 +1,44 @@
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
+import {
+	Dropdown,
+	DropdownItem,
+	DropdownTrigger,
+} from "@/components/ui/Dropdown"
 
-/** Store */
-import { useAppStore } from "@/stores/app.store"
-const appStore = useAppStore()
+/** Composables */
+import { useSettings } from "@/composables/settings.js"
+const { settings, updateSettings } = useSettings()
 
-const isDarkThemeEnabled = ref(appStore.theme === "dark")
+const root = document.querySelector("html")
+const theme = computed(() => settings.value.appearance.theme)
 watch(
-	() => isDarkThemeEnabled.value,
+	() => theme.value,
+	() => {
+		root.setAttribute("theme", theme.value)
+	}
+)
+
+const isSidePanelEnabled = ref(settings.value.appearance.sidePanel)
+watch(
+	() => isSidePanelEnabled.value,
 	async () => {
-		const theme = isDarkThemeEnabled.value ? "dark" : null
+		updateSettings("appearance", "sidePanel", isSidePanelEnabled.value)
 
-		const root = document.querySelector("html")
-		root.setAttribute("theme", theme)
+		chrome.sidePanel.setPanelBehavior({
+			openPanelOnActionClick: settings.value.appearance.sidePanel,
+		})
 
-		appStore.theme = theme
-
-		chrome.storage.local.set({ "azguard:ui:theme": theme })
+		if (isSidePanelEnabled.value) {
+			const currentWindow = await chrome.windows.getCurrent()
+			chrome.sidePanel.open({
+				windowId: currentWindow.id,
+			})
+			window.close()
+		} else {
+			window.close()
+		}
 	}
 )
 </script>
@@ -46,18 +67,93 @@ watch(
 			</Text>
 		</Flex>
 
-		<Flex direction="column" gap="8">
+		<Flex direction="column" gap="24">
 			<Flex justify="between">
 				<Flex direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">
 						Dark Theme
 					</Text>
-					<Text size="13" weight="500" color="tertiary">
-						Application Theme
+					<Text size="12" weight="500" color="tertiary">
+						Application theme
 					</Text>
 				</Flex>
 
-				<Toggle v-model="isDarkThemeEnabled" />
+				<Dropdown>
+					<template #trigger>
+						<DropdownTrigger>
+							<Icon
+								:name="
+									(theme === 'dark' && 'moon') ||
+									(theme === 'light' && 'sun')
+								"
+								size="14"
+								color="primary"
+							/>
+							<Text
+								size="13"
+								weight="600"
+								color="primary"
+								style="text-transform: capitalize"
+							>
+								{{ settings.appearance.theme }}
+							</Text>
+						</DropdownTrigger>
+					</template>
+
+					<template #popup>
+						<DropdownItem
+							@click="
+								updateSettings('appearance', 'theme', 'dark')
+							"
+						>
+							<Flex align="center" gap="8">
+								<Icon
+									:name="theme === 'dark' ? 'check' : ''"
+									size="14"
+									color="primary"
+								/>
+								Dark
+							</Flex>
+						</DropdownItem>
+						<DropdownItem
+							@click="
+								updateSettings('appearance', 'theme', 'light')
+							"
+						>
+							<Flex align="center" gap="8">
+								<Icon
+									:name="theme === 'light' ? 'check' : ''"
+									size="14"
+									color="primary"
+								/>
+								Light
+							</Flex>
+						</DropdownItem>
+						<DropdownItem disabled>
+							<Flex align="center" gap="8">
+								<Icon
+									:name="theme === 'system' ? 'check' : ''"
+									size="14"
+									color="primary"
+								/>
+								System
+							</Flex>
+						</DropdownItem>
+					</template>
+				</Dropdown>
+			</Flex>
+
+			<Flex justify="between">
+				<Flex direction="column" gap="6">
+					<Text size="13" weight="600" color="primary">
+						Open as Side Panel
+					</Text>
+					<Text size="12" weight="500" color="tertiary">
+						Open as side panel instead of popup
+					</Text>
+				</Flex>
+
+				<Toggle v-model="isSidePanelEnabled" />
 			</Flex>
 		</Flex>
 

@@ -13,9 +13,7 @@ if (!appStore.isLogined) router.push("/popup/auth")
 
 <template>
 	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Text size="13" weight="600" color="priamry" style="line-height: 16px">
-			Today
-		</Text>
+		<Text size="13" weight="600" color="primary"> Today </Text>
 
 		<Flex wide direction="column" gap="8" :class="$style.list">
 			<Flex wide align="center" gap="12" :class="$style.item">
@@ -89,18 +87,19 @@ if (!appStore.isLogined) router.push("/popup/auth")
 			<Icon name="zap-circle" size="20" color="tertiary" />
 
 			<Flex direction="column" align="center" gap="6">
-				<Text size="13" weight="600" color="secondary" align="center"
-					>Almost empty activity</Text
-				>
+				<Text size="13" weight="600" color="secondary" align="center">
+					Almost empty activity
+				</Text>
 				<Text
 					size="12"
 					weight="500"
 					height="140"
 					color="tertiary"
 					align="center"
-					>Once you start working with your wallet, all activities
-					will be displayed here</Text
 				>
+					Once you start working with your wallet, all activities will
+					be displayed here
+				</Text>
 			</Flex>
 		</Flex>
 
@@ -149,8 +148,7 @@ if (!appStore.isLogined) router.push("/popup/auth")
 	height: 32px;
 
 	border-radius: 50%;
-	background: linear-gradient(var(--gray-5), var(--gray-3));
-	box-shadow: inset 0 0 0 1px var(--gray-5);
+	background: linear-gradient(var(--gray-8), var(--gray-3));
 }
 
 .check_icon {
@@ -159,7 +157,7 @@ if (!appStore.isLogined) router.push("/popup/auth")
 	right: -8px;
 
 	box-sizing: content-box;
-	border: 3px solid #fff;
+	border: 3px solid var(--card-bg);
 	border-radius: 50%;
 }
 

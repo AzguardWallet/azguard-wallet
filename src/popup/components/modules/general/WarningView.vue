@@ -17,7 +17,7 @@
 .wrapper {
 	background: var(--card-bg);
 	border-radius: 12px;
-	border: 1px solid var(--gray-10);
+	border: 1px solid var(--border);
 
 	padding: 12px;
 }
