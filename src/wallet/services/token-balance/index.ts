@@ -87,7 +87,7 @@ export class TokenBalanceService extends Service {
         return (await this.balances.getValues())
             .filter(x => tokenId === undefined || x.token === tokenId)
             .filter(x => accountAddress === undefined || x.account === accountAddress)
-            .map(this.getTokenBalanceInfo);
+            .map(x => this.getTokenBalanceInfo(x), this);
     }
 
     public async refreshBalance(id: number): Promise<void> {
@@ -115,14 +115,14 @@ export class TokenBalanceService extends Service {
         );
     }
 
-    private getTokenBalanceInfo(tb: TokenBalanceRaw): TokenBalanceInfo {
-        const token = this.tokens.get(tb.token);
-        if (!token) {
+    private getTokenBalanceInfo(tb: TokenBalanceRaw, token?: Token): TokenBalanceInfo {
+        const _token = token ?? this.tokens.get(tb.token);
+        if (!_token) {
             throw new Error("unknown token");
         }
         return new TokenBalanceInfo(
             tb.id,
-            this.getTokenInfo(token),
+            this.getTokenInfo(_token),
             tb.account,
             tb.publicBalance,
             tb.privateBalance,
@@ -179,7 +179,7 @@ export class TokenBalanceService extends Service {
         this.tokens.delete(token.id);
         for (const tb of (await this.balances.getValues()).filter(x => x.token === token.id)) {
             await this.balances.delete(`${tb.id}`);
-            this.emit(new TokenBalanceServiceEventMessage(TokenBalanceServiceEvent.TokenBalanceDeleted, this.getTokenBalanceInfo(tb)));
+            this.emit(new TokenBalanceServiceEventMessage(TokenBalanceServiceEvent.TokenBalanceDeleted, this.getTokenBalanceInfo(tb, token)));
         }
     }
 

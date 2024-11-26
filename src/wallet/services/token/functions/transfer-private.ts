@@ -8,7 +8,7 @@ export enum TransferPrivateImpl {
 }
 
 export abstract class TransferPrivateFn extends Fn {
-    public abstract override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): any[];
+    public abstract override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint | string): any[];
 
     public static new(name: string, impl: TransferPrivateImpl): TransferPrivateFn {
         switch (impl) {

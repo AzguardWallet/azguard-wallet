@@ -66,8 +66,8 @@ export class AzguardV0 implements IAccountContract {
         return new Schnorr().constructSignature(payload, this.signingKey).toString();
     }
 
-    public buildTxExecutionRequest(pxe: PXE, calls: AzguardFunctionCall[], args: PackedValues[]): Promise<TxExecutionRequest> {
-        return this._buildTxExecutionRequest(pxe, calls, args, Fr.random());
+    public buildTxExecutionRequest(pxe: PXE, calls: AzguardFunctionCall[], args: PackedValues[], nonce: Fr): Promise<TxExecutionRequest> {
+        return this._buildTxExecutionRequest(pxe, calls, args, nonce);
     }
 
     public buildTxSimulationRequest(pxe: PXE, call: AzguardFunctionCall, args: PackedValues): Promise<TxExecutionRequest> {

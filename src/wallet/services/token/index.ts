@@ -83,7 +83,7 @@ export class TokenService extends Service {
                 const _request = request as GetTokensRequest;
                 try {
                     const tokens = await this.getTokens();
-                    return new GetTokensResponse(_request, tokens.map(this.getTokenInfo));
+                    return new GetTokensResponse(_request, tokens.map(this.getTokenInfo, this));
                 }
                 catch (error: any) {
                     return new GetTokensResponse(_request, undefined, error.message);
@@ -169,6 +169,14 @@ export class TokenService extends Service {
         return this.getTokenInfo(token);
     }
 
+    public async getTokenRaw(id: number): Promise<Token> {
+        const token = await this.tokens.get(`${id}`);
+        if (!token) {
+            throw new Error("unknown token id");
+        }
+        return token;
+    }
+
     public async addToken(ti: TokenInterface): Promise<TokenInfo> {
         let token = await this.findToken(ti.chainId, ti.contract);
         if (!token) {
@@ -185,7 +193,7 @@ export class TokenService extends Service {
                 balanceOfPublicFn: ti.balanceOfPublicFn,
                 balanceOfPrivateFn: ti.balanceOfPrivateFn,
                 transferPublicFn: ti.transferPublicFn,
-                transferPrivateFn: ti.balanceOfPrivateFn,
+                transferPrivateFn: ti.transferPrivateFn,
                 transferPublicToPrivateFn: ti.transferPublicToPrivateFn,
                 transferPrivateToPublicFn: ti.transferPrivateToPublicFn,
             };
@@ -216,7 +224,7 @@ export class TokenService extends Service {
             balanceOfPublicFn: ti.balanceOfPublicFn,
             balanceOfPrivateFn: ti.balanceOfPrivateFn,
             transferPublicFn: ti.transferPublicFn,
-            transferPrivateFn: ti.balanceOfPrivateFn,
+            transferPrivateFn: ti.transferPrivateFn,
             transferPublicToPrivateFn: ti.transferPublicToPrivateFn,
             transferPrivateToPublicFn: ti.transferPrivateToPublicFn,
         }
