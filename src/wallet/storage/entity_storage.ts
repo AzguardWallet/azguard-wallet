@@ -47,4 +47,12 @@ export class EntityStorage<T> {
             .filter(k => k.startsWith(path))
             .map(k => k.substring(path.length));
     }
+
+    public async getValues(): Promise<Array<T>> {
+        const path = `${this.root}@`;
+        const res = await this.storage.get();
+        return Object.entries(res)
+            .filter(([k, _]) => k.startsWith(path))
+            .map(([_, v]) => JSON.parse(v));
+    }
 }

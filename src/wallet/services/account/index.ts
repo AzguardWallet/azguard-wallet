@@ -33,6 +33,8 @@ type AccountDto = {
 }
 
 export class AccountService extends Service {
+    public readonly onAccountAdded: ((account: Account) => void)[] = [];
+
     constructor(
         private readonly profiles: ProfileService,
         emit: (event: EventMessage) => void,
@@ -67,6 +69,9 @@ export class AccountService extends Service {
                 try {
                     const account = await this.createAccount(_request.profileId, _request.chainId, _request.accountType, _request.name);
                     this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountAdded, account));
+                    for (const emit of this.onAccountAdded) {
+                        try {emit(account)} catch {}
+                    }
                     return new CreateAccountResponse(_request, account);
                 }
                 catch (error: any) {
@@ -125,9 +130,9 @@ export class AccountService extends Service {
 
     public async createAccount(profileId: string, chainId: number, type: AccountType, name: string): Promise<Account> {
         const storage = this._getStorage(profileId, chainId);
-        const accounts = await storage.getAll();
+        const accounts = await storage.getValues();
         const index = accounts.length > 0
-            ? array_max(accounts.filter(([_, v]) => v.type === type).map(([_, v]) => +v.index)) + 1
+            ? array_max(accounts.filter(x => x.type === type).map(x => +x.index)) + 1
             : 0;
 
         const secret = await this._deriveAccountSecret(profileId, chainId, type, index);
@@ -208,7 +213,7 @@ export class AccountService extends Service {
     }
 
     private async _deriveAccountSecret(profileId: string, chainId: number, type: number, index: number): Promise<Fr> {
-        const master = await this.profiles.GetProfileSecret(profileId);
+        const master = await this.profiles.getProfileSecret(profileId);
         if (!master) {
             throw new Error('unauthorized');
         }
