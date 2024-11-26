@@ -41,7 +41,7 @@ export class ExecutionServiceClient extends ServiceClient {
      * @param account Sender account address.
      * @throws If transaction is invalid or failed.
      */
-    public ExecuteBatch(
+    public executeBatch(
         network: string,
         account: string,
     ): Promise<string> {
@@ -58,7 +58,7 @@ export class ExecutionServiceClient extends ServiceClient {
      * @param amount Amount.
      * @throws If transaction is invalid or failed.
      */
-    public ExecuteTransfer(
+    public executeTransfer(
         network: string,
         account: string,
         token: number,
