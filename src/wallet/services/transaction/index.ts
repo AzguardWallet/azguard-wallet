@@ -101,9 +101,9 @@ export class TransactionService extends Service {
             calls,
             nonce,
             hash,
+            now,
+            now,
             TxStatus.Pending,
-            now,
-            now,
         )
         await this.txs.set(tx.hash, tx);
         this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionAdded, tx));
