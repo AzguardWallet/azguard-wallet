@@ -1,78 +1,120 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { type Dapp, INTERACTION_SERVICE_NAME } from ".";
+import { type DappSession, type InteractionRequest, INTERACTION_SERVICE_NAME } from ".";
 
 // biome-ignore lint/style/useEnumInitializers: <explanation>
 export enum InteractionServiceMethod {
-    GetDapps,
-    GetDapp,
-    AddDapp,
-    DeleteDapp,
+    GetDappSessions,
+    GetDappSession,
+    AddDappSession,
+    DropDappSession,
+    GetInteractionRequest,
+    DeleteInteractionRequest,
 }
 
-export class GetDappsRequest extends RequestMessage {
+export class GetDappSessionsRequest extends RequestMessage {
     constructor() {
-        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.GetDapps);
+        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.GetDappSessions);
     }
 }
 
-export class GetDappsResponse extends ResponseMessage {
+export class GetDappSessionsResponse extends ResponseMessage {
     constructor(
-        request: GetDappsRequest,
-        result?: Dapp[],
+        request: GetDappSessionsRequest,
+        result?: DappSession[],
         error?: string,
     ) {
         super(INTERACTION_SERVICE_NAME, request.id, result, error);
     }
 }
 
-export class GetDappRequest extends RequestMessage {
+export class GetDappSessionRequest extends RequestMessage {
     constructor(
-        public readonly dappid: string,
+        public readonly dappSessionId: string,
     ) {
-        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.GetDapp);
+        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.GetDappSession);
     }
 }
 
-export class GetDappResponse extends ResponseMessage {
+export class GetDappSessionResponse extends ResponseMessage {
     constructor(
-        request: GetDappRequest,
-        result?: Dapp,
+        request: GetDappSessionRequest,
+        result?: DappSession,
         error?: string,
     ) {
         super(INTERACTION_SERVICE_NAME, request.id, result, error);
     }
 }
 
-export class AddDappRequest extends RequestMessage {
+export class AddDappSessionRequest extends RequestMessage {
     constructor(
         public readonly name: string,
+        public readonly topic: string,
+        public readonly expiry: number,
+        public readonly url?: string,
+        public readonly icon?: string,
     ) {
-        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.AddDapp);
+        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.AddDappSession);
     }
 }
 
-export class AddDappResponse extends ResponseMessage {
+export class AddDappSessionResponse extends ResponseMessage {
     constructor(
-        request: AddDappRequest,
-        result?: Dapp,
+        request: AddDappSessionRequest,
+        result?: DappSession,
         error?: string,
     ) {
         super(INTERACTION_SERVICE_NAME, request.id, result, error);
     }
 }
 
-export class DeleteDappRequest extends RequestMessage {
+export class DropDappSessionRequest extends RequestMessage {
     constructor(
-        public readonly dappId: string,
+        public readonly dappSessionId: string,
     ) {
-        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.DeleteDapp);
+        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.DropDappSession);
     }
 }
 
-export class DeleteDappResponse extends ResponseMessage {
+export class DropDappSessionResponse extends ResponseMessage {
     constructor(
-        request: DeleteDappRequest,
-        result?: Dapp,
+        request: DropDappSessionRequest,
+        result?: DappSession,
+        error?: string,
+    ) {
+        super(INTERACTION_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class GetInteractionRequestRequest extends RequestMessage {
+    constructor(
+        public readonly requestId: string,
+    ) {
+        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.GetInteractionRequest);
+    }
+}
+
+export class GetInteractionRequestResponse extends ResponseMessage {
+    constructor(
+        request: GetInteractionRequestRequest,
+        result?: InteractionRequest,
+        error?: string,
+    ) {
+        super(INTERACTION_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class DeleteInteractionRequestRequest extends RequestMessage {
+    constructor(
+        public readonly requestId: string,
+    ) {
+        super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.DeleteInteractionRequest);
+    }
+}
+
+export class DeleteInteractionRequestResponse extends ResponseMessage {
+    constructor(
+        request: DeleteInteractionRequestRequest,
+        result?: boolean,
         error?: string,
     ) {
         super(INTERACTION_SERVICE_NAME, request.id, result, error);

@@ -47,4 +47,15 @@ export class EntityStorage<T> {
             .filter(k => k.startsWith(path))
             .map(k => k.substring(path.length));
     }
+
+    public async findByKeys(predicate: (entity: T) => boolean): Promise<{ key: string, entity: T } | undefined> {
+        const allEntities = await this.getAll()
+        const foundEntity = allEntities.find(([, entity]) => predicate(entity))
+
+        if (foundEntity) {
+            return { key: foundEntity[0], entity: foundEntity[1] }
+        }
+
+        return undefined
+    }
 }

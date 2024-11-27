@@ -7,13 +7,13 @@ import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/cli
 const profileService = new ProfileServiceClient()
 const networkService = new NetworkServiceClient()
 const walletConnectService = new WalletConnectServiceClient()
-// const interactionSevice = new InteractionServiceClient()
+const interactionSevice = new InteractionServiceClient()
 
 export const managers = {
 	profile: profileService,
 	network: networkService,
 	wallectConnect: walletConnectService,
-	// interaction: interactionSevice,
+	interaction: interactionSevice,
 }
 
 export const initNetworks = async () => {

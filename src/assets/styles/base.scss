@@ -35,6 +35,7 @@ $grayscale: (
 	--blue: #007aff;
 	--green: #14ae5c;
 	--orange: #ff9500;
+	--red: #e63946;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(255, 255, 255, #{$value});

@@ -1,14 +1,19 @@
 import type { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
-import { WalletConnectServiceEvent, WalletConnectServiceEventMessage } from "./events";
+import { WalletConnectServiceEvent, type WalletConnectServiceEventMessage } from "./events";
 // import { Network } from "./models";
 import {
-    ConnectByURLRequest,
+    ConnectByURIRequest,
+    ApproveDappSessionRequest,
+    RejectDappSessionRequest,
+    DropDappSessionRequest,
+    ValidateProposalRequest,
 } from "./methods";
+import type { DappSession } from "@/wallet/services/interaction/client/models";
+import type { Account } from "@/wallet/services/account/client/models";
 
 export * from './events';
 export * from './methods';
-export * from './models';
 
 export const WALLET_CONNECT_SERVICE_NAME = "wallet-connect";
 
@@ -20,26 +25,24 @@ export class WalletConnectServiceClient extends ServiceClient {
      * Creates WalletConnectServiceClient instace.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
-     * @param onNetworkAdded Callback, called when a new network was created.
-     * @param onNetworkUpdated Callback, called when an existing network was updated.
-     * @param onNetworkDeleted Callback, called when an existing network was deleted.
      */
     constructor(
         onConnected?: () => void,
         onDisconnected?: () => void,
-        // private readonly onNetworkAdded?: (network: Network) => void,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        private readonly onProposalExpire?: (payload: any) => void,
     ) {
         super(WALLET_CONNECT_SERVICE_NAME, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
         switch (message.event) {
-            // case NetworkServiceEvent.NetworkAdded:
-            //     if (this.onNetworkAdded) {
-            //         try {this.onNetworkAdded((message as NetworkServiceEventMessage).network);}
-            //         catch {}
-            //     }
-            //     break;
+            case WalletConnectServiceEvent.ProposalExpire:
+                if (this.onProposalExpire) {
+                    try {this.onProposalExpire((message as WalletConnectServiceEventMessage).payload);}
+                    catch {}
+                }
+                break;
             // case NetworkServiceEvent.NetworkUpdated:
             //     if (this.onNetworkUpdated) {
             //         try {this.onNetworkUpdated((message as NetworkServiceEventMessage).network);}
@@ -58,8 +61,28 @@ export class WalletConnectServiceClient extends ServiceClient {
         }
     }
 
-    public connectByURL(url: string): Promise<void> {
-        return this.request(new ConnectByURLRequest(url));
+    public connectByURI(uri: string): Promise<void> {
+        return this.request(new ConnectByURIRequest(uri));
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public validateProposal(payload: any, address: string): Promise<void> {
+        console.log('public validateProposal(payload: any, address: string): Promise<void> {', address);
+        
+        return this.request(new ValidateProposalRequest(payload, address));
+    }
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public approveDappSession(payload: any, accounts: Array<Account>): Promise<DappSession | undefined> {
+        return this.request(new ApproveDappSessionRequest(payload, accounts));
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public rejectDappSession(payload: any): Promise<void> {
+        return this.request(new RejectDappSessionRequest(payload));
+    }
+
+    public dropDappSession(dappSession: DappSession): Promise<void> {
+        return this.request(new DropDappSessionRequest(dappSession));
     }
 
     // /**

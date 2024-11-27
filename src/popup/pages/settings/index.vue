@@ -60,6 +60,26 @@ if (!appStore.isLogined) router.push("/popup/auth")
 				/>
 			</Flex>
 
+			<RouterLink to="/popup/settings/dappSessions">
+				<Flex align="center" justify="between" :class="$style.item">
+					<Flex direction="column" gap="6">
+						<Text size="14" weight="600" color="primary">
+							Dapp Sessions
+						</Text>
+						<Text size="13" weight="500" color="tertiary">
+							Connect dapps and manage their sessions
+						</Text>
+					</Flex>
+
+					<Icon
+						name="chevron"
+						size="16"
+						color="tertiary"
+						:class="$style.item_icon"
+					/>
+				</Flex>
+			</RouterLink>
+
 			<RouterLink to="/popup/settings/developer">
 				<Flex align="center" justify="between" :class="$style.item">
 					<Flex direction="column" gap="6">

@@ -1,36 +1,58 @@
 import { Core } from '@walletconnect/core';
 import { WalletKit, WalletKitTypes } from '@reown/walletkit';
-import { buildAuthObject, parseUri, populateAuthPayload } from '@walletconnect/utils';
 import { buildApprovedNamespaces, getSdkError } from "@walletconnect/utils";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import type { ProfileService } from "@/wallet/services/profile";
-import type { NetworkService } from "@/wallet/services/network";
 import type { AccountService } from "@/wallet/services/account";
+import type { InteractionService } from "@/wallet/services/interaction";
+import type { DappSession } from "@/wallet/services/interaction/client";
+import type { Account } from '../account/client';
 import { Service } from "@/wallet/base/service";
-import { EntityStorage, StorageType } from "@/wallet/storage";
-import { getRandomHex } from "@/wallet/utils";
 import {
-    type ConnectByURLRequest,
-    ConnectByURLResponse,
+    type ConnectByURIRequest,
+    ConnectByURIResponse,
+    type ApproveDappSessionRequest,
+    ApproveDappSessionResponse,
+    type RejectDappSessionRequest,
+    RejectDappSessionResponse,
+    type DropDappSessionRequest,
+    DropDappSessionResponse,
+    type ValidateProposalRequest,
+    ValidateProposalResponse,
     WALLET_CONNECT_SERVICE_NAME,
     WalletConnectServiceMethod,
+    WalletConnectServiceEventMessage,
+    WalletConnectServiceEvent,
 } from "./client";
+
 
 const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783"
 const WALLET_CONNECT_METADATA = {
-    name: 'Azguard Wallet',
-    description: 'Azguard Wallet Description',
-    url: 'https://aztec.network',
+    name: "Azguard Wallet",
+    description: "Azguard Wallet Description",
+    url: "https://aztec.network",
     icons: [],
 }
+const WALLET_CONNECT_LOG_LEVEL = "silent"
+
+const CAIP_PREFIX = "aztec";
+const AZTEC_CHAIN_ID = "31337";
+const CAIP = {
+    chain() {
+        return `${CAIP_PREFIX}:${AZTEC_CHAIN_ID}`;
+    },
+    address(address: string) {
+        return `${CAIP_PREFIX}:${AZTEC_CHAIN_ID}:${address}`;
+    },
+};
+const AZTEC_METHODS = ["aztec_execute"]
+const AZTEC_EVENTS = ["accountsChanged"]
 
 export class WalletConnectService extends Service {
     private walletKit: InstanceType<typeof WalletKit> | null = null;
 
     constructor(
-        // private readonly profiles: ProfileService,
         private readonly accounts: AccountService,
-        // private readonly networks: NetworkService,
+        private readonly interaction: InteractionService,
         emit: (event: EventMessage) => void
     ) {
         super(WALLET_CONNECT_SERVICE_NAME, emit);
@@ -38,19 +60,93 @@ export class WalletConnectService extends Service {
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
         switch(request.method) {
-            case WalletConnectServiceMethod.ConnectByURL: {
-                const _request = request as ConnectByURLRequest;
+            case WalletConnectServiceMethod.ConnectByURI: {
+                const _request = request as ConnectByURIRequest;
                 try {
-                    await this.onConnect(_request.uri)
-                    return new ConnectByURLResponse(_request, true);
+                    await this.connectByURI(_request.uri)
+                    
+                    return new ConnectByURIResponse(_request, true);
                 }
-                catch (error: any) {
-                    return new ConnectByURLResponse(_request, false, error.message);
+
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new ConnectByURIResponse(_request, false, error.message);
+                    }
+
+                    return new ConnectByURIResponse(_request, false, 'Unknown error occurred');
+                }
+            }
+            case WalletConnectServiceMethod.ValidateProposal: {
+                const _request = request as ValidateProposalRequest;
+                console.log('_request', _request);
+                
+                try {
+                    const result = await this.validateProposal(_request.payload, _request.address)
+                    
+                    return new ValidateProposalResponse(_request, result);
+                }
+
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new ValidateProposalResponse(_request, false, error.message);
+                    }
+
+                    return new ValidateProposalResponse(_request, false, 'Unknown error occurred');
+                }
+            }
+            case WalletConnectServiceMethod.ApproveDappSession: {
+                const _request = request as ApproveDappSessionRequest;
+                try {
+                    const dappSession = await this.sessionApprove(_request.payload, _request.accounts)
+                    // this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountAdded, account));
+                    // this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountAdded, account));
+                    return new ApproveDappSessionResponse(_request, dappSession);
+                }
+
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new ApproveDappSessionResponse(_request, undefined, error.message);
+                    }
+
+                    return new ApproveDappSessionResponse(_request, undefined, 'Unknown error occurred');
+                }
+            }
+            case WalletConnectServiceMethod.RejectDappSession: {
+                const _request = request as RejectDappSessionRequest;
+                try {
+                    const result = await this.sessionReject(_request.payload)
+
+                    return new RejectDappSessionResponse(_request, result);
+                }
+
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new RejectDappSessionResponse(_request, undefined, error.message);
+                    }
+
+                    return new RejectDappSessionResponse(_request, undefined, 'Unknown error occurred');
+                }
+            }
+            case WalletConnectServiceMethod.DropDappSession: {
+                const _request = request as DropDappSessionRequest;
+                try {
+                    await this.dropDappSession(_request.dappSession)
+
+                    return new DropDappSessionResponse(_request, true);
+                }
+
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new DropDappSessionResponse(_request, false, error.message);
+                    }
+
+                    return new DropDappSessionResponse(_request, false, 'Unknown error occurred');
                 }
             }
 
             default: {
                 console.error(`Invalid request method ${request.method}.`);
+
                 return undefined;
             }                
         }
@@ -59,6 +155,7 @@ export class WalletConnectService extends Service {
     public async initialize(): Promise<void> {
         const core = new Core({
             projectId: WALLET_CONNECT_PROJECT_ID,
+            logger: WALLET_CONNECT_LOG_LEVEL,
         });
 
         this.walletKit = await WalletKit.init({
@@ -66,19 +163,7 @@ export class WalletConnectService extends Service {
             metadata: WALLET_CONNECT_METADATA,
         });
 
-        // Remove after test
-        const clientId = await this.walletKit.engine.signClient.core.crypto.getClientId()
-        console.log('WalletConnect ClientID: ', clientId)
-
         this.setupWalletKitEvents();
-
-        // console.log('profiles', await this.profiles.getProfiles());
-        // console.log('networks', await this.networks.getNetworks());
-        
-        // console.log('accounts', await this.accounts.getAccounts("9181ab0c", 31337));
-        
-
-        // await this.onConnect(WALLET_CONNECT_URL)
     }
 
     private setupWalletKitEvents(): void {
@@ -86,154 +171,225 @@ export class WalletConnectService extends Service {
             throw new Error("WalletKit is not initialized.");
         }
 
-        this.walletKit.on('session_proposal', async (payload) => {
-            console.log('Session proposal received', payload);
+        // type Event = "session_proposal" | "session_request" | "session_delete" | "proposal_expire" | "session_request_expire" | "session_authenticate";
 
-            const accounts = await this.accounts.getAccounts("9181ab0c", 31337)
-            console.log('accounts', accounts.map(acc => acc.address));
-            
-            const account = accounts[0]
+        this.walletKit.on('session_proposal', async (payload) => this.handleSessionProposal(payload))
 
-            const approvedNamespaces = buildApprovedNamespaces({
-                proposal: payload.params,
-                supportedNamespaces: {
-                    aztec: {
-                        chains: ["aztec:1"],
-                        methods: [
-                            "aztec_sendTransaction",
-                            "aztec_experimental_createSecretHash",
-                            "aztec_experimental_tokenRedeemShield",
-                            "aztec_requestAccounts",
-                            "aztec_accounts"
-                        ],
-                        events: ["accountsChanged"],
-                        accounts: [`aztec:1:${account.address}`],
-                    },
-                    eip155: {
-                        chains: ["eip155:128123"],
-                        methods: [
-                            "eth_accounts"
-                        ],
-                        events: ["accountsChanged"],
-                        accounts: [`eip155:128123:${account.address}`],
-                    }
-                },
-            })
+        this.walletKit.on('proposal_expire', async (payload) => this.handleProposalExpire(payload))
 
-            console.log('namespaces', approvedNamespaces);
-            
-
-            const session = await this.walletKit.approveSession({
-                id: payload.id,
-                namespaces: approvedNamespaces,
-            });
-
-            console.log('Approved session', session);
-            
-        })
+        this.walletKit.on('session_delete', async (payload) => this.handleSessionDelete(payload))
 
         this.walletKit.on('session_request', async (payload) => {
             console.log('Session request received', payload);
         });
 
-        this.walletKit.on('session_event', async (payload) => {
-            console.log('Session event received', payload);
+        this.walletKit.on('session_request_expire', async (payload) => {
+            console.log('Session request expire received', payload);
         });
 
-        this.walletKit.on('session_authenticate', async (payload) => {
-            console.log('Session authenticate received', payload);
-
-            const accounts = await this.accounts.getAccounts("9181ab0c", 31337)
-            const account = accounts[0]
-
-            // const namespaces = buildApprovedNamespaces({
-            //     proposal: payload?.params,
-            //     supportedNamespaces: {
-            //         aztec: {
-            //             chains: "aztec:1",
-            //             methods: ["personal_sign"],
-            //             events: ["accountsChanged", "chainChanged"],
-            //             accounts: accounts.map(acc => acc.address),
-            //         },
-            //     },
-            // });
-
-            // console.log('namespaces', namespaces);
-            // // return [await this._addNetwork("Sandbox", "https://rpc.sandbox.azguardwallet.io", 31337)];
-            
-
-            // await this.walletKit.approveSession({
-            //     id: payload.id,
-            //     namespaces,
-            // });
-    
-            // const supportedChains = ["aztec:1"]
-            const supportedChains = [
-                "eip155:1",
-                "eip155:10",
-                "eip155:137",
-                "eip155:324",
-                "eip155:42161",
-                "eip155:8453",
-                "eip155:84532",
-                "eip155:1301",
-                "eip155:11155111",
-                "eip155:100",
-                "eip155:295",
-                "eip155:1313161554",
-                "aztec:1"
-            ]
-            // const supportedChains = ["eip155:1", "eip155:2", "eip155:137"]
-            const supportedMethods = ["personal_sign", "eth_sendTransaction", "eth_signTypedData"];
-
-            const authPayload = populateAuthPayload({
-                authPayload: payload.params.authPayload,
-                chains: supportedChains,
-                methods: supportedMethods,
-            });
-
-            const iss = `aztec:1:${account.address}`
-            const message = this.walletKit?.formatAuthMessage({
-                request: authPayload,
-                iss,
-            });
-
-            const signature = await this.accounts.signPayload("9181ab0c", 31337, account.address, message)
-
-            const auth = buildAuthObject(
-                authPayload,
-                { t: 'eip191', s: signature },
-                iss
-            );
-
-            await this.walletKit.approveSessionAuthenticate({
-                id: payload.id,
-                auths: [auth],
-            });
-        });
-
-        this.walletKit.on('pairing_expire', ({ topic }) => {
-            console.log(`Pairing expired for topic: ${topic}`);
-        });
+        this.walletKit.on('session_authenticate', async (payload) => this.handleSessionAuthenticate(payload))
 
         console.log("WalletKit event handlers set up.");
     }
 
-    public async onConnect(uri: string): Promise<any> {
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async connectByURI(uri: string): Promise<any> {
+        if (!this.walletKit) {
+            throw new Error("WalletKit is not initialized.")
+        }
+
+        try {
+            await this.walletKit.pair({ uri })
+                        
+            return true
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                throw new Error(error.message)
+            }
+
+            throw new Error("Unknown error occurred")
+        }
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async validateProposal(payload: any, address: string): Promise<boolean> {
+        if (!this.walletKit) {
+            throw new Error("WalletKit is not initialized.")
+        }
+        
+        try {
+            const approvedNamespaces = buildApprovedNamespaces({
+                proposal: payload.params,
+                supportedNamespaces: {
+                    aztec: {
+                        chains: [CAIP.chain()],
+                        methods: AZTEC_METHODS,
+                        events: AZTEC_EVENTS,
+                        accounts: [CAIP.address(address)],
+                    },
+                },
+            })
+
+            return true
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                throw new Error(error.message)
+            }
+
+            throw new Error("Unknown error occurred")
+        }
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async handleSessionProposal(payload: any): Promise<any> {
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.");
         }
 
-        const { topic: pairingTopic } = parseUri(uri);
-        console.log('Connecting with pairing topic:', pairingTopic);
+        console.log('Session proposal received', payload);
+
+        this.interaction.dappSessionProposal(payload)
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private async sessionApprove(payload: any, accounts: Array<Account>): Promise<DappSession | undefined> {
+        if (!this.walletKit) {
+            throw new Error("WalletKit is not initialized.");
+        }
+
+        const approvedNamespaces = buildApprovedNamespaces({
+            proposal: payload.params,
+            supportedNamespaces: {
+                aztec: {
+                    chains: [CAIP.chain()],
+                    methods: AZTEC_METHODS,
+                    events: AZTEC_EVENTS,
+                    accounts: accounts.map(acc => CAIP.address(acc.address)),
+                },
+            },
+        })
 
         try {
-            await this.walletKit.pair({ uri });
-            console.log('walletKit.pair end');
-            
-        } catch (error) {
-            console.error("Failed to connect:", error);
-            return { success: false, error: error.message };
+            const session = await this.walletKit.approveSession({
+                id: payload.id,
+                namespaces: approvedNamespaces,
+            })
+    
+            if (!session) return undefined
+
+            const { name, url, icons } = session.peer.metadata
+            const dappSession = await this.interaction.addDappSession(name, session.topic, session.expiry, url ?? '', icons.length > 0 ? icons[0] : '', true)
+    
+            return dappSession
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                throw new Error(error.message)
+            }
+
+            throw new Error("Unknown error occurred")
+        }
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private async sessionReject(payload: any): Promise<boolean> {
+        await this.walletKit?.rejectSession({
+            id: payload.id,
+            reason: getSdkError("USER_REJECTED"),
+        })
+
+        return true
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async handleSessionAuthenticate(payload: any): Promise<any> {
+        console.log('Session authenticate received', payload);
+
+        // const accounts = await this.accounts.getAccounts("9181ab0c", 31337)
+        // const account = accounts[0]
+
+        // const namespaces = buildApprovedNamespaces({
+        //     proposal: payload?.params,
+        //     supportedNamespaces: {
+        //         aztec: {
+        //             chains: "aztec:31337",
+        //             methods: ["personal_sign"],
+        //             events: ["accountsChanged", "chainChanged"],
+        //             accounts: accounts.map(acc => acc.address),
+        //         },
+        //     },
+        // });
+
+        // console.log('namespaces', namespaces);
+        // // return [await this._addNetwork("Sandbox", "https://rpc.sandbox.azguardwallet.io", 31337)];
+        
+
+        // await this.walletKit.approveSession({
+        //     id: payload.id,
+        //     namespaces,
+        // });
+
+        // const supportedChains = ["aztec:31337"]
+        // const supportedMethods = ["personal_sign", "eth_sendTransaction", "eth_signTypedData"];
+
+        // const authPayload = populateAuthPayload({
+        //     authPayload: payload.params.authPayload,
+        //     chains: supportedChains,
+        //     methods: supportedMethods,
+        // });
+
+        // const iss = `aztec:31337:${account.address}`
+        // const message = this.walletKit?.formatAuthMessage({
+        //     request: authPayload,
+        //     iss,
+        // });
+
+        // const signature = await this.accounts.signPayload("9181ab0c", 31337, account.address, message)
+
+        // const auth = buildAuthObject(
+        //     authPayload,
+        //     { t: 'eip191', s: signature },
+        //     iss
+        // );
+
+        // await this.walletKit?.approveSessionAuthenticate({
+        //     id: payload.id,
+        //     auths: [auth],
+        // });
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async handleProposalExpire(payload: any): Promise<any> {
+        if (!this.walletKit) {
+            throw new Error("WalletKit is not initialized.");
+        }
+
+        this.emit(new WalletConnectServiceEventMessage(WalletConnectServiceEvent.ProposalExpire, payload));
+    }
+    
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async handleSessionDelete(payload: any): Promise<any> {
+        if (!this.walletKit) {
+            throw new Error("WalletKit is not initialized.");
+        }
+
+        await this.interaction.dropDappSession({ topic: payload.topic }, true)
+    }
+    
+    public async dropDappSession(dappSession: DappSession): Promise<void> {
+        if (!this.walletKit) {
+            throw new Error("WalletKit is not initialized.");
+        }
+
+        try {
+            await this.interaction.dropDappSession({ id: dappSession.id }, true)
+
+            this.walletKit.disconnectSession({
+                topic: dappSession.topic,
+                reason: getSdkError('USER_DISCONNECTED')
+            })
+        } catch (err) {
+
         }
     }
 }

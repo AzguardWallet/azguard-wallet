@@ -2,6 +2,9 @@
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
 
+/** Utils */
+import { managers } from "@/utils/core"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
@@ -12,8 +15,9 @@ if (!appStore.isLogined) router.push("/popup/auth")
 
 const handleEdit = () => {}
 
-const handleDelete = (target) => {
-	appStore.removeNetwork(target)
+const handleDelete = async (network) => {
+	await managers.network.deleteNetwork(network.id)
+	appStore.networks = appStore.networks.filter(n => n.id !== network.id)
 }
 </script>
 

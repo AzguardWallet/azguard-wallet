@@ -6,6 +6,7 @@ import PopupManager from "./components/popups/PopupManager.vue"
 /** Utils */
 import { managers, initNetworks } from "@/utils/core.js"
 import { AccountServiceClient } from "@/wallet/services/account/client"
+import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -25,25 +26,63 @@ const initAccount = async () => {
 	await appStore.setupActiveAccount()
 }
 
+const uploadDappSessions = async (dappSession) => {
+	console.log('uploadDappSessions', dappSession);
+	
+	appStore.dappSessions = await managers.interaction.getDappSessions()
+}
+const interactionServiceClient = new InteractionServiceClient(undefined, undefined, uploadDappSessions, uploadDappSessions)
+
+// const initListeners = () => {
+// 	const interactionServiceClient = new InteractionServiceClient(undefined, undefined, uploadDappSessions, uploadDappSessions)
+// }
+// initListeners()
+
 const init = async () => {
 	const networks = await initNetworks()
 	appStore.networks = networks
 	appStore.network = networks[0]
 
+	await uploadDappSessions()
+
 	const activeProfile = await managers.profile.getActiveProfile()
 	if (activeProfile) {
+		console.log('activeProfile');
+		
 		appStore.profile = activeProfile
 
 		await initAccount()
 
 		appStore.isLogined = true
 
-		router.push("/popup/general")
+		console.log('init route', route);
+		
+		// if (route.query.redirect) {
+		// 	window.location.href = route.query.redirect
+		// } else {
+			
+			// router.push("/popup/general")
+		// }
+
+		// router.push("/popup/general")
+
+		if (route.name === "popup-settings-dappSessions-popup") {
+			if (route.query.redirect) {
+				window.location.href = route.query.redirect
+			} else {
+				router.push(route.fullPath)
+			}
+		} else {
+			router.push("/popup/general")
+		}
+
 		return
 	}
 
 	const profiles = await managers.profile.getProfiles()
 	if (profiles.length) {
+		console.log('profiles.length');
+		
 		appStore.profile = profiles[0]
 
 		await initAccount()
@@ -69,7 +108,7 @@ const handleOpenNetworksPopup = () => {
 watch(
 	() => route.name,
 	() => {
-		appStore._isHomeScreenOpened = route.name === "popup-register"
+		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name === "popup-settings-dappSessions-popup"
 	}
 )
 </script>

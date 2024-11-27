@@ -7,9 +7,19 @@ import { managers } from "@/utils/core"
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+const route = useRoute()
 const router = useRouter()
 
-if (appStore.isLogined) router.push("/popup/general")
+console.log('auth enter route', route);
+console.log('auth enter router', router);
+
+console.log('auth appStore.isLogined', appStore.isLogined);
+
+if (appStore.isLogined) {
+	console.log('auth after appStore.isLogined route', route);
+	
+	router.go(-1)
+}
 
 const inputElement = useTemplateRef("inputElement")
 const password = ref("")
@@ -32,7 +42,21 @@ const handleUnlockWallet = async () => {
 		)
 
 		appStore.isLogined = true
-		router.push("/popup/general")
+		
+		if (route.query.redirect) {
+			console.log('auth route.query.redirect', route.query.redirect);
+			
+			window.location.href = route.query.redirect
+		} else {
+			console.log('auth else');
+			
+			router.push("/popup/general")
+		}
+		// const redirect = route.query.redirect || "/popup/general"
+		// console.log('auth redirect', redirect);
+		
+		// window.location.href = redirect
+		// router.push(redirect)
 	} catch (err) {
 		console.log(err)
 	}

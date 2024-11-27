@@ -4,6 +4,7 @@ import NetworksPopup from "./NetworksPopup.vue"
 import AccountsPopup from "./AccountsPopup.vue"
 import NewAccountPopup from "./NewAccountPopup.vue"
 import SendPopup from "./SendPopup.vue"
+import ConnectByURI from "./ConnectByURI.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -26,5 +27,9 @@ const popupStore = usePopupStore()
 	<SendPopup
 		:show="popupStore.isOpened('send')"
 		@onClose="popupStore.close('send')"
+	/>
+	<ConnectByURI
+		:show="popupStore.isOpened('connectByURI')"
+		@onClose="popupStore.close('connectByURI')"
 	/>
 </template>

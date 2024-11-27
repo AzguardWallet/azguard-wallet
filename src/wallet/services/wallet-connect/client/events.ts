@@ -1,15 +1,19 @@
 import { EventMessage } from "@/wallet/base/messages";
-import { Network, WALLET_CONNECT_SERVICE_NAME } from ".";
+import { WALLET_CONNECT_SERVICE_NAME } from ".";
+// import type { DappSession } from "@/wallet/services/interaction/client/models";
 
 // biome-ignore lint/style/useEnumInitializers: <explanation>
 export enum WalletConnectServiceEvent {
-    DappConnected,
+    // DappSessionAdded,
+    // DappConnected,
+    ProposalExpire,
 }
 
 export class WalletConnectServiceEventMessage extends EventMessage {
     constructor(
         event: WalletConnectServiceEvent,
-        // public readonly network: Network
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly payload?: any,
     ) {
         super(WALLET_CONNECT_SERVICE_NAME, event);
     }

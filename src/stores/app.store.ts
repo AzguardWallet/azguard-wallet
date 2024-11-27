@@ -75,6 +75,8 @@ export const useAppStore = defineStore("app", () => {
 	const network = ref()
 	const networks = ref([])
 
+	const dappSessions = ref([])
+
 	const showSendPopup = ref(false)
 	const showRegisterPopup = ref(false)
 
@@ -93,6 +95,7 @@ export const useAppStore = defineStore("app", () => {
 		hideAccount,
 		network,
 		networks,
+		dappSessions,
 		showSendPopup,
 		showRegisterPopup,
 		isPrivacyModeEnabled,

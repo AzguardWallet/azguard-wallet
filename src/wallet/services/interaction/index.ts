@@ -3,95 +3,155 @@ import { Service } from "@/wallet/base/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex } from "@/wallet/utils";
 import {
-    type AddDappRequest,
-    AddDappResponse,
-    type DeleteDappRequest,
-    DeleteDappResponse,
-    type GetDappRequest,
-    GetDappResponse,
-    type GetDappsRequest,
-    GetDappsResponse,
-    Dapp,
+    type AddDappSessionRequest,
+    AddDappSessionResponse,
+    type DropDappSessionRequest,
+    DropDappSessionResponse,
+    type GetDappSessionRequest,
+    GetDappSessionResponse,
+    type GetDappSessionsRequest,
+    GetDappSessionsResponse,
+    type GetInteractionRequestRequest,
+    GetInteractionRequestResponse,
+    type DeleteInteractionRequestRequest,
+    DeleteInteractionRequestResponse,
+    InteractionRequest,
+    Status,
+    DappSession,
     INTERACTION_SERVICE_NAME,
     InteractionServiceEvent,
     InteractionServiceEventMessage,
     InteractionServiceMethod,
 } from "./client";
 
-type DappDto = {
+type DappSessionDto = {
     name: string,
+    topic: string,
+    expiry: number,
+    url: string,
+    icon: string,
+}
+
+type InteractionRequestDto = {
+    status: Status,
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    payload: Record<string, any>,
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    result?: Record<string, any>,
+}
+
+type DappSessionParams = {
+    id?: string,
+    topic?: string,
 }
 
 export class InteractionService extends Service {
-    private readonly dapps: EntityStorage<DappDto>;
+    private readonly dappSessions: EntityStorage<DappSessionDto>;
+    private readonly interactionRequests: Map<string, InteractionRequestDto>;
 
-    constructor(emit: (event: EventMessage) => void) {
+    constructor(
+        emit: (event: EventMessage) => void
+    ) {        
         super(INTERACTION_SERVICE_NAME, emit);
-        this.dapps = new EntityStorage("azguard:core:dapps", StorageType.Local);
+        this.dappSessions = new EntityStorage("azguard:core:dappSessions", StorageType.Local);
+        this.interactionRequests = new Map();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
         switch(request.method) {
-            case InteractionServiceMethod.GetDapps: {
-                const _request = request as GetDappsRequest;
+            case InteractionServiceMethod.GetDappSessions: {
+                const _request = request as GetDappSessionsRequest;
                 try {
-                    return new GetDappsResponse(_request, await this.getDapps());
+                    return new GetDappSessionsResponse(_request, await this.getDappSessions());
                 }
                 catch (error: unknown) {
                     if (error instanceof Error) {
-                        return new GetDappsResponse(_request, undefined, error.message);
+                        return new GetDappSessionsResponse(_request, undefined, error.message);
                     }
 
-                    return new GetDappsResponse(_request, undefined, 'Unknown error occurred');
+                    return new GetDappSessionsResponse(_request, undefined, 'Unknown error occurred');
                 }
             }
-            case InteractionServiceMethod.GetDapp: {
-                const _request = request as GetDappRequest;
+            case InteractionServiceMethod.GetDappSession: {
+                const _request = request as GetDappSessionRequest;
                 try {
-                    const network = await this.getDapp(_request.dappid);
-                    return new GetDappResponse(_request);
+                    const dappSession = await this.getDappSession({id: _request.dappSessionId});
+                    return new GetDappSessionResponse(_request, dappSession);
                 }
                 catch (error: unknown) {
                     if (error instanceof Error) {
-                        return new GetDappResponse(_request, undefined, error.message);
+                        return new GetDappSessionResponse(_request, undefined, error.message);
                     }
 
-                    return new GetDappResponse(_request, undefined, 'Unknown error occurred');
+                    return new GetDappSessionResponse(_request, undefined, 'Unknown error occurred');
                 }
             }
-            case InteractionServiceMethod.AddDapp: {
-                const _request = request as AddDappRequest;
+            case InteractionServiceMethod.AddDappSession: {
+                const _request = request as AddDappSessionRequest
                 try {
-                    const network = await this.addDapp(_request.name);
-                    this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappAdded, network));
-                    return new AddDappResponse(_request, network);
+                    const dappSession = await this.addDappSession(_request.name, _request.topic, _request.expiry, _request.url, _request.icon)
+                    this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession))
+                    return new AddDappSessionResponse(_request, dappSession)
                 }
                 catch (error: unknown) {
                     if (error instanceof Error) {
-                        return new AddDappResponse(_request, undefined, error.message);
+                        return new AddDappSessionResponse(_request, undefined, error.message)
                     }
 
-                    return new AddDappResponse(_request, undefined, 'Unknown error occurred');
+                    return new AddDappSessionResponse(_request, undefined, 'Unknown error occurred')
                 }
             }
-            case InteractionServiceMethod.DeleteDapp: {
-                const _request = request as DeleteDappRequest;
+            case InteractionServiceMethod.DropDappSession: {
+                const _request = request as DropDappSessionRequest;
                 try {
-                    const dapp = await this.getDapp(_request.dappId);
-                    if (dapp) {
-                        await this.deleteDapp(_request.dappId);
-                        this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappDeleted, dapp));
+                    const dappSession = await this.getDappSession({ id: _request.dappSessionId});
+                    if (dappSession) {
+                        await this.dropDappSession({ id: _request.dappSessionId });
+                        this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionDroped, dappSession));
                     }
-                    return new DeleteDappResponse(_request, dapp);
+                    return new DropDappSessionResponse(_request, dappSession);
                 }
                 catch (error: unknown) {
                     if (error instanceof Error) {
-                        return new DeleteDappResponse(_request, undefined, error.message);
+                        return new DropDappSessionResponse(_request, undefined, error.message);
                     }
 
-                    return new DeleteDappResponse(_request, undefined, 'Unknown error occurred');
+                    return new DropDappSessionResponse(_request, undefined, 'Unknown error occurred');
                 }
             }
+            case InteractionServiceMethod.GetInteractionRequest: {
+                const _request = request as GetInteractionRequestRequest;
+                try {
+                    const interactionRequest = await this.getInteractionRequest(_request.requestId);
+                    return new GetInteractionRequestResponse(_request, interactionRequest);
+                }
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new GetInteractionRequestResponse(_request, undefined, error.message);
+                    }
+
+                    return new GetInteractionRequestResponse(_request, undefined, 'Unknown error occurred');
+                }
+            }
+            case InteractionServiceMethod.DeleteInteractionRequest: {
+                const _request = request as DeleteInteractionRequestRequest;
+                try {
+                    const interactionRequest = await this.getInteractionRequest(_request.requestId);
+                    if (interactionRequest) {
+                        this.deleteInteractionRequest(_request.requestId);
+                        return new DeleteInteractionRequestResponse(_request, true);
+                    }
+                    return new DeleteInteractionRequestResponse(_request, false);
+                }
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new DeleteInteractionRequestResponse(_request, false, error.message);
+                    }
+
+                    return new DeleteInteractionRequestResponse(_request, false, 'Unknown error occurred');
+                }
+            }
+
             default: {
                 console.error(`Invalid request method ${request.method}.`);
                 return undefined;
@@ -99,32 +159,112 @@ export class InteractionService extends Service {
         }
     }
 
-    public async getDapps(): Promise<Array<Dapp>> {
-        const dapps = await this.dapps.getAll();
-        if (dapps.length === 0) {
+    public async getInteractionRequest(id: string): Promise<InteractionRequest | undefined> {
+        const interactionRequest = this.interactionRequests.get(id);
+        return interactionRequest !== undefined ? new InteractionRequest(id, interactionRequest.status, interactionRequest.payload, interactionRequest.result) : undefined;
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async addInteractionRequest(payload: any): Promise<InteractionRequest> {
+        return this._addInteractionRequest(payload);
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async _addInteractionRequest(payload: any): Promise<InteractionRequest> {
+        let id: string
+        do { id = getRandomHex(8) }
+        while (this.interactionRequests.has(id))
+        this.interactionRequests.set(id, {status: Status.Pending, payload: payload})
+        
+        return new InteractionRequest(id, Status.Pending, payload)
+    }
+
+    public deleteInteractionRequest(id: string): void {
+        this.interactionRequests.delete(id);
+    }
+
+    public async getDappSessions(): Promise<Array<DappSession>> {
+        const dappSessions = await this.dappSessions.getAll();
+        if (dappSessions.length === 0) {
             return [];
         }
-        return dapps.map(([id, dto]) => new Dapp(id, dto.name));
+        return dappSessions.map(([id, dto]) => new DappSession(id, dto.name, dto.topic, dto.expiry, dto.url, dto.icon));
     }
 
-    public async getDapp(id: string): Promise<Dapp | undefined> {
-        const dapp = await this.dapps.get(id);
-        return dapp !== undefined ? new Dapp(id, dapp.name) : undefined;
+
+    public async getDappSession(params: DappSessionParams): Promise<DappSession | undefined> {
+        const { id, topic } = params;
+        let session: DappSessionDto | undefined
+        let key: string | undefined
+        if (id) {
+            session = await this.dappSessions.get(id)
+            key = id
+        } else {
+            const result = await this.dappSessions.findByKeys(ds => ds.topic === topic)
+            if (result) {
+                session = result.entity
+                key = result.key
+            }
+        }
+
+        if (!session || !key) {
+            return undefined
+        }
+
+        return new DappSession(key, session.name, session.topic, session.expiry, session.url, session.icon)
+    }
+    
+    public async addDappSession(name: string, topic: string, expiry: number, url?: string, icon?: string, emit?: boolean): Promise<DappSession> {
+        const dappSession = await this._addDappSession(name, topic, expiry, url, icon)
+        if (emit) {
+            this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession))
+        }
+
+        return dappSession
     }
 
-    public async addDapp(name: string): Promise<Dapp> {
-        return this._addDapp(name);
-    }
-
-    public deleteDapp(id: string): Promise<void> {
-        return this.dapps.delete(id);
-    }
-
-    private async _addDapp(name: string): Promise<Dapp> {
+    private async _addDappSession(name: string, topic: string, expiry: number, url?: string, icon?: string): Promise<DappSession> {
         let id: string;
         do { id = getRandomHex(8); }
-        while (await this.dapps.contains(id));
-        await this.dapps.set(id, {name});
-        return new Dapp(id, name);
+        while (await this.dappSessions.contains(id));
+        await this.dappSessions.set(id, {name, topic, expiry, url: url ?? '', icon: icon ?? ''});
+        const dappSession = new DappSession(id, name, topic, expiry, url, icon);
+
+        return dappSession
+    }
+
+    // public async getDappSession(params: DappSessionParams): Promise<DappSession | undefined> {}
+    public async dropDappSession(params: DappSessionParams, emit?: boolean): Promise<void> {
+        const { id, topic } = params
+        let key: string | undefined
+
+        if (id) {
+            key = id
+        } else if (topic) {
+            const result = await this.dappSessions.findByKeys(ds => ds.topic === topic)
+            if (result) {
+                key = result.key
+            }
+        }
+
+        if (!key) return
+
+        if (emit) {
+            const dappSession = await this.getDappSession({ id, topic })
+            if (dappSession) {
+                this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionDroped, dappSession))
+            }
+        }
+
+        return this.dappSessions.delete(key);
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async dappSessionProposal(payload: any): Promise<void> {
+        const interactionRequest = await this.addInteractionRequest(payload)
+        const url = new URL(chrome.runtime.getURL('src/popup/index.html#/popup/settings/dappSessions/popup'))
+        url.searchParams.set('requestId', interactionRequest.id)
+
+        chrome.windows.create({type: 'popup', url: url.toString(), height: 660, width: 400})
     }
 }

@@ -3,9 +3,6 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
-/** Utils */
-import { managers } from "@/utils/core"
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
@@ -14,14 +11,6 @@ const emit = defineEmits(["onClose"])
 
 const selectedSendType = ref("private")
 const selectedReceiverType = ref("private")
-
-const uri = ref("")
-const handleConnectByURL = () => {
-	if (uri.value) {
-		managers.wallectConnect.connectByURL(uri.value)
-	}
-}
-
 
 const handleSwitchSendType = () => {
 	selectedSendType.value =
@@ -230,22 +219,6 @@ const handleSwitchReceiverType = () => {
 								</Flex>
 							</Flex>
 						</Flex>
-
-						<Flex>
-							<Input
-								v-model="uri"
-								label="uri-connect"
-								placeholder="wc:c"
-							/>
-
-							<Button
-								@click="handleConnectByURL()"
-								wide
-								type="secondary"
-								size="mini"
-							/>
-						</Flex>
-
 
 						<Button
 							wide
