@@ -1,3 +1,6 @@
+import type { Account } from "@/wallet/services/account/client/models"
+import type { WCSessionParams } from "@/wallet/services/wallet-connect/client/models";
+
 /**
  * Interaction request info.
  */
@@ -33,16 +36,18 @@ export class DappSession {
      * Creates Dapp session.
      * @param id Randomly generated id.
      * @param name Dapp name.
-     * @param topic Dapp session wc id.
-     * @param expiry Dapp session expiration timestamp.
+     * @param params WC session params.
+     * @param profileId Profile id.
+     * @param accounts List of accounts shared with the dApp.
      * @param url Dapp url.
      * @param icon Dapp logo. chain ids, profileId, accounts.addresses
      */
     constructor(
         public readonly id: string,
         public readonly name: string,
-        public readonly topic: string,
-        public readonly expiry: number,
+        public readonly params: WCSessionParams,
+        public readonly profileId: string,
+        public readonly accounts: Array<Account>,
         public readonly url?: string,
         public readonly icon?: string,
     ) {}

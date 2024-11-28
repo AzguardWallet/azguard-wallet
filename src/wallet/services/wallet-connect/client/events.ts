@@ -1,11 +1,8 @@
 import { EventMessage } from "@/wallet/base/messages";
 import { WALLET_CONNECT_SERVICE_NAME } from ".";
-// import type { DappSession } from "@/wallet/services/interaction/client/models";
 
 // biome-ignore lint/style/useEnumInitializers: <explanation>
 export enum WalletConnectServiceEvent {
-    // DappSessionAdded,
-    // DappConnected,
     ProposalExpire,
 }
 

@@ -10,6 +10,7 @@ import {
     GetDappSessionsRequest,
     GetInteractionRequestRequest,
 } from "./methods";
+import type { Account } from "../../account/client";
 
 export * from './events';
 export * from './methods';
@@ -60,8 +61,8 @@ export class InteractionServiceClient extends ServiceClient {
     /**
      * Returns a list of active dapp sessions.
      */
-    public getDappSessions(): Promise<DappSession[]> {
-        return this.request(new GetDappSessionsRequest());
+    public getDappSessions(profileId: string): Promise<DappSession[]> {
+        return this.request(new GetDappSessionsRequest(profileId));
     }
 
     /**
@@ -72,18 +73,18 @@ export class InteractionServiceClient extends ServiceClient {
         return this.request(new GetDappSessionRequest(id));
     }
     
-    /**
-     * Creates and returns a new dapp session.
-     * @param name Display dapp name.
-     * @param topic Wallet connect dapp session id.
-     * @param expiry Dapp session expiration timestamp.
-     * @param url Dapp URL.
-     * @param icon Dapp icon.
-     * @emits `DappSessionAdded` event.
-     */
-    public addDappSession(name: string, topic: string, expiry: number, url?: string, icon?: string): Promise<DappSession> {
-        return this.request(new AddDappSessionRequest(name, topic, expiry, url, icon));
-    }
+    // /**
+    //  * Creates and returns a new dapp session.
+    //  * @param name Display dapp name.
+    //  * @param topic Wallet connect dapp session id.
+    //  * @param expiry Dapp session expiration timestamp.
+    //  * @param url Dapp URL.
+    //  * @param icon Dapp icon.
+    //  * @emits `DappSessionAdded` event.
+    //  */
+    // public addDappSession(name: string, topic: string, expiry: number, profileId: string, accounts: Array<Account>, url?: string, icon?: string): Promise<DappSession> {
+    //     return this.request(new AddDappSessionRequest(name, topic, expiry, profileId, accounts, url, icon));
+    // }
     
     /**
      * Drops dapp session with the specified id.

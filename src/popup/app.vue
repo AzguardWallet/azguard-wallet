@@ -26,32 +26,25 @@ const initAccount = async () => {
 	await appStore.setupActiveAccount()
 }
 
-const uploadDappSessions = async (dappSession) => {
-	console.log('uploadDappSessions', dappSession);
+const uploadDappSessions = async () => {
+	appStore.dappSessions = await managers.interaction.getDappSessions(appStore.profile.id)
+
+	console.log('uploadDappSessions ', appStore.dappSessions);
 	
-	appStore.dappSessions = await managers.interaction.getDappSessions()
 }
 const interactionServiceClient = new InteractionServiceClient(undefined, undefined, uploadDappSessions, uploadDappSessions)
-
-// const initListeners = () => {
-// 	const interactionServiceClient = new InteractionServiceClient(undefined, undefined, uploadDappSessions, uploadDappSessions)
-// }
-// initListeners()
 
 const init = async () => {
 	const networks = await initNetworks()
 	appStore.networks = networks
 	appStore.network = networks[0]
 
-	await uploadDappSessions()
-
 	const activeProfile = await managers.profile.getActiveProfile()
 	if (activeProfile) {
-		console.log('activeProfile');
-		
 		appStore.profile = activeProfile
 
 		await initAccount()
+		await uploadDappSessions()
 
 		appStore.isLogined = true
 
@@ -81,11 +74,10 @@ const init = async () => {
 
 	const profiles = await managers.profile.getProfiles()
 	if (profiles.length) {
-		console.log('profiles.length');
-		
 		appStore.profile = profiles[0]
 
 		await initAccount()
+		await uploadDappSessions()
 
 		router.push("/popup/auth")
 		return

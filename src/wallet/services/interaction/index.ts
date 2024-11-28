@@ -23,11 +23,14 @@ import {
     InteractionServiceEventMessage,
     InteractionServiceMethod,
 } from "./client";
+import type { Account } from "@/wallet/services/account/client/models";
+import type { WCSessionParams } from "@/wallet/services/wallet-connect/client/models";
 
 type DappSessionDto = {
     name: string,
-    topic: string,
-    expiry: number,
+    params: WCSessionParams,
+    profileId: string,
+    accounts: Array<Account>,
     url: string,
     icon: string,
 }
@@ -40,7 +43,7 @@ type InteractionRequestDto = {
     result?: Record<string, any>,
 }
 
-type DappSessionParams = {
+type GetDappSessionParams = {
     id?: string,
     topic?: string,
 }
@@ -62,7 +65,7 @@ export class InteractionService extends Service {
             case InteractionServiceMethod.GetDappSessions: {
                 const _request = request as GetDappSessionsRequest;
                 try {
-                    return new GetDappSessionsResponse(_request, await this.getDappSessions());
+                    return new GetDappSessionsResponse(_request, await this.getDappSessions(_request.profileId));
                 }
                 catch (error: unknown) {
                     if (error instanceof Error) {
@@ -89,7 +92,7 @@ export class InteractionService extends Service {
             case InteractionServiceMethod.AddDappSession: {
                 const _request = request as AddDappSessionRequest
                 try {
-                    const dappSession = await this.addDappSession(_request.name, _request.topic, _request.expiry, _request.url, _request.icon)
+                    const dappSession = await this.addDappSession(_request.name, _request.params, _request.profileId, _request.accounts, _request.url, _request.icon)
                     this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession))
                     return new AddDappSessionResponse(_request, dappSession)
                 }
@@ -183,39 +186,41 @@ export class InteractionService extends Service {
         this.interactionRequests.delete(id);
     }
 
-    public async getDappSessions(): Promise<Array<DappSession>> {
-        const dappSessions = await this.dappSessions.getAll();
-        if (dappSessions.length === 0) {
+    public async getDappSessions(profileId: string): Promise<Array<DappSession>> {
+        const dappSessions = await this.dappSessions.findByKeys(ds => ds.profileId === profileId)
+        if (!dappSessions) {
             return [];
         }
-        return dappSessions.map(([id, dto]) => new DappSession(id, dto.name, dto.topic, dto.expiry, dto.url, dto.icon));
+        return dappSessions.map(({ key, entity }) => new DappSession(key, entity.name, entity.params, entity.profileId, entity.accounts, entity.url, entity.icon))
     }
 
 
-    public async getDappSession(params: DappSessionParams): Promise<DappSession | undefined> {
+    public async getDappSession(params: GetDappSessionParams): Promise<DappSession | undefined> {
         const { id, topic } = params;
-        let session: DappSessionDto | undefined
+        let ds: DappSessionDto | undefined
         let key: string | undefined
         if (id) {
-            session = await this.dappSessions.get(id)
             key = id
+            ds = await this.dappSessions.get(id)
         } else {
-            const result = await this.dappSessions.findByKeys(ds => ds.topic === topic)
+            const sessions = await this.dappSessions.getAll()
+            
+            const result = sessions.find(s => s[1].params.topic === topic)
             if (result) {
-                session = result.entity
-                key = result.key
+                key = result[0]
+                ds = result[1]
             }
         }
 
-        if (!session || !key) {
+        if (!ds || !key) {
             return undefined
         }
 
-        return new DappSession(key, session.name, session.topic, session.expiry, session.url, session.icon)
+        return new DappSession(key, ds.name, ds.params, ds.profileId, ds.accounts, ds.url, ds.icon)
     }
     
-    public async addDappSession(name: string, topic: string, expiry: number, url?: string, icon?: string, emit?: boolean): Promise<DappSession> {
-        const dappSession = await this._addDappSession(name, topic, expiry, url, icon)
+    public async addDappSession(name: string, params: WCSessionParams, profileId: string, accounts: Array<Account>, url?: string, icon?: string, emit?: boolean): Promise<DappSession> {
+        const dappSession = await this._addDappSession(name, params, profileId, accounts, url, icon)
         if (emit) {
             this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession))
         }
@@ -223,40 +228,47 @@ export class InteractionService extends Service {
         return dappSession
     }
 
-    private async _addDappSession(name: string, topic: string, expiry: number, url?: string, icon?: string): Promise<DappSession> {
+    private async _addDappSession(name: string, params: WCSessionParams, profileId: string, accounts: Array<Account>, url?: string, icon?: string): Promise<DappSession> {
         let id: string;
         do { id = getRandomHex(8); }
         while (await this.dappSessions.contains(id));
-        await this.dappSessions.set(id, {name, topic, expiry, url: url ?? '', icon: icon ?? ''});
-        const dappSession = new DappSession(id, name, topic, expiry, url, icon);
+        await this.dappSessions.set(id, {name, params, profileId, accounts, url: url ?? '', icon: icon ?? ''});
+        const dappSession = new DappSession(id, name, params, profileId, accounts, url, icon);
 
         return dappSession
     }
 
-    // public async getDappSession(params: DappSessionParams): Promise<DappSession | undefined> {}
-    public async dropDappSession(params: DappSessionParams, emit?: boolean): Promise<void> {
+    public async dropDappSession(params: GetDappSessionParams, emit?: boolean): Promise<void> {
         const { id, topic } = params
         let key: string | undefined
 
         if (id) {
             key = id
         } else if (topic) {
-            const result = await this.dappSessions.findByKeys(ds => ds.topic === topic)
+            const sessions = await this.dappSessions.getAll()
+            
+            const result = sessions.find(s => s[1].params.topic === topic)
+            // const result = await this.dappSessions.findByKeys(ds => ds.params.topic === topic)
             if (result) {
-                key = result.key
+                key = result[0]
             }
         }
 
         if (!key) return
 
+        this.dappSessions.delete(key)
+
         if (emit) {
-            const dappSession = await this.getDappSession({ id, topic })
+            const dappSession = await this.getDappSession({ id: key })
+            
             if (dappSession) {
+                console.log('Interaction dropDappSession emit');
+                
                 this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionDroped, dappSession))
             }
         }
 
-        return this.dappSessions.delete(key);
+        return
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>

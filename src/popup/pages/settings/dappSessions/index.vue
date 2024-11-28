@@ -63,16 +63,14 @@ const handleDropSession = (session) => {
 					</Text>
 				</RouterLink>
 				<Text color="support">•</Text>
-				<RouterLink to="/popup/settings/dappSessions">
-					<Text
-						size="13"
-						weight="600"
-						color="tertiary"
-						style="line-height: 16px"
-					>
-						Dapp Sessions
-					</Text>
-				</RouterLink>
+				<Text
+					size="13"
+					weight="600"
+					color="tertiary"
+					style="line-height: 16px"
+				>
+					Dapp Sessions
+				</Text>
 			</Flex>
 			<Flex direction="column" gap="16">
 				<Text size="16" weight="600" color="primary">Sessions</Text>
@@ -80,6 +78,7 @@ const handleDropSession = (session) => {
 				<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
 					<Flex
 						v-for="ds in dappSessions"
+						@click="router.push(`/popup/settings/dappSessions/session/${ds.id}`)"
 						align="center"
 						justify="between"
 						:class="$style.session"
@@ -88,7 +87,6 @@ const handleDropSession = (session) => {
 							<div v-if="ds.imageLoaded" :class="$style.avatar_container">
 								<img
 									:src="ds.icon"
-									alt="Icon"
 									@error="onImageError(ds)"
 									:class="$style.avatar_image"
 								/>

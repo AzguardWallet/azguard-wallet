@@ -1,5 +1,7 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { type DappSession, type InteractionRequest, INTERACTION_SERVICE_NAME } from ".";
+import type { Account } from "@/wallet/services/account/client/models"
+import type { WCSessionParams } from "@/wallet/services/wallet-connect/client/models"
 
 // biome-ignore lint/style/useEnumInitializers: <explanation>
 export enum InteractionServiceMethod {
@@ -12,7 +14,9 @@ export enum InteractionServiceMethod {
 }
 
 export class GetDappSessionsRequest extends RequestMessage {
-    constructor() {
+    constructor(
+        public readonly profileId: string,
+    ) {
         super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.GetDappSessions);
     }
 }
@@ -48,8 +52,9 @@ export class GetDappSessionResponse extends ResponseMessage {
 export class AddDappSessionRequest extends RequestMessage {
     constructor(
         public readonly name: string,
-        public readonly topic: string,
-        public readonly expiry: number,
+        public readonly params: WCSessionParams,
+        public readonly profileId: string,
+        public readonly accounts: Array<Account>,
         public readonly url?: string,
         public readonly icon?: string,
     ) {

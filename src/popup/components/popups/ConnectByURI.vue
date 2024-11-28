@@ -73,7 +73,7 @@ onMounted(() => {
 						:style="{flex: 1}"
 					/>
 
-					<Text v-if="connectionError.show" size="12" color="red" :style="{paddingLeft: '4px'}">
+					<Text v-if="connectionError.show" size="12" weight="600" color="red" :style="{paddingLeft: '4px'}">
 						{{ connectionError.title }}
 					</Text>
 				</Flex>

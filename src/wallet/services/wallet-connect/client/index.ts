@@ -1,7 +1,6 @@
 import type { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
 import { WalletConnectServiceEvent, type WalletConnectServiceEventMessage } from "./events";
-// import { Network } from "./models";
 import {
     ConnectByURIRequest,
     ApproveDappSessionRequest,
@@ -14,11 +13,12 @@ import type { Account } from "@/wallet/services/account/client/models";
 
 export * from './events';
 export * from './methods';
+export * from './models';
 
 export const WALLET_CONNECT_SERVICE_NAME = "wallet-connect";
 
 /**
- * Client for interaction with the WalletConnectService via messaging API
+ * Client for interaction with external services via messaging API
  */
 export class WalletConnectServiceClient extends ServiceClient {
     /**
@@ -72,8 +72,8 @@ export class WalletConnectServiceClient extends ServiceClient {
         return this.request(new ValidateProposalRequest(payload, address));
     }
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public approveDappSession(payload: any, accounts: Array<Account>): Promise<DappSession | undefined> {
-        return this.request(new ApproveDappSessionRequest(payload, accounts));
+    public approveDappSession(payload: any, profileId: string, accounts: Array<Account>): Promise<DappSession | undefined> {
+        return this.request(new ApproveDappSessionRequest(payload, profileId, accounts));
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>

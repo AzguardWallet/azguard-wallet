@@ -54,6 +54,7 @@ export class ApproveDappSessionRequest extends RequestMessage {
     constructor(
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         public readonly payload: any,
+        public readonly profileId: string,
         public readonly accounts: Array<Account>,
     ) {
         super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.ApproveDappSession);

@@ -1,5 +1,5 @@
 import { Core } from '@walletconnect/core';
-import { WalletKit, WalletKitTypes } from '@reown/walletkit';
+import { WalletKit } from '@reown/walletkit';
 import { buildApprovedNamespaces, getSdkError } from "@walletconnect/utils";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import type { AccountService } from "@/wallet/services/account";
@@ -22,6 +22,7 @@ import {
     WalletConnectServiceMethod,
     WalletConnectServiceEventMessage,
     WalletConnectServiceEvent,
+    WCSessionParams,
 } from "./client";
 
 
@@ -97,7 +98,7 @@ export class WalletConnectService extends Service {
             case WalletConnectServiceMethod.ApproveDappSession: {
                 const _request = request as ApproveDappSessionRequest;
                 try {
-                    const dappSession = await this.sessionApprove(_request.payload, _request.accounts)
+                    const dappSession = await this.sessionApprove(_request.payload, _request.profileId, _request.accounts)
                     // this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountAdded, account));
                     // this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountAdded, account));
                     return new ApproveDappSessionResponse(_request, dappSession);
@@ -252,7 +253,7 @@ export class WalletConnectService extends Service {
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async sessionApprove(payload: any, accounts: Array<Account>): Promise<DappSession | undefined> {
+    private async sessionApprove(payload: any, profileId: string, accounts: Array<Account>): Promise<DappSession | undefined> {
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.");
         }
@@ -277,8 +278,19 @@ export class WalletConnectService extends Service {
     
             if (!session) return undefined
 
+            console.log('Approved session: ', session);
+            
             const { name, url, icons } = session.peer.metadata
-            const dappSession = await this.interaction.addDappSession(name, session.topic, session.expiry, url ?? '', icons.length > 0 ? icons[0] : '', true)
+
+            // Build wc session params
+            const sessionParams = await this._buildDappSessionParams(session)
+            const dappSession = await this.interaction.addDappSession(
+                name, sessionParams, profileId, accounts, url ?? '', icons.length > 0 ? icons[0] : '', true
+            )
+
+            // const dappSession = await this.interaction.addDappSession(
+            //     name, session.topic, session.expiry, profileId, accounts, url ?? '', icons.length > 0 ? icons[0] : '', true
+            // )
     
             return dappSession
         } catch (error: unknown) {
@@ -385,11 +397,40 @@ export class WalletConnectService extends Service {
             await this.interaction.dropDappSession({ id: dappSession.id }, true)
 
             this.walletKit.disconnectSession({
-                topic: dappSession.topic,
+                topic: dappSession.params.topic,
                 reason: getSdkError('USER_DISCONNECTED')
             })
         } catch (err) {
 
         }
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private async _buildDappSessionParams(session: any): Promise<WCSessionParams> {
+        const chains: string[] = [];
+        const methods: string[] = [];
+        const events: string[] = [];
+        
+        const namespaces = session.namespaces
+        for (const key in namespaces) {
+            const ns = namespaces[key];
+            if (ns.chains) {
+                chains.push(...ns.chains);
+            }
+            if (ns.methods) {
+                methods.push(...ns.methods);
+            }
+            if (ns.events) {
+                events.push(...ns.events);
+            }
+        }
+    
+        return new WCSessionParams(
+            session.topic,
+            session.expiry,
+            [...new Set(chains)],
+            [...new Set(methods)],
+            [...new Set(events)]
+        );
     }
 }

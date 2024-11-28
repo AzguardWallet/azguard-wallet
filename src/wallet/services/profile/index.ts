@@ -280,9 +280,8 @@ export class ProfileService extends Service {
 
     public async GetProfileSecret(id: string): Promise<Fr | undefined> {
         const session = await this._getActiveSession();
-        console.log('session', session);
-        
         const day = 1000 * 60 * 60 * 24; // TODO: use settings
+        
         if (session?.profile === id && session.since > Date.now() - day) {
             const profile = await this.profiles.get(session.profile);
             if (profile !== undefined) {
