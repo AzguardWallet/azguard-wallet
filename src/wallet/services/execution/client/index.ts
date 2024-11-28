@@ -5,9 +5,11 @@ import {
     ExecuteTransferRequest,
 } from "./methods";
 import { TransferType } from "../../transaction/client";
+import { IAction } from "./models";
 
 export { TransferType } from "../../transaction/client";
 export * from './methods';
+export * from './models';
 
 export const EXECUTION_SERVICE_NAME = "execution";
 
@@ -44,8 +46,9 @@ export class ExecutionServiceClient extends ServiceClient {
     public executeBatch(
         network: string,
         account: string,
+        actions: IAction[],
     ): Promise<string> {
-        return this.request(new ExecuteBatchRequest(network, account));
+        return this.request(new ExecuteBatchRequest(network, account, actions));
     }
 
     /**

@@ -1,5 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { EXECUTION_SERVICE_NAME, TransferType } from ".";
+import { EXECUTION_SERVICE_NAME, IAction, TransferType } from ".";
 
 export enum ExecutionServiceMethod {
     ExecuteBatch,
@@ -10,6 +10,7 @@ export class ExecuteBatchRequest extends RequestMessage {
     constructor(
         public readonly network: string,
         public readonly account: string,
+        public readonly actions: IAction[],
     ) {
         super(EXECUTION_SERVICE_NAME, ExecutionServiceMethod.ExecuteBatch);
     }

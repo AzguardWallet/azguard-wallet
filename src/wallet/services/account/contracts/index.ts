@@ -1,9 +1,11 @@
-import { AztecAddress, Fr, FunctionSelector, PackedValues, PXE, TxExecutionRequest } from '@aztec/aztec.js';
+import { AuthWitness, AztecAddress, Fr, FunctionSelector, PackedValues, PXE, TxExecutionRequest } from '@aztec/aztec.js';
 
 export * from './azguard-v0';
 
 export interface IAccountContract {
     readonly address: AztecAddress,
+
+    buildAuthWitness(messageHash: Fr): Promise<AuthWitness>;
     
     buildTxExecutionRequest(
         pxe: PXE,
