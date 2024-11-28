@@ -1,13 +1,12 @@
 import { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
-import {
-    ExecuteBatchRequest,
-    ExecuteTransferRequest,
-} from "./methods";
-import { TransferType } from "../../transaction/client";
+import { TransferType } from "@/wallet/services/transaction/client";
+import { ExecuteBatchRequest, ExecuteTransferRequest } from "./methods";
+import { IAction } from "./models";
 
 export { TransferType } from "../../transaction/client";
 export * from './methods';
+export * from './models';
 
 export const EXECUTION_SERVICE_NAME = "execution";
 
@@ -44,8 +43,10 @@ export class ExecutionServiceClient extends ServiceClient {
     public executeBatch(
         network: string,
         account: string,
+        dappName: string,
+        actions: IAction[],
     ): Promise<string> {
-        return this.request(new ExecuteBatchRequest(network, account));
+        return this.request(new ExecuteBatchRequest(network, account, dappName, actions));
     }
 
     /**

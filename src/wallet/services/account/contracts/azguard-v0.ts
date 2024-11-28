@@ -1,7 +1,6 @@
 import {
     AuthWitness,
     AztecAddress,
-    CompleteAddress,
     deriveKeys,
     encodeArguments,
     Fr,
@@ -64,6 +63,12 @@ export class AzguardV0 implements IAccountContract {
 
     public signPayload(payload: Uint8Array): string {
         return new Schnorr().constructSignature(payload, this.signingKey).toString();
+    }
+
+    public buildAuthWitness(messageHash: Fr): Promise<AuthWitness> {
+        const schnorr = new Schnorr();
+        const signature = schnorr.constructSignature(messageHash.toBuffer(), this.signingKey).toBuffer();
+        return Promise.resolve(new AuthWitness(messageHash, [...signature]));
     }
 
     public buildTxExecutionRequest(pxe: PXE, calls: AzguardFunctionCall[], args: PackedValues[], nonce: Fr): Promise<TxExecutionRequest> {
