@@ -1,24 +1,55 @@
 import {
     AztecAddress,
+    computeInnerAuthWitHash,
+    computeAuthWitMessageHash,
     createPXEClient, 
     ExtendedNote,
     Fr,
-    Note,
     PackedValues,
     PXE,
-    TxHash,
+    FunctionCall,
 } from "@aztec/aztec.js";
-import { ContractArtifact, encodeArguments, FunctionSelector, FunctionType, NoteSelector } from "@aztec/foundation/abi";
-import { poseidon2Hash } from "@aztec/foundation/crypto";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import {
+    ContractArtifact,
+    encodeArguments,
+    FunctionSelector,
+    FunctionType,
+} from "@aztec/foundation/abi";
+import {
+    EventMessage,
+    RequestMessage,
+    ResponseMessage,
+} from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
+import { NetworkService } from "@/wallet/services/network";
+import { AccountService } from "@/wallet/services/account";
+import { AzguardFunctionCall } from "@/wallet/services/account/contracts";
+import { ProfileService } from "@/wallet/services/profile";
+import { TokenService } from "@/wallet/services/token";
+import {
+    TransferPrivateFn,
+    TransferPrivateToPublicFn,
+    TransferPublicFn,
+    TransferPublicToPrivateFn,
+} from "@/wallet/services/token/functions";
+import { TransactionService } from "@/wallet/services/transaction";
+import {
+    OriginType,
+    TransferToken,
+    TransferType,
+    TxCall,
+    TxOrigin,
+    TxTransfer,
+} from "@/wallet/services/transaction/client";
+import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
+import { Fn } from "@/wallet/utils/fn";
 import {
     ActionType,
     AddCapsuleAction,
     AddNoteAction,
-    AddRecipientAction,
+    AddContactAction,
     AuthorizeCallAction,
-    AuthorizeMessageAction,
+    AuthorizeIntentAction,
     CallAction,
     ExecuteBatchRequest,
     ExecuteBatchResponse,
@@ -28,28 +59,6 @@ import {
     ExecutionServiceMethod,
     IAction,
 } from "./client";
-import { NetworkService } from "../network";
-import { AccountService } from "../account";
-import { ProfileService } from "../profile";
-import { TokenService } from "../token";
-import { TransactionService } from "../transaction";
-import {
-    TransferPrivateFn,
-    TransferPrivateToPublicFn,
-    TransferPublicFn,
-    TransferPublicToPrivateFn,
-} from "../token/functions";
-import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
-import { Fn } from "@/wallet/utils/fn";
-import { AzguardFunctionCall } from "../account/contracts";
-import {
-    OriginType,
-    TransferToken,
-    TransferType,
-    TxCall,
-    TxOrigin,
-    TxTransfer,
-} from "../transaction/client";
 
 export class ExecutionService extends Service {
     constructor(
@@ -71,6 +80,7 @@ export class ExecutionService extends Service {
                     const txHash = await this.executeBatch(
                         _request.network,
                         _request.account,
+                        _request.dappName,
                         _request.actions,
                     );
                     return new ExecuteBatchResponse(_request, txHash);
@@ -106,6 +116,7 @@ export class ExecutionService extends Service {
     public async executeBatch(
         networkId: string,
         accountAddress: string,
+        dappName: string,
         actions: IAction[],
     ): Promise<string> {
         const profile = await this.profileService.getActiveProfile();
@@ -128,43 +139,57 @@ export class ExecutionService extends Service {
             switch (action.type) {
                 case ActionType.AddCapsule: {
                     const _action = (action as AddCapsuleAction)!;
+                    console.debug(`Adding capsule from ${dappName}...`);
                     await pxe.addCapsule(_action.capsule.map(Fr.fromString));
+                    console.debug(`Capsule from ${dappName} added.`);
                     break;
                 }
                 case ActionType.AddNote: {
                     const _action = (action as AddNoteAction)!;
-                    const note = new ExtendedNote(
-                        Note.fromString(_action.note),
-                        AztecAddress.fromString(_action.owner),
-                        AztecAddress.fromString(_action.contract),
-                        Fr.fromString(_action.storageSlot),
-                        NoteSelector.fromString(_action.storageSlot),
-                        TxHash.fromString(_action.txHash),
-                    );
-                    await pxe.addNote(note, account.address);
+                    console.debug(`Adding note from ${dappName}...`);
+                    await pxe.addNote(ExtendedNote.fromString(_action.note), account.address);
+                    console.debug(`Note from ${dappName} added.`);
                     break;
                 }
                 case ActionType.AddContact: {
-                    const _action = (action as AddRecipientAction)!;
+                    const _action = (action as AddContactAction)!;
+                    console.debug(`Adding contact from ${dappName}...`);
                     await pxe.registerContact(AztecAddress.fromString(_action.address));
+                    console.debug(`Contact from ${dappName} added.`);
                     break;
                 }
                 case ActionType.AuthorizeCall: {
                     const _action = (action as AuthorizeCallAction)!;
-                    if (_action.inPublic) {
-
+                    const artifact = artifacts.get(_action.contract);
+                    if (!artifact) {
+                        throw new Error("Contract not found");
                     }
-                    else {
-
+                    const fn = artifact.functions.find(x => x.name === _action.method);
+                    if (!fn) {
+                        throw new Error("Method not found");
                     }
-                    break;
-                }
-                case ActionType.AuthorizeMessage: {
-                    const _action = (action as AuthorizeMessageAction)!;
-                    const messageHash = poseidon2Hash([Buffer.from(_action.message, 'hex')]);
-                    if (_action.inPublic) {
+                    const messageHash = computeAuthWitMessageHash(
+                        {
+                            caller: AztecAddress.fromString(_action.caller),
+                            action: new FunctionCall(
+                                fn.name,
+                                AztecAddress.fromString(_action.contract),
+                                FunctionSelector.fromNameAndParameters(fn.name, fn.parameters),
+                                fn.functionType,
+                                fn.isStatic,
+                                encodeArguments(fn, _action.args),
+                                fn.returnTypes,
+                            ),
+                        },
+                        {
+                            chainId: new Fr(network.chainId),
+                            version: new Fr(network.protocolVersion),
+                        },
+                    );
+                    if (_action.registry) {
                         const fn = getSetAuthorizedFn();
                         const packedArgs = PackedValues.fromValues(encodeArguments(fn, [messageHash, true]));
+                        args.push(packedArgs);
                         calls.push(new AzguardFunctionCall(
                             getAuthRegistryAddress(),
                             getSetAuthorizedSelector(),
@@ -172,10 +197,56 @@ export class ExecutionService extends Service {
                             fn.functionType === FunctionType.PUBLIC,
                             fn.isStatic,
                         ));
+                        txCalls.push(new TxCall(
+                            getAuthRegistryAddress().toString(),
+                            fn.name,
+                            [messageHash, true],
+                        ));
+                        console.debug(`Call to authwit registry from ${dappName} enqueued.`);
                     }
                     else {
+                        console.debug(`Adding call authwit from ${dappName}...`);
                         const authwit = await account.buildAuthWitness(messageHash);
                         await pxe.addAuthWitness(authwit);
+                        console.debug(`Call authwit from ${dappName} added.`);
+                    }
+                    break;
+                }
+                case ActionType.AuthorizeIntent: {
+                    const _action = (action as AuthorizeIntentAction)!;
+                    const messageHash = computeAuthWitMessageHash(
+                        {
+                            consumer: AztecAddress.fromString(_action.consumer),
+                            innerHash: computeInnerAuthWitHash(_action.intent.map(x => Fr.fromString(x))),
+                        },
+                        {
+                            chainId: new Fr(network.chainId),
+                            version: new Fr(network.protocolVersion),
+                        },
+                    );
+                    if (_action.registry) {
+                        const fn = getSetAuthorizedFn();
+                        const packedArgs = PackedValues.fromValues(encodeArguments(fn, [messageHash, true]));
+                        args.push(packedArgs);
+                        calls.push(new AzguardFunctionCall(
+                            getAuthRegistryAddress(),
+                            getSetAuthorizedSelector(),
+                            packedArgs.hash,
+                            fn.functionType === FunctionType.PUBLIC,
+                            fn.isStatic,
+                        ));
+                        txCalls.push(new TxCall(
+                            getAuthRegistryAddress().toString(),
+                            fn.name,
+                            [messageHash, true],
+                        ));
+                        console.debug(`Call to authwit registry from ${dappName} enqueued.`);
+                    }
+                    else {
+                        console.debug(`Adding intent authwit from ${dappName}...`);
+                        const authwit = await account.buildAuthWitness(messageHash);
+                        await pxe.addAuthWitness(authwit);
+                        console.debug(`Intent authwit from ${dappName} added.`);
                     }
                     break;
                 }
@@ -204,6 +275,7 @@ export class ExecutionService extends Service {
                         _action.method,
                         _action.args,
                     ));
+                    console.debug(`Call from ${dappName} enqueued.`);
                     break;
                 }
             }
@@ -216,7 +288,7 @@ export class ExecutionService extends Service {
         const txHash = await pxe.sendTx(provedTx.toTx());
 
         const tx = await this.transactionService.addTransaction(
-            new TxOrigin(OriginType.UI),
+            new TxOrigin(OriginType.DAPP, dappName),
             network.chainId,
             accountAddress,
             [],
@@ -363,9 +435,11 @@ export class ExecutionService extends Service {
                 .filter(x => x.type === ActionType.AuthorizeCall || x.type === ActionType.Call)
                 .map(x => (x as AuthorizeCallAction)?.contract ?? (x as CallAction).contract)
         );
+        console.debug(`Fetching ${contracts.size} artifacts...`);
         const artifacts = await Promise.all(
             contracts.values().map(x => this.getArtifact(pxe, x))
         );
+        console.debug(`${artifacts.length} artifacts fetched`);
         return new Map(artifacts)
     }
 

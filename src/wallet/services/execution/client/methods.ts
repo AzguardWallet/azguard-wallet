@@ -10,6 +10,7 @@ export class ExecuteBatchRequest extends RequestMessage {
     constructor(
         public readonly network: string,
         public readonly account: string,
+        public readonly dappName: string,
         public readonly actions: IAction[],
     ) {
         super(EXECUTION_SERVICE_NAME, ExecutionServiceMethod.ExecuteBatch);

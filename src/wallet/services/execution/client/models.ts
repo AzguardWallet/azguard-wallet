@@ -1,10 +1,10 @@
 export enum ActionType {
-    AddCapsule,
-    AddNote,
-    AddContact,
-    AuthorizeCall,
-    AuthorizeMessage,
-    Call,
+    AddCapsule = "add_capsule",
+    AddNote = "add_note",
+    AddContact = "add_contact",
+    AuthorizeCall = "authorize_call",
+    AuthorizeIntent = "authorize_intent",
+    Call = "call",
 }
   
 export interface IAction {
@@ -24,15 +24,10 @@ export class AddNoteAction implements IAction {
 
     constructor(
         public readonly note: string,
-        public readonly owner: string,
-        public readonly contract: string,
-        public readonly storageSlot: string,
-        public readonly noteTypeId: string,
-        public readonly txHash: string,
     ) {}
 }
 
-export class AddRecipientAction implements IAction {
+export class AddContactAction implements IAction {
     public readonly type = ActionType.AddContact;
 
     constructor(
@@ -44,8 +39,7 @@ export class AuthorizeCallAction implements IAction {
     public readonly type = ActionType.AuthorizeCall;
 
     constructor(
-        public readonly inPublic: boolean,
-        public readonly consumer: string,
+        public readonly registry: boolean,
         public readonly caller: string,
         public readonly contract: string,
         public readonly method: string,
@@ -53,13 +47,13 @@ export class AuthorizeCallAction implements IAction {
     ) {}
 }
 
-export class AuthorizeMessageAction implements IAction {
-    public readonly type = ActionType.AuthorizeMessage;
+export class AuthorizeIntentAction implements IAction {
+    public readonly type = ActionType.AuthorizeIntent;
 
     constructor(
-        public readonly inPublic: boolean,
+        public readonly registry: boolean,
         public readonly consumer: string,
-        public readonly message: string,
+        public readonly intent: string[],
     ) {}
 }
 
