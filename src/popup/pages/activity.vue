@@ -1,5 +1,6 @@
 <script setup>
 /** Components */
+import TransactionsList from "../components/modules/activity/TransactionsList.vue"
 import Navigation from "../components/Navigation.vue"
 
 /** Store */
@@ -8,14 +9,78 @@ const appStore = useAppStore()
 
 const router = useRouter()
 
-if (!appStore.isLogined) router.push("/popup/auth")
+const transactions = ref([])
+const initTransactions = async () => {
+	transactions.value = (
+		await managers.transaction.getTransactions(appStore.account)
+	).filter((t) => t.account === appStore.account.address)
+
+	console.log(transactions.value)
+}
+
+onMounted(async () => {
+	if (!appStore.isLogined && appStore.isSessionChecked) {
+		router.push("/popup/auth")
+		return
+	}
+
+	if (appStore.isLogined) initTransactions()
+})
+
+watch(
+	() => appStore.isSessionChecked,
+	() => {
+		if (!appStore.isLogined && appStore.isSessionChecked) {
+			router.push("/popup/auth")
+			return
+		}
+	}
+)
+
+watch(
+	() => appStore.isLogined,
+	() => {
+		initTransactions()
+	}
+)
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
+	<Flex
+		v-if="appStore.isLogined"
+		direction="column"
+		gap="20"
+		:class="$style.wrapper"
+	>
 		<Text size="13" weight="600" color="primary"> Today </Text>
 
-		<Flex wide direction="column" gap="8" :class="$style.list">
+		<Flex direction="column" gap="8" :class="$style.list">
+			<Flex wide align="center" gap="12" :class="$style.item">
+				<Flex
+					align="center"
+					justify="center"
+					:class="$style.activity_icon"
+				>
+					<Spinner size="16" color="--txt-primary" />
+
+					<Icon
+						name="zap-circle"
+						size="14"
+						color="blue"
+						:class="$style.check_icon"
+					/>
+				</Flex>
+
+				<Flex direction="column" gap="6">
+					<Text size="13" weight="600" color="primary">
+						Transaction in progress
+					</Text>
+					<Text size="12" weight="500" color="tertiary">
+						Awaiting confirmation
+					</Text>
+				</Flex>
+			</Flex>
+
 			<Flex wide align="center" gap="12" :class="$style.item">
 				<Flex
 					align="center"
@@ -46,38 +111,43 @@ if (!appStore.isLogined) router.push("/popup/auth")
 				</Flex>
 			</Flex>
 
-			<Flex align="center" gap="12" :class="$style.dummy">
-				<Flex
-					align="center"
-					justify="center"
-					:class="$style.dummy_circle"
-				>
-					<div />
+			<template v-if="!transactions.length">
+				<Flex align="center" gap="12" :class="$style.dummy">
+					<Flex
+						align="center"
+						justify="center"
+						:class="$style.dummy_circle"
+					>
+						<div />
+					</Flex>
+
+					<Flex direction="column" gap="8">
+						<div :class="$style.dummy_title" />
+						<div :class="$style.dummy_subtitle" />
+					</Flex>
 				</Flex>
 
-				<Flex direction="column" gap="8">
-					<div :class="$style.dummy_title" />
-					<div :class="$style.dummy_subtitle" />
-				</Flex>
-			</Flex>
+				<Flex align="center" gap="12" :class="$style.dummy">
+					<Flex
+						align="center"
+						justify="center"
+						:class="$style.dummy_circle"
+					>
+						<div />
+					</Flex>
 
-			<Flex align="center" gap="12" :class="$style.dummy">
-				<Flex
-					align="center"
-					justify="center"
-					:class="$style.dummy_circle"
-				>
-					<div />
+					<Flex direction="column" gap="8">
+						<div :class="$style.dummy_title" />
+						<div :class="$style.dummy_subtitle" />
+					</Flex>
 				</Flex>
+			</template>
 
-				<Flex direction="column" gap="8">
-					<div :class="$style.dummy_title" />
-					<div :class="$style.dummy_subtitle" />
-				</Flex>
-			</Flex>
+			<TransactionsList :transactions />
 		</Flex>
 
 		<Flex
+			v-if="!transactions.length"
 			direction="column"
 			ap
 			align="center"
@@ -111,13 +181,16 @@ if (!appStore.isLogined) router.push("/popup/auth")
 .wrapper {
 	flex: 1;
 
+	overflow: auto;
+
 	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
+	border-top: 2px solid var(--gray-8);
+	box-shadow: inset 0 10px 8px -2px var(--gray-3);
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
 
-	padding: 20px 24px 24px 24px;
+	padding: 20px 24px 80px 24px;
 }
 
 .list {

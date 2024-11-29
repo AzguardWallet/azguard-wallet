@@ -29,7 +29,7 @@ const props = defineProps({
 		type: String,
 		required: false,
 	},
-	round: {
+	square: {
 		type: Boolean,
 	},
 	target: {
@@ -72,7 +72,7 @@ const getStyles = () => {
 		hasCorrectSize && style[props.size],
 		props.disabled && style.disabled,
 		props.border && style.border,
-		props.round && style.round,
+		props.square && style.square,
 	]
 }
 </script>
@@ -84,6 +84,10 @@ const getStyles = () => {
 		:target="target"
 		:class="[...getStyles(), loading && $style.loading]"
 	>
+		<Spinner
+			v-if="loading"
+			:color="type === 'primary' ? '--txt-inverse' : '--txt-primary'"
+		/>
 		<Icon
 			v-if="leftIcon"
 			:name="leftIcon"
@@ -124,9 +128,25 @@ const getStyles = () => {
 	transition: all 0.2s ease;
 }
 
+@keyframes loading {
+	0% {
+		opacity: 0.8;
+	}
+
+	50% {
+		opacity: 0.3;
+	}
+
+	100% {
+		opacity: 0.8;
+	}
+}
+
 .wrapper.loading {
-	opacity: 0.5;
+	opacity: 0.8;
 	pointer-events: none;
+
+	animation: loading 2s infinite linear;
 }
 
 .wrapper.wide {
@@ -176,7 +196,7 @@ const getStyles = () => {
 
 	gap: 6px;
 
-	border-radius: 6px;
+	border-radius: 50px;
 
 	font-size: 12px;
 
@@ -218,10 +238,10 @@ const getStyles = () => {
 	background: transparent;
 }
 .wrapper.tertiary:hover {
-	box-shadow: inset 0 0 0 2px var(--gray-10);
+	background: var(--gray-5);
 }
 .wrapper.tertiary:active {
-	background: var(--gray-5);
+	background: var(--gray-10);
 }
 
 .wrapper.text {
@@ -255,8 +275,8 @@ const getStyles = () => {
 	border: 1px solid var(--border);
 }
 
-.wrapper.round {
-	border-radius: 500px;
+.wrapper.square {
+	border-radius: 10px;
 }
 
 .left_icon {

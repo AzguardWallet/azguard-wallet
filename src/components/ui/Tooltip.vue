@@ -214,13 +214,15 @@ const handleMouseLeave = () => {
 
 	box-sizing: border-box;
 	background-color: #000;
-	box-shadow: 0 4px 8px var(--shadow-5);
-	border-radius: 7px;
+	box-shadow: 0 4px 8px var(--shadow-10);
+	border-radius: 12px;
 
 	padding: 6px 8px;
 }
 
 .text {
+	max-width: calc(var(--base-width) - 40px);
+
 	font-size: 12px;
 	font-weight: 600;
 	color: var(--txt-white);

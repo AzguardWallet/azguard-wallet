@@ -6,16 +6,46 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 /** Utils */
 import { managers } from "@/utils/core"
 
+/** Composables */
+import { useToast } from "@/composables/toast"
+const { openToast } = useToast()
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
+import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
+const cacheStore = useCacheStore()
 
 const emit = defineEmits(["onClose"])
+const props = defineProps({
+	show: Boolean,
+})
+
+const displaceIdx = computed(() => {
+	return popupStore.popups.tokens
+})
+
+const handleDeleteToken = (target) => {
+	cacheStore.confirm.description =
+		"Removing a token only affects the display in the UI and it does not affect the token balance"
+	cacheStore.confirm.callback = async () => {
+		await managers.token.deleteToken(target.id)
+		appStore.tokens = appStore.tokens.filter((t) => t.id !== target.id)
+		appStore.balances = appStore.balances.filter(
+			(b) => b.token.id !== target.id
+		)
+		openToast({ label: "Token successfully deleted" })
+	}
+
+	popupStore.open("confirm")
+}
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')">
-		<PopupCard>
+	<Popup :show @onClose="emit('onClose')">
+		<PopupCard :displaceIdx>
 			<Flex
 				wide
 				direction="column"
@@ -28,65 +58,64 @@ const emit = defineEmits(["onClose"])
 						Manage tokens
 					</Text>
 
-					<Flex direction="column" gap="6">
+					<Flex
+						v-if="appStore.tokens.length"
+						direction="column"
+						gap="6"
+					>
 						<Flex
-							v-for="network in appStore.networks"
-							@click="appStore.network = network"
+							v-for="token in appStore.tokens"
 							align="center"
 							justify="between"
 							:class="$style.network"
 						>
 							<Flex align="center" gap="8">
 								<Icon
-									:name="
-										appStore.network.id === network.id
-											? 'check-circle'
-											: 'globe'
-									"
+									name="banknote"
 									size="16"
-									:color="
-										appStore.network.id === network.id
-											? 'green'
-											: 'tertiary'
-									"
+									color="primary"
 								/>
 								<Text size="14" weight="600" color="primary">
-									{{ network.name }}
+									{{ token.symbol }}
+								</Text>
+								<Text size="14" weight="600" color="tertiary">
+									{{ token.name }}
 								</Text>
 							</Flex>
 
-							<Flex
-								v-if="network.type === 'custom'"
-								align="center"
-								gap="8"
-								:class="$style.icons"
-							>
+							<Flex :class="$style.icons">
 								<Icon
-									@click="handleEdit(network)"
-									name="edit"
-									size="14"
-									color="tertiary"
-								/>
-								<Icon
-									@click.stop="handleDelete(network)"
+									@click="handleDeleteToken(token)"
 									name="close-circle"
-									size="16"
-									color="tertiary"
+									size="14"
+									color="secondary"
+									:class="$style.icon_btn"
 								/>
 							</Flex>
 						</Flex>
 					</Flex>
+
+					<Button
+						v-else
+						type="secondary"
+						size="small"
+						disabled
+						square
+					>
+						There is no tokens
+					</Button>
 				</Flex>
 
 				<Flex direction="column" gap="16">
 					<Button
+						@click="popupStore.open('new_token')"
 						wide
 						type="secondary"
 						size="medium"
 						leftIcon="plus-circle"
-						leftIconColor="blue"
+						leftIconColor="primary"
 					>
-						Add token
+						New token
 					</Button>
 
 					<Text
@@ -127,14 +156,14 @@ const emit = defineEmits(["onClose"])
 		background: var(--gray-3);
 		box-shadow: inset 0 0 0 1px var(--border-hovered),
 			0 1px 2px var(--shadow-5);
-
-		& .icons {
-			opacity: 1;
-		}
 	}
 
 	&:active {
 		background: var(--gray-5);
+	}
+
+	&:hover .icons {
+		opacity: 1;
 	}
 }
 
@@ -142,5 +171,13 @@ const emit = defineEmits(["onClose"])
 	opacity: 0;
 
 	transition: all 0.2s var(--bezier);
+}
+
+.icon_btn {
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		fill: var(--txt-primary);
+	}
 }
 </style>

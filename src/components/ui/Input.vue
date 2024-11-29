@@ -118,12 +118,13 @@ const handlePaste = (e) => {
 		<Flex v-if="label" align="center" justify="between">
 			<Text size="13" weight="600" color="secondary">{{ label }}</Text>
 
-			<slot name="rightText" />
+			<slot name="right" />
 		</Flex>
 
-		<div
+		<Flex
 			ref="base"
 			@click="handleClick"
+			gap="12"
 			:class="[
 				$style.base,
 				isFocused && $style.focused,
@@ -152,7 +153,7 @@ const handlePaste = (e) => {
 			</Flex>
 
 			<slot name="suffix" />
-		</div>
+		</Flex>
 	</Flex>
 </template>
 
@@ -202,6 +203,8 @@ const handlePaste = (e) => {
 	font-size: 14px;
 	font-weight: 600;
 	color: var(--txt-primary);
+
+	text-overflow: ellipsis;
 }
 
 .base input::placeholder {

@@ -1,8 +1,4 @@
 <script setup>
-/** Composables */
-import { useToast } from "@/composables/toast.js"
-const { openToast } = useToast()
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
@@ -12,11 +8,6 @@ const popupStore = usePopupStore()
 const handleOpenPopup = (target) => {
 	if (!appStore.isLogined) return
 	popupStore.open(target)
-}
-
-const handleCopyAddress = () => {
-	window.navigator.clipboard.writeText(appStore.account.address)
-	openToast({ label: "Address is copied to clipboard", icon: "copy" })
 }
 </script>
 
@@ -28,7 +19,7 @@ const handleCopyAddress = () => {
 		:class="$style.wrapper"
 	>
 		<Flex
-			@click="handleOpenPopup('settings')"
+			@click="handleOpenPopup('menu')"
 			align="center"
 			justify="center"
 			:class="[$style.button, !appStore.isLogined && $style.disabled]"
@@ -36,23 +27,34 @@ const handleCopyAddress = () => {
 			<Icon name="dots" size="18" color="primary" />
 		</Flex>
 
-		<Flex
-			v-if="appStore.isLogined"
-			@click="handleOpenPopup('accounts')"
-			align="center"
-			gap="6"
-			:class="$style.account"
-		>
-			<Icon name="vault" size="18" color="blue" />
-			<Text
-				size="13"
-				weight="600"
-				color="primary"
-				:class="$style.account_name"
+		<Flex align="center" gap="8">
+			<Flex
+				v-if="appStore.isLogined"
+				@click="handleOpenPopup('accounts')"
+				align="center"
+				gap="6"
+				:class="$style.account"
 			>
-				{{ appStore.account.name }}
-			</Text>
-			<Text
+				<Transition name="fade">
+					<Icon
+						v-if="!appStore.isLoading"
+						name="vault"
+						size="18"
+						color="primary"
+					/>
+					<Spinner v-else size="16" color="--txt-primary" />
+				</Transition>
+
+				<Text
+					size="13"
+					weight="600"
+					color="primary"
+					:class="$style.account_name"
+				>
+					{{ appStore.account.name }}
+				</Text>
+
+				<!-- <Text
 				@click.stop="handleCopyAddress"
 				size="13"
 				weight="600"
@@ -62,8 +64,9 @@ const handleCopyAddress = () => {
 				{{ appStore.account.address.slice(0, 4) }}
 				•••
 				{{ appStore.account.address.slice(-4) }}
-			</Text>
-			<Icon name="chevron" size="12" color="secondary" />
+			</Text> -->
+				<Icon name="chevron" size="12" color="secondary" />
+			</Flex>
 		</Flex>
 
 		<Flex
@@ -73,6 +76,7 @@ const handleCopyAddress = () => {
 			:class="[$style.button, !appStore.isLogined && $style.disabled]"
 		>
 			<Icon name="globe" size="18" color="primary" />
+			<div :class="$style.dot" />
 		</Flex>
 	</Flex>
 </template>
@@ -85,9 +89,12 @@ const handleCopyAddress = () => {
 }
 
 .button {
+	position: relative;
+
 	cursor: pointer;
 	border-radius: 50%;
-	background: var(--gray-5);
+	background: var(--card-bg);
+	box-shadow: inset 0 0 0 1px var(--border);
 
 	padding: 4px;
 
@@ -95,6 +102,7 @@ const handleCopyAddress = () => {
 
 	&:hover {
 		background: var(--gray-15);
+		box-shadow: inset 0 0 0 1px var(--border-hovered);
 	}
 
 	&:active {
@@ -105,6 +113,21 @@ const handleCopyAddress = () => {
 		opacity: 0.5;
 		pointer-events: none;
 	}
+}
+
+.dot {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+
+	width: 5px;
+	height: 5px;
+	box-sizing: content-box;
+
+	box-shadow: 0 0 0 2px var(--card-bg);
+
+	border-radius: 50%;
+	background: var(--orange);
 }
 
 .account {

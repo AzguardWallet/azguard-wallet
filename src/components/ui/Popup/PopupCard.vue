@@ -37,6 +37,8 @@ const showFullscreen = ref(false)
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
 
+	overflow: auto;
+
 	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--border), 0 -6px 16px var(--shadow-5);
 
@@ -51,10 +53,14 @@ const showFullscreen = ref(false)
 	&.displace {
 		transform: scale(calc(0.99 - (var(--displace) / 100)));
 	}
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
 }
 
 .bar {
-	width: 80px;
+	width: 40px;
 	height: 4px;
 
 	cursor: pointer;

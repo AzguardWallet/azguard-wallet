@@ -7,54 +7,121 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 /** Utils */
 import { managers } from "@/utils/core"
 
+/** Composables */
+import { useToast } from "@/composables/toast"
+const { openToast } = useToast()
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
+const props = defineProps({
+	show: Boolean,
+})
+
 const emit = defineEmits(["onClose"])
 
 const contractAddressTerm = ref("")
 
+const isLoadingParseResult = ref(false)
+const isAlreadyExist = computed(() =>
+	appStore.tokens.findLast((t) => t.contract === contractAddressTerm.value)
+)
 const isAvailableToCreateToken = computed(() => {
-	if (!contractAddressTerm.value.length) return
+	if (
+		!contractAddressTerm.value.length ||
+		contractAddressTerm.value.length !== 66
+	)
+		return
+	if (!contractAddressTerm.value.startsWith("0x")) return
+	if (isLoadingParseResult.value) return
+	if (isAlreadyExist.value) return
 
 	return true
 })
 
-const handleCreateAccount = async () => {
-	// const test = await managers.token.parseInterface(
-	// 	"0x2cee972228c1ca2f802e2c94cf2e98e642a38d44d646e53dbee210333747d34f"
-	// )
-	console.log(await managers.network.getNetworks())
-
+const handleCreateToken = async () => {
 	if (!isAvailableToCreateToken.value) return
+
+	isLoadingParseResult.value = true
+	appStore.isLoading = true
+
+	const parsingResult = await managers.token.parseInterface(
+		contractAddressTerm.value
+	)
+
+	isLoadingParseResult.value = false
+	appStore.isLoading = false
+
+	if (!parsingResult.isComplete) {
+		openToast({ label: "Something went wrong", icon: "close-circle" })
+		return
+	}
+
+	const newToken = await managers.token.addToken(parsingResult)
+	appStore.tokens.push(newToken)
+
+	await appStore.syncBalances()
+	appStore.tokenAwaitingBalanceIdx = newToken.id
+
+	openToast({ label: `${parsingResult.symbol} is added to tokens` })
 
 	emit("onClose")
 }
+
+watch(
+	() => props.show,
+	() => {
+		if (!props.show) {
+			contractAddressTerm.value = ""
+		}
+	}
+)
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')">
+	<Popup :show="show" @onClose="emit('onClose')">
 		<PopupCard>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> Add token </Text>
+				<Text size="14" weight="600" color="primary"> New token </Text>
 
 				<Input
 					v-model="contractAddressTerm"
 					label="Contract address"
 					placeholder="0x"
-				/>
+					:disabled="isLoadingParseResult"
+				>
+					<template #suffix>
+						<Icon
+							v-if="isAvailableToCreateToken"
+							name="check-circle"
+							size="14"
+							color="green"
+						/>
+					</template>
+					<template #right>
+						<Transition name="fade">
+							<Flex v-if="isAlreadyExist" align="center" gap="4">
+								<Icon name="warning" size="12" color="orange" />
+								<Text size="12" weight="600" color="primary">
+									Already imported
+								</Text>
+							</Flex>
+						</Transition>
+					</template>
+				</Input>
 
 				<Button
-					@click="handleCreateAccount"
+					@click="handleCreateToken"
 					wide
 					type="primary"
 					size="medium"
+					:loading="isLoadingParseResult"
 					:disabled="!isAvailableToCreateToken"
 				>
-					<Text color="inverse">Create</Text>
+					<Text color="inverse">Import new token</Text>
 				</Button>
 
 				<Text

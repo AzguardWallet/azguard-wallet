@@ -1,7 +1,7 @@
 <script setup>
 /** Utils */
 import { AccountServiceClient } from "@/wallet/services/account/client"
-import { managers } from "@/utils/core"
+import { managers, initTokenService } from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -25,24 +25,53 @@ if (appStore.isLogined) {
 
 const inputElement = useTemplateRef("inputElement")
 const password = ref("")
+const isWrongPassword = ref(false)
 const isPasswordType = ref(true)
 
-const handleUnlockWallet = async () => {
+const handlePasswordInput = () => {
+	if (isWrongPassword.value) isWrongPassword.value = false
+}
+
+const isAllowedToContinue = computed(() => {
 	if (!password.value.length) return
+	if (isWrongPassword.value) return
+
+	return true
+})
+
+const isAwaitingResponse = ref(false)
+const handleUnlockWallet = async () => {
+	if (!isAllowedToContinue.value) return
 
 	try {
+		isAwaitingResponse.value = true
 		const activeProfile = await managers.profile.unlockProfile(
 			appStore.profile.id,
 			password.value
 		)
+		isAwaitingResponse.value = false
 
-		if (!activeProfile) return
+		if (!activeProfile) {
+			isWrongPassword.value = true
+			return
+		}
+
+		password.value = ""
 
 		appStore.profile = activeProfile
 		managers.account = new AccountServiceClient(
 			appStore.profile,
 			appStore.network
 		)
+
+		initTokenService({
+			profile: appStore.profile,
+			network: appStore.network,
+			account: appStore.account,
+		})
+		await appStore.syncLocalTokens()
+		await appStore.syncBalances()
+		appStore.initBalanceListeners()
 
 		appStore.isLogined = true
 		
@@ -53,7 +82,8 @@ const handleUnlockWallet = async () => {
 		} else {
 			console.log('auth else');
 			
-			router.push("/popup/general")
+	
+		router.push("/popup/general")
 		}
 		// const redirect = route.query.redirect || "/popup/general"
 		// console.log('auth redirect', redirect);
@@ -74,67 +104,111 @@ onMounted(() => {
 
 	document.addEventListener("keydown", onKeydown)
 })
+onBeforeUnmount(() => {
+	document.removeEventListener("keydown", onKeydown)
+})
 </script>
 
 <template>
 	<Flex direction="column" jusitfy="between" :class="$style.wrapper">
-		<Flex direction="column" gap="32" style="flex: 1">
-			<Icon name="lock" size="24" color="tertiary" />
+		<Flex direction="column" align="center" gap="40" style="flex: 1">
+			<Flex align="center" justify="center" :class="$style.lock_badge">
+				<Icon name="logo" size="40" :class="$style.logo_icon" />
+				<Icon
+					name="lock"
+					size="20"
+					:color="isWrongPassword ? 'red' : 'orange'"
+					:class="[$style.lock_icon, isWrongPassword && $style.shake]"
+				/>
+			</Flex>
 
-			<Flex direction="column" gap="12">
+			<Flex align="center" direction="column" gap="16">
 				<Text
 					size="24"
 					weight="600"
 					color="primary"
 					style="line-height: 16px"
 				>
-					Wallet is locked
+					Password required
 				</Text>
-				<Text size="14" weight="500" color="tertiary" height="140">
-					Enter your password to continue
+				<Text
+					size="14"
+					weight="500"
+					color="tertiary"
+					align="center"
+					height="140"
+				>
+					Enter your profile password to continue
 				</Text>
 			</Flex>
 
-			<Input
-				ref="inputElement"
-				v-model="password"
-				:type="isPasswordType ? 'password' : 'text'"
-				placeholder="Enter password"
-				label="Password"
-			>
-				<template #suffix>
-					<Icon
-						@click="isPasswordType = !isPasswordType"
-						:name="isPasswordType ? 'password' : 'text'"
-						size="16"
-						color="blue"
-						style="cursor: pointer"
-					/>
-				</template>
-			</Input>
+			<Flex wide direction="column" gap="24">
+				<Input
+					ref="inputElement"
+					v-model="password"
+					@input="handlePasswordInput"
+					:type="isPasswordType ? 'password' : 'text'"
+					placeholder="Enter password"
+					label="Password"
+					wide
+				>
+					<template #right>
+						<Transition name="fade">
+							<Flex v-if="isWrongPassword" align="center" gap="4">
+								<Icon name="warning" size="12" color="red" />
+								<Text size="12" weight="600" color="primary">
+									Wrong password
+								</Text>
+							</Flex>
+						</Transition>
+					</template>
 
-			<Button
-				@click="handleUnlockWallet"
-				wide
-				type="primary"
-				size="medium"
-				:disabled="password.length < 8"
-			>
-				<Text color="inverse">Unlock Wallet</Text>
-			</Button>
+					<template #suffix>
+						<Icon
+							@click="isPasswordType = !isPasswordType"
+							:name="isPasswordType ? 'password' : 'text'"
+							size="16"
+							color="secondary"
+							style="cursor: pointer"
+						/>
+					</template>
+				</Input>
+
+				<Button
+					@click="handleUnlockWallet"
+					wide
+					type="secondary"
+					size="medium"
+					rightIcon="arrow-right-circle"
+					rightIconColor="primary"
+					:disabled="!isAllowedToContinue"
+					:loading="isAwaitingResponse"
+				>
+					Continue
+				</Button>
+			</Flex>
 		</Flex>
 
-		<Text
-			size="12"
-			weight="500"
-			color="tertiary"
-			height="140"
-			align="center"
-		>
-			If you forget your password, you can
-			<Text @click="popupStore.open('reset')" color="blue">reset</Text>
-			your wallet. This action cannot be undone.
-		</Text>
+		<Flex align="center" direction="column" gap="12">
+			<Button
+				@click="popupStore.open('forgot_password')"
+				type="secondary"
+				size="mini"
+			>
+				<Icon name="info" size="16" color="primary" /> Forgot Password
+			</Button>
+
+			<Text
+				size="12"
+				weight="500"
+				color="support"
+				height="140"
+				align="center"
+			>
+				The session has ended and the wallet has been locked. See
+				"Forgot Password" for options.
+			</Text>
+		</Flex>
 	</Flex>
 </template>
 
@@ -169,6 +243,57 @@ onMounted(() => {
 
 	&:focus {
 		border-color: var(--blue);
+	}
+}
+
+.lock_badge {
+	position: relative;
+
+	background: var(--txt-primary);
+	border-radius: 50%;
+
+	padding: 4px;
+}
+
+.lock_icon {
+	position: absolute;
+	top: -12px;
+	right: -12px;
+
+	background: var(--card-bg);
+	box-sizing: content-box;
+	border-radius: 12px;
+
+	padding: 4px;
+}
+
+.logo_icon {
+	fill: var(--card-bg);
+}
+
+.shake {
+	animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+	0% {
+		transform: translateX(-1px);
+	}
+
+	25% {
+		transform: translateX(2px);
+	}
+
+	50% {
+		transform: translateX(-2px);
+	}
+
+	75% {
+		transform: translateX(1px);
+	}
+
+	100% {
+		transform: translateX(0);
 	}
 }
 </style>

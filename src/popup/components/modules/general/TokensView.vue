@@ -1,4 +1,7 @@
 <script setup>
+/** Components */
+import TokenCard from "./TokenCard.vue"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
@@ -15,92 +18,36 @@ const popupStore = usePopupStore()
 				size="12"
 				weight="600"
 				color="tertiary"
-				class="clickable"
+				:class="['clickable', $style.txt_button]"
 			>
 				Manage
 			</Text>
 		</Flex>
 
 		<template v-if="appStore.tokens.length">
-			<Flex
-				v-for="token in appStore.tokens"
-				align="center"
-				justify="between"
-				:class="$style.card"
-			>
-				<Flex align="center" gap="12">
-					<Flex
-						align="center"
-						justify="center"
-						:class="$style.token_icon"
-					>
-						<Icon name="aztec" size="20" color="primary" />
-					</Flex>
-
-					<Flex direction="column" gap="6">
-						<Text size="13" weight="600" color="primary">AZT</Text>
-						<Text size="12" weight="500" color="tertiary">
-							Aztec Network
-						</Text>
-					</Flex>
-				</Flex>
-
-				<Flex direction="column" align="end" gap="6">
-					<Text size="13" weight="600" color="primary">0</Text>
-					<Text size="13" weight="600" color="tertiary">$0.00</Text>
-				</Flex>
+			<Flex direction="column" gap="6">
+				<TokenCard v-for="token in appStore.tokens" :token />
 			</Flex>
 		</template>
 		<template v-else>
-			<Flex align="center" justify="between" :class="$style.empty">
-				<Text size="13" weight="500" color="tertiary">
-					No available tokens
-				</Text>
-				<Text
-					@click="popupStore.open('new_token')"
-					size="12"
-					weight="600"
-					color="blue"
-					class="clickable"
-				>
-					Add token
-				</Text>
-			</Flex>
+			<Button
+				@click="popupStore.open('new_token')"
+				type="secondary"
+				size="small"
+				leftIcon="plus-circle"
+			>
+				New token
+			</Button>
 		</template>
 	</Flex>
 </template>
 
 <style module>
-.card {
-	background: var(--card-bg);
-	border: 1px solid var(--border);
-	box-shadow: 0 1px 2px transparent;
-	border-radius: 12px;
-	cursor: pointer;
-
-	padding: 12px;
-
+.txt_button {
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		border-color: var(--border-hovered);
-		box-shadow: 0 1px 2px var(--shadow-5);
+		color: var(--txt-secondary);
 	}
-}
-
-.token_icon {
-	width: 32px;
-	height: 32px;
-
-	border-radius: 8px;
-	background: var(--gray-5);
-	box-sizing: border-box;
-}
-
-.empty {
-	border-radius: 12px;
-	box-shadow: inset 0 0 0 1px var(--border);
-
-	padding: 12px;
 }
 </style>

@@ -38,17 +38,17 @@ const { toast, closeToast } = useToast()
 <style module>
 .wrapper {
 	position: absolute;
-	top: 16px;
+	top: 10px;
 	left: 0;
 	right: 0;
 	z-index: 2000;
 }
 
 .card {
-	height: 32px;
+	height: 28px;
 
 	background: var(--card-bg);
-	box-shadow: inset 0 0 0 2px var(--border), 0 4px 8px var(--shadow-10);
+	box-shadow: inset 0 0 0 1px var(--border), 0 4px 8px var(--shadow-10);
 	border-radius: 50px;
 
 	padding: 0 12px;

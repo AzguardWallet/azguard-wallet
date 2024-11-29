@@ -125,7 +125,7 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		include: ["vue", "webextension-polyfill"],
-		exclude: ["vue-demi", "@aztec/bb.js"],
+		exclude: ["vue-demi", "@aztec/bb.js", "@aztec/noir-contracts.js"],
 		esbuildOptions: {
 			target: "esnext",
 		},

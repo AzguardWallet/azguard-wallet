@@ -21,6 +21,7 @@
 		"@aztec/circuit-types": "^0.62.0",
 		"@aztec/circuits.js": "^0.62.0",
 		"@aztec/foundation": "^0.62.0",
+		"@aztec/noir-contracts.js": "^0.62.0",
 		"@reown/walletkit": "^1.1.1",
 		"@walletconnect/core": "^2.17.2",
 		"@walletconnect/utils": "^2.17.2",

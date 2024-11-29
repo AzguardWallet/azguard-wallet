@@ -9,7 +9,7 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 			<Dropdown>
 				<template #trigger>
 					<Flex align="center" gap="8" class="clickable">
-						<Icon name="discount" size="16" color="orange" />
+						<Icon name="discount" size="16" color="purple" />
 						<Text size="13" weight="600" color="primary">
 							Fee Juice
 						</Text>
@@ -27,7 +27,7 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 				</template>
 			</Dropdown>
 
-			<Text size="13" weight="600" color="primary"> 1.52 FJC </Text>
+			<Text size="13" weight="600" color="primary"> 0 FJC </Text>
 		</Flex>
 
 		<Flex align="center" justify="between" :class="$style.fjc_price">
@@ -35,7 +35,7 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 				Estimated Fee Juice
 			</Text>
 			<Text size="12" weight="600" color="primary">
-				<Text color="body">$0.05</Text>&nbsp; ~0.00125 FJC
+				<Text color="body">$0.00</Text>&nbsp; 0 FJC
 			</Text>
 		</Flex>
 	</Flex>
@@ -45,12 +45,10 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 .wrapper {
 	border-radius: 12px;
 	overflow: hidden;
-	box-shadow: 0 1px 2px var(--shadow-5);
-	border: 1px solid var(--border);
+	box-shadow: 0 1px 2px var(--shadow-5), inset 0 0 0 1px var(--border);
 }
 
 .card {
-	background: var(--card-bg);
 	border-radius: 12px 12px 0 0;
 
 	padding: 12px;
@@ -58,6 +56,7 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
 .fjc_price {
 	background: var(--gray-5);
+	overflow: hidden;
 
 	padding: 12px;
 }

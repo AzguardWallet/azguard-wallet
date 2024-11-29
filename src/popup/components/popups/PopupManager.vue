@@ -1,13 +1,17 @@
 <script setup>
 /** Popups */
-import SettingsPopup from "./SettingsPopup.vue"
+import MenuPopup from "./MenuPopup.vue"
 import NetworksPopup from "./NetworksPopup.vue"
+import NewNetworkPopup from "./NewNetworkPopup.vue"
+import EditNetworkPopup from "./EditNetworkPopup.vue"
+import EditAccountPopup from "./EditAccountPopup.vue"
 import AccountsPopup from "./AccountsPopup.vue"
 import NewAccountPopup from "./NewAccountPopup.vue"
 import SendPopup from "./SendPopup.vue"
 import ConnectByURI from "./ConnectByURI.vue"
 import ReceivePopup from "./ReceivePopup.vue"
 import ResetPopup from "./ResetPopup.vue"
+import ForgotPasswordPopup from "./ForgotPasswordPopup.vue"
 import ConfirmPopup from "./ConfirmPopup.vue"
 import SelectTokenPopup from "./SelectTokenPopup.vue"
 import TokensPopup from "./TokensPopup.vue"
@@ -19,13 +23,25 @@ const popupStore = usePopupStore()
 </script>
 
 <template>
-	<SettingsPopup
-		:show="popupStore.isOpened('settings')"
-		@onClose="popupStore.close('settings')"
+	<MenuPopup
+		:show="popupStore.isOpened('menu')"
+		@onClose="popupStore.close('menu')"
 	/>
 	<NetworksPopup
 		:show="popupStore.isOpened('networks')"
 		@onClose="popupStore.close('networks')"
+	/>
+	<NewNetworkPopup
+		:show="popupStore.isOpened('new_network')"
+		@onClose="popupStore.close('new_network')"
+	/>
+	<EditNetworkPopup
+		:show="popupStore.isOpened('edit_network')"
+		@onClose="popupStore.close('edit_network')"
+	/>
+	<EditAccountPopup
+		:show="popupStore.isOpened('edit_account')"
+		@onClose="popupStore.close('edit_account')"
 	/>
 	<AccountsPopup
 		:show="popupStore.isOpened('accounts')"
@@ -50,6 +66,10 @@ const popupStore = usePopupStore()
 	<ResetPopup
 		:show="popupStore.isOpened('reset')"
 		@onClose="popupStore.close('reset')"
+	/>
+	<ForgotPasswordPopup
+		:show="popupStore.isOpened('forgot_password')"
+		@onClose="popupStore.close('forgot_password')"
 	/>
 	<ConfirmPopup
 		:show="popupStore.isOpened('confirm')"

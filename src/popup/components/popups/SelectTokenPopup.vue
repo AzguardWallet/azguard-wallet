@@ -3,11 +3,27 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
+import { useCacheStore } from "@/stores/cache.store"
+const appStore = useAppStore()
+const popupStore = usePopupStore()
+const cacheStore = useCacheStore()
+
 const emit = defineEmits(["onClose"])
+const props = defineProps({
+	show: Boolean,
+})
+
+const handleSelectToken = (target) => {
+	cacheStore.activeTokenIdx = target.id
+	emit("onClose")
+}
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')">
+	<Popup :show @onClose="emit('onClose')">
 		<PopupCard>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Flex direction="column" gap="12">
@@ -17,24 +33,27 @@ const emit = defineEmits(["onClose"])
 
 					<Flex direction="column" gap="8">
 						<Flex
+							v-for="token in appStore.tokens"
+							@click="handleSelectToken(token)"
 							align="center"
 							justify="between"
 							:class="$style.token"
 						>
 							<Flex align="center" gap="8">
-								<Icon name="aztec" size="16" color="green" />
+								<Icon
+									name="banknote"
+									size="16"
+									color="primary"
+								/>
 								<Text size="14" weight="600" color="primary">
-									AZT
+									{{ token.symbol }}
 								</Text>
 								<Text size="14" weight="600" color="tertiary">
-									Aztec Network
+									{{ token.name }}
 								</Text>
 							</Flex>
 
 							<Flex align="center" gap="8">
-								<Text size="14" weight="600" color="primary">
-									762 AZT
-								</Text>
 								<Icon
 									name="chevron"
 									size="16"
@@ -43,22 +62,15 @@ const emit = defineEmits(["onClose"])
 								/>
 							</Flex>
 						</Flex>
-
-						<Text
-							size="12"
-							weight="600"
-							color="tertiary"
-							height="140"
-							align="center"
-						>
-							Hidden <Text color="body">5 tokens</Text> with
-							<Text color="body">zero</Text> private balance
-						</Text>
 					</Flex>
 				</Flex>
 
 				<Flex direction="column" gap="12">
-					<Button type="secondary" size="medium">
+					<Button
+						@click="popupStore.open('tokens')"
+						type="secondary"
+						size="medium"
+					>
 						Manage tokens
 					</Button>
 				</Flex>

@@ -10,6 +10,17 @@ const popupStore = usePopupStore()
 <template>
 	<Flex direction="column" gap="20" :class="$style.wrapper">
 		<Flex align="center" gap="8">
+			<RouterLink to="/popup/settings">
+				<Text
+					size="13"
+					weight="600"
+					color="tertiary"
+					style="line-height: 16px"
+				>
+					Settings
+				</Text>
+			</RouterLink>
+			<Text color="support">•</Text>
 			<RouterLink to="/popup/settings/security">
 				<Text
 					size="13"

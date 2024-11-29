@@ -19,15 +19,17 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const displaceIdx = computed(() => {
-	return (
-		popupStore.popups.length -
-		popupStore.popups.findIndex((p) => p === "reset")
-	)
+	return popupStore.popups.reset
 })
 
 const router = useRouter()
 
 const emit = defineEmits(["onClose"])
+const props = defineProps({
+	show: Boolean,
+})
+
+const inputEl = useTemplateRef("inputEl")
 
 const profileNameTerm = ref("")
 const checks = reactive({
@@ -46,6 +48,7 @@ const isReadyToReset = computed(
 const handleReset = () => {
 	if (!isReadyToReset.value) return
 
+	cacheStore.confirm.confirm_text = "Yes, reset"
 	cacheStore.confirm.description =
 		"This is the last warning before a deletion. If you have not saved the seed phrase, it will not be possible to regain access to the wallet."
 	cacheStore.confirm.callback = () => {
@@ -59,15 +62,31 @@ const handleReset = () => {
 
 	popupStore.open("confirm")
 }
+
+watch(
+	() => props.show,
+	async () => {
+		if (!props.show) {
+			profileNameTerm.value = ""
+			for (const key in checks) {
+				const element = checks[key]
+				if (element) checks[key] = false
+			}
+		} else {
+			await nextTick()
+			inputEl.value.inputEl.focus()
+		}
+	}
+)
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')">
+	<Popup :show @onClose="emit('onClose')">
 		<PopupCard :displaceIdx="displaceIdx">
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
 					<Flex align="center" gap="6">
-						<Icon name="warning" size="18" color="primary" />
+						<Icon name="trash" size="18" color="primary" />
 						<Text size="16" weight="600" color="primary">
 							Reset Wallet
 						</Text>
@@ -79,6 +98,7 @@ const handleReset = () => {
 						color="body"
 						height="140"
 						align="center"
+						style="padding: 0 12px"
 					>
 						Your wallet will be permanently removed and you can't
 						undo this action
@@ -86,6 +106,7 @@ const handleReset = () => {
 				</Flex>
 
 				<Input
+					ref="inputEl"
 					v-model="profileNameTerm"
 					label="Type your profile name"
 					placeholder="My Profile"
@@ -130,11 +151,12 @@ const handleReset = () => {
 					</Flex>
 				</Flex>
 
-				<Flex direction="column" gap="16">
+				<Flex wide direction="column" align="center" gap="12">
 					<Button
 						v-if="appStore.isLogined"
 						type="secondary"
 						size="medium"
+						wide
 					>
 						<Text color="tertiary" wrap="wrap">
 							<Text color="secondary"
@@ -149,10 +171,23 @@ const handleReset = () => {
 						@click="handleReset"
 						type="red"
 						size="medium"
+						wide
 						:disabled="!isReadyToReset"
 					>
 						Reset my wallet
 					</Button>
+
+					<Text
+						size="12"
+						weight="500"
+						color="support"
+						height="140"
+						align="center"
+						style="max-width: 300px"
+					>
+						You will be able to restore your wallet later if you
+						have saved the seed phrase
+					</Text>
 				</Flex>
 			</Flex>
 		</PopupCard>

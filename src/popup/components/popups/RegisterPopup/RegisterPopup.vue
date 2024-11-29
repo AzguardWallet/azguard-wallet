@@ -19,8 +19,6 @@ const router = useRouter()
 const walletPassword = ref<string>("")
 const repeatedPassword = ref<string>("")
 
-// const walletType = ref<string>("Schnorr")
-
 const handleCreateProfile = async () => {
 	if (!isAllowedToContinue.value) return
 
@@ -38,7 +36,7 @@ const handleCreateProfile = async () => {
 
 	appStore.profile = profile
 	appStore.account = account
-	appStore.accounts = await managers.account.getAccounts()
+	appStore.accounts = await managers.account.getAccounts(true)
 
 	appStore.isLogined = true
 

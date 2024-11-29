@@ -56,7 +56,11 @@ const tokenBalanceService = new TokenBalanceService(
     tokenService,
     broadcast,
 );
-const transactionService = new TransactionService(networkService, broadcast);
+const transactionService = new TransactionService(
+    networkService,
+    tokenBalanceService,
+    broadcast,
+);
 const executionService = new ExecutionService(
     profileService,
     networkService,

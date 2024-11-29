@@ -17,34 +17,40 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 
 const emit = defineEmits(["onClose"])
+const props = defineProps({
+	show: Boolean,
+})
 
 const account = computed(() => appStore.account)
 
 watch(
-	() => popupStore.popups,
+	() => props.show,
 	() => {
-		if (!popupStore.popups.includes("receive")) return
+		if (!props.show) return
 
 		nextTick(() => {
 			const qrCode = generate(appStore.account.address)
 			qrCode.toCanvas(document.getElementById("my-qr-code"))
 		})
-	},
-	{
-		deep: true,
 	}
 )
 
 const handleCopyAddress = () => {
 	window.navigator.clipboard.writeText(appStore.account.address)
-	openToast({ label: "Address is copied to clipboard", icon: "copy" })
+	openToast({ label: "Address is copied", icon: "copy" })
 }
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')">
+	<Popup :show="show" @onClose="emit('onClose')">
 		<PopupCard>
-			<Flex wide direction="column" gap="24" :class="$style.wrapper">
+			<Flex
+				wide
+				align="center"
+				direction="column"
+				gap="24"
+				:class="$style.wrapper"
+			>
 				<Flex align="center" gap="6">
 					<Icon
 						name="arrow-bottom-circle"
@@ -85,6 +91,7 @@ const handleCopyAddress = () => {
 
 				<Button
 					@click="popupStore.close('receive')"
+					wide
 					type="secondary"
 					size="medium"
 				>
