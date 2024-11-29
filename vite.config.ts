@@ -64,6 +64,10 @@ export default defineConfig({
 					baseRoute: "popup",
 				},
 				{
+					dir: "src/popup/windows",
+					baseRoute: "windows",
+				},
+				{
 					dir: "src/options/pages",
 					baseRoute: "options",
 				},

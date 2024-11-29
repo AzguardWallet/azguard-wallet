@@ -267,7 +267,8 @@ export class InteractionService extends Service {
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async dappSessionProposal(payload: any): Promise<void> {
         const interactionRequest = await this.addInteractionRequest(payload)
-        const url = new URL(chrome.runtime.getURL('src/popup/index.html#/popup/settings/dappSessions/popup'))
+        // const url = new URL(chrome.runtime.getURL('src/popup/index.html#/popup/settings/dappSessions/popup/sessionProposal.vue'))
+        const url = new URL(chrome.runtime.getURL('src/popup/index.html#/windows/session'))
         url.searchParams.set('requestId', interactionRequest.id)
 
         chrome.windows.create({type: 'popup', url: url.toString(), height: 660, width: 400})

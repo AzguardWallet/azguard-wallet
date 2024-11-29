@@ -80,7 +80,7 @@ const init = async () => {
 
 		// router.push("/popup/general")
 
-		if (route.name === "popup-settings-dappSessions-popup") {
+		if (route.name.includes("windows-")) {
 			if (route.query.redirect) {
 				window.location.href = route.query.redirect
 			} else {
@@ -111,7 +111,7 @@ init()
 watch(
 	() => route.name,
 	() => {
-		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name === "popup-settings-dappSessions-popup"
+		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name.includes("windows-")
 	}
 )
 </script>

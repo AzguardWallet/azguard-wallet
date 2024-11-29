@@ -55,4 +55,13 @@ export class EntityStorage<T> {
             .filter(([k, _]) => k.startsWith(path))
             .map(([_, v]) => JSON.parse(v));
     }
+
+    public async findByKeys(predicate: (entity: T) => boolean): Promise<Array<{ key: string, entity: T }>> {
+        const allEntities = await this.getAll()
+        const foundEntities = allEntities
+            .filter(([, entity]) => predicate(entity))
+            .map(([key, entity]) => ({ key, entity }))
+
+        return foundEntities
+    }
 }
