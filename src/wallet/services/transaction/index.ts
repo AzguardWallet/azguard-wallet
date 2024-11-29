@@ -20,6 +20,7 @@ import {
 } from "./client";
 import { NetworkService } from "../network";
 import { Network } from "../network/client";
+import { TokenBalanceService } from "../token-balance";
 
 export class TransactionService extends Service {
     public readonly onTransactionAdded: ((tx: Tx) => void)[] = [];
@@ -32,6 +33,7 @@ export class TransactionService extends Service {
 
     constructor(
         private readonly networkService: NetworkService,
+        private readonly tokenBalanceService: TokenBalanceService,
         emit: (event: EventMessage) => void,
     ) {
         super(TRANSACTION_SERVICE_NAME, emit);
@@ -101,9 +103,9 @@ export class TransactionService extends Service {
             calls,
             nonce,
             hash,
+            now,
+            now,
             TxStatus.Pending,
-            now,
-            now,
         )
         await this.txs.set(tx.hash, tx);
         this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionAdded, tx));
@@ -193,6 +195,7 @@ export class TransactionService extends Service {
         }
         if (tx.status != TxStatus.Pending) {
             this.pending.delete(tx.hash);
+            this.tokenBalanceService.refreshAccountBalances(tx.account); // async call
         }
         console.debug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
     }
