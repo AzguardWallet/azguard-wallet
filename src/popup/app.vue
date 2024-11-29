@@ -27,7 +27,8 @@ const initAccount = async () => {
 		appStore.network
 	)
 
-	appStore.accounts = await managers.account.getAccounts()
+	appStore.accounts = await managers.account.getAccounts(true)
+
 	await appStore.setupActiveAccount()
 }
 
@@ -43,6 +44,7 @@ const init = async () => {
 	const networks = await initNetworks()
 	appStore.networks = networks
 	appStore.network = networks[0]
+	managers.network.setDefault(appStore.network.id)
 
 	const activeProfile = await managers.profile.getActiveProfile()
 	if (activeProfile) {
@@ -56,10 +58,15 @@ const init = async () => {
 			account: appStore.account,
 		})
 		await appStore.syncLocalTokens()
+		await appStore.syncBalances()
+		appStore.initBalanceListeners()
 
 		appStore.isLogined = true
+		appStore.isSessionChecked = true
 
-		router.push("/popup/general")
+		if (["popup-register"].includes(route.name))
+			router.push("/popup/general")
+
 		return
 	}
 
@@ -69,9 +76,13 @@ const init = async () => {
 
 		await initAccount()
 
+		appStore.isSessionChecked = true
+
 		router.push("/popup/auth")
 		return
 	}
+
+	appStore.isSessionChecked = true
 
 	router.push("/popup/register")
 }

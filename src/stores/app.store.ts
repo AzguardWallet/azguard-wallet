@@ -27,11 +27,15 @@ export const useAppStore = defineStore("app", () => {
 
 	const _isHomeScreenOpened = ref(false)
 
+	const isLoading = ref(false)
+
 	const profile = ref()
 
 	const account = ref<Account>()
-	const isLogined = ref<boolean>(false)
 	const accounts = ref<Account[]>([])
+	const isLogined = ref<boolean>(false)
+	const isSessionChecked = ref<boolean>(false)
+
 	const setupActiveAccount = async () => {
 		const activeAccountResult = await chrome.storage.local.get(
 			"azguard:ui:activeAccount"
@@ -58,19 +62,34 @@ export const useAppStore = defineStore("app", () => {
 			"azguard:ui:activeAccount": acc.address,
 		})
 	}
-	const hideAccount = async (acc: Account) => {
+	const changeAccountVisibility = async (acc: Account, value: boolean) => {
 		const accIdx = accounts.value.findIndex(
 			(a) => acc.address === a.address
 		)
 
-		managers.account.changeAccountVisibility(acc, false)
-		accounts.value.splice(accIdx, 1)
+		managers.account.changeAccountVisibility(acc.address, value)
+		accounts.value[accIdx] = { ...acc, visible: value }
 
-		if (accounts.value.length) {
-			account.value = accounts.value[0]
-			await chrome.storage.local.set({
-				"azguard:ui:activeAccount": account.value?.address,
-			})
+		if (!value) {
+			if (accounts.value.length) {
+				account.value = accounts.value
+					.filter((a) => a.visible)
+					.sort((a, b) => a.index - b.index)[0]
+				await chrome.storage.local.set({
+					"azguard:ui:activeAccount": account.value?.address,
+				})
+			}
+		}
+	}
+	const updateAccount = async (address: string, name: string) => {
+		const accIdx = accounts.value.findIndex((a) => address === a.address)
+
+		await managers.account.changeAccountName(address, name)
+
+		const updatedAccount = { ...accounts.value[accIdx], name: name }
+		accounts.value[accIdx] = updatedAccount
+		if (address === account.value?.address) {
+			account.value = updatedAccount
 		}
 	}
 
@@ -79,8 +98,57 @@ export const useAppStore = defineStore("app", () => {
 		tokens.value = await managers.token.getTokens()
 	}
 
+	const tokenAwaitingBalanceIdx = ref()
+	const balances = ref([])
+	const accountTotalBalance = computed(() => {
+		if (!balances.value.length) return 0
+
+		return balances.value
+			.filter((b) => b.account === account.value?.address)
+			.reduce((acc, curr) => {
+				const tokenBalance =
+					Number.parseFloat(curr.privateBalance) +
+					Number.parseFloat(curr.publicBalance)
+				return acc + tokenBalance
+			}, 0)
+	})
+	const syncBalances = async () => {
+		if (!tokens.value.length) return
+		balances.value = await managers.balance.getTokenBalances(
+			tokens.value[0].id,
+			account.value?.address
+		)
+	}
+	const initBalanceListeners = () => {
+		managers.balance.onTokenBalanceUpdated = (newBalance) => {
+			tokenAwaitingBalanceIdx.value = null
+
+			console.log(newBalance)
+			console.log(balances.value)
+
+			const oldBalanceIdx = balances.value.findIndex(
+				(b) => b.id === newBalance.id
+			)
+			if (oldBalanceIdx === -1) {
+				balances.value.push(newBalance)
+			} else {
+				balances.value[oldBalanceIdx] = newBalance
+			}
+		}
+	}
+
 	const network = ref()
 	const networks = ref([])
+	const updateNetwork = async (id, name, url) => {
+		await managers.network.updateNetwork(id, name, url)
+		networks.value = await managers.network.getNetworks()
+	}
+	const removeNetwork = async (target) => {
+		await managers.network.deleteNetwork(target.id)
+		networks.value = networks.value.filter((n) => n.id !== target.id)
+	}
+
+	const transactions = ref([])
 
 	const showSendPopup = ref(false)
 	const showRegisterPopup = ref(false)
@@ -91,17 +159,28 @@ export const useAppStore = defineStore("app", () => {
 		_wallet,
 		setWalletCreatedAt,
 		_isHomeScreenOpened,
+		isLoading,
 		profile,
 		account,
 		isLogined,
+		isSessionChecked,
 		accounts,
 		setupActiveAccount,
 		selectAccount,
-		hideAccount,
+		changeAccountVisibility,
+		updateAccount,
 		tokens,
 		syncLocalTokens,
+		tokenAwaitingBalanceIdx,
+		balances,
+		accountTotalBalance,
+		syncBalances,
+		initBalanceListeners,
 		network,
 		networks,
+		updateNetwork,
+		removeNetwork,
+		transactions,
 		showSendPopup,
 		showRegisterPopup,
 		isPrivacyModeEnabled,

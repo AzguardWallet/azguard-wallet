@@ -4,8 +4,11 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Utils */
-import { AccountType } from "@/wallet/services/account/client"
 import { managers } from "@/utils/core"
+
+/** Composables */
+import { useToast } from "@/composables/toast"
+const { openToast } = useToast()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -22,52 +25,56 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const inputEl = useTemplateRef("inputEl")
+const notAllowedNetworkNames = computed(() =>
+	appStore.networks.map((n) => n.name)
+)
 
-const name = ref("")
+const nameTerm = ref("")
+const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
 
-const isAvailableToCreateAccount = computed(() => {
-	if (!name.value.length) return
+const isAlreadyExist = computed(() =>
+	notAllowedNetworkNames.value.includes(nameTerm.value)
+)
+const isAvailableToCreateNetwork = computed(() => {
+	if (!nameTerm.value.length) return
+	if (!urlTerm.value.length) return
+	if (urlTerm.value.length < 5) return
+	if (isAlreadyExist.value) return
 
 	return true
 })
 
-const handleCreateAccount = async () => {
-	if (!isAvailableToCreateAccount.value) return
+const handleCreateNetwork = async () => {
+	if (!isAvailableToCreateNetwork.value) return
 
-	const account = await managers.account.createAccount(
-		AccountType.Azguard_v0,
-		name.value.trim()
+	const network = await managers.network.addNetwork(
+		nameTerm.value,
+		urlTerm.value
 	)
-
-	appStore.account = account
-	appStore.accounts.push(account)
-
-	await chrome.storage.local.set({
-		"azguard:ui:activeAccount": account.address,
-	})
+	appStore.network = network
+	appStore.networks = await managers.network.getNetworks()
 
 	emit("onClose")
+
+	openToast({ label: "Network is updated" })
 }
 
 watch(
 	() => props.show,
-	async () => {
+	() => {
 		if (!props.show) {
 			document.removeEventListener("keydown", onKeydown)
 
-			name.value = ""
+			nameTerm.value = ""
+			urlTerm.value = "https://rpc.sandbox.azguardwallet.io/"
 		} else {
 			document.addEventListener("keydown", onKeydown)
-
-			await nextTick()
-			inputEl.value.inputEl.focus()
 		}
 	}
 )
 
 const onKeydown = (e) => {
-	if (e.code === "Enter") handleCreateAccount()
+	if (e.code === "Enter") handleCreateNetwork()
 }
 </script>
 
@@ -76,22 +83,39 @@ const onKeydown = (e) => {
 		<PopupCard :displaceIdx="displaceIdx">
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Text size="14" weight="600" color="primary">
-					New account
+					New network
 				</Text>
 
 				<Input
-					ref="inputEl"
-					v-model="name"
-					label="Account name"
-					placeholder="My Vault"
+					label="Name"
+					placeholder="My Network"
+					v-model="nameTerm"
+					autofocus
+				>
+					<template #right>
+						<Transition name="fade">
+							<Flex v-if="isAlreadyExist" align="center" gap="6">
+								<Icon name="warning" size="12" color="orange" />
+								<Text size="12" weight="600" color="primary">
+									Already exist
+								</Text>
+							</Flex>
+						</Transition>
+					</template>
+				</Input>
+
+				<Input
+					label="RPC Link"
+					placeholder="http://localhost:1337"
+					v-model="urlTerm"
 				/>
 
 				<Button
-					@click="handleCreateAccount"
+					@click="handleCreateNetwork"
 					wide
 					type="primary"
 					size="medium"
-					:disabled="!isAvailableToCreateAccount"
+					:disabled="!isAvailableToCreateNetwork"
 				>
 					<Text color="inverse">Create</Text>
 				</Button>
@@ -103,8 +127,8 @@ const onKeydown = (e) => {
 					height="140"
 					align="center"
 				>
-					New accounts do not require the creation of a new seed
-					phrase, just select the account type
+					We will check the availability of the specified RPC before
+					adding it
 				</Text>
 			</Flex>
 		</PopupCard>

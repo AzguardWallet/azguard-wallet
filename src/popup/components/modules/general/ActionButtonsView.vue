@@ -2,14 +2,34 @@
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
+import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
+const cacheStore = useCacheStore()
+
+const props = defineProps({
+	token: {
+		type: Object,
+		required: false,
+	},
+})
+
+const handleOpenPopup = (target) => {
+	popupStore.open(target)
+
+	if (props.token) {
+		cacheStore.activeTokenIdx = props.token.id
+	} else {
+		cacheStore.activeTokenIdx = appStore.tokens[0].id
+	}
+}
 </script>
 
 <template>
-	<Flex wide align="center" justify="between">
+	<Flex wide align="center" justify="between" gap="12">
 		<Flex
-			@click="popupStore.open('send')"
+			@click="handleOpenPopup('send')"
+			wide
 			align="center"
 			justify="center"
 			gap="6"
@@ -20,7 +40,8 @@ const popupStore = usePopupStore()
 		</Flex>
 
 		<Flex
-			@click="popupStore.open('receive')"
+			@click="handleOpenPopup('receive')"
+			wide
 			align="center"
 			justify="center"
 			gap="6"
@@ -31,6 +52,7 @@ const popupStore = usePopupStore()
 		</Flex>
 
 		<Flex
+			v-if="!props.token"
 			align="center"
 			justify="center"
 			gap="6"
@@ -47,7 +69,7 @@ const popupStore = usePopupStore()
 	height: 36px;
 
 	cursor: pointer;
-	background: var(--action-btn-bg);
+	background: linear-gradient(var(--gray-10), var(--gray-3));
 	box-shadow: inset 0 0 0 1px var(--border), 0 1px 3px var(--shadow-5);
 	border-radius: 500px;
 
@@ -62,7 +84,7 @@ const popupStore = usePopupStore()
 
 	&:hover {
 		box-shadow: inset 0 0 0 1px var(--border-hovered),
-			0 1px 3px var(--shadow-5);
+			0 1px 3px var(--shadow-10);
 	}
 }
 </style>

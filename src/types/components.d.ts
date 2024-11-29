@@ -7,6 +7,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Badge: typeof import('./../components/ui/Badge.vue')['default']
     Button: typeof import('./../components/ui/Button.vue')['default']
     Checkbox: typeof import('./../components/ui/Checkbox.vue')['default']
     DropdownDivider: typeof import('./../components/ui/Dropdown/DropdownDivider.vue')['default']
@@ -25,6 +26,7 @@ declare module 'vue' {
     PopupCard: typeof import('./../components/ui/Popup/PopupCard.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Spinner: typeof import('./../components/ui/Spinner.vue')['default']
     Text: typeof import('./../components/core/Text.vue')['default']
     ToastManager: typeof import('./../components/ui/ToastManager.vue')['default']
     Toggle: typeof import('./../components/ui/Toggle.vue')['default']

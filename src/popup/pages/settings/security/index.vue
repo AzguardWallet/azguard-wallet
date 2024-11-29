@@ -6,6 +6,17 @@ import Navigation from "../../../components/Navigation.vue"
 <template>
 	<Flex direction="column" gap="12" :class="$style.wrapper">
 		<Flex align="center" gap="8">
+			<RouterLink to="/popup/settings">
+				<Text
+					size="13"
+					weight="600"
+					color="tertiary"
+					style="line-height: 16px"
+				>
+					Settings
+				</Text>
+			</RouterLink>
+			<Text color="support">•</Text>
 			<Text
 				size="13"
 				weight="600"
@@ -24,7 +35,27 @@ import Navigation from "../../../components/Navigation.vue"
 							Wallet
 						</Text>
 						<Text size="13" weight="500" color="tertiary">
-							TBD
+							Edit or reset your wallet
+						</Text>
+					</Flex>
+
+					<Icon
+						name="chevron"
+						size="16"
+						color="tertiary"
+						:class="$style.item_icon"
+					/>
+				</Flex>
+			</RouterLink>
+
+			<RouterLink to="/popup/settings/security/accounts">
+				<Flex align="center" justify="between" :class="$style.item">
+					<Flex direction="column" gap="6">
+						<Text size="14" weight="600" color="primary">
+							Manage accounts
+						</Text>
+						<Text size="13" weight="500" color="tertiary">
+							Edit account visibility or metadata
 						</Text>
 					</Flex>
 
@@ -46,13 +77,15 @@ import Navigation from "../../../components/Navigation.vue"
 .wrapper {
 	flex: 1;
 
+	overflow: auto;
+
 	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--gray-5);
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
 
-	padding: 20px 24px 24px 24px;
+	padding: 20px 24px 80px 24px;
 }
 
 .item {

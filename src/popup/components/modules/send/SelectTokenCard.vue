@@ -1,7 +1,24 @@
 <script setup>
 /** Store */
+import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
+import { useCacheStore } from "@/stores/cache.store"
+const appStore = useAppStore()
 const popupStore = usePopupStore()
+const cacheStore = useCacheStore()
+
+const selectedToken = computed(() => {
+	if (cacheStore.activeTokenIdx)
+		// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
+		return appStore.tokens.find((t) => t.id == cacheStore.activeTokenIdx)
+	return appStore.tokens[0]
+})
+const isTokenRestricted = computed(() => {
+	return (
+		!selectedToken.value.hasPrivateTransfers ||
+		!selectedToken.value.hasPublicTransfers
+	)
+})
 </script>
 
 <template>
@@ -12,9 +29,45 @@ const popupStore = usePopupStore()
 		:class="$style.wrapper"
 	>
 		<Flex align="center" gap="8">
-			<Icon name="aztec" size="16" color="primary" />
-			<Text size="13" weight="600" color="primary"> AZT </Text>
-			<Text size="13" weight="600" color="body"> Aztec Network </Text>
+			<Tooltip :disabled="!isTokenRestricted" position="start">
+				<Flex
+					align="center"
+					justify="center"
+					:class="$style.token_icon"
+				>
+					<Icon name="banknote" size="16" color="primary" />
+					<Icon
+						v-if="isTokenRestricted"
+						:name="
+							!selectedToken.hasPrivateTransfers
+								? 'face'
+								: 'key-square'
+						"
+						size="10"
+						:color="
+							!selectedToken.hasPrivateTransfers
+								? 'orange'
+								: 'green'
+						"
+						:class="$style.type_icon"
+					/>
+				</Flex>
+
+				<template #content>
+					Restricted token, only
+					{{
+						selectedToken.hasPrivateTransfers ? "private" : "public"
+					}}
+					transfers
+				</template>
+			</Tooltip>
+
+			<Text size="13" weight="600" color="primary">
+				{{ selectedToken.symbol }}
+			</Text>
+			<Text size="13" weight="600" color="body">
+				{{ selectedToken.name }}
+			</Text>
 		</Flex>
 
 		<Icon
@@ -42,5 +95,21 @@ const popupStore = usePopupStore()
 	&:hover {
 		background: var(--gray-5);
 	}
+}
+
+.token_icon {
+	position: relative;
+}
+
+.type_icon {
+	position: absolute;
+	top: -5px;
+	right: -5px;
+
+	box-sizing: content-box;
+	background: var(--card-bg);
+	border-radius: 3px;
+
+	padding: 1px;
 }
 </style>

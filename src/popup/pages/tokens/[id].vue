@@ -1,16 +1,20 @@
 <script setup>
 /** Components */
-import BalanceView from "../components/modules/general/BalanceView.vue"
-import WarningView from "../components/modules/general/WarningView.vue"
-import TokensView from "../components/modules/general/TokensView.vue"
-import RecentActivityView from "../components/modules/general/RecentActivityView.vue"
-import Navigation from "../components/Navigation.vue"
+import BalanceView from "../../components/modules/general/BalanceView.vue"
+import RecentActivityView from "../../components/modules/general/RecentActivityView.vue"
+import Navigation from "../../components/Navigation.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 const router = useRouter()
+const route = useRoute()
+
+const token = computed(() =>
+	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
+	appStore.tokens.find((t) => t.id == route.params.id)
+)
 
 onMounted(async () => {
 	if (!appStore.isLogined && appStore.isSessionChecked)
@@ -28,11 +32,9 @@ watch(
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
-		<BalanceView />
+		<BalanceView :token />
 
 		<Flex direction="column" gap="32" :class="$style.content">
-			<WarningView />
-			<TokensView />
 			<RecentActivityView />
 		</Flex>
 

@@ -1,13 +1,26 @@
 <script setup>
+const props = defineProps({
+	token: {
+		type: Object,
+		required: false,
+	},
+})
+
 const selectedSendType = defineModel("sendType")
 const selectedReceiverType = defineModel("receiverType")
 
 const handleSwitchSendType = () => {
+	if (!props.token.hasPrivateTransfers || !props.token.hasPublicTransfers)
+		return
+
 	selectedSendType.value =
 		selectedSendType.value === "private" ? "public" : "private"
 }
 
 const handleSwitchReceiverType = () => {
+	if (!props.token.hasPrivateBalances || !props.token.hasPublicBalances)
+		return
+
 	selectedReceiverType.value =
 		selectedReceiverType.value === "private" ? "public" : "private"
 }
@@ -59,14 +72,21 @@ const handleSwitchReceiverType = () => {
 
 <style module>
 .wrapper {
-	background: var(--card-bg);
+	height: 40px;
+
 	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
 	border-radius: 12px;
 
-	padding: 12px;
+	padding: 0 12px;
 }
 
 .type {
 	cursor: pointer;
+	background: var(--gray-5);
+	box-shadow: inset 0 0 0 1px var(--border);
+
+	border-radius: 6px;
+
+	padding: 4px;
 }
 </style>

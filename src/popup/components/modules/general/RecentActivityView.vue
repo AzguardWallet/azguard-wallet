@@ -2,6 +2,8 @@
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
+
+const router = useRouter()
 </script>
 
 <template>
@@ -10,7 +12,13 @@ const appStore = useAppStore()
 			<Text size="13" weight="600" color="secondary">
 				Recent activity
 			</Text>
-			<Text size="12" weight="600" color="tertiary" class="clickable">
+			<Text
+				@click="router.push('/popup/activity')"
+				size="12"
+				weight="600"
+				color="tertiary"
+				:class="['clickable', $style.txt_button]"
+			>
 				View all
 			</Text>
 		</Flex>
@@ -74,5 +82,13 @@ const appStore = useAppStore()
 
 	border-radius: 50%;
 	background: linear-gradient(var(--gray-8), var(--gray-3));
+}
+
+.txt_button {
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		color: var(--txt-secondary);
+	}
 }
 </style>

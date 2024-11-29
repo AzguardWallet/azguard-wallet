@@ -3,28 +3,36 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
+/** Services */
+import { managers } from "@/utils/core.js"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
 
 const emit = defineEmits(["onClose"])
+const props = defineProps({
+	show: Boolean,
+})
 
 const router = useRouter()
 
-const handleEdit = () => {}
-
-const handleDelete = (target) => {
-	appStore.removeNetwork(target)
+const handleSelectNetwork = (target) => {
+	if (appStore.network.id === target.id) return
+	appStore.network = target
+	managers.network.setDefault(appStore.network.id)
 }
 
-const handleAddNetwork = () => {
+const handleManageNetworks = () => {
+	router.push("/popup/settings/developer/networks")
 	emit("onClose")
-	router.push("/popup/settings/developer/networks/new")
 }
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')">
+	<Popup :show @onClose="emit('onClose')">
 		<PopupCard>
 			<Flex
 				wide
@@ -34,19 +42,36 @@ const handleAddNetwork = () => {
 				:class="$style.wrapper"
 			>
 				<Flex direction="column" gap="16">
-					<Text size="14" weight="600" color="primary">
-						Select network
-					</Text>
+					<Flex align="center" justify="between">
+						<Text size="14" weight="600" color="primary">
+							Select network
+						</Text>
 
+						<Flex
+							@click="handleManageNetworks"
+							align="center"
+							gap="4"
+							:class="['clickable', $style.txt_button]"
+						>
+							<Text size="13" weight="600" color="tertiary">
+								Manage networks
+							</Text>
+							<Icon
+								name="arrow-narrow-up-right"
+								size="12"
+								color="tertiary"
+							/>
+						</Flex>
+					</Flex>
 					<Flex direction="column" gap="6">
 						<Flex
 							v-for="network in appStore.networks"
-							@click="appStore.network = network"
+							@click="handleSelectNetwork(network)"
 							align="center"
 							justify="between"
 							:class="$style.network"
 						>
-							<Flex align="center" gap="8">
+							<Flex align="center" gap="10">
 								<Icon
 									:name="
 										appStore.network.id === network.id
@@ -60,9 +85,14 @@ const handleAddNetwork = () => {
 											: 'tertiary'
 									"
 								/>
+
 								<Text size="14" weight="600" color="primary">
 									{{ network.name }}
 								</Text>
+
+								<Badge variant="warning">
+									<Text size="11" weight="700"> Custom </Text>
+								</Badge>
 							</Flex>
 
 							<Flex
@@ -88,14 +118,14 @@ const handleAddNetwork = () => {
 					</Flex>
 				</Flex>
 
-				<Flex direction="column" gap="16">
+				<Flex direction="column" gap="12">
 					<Button
-						@click="handleAddNetwork"
+						@click="popupStore.open('new_network')"
 						wide
 						type="secondary"
 						size="medium"
 						leftIcon="plus-circle"
-						leftIconColor="blue"
+						leftIconColor="primary"
 					>
 						Add network
 					</Button>
@@ -107,10 +137,8 @@ const handleAddNetwork = () => {
 						height="140"
 						align="center"
 					>
-						Default networks
-						<Text color="secondary">Mainnet</Text> &
-						<Text color="secondary">Testnet</Text> cannot be edited
-						or deleted, you can only edit custom networks.
+						To add a new network, come up with a unique name and
+						provide an RPC link
 					</Text>
 				</Flex>
 			</Flex>
@@ -153,5 +181,20 @@ const handleAddNetwork = () => {
 	opacity: 0;
 
 	transition: all 0.2s var(--bezier);
+}
+
+.txt_button {
+	& span,
+	& svg {
+		transition: all 0.2s var(--bezier);
+	}
+
+	&:hover {
+		& span,
+		& svg {
+			color: var(--txt-secondary);
+			fill: var(--txt-secondary);
+		}
+	}
 }
 </style>

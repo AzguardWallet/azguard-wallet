@@ -8,7 +8,18 @@ const appStore = useAppStore()
 
 const router = useRouter()
 
-if (!appStore.isLogined) router.push("/popup/auth")
+onMounted(() => {
+	if (!appStore.isLogined && appStore.isSessionChecked)
+		router.push("/popup/auth")
+})
+
+watch(
+	() => appStore.isSessionChecked,
+	() => {
+		if (!appStore.isLogined && appStore.isSessionChecked)
+			router.push("/popup/auth")
+	}
+)
 </script>
 
 <template>
@@ -42,33 +53,19 @@ if (!appStore.isLogined) router.push("/popup/auth")
 		</Flex>
 
 		<Flex direction="column" gap="8">
-			<Flex align="center" justify="between" :class="$style.item">
-				<Flex direction="column" gap="6">
-					<Text size="14" weight="600" color="primary">
-						General
-					</Text>
-					<Text size="13" weight="500" color="tertiary">
-						Select theme, set up notifications
-					</Text>
-				</Flex>
-
-				<Icon
-					name="chevron"
-					size="16"
-					color="tertiary"
-					:class="$style.item_icon"
-				/>
-			</Flex>
-
-			<RouterLink to="/popup/settings/developer">
+			<RouterLink to="/popup/settings/general">
 				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary">
-							Developer
-						</Text>
-						<Text size="13" weight="500" color="tertiary">
-							Modify networks, endpoints, etc
-						</Text>
+					<Flex gap="10">
+						<Icon name="settings" size="16" color="secondary" />
+
+						<Flex direction="column" gap="6">
+							<Text size="14" weight="600" color="primary">
+								General
+							</Text>
+							<Text size="13" weight="500" color="tertiary">
+								Select theme, set up notifications
+							</Text>
+						</Flex>
 					</Flex>
 
 					<Icon
@@ -80,23 +77,53 @@ if (!appStore.isLogined) router.push("/popup/auth")
 				</Flex>
 			</RouterLink>
 
-			<Flex align="center" justify="between" :class="$style.item">
-				<Flex direction="column" gap="6">
-					<Text size="14" weight="600" color="primary">
-						Security
-					</Text>
-					<Text size="13" weight="500" color="tertiary">
-						Password and account managemenet
-					</Text>
-				</Flex>
+			<RouterLink to="/popup/settings/developer">
+				<Flex align="center" justify="between" :class="$style.item">
+					<Flex gap="10">
+						<Icon name="developer" size="16" color="secondary" />
 
-				<Icon
-					name="chevron"
-					size="16"
-					color="tertiary"
-					:class="$style.item_icon"
-				/>
-			</Flex>
+						<Flex direction="column" gap="6">
+							<Text size="14" weight="600" color="primary">
+								Developer
+							</Text>
+							<Text size="13" weight="500" color="tertiary">
+								Modify networks, endpoints, etc
+							</Text>
+						</Flex>
+					</Flex>
+
+					<Icon
+						name="chevron"
+						size="16"
+						color="tertiary"
+						:class="$style.item_icon"
+					/>
+				</Flex>
+			</RouterLink>
+
+			<RouterLink to="/popup/settings/security">
+				<Flex align="center" justify="between" :class="$style.item">
+					<Flex gap="10">
+						<Icon name="key-circle" size="16" color="secondary" />
+
+						<Flex direction="column" gap="6">
+							<Text size="14" weight="600" color="primary">
+								Security
+							</Text>
+							<Text size="13" weight="500" color="tertiary">
+								Password and account managemenet
+							</Text>
+						</Flex>
+					</Flex>
+
+					<Icon
+						name="chevron"
+						size="16"
+						color="tertiary"
+						:class="$style.item_icon"
+					/>
+				</Flex>
+			</RouterLink>
 		</Flex>
 
 		<Navigation />
@@ -108,7 +135,8 @@ if (!appStore.isLogined) router.push("/popup/auth")
 	flex: 1;
 
 	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
+	border-top: 2px solid var(--gray-8);
+	box-shadow: inset 0 10px 8px -2px var(--gray-3);
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;

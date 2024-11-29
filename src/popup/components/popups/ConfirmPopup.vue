@@ -10,22 +10,27 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const displaceIdx = computed(() => {
-	return (
-		popupStore.popups.length -
-		popupStore.popups.findIndex((p) => p === "confirm")
-	)
+	return popupStore.popups.confirm
 })
 
 const emit = defineEmits(["onClose"])
+const props = defineProps({
+	show: Boolean,
+})
+
+const handleConfirm = () => {
+	cacheStore.confirm.callback()
+	emit("onClose")
+}
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')">
+	<Popup :show @onClose="emit('onClose')">
 		<PopupCard :displaceIdx="displaceIdx">
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
 					<Flex align="center" gap="6">
-						<Icon name="warning" size="18" color="primary" />
+						<Icon name="warning" size="18" color="orange" />
 						<Text size="16" weight="600" color="primary">
 							{{
 								cacheStore.confirm.title
@@ -57,12 +62,14 @@ const emit = defineEmits(["onClose"])
 					</Button>
 
 					<Button
-						@click="cacheStore.confirm.callback()"
+						@click="handleConfirm"
 						wide
 						type="primary"
 						size="medium"
 					>
-						<Text color="inverse">Confirm</Text>
+						<Text color="inverse">{{
+							cacheStore.confirm.confirm_text || "Confirm"
+						}}</Text>
 					</Button>
 				</Flex>
 			</Flex>

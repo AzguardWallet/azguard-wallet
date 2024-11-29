@@ -23,7 +23,7 @@ const balance = reactive({
 
 const handleCopyAddress = () => {
 	window.navigator.clipboard.writeText(appStore.account.address)
-	openToast({ label: "Address is copied to clipboard", icon: "copy" })
+	openToast({ label: "Address is copied", icon: "copy" })
 }
 </script>
 

@@ -311,6 +311,8 @@
     "useToast": true,
     "capitilize": true,
     "capitalize": true,
-    "initTokenService": true
+    "initTokenService": true,
+    "purgeNumber": true,
+    "normalizeAmount": true
   }
 }

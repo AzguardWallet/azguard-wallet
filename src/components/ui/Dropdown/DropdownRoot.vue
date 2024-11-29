@@ -300,8 +300,7 @@ const onKeydown = (event) => {
 
 	border-radius: 10px;
 	background: var(--card-bg);
-	box-shadow: var(--shadow) 0px 2px 6px;
-	border: 1px solid var(--gray-5);
+	box-shadow: inset 0 0 0 1px var(--border), 0px 2px 6px var(--shadow-5);
 
 	padding: 4px;
 }

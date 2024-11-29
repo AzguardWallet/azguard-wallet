@@ -10,6 +10,8 @@ const { settings, updateSettings } = useSettings()
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+const router = useRouter()
+
 const root = document.querySelector("html")
 
 const theme = computed(() => settings.value.appearance.theme)
@@ -17,6 +19,10 @@ watch(
 	() => theme.value,
 	() => [root.setAttribute("theme", theme.value)]
 )
+
+onMounted(() => {
+	if (appStore.isLogined) router.push("/popup/general")
+})
 </script>
 
 <template>

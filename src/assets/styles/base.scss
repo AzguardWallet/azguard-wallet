@@ -46,6 +46,7 @@ $grayscale: (
 	--green: #14ae5c;
 	--orange: #ff9500;
 	--red: #f03c3c;
+	--purple: #5856de;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(255, 255, 255, #{$value});
@@ -169,6 +170,10 @@ $grayscale: (
 *::after {
 	box-sizing: border-box;
 	margin: 0;
+}
+
+*::-webkit-scrollbar {
+	display: none;
 }
 
 a {
