@@ -31,36 +31,23 @@ const appStore = useAppStore()
 			</Text>
 		</Flex>
 
-		<Flex
-			direction="column"
-			gap="24"
-			align="center"
-			:class="[$style.bottom]"
-		>
-			<Flex wide direction="column" gap="12">
+		<Flex direction="column" gap="16" align="center" :class="$style.bottom">
+			<Flex wide direction="column" gap="8">
 				<Button
 					@click="appStore.showRegisterPopup = true"
 					size="dynamic"
 					type="primary"
 					wide
 				>
-					<Flex direction="column" align="center" gap="8">
-						<Text size="14" weight="600" color="white">
-							Create a new wallet
-						</Text>
-						<Text
-							size="12"
-							weight="600"
-							style="color: var(--op-40)"
-						>
-							Private and Public
-						</Text>
+					<Flex align="center" gap="6">
+						<Icon name="plus-square" size="16" color="white" />
+						<Text size="13" color="white">Create profile</Text>
 					</Flex>
 				</Button>
 				<Button size="medium" type="secondary" wide>
 					<Flex align="center" gap="6">
 						<Icon name="import" size="16" color="tertiary" />
-						Import Wallet
+						Import profile
 					</Flex>
 				</Button>
 			</Flex>

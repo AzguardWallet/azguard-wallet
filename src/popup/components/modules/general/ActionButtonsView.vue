@@ -7,65 +7,53 @@ const popupStore = usePopupStore()
 </script>
 
 <template>
-	<Flex align="center" justify="between">
+	<Flex wide align="center" justify="between">
 		<Flex
 			@click="popupStore.open('send')"
-			direction="column"
 			align="center"
-			gap="8"
-			:class="$style.button_wrapper"
+			justify="center"
+			gap="6"
+			:class="$style.button"
 		>
-			<Flex align="center" justify="center" :class="$style.button">
-				<Icon name="arrow-top-right-circle" size="20" color="primary" />
-			</Flex>
-
-			<Text size="12" weight="600" color="secondary">Send</Text>
+			<Icon name="arrow-top-right-circle" size="20" color="blue" />
+			<Text size="14" weight="600" color="primary">Send</Text>
 		</Flex>
 
 		<Flex
-			direction="column"
+			@click="popupStore.open('receive')"
 			align="center"
-			gap="8"
-			:class="$style.button_wrapper"
+			justify="center"
+			gap="6"
+			:class="$style.button"
 		>
-			<Flex align="center" justify="center" :class="$style.button">
-				<Icon name="arrow-bottom-circle" size="20" color="primary" />
-			</Flex>
-
-			<Text size="12" weight="600" color="secondary">Receive</Text>
+			<Icon name="arrow-bottom-circle" size="20" color="green" />
+			<Text size="14" weight="600" color="primary">Receive</Text>
 		</Flex>
 
 		<Flex
-			direction="column"
 			align="center"
-			gap="8"
-			:class="[$style.button_wrapper, $style.disabled]"
+			justify="center"
+			gap="6"
+			:class="[$style.button, $style.disabled]"
 		>
-			<Flex align="center" justify="center" :class="$style.button">
-				<Icon name="plus-circle" size="20" color="blue" />
-			</Flex>
-
-			<Text size="12" weight="600" color="secondary">Buy</Text>
-		</Flex>
-
-		<Flex
-			direction="column"
-			align="center"
-			gap="8"
-			:class="[$style.button_wrapper, $style.disabled]"
-		>
-			<Flex align="center" justify="center" :class="$style.button">
-				<Icon name="swap" size="20" color="green" />
-			</Flex>
-
-			<Text size="12" weight="600" color="secondary">Swap</Text>
+			<Icon name="plus-circle" size="20" color="secondary" />
+			<Text size="14" weight="600" color="primary">Deposit</Text>
 		</Flex>
 	</Flex>
 </template>
 
 <style module>
-.button_wrapper {
+.button {
+	height: 36px;
+
 	cursor: pointer;
+	background: var(--action-btn-bg);
+	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 3px var(--gray-5);
+	border-radius: 500px;
+
+	padding: 0 12px;
+
+	transition: all 0.2s var(--bezier);
 
 	&.disabled {
 		opacity: 0.5;
@@ -73,25 +61,11 @@ const popupStore = usePopupStore()
 	}
 
 	&:hover {
-		& .button {
-			background: var(--gray-10);
-		}
+		background: var(--gray-10);
 	}
 
 	&:active {
-		& .button {
-			background: var(--gray-15);
-		}
+		background: var(--gray-15);
 	}
-}
-
-.button {
-	width: 68px;
-	height: 36px;
-
-	background: var(--gray-5);
-	border-radius: 500px;
-
-	transition: all 0.2s var(--bezier);
 }
 </style>

@@ -4,36 +4,28 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
 import { AccountType } from "@/wallet/services/account/client"
+import { managers } from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
+
+const displaceIdx = computed(() => {
+	return (
+		popupStore.popups.length -
+		popupStore.popups.findIndex((p) => p === "confirm")
+	)
+})
 
 const emit = defineEmits(["onClose"])
 
 const name = ref("")
 
-const selectedType = ref("Schnorr")
-const types = [
-	{
-		name: "Schnorr",
-		available: true,
-	},
-	{
-		name: "Ecdsa",
-		available: false,
-	},
-	{
-		name: "SingleKey",
-		available: false,
-	},
-]
-
 const isAvailableToCreateAccount = computed(() => {
 	if (!name.value.length) return
-	if (!selectedType.value) return
 
 	return true
 })
@@ -49,7 +41,9 @@ const handleCreateAccount = async () => {
 	appStore.account = account
 	appStore.accounts.push(account)
 
-	await chrome.storage.local.set({ "azguard:ui:activeAccount": account.address })
+	await chrome.storage.local.set({
+		"azguard:ui:activeAccount": account.address,
+	})
 
 	emit("onClose")
 }
@@ -57,7 +51,7 @@ const handleCreateAccount = async () => {
 
 <template>
 	<Popup @onClose="emit('onClose')">
-		<PopupCard>
+		<PopupCard :displaceIdx="displaceIdx">
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Text size="14" weight="600" color="primary">
 					New account
@@ -68,45 +62,6 @@ const handleCreateAccount = async () => {
 					label="Account name"
 					placeholder="My Vault"
 				/>
-
-				<Flex direction="column" gap="10">
-					<Text size="13" weight="600" color="secondary">
-						Select account type
-					</Text>
-
-					<Flex align="center" justify="between" gap="6">
-						<Flex
-							v-for="type in types"
-							@click="selectedType = type.name"
-							align="center"
-							justify="center"
-							gap="6"
-							:class="[
-								$style.item,
-								type.name === selectedType && $style.selected,
-								!type.available && $style.disabled,
-							]"
-						>
-							<Icon
-								v-if="type.name === selectedType"
-								name="check-circle"
-								size="12"
-								color="white"
-							/>
-							<Text
-								size="14"
-								weight="600"
-								:color="
-									type.name === selectedType
-										? 'white'
-										: 'primary'
-								"
-							>
-								{{ type.name }}
-							</Text>
-						</Flex>
-					</Flex>
-				</Flex>
 
 				<Button
 					@click="handleCreateAccount"

@@ -35,7 +35,7 @@
 
 <style module>
 .card {
-	background: #fff;
+	background: var(--card-bg);
 	border: 1px solid var(--gray-10);
 	box-shadow: 0 1px 2px transparent;
 	border-radius: 12px;

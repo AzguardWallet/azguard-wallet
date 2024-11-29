@@ -12,19 +12,19 @@ import Navigation from "../../../components/Navigation.vue"
 				color="tertiary"
 				style="line-height: 16px"
 			>
-				Developer
+				General
 			</Text>
 		</Flex>
 
 		<Flex direction="column" gap="8">
-			<RouterLink to="/popup/settings/developer/networks">
+			<RouterLink to="/popup/settings/general/appearance">
 				<Flex align="center" justify="between" :class="$style.item">
 					<Flex direction="column" gap="6">
 						<Text size="14" weight="600" color="primary">
-							Networks
+							Appearance
 						</Text>
 						<Text size="13" weight="500" color="tertiary">
-							Manage networks
+							Theme
 						</Text>
 					</Flex>
 

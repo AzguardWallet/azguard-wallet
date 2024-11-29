@@ -24,17 +24,6 @@ const handleDelete = async (network) => {
 <template>
 	<Flex direction="column" gap="12" :class="$style.wrapper">
 		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Settings
-				</Text>
-			</RouterLink>
-			<Text color="support">•</Text>
 			<RouterLink to="/popup/settings/developer">
 				<Text
 					size="13"
@@ -128,7 +117,7 @@ const handleDelete = async (network) => {
 .wrapper {
 	flex: 1;
 
-	background: #fff;
+	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--gray-5);
 
 	border-top-left-radius: 24px;

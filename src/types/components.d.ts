@@ -8,7 +8,9 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Button: typeof import('./../components/ui/Button.vue')['default']
+    Checkbox: typeof import('./../components/ui/Checkbox.vue')['default']
     Flex: typeof import('./../components/core/Flex.vue')['default']
+    Header: typeof import('./../components/Header.vue')['default']
     Icon: typeof import('./../components/core/Icon.vue')['default']
     Input: typeof import('./../components/ui/Input.vue')['default']
     Install: typeof import('./../components/install.vue')['default']
@@ -19,6 +21,8 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Text: typeof import('./../components/core/Text.vue')['default']
+    Toggle: typeof import('./../components/ui/Toggle.vue')['default']
+    Tooltip: typeof import('./../components/ui/Tooltip.vue')['default']
     Update: typeof import('./../components/update.vue')['default']
   }
 }
