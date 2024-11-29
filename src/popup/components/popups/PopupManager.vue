@@ -10,6 +10,8 @@ import ReceivePopup from "./ReceivePopup.vue"
 import ResetPopup from "./ResetPopup.vue"
 import ConfirmPopup from "./ConfirmPopup.vue"
 import SelectTokenPopup from "./SelectTokenPopup.vue"
+import TokensPopup from "./TokensPopup.vue"
+import NewTokenPopup from "./NewTokenPopup.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -56,5 +58,13 @@ const popupStore = usePopupStore()
 	<SelectTokenPopup
 		:show="popupStore.isOpened('select_token')"
 		@onClose="popupStore.close('select_token')"
+	/>
+	<TokensPopup
+		:show="popupStore.isOpened('tokens')"
+		@onClose="popupStore.close('tokens')"
+	/>
+	<NewTokenPopup
+		:show="popupStore.isOpened('new_token')"
+		@onClose="popupStore.close('new_token')"
 	/>
 </template>

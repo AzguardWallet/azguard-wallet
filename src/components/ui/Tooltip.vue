@@ -214,7 +214,7 @@ const handleMouseLeave = () => {
 
 	box-sizing: border-box;
 	background-color: #000;
-	box-shadow: 0 4px 8px var(--gray-5);
+	box-shadow: 0 4px 8px var(--shadow-5);
 	border-radius: 7px;
 
 	padding: 6px 8px;

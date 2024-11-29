@@ -1,4 +1,8 @@
 <script setup>
+/** Composables */
+import { useToast } from "@/composables/toast.js"
+const { openToast } = useToast()
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
@@ -8,6 +12,11 @@ const popupStore = usePopupStore()
 const handleOpenPopup = (target) => {
 	if (!appStore.isLogined) return
 	popupStore.open(target)
+}
+
+const handleCopyAddress = () => {
+	window.navigator.clipboard.writeText(appStore.account.address)
+	openToast({ label: "Address is copied to clipboard", icon: "copy" })
 }
 </script>
 
@@ -43,7 +52,13 @@ const handleOpenPopup = (target) => {
 			>
 				{{ appStore.account.name }}
 			</Text>
-			<Text size="13" weight="600" color="body">
+			<Text
+				@click.stop="handleCopyAddress"
+				size="13"
+				weight="600"
+				color="body"
+				class="copyable"
+			>
 				{{ appStore.account.address.slice(0, 4) }}
 				•••
 				{{ appStore.account.address.slice(-4) }}
@@ -97,10 +112,16 @@ const handleOpenPopup = (target) => {
 
 	border-radius: 50px;
 	background: var(--card-bg);
-	box-shadow: inset 0 0 0 1px var(--gray-10);
+	box-shadow: inset 0 0 0 1px var(--border);
 	cursor: pointer;
 
 	padding: 0 10px 0 6px;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		box-shadow: inset 0 0 0 1px var(--border-hovered);
+	}
 }
 
 .account_name {

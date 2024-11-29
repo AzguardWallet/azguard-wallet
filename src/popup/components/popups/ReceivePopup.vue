@@ -6,7 +6,11 @@ import { generate } from "lean-qr"
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
-/** Popup */
+/** Composables */
+import { useToast } from "@/composables/toast.js"
+const { openToast } = useToast()
+
+/** Store */
 import { useAppStore } from "@/stores/app.store.ts"
 import { usePopupStore } from "@/stores/popup.store.ts"
 const appStore = useAppStore()
@@ -30,6 +34,11 @@ watch(
 		deep: true,
 	}
 )
+
+const handleCopyAddress = () => {
+	window.navigator.clipboard.writeText(appStore.account.address)
+	openToast({ label: "Address is copied to clipboard", icon: "copy" })
+}
 </script>
 
 <template>
@@ -56,7 +65,12 @@ watch(
 								{{ account.name }}
 							</Text>
 
-							<Flex align="center" gap="6">
+							<Flex
+								@click="handleCopyAddress"
+								align="center"
+								gap="6"
+								class="copyable"
+							>
 								<Text size="13" weight="600" color="body">
 									{{ account.address.slice(0, 6) }}
 									•••
@@ -73,8 +87,9 @@ watch(
 					@click="popupStore.close('receive')"
 					type="secondary"
 					size="medium"
-					>Close</Button
 				>
+					Close
+				</Button>
 			</Flex>
 		</PopupCard>
 	</Popup>
@@ -95,7 +110,13 @@ watch(
 
 	user-select: none;
 	-webkit-user-drag: none;
-	box-shadow: inset 0 0 0 1px var(--gray-10);
+	box-shadow: inset 0 0 0 1px var(--op-10);
 	border-radius: 12px;
+}
+
+[theme="dark"] {
+	.qrcode {
+		filter: invert(1);
+	}
 }
 </style>

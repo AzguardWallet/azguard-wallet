@@ -85,31 +85,42 @@ const handleLockWallet = () => {
 						</Flex>
 					</RouterLink>
 
-					<Flex align="center" justify="between" :class="$style.link">
-						<Flex gap="10">
-							<Icon
-								name="key-square"
-								size="16"
-								color="secondary"
-							/>
+					<RouterLink to="/popup/settings/security">
+						<Flex
+							@click="emit('onClose')"
+							align="center"
+							justify="between"
+							:class="$style.link"
+						>
+							<Flex gap="10">
+								<Icon
+									name="key-square"
+									size="16"
+									color="secondary"
+								/>
 
-							<Flex direction="column" gap="6">
-								<Text size="14" weight="600" color="primary">
-									Security
-								</Text>
-								<Text size="13" weight="500" color="body">
-									Password and account managemenet
-								</Text>
+								<Flex direction="column" gap="6">
+									<Text
+										size="14"
+										weight="600"
+										color="primary"
+									>
+										Security
+									</Text>
+									<Text size="13" weight="500" color="body">
+										Password and account managemenet
+									</Text>
+								</Flex>
 							</Flex>
-						</Flex>
 
-						<Icon
-							name="chevron"
-							size="14"
-							color="tertiary"
-							style="transform: rotate(-90deg)"
-						/>
-					</Flex>
+							<Icon
+								name="chevron"
+								size="14"
+								color="tertiary"
+								style="transform: rotate(-90deg)"
+							/>
+						</Flex>
+					</RouterLink>
 
 					<RouterLink to="/popup/settings/developer">
 						<Flex
@@ -173,7 +184,7 @@ const handleLockWallet = () => {
 .link {
 	border-radius: 12px;
 	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
 
 	padding: 12px 16px 12px 12px;
 
@@ -181,6 +192,8 @@ const handleLockWallet = () => {
 
 	&:hover {
 		background: var(--gray-3);
+		box-shadow: inset 0 0 0 1px var(--border-hovered),
+			0 1px 2px var(--shadow-5);
 	}
 
 	&:active {

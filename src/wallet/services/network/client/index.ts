@@ -8,6 +8,7 @@ import {
     GetNetworkRequest,
     GetNetworksRequest,
     UpdateNetworkRequest,
+    SetDefaultRequest,
 } from "./methods";
 
 export * from './events';
@@ -27,6 +28,7 @@ export class NetworkServiceClient extends ServiceClient {
      * @param onNetworkAdded Callback, called when a new network was created.
      * @param onNetworkUpdated Callback, called when an existing network was updated.
      * @param onNetworkDeleted Callback, called when an existing network was deleted.
+     * @param onDefaultNetworkChanged Callback, called when an existing network was set as default.
      */
     constructor(
         onConnected?: () => void,
@@ -34,6 +36,7 @@ export class NetworkServiceClient extends ServiceClient {
         private readonly onNetworkAdded?: (network: Network) => void,
         private readonly onNetworkUpdated?: (network: Network) => void,
         private readonly onNetworkDeleted?: (network: Network) => void,
+        private readonly onDefaultNetworkChanged?: (network: Network) => void,
     ) {
         super(NETWORK_SERVICE_NAME, onConnected, onDisconnected);
     }
@@ -58,6 +61,12 @@ export class NetworkServiceClient extends ServiceClient {
                     catch {}
                 }
                 break;
+            case NetworkServiceEvent.DefaultNetworkChanged:
+                if (this.onDefaultNetworkChanged) {
+                    try {this.onDefaultNetworkChanged((message as NetworkServiceEventMessage).network);}
+                    catch {}
+                }
+                break;
             default:
                 console.error(`Unexpected event type ${message.event}.`);
                 break;
@@ -74,8 +83,9 @@ export class NetworkServiceClient extends ServiceClient {
     /**
      * Returns a network with the specified id, or undefined if it doesn't exist.
      * @param id Network id.
+     * @throws If the network with the specified id doesn't exist.
      */
-    public getNetwork(id: string): Promise<Network | undefined> {
+    public getNetwork(id: string): Promise<Network> {
         return this.request(new GetNetworkRequest(id));
     }
     
@@ -84,6 +94,7 @@ export class NetworkServiceClient extends ServiceClient {
      * @param name Display name.
      * @param rpcUrl RPC URL the wallet will connect to.
      * @emits `NetworkAdded` event.
+     * @throws If the specified RPC is invalid or not responding.
      */
     public addNetwork(name: string, rpcUrl: string): Promise<Network> {
         return this.request(new AddNetworkRequest(rpcUrl, name));
@@ -95,6 +106,7 @@ export class NetworkServiceClient extends ServiceClient {
      * @param name New display name.
      * @param rpcUrl New RPC URL.
      * @emits `NetworkUpdated` event.
+     * @throws If the network with the specified id doesn't exist, or the specified RPC is invalid or not responding.
      */
     public updateNetwork(id: string, name: string, rpcUrl: string): Promise<Network> {
         return this.request(new UpdateNetworkRequest(id, rpcUrl, name));
@@ -104,8 +116,19 @@ export class NetworkServiceClient extends ServiceClient {
      * Deletes network with the specified id.
      * @param id Network id.
      * @emits `NetworkDeleted` event.
+     * @throws If the network with the specified id doesn't exist.
      */
-    public deleteNetwork(id: string): Promise<void> {
+    public deleteNetwork(id: string): Promise<Network> {
         return this.request(new DeleteNetworkRequest(id));
+    }
+
+    /**
+     * Deletes network with the specified id.
+     * @param id Network id.
+     * @emits `NetworkUpdated` events (two).
+     * @throws If the network with the specified id doesn't exist.
+     */
+    public setDefault(id: string): Promise<Network> {
+        return this.request(new SetDefaultRequest(id));
     }
 }

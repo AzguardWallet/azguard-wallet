@@ -3,6 +3,10 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
+/** Composables */
+import { useToast } from "@/composables/toast.js"
+const { openToast } = useToast()
+
 /** Utils */
 import { managers } from "@/utils/core.js"
 
@@ -49,6 +53,8 @@ const handleReset = () => {
 		popupStore.closeAll()
 
 		router.push("/popup/register")
+
+		openToast({ label: "Successfully reset", icon: "check-circle" })
 	}
 
 	popupStore.open("confirm")
@@ -125,7 +131,11 @@ const handleReset = () => {
 				</Flex>
 
 				<Flex direction="column" gap="16">
-					<Button type="secondary" size="medium">
+					<Button
+						v-if="appStore.isLogined"
+						type="secondary"
+						size="medium"
+					>
 						<Text color="tertiary" wrap="wrap">
 							<Text color="secondary"
 								>{{ appStore.accounts.length }} accounts</Text
@@ -141,7 +151,7 @@ const handleReset = () => {
 						size="medium"
 						:disabled="!isReadyToReset"
 					>
-						<Text color="white">Reset my wallet</Text>
+						Reset my wallet
 					</Button>
 				</Flex>
 			</Flex>

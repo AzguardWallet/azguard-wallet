@@ -7,6 +7,7 @@ export enum NetworkServiceMethod {
     AddNetwork,
     UpdateNetwork,
     DeleteNetwork,
+    SetDefault,
 }
 
 export class GetNetworksRequest extends RequestMessage {
@@ -93,6 +94,24 @@ export class DeleteNetworkRequest extends RequestMessage {
 export class DeleteNetworkResponse extends ResponseMessage {
     constructor(
         request: DeleteNetworkRequest,
+        result?: Network,
+        error?: string,
+    ) {
+        super(NETWORK_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class SetDefaultRequest extends RequestMessage {
+    constructor(
+        public readonly networkId: string,
+    ) {
+        super(NETWORK_SERVICE_NAME, NetworkServiceMethod.SetDefault);
+    }
+}
+
+export class SetDefaultResponse extends ResponseMessage {
+    constructor(
+        request: SetDefaultRequest,
         result?: Network,
         error?: string,
     ) {

@@ -9,7 +9,11 @@ const isShifted = computed(() => {
 </script>
 
 <template>
-	<div :class="[$style.wrapper, isShifted && $style.shift]">
+	<Flex
+		align="center"
+		justify="center"
+		:class="[$style.wrapper, isShifted && $style.shift]"
+	>
 		<div :class="$style.bg">
 			<Icon
 				name="star"
@@ -22,7 +26,7 @@ const isShifted = computed(() => {
 				:class="$style.logo_icon"
 			/>
 		</div>
-	</div>
+	</Flex>
 </template>
 
 <style module>
@@ -30,18 +34,20 @@ const isShifted = computed(() => {
 	position: absolute;
 	top: 0;
 	left: 50%;
-	transform: translateX(-50%);
+	width: 360px;
+	height: 360px;
 	z-index: -1;
+	overflow: hidden;
 
 	transition: all 1s var(--bezier);
 
-	margin-top: 90px;
+	transform: translateY(-80px) translateX(-50%);
 
 	&.shift {
-		transform: translateX(-50%) translateY(-320%);
+		transform: translateY(-154px) translateX(-50%);
 
 		& .logo_icon {
-			fill: rgba(0, 0, 0, 30%);
+			fill: var(--gray-30);
 		}
 	}
 }
@@ -59,8 +65,7 @@ const isShifted = computed(() => {
 	transform: rotate(0);
 	transform-origin: center;
 
-	opacity: 0.03;
-
+	fill: var(--gray-3);
 	animation: rotation 100s linear infinite;
 
 	transition: all 1s var(--bezier);
@@ -81,7 +86,7 @@ const isShifted = computed(() => {
 }
 
 .logo_icon {
-	fill: rgba(0, 0, 0, 50%);
+	fill: var(--gray-50);
 
 	z-index: 2;
 

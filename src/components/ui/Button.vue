@@ -124,19 +124,6 @@ const getStyles = () => {
 	transition: all 0.2s ease;
 }
 
-/* Focus */
-/* .wrapper.primary:focus-visible {
-	box-shadow: 0 0 0 3px rgba(39, 110, 241, 0.4);
-}
-
-.wrapper.secondary:focus-visible {
-	box-shadow: 0 0 0 2px var(--op-10);
-}
-
-.wrapper.tertiary:focus-visible {
-	box-shadow: inset 0 0 0 2px var(--op-5), 0 0 0 2px var(--op-10);
-} */
-
 .wrapper.loading {
 	opacity: 0.5;
 	pointer-events: none;
@@ -170,7 +157,7 @@ const getStyles = () => {
 
 	font-size: 13px;
 
-	border-radius: 12px;
+	border-radius: 50px;
 
 	padding: 0 12px;
 }
@@ -179,7 +166,7 @@ const getStyles = () => {
 	height: 32px;
 	gap: 6px;
 
-	border-radius: 10px;
+	border-radius: 50px;
 
 	padding: 0 12px;
 }

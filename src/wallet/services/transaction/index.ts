@@ -1,0 +1,218 @@
+import { createPXEClient, PXE, TxHash, TxStatus as AztecTxStatus } from "@aztec/aztec.js";
+import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { Service } from "@/wallet/base/service";
+import { EntityStorage, StorageType } from "@/wallet/storage";
+import { sleep } from "@/wallet/utils";
+import {
+    GetTransactionRequest,
+    GetTransactionResponse,
+    GetTransactionsRequest,
+    GetTransactionsResponse,
+    Tx,
+    TRANSACTION_SERVICE_NAME,
+    TransactionServiceEvent,
+    TransactionServiceEventMessage,
+    TransactionServiceMethod,
+    TxOrigin,
+    TxCall,
+    TxStatus,
+    TxBlock,
+} from "./client";
+import { NetworkService } from "../network";
+import { Network } from "../network/client";
+
+export class TransactionService extends Service {
+    public readonly onTransactionAdded: ((tx: Tx) => void)[] = [];
+    public readonly onTransactionUpdated: ((tx: Tx) => void)[] = [];
+
+    private readonly txs: EntityStorage<Tx>;
+    private readonly pending: Map<string, Tx> = new Map();
+    private readonly pxes: Map<number, PXE> = new Map();
+    private readonly worker: Promise<void>;
+
+    constructor(
+        private readonly networkService: NetworkService,
+        emit: (event: EventMessage) => void,
+    ) {
+        super(TRANSACTION_SERVICE_NAME, emit);
+        this.txs = new EntityStorage("azguard:core:txs", StorageType.Local);
+        this.worker = this.runWorker();
+    }
+
+    public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
+        switch(request.method) {
+            case TransactionServiceMethod.GetTransactions: {
+                const _request = request as GetTransactionsRequest;
+                try {
+                    const txs = await this.getTransactions();
+                    return new GetTransactionsResponse(_request, txs);
+                }
+                catch (error: any) {
+                    return new GetTransactionsResponse(_request, undefined, error.message);
+                }
+            }
+            case TransactionServiceMethod.GetTransaction: {
+                const _request = request as GetTransactionRequest;
+                try {
+                    const tx = await this.getTransaction(_request.hash);
+                    return new GetTransactionResponse(_request, tx);
+                }
+                catch (error: any) {
+                    return new GetTransactionResponse(_request, undefined, error.message);
+                }
+            }
+            default: {
+                console.error(`Invalid request method ${request.method}.`);
+                return undefined;
+            }                
+        }
+    }
+
+    public async getTransactions(): Promise<Tx[]> {
+        return this.txs.getValues();
+    }
+
+    public async getTransaction(hash: string): Promise<Tx> {
+        const tx = await this.txs.get(hash);
+        if (!tx) {
+            throw new Error("unknown hash");
+        }
+        return tx;
+    }
+
+    public async addTransaction(
+        origin: TxOrigin,
+        chainId: number,
+        account: string,
+        setup: TxCall[],
+        calls: TxCall[],
+        nonce: string,
+        hash: string,
+    ): Promise<Tx> {
+        if ((await this.txs.get(hash))) {
+            throw new Error("duplicated hash");
+        }
+        const now = Date.now();
+        const tx = new Tx(
+            origin,
+            chainId,
+            account,
+            setup,
+            calls,
+            nonce,
+            hash,
+            now,
+            now,
+            TxStatus.Pending,
+        )
+        await this.txs.set(tx.hash, tx);
+        this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionAdded, tx));
+        for (const emit of this.onTransactionAdded) {
+            try {emit(tx)} catch {}
+        }
+        this.pending.set(tx.hash, tx);
+        return tx;
+    }
+
+    private readonly onDefaultNetworkChanged = async (network: Network) => {
+        this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
+    }
+
+    private async init() {
+        while(true) {
+            try {
+                for (const network of (await this.networkService.getNetworks()).filter(x => x.isDefault)) {
+                    this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
+                }
+
+                this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged);
+
+                for (const tx of (await this.txs.getValues()).filter(x => x.status === TxStatus.Pending)) {
+                    this.pending.set(tx.hash, tx);
+                }
+
+                console.debug("Transaction service initialized");
+                break;
+            }
+            catch (error) {
+                console.error("Failed to initialize transaction service. Retry...");
+                await sleep(1000);
+            }
+        }
+    }
+
+    private async runWorker() {
+        await this.init();
+
+        while (true) {
+            try {
+                if (this.pending.size) {
+                    console.debug(`Sync ${this.pending.size} transactions...`);
+                    const start = Date.now();
+                    await Promise.allSettled(
+                        this.pending.values().map(x => this.updateTx(x)),
+                    );
+                    const end = Date.now();
+                    console.debug(`Transactions synced in ${end - start}ms`);
+                }
+            }
+            catch (error) {
+                console.error("Failed to sync transaction status.", error);
+            }
+            await sleep(1000);
+        }
+    }
+
+    private async updateTx(tx: Tx) {
+        console.debug(`Sync tx ${tx.hash.slice(0, 8)}`);
+        const pxe = this.pxes.get(tx.chainId);
+        if (!pxe) {
+            console.error("Unknown network");
+            return;
+        }
+
+        const receipt = await pxe.getTxReceipt(TxHash.fromString(tx.hash));
+        const status = this.getTxStatus(receipt.status);
+        if (status === tx.status) {
+            console.debug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
+            return;
+        }
+        
+        tx.updatedAt = Date.now();
+        tx.status = status;
+        tx.block = receipt.blockHash && receipt.blockNumber
+            ? new TxBlock(receipt.blockHash.toString("hex"), receipt.blockNumber)
+            : undefined;
+        tx.fee = receipt.transactionFee?.toString();
+        tx.error = receipt.error;
+
+        await this.txs.set(tx.hash, tx);
+        this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionUpdated, tx));
+        for (const emit of this.onTransactionUpdated) {
+            try {emit(tx)} catch {}
+        }
+        if (tx.status != TxStatus.Pending) {
+            this.pending.delete(tx.hash);
+        }
+        console.debug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
+    }
+
+    private getTxStatus(status: AztecTxStatus): TxStatus {
+        switch (status) {
+            case AztecTxStatus.PENDING:
+                return TxStatus.Pending;
+            case AztecTxStatus.DROPPED:
+                return TxStatus.Dropped;
+            case AztecTxStatus.SUCCESS:
+                return TxStatus.Success;
+            case AztecTxStatus.APP_LOGIC_REVERTED:
+                return TxStatus.AppLogicReverted;
+            case AztecTxStatus.TEARDOWN_REVERTED:
+                return TxStatus.TeardownReverted;
+            case AztecTxStatus.BOTH_REVERTED:
+                return TxStatus.BothReverted;
+            default: 
+                throw new Error("unknown tx status");
+        }
+    }
+}

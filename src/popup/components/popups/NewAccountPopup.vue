@@ -16,7 +16,7 @@ const popupStore = usePopupStore()
 const displaceIdx = computed(() => {
 	return (
 		popupStore.popups.length -
-		popupStore.popups.findIndex((p) => p === "confirm")
+		popupStore.popups.findIndex((p) => p === "new_account")
 	)
 })
 
@@ -70,10 +70,16 @@ const handleCreateAccount = async () => {
 					size="medium"
 					:disabled="!isAvailableToCreateAccount"
 				>
-					<Text color="white">Create</Text>
+					<Text color="inverse">Create</Text>
 				</Button>
 
-				<Text size="12" weight="500" color="tertiary" height="140">
+				<Text
+					size="12"
+					weight="500"
+					color="tertiary"
+					height="140"
+					align="center"
+				>
 					New accounts do not require the creation of a new seed
 					phrase, just select the account type
 				</Text>

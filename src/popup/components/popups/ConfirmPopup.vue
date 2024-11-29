@@ -62,7 +62,7 @@ const emit = defineEmits(["onClose"])
 						type="primary"
 						size="medium"
 					>
-						<Text color="white">Confirm</Text>
+						<Text color="inverse">Confirm</Text>
 					</Button>
 				</Flex>
 			</Flex>

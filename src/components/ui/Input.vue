@@ -163,7 +163,7 @@ const handlePaste = (e) => {
 	justify-content: space-between;
 
 	border-radius: 10px;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 3px var(--gray-5);
+	box-shadow: inset 0 0 0 1px var(--border), 0 1px 3px var(--shadow-5);
 	background: var(--card-bg);
 	padding: 0 12px;
 	cursor: text;
@@ -180,11 +180,11 @@ const handlePaste = (e) => {
 }
 
 .base:hover {
-	box-shadow: inset 0 0 0 1px var(--gray-15);
+	box-shadow: inset 0 0 0 1px var(--border-hovered);
 }
 
 .base.focused {
-	box-shadow: inset 0 0 0 2px var(--gray-15);
+	box-shadow: inset 0 0 0 2px var(--blue);
 }
 
 .base.disabled {

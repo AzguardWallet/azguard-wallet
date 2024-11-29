@@ -5,6 +5,7 @@ export enum NetworkServiceEvent {
     NetworkAdded,
     NetworkUpdated,
     NetworkDeleted,
+    DefaultNetworkChanged,
 }
 
 export class NetworkServiceEventMessage extends EventMessage {

@@ -3,7 +3,11 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
-/** Popup */
+/** Composables */
+import { useToast } from "@/composables/toast.js"
+const { openToast } = useToast()
+
+/** Store */
 import { useAppStore } from "@/stores/app.store.ts"
 import { usePopupStore } from "@/stores/popup.store.ts"
 const appStore = useAppStore()
@@ -12,7 +16,7 @@ const popupStore = usePopupStore()
 const displaceIdx = computed(() => {
 	return (
 		popupStore.popups.length -
-		popupStore.popups.findIndex((p) => p === "confirm")
+		popupStore.popups.findIndex((p) => p === "accounts")
 	)
 })
 
@@ -31,6 +35,11 @@ const handleSelectAccount = (acc) => {
 }
 const handleHideAccount = (acc) => {
 	appStore.hideAccount(acc)
+}
+
+const handleCopyAddress = () => {
+	window.navigator.clipboard.writeText(appStore.account.address)
+	openToast({ label: "Address is copied to clipboard", icon: "copy" })
 }
 </script>
 
@@ -101,7 +110,11 @@ const handleHideAccount = (acc) => {
 									{{ account.name }}
 								</Text>
 								<Text size="13" weight="600" color="tertiary">
-									<Text color="body">
+									<Text
+										@click="handleCopyAddress"
+										color="body"
+										class="copyable"
+									>
 										{{ address.slice(0, 6) }}
 										•••
 										{{ address.slice(-4) }}
@@ -223,7 +236,7 @@ const handleHideAccount = (acc) => {
 .account {
 	border-radius: 12px;
 	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
 
 	padding: 12px 16px 12px 12px;
 
@@ -231,6 +244,8 @@ const handleHideAccount = (acc) => {
 
 	&:hover {
 		background: var(--gray-3);
+		box-shadow: inset 0 0 0 1px var(--border-hovered),
+			0 1px 2px var(--shadow-5);
 	}
 
 	&:active {

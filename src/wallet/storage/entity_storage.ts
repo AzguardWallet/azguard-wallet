@@ -55,5 +55,12 @@ export class EntityStorage<T> {
             .map(([key, entity]) => ({ key, entity }))
     
         return foundEntities
+ 
+    public async getValues(): Promise<Array<T>> {
+        const path = `${this.root}@`;
+        const res = await this.storage.get();
+        return Object.entries(res)
+            .filter(([k, _]) => k.startsWith(path))
+            .map(([_, v]) => JSON.parse(v));
     }
 }

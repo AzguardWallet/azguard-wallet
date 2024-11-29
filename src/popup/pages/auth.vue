@@ -120,7 +120,7 @@ onMounted(() => {
 				size="medium"
 				:disabled="password.length < 8"
 			>
-				<Text color="white">Unlock Wallet</Text>
+				<Text color="inverse">Unlock Wallet</Text>
 			</Button>
 		</Flex>
 

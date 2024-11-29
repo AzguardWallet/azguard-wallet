@@ -51,6 +51,9 @@ type SessionDto = {
 const encryptionGuard = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
 
 export class ProfileService extends Service {
+    public readonly onSessionOpened: ((profileId: string) => void)[] = [];
+    public readonly onSessionClosed: (() => void)[] = [];
+
     private readonly profiles: EntityStorage<ProfileDto>;
     private readonly session: SimpleStorage<SessionDto>;
 
@@ -256,7 +259,7 @@ export class ProfileService extends Service {
         return undefined;
     }
 
-    public async getActiveProfile(): Promise<Profile | undefined> {
+    public async readActiveProfile(): Promise<Profile | undefined> {
         const session = await this._getActiveSession();
         const day = 1000 * 60 * 60 * 24; // TODO: use settings
         if (session) {
@@ -267,9 +270,7 @@ export class ProfileService extends Service {
                     const key = await EncryptionKey.fromPasshash(passhash);
                     const guard = await key.decrypt(Buffer.from(profile.guard, 'base64'));
                     if (array_equals(guard, encryptionGuard)) {
-                        await this._openSession(session.profile, passhash);
                         return new Profile(session.profile, profile.name);
-                        //return new Profile(session.profile, profile.name, Buffer.from(profile.secret, 'base64'), key);
                     }
                 }
             }
@@ -278,7 +279,13 @@ export class ProfileService extends Service {
         return undefined;
     }
 
-    public async GetProfileSecret(id: string): Promise<Fr | undefined> {
+    public async getActiveProfile(): Promise<Profile | undefined> {
+        const activeProfile = await this.readActiveProfile();
+        if (activeProfile) await this._extendSession();
+        return activeProfile;
+    }
+
+    public async getProfileSecret(id: string): Promise<Fr | undefined> {
         const session = await this._getActiveSession();
         const day = 1000 * 60 * 60 * 24; // TODO: use settings
         
@@ -382,20 +389,34 @@ export class ProfileService extends Service {
     }
 
     private async _openSession(profile: string, passhash: ArrayBuffer): Promise<void> {
-        const session = {
+        const session: SessionDto = {
             profile,
             passhash: Buffer.from(passhash).toString('base64'),
             since: Date.now(),
         };
         await this.session.set('active_session', session);
+        for (const emit of this.onSessionOpened) {
+            try {emit(profile)} catch {}
+        }
+    }
+
+    private async _extendSession(): Promise<void> {
+        const session = await this.session.get('active_session');
+        if (session) {
+            session.since = Date.now();
+            await this.session.set('active_session', session);
+        }
     }
 
     private _getActiveSession(): Promise<SessionDto | null> {
         return this.session.get('active_session');
     }
     
-    private _closeSession(): Promise<void> {
-        return this.session.delete('active_session');
+    private async _closeSession(): Promise<void> {
+        await this.session.delete('active_session');
+        for (const emit of this.onSessionClosed) {
+            try {emit()} catch {}
+        }
     }
 
     private _tryDecrypt(payload: Uint8Array, key: EncryptionKey): Promise<Uint8Array | undefined> {

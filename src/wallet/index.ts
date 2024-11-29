@@ -1,12 +1,17 @@
 import { BarretenbergSync } from "@aztec/bb.js"
 import { EventMessage, IMessage, MessageType, RequestMessage } from "./base/messages";
 import { Service } from "./base/service";
+import { AccountService } from "./services/account";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
 import { AccountService } from "./services/account";
 import { InteractionService } from "./services/interaction";
 import { WalletConnectService } from "./services/wallet-connect";
+import { TokenService } from "./services/token";
 import { sleep } from "./utils";
+import { TokenBalanceService } from "./services/token-balance";
+import { TransactionService } from "./services/transaction";
+import { ExecutionService } from "./services/execution";
 
 export async function init() {
     console.debug("Init BarretenbergSync...");
@@ -44,6 +49,23 @@ const accountService = new AccountService(profileService, broadcast);
 const interactionService = new InteractionService(broadcast);
 const walletConnectService = new WalletConnectService(accountService, interactionService, broadcast);
 walletConnectService.initialize()
+const tokenService = new TokenService(networkService, accountService, broadcast);
+const tokenBalanceService = new TokenBalanceService(
+    profileService,
+    networkService,
+    accountService,
+    tokenService,
+    broadcast,
+);
+const transactionService = new TransactionService(networkService, broadcast);
+const executionService = new ExecutionService(
+    profileService,
+    networkService,
+    accountService,
+    tokenService,
+    transactionService,
+    broadcast
+);
 
 const services = new Map<string, Service>([
     [profileService.name, profileService],
@@ -51,6 +73,10 @@ const services = new Map<string, Service>([
     [accountService.name, accountService],
     [interactionService.name, interactionService],
     [walletConnectService.name, walletConnectService]
+    [tokenService.name, tokenService],
+    [tokenBalanceService.name, tokenBalanceService],
+    [transactionService.name, transactionService],
+    [executionService.name, executionService],
 ]);
 
 // state

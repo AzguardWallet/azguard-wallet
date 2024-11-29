@@ -116,11 +116,11 @@ const isAllowedToContinue = computed(() => {
 						gap="8"
 						:class="[$style.badge, $style.dummy]"
 					>
-						<Icon name="user" size="16" color="white" />
+						<Icon name="password" size="16" color="white" />
 						<div :class="$style.rect" />
 					</Flex>
 					<Flex align="center" gap="8" :class="[$style.badge]">
-						<Icon name="user" size="16" color="white" />
+						<Icon name="vault" size="20" color="inverse" />
 						<div
 							v-if="!walletPassword.length"
 							:class="$style.rect"
@@ -130,7 +130,7 @@ const isAllowedToContinue = computed(() => {
 								v-for="_ in Math.min(8, walletPassword.length)"
 								name="asterisk"
 								size="10"
-								color="white"
+								color="inverse"
 							/>
 						</Flex>
 					</Flex>
@@ -166,7 +166,7 @@ const isAllowedToContinue = computed(() => {
 						wide
 						:disabled="!isAllowedToContinue"
 					>
-						<Text color="white">Create profile</Text>
+						<Text color="inverse">Create</Text>
 					</Button>
 					<Button
 						@click="handlePrevStep"
@@ -228,7 +228,7 @@ const isAllowedToContinue = computed(() => {
 
 	overflow: hidden;
 
-	background: linear-gradient(rgba(0, 0, 0, 80%), rgba(0, 0, 0, 60%));
+	background: linear-gradient(var(--txt-primary), var(--txt-secondary));
 	border: 2px solid var(--gray-20);
 	border-radius: 500px;
 

@@ -17,6 +17,12 @@ importers:
       '@aztec/bb.js':
         specifier: ^0.62.0
         version: 0.62.0
+      '@aztec/circuit-types':
+        specifier: ^0.62.0
+        version: 0.62.0(typescript@5.6.3)(zod@3.23.8)
+      '@aztec/circuits.js':
+        specifier: ^0.62.0
+        version: 0.62.0(typescript@5.6.3)(zod@3.23.8)
       '@aztec/foundation':
         specifier: ^0.62.0
         version: 0.62.0
@@ -32,6 +38,9 @@ importers:
       bb:
         specifier: ^0.0.1
         version: 0.0.1
+      lean-qr:
+        specifier: ^2.3.4
+        version: 2.3.4
       pinia:
         specifier: ^2.2.4
         version: 2.2.6(typescript@5.6.3)(vue@3.5.13(typescript@5.6.3))
@@ -2212,6 +2221,10 @@ packages:
 
   kolorist@1.8.0:
     resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
+
+  lean-qr@2.3.4:
+    resolution: {integrity: sha512-gr5mVwthZvcnaXXOBCjIKcBaEQBWhEdcynnSWfob6pZuDaN58iCJzSzMY8vehURzaECW7BSl3hv4k8B0HJIzxg==}
+    hasBin: true
 
   level-concat-iterator@3.1.0:
     resolution: {integrity: sha512-BWRCMHBxbIqPxJ8vHOvKUsaO0v1sLYZtjN3K2iZJsRBYtp+ONsY6Jfi6hy9K3+zolgQRryhIn2NRZjZnWJ9NmQ==}
@@ -6157,6 +6170,8 @@ snapshots:
       - supports-color
 
   kolorist@1.8.0: {}
+
+  lean-qr@2.3.4: {}
 
   level-concat-iterator@3.1.0:
     dependencies:

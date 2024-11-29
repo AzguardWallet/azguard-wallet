@@ -1,0 +1,71 @@
+import { EventMessage } from "@/wallet/base/messages";
+import { ServiceClient } from "@/wallet/base/service-client";
+import { TransactionServiceEvent, TransactionServiceEventMessage } from "./events";
+import { Tx } from "./models";
+import {
+    GetTransactionRequest,
+    GetTransactionsRequest,
+} from "./methods";
+
+export * from './events';
+export * from './methods';
+export * from './models';
+
+export const TRANSACTION_SERVICE_NAME = "transaction";
+
+/**
+ * Client for interaction with the TransactionService via messaging API
+ */
+export class TransactionServiceClient extends ServiceClient {
+    /**
+     * Creates TransactionServiceClient instace.
+     * @param onConnected Callback, called when the client is connected to the background service.
+     * @param onDisconnected Callback, called when the client is disconnected from the background service.
+     * @param onTransactionAdded Callback, called when a new transaction was created.
+     * @param onTransactionUpdated Callback, called when an existing transaction was updated.
+     */
+    constructor(
+        onConnected?: () => void,
+        onDisconnected?: () => void,
+        private readonly onTransactionAdded?: (tx: Tx) => void,
+        private readonly onTransactionUpdated?: (tx: Tx) => void,
+    ) {
+        super(TRANSACTION_SERVICE_NAME, onConnected, onDisconnected);
+    }
+
+    protected onEvent(message: EventMessage): void {
+        switch (message.event) {
+            case TransactionServiceEvent.TransactionAdded:
+                if (this.onTransactionAdded) {
+                    try {this.onTransactionAdded((message as TransactionServiceEventMessage).tx);}
+                    catch {}
+                }
+                break;
+            case TransactionServiceEvent.TransactionUpdated:
+                if (this.onTransactionUpdated) {
+                    try {this.onTransactionUpdated((message as TransactionServiceEventMessage).tx);}
+                    catch {}
+                }
+                break;
+            default:
+                console.error(`Unexpected event type ${message.event}.`);
+                break;
+        }
+    }
+
+    /**
+     * Returns a list of transactions.
+     */
+    public getTransactions(account: string): Promise<Tx[]> {
+        return this.request(new GetTransactionsRequest(account));
+    }
+
+    /**
+     * Returns a transaction with the specified hash.
+     * @param hash Transaction hash.
+     * @throws If the transaction with the specified hash doesn't exist.
+     */
+    public getTransaction(hash: string): Promise<Tx> {
+        return this.request(new GetTransactionRequest(hash));
+    }
+}
