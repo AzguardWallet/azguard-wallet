@@ -4,6 +4,7 @@ import { Account, ACCOUNT_SERVICE_NAME } from ".";
 export enum AccountServiceEvent {
     AccountAdded,
     AccountUpdated,
+    AccountDeleted,
 }
 
 export class AccountServiceEventMessage extends EventMessage {

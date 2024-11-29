@@ -23,12 +23,14 @@ export class TransactionServiceClient extends ServiceClient {
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onTransactionAdded Callback, called when a new transaction was created.
      * @param onTransactionUpdated Callback, called when an existing transaction was updated.
+     * @param onTransactionDeleted Callback, called when an existing transaction was updated.
      */
     constructor(
         onConnected?: () => void,
         onDisconnected?: () => void,
         private readonly onTransactionAdded?: (tx: Tx) => void,
         private readonly onTransactionUpdated?: (tx: Tx) => void,
+        private readonly onTransactionDeleted?: (tx: Tx) => void,
     ) {
         super(TRANSACTION_SERVICE_NAME, onConnected, onDisconnected);
     }
@@ -44,6 +46,12 @@ export class TransactionServiceClient extends ServiceClient {
             case TransactionServiceEvent.TransactionUpdated:
                 if (this.onTransactionUpdated) {
                     try {this.onTransactionUpdated((message as TransactionServiceEventMessage).tx);}
+                    catch {}
+                }
+                break;
+            case TransactionServiceEvent.TransactionDeleted:
+                if (this.onTransactionDeleted) {
+                    try {this.onTransactionDeleted((message as TransactionServiceEventMessage).tx);}
                     catch {}
                 }
                 break;

@@ -4,6 +4,7 @@ import { Tx, TRANSACTION_SERVICE_NAME } from ".";
 export enum TransactionServiceEvent {
     TransactionAdded,
     TransactionUpdated,
+    TransactionDeleted,
 }
 
 export class TransactionServiceEventMessage extends EventMessage {

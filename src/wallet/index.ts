@@ -42,7 +42,7 @@ export async function stop() {
 // services
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(broadcast);
-const accountService = new AccountService(profileService, broadcast);
+const accountService = new AccountService(profileService, networkService, broadcast);
 const tokenService = new TokenService(networkService, accountService, broadcast);
 const tokenBalanceService = new TokenBalanceService(
     profileService,
@@ -52,6 +52,7 @@ const tokenBalanceService = new TokenBalanceService(
     broadcast,
 );
 const transactionService = new TransactionService(
+    accountService,
     networkService,
     tokenBalanceService,
     broadcast,

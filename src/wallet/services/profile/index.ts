@@ -51,6 +51,7 @@ type SessionDto = {
 const encryptionGuard = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
 
 export class ProfileService extends Service {
+    public readonly onProfileDeleted: ((profileId: string) => void)[] = [];
     public readonly onSessionOpened: ((profileId: string) => void)[] = [];
     public readonly onSessionClosed: (() => void)[] = [];
 
@@ -152,6 +153,9 @@ export class ProfileService extends Service {
                     const profile = await this.deleteProfile(_request.profileId);
                     if (profile) {
                         this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileDeleted, profile));
+                        for (const emit of this.onProfileDeleted) {
+                            try {emit(profile.id)} catch {}
+                        }
                     }
                     return new DeleteProfileResponse(_request, profile);
                 }

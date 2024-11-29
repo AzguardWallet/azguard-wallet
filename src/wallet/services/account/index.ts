@@ -6,6 +6,7 @@ import {
 	EventMessage,
 } from "@/wallet/base/messages"
 import { Service } from "@/wallet/base/service"
+import { NetworkService } from "@/wallet/services/network"
 import { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max } from "@/wallet/utils"
@@ -38,12 +39,15 @@ type AccountDto = {
 
 export class AccountService extends Service {
 	public readonly onAccountAdded: ((account: Account) => void)[] = []
+	public readonly onAccountDeleted: ((account: Account) => void)[] = []
 
 	constructor(
 		private readonly profiles: ProfileService,
+		private readonly networks: NetworkService,
 		emit: (event: EventMessage) => void
 	) {
 		super(ACCOUNT_SERVICE_NAME, emit)
+        this.profiles.onProfileDeleted.push(this.onProfileDeleted);
 	}
 
 	public async process(
@@ -365,6 +369,43 @@ export class AccountService extends Service {
 		}
 
 		return accountContract
+	}
+
+    private readonly onProfileDeleted = async (profileId: string) => {
+        console.debug(`profile ${profileId} deleted, remove related accounts`);
+        // TODO: rework accounts to not depend on networks and delete directly
+        for (const networks of await this.networks.getNetworks()) {
+            const storage = this._getStorage(profileId, networks.chainId);
+            for (const address of await storage.getKeys()) {
+                console.debug(`remove account ${address}`);
+                await this.deleteAccount(profileId, networks.chainId, address);
+            }
+        }
+    }
+
+	private async deleteAccount(
+		profileId: string,
+		chainId: number,
+		address: string,
+	) {
+		const storage = this._getStorage(profileId, chainId)
+		const dto = await storage.get(address)
+        if (dto) {
+            await storage.delete(address)
+            const account = new Account(
+				profileId,
+				chainId,
+				address,
+				dto.index,
+				dto.type,
+				dto.name,
+				dto.visible
+			)
+            this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountDeleted, account))
+            for (const emit of this.onAccountDeleted) {
+                try {emit(account)} catch {}
+            }
+        }
 	}
 
 	private async _deriveAccountSecret(
