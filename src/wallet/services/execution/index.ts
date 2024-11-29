@@ -98,7 +98,7 @@ export class ExecutionService extends Service {
                         _request.token,
                         _request.transferType,
                         _request.recipient,
-                        _request.amount,
+                        BigInt(_request.amount),
                     );
                     return new ExecuteTransferResponse(_request, txHash);
                 }
@@ -306,7 +306,7 @@ export class ExecutionService extends Service {
         tokenId: number,
         transferType: TransferType,
         recipientAddress: string,
-        amount: string,
+        amount: bigint,
     ): Promise<string> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
@@ -410,14 +410,14 @@ export class ExecutionService extends Service {
                 new TxCall(
                     token.contract,
                     fn.name,
-                    args,
+                    args.map(x => x.toString()),
                     [
                         new TxTransfer(
                             new TransferToken(token.name, token.symbol, token.decimals),
                             transferType,
                             accountAddress,
                             recipientAddress,
-                            amount,
+                            amount.toString(),
                         )
                     ]
                 ),

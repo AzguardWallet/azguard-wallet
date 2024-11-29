@@ -36,7 +36,7 @@ export class ExecuteTransferRequest extends RequestMessage {
         public readonly token: number,
         public readonly transferType: TransferType,
         public readonly recipient: string,
-        amount: number | bigint | string,
+        amount: number | bigint,
     ) {
         super(EXECUTION_SERVICE_NAME, ExecutionServiceMethod.ExecuteTransfer);
         this.amount = amount.toString();
