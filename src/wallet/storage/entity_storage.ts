@@ -48,14 +48,6 @@ export class EntityStorage<T> {
             .map(k => k.substring(path.length));
     }
 
-    public async findByKeys(predicate: (entity: T) => boolean): Promise<Array<{ key: string, entity: T }>> {
-        const allEntities = await this.getAll()
-        const foundEntities = allEntities
-            .filter(([, entity]) => predicate(entity))
-            .map(([key, entity]) => ({ key, entity }))
-    
-        return foundEntities
- 
     public async getValues(): Promise<Array<T>> {
         const path = `${this.root}@`;
         const res = await this.storage.get();
