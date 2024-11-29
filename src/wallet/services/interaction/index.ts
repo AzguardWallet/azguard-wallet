@@ -246,9 +246,7 @@ export class InteractionService extends Service {
             key = id
         } else if (topic) {
             const sessions = await this.dappSessions.getAll()
-            
             const result = sessions.find(s => s[1].params.topic === topic)
-            // const result = await this.dappSessions.findByKeys(ds => ds.params.topic === topic)
             if (result) {
                 key = result[0]
             }
@@ -256,19 +254,14 @@ export class InteractionService extends Service {
 
         if (!key) return
 
-        this.dappSessions.delete(key)
-
         if (emit) {
             const dappSession = await this.getDappSession({ id: key })
-            
             if (dappSession) {
-                console.log('Interaction dropDappSession emit');
-                
                 this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionDroped, dappSession))
             }
         }
-
-        return
+        
+        return this.dappSessions.delete(key)
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>

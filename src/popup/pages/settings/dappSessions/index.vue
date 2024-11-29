@@ -22,8 +22,6 @@ if (!appStore.isLogined) {
 	})
 }
 
-console.log('appStore', appStore);
-
 const dappSessions = computed(() => {
 	const arr = [...appStore.dappSessions]
 	for (let index = 0; index < arr.length; index++) {
