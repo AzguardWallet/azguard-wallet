@@ -36,7 +36,7 @@ type TokenBalanceRaw = {
 export class TokenBalanceService extends Service {
     private readonly balances: EntityStorage<TokenBalanceRaw>;
     private readonly queue: Queue<number, TokenBalanceRaw> = new Queue(x => x.id);
-    private readonly sync: Promise<void>;
+    private readonly worker: Promise<void>;
     
     private profile?: string = undefined;
     private readonly pxes: Map<number, PXE> = new Map();
@@ -51,7 +51,7 @@ export class TokenBalanceService extends Service {
     ) {
         super(TOKEN_BALANCE_SERVICE_NAME, emit);
         this.balances = new EntityStorage("azguard:core:token-balances", StorageType.Local);
-        this.sync = this.startSyncing();
+        this.worker = this.startWorker();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -88,6 +88,12 @@ export class TokenBalanceService extends Service {
             .filter(x => tokenId === undefined || x.token === tokenId)
             .filter(x => accountAddress === undefined || x.account === accountAddress)
             .map(x => this.getTokenBalanceInfo(x), this);
+    }
+
+    public async refreshAccountBalances(account: string): Promise<void> {
+        for (const balance of (await this.balances.getValues()).filter(x => x.account === account)) { 
+            this.queue.priorityPass(balance);
+        }
     }
 
     public async refreshBalance(id: number): Promise<void> {
@@ -214,7 +220,7 @@ export class TokenBalanceService extends Service {
         }
     }
 
-    private async startSyncing() {
+    private async startWorker() {
         await this.init();
         let nextSync = 0;
         while (true) {
@@ -224,7 +230,7 @@ export class TokenBalanceService extends Service {
                         for (const tb of await this.balances.getValues()) {
                             this.queue.enqueue(tb);
                         }
-                        nextSync = Date.now() + 30_000; // TODO: settings
+                        nextSync = Date.now() + 60_000; // TODO: settings
                     }
                     if (this.queue.length) {
                         console.debug(`Syncing ${this.queue.length} token balances`);
