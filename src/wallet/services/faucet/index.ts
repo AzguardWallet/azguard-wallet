@@ -105,12 +105,12 @@ export class FaucetService extends Service {
                     decimals,
                 ],
                 publicKeys: PublicKeys.default(),
-                salt: Fr.random(),
+                salt: Fr.zero(),
             },
         );
 
         if (!await pxe.isContractClassPubliclyRegistered(contractClass.id)) {
-            console.debug('register faucet token class id');
+            console.debug("register faucet token class id");
             const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
             const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
             actions.push(new AddCapsuleAction(
@@ -118,7 +118,7 @@ export class FaucetService extends Service {
             ));
             actions.push(new CallAction(
                 AztecAddress.fromBigInt(3n).toString(), // ContractClassRegisterer
-                'register',
+                "register",
                 [
                     artifactHash.toString(),
                     privateFunctionsRoot.toString(),
@@ -128,11 +128,11 @@ export class FaucetService extends Service {
         }
 
         if (!await pxe.isContractPubliclyDeployed(instance.address)) {
-            console.debug('deploy faucet token');
+            console.debug("deploy faucet token");
             const {salt, contractClassId, initializationHash, publicKeys} = instance;
             actions.push(new CallAction(
                 AztecAddress.fromBigInt(2n).toString(), // ContractInstanceDeployer
-                'deploy',
+                "deploy",
                 [
                     salt,
                     contractClassId,
@@ -144,7 +144,7 @@ export class FaucetService extends Service {
         }
 
         if (!await pxe.isContractInitialized(instance.address)) {
-            console.debug('initialize faucet token');
+            console.debug("initialize faucet token");
             actions.push(new AddContractAction(
                 instance.address.toString(),
                 instance,
@@ -152,7 +152,7 @@ export class FaucetService extends Service {
             ));
             actions.push(new CallAction(
                 instance.address.toString(),
-                'constructor',
+                "constructor",
                 [
                     accountAddress,
                     name,
@@ -162,13 +162,15 @@ export class FaucetService extends Service {
             ));
         }
         
-        const initTx = await this.executionService.executeAndWait(
-            networkId,
-            accountAddress,
-            "Faucet",
-            actions,
-        );
-        console.debug('faucet init tx:', initTx);
+        if (actions.length) {
+            const initTx = await this.executionService.executeAndWait(
+                networkId,
+                accountAddress,
+                "Faucet",
+                actions,
+            );
+            console.debug("faucet init tx:", initTx);
+        }
 
         const mintTx = await this.executionService.executeAndWait(
             networkId,
@@ -187,15 +189,19 @@ export class FaucetService extends Service {
                 ),
             ]
         );
-        console.debug('faucet mint tx:', mintTx);
+        console.debug("faucet mint tx:", mintTx);
 
-        const ti = await this.tokenService.parseTokenInterface(
-            profile.id,
-            networkId,
-            accountAddress,
-            instance.address.toString(),
-        );
-        const token = await this.tokenService.addToken(ti);
-        console.log('faucet token:', token);
+        const tokens = await this.tokenService.getTokens();
+        if (!tokens.some(x => x.contract === instance.address.toString())) {
+            console.debug("adding faucet token...");
+            const ti = await this.tokenService.parseTokenInterface(
+                profile.id,
+                networkId,
+                accountAddress,
+                instance.address.toString(),
+            );
+            const token = await this.tokenService.addToken(ti);
+            console.debug("faucet token:", token);
+        }
     }
 }
