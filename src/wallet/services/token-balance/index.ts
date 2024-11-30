@@ -204,6 +204,7 @@ export class TokenBalanceService extends Service {
 
 	private readonly onAccountDeleted = async (account: Account) => {
         console.debug(`account ${account.address} deleted, remove related token balanes`);
+        this.queue.clear();
 		for (const tb of (await this.balances.getValues()).filter(x => x.account === account.address)) {
             console.debug(`remove token balane #${tb.id}`);
 			await this.balances.delete(`${tb.id}`);

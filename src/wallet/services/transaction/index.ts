@@ -119,6 +119,12 @@ export class TransactionService extends Service {
         return tx;
     }
 
+    public async waitForTx(txHash: string) {
+        while (this.pending.has(txHash)) {
+            await sleep(100);
+        }
+    }
+
     private readonly onDefaultNetworkChanged = async (network: Network) => {
         this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
     }
@@ -127,6 +133,7 @@ export class TransactionService extends Service {
         console.debug(`account ${account.address} deleted, remove related txs`);
         for (const tx of (await this.txs.getValues()).filter(x => x.account === account.address)) {
             console.debug(`remove tx ${tx.hash}`);
+            this.pending.delete(tx.hash);
             await this.txs.delete(tx.hash);
             this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionDeleted, tx));
         }

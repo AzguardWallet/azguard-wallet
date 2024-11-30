@@ -8,6 +8,7 @@ import {
     PackedValues,
     PXE,
     FunctionCall,
+    ContractInstanceWithAddress,
 } from "@aztec/aztec.js";
 import {
     ContractArtifact,
@@ -58,6 +59,7 @@ import {
     EXECUTION_SERVICE_NAME,
     ExecutionServiceMethod,
     IAction,
+    AddContractAction,
 } from "./client";
 
 export class ExecutionService extends Service {
@@ -112,6 +114,22 @@ export class ExecutionService extends Service {
             }                
         }
     }
+    
+    public async executeAndWait(
+        networkId: string,
+        accountAddress: string,
+        dappName: string,
+        actions: IAction[],
+    ): Promise<string> {
+        const tx = await this.executeBatch(
+            networkId,
+            accountAddress,
+            dappName,
+            actions,
+        );
+        await this.transactionService.waitForTx(tx);
+        return tx;
+    }
 
     public async executeBatch(
         networkId: string,
@@ -130,7 +148,19 @@ export class ExecutionService extends Service {
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, accountAddress);
 
         const pxe = createPXEClient(network.rpcUrl);
-        const artifacts = await this.prepareArtifacts(pxe, actions);
+        const instances = await this.prepareInstances(pxe, actions);
+        const artifacts = await this.prepareArtifacts(pxe, actions, instances);
+
+        const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
+        for (const [contract, instance] of instances) {
+            if (!registeredContracts.has(contract)) {
+                console.debug("Register contract");
+                await pxe.registerContract({
+                    instance,
+                    artifact: artifacts.get(instance.contractClassId.toString()),
+                });
+            }
+        }
         
         const args = [];
         const calls = [];
@@ -158,9 +188,17 @@ export class ExecutionService extends Service {
                     console.debug(`Contact from ${dappName} added.`);
                     break;
                 }
+                case ActionType.AddContract: {
+                    // contracts are registered above
+                    break;
+                }
                 case ActionType.AuthorizeCall: {
                     const _action = (action as AuthorizeCallAction)!;
-                    const artifact = artifacts.get(_action.contract);
+                    const instance = instances.get(_action.contract);
+                    if (!instance) {
+                        throw new Error("Contract not found");
+                    }
+                    const artifact = artifacts.get(instance.contractClassId.toString());
                     if (!artifact) {
                         throw new Error("Contract not found");
                     }
@@ -252,7 +290,11 @@ export class ExecutionService extends Service {
                 }
                 case ActionType.Call: {
                     const _action = (action as CallAction)!;
-                    const artifact = artifacts.get(_action.contract);
+                    const instance = instances.get(_action.contract);
+                    if (!instance) {
+                        throw new Error("Contract not found");
+                    }
+                    const artifact = artifacts.get(instance.contractClassId.toString());
                     if (!artifact) {
                         throw new Error("Contract not found");
                     }
@@ -429,29 +471,85 @@ export class ExecutionService extends Service {
         return tx.hash;
     }
 
-    private async prepareArtifacts(pxe: PXE, actions: IAction[]): Promise<Map<string, ContractArtifact>> {
+    private async prepareInstances(pxe: PXE, actions: IAction[]): Promise<Map<string, ContractInstanceWithAddress>> {
+        console.debug("Prepare instances...");
+        const instances = new Map<string, ContractInstanceWithAddress>();
+        for (const action of actions.filter(x => x.type === ActionType.AddContract)) {
+            const _action = action as AddContractAction;
+            if (_action.instance) {
+                instances.set(_action.address, _action.instance as ContractInstanceWithAddress);
+            }
+        }
+        console.debug(`${instances.size} instances provided`);
         const contracts = new Set(
             actions
-                .filter(x => x.type === ActionType.AuthorizeCall || x.type === ActionType.Call)
-                .map(x => (x as AuthorizeCallAction)?.contract ?? (x as CallAction).contract)
+                .filter(x => 
+                    x.type === ActionType.AddContract ||
+                    x.type === ActionType.AuthorizeCall ||
+                    x.type === ActionType.Call
+                )
+                .map(x => 
+                    (x as AddContractAction)?.address ??
+                    (x as AuthorizeCallAction)?.contract ??
+                    (x as CallAction).contract
+                )
+                .filter(x => !instances.has(x))
         );
-        console.debug(`Fetching ${contracts.size} artifacts...`);
-        const artifacts = await Promise.all(
-            contracts.values().map(x => this.getArtifact(pxe, x))
+        console.debug(`Fetching ${contracts.size} instances...`);
+        const fetched = await Promise.all(
+            contracts.values().map(x => this.getInstance(pxe, x)),
         );
-        console.debug(`${artifacts.length} artifacts fetched`);
-        return new Map(artifacts)
+        console.debug(`${fetched.length} instances fetched`);
+        for (const [address, instance] of fetched) {
+            instances.set(address, instance);
+        }
+        return instances;
     }
 
-    private async getArtifact(pxe: PXE, contract: string): Promise<[string, ContractArtifact]> {
+    private async getInstance(pxe: PXE, contract: string): Promise<[string, ContractInstanceWithAddress]> {
         const instance = await pxe.getContractInstance(AztecAddress.fromString(contract));
         if (!instance) {
-            throw new Error("Contract not found");
+            throw new Error("Contract instance not found");
         }
-        const artifact = await pxe.getContractArtifact(instance.contractClassId);
+        return [contract, instance];
+    }
+
+    private async prepareArtifacts(pxe: PXE, actions: IAction[], instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
+        console.debug("Prepare artifacts...");
+        const artifacts = new Map<string, ContractArtifact>();
+        for (const action of actions.filter(x => x.type === ActionType.AddContract)) {
+            const _action = action as AddContractAction;
+            if (_action.artifact) {
+                const instance = instances.get(_action.address)!;
+                artifacts.set(instance.contractClassId.toString(), _action.artifact as ContractArtifact);
+            }
+        }
+        console.debug(`${artifacts.size} artifacts provided`);
+        const classIds = new Set(
+            instances
+                .values()
+                .filter(x => !artifacts.has(x.contractClassId.toString()))
+                .map(x => x.contractClassId.toString())
+        );
+        console.debug(`Fetching ${classIds.size} artifacts...`);
+        const fetched = await Promise.all(
+            classIds.values().map(x => this.getArtifact(pxe, x))
+        );
+        console.debug(`${fetched.length} artifacts fetched`);
+        for (const [classId, artifact] of fetched) {
+            artifacts.set(classId, artifact);
+        }
+        return artifacts;
+    }
+
+    private async getArtifact(
+        pxe: PXE,
+        classId: string,
+    ): Promise<[string, ContractArtifact]> {
+        const artifact = await pxe.getContractArtifact(Fr.fromString(classId));
         if (!artifact) {
-            throw new Error("Contract not found");
+            throw new Error("Contract artifact not found");
         }
-        return [contract, artifact];
+        return [classId, artifact];
     }
 }

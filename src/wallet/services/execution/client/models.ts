@@ -2,6 +2,7 @@ export enum ActionType {
     AddCapsule = "add_capsule",
     AddNote = "add_note",
     AddContact = "add_contact",
+    AddContract = "add_contract",
     AuthorizeCall = "authorize_call",
     AuthorizeIntent = "authorize_intent",
     Call = "call",
@@ -32,6 +33,16 @@ export class AddContactAction implements IAction {
 
     constructor(
         public readonly address: string,
+    ) {}
+}
+
+export class AddContractAction implements IAction {
+public readonly type = ActionType.AddContract;
+
+    constructor(
+        public readonly address: string,
+        public readonly instance?: unknown,
+        public readonly artifact?: unknown,
     ) {}
 }
 
