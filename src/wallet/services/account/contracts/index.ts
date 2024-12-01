@@ -5,6 +5,8 @@ export * from './azguard-v0';
 export interface IAccountContract {
     readonly address: AztecAddress,
 
+    register(pxe: PXE): Promise<void>;
+
     buildAuthWitness(messageHash: Fr): Promise<AuthWitness>;
     
     buildTxExecutionRequest(

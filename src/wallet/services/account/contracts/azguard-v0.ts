@@ -62,6 +62,13 @@ export class AzguardV0 implements IAccountContract {
         this.address = this.instance.address;
     }
 
+    public async register(pxe: PXE): Promise<void> {
+        console.debug('registering account...');
+        await pxe.registerAccount(this.secret, computePartialAddress(this.instance));
+        console.debug('registering contract...');
+        await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
+    }
+
     public signPayload(payload: Uint8Array): string {
         return new Schnorr().constructSignature(payload, this.signingKey).toString();
     }
