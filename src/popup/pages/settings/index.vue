@@ -79,13 +79,17 @@ watch(
 
 			<RouterLink to="/popup/settings/dappSessions">
 				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary">
-							Dapp Sessions
-						</Text>
-						<Text size="13" weight="500" color="tertiary">
-							Connect dapps and manage their sessions
-						</Text>
+					<Flex gap="10">
+						<Icon name="dapp" size="15" color="secondary" />
+
+						<Flex direction="column" gap="6" :style="{paddingLeft: '1px'}">
+							<Text size="14" weight="600" color="primary">
+								Dapp Sessions
+							</Text>
+							<Text size="13" weight="500" color="tertiary">
+								Connect dApps and manage sessions
+							</Text>
+						</Flex>
 					</Flex>
 
 					<Icon

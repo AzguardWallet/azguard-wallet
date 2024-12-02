@@ -1,5 +1,6 @@
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
+import type { ExecutionService } from "@/wallet/services/execution";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex } from "@/wallet/utils";
 import {
@@ -17,6 +18,7 @@ import {
     DeleteInteractionRequestResponse,
     InteractionRequest,
     Status,
+    type GetDappSessionParams,
     DappSession,
     INTERACTION_SERVICE_NAME,
     InteractionServiceEvent,
@@ -25,6 +27,7 @@ import {
 } from "./client";
 import type { Account } from "@/wallet/services/account/client/models";
 import type { WCSessionParams } from "@/wallet/services/wallet-connect/client/models";
+import type { IAction } from "@/wallet/services/execution/client/models";
 
 type DappSessionDto = {
     name: string,
@@ -43,16 +46,12 @@ type InteractionRequestDto = {
     result?: Record<string, any>,
 }
 
-type GetDappSessionParams = {
-    id?: string,
-    topic?: string,
-}
-
 export class InteractionService extends Service {
     private readonly dappSessions: EntityStorage<DappSessionDto>;
     private readonly interactionRequests: Map<string, InteractionRequestDto>;
 
     constructor(
+        private readonly execution: ExecutionService,
         emit: (event: EventMessage) => void
     ) {        
         super(INTERACTION_SERVICE_NAME, emit);
@@ -78,7 +77,7 @@ export class InteractionService extends Service {
             case InteractionServiceMethod.GetDappSession: {
                 const _request = request as GetDappSessionRequest;
                 try {
-                    const dappSession = await this.getDappSession({id: _request.dappSessionId});
+                    const dappSession = await this.getDappSession(_request.getDappSessionParams);
                     return new GetDappSessionResponse(_request, dappSession);
                 }
                 catch (error: unknown) {
@@ -263,14 +262,38 @@ export class InteractionService extends Service {
         
         return this.dappSessions.delete(key)
     }
+    
+    public async executeDappSessionRequest(networkId: string, accountAddress: string, dappName: string, actions: IAction[], emit?: boolean): Promise<string> {
+        try {
+            const txHash = await this.execution.executeBatch(networkId, accountAddress, dappName, actions)
+
+            return txHash
+        }
+        catch (error: unknown) {
+            if (error instanceof Error) {
+                throw new Error(error.message);
+            }
+
+            throw new Error("Unknown error occurred");
+        }
+    }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async dappSessionProposal(payload: any): Promise<void> {
+        await this._openWindow('session', payload)
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async dappSessionRequest(payload: any): Promise<void> {
+        await this._openWindow('request', payload, 760)
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private async _openWindow(name: string, payload: any, height?: number): Promise<void> {
         const interactionRequest = await this.addInteractionRequest(payload)
-        // const url = new URL(chrome.runtime.getURL('src/popup/index.html#/popup/settings/dappSessions/popup/sessionProposal.vue'))
-        const url = new URL(chrome.runtime.getURL('src/popup/index.html#/windows/session'))
+        const url = new URL(chrome.runtime.getURL(`src/popup/index.html#/windows/${name}`))
         url.searchParams.set('requestId', interactionRequest.id)
 
-        chrome.windows.create({type: 'popup', url: url.toString(), height: 660, width: 400})
+        chrome.windows.create({type: 'popup', url: url.toString(), height: height || 660, width: 400})
     }
 }

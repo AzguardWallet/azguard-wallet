@@ -10,37 +10,22 @@ import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/cli
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
-const route = useRoute()
 const router = useRouter()
-
-// const params = ref()
-// const requestId = ref()
-// params.value = new URLSearchParams(window.location.search)
-// requestId.value = params.value.get('requestId')
 
 const params = new URLSearchParams(window.location.search)
 const requestId = params.get('requestId')
-// console.log('route asd', route);
 
+if (!appStore.isLogined) {
+	const redirect = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${params.toString()}`)
 
-// if (!appStore.isLogined) {	
-// 	const redirect = `${window.location.pathname}${window.location.hash}?${params.toString()}`
-
-// 	console.log('!appStore.isLogined', route, redirect);	
-	
-// 	router.push({
-// 		path: "/popup/auth",
-// 		query: { redirect },
-// 	})
-// }
+	router.push({
+		path: "/popup/auth",
+		query: { redirect },
+	})
+}
 
 const isLoading = ref(false)
 const isActionCalled = ref(false)
-
-// const profile = await managers.profile.getActiveProfile()
-// const networks = await managers.network.getNetworks()
-// const accountServiceClient = new AccountServiceClient(profile, networks[1])
-// const accounts = await accountServiceClient.getAccounts()
 
 const selectedAccounts = ref([])
 
@@ -53,7 +38,7 @@ const profile = computed(() => appStore.profile)
 const accounts = computed(() => appStore.accounts)
 const isProposalExpired = ref(false)
 
-const validationError = ref({
+const processingError = ref({
 	show: false,
 	title: "",
 })
@@ -62,7 +47,7 @@ const validateProposal = async () => {
 	try {
 		await walletConnectServiceClient.validateProposal(interactionRequest.value.payload, appStore.account.address)
 	} catch(error) {
-		validationError.value = {
+		processingError.value = {
 			show: true,
 			title: "Proposal validation error. Failed to connect to this dApp."
 		}
@@ -82,7 +67,7 @@ const init = async () => {
 	} catch (error) {
 		console.error('Unexpected error', error);
 		
-		validationError.value = {
+		processingError.value = {
 			show: true,
 			title: "Proposal processing error."
 		}
@@ -101,10 +86,19 @@ const handleApprove = async () => {
 	isLoading.value = true
 	isActionCalled.value = true
 
-	await walletConnectServiceClient.approveDappSession(interactionRequest.value.payload, profile.value.id, selectedAccounts.value)
+	try {
+		await walletConnectServiceClient.approveDappSession(interactionRequest.value.payload, profile.value.id, selectedAccounts.value)
 
-	isLoading.value = false
-	closeWindow()
+		closeWindow()
+	} catch (error) {
+		console.error('Unexpected error', error);
+
+		isLoading.value = false
+		processingError.value = {
+			show: true,
+			title: "Unexpected proposal processing error."
+		}
+	}
 }
 
 const handleReject = async () => {
@@ -138,7 +132,7 @@ const handleWindowClose = () => {
 watch(
 	() => appStore.account,
 	async () => {
-		if (appStore.account) {
+		if (appStore.account && !selectedAccounts.value.length) {
 			selectedAccounts.value.push(appStore.account)
 			await validateProposal()
 		}
@@ -147,7 +141,10 @@ watch(
 
 onMounted( async () => {
 	await init()
-	if (appStore.account) selectedAccounts.value.push(appStore.account)
+	if (appStore.account) {
+		selectedAccounts.value.push(appStore.account)
+		await validateProposal()
+	}
 
 	window.addEventListener("beforeunload", handleWindowClose)
 })
@@ -169,7 +166,7 @@ onUnmounted(() => {
 					align="center"
 					justify="center"
 					gap="6"
-					:class="[$style.wallet, $style.connected]"
+					:class="$style.avatar"
 				>
 					<img v-if="dapp?.icons[0]" width="48" height="48" :src="dapp?.icons[0]" />
 
@@ -183,7 +180,7 @@ onUnmounted(() => {
 					<Text size="13" weight="600" color="primary"> {{ dapp?.name }} </Text>
 				</Flex>
 
-				<Flex align="center" gap="12" :class="allConnected && $style.ready_icon" :style="{paddingBottom: '13px'}">
+				<Flex align="center" gap="12" :class="isLoading && $style.status_icon" :style="{paddingBottom: '13px'}">
 					<Icon name="left-connect" size="24" color="tertiary" />
 					<Icon name="right-connect" size="24" color="tertiary" />
 				</Flex>
@@ -193,7 +190,7 @@ onUnmounted(() => {
 					align="center"
 					justify="center"
 					gap="6"
-					:class="[$style.wallet, $style.connected]"
+					:class="$style.avatar"
 				>
 					<img width="48" height="48" src="@/assets/logo.png" />
 
@@ -207,7 +204,7 @@ onUnmounted(() => {
 					<Text size="13" color="primary">would like to connect to your wallet</Text>
 				</Flex>
 				<Flex direction="column" align="center" justify="center" gap="4">
-					<Text size="12" color="secondary">This site is requesting access to view your account address.</Text>
+					<Text size="12" color="secondary">This site is requesting access to view your addresses.</Text>
 					<Text size="12" color="secondary">Always make sure you trust the sites you interact with.</Text>
 				</Flex>
 			</Flex>
@@ -237,9 +234,9 @@ onUnmounted(() => {
 					<Text size="13" color="secondary">to be connected to the dApp</Text>
 				</Flex>
 				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-					<Flex v-for="acc in accounts" @click="handleAccountSelect(acc)" gap="10" :class="$style.account">
+					<Flex v-for="acc in accounts" @click="handleAccountSelect(acc)" gap="10" :class="[$style.account, isLoading && $style.disabled]">
 						<Flex align="center">
-							<Icon v-if="selectedAccounts.includes(acc)" name="check-circle" size="16" color="green" />
+							<Icon v-if="selectedAccounts?.includes(acc)" name="check-circle" size="16" color="green" />
 							<Icon v-else name="circle" size="16" color="secondary" />
 						</Flex>				
 
@@ -248,8 +245,6 @@ onUnmounted(() => {
 								{{ acc.name }}
 							</Text>
 							<Text size="13" weight="600" color="tertiary">
-								$0.00
-								<Text color="support">•</Text>
 								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
 							</Text>
 						</Flex>
@@ -260,8 +255,8 @@ onUnmounted(() => {
 
 		<Flex direction="column" gap="6">
 			<Flex align="center" justify="start" wide>
-				<Text v-if="validationError.show" size="12" weight="600" color="red" :style="{paddingLeft: '4px'}">
-					{{ validationError.title }}
+				<Text v-if="processingError.show" size="12" weight="600" color="red" :style="{paddingLeft: '4px'}">
+					{{ processingError.title }}
 				</Text>
 			</Flex>
 
@@ -271,6 +266,7 @@ onUnmounted(() => {
 					wide
 					type="secondary"
 					size="medium"
+					:disabled="isLoading"
 				>
 					<Text size="13">Reject</Text>
 				</Button>
@@ -280,9 +276,10 @@ onUnmounted(() => {
 					wide
 					type="primary"
 					size="medium"
-					:disabled="!selectedAccounts.length || validationError.show"
+					:loading="isLoading"
+					:disabled="!selectedAccounts.length || processingError.show"
 				>
-					<Text size="13" color="white">Approve</Text>
+					<Text size="13" color="inverse">Approve</Text>
 				</Button>
 			</Flex>
 		</Flex>
@@ -298,11 +295,11 @@ onUnmounted(() => {
 
 				<Button
 					@click="closeWindow"
-					wide
 					type="primary"
-					size="medium"
+					size="small"
+					:style="{width: '50%'}"
 				>
-					<Text size="13" color="white">OK</Text>
+					<Text size="13" color="inverse">OK</Text>
 				</Button>
 			</Flex>
 		</Flex>
@@ -310,10 +307,11 @@ onUnmounted(() => {
 </template>
 
 <style module>
+
 .wrapper {
 	flex: 1;
 
-	background: #fff;
+	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--gray-5);
 
 	border-top-left-radius: 24px;
@@ -322,14 +320,14 @@ onUnmounted(() => {
 	padding: 10px 24px 12px 24px;
 }
 
-.wallet {
+.avatar {
 	position: relative;
 
 	width: 80px;
 	height: 80px;
 
 	border-radius: 12px;
-	background: var(--op-8);
+	background: var(--card-bg);
 
 	text-align: center;
   	white-space: nowrap;
@@ -355,6 +353,51 @@ onUnmounted(() => {
 	}
 }
 
+@keyframes loading {
+	0% {
+		opacity: 1;
+	}
+
+	25% {
+		opacity: 0.8;
+	}
+
+	50% {
+		opacity: 0.4;
+	}
+
+	70% {
+		opacity: 0.8;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
+.status_icon {
+	& svg {
+		transition: all 1s ease;
+		animation: loading 2s infinite linear;
+	}
+
+	& svg:first-child {
+		fill: var(--green);
+
+		transform: translateX(16px);
+
+		filter: drop-shadow(0 0px 8px var(--green));
+	}
+
+	& svg:last-child {
+		fill: var(--green);
+
+		transform: translateX(-16px);
+
+		filter: drop-shadow(0 0px 8px var(--green));
+	}
+}
+
 .accounts_section {
 	width: 100%;
 }
@@ -362,9 +405,9 @@ onUnmounted(() => {
 .accounts {
 	width: 100%;
 	max-height: 170px;
-	overflow-y: auto;
+	overflow: auto;
 
-	scrollbar-width: thin;
+	/* scrollbar-width: thin; */
 }
 
 .account {
@@ -386,19 +429,24 @@ onUnmounted(() => {
 	}
 }
 
+.disabled {
+	cursor: default;
+	pointer-events: none;
+}
+
 .proposal_expired_overlay {
 	position: fixed;
 	top: 0;
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background-color: rgba(0, 0, 0, 0.4); /* Полупрозрачный тёмный фон */
-	z-index: 1000; /* Поверх основного контента */
+	background-color: rgba(0, 0, 0, 0.4);
+	z-index: 1000;
 }
 
 .proposal_expired_content {
-	background-color: white;
-	padding: 20px;
+	background-color: var(--card-bg);
+	padding: 12px;
 	border-radius: 8px;
 	text-align: center;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);

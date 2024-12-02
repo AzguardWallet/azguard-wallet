@@ -9,6 +9,7 @@ import { managers } from "@/utils/core"
 const emit = defineEmits(["onClose"])
 
 const uri = ref("")
+const isLoading = ref(false)
 const connectionError = ref({
 	show: false,
 	title: "",
@@ -18,35 +19,45 @@ const handleConnectByURI = async () => {
 	connectionError.value.show = false
 
 	try {
+		isLoading.value = true
 		await managers.wallectConnect.connectByURI(uri.value)
 		
 		closePopup()
 	} catch (error) {
+		isLoading.value = false
 		if (error.includes("Missing or invalid. pair() uri")) {
 			connectionError.value = {
 				show: true,
-				title: 'Invalid connection URI',
+				title: 'Invalid connection URI.',
 			}
 		} else if (error.includes("Pairing already exists")) {
 			connectionError.value = {
 				show: true,
-				title: 'Pairing already exists, please try again with new URI',
+				title: 'Pairing already exists, please try again with new URI.',
 			}
 		} else {
 			connectionError.value = {
 				show: true,
-				title: 'Unexpected connection error, please try again',
+				title: 'Unexpected connection error, please try again.',
 			}
 		}
 	}
 }
 
 const closePopup = () => {
+	isLoading.value = false
 	connectionError.value.show = false
 	uri.value = ""
 
 	emit('onClose')
 }
+
+watch(
+	() => uri.value,
+	() => {
+		connectionError.value.show = false
+	}
+)
 
 const onKeydown = (e) => {
 	if (e.code === "Enter" && uri.value) handleConnectByURI()
@@ -55,7 +66,6 @@ const onKeydown = (e) => {
 onMounted(() => {
 	document.addEventListener("keydown", onKeydown)
 })
-
 </script>
 
 <template>
@@ -85,8 +95,9 @@ onMounted(() => {
 					size="medium"
 					leftIcon="arrow-right-circle"
 					leftIconColor="blue"
-					:class="connectionError.show && $style.shake"
+					:loading="isLoading"
 					:disabled="!uri"
+					:class="connectionError.show && $style.shake"
 				>
 					Connect
 				</Button>

@@ -4,6 +4,7 @@ import { WALLET_CONNECT_SERVICE_NAME } from ".";
 // biome-ignore lint/style/useEnumInitializers: <explanation>
 export enum WalletConnectServiceEvent {
     ProposalExpire,
+    RequestExpire,
 }
 
 export class WalletConnectServiceEventMessage extends EventMessage {

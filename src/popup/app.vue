@@ -6,6 +6,7 @@ import PopupManager from "./components/popups/PopupManager.vue"
 
 /** Utils */
 import { managers, initNetworks, initTokenService } from "@/utils/core.js"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 
@@ -33,13 +34,16 @@ const initAccount = async () => {
 	await appStore.setupActiveAccount()
 }
 
+// Update appStore
 const uploadDappSessions = async () => {
 	appStore.dappSessions = await managers.interaction.getDappSessions(appStore.profile.id)
-
-	console.log('uploadDappSessions ', appStore.dappSessions);
-	
 }
 const interactionServiceClient = new InteractionServiceClient(undefined, undefined, uploadDappSessions, uploadDappSessions)
+const handleWalletLock = () => {
+	appStore.isLogined = false
+	router.push("/popup/auth")
+}
+const profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, undefined, handleWalletLock)
 
 const init = async () => {
 	/**
@@ -74,28 +78,9 @@ const init = async () => {
 		appStore.isLogined = true
 		appStore.isSessionChecked = true
 
-		console.log('init route', route);
-		
-		// if (route.query.redirect) {
-		// 	window.location.href = route.query.redirect
-		// } else {
-			
-			// router.push("/popup/general")
-		// }
-
-		// router.push("/popup/general")
-
-		if (route.name.includes("windows-")) {
-			if (route.query.redirect) {
-				window.location.href = route.query.redirect
-			} else {
-				router.push(route.fullPath)
-			}
-		} else {
-			if (["popup-register"].includes(route.name))
+		if (["popup-register"].includes(route.name)) {
 			router.push("/popup/general")
 		}
-
 
 		return
 	}

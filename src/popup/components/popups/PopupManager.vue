@@ -4,6 +4,7 @@ import MenuPopup from "./MenuPopup.vue"
 import NetworksPopup from "./NetworksPopup.vue"
 import NewNetworkPopup from "./NewNetworkPopup.vue"
 import EditNetworkPopup from "./EditNetworkPopup.vue"
+import SelectNetworksPopup from "./SelectNetworksPopup.vue"
 import EditAccountPopup from "./EditAccountPopup.vue"
 import AccountsPopup from "./AccountsPopup.vue"
 import NewAccountPopup from "./NewAccountPopup.vue"
@@ -38,6 +39,10 @@ const popupStore = usePopupStore()
 	<EditNetworkPopup
 		:show="popupStore.isOpened('edit_network')"
 		@onClose="popupStore.close('edit_network')"
+	/>
+	<SelectNetworksPopup
+		:show="popupStore.isOpened('select_network')"
+		@onClose="popupStore.close('select_network')"
 	/>
 	<EditAccountPopup
 		:show="popupStore.isOpened('edit_account')"

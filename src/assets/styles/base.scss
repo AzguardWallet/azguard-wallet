@@ -46,7 +46,7 @@ $grayscale: (
 	--green: #14ae5c;
 	--orange: #ff9500;
 	--red: #f03c3c;
-	--purple: #5856de;
+	--purple: #5856de;	  
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(255, 255, 255, #{$value});
@@ -92,6 +92,12 @@ $grayscale: (
 	--orange: #ff9500;
 	--red: #f03c3c;
 
+	/** json viewer */
+	--json-property-name: #998418;
+	--json-string: #B56959;
+	--json-number: #2F798A;
+	--json-bool: #1E754F;
+
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(255, 255, 255, #{$value});
 	}
@@ -135,6 +141,12 @@ $grayscale: (
 	--green: #14ae5c;
 	--orange: #ff9500;
 	--red: #f03c3c;
+
+	/** json viewer */
+	--json-property-name: #A99D5E;
+	--json-string: #BD8276;
+	--json-number: #4C9A91;
+	--json-bool: #4D9375;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(0, 0, 0, #{$value});

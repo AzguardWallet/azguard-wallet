@@ -12,14 +12,10 @@ const popupStore = usePopupStore()
 const route = useRoute()
 const router = useRouter()
 
-console.log('auth enter route', route);
-console.log('auth enter router', router);
-
-console.log('auth appStore.isLogined', appStore.isLogined);
+console.log('auth start route', route);
+console.log('auth start router', router);
 
 if (appStore.isLogined) {
-	console.log('auth after appStore.isLogined route', route);
-	
 	router.go(-1)
 }
 
@@ -75,21 +71,11 @@ const handleUnlockWallet = async () => {
 
 		appStore.isLogined = true
 		
-		if (route.query.redirect) {
-			console.log('auth route.query.redirect', route.query.redirect);
-			
-			window.location.href = route.query.redirect
+		if (router.options.history.state.back?.includes('windows')) {
+			router.go(-1)
 		} else {
-			console.log('auth else');
-			
-	
-		router.push("/popup/general")
+			router.push("/popup/general")
 		}
-		// const redirect = route.query.redirect || "/popup/general"
-		// console.log('auth redirect', redirect);
-		
-		// window.location.href = redirect
-		// router.push(redirect)
 	} catch (err) {
 		console.log(err)
 	}

@@ -45,9 +45,6 @@ export async function stop() {
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(broadcast);
 const accountService = new AccountService(profileService, broadcast);
-const interactionService = new InteractionService(broadcast);
-const walletConnectService = new WalletConnectService(accountService, interactionService, broadcast);
-walletConnectService.initialize()
 const tokenService = new TokenService(networkService, accountService, broadcast);
 const tokenBalanceService = new TokenBalanceService(
     profileService,
@@ -69,17 +66,20 @@ const executionService = new ExecutionService(
     transactionService,
     broadcast
 );
+const interactionService = new InteractionService(executionService, broadcast);
+const walletConnectService = new WalletConnectService(interactionService, broadcast);
+walletConnectService.initialize()
 
 const services = new Map<string, Service>([
     [profileService.name, profileService],
     [networkService.name, networkService],
     [accountService.name, accountService],
-    [interactionService.name, interactionService],
-    [walletConnectService.name, walletConnectService],
     [tokenService.name, tokenService],
     [tokenBalanceService.name, tokenBalanceService],
     [transactionService.name, transactionService],
     [executionService.name, executionService],
+    [interactionService.name, interactionService],
+    [walletConnectService.name, walletConnectService],
 ]);
 
 // state

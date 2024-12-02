@@ -1,7 +1,7 @@
 import type { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
 import { InteractionServiceEvent, type InteractionServiceEventMessage } from "./events";
-import type { DappSession, InteractionRequest } from "./models";
+import type { GetDappSessionParams, DappSession, InteractionRequest } from "./models";
 import {
     AddDappSessionRequest,
     DeleteInteractionRequestRequest,
@@ -69,8 +69,8 @@ export class InteractionServiceClient extends ServiceClient {
      * Returns a dapp session with the specified id, or undefined if it doesn't exist.
      * @param id Dapp session id.
      */
-    public getDappSession(id: string): Promise<DappSession | undefined> {
-        return this.request(new GetDappSessionRequest(id));
+    public getDappSession(params: GetDappSessionParams): Promise<DappSession | undefined> {
+        return this.request(new GetDappSessionRequest(params));
     }
     
     // /**

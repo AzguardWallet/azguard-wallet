@@ -31,6 +31,11 @@ export class InteractionRequest {
 /**
  * Dapp session info.
  */
+export type GetDappSessionParams = {
+    id?: string,
+    topic?: string,
+}
+
 export class DappSession {
     /**
      * Creates Dapp session.

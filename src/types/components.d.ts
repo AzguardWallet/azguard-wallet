@@ -20,6 +20,7 @@ declare module 'vue' {
     Icon: typeof import('./../components/core/Icon.vue')['default']
     Input: typeof import('./../components/ui/Input.vue')['default']
     Install: typeof import('./../components/install.vue')['default']
+    JsonViewer: typeof import('./../components/ui/JsonViewer/JsonViewer.vue')['default']
     LogoStar: typeof import('./../components/LogoStar.vue')['default']
     Or: typeof import('./../components/Or.vue')['default']
     Popup: typeof import('./../components/ui/Popup/Popup.vue')['default']

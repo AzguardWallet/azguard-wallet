@@ -10,6 +10,8 @@ export enum WalletConnectServiceMethod {
     ApproveDappSession,
     RejectDappSession,
     DropDappSession,
+    ConfirmSessionRequest,
+    RejectSessionRequest,
 }
 
 export class ConnectByURIRequest extends RequestMessage {
@@ -101,6 +103,47 @@ export class DropDappSessionRequest extends RequestMessage {
 export class DropDappSessionResponse extends ResponseMessage {
     constructor(
         request: DropDappSessionRequest,
+        result?: boolean,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class ConfirmSessionRequestRequest extends RequestMessage {
+    constructor(
+        public readonly networkId: string,
+        public readonly accountAddress: string,
+        public readonly dappName: string,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly payload: any,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.ConfirmSessionRequest);
+    }
+}
+
+export class ConfirmSessionRequestResponse extends ResponseMessage {
+    constructor(
+        request: ConfirmSessionRequestRequest,
+        result?: string | boolean,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class RejectSessionRequestRequest extends RequestMessage {
+    constructor(
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly payload: any,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.RejectSessionRequest);
+    }
+}
+
+export class RejectSessionRequestResponse extends ResponseMessage {
+    constructor(
+        request: RejectSessionRequestRequest,
         result?: boolean,
         error?: string,
     ) {

@@ -54,7 +54,7 @@ export class NetworkService extends Service {
 			case NetworkServiceMethod.GetNetworks: {
 				const _request = request as GetNetworksRequest
 				try {
-					const networks = await this.getNetworks()
+					const networks = await this.getNetworks(_request.chainId)
 					return new GetNetworksResponse(_request, networks)
 				} catch (error: any) {
 					return new GetNetworksResponse(
@@ -172,7 +172,7 @@ export class NetworkService extends Service {
 		}
 	}
 
-	public async getNetworks(): Promise<Array<Network>> {
+	public async getNetworks(chainId?: number): Promise<Array<Network>> {
 		const networks = await this.networks.getAll()
 		if (networks.length === 0) {
 			return [
@@ -185,6 +185,11 @@ export class NetworkService extends Service {
 				),
 			]
 		}
+
+		if (chainId) {
+			return networks.filter(([_, _network]) => _network.chainId === chainId).map(([id, network]) => this._makeNetwork(id, network))
+		}
+
 		return networks.map(([id, network]) => this._makeNetwork(id, network))
 	}
 

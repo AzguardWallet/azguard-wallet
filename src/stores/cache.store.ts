@@ -8,5 +8,8 @@ export const useCacheStore = defineStore("cache", () => {
 
 	const activeTokenIdx = ref()
 
-	return { confirm, networkToEditIdx, accountToEditIdx, activeTokenIdx }
+	const proposedNetworks = ref([])
+	const selectedNetwork = ref()
+
+	return { confirm, networkToEditIdx, accountToEditIdx, activeTokenIdx, proposedNetworks, selectedNetwork }
 })

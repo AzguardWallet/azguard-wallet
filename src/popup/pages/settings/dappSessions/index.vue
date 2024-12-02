@@ -44,6 +44,12 @@ const handleOpenConnectByURIPopup = () => {
 const handleDropSession = (session) => {
 	managers.wallectConnect.dropDappSession(session)
 }
+
+const handleDropAllSessions = () => {
+	for (let i = 0; i < dappSessions.value.length; i++) {
+		handleDropSession(dappSessions.value[i])
+	}
+}
 </script>
 
 <template>
@@ -71,7 +77,17 @@ const handleDropSession = (session) => {
 				</Text>
 			</Flex>
 			<Flex direction="column" gap="16">
-				<Text size="16" weight="600" color="primary">Sessions</Text>
+				<Flex align="center" justify="between">
+					<Text size="16" weight="600" color="primary">Sessions</Text>
+
+					<Tooltip v-if="dappSessions.length">
+						<Icon @click="handleDropAllSessions" name="log-out" size="16" color="tertiary" :class="$style.disconnect_all">Disconnect All</Icon>
+
+						<template #content>
+							<Text size="12" color="secondary">Disconnect all dApps</Text>
+						</template>
+					</Tooltip>
+				</Flex>				
 
 				<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
 					<Flex
@@ -142,10 +158,9 @@ const handleDropSession = (session) => {
 
 <style module>
 .wrapper {
-	max-height: var(--base-height);
 	flex: 1;
 
-	background: #fff;
+	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--gray-5);
 
 	border-top-left-radius: 24px;
@@ -154,17 +169,18 @@ const handleDropSession = (session) => {
 	padding: 20px 24px 24px 24px;
 }
 
-.sessions_section {
-	max-height: calc(var(--base-height) - 280px);
-	overflow-y: auto;
+.disconnect_all {
+	cursor: pointer;
 
-	scrollbar-width: thin;
-	/* scrollbar-color: #888 #f1f1f1; */
+	&:hover {
+		fill: var(--red);
+	}
 }
 
-/* .sessions_section::-webkit-scrollbar {
-	width: 4px;
-} */
+.sessions_section {
+	max-height: calc(var(--base-height) - 265px);
+	overflow: auto;
+}
 
 .uri_connect_section {
 	margin-bottom: 48px;
@@ -211,22 +227,4 @@ const handleDropSession = (session) => {
 
 	transition: all 0.2s var(--bezier);
 }
-
-
-/* *::-webkit-scrollbar-track {
-}
-
-*::-webkit-scrollbar-thumb {
-	background-color: rgba(255, 255, 255, 0);
-	border-radius: 50px;
-}
-
-*::-webkit-scrollbar-thumb {
-	background-color: rgba(255, 255, 255, 0.15);
-}
-
-*::-webkit-scrollbar-corner {
-	background-color: transparent;
-} */
-
 </style>

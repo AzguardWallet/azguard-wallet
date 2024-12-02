@@ -24,7 +24,7 @@ const navigationLinks = [
 				<Icon
 					:name="link.icon"
 					size="24"
-					:color="route.path === link.path ? 'primary' : 'tertiary'"
+					:color="route.path.includes(link.path) ? 'primary' : 'tertiary'"
 				/>
 			</Flex>
 		</RouterLink>

@@ -2,7 +2,6 @@ import { Core } from '@walletconnect/core';
 import { WalletKit } from '@reown/walletkit';
 import { buildApprovedNamespaces, getSdkError } from "@walletconnect/utils";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import type { AccountService } from "@/wallet/services/account";
 import type { InteractionService } from "@/wallet/services/interaction";
 import type { DappSession } from "@/wallet/services/interaction/client";
 import type { Account } from '../account/client';
@@ -18,6 +17,10 @@ import {
     DropDappSessionResponse,
     type ValidateProposalRequest,
     ValidateProposalResponse,
+    type ConfirmSessionRequestRequest,
+    ConfirmSessionRequestResponse,
+    type RejectSessionRequestRequest,
+    RejectSessionRequestResponse,
     WALLET_CONNECT_SERVICE_NAME,
     WalletConnectServiceMethod,
     WalletConnectServiceEventMessage,
@@ -52,7 +55,6 @@ export class WalletConnectService extends Service {
     private walletKit: InstanceType<typeof WalletKit> | null = null;
 
     constructor(
-        private readonly accounts: AccountService,
         private readonly interaction: InteractionService,
         emit: (event: EventMessage) => void
     ) {
@@ -79,8 +81,6 @@ export class WalletConnectService extends Service {
             }
             case WalletConnectServiceMethod.ValidateProposal: {
                 const _request = request as ValidateProposalRequest;
-                console.log('_request', _request);
-                
                 try {
                     const result = await this.validateProposal(_request.payload, _request.address)
                     
@@ -98,8 +98,7 @@ export class WalletConnectService extends Service {
             case WalletConnectServiceMethod.ApproveDappSession: {
                 const _request = request as ApproveDappSessionRequest;
                 try {
-                    const dappSession = await this.sessionApprove(_request.payload, _request.profileId, _request.accounts)
-                    // this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountAdded, account));
+                    const dappSession = await this.approveSession(_request.payload, _request.profileId, _request.accounts)
                     // this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountAdded, account));
                     return new ApproveDappSessionResponse(_request, dappSession);
                 }
@@ -115,7 +114,7 @@ export class WalletConnectService extends Service {
             case WalletConnectServiceMethod.RejectDappSession: {
                 const _request = request as RejectDappSessionRequest;
                 try {
-                    const result = await this.sessionReject(_request.payload)
+                    const result = await this.rejectSession(_request.payload)
 
                     return new RejectDappSessionResponse(_request, result);
                 }
@@ -142,6 +141,38 @@ export class WalletConnectService extends Service {
                     }
 
                     return new DropDappSessionResponse(_request, false, 'Unknown error occurred');
+                }
+            }
+            case WalletConnectServiceMethod.ConfirmSessionRequest: {
+                const _request = request as ConfirmSessionRequestRequest;
+                try {
+                    const txHash = await this.confirmSessionRequest(_request.networkId, _request.accountAddress, _request.dappName, _request.payload)
+
+                    return new ConfirmSessionRequestResponse(_request, txHash);
+                }
+
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new ConfirmSessionRequestResponse(_request, undefined, error.message);
+                    }
+
+                    return new ConfirmSessionRequestResponse(_request, undefined, 'Unknown error occurred');
+                }
+            }
+            case WalletConnectServiceMethod.RejectSessionRequest: {
+                const _request = request as RejectSessionRequestRequest;
+                try {
+                    await this.rejectSessionRequest(_request.payload)
+
+                    return new RejectSessionRequestResponse(_request, true);
+                }
+
+                catch (error: unknown) {
+                    if (error instanceof Error) {
+                        return new RejectSessionRequestResponse(_request, false, error.message);
+                    }
+
+                    return new RejectSessionRequestResponse(_request, false, 'Unknown error occurred');
                 }
             }
 
@@ -180,17 +211,13 @@ export class WalletConnectService extends Service {
 
         this.walletKit.on('session_delete', async (payload) => this.handleSessionDelete(payload))
 
-        this.walletKit.on('session_request', async (payload) => {
-            console.log('Session request received', payload);
-        });
+        this.walletKit.on('session_request', async (payload) => this.handleSessionRequest(payload));
 
-        this.walletKit.on('session_request_expire', async (payload) => {
-            console.log('Session request expire received', payload);
-        });
+        this.walletKit.on('session_request_expire', async (payload) => this.handleSessionRequestExpire(payload));
 
         this.walletKit.on('session_authenticate', async (payload) => this.handleSessionAuthenticate(payload))
 
-        console.log("WalletKit event handlers set up.");
+        console.debug("WalletKit event handlers set up.");
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -201,7 +228,7 @@ export class WalletConnectService extends Service {
 
         try {
             await this.walletKit.pair({ uri })
-                        
+
             return true
         } catch (error: unknown) {
             if (error instanceof Error) {
@@ -247,13 +274,13 @@ export class WalletConnectService extends Service {
             throw new Error("WalletKit is not initialized.");
         }
 
-        console.log('Session proposal received', payload);
+        console.debug('Session proposal received', payload);
 
         this.interaction.dappSessionProposal(payload)
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async sessionApprove(payload: any, profileId: string, accounts: Array<Account>): Promise<DappSession | undefined> {
+    private async approveSession(payload: any, profileId: string, accounts: Array<Account>): Promise<DappSession | undefined> {
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.");
         }
@@ -277,8 +304,6 @@ export class WalletConnectService extends Service {
             })
     
             if (!session) return undefined
-
-            console.log('Approved session: ', session);
             
             const { name, url, icons } = session.peer.metadata
 
@@ -303,7 +328,7 @@ export class WalletConnectService extends Service {
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async sessionReject(payload: any): Promise<boolean> {
+    private async rejectSession(payload: any): Promise<boolean> {
         await this.walletKit?.rejectSession({
             id: payload.id,
             reason: getSdkError("USER_REJECTED"),
@@ -313,8 +338,126 @@ export class WalletConnectService extends Service {
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async handleProposalExpire(payload: any): Promise<any> {
+        console.debug('Session proposal expire received', payload);
+
+        this.emit(new WalletConnectServiceEventMessage(WalletConnectServiceEvent.ProposalExpire, payload));
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async handleSessionRequest(payload: any): Promise<any> {
+        console.debug('Session request received', payload);
+
+        if (!this.walletKit) {
+            throw new Error("WalletKit is not initialized.");
+        }
+
+        this.interaction.dappSessionRequest(payload)
+    }
+    
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private async confirmSessionRequest(networkId: string, accountAddress: string, dappName: string, payload: any): Promise<string> {
+        try {
+            const txHash = await this.interaction.executeDappSessionRequest(networkId, accountAddress, dappName, payload.params?.request?.params)
+
+            const response = {
+                id: payload.id,
+                result: txHash,
+                jsonrpc: '2.0',
+            }
+
+            await this.walletKit?.respondSessionRequest({ topic: payload.topic, response })
+    
+            return txHash
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                throw new Error(error.message);
+            }
+
+            throw new Error("Unknown error occurred");
+        }
+    }
+    
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private async rejectSessionRequest(payload: any): Promise<boolean> {
+        const response = {
+            id: payload.id,
+            jsonrpc: '2.0',
+            error: {
+                code: 5000,
+                message: 'User rejected.',
+            },
+        }
+
+        await this.walletKit?.respondSessionRequest({ topic: payload.topic, response })
+
+        return true
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async handleSessionRequestExpire(payload: any): Promise<any> {
+        console.debug('Session request expire received', payload);
+        
+        this.emit(new WalletConnectServiceEventMessage(WalletConnectServiceEvent.RequestExpire, payload));
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public async handleSessionDelete(payload: any): Promise<any> {
+        console.debug('Session delete received', payload);
+
+        await this.interaction.dropDappSession({ topic: payload.topic }, true)
+    }
+    
+    public async dropDappSession(dappSession: DappSession): Promise<void> {
+        if (!this.walletKit) {
+            throw new Error("WalletKit is not initialized.");
+        }
+
+        try {
+            await this.interaction.dropDappSession({ id: dappSession.id }, true)
+
+            this.walletKit.disconnectSession({
+                topic: dappSession.params.topic,
+                reason: getSdkError('USER_DISCONNECTED')
+            })
+        } catch (err) {
+
+        }
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private async _buildDappSessionParams(session: any): Promise<WCSessionParams> {
+        const chains: string[] = [];
+        const methods: string[] = [];
+        const events: string[] = [];
+        
+        const namespaces = session.namespaces
+        for (const key in namespaces) {
+            const ns = namespaces[key];
+            if (ns.chains) {
+                chains.push(...ns.chains);
+            }
+            if (ns.methods) {
+                methods.push(...ns.methods);
+            }
+            if (ns.events) {
+                events.push(...ns.events);
+            }
+        }
+    
+        return new WCSessionParams(
+            session.topic,
+            session.expiry,
+            [...new Set(chains)],
+            [...new Set(methods)],
+            [...new Set(events)]
+        );
+    }
+
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async handleSessionAuthenticate(payload: any): Promise<any> {
-        console.log('Session authenticate received', payload);
+        console.debug('Session authenticate received', payload);
 
         // const accounts = await this.accounts.getAccounts("9181ab0c", 31337)
         // const account = accounts[0]
@@ -367,70 +510,5 @@ export class WalletConnectService extends Service {
         //     id: payload.id,
         //     auths: [auth],
         // });
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async handleProposalExpire(payload: any): Promise<any> {
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.");
-        }
-
-        this.emit(new WalletConnectServiceEventMessage(WalletConnectServiceEvent.ProposalExpire, payload));
-    }
-    
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async handleSessionDelete(payload: any): Promise<any> {
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.");
-        }
-
-        await this.interaction.dropDappSession({ topic: payload.topic }, true)
-    }
-    
-    public async dropDappSession(dappSession: DappSession): Promise<void> {
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.");
-        }
-
-        try {
-            await this.interaction.dropDappSession({ id: dappSession.id }, true)
-
-            this.walletKit.disconnectSession({
-                topic: dappSession.params.topic,
-                reason: getSdkError('USER_DISCONNECTED')
-            })
-        } catch (err) {
-
-        }
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async _buildDappSessionParams(session: any): Promise<WCSessionParams> {
-        const chains: string[] = [];
-        const methods: string[] = [];
-        const events: string[] = [];
-        
-        const namespaces = session.namespaces
-        for (const key in namespaces) {
-            const ns = namespaces[key];
-            if (ns.chains) {
-                chains.push(...ns.chains);
-            }
-            if (ns.methods) {
-                methods.push(...ns.methods);
-            }
-            if (ns.events) {
-                events.push(...ns.events);
-            }
-        }
-    
-        return new WCSessionParams(
-            session.topic,
-            session.expiry,
-            [...new Set(chains)],
-            [...new Set(methods)],
-            [...new Set(events)]
-        );
     }
 }

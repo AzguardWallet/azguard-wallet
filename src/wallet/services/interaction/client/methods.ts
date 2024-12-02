@@ -1,5 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { type DappSession, type InteractionRequest, INTERACTION_SERVICE_NAME } from ".";
+import { type GetDappSessionParams, type DappSession, type InteractionRequest, INTERACTION_SERVICE_NAME } from ".";
 import type { Account } from "@/wallet/services/account/client/models"
 import type { WCSessionParams } from "@/wallet/services/wallet-connect/client/models"
 
@@ -33,7 +33,7 @@ export class GetDappSessionsResponse extends ResponseMessage {
 
 export class GetDappSessionRequest extends RequestMessage {
     constructor(
-        public readonly dappSessionId: string,
+        public readonly getDappSessionParams: GetDappSessionParams,
     ) {
         super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.GetDappSession);
     }
