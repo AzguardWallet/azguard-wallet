@@ -55,6 +55,12 @@ const handleReset = () => {
 		managers.profile.deleteProfile(appStore.profile.id)
 		popupStore.closeAll()
 
+		appStore.accounts = []
+		appStore.balances = []
+		appStore.networks = []
+		appStore.tokens = []
+		appStore.transactions = []
+
 		router.push("/popup/register")
 
 		openToast({ label: "Successfully reset", icon: "check-circle" })
