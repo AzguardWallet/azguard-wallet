@@ -110,6 +110,7 @@ const handleHalf = () => {
 			</Flex>
 
 			<Button
+				v-if="token"
 				@click="handleMax"
 				type="secondary"
 				size="mini"

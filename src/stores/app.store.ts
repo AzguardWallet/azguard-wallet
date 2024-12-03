@@ -98,7 +98,7 @@ export const useAppStore = defineStore("app", () => {
 
 	const tokens = ref([])
 	const syncLocalTokens = async () => {
-		tokens.value = await managers.token.getTokens()
+		tokens.value = await managers.token?.getTokens()
 	}
 
 	const tokenAwaitingBalanceIdx = ref()

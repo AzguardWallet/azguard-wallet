@@ -21,7 +21,12 @@ const handleSelectTx = () => {
 </script>
 
 <template>
-	<Flex direction="column" gap="16" :class="$style.wrapper">
+	<Flex
+		v-if="latestTransaction"
+		direction="column"
+		gap="16"
+		:class="$style.wrapper"
+	>
 		<Flex align="center" justify="between">
 			<Text size="13" weight="600" color="secondary">
 				Latest activity

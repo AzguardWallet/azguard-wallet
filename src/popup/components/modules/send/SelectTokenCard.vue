@@ -14,68 +14,86 @@ const selectedToken = computed(() => {
 	return appStore.tokens[0]
 })
 const isTokenRestricted = computed(() => {
+	if (!selectedToken.value) return
+
 	return (
 		!selectedToken.value.hasPrivateTransfers ||
 		!selectedToken.value.hasPublicTransfers
 	)
 })
+
+const handleSelectToken = () => {
+	if (!selectedToken.value) return
+	popupStore.open("select_token")
+}
 </script>
 
 <template>
 	<Flex
-		@click="popupStore.open('select_token')"
+		@click="handleSelectToken"
 		align="center"
 		justify="between"
 		:class="$style.wrapper"
 	>
-		<Flex align="center" gap="8">
-			<Tooltip :disabled="!isTokenRestricted" position="start">
-				<Flex
-					align="center"
-					justify="center"
-					:class="$style.token_icon"
-				>
-					<Icon name="banknote" size="16" color="primary" />
-					<Icon
-						v-if="isTokenRestricted"
-						:name="
-							!selectedToken.hasPrivateTransfers
-								? 'face'
-								: 'key-square'
-						"
-						size="10"
-						:color="
-							!selectedToken.hasPrivateTransfers
-								? 'orange'
-								: 'green'
-						"
-						:class="$style.type_icon"
-					/>
-				</Flex>
+		<template v-if="selectedToken">
+			<Flex align="center" gap="8">
+				<Tooltip :disabled="!isTokenRestricted" position="start">
+					<Flex
+						align="center"
+						justify="center"
+						:class="$style.token_icon"
+					>
+						<Icon name="banknote" size="16" color="primary" />
+						<Icon
+							v-if="isTokenRestricted"
+							:name="
+								!selectedToken.hasPrivateTransfers
+									? 'face'
+									: 'key-square'
+							"
+							size="10"
+							:color="
+								!selectedToken.hasPrivateTransfers
+									? 'orange'
+									: 'green'
+							"
+							:class="$style.type_icon"
+						/>
+					</Flex>
 
-				<template #content>
-					Restricted token, only
-					{{
-						selectedToken.hasPrivateTransfers ? "private" : "public"
-					}}
-					transfers
-				</template>
-			</Tooltip>
+					<template #content>
+						Restricted token, only
+						{{
+							selectedToken.hasPrivateTransfers
+								? "private"
+								: "public"
+						}}
+						transfers
+					</template>
+				</Tooltip>
 
-			<Text size="13" weight="600" color="primary">
-				{{ selectedToken.symbol }}
-			</Text>
-			<Text size="13" weight="600" color="body">
-				{{ selectedToken.name }}
+				<Text size="13" weight="600" color="primary">
+					{{ selectedToken.symbol }}
+				</Text>
+				<Text size="13" weight="600" color="body">
+					{{ selectedToken.name }}
+				</Text>
+			</Flex>
+
+			<Icon
+				name="chevron"
+				size="16"
+				color="primary"
+				style="transform: rotate(-90deg)"
+			/>
+		</template>
+
+		<Flex v-else wide justify="center" align="center" gap="8">
+			<Icon name="banknote" size="16" color="secondary" />
+			<Text size="13" weight="600" color="tertiary">
+				No available tokens
 			</Text>
 		</Flex>
-
-		<Icon
-			name="chevron"
-			size="16"
-			color="primary"
-			style="transform: rotate(-90deg)"
-		/>
 	</Flex>
 </template>
 
