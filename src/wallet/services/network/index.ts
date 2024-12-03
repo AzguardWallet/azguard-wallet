@@ -174,6 +174,10 @@ export class NetworkService extends Service {
 
 	public async getNetworks(chainId?: number): Promise<Array<Network>> {
 		const networks = await this.networks.getAll()
+		if (chainId) {
+			return networks.filter(([_, _network]) => _network.chainId === chainId).map(([id, network]) => this._makeNetwork(id, network))
+		}
+
 		if (networks.length === 0) {
 			return [
 				await this._addNetwork(
@@ -184,10 +188,6 @@ export class NetworkService extends Service {
 					true
 				),
 			]
-		}
-
-		if (chainId) {
-			return networks.filter(([_, _network]) => _network.chainId === chainId).map(([id, network]) => this._makeNetwork(id, network))
 		}
 
 		return networks.map(([id, network]) => this._makeNetwork(id, network))

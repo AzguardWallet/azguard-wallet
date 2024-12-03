@@ -157,6 +157,7 @@ const handleOpen = (target) => {
 					size="12"
 					weight="600"
 					color="blue"
+					:class="$style.link"
 				>
 					Terms of Use
 				</Text>
@@ -166,6 +167,7 @@ const handleOpen = (target) => {
 					size="12"
 					weight="600"
 					color="blue"
+					:class="$style.link"
 				>
 					Privacy Policy
 				</Text>
@@ -207,5 +209,9 @@ const handleOpen = (target) => {
 	&:active {
 		background: var(--gray-5);
 	}
+}
+
+.link {
+	cursor: pointer;
 }
 </style>

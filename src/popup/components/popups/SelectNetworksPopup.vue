@@ -3,16 +3,11 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
-/** Services */
-import { managers } from "@/utils/core.js"
-
 /** Store */
-import { useAppStore } from "@/stores/app.store"
-import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
-const appStore = useAppStore()
-const popupStore = usePopupStore()
+import { usePopupStore } from "@/stores/popup.store"
 const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
 
 const emit = defineEmits(["onClose"])
 const props = defineProps({
@@ -37,7 +32,7 @@ watch(
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx=popupStore.popups.select_network>
 		<PopupCard>
 			<Flex
 				wide
@@ -158,20 +153,5 @@ watch(
 	opacity: 0;
 
 	transition: all 0.2s var(--bezier);
-}
-
-.txt_button {
-	& span,
-	& svg {
-		transition: all 0.2s var(--bezier);
-	}
-
-	&:hover {
-		& span,
-		& svg {
-			color: var(--txt-secondary);
-			fill: var(--txt-secondary);
-		}
-	}
 }
 </style>

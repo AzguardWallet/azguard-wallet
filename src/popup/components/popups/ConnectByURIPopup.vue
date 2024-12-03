@@ -6,6 +6,10 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 /** Utils */
 import { managers } from "@/utils/core"
 
+/** Store */
+import { usePopupStore } from "@/stores/popup.store"
+const popupStore = usePopupStore()
+
 const emit = defineEmits(["onClose"])
 
 const uri = ref("")
@@ -69,7 +73,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<Popup @onClose="closePopup">
+	<Popup @onClose="closePopup" :displaceIdx=popupStore.popups.connect_by_uri>
 		<PopupCard>
 			<Flex wide direction="column" gap="12" :class="$style.wrapper">
 				<Text size="13" weight="500" color="primary"> Connect by URI </Text>
@@ -109,34 +113,6 @@ onMounted(() => {
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
-}
-
-.account {
-	border-radius: 12px;
-	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
-
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--gray-3);
-
-		& .icons {
-			opacity: 1;
-		}
-	}
-
-	&:active {
-		background: var(--gray-5);
-	}
-}
-
-.icons {
-	opacity: 0;
-
-	transition: all 0.2s var(--bezier);
 }
 
 .shake {

@@ -78,7 +78,7 @@ const faucetService = new FaucetService(
 );
 const interactionService = new InteractionService(executionService, broadcast);
 const walletConnectService = new WalletConnectService(interactionService, broadcast);
-walletConnectService.initialize()
+walletConnectService.init()
 
 const services = new Map<string, Service>([
     [profileService.name, profileService],

@@ -38,7 +38,7 @@ const onImageError = (ds) => {
 
 const handleOpenConnectByURIPopup = () => {
 	if (!appStore.isLogined) return
-	popupStore.open("connectByURI")
+	popupStore.open("connect_by_uri")
 }
 
 const handleDropSession = (session) => {

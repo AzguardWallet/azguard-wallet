@@ -37,6 +37,7 @@ export const useAppStore = defineStore("app", () => {
 	const accounts = ref<Account[]>([])
 	const isLogined = ref<boolean>(false)
 	const isSessionChecked = ref<boolean>(false)
+	const pageAwaitingAuth = ref<string>("")
 
 	const setupActiveAccount = async () => {
 		const activeAccountResult = await chrome.storage.local.get(
@@ -182,6 +183,7 @@ export const useAppStore = defineStore("app", () => {
 		account,
 		isLogined,
 		isSessionChecked,
+		pageAwaitingAuth,
 		accounts,
 		setupActiveAccount,
 		selectAccount,

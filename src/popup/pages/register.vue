@@ -94,11 +94,11 @@ const handleOpen = (target) => {
 			>
 				By continuing, you are confirming that you read and agree to
 
-				<Text @click="handleOpen('terms')" color="secondary"
+				<Text @click="handleOpen('terms')" color="secondary" :class="$style.link"
 					>Terms of Use</Text
 				>
 				and
-				<Text @click="handleOpen('privacy')" color="secondary"
+				<Text @click="handleOpen('privacy')" color="secondary" :class="$style.link"
 					>Privacy Policy</Text
 				>
 			</Text>
@@ -159,6 +159,14 @@ const handleOpen = (target) => {
 	margin-bottom: 24px;
 
 	transition: all 0.5s var(--bezier);
+}
+
+.link {
+	cursor: pointer;
+
+	&:hover {
+		color: var(--txt-primary);
+	}
 }
 
 .theme_switcher {

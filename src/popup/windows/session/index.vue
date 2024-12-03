@@ -16,11 +16,10 @@ const params = new URLSearchParams(window.location.search)
 const requestId = params.get('requestId')
 
 if (!appStore.isLogined) {
-	const redirect = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${params.toString()}`)
+	appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${params.toString()}`)
 
 	router.push({
 		path: "/popup/auth",
-		query: { redirect },
 	})
 }
 
@@ -234,7 +233,7 @@ onUnmounted(() => {
 					<Text size="13" color="secondary">to be connected to the dApp</Text>
 				</Flex>
 				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-					<Flex v-for="acc in accounts" @click="handleAccountSelect(acc)" gap="10" :class="[$style.account, isLoading && $style.disabled]">
+					<Flex v-for="acc in accounts" @click="handleAccountSelect(acc)" gap="10" :class="[$style.account, (isLoading || processingError.show) && $style.disabled]">
 						<Flex align="center">
 							<Icon v-if="selectedAccounts?.includes(acc)" name="check-circle" size="16" color="green" />
 							<Icon v-else name="circle" size="16" color="secondary" />

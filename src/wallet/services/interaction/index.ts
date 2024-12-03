@@ -186,7 +186,7 @@ export class InteractionService extends Service {
     }
 
     public async getDappSessions(profileId: string): Promise<Array<DappSession>> {
-        const dappSessions = await this.dappSessions.findByKeys(ds => ds.profileId === profileId)
+        const dappSessions = await this.dappSessions.findByPredicate(ds => ds.profileId === profileId)
         if (!dappSessions) {
             return [];
         }

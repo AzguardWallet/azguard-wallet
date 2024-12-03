@@ -1,3 +1,4 @@
+import { sleep } from "../../utils/sleep";
 import { Core } from '@walletconnect/core';
 import { WalletKit } from '@reown/walletkit';
 import { buildApprovedNamespaces, getSdkError } from "@walletconnect/utils";
@@ -184,18 +185,28 @@ export class WalletConnectService extends Service {
         }
     }
 
-    public async initialize(): Promise<void> {
-        const core = new Core({
-            projectId: WALLET_CONNECT_PROJECT_ID,
-            logger: WALLET_CONNECT_LOG_LEVEL,
-        });
-
-        this.walletKit = await WalletKit.init({
-            core,
-            metadata: WALLET_CONNECT_METADATA,
-        });
-
-        this.setupWalletKitEvents();
+    public async init(): Promise<void> {
+        while (true) {
+            try {
+                const core = new Core({
+                    projectId: WALLET_CONNECT_PROJECT_ID,
+                    logger: WALLET_CONNECT_LOG_LEVEL,
+                });
+        
+                this.walletKit = await WalletKit.init({
+                    core,
+                    metadata: WALLET_CONNECT_METADATA,
+                });
+        
+                this.setupWalletKitEvents();
+                
+                console.debug("Account service initialized")
+                break
+            } catch (error) {
+                console.error("Failed to initialize wallet connect service. Retry...");
+                await sleep(1000)
+            }
+        }
     }
 
     private setupWalletKitEvents(): void {

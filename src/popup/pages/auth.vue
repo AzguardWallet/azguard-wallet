@@ -16,9 +16,6 @@ const popupStore = usePopupStore()
 const route = useRoute()
 const router = useRouter()
 
-console.log('auth start route', route);
-console.log('auth start router', router);
-
 if (appStore.isLogined) {
 	router.go(-1)
 }
@@ -80,8 +77,9 @@ const handleUnlockWallet = async () => {
 
 		appStore.isLogined = true
 		
-		if (router.options.history.state.back?.includes('windows')) {
+		if (appStore.pageAwaitingAuth) {
 			router.go(-1)
+			appStore.pageAwaitingAuth = ""
 		} else {
 			router.push("/popup/general")
 		}

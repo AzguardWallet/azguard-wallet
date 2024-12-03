@@ -9,7 +9,7 @@ import EditAccountPopup from "./EditAccountPopup.vue"
 import AccountsPopup from "./AccountsPopup.vue"
 import NewAccountPopup from "./NewAccountPopup.vue"
 import SendPopup from "./SendPopup.vue"
-import ConnectByURI from "./ConnectByURI.vue"
+import ConnectByURIPopup from "./ConnectByURIPopup.vue"
 import FaucetPopup from "./FaucetPopup.vue"
 import ReceivePopup from "./ReceivePopup.vue"
 import ResetPopup from "./ResetPopup.vue"
@@ -67,9 +67,9 @@ const popupStore = usePopupStore()
 		:show="popupStore.isOpened('send')"
 		@onClose="popupStore.close('send')"
 	/>
-	<ConnectByURI
-		:show="popupStore.isOpened('connectByURI')"
-		@onClose="popupStore.close('connectByURI')"
+	<ConnectByURIPopup
+		:show="popupStore.isOpened('connect_by_uri')"
+		@onClose="popupStore.close('connect_by_uri')"
 	/>
 	<ReceivePopup
 		:show="popupStore.isOpened('receive')"

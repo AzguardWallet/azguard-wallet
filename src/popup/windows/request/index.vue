@@ -28,11 +28,9 @@ const params = new URLSearchParams(window.location.search)
 const requestId = params.get('requestId')
 
 if (!appStore.isLogined) {
-	const redirect = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${params.toString()}`)
-	
+	appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${params.toString()}`)
 	router.push({
 		path: "/popup/auth",
-		query: { redirect },
 	})
 }
 
@@ -240,7 +238,7 @@ onUnmounted(() => {
 					<Text size="14" weight="600" color="primary">Select netwrok</Text>
 					<Text size="13" color="secondary">to execute the operation</Text>
 				</Flex>
-				<Flex direction="column" align="start" justify="start" gap="6" :class="[$style.networks, isLoading && $style.disabled]">
+				<Flex direction="column" align="start" justify="start" gap="6" :class="[$style.networks, (isLoading || processingError.show) && $style.disabled]">
 					<Flex @click="handleNetworkSelect()" gap="10" :class="$style.network">
 						<Flex align="center">
 							<Icon name="check-circle" size="16" color="green" />
