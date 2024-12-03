@@ -1,4 +1,7 @@
 <script setup>
+/** Vendor */
+import BN from "bignumber.js"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -27,10 +30,11 @@ const cacheStore = useCacheStore()
 const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
+	displace: Number,
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.popups.send
+	return popupStore.len - popupStore.popups.send
 })
 
 const activeToken = computed(() =>
@@ -57,7 +61,7 @@ const initSendType = () => {
 		activeToken.value.hasPrivateTransfers &&
 		activeToken.value.hasPublicTransfers
 	) {
-		selectedSendType.value = "private"
+		selectedSendType.value = cacheStore.preselectedBalanceType
 	}
 
 	if (!activeToken.value.hasPrivateTransfers) {
@@ -95,7 +99,13 @@ const selfAccountDestination = computed(() =>
 )
 
 const isAllowedToSend = computed(() => {
-	const amountToSend = Number.parseFloat(amountTerm.value?.replace(",", ""))
+	if (!amountTerm.value) return
+
+	const amountToSend = new BN(
+		typeof amountTerm.value === "string"
+			? amountTerm.value?.replace(",", "")
+			: amountTerm.value
+	)
 
 	if (!tokenBalanceByType.value) return
 	if (Number.isNaN(amountToSend)) return
@@ -110,53 +120,50 @@ const isAllowedToSend = computed(() => {
 	return true
 })
 
-const isSending = ref(false)
 const handleSend = async () => {
 	if (!isAllowedToSend.value) return
 
-	const amountToSend =
-		Number.parseFloat(amountTerm.value?.trim().replace(",", "")) *
-		10 ** activeToken.value.decimals
+	const amountToSend = new BN(
+		amountTerm.value?.trim().replace(",", "")
+	).times(10 ** activeToken.value.decimals)
 
-	let test
+	let type
 
 	if (
 		selectedSendType.value === "private" &&
 		selectedReceiverType.value === "private"
 	) {
-		test = TransferType.Private
+		type = TransferType.Private
 	}
 	if (
 		selectedSendType.value === "private" &&
 		selectedReceiverType.value === "public"
 	) {
-		test = TransferType.PrivateToPublic
+		type = TransferType.PrivateToPublic
 	}
 	if (
 		selectedSendType.value === "public" &&
 		selectedReceiverType.value === "private"
 	) {
-		test = TransferType.PublicToPrivate
+		type = TransferType.PublicToPrivate
 	}
 	if (
 		selectedSendType.value === "public" &&
 		selectedReceiverType.value === "public"
 	) {
-		test = TransferType.Public
+		type = TransferType.Public
 	}
 
-	isSending.value = true
-	const txHash = await managers.execution.executeTransfer(
+	appStore.isAwaitingTransaction = true
+	managers.execution.executeTransfer(
 		appStore.network.id,
 		appStore.account.address,
 		activeToken.value.id,
-		test,
+		type,
 		destinationAddressTerm.value,
 		amountToSend
 	)
-	isSending.value = false
 
-	console.log(txHash)
 	openToast({ label: "Transaction is sent" })
 
 	emit("onClose")
@@ -167,6 +174,8 @@ watch(
 	() => {
 		initSendType()
 		initReceiverType()
+
+		amountTerm.value = null
 	}
 )
 
@@ -176,21 +185,23 @@ watch(
 		if (props.show) {
 			initSendType()
 			initReceiverType()
-		}
-	}
-)
+		} else {
+			amountTerm.value = null
+			destinationAddressTerm.value = ""
 
-watch(
-	() => cacheStore.activeTokenIdx,
-	() => {
-		amountTerm.value = null
+			cacheStore.preselectedBalanceType = "private"
+		}
 	}
 )
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
-		<PopupCard large :displaceIdx="displaceIdx">
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.send"
+	>
+		<PopupCard large :displaceIdx>
 			<Flex
 				wide
 				direction="column"
@@ -203,16 +214,44 @@ watch(
 					gap="16"
 					:class="$style.top"
 				>
-					<Flex align="center" gap="6">
-						<Icon
-							name="arrow-top-right-circle"
-							size="16"
-							color="primary"
-						/>
-						<Text size="16" weight="600" color="primary">
-							Send
-						</Text>
-					</Flex>
+					<Tooltip>
+						<Flex align="center" gap="6">
+							<Flex
+								align="center"
+								justify="center"
+								:class="$style.send_icon"
+							>
+								<Icon
+									name="arrow-top-right-circle"
+									size="16"
+									color="primary"
+								/>
+
+								<Icon
+									name="globe"
+									size="12"
+									color="purple"
+									:class="$style.warning_icon"
+								/>
+							</Flex>
+							<Text
+								size="16"
+								weight="600"
+								color="primary"
+								style="transform: translate3d(0, 0, 0, 0)"
+							>
+								Send
+							</Text>
+
+							<Text size="16" weight="600" color="tertiary">
+								in {{ appStore.network.name }}
+							</Text>
+						</Flex>
+
+						<template #content>
+							This tx will execute on the custom network
+						</template>
+					</Tooltip>
 
 					<Flex wide direction="column" gap="16">
 						<Flex direction="column" gap="8">
@@ -279,7 +318,6 @@ watch(
 						rightIcon="arrow-right-circle"
 						rightIconColor="inverse"
 						:disabled="!isAllowedToSend"
-						:loading="isSending"
 					>
 						<Text color="inverse">Send</Text>
 					</Button>
@@ -307,5 +345,18 @@ watch(
 
 .bottom {
 	padding: 20px;
+}
+
+.send_icon {
+	position: relative;
+}
+
+.warning_icon {
+	position: absolute;
+	top: -6px;
+	right: -6px;
+
+	border-radius: 4px;
+	background: var(--card-bg);
 }
 </style>

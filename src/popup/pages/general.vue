@@ -32,8 +32,8 @@ watch(
 
 		<Flex direction="column" gap="32" :class="$style.content">
 			<WarningView />
-			<TokensView />
 			<RecentActivityView />
+			<TokensView />
 		</Flex>
 
 		<Navigation />

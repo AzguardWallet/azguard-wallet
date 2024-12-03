@@ -20,7 +20,7 @@ const handleOpenPopup = (target) => {
 	if (props.token) {
 		cacheStore.activeTokenIdx = props.token.id
 	} else {
-		cacheStore.activeTokenIdx = appStore.tokens[0].id
+		cacheStore.activeTokenIdx = appStore.tokens[0]?.id
 	}
 }
 </script>
@@ -52,11 +52,11 @@ const handleOpenPopup = (target) => {
 		</Flex>
 
 		<Flex
-			v-if="!props.token"
+			@click="handleOpenPopup('faucet')"
 			align="center"
 			justify="center"
 			gap="6"
-			:class="[$style.button, $style.disabled]"
+			:class="[$style.button]"
 		>
 			<Icon name="plus-circle" size="20" color="secondary" />
 			<Text size="14" weight="600" color="primary">Deposit</Text>

@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Badge: typeof import('./../components/ui/Badge.vue')['default']
+    Banner: typeof import('./../components/ui/Banner.vue')['default']
     Button: typeof import('./../components/ui/Button.vue')['default']
     Checkbox: typeof import('./../components/ui/Checkbox.vue')['default']
     DropdownDivider: typeof import('./../components/ui/Dropdown/DropdownDivider.vue')['default']

@@ -1,7 +1,14 @@
 <script setup>
+/** Vendor */
+import { DateTime } from "luxon"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
 
 const props = defineProps({
 	transactions: {
@@ -9,13 +16,17 @@ const props = defineProps({
 	},
 })
 
-console.log(props.transactions[0])
+const handleSelectTx = (target) => {
+	cacheStore.activeTxHash = target.hash
+	popupStore.open("tx")
+}
 </script>
 
 <template>
 	<Flex direction="column" gap="8">
 		<Flex
 			v-for="tx in transactions"
+			@click="handleSelectTx(tx)"
 			wide
 			align="center"
 			justify="between"
@@ -29,9 +40,9 @@ console.log(props.transactions[0])
 				>
 					<Icon
 						:name="
-							tx.calls[0].method === 'transfer'
-								? 'arrow-top-right-circle'
-								: 'wallet'
+							tx.calls[0].method.startsWith('transfer')
+								? 'arrow-narrow-up-right'
+								: 'zap'
 						"
 						size="20"
 						color="primary"
@@ -47,17 +58,21 @@ console.log(props.transactions[0])
 
 				<Flex direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">
-						Transfer
+						{{
+							tx.calls[0].method.startsWith("transfer")
+								? "Transfer"
+								: "Transaction"
+						}}
 					</Text>
 					<Text size="12" weight="500" color="tertiary">
-						{{ new Date(tx.updatedAt).toLocaleString() }}
+						{{
+							DateTime.fromSeconds(tx.updatedAt / 1_000).toFormat(
+								"MMMM dd, yyyy"
+							)
+						}}
 					</Text>
 				</Flex>
 			</Flex>
-
-			<Text size="12" weight="600" color="primary">
-				{{ tx.calls[0].transfers[0].amount / 10 ** 8 }}
-			</Text>
 		</Flex>
 	</Flex>
 </template>

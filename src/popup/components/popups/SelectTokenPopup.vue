@@ -14,6 +14,11 @@ const cacheStore = useCacheStore()
 const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
+	displaceIdx: Number,
+})
+
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.select_token
 })
 
 const handleSelectToken = (target) => {
@@ -23,8 +28,12 @@ const handleSelectToken = (target) => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
-		<PopupCard>
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.select_token"
+	>
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Flex direction="column" gap="12">
 					<Text size="14" weight="600" color="primary">

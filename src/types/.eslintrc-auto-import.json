@@ -313,6 +313,7 @@
     "capitalize": true,
     "initTokenService": true,
     "purgeNumber": true,
-    "normalizeAmount": true
+    "normalizeAmount": true,
+    "initTransactionService": true
   }
 }

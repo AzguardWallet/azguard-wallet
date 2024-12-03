@@ -91,7 +91,7 @@ const handleCopyAddress = () => {
 								size="32"
 								weight="500"
 								height="100"
-								color="secondary"
+								color="tertiary"
 							>
 								$0.00
 							</Text>

@@ -32,5 +32,10 @@ const props = defineProps({
 		background: var(--red);
 		color: var(--txt-inverse);
 	}
+
+	&.purple {
+		background: var(--purple);
+		color: var(--txt-inverse);
+	}
 }
 </style>

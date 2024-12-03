@@ -29,6 +29,8 @@ export const useAppStore = defineStore("app", () => {
 
 	const isLoading = ref(false)
 
+	const isAwaitingTransaction = ref(false)
+
 	const profile = ref()
 
 	const account = ref<Account>()
@@ -114,10 +116,16 @@ export const useAppStore = defineStore("app", () => {
 	})
 	const syncBalances = async () => {
 		if (!tokens.value.length) return
-		balances.value = await managers.balance.getTokenBalances(
-			tokens.value[0].id,
-			account.value?.address
-		)
+
+		for (const token of tokens.value) {
+			const tokenBalance = (
+				await managers.balance.getTokenBalances(
+					token.id,
+					account.value?.address
+				)
+			)[0]
+			balances.value.push(tokenBalance)
+		}
 	}
 	const initBalanceListeners = () => {
 		managers.balance.onTokenBalanceUpdated = (newBalance) => {
@@ -149,6 +157,13 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const transactions = ref([])
+	const syncTransactions = async () => {
+		transactions.value = (
+			await managers.transaction.getTransactions(account.value)
+		)
+			.filter((t) => t.account === account.value.address)
+			.sort((a, b) => b.updatedAt - a.updatedAt)
+	}
 
 	const showSendPopup = ref(false)
 	const showRegisterPopup = ref(false)
@@ -160,6 +175,7 @@ export const useAppStore = defineStore("app", () => {
 		setWalletCreatedAt,
 		_isHomeScreenOpened,
 		isLoading,
+		isAwaitingTransaction,
 		profile,
 		account,
 		isLogined,
@@ -181,6 +197,7 @@ export const useAppStore = defineStore("app", () => {
 		updateNetwork,
 		removeNetwork,
 		transactions,
+		syncTransactions,
 		showSendPopup,
 		showRegisterPopup,
 		isPrivacyModeEnabled,

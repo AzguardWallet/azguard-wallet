@@ -123,7 +123,7 @@ const handleDelete = (target) => {
 							{{ network.name }}
 						</Text>
 
-						<Badge variant="warning">
+						<Badge variant="purple">
 							<Text size="11" weight="700"> Custom </Text>
 						</Badge>
 					</Flex>

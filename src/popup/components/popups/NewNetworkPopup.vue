@@ -17,7 +17,7 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.popups.new_account
+	return popupStore.len - popupStore.popups.new_network
 })
 
 const emit = defineEmits(["onClose"])
@@ -32,6 +32,8 @@ const notAllowedNetworkNames = computed(() =>
 const nameTerm = ref("")
 const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
 
+const isUrlHasError = ref(false)
+
 const isAlreadyExist = computed(() =>
 	notAllowedNetworkNames.value.includes(nameTerm.value)
 )
@@ -44,19 +46,33 @@ const isAvailableToCreateNetwork = computed(() => {
 	return true
 })
 
+const isCreating = ref(false)
 const handleCreateNetwork = async () => {
 	if (!isAvailableToCreateNetwork.value) return
 
-	const network = await managers.network.addNetwork(
-		nameTerm.value,
-		urlTerm.value
-	)
-	appStore.network = network
-	appStore.networks = await managers.network.getNetworks()
+	try {
+		isCreating.value = true
+		const network = await managers.network.addNetwork(
+			nameTerm.value,
+			urlTerm.value
+		)
+		isCreating.value = false
 
-	emit("onClose")
+		appStore.network = network
+		appStore.networks = await managers.network.getNetworks()
 
-	openToast({ label: "Network is updated" })
+		emit("onClose")
+
+		openToast({ label: "Network is updated" })
+	} catch (error) {
+		isCreating.value = false
+
+		if (error === "failed to fetch node info") {
+			isUrlHasError.value = true
+		} else {
+			openToast({ label: "Something went wrong", icon: "warning" })
+		}
+	}
 }
 
 watch(
@@ -79,8 +95,12 @@ const onKeydown = (e) => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
-		<PopupCard :displaceIdx="displaceIdx">
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.new_network"
+	>
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Text size="14" weight="600" color="primary">
 					New network
@@ -95,7 +115,7 @@ const onKeydown = (e) => {
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">
-								<Icon name="warning" size="12" color="orange" />
+								<Icon name="warning" size="12" color="red" />
 								<Text size="12" weight="600" color="primary">
 									Already exist
 								</Text>
@@ -108,7 +128,19 @@ const onKeydown = (e) => {
 					label="RPC Link"
 					placeholder="http://localhost:1337"
 					v-model="urlTerm"
-				/>
+					@click="isUrlHasError = false"
+				>
+					<template #right>
+						<Transition name="fade">
+							<Flex v-if="isUrlHasError" align="center" gap="6">
+								<Icon name="warning" size="12" color="red" />
+								<Text size="12" weight="600" color="primary">
+									Failed to fetch node info
+								</Text>
+							</Flex>
+						</Transition>
+					</template>
+				</Input>
 
 				<Button
 					@click="handleCreateNetwork"
@@ -116,6 +148,7 @@ const onKeydown = (e) => {
 					type="primary"
 					size="medium"
 					:disabled="!isAvailableToCreateNetwork"
+					:loading="isCreating"
 				>
 					<Text color="inverse">Create</Text>
 				</Button>
@@ -126,6 +159,7 @@ const onKeydown = (e) => {
 					color="tertiary"
 					height="140"
 					align="center"
+					style="padding: 0 20px"
 				>
 					We will check the availability of the specified RPC before
 					adding it

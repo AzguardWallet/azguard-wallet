@@ -13,21 +13,26 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const displaceIdx = computed(() => {
-	return popupStore.popups.new_account
-})
-
 const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
+})
+
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.new_account
 })
 
 const inputEl = useTemplateRef("inputEl")
 
 const name = ref("")
 
+const isAlreadyExist = computed(
+	() => !!appStore.accounts.find((a) => a.name === name.value)
+)
+
 const isAvailableToCreateAccount = computed(() => {
 	if (!name.value.length) return
+	if (isAlreadyExist.value) return
 
 	return true
 })
@@ -60,6 +65,10 @@ watch(
 		} else {
 			document.addEventListener("keydown", onKeydown)
 
+			name.value = `Account ${
+				appStore.accounts.sort((a, b) => b.index - a.index)[0].index + 1
+			}`
+
 			await nextTick()
 			inputEl.value.inputEl.focus()
 		}
@@ -72,8 +81,12 @@ const onKeydown = (e) => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
-		<PopupCard :displaceIdx="displaceIdx">
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.new_account"
+	>
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Text size="14" weight="600" color="primary">
 					New account
@@ -84,7 +97,18 @@ const onKeydown = (e) => {
 					v-model="name"
 					label="Account name"
 					placeholder="My Vault"
-				/>
+				>
+					<template #right>
+						<Transition name="fade">
+							<Flex v-if="isAlreadyExist" align="center" gap="6">
+								<Icon name="warning" size="12" color="red" />
+								<Text size="12" weight="600" color="primary">
+									Already exist
+								</Text>
+							</Flex>
+						</Transition>
+					</template>
+				</Input>
 
 				<Button
 					@click="handleCreateAccount"
@@ -102,9 +126,10 @@ const onKeydown = (e) => {
 					color="tertiary"
 					height="140"
 					align="center"
+					style="padding: 0 20px"
 				>
 					New accounts do not require the creation of a new seed
-					phrase, just select the account type
+					phrase
 				</Text>
 			</Flex>
 		</PopupCard>

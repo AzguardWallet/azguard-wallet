@@ -2,10 +2,16 @@
 	<Flex justify="between" :class="$style.wrapper">
 		<Flex direction="column" gap="6">
 			<Text size="13" weight="600" color="primary">
-				Seed phrase is not saved
+				Azguard Wallet is in alpha testing
 			</Text>
 			<Text size="12" weight="600" color="tertiary">
-				This is the only way to recover your account
+				If you're facing a bug -
+				<a
+					href="https://azguardwallet.io/forms/report-issue"
+					target="_blank"
+				>
+					report an issue
+				</a>
 			</Text>
 		</Flex>
 
@@ -15,9 +21,8 @@
 
 <style module>
 .wrapper {
-	background: var(--card-bg);
+	background: var(--gray-5);
 	border-radius: 12px;
-	border: 1px solid var(--border);
 
 	padding: 12px;
 }
