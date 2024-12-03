@@ -54,9 +54,10 @@ const tokenBalanceByType = computed(() => {
 		: tokenBalance.value.publicBalance / 10 ** activeToken.value.decimals
 })
 
-const selectedSendType = ref()
+const selectedSendType = ref("private")
 const selectedReceiverType = ref("private")
 const initSendType = () => {
+	if (!activeToken.value) return
 	if (
 		activeToken.value.hasPrivateTransfers &&
 		activeToken.value.hasPublicTransfers
@@ -73,6 +74,7 @@ const initSendType = () => {
 	}
 }
 const initReceiverType = () => {
+	if (!activeToken.value) return
 	if (
 		activeToken.value.hasPrivateBalances &&
 		activeToken.value.hasPublicBalances

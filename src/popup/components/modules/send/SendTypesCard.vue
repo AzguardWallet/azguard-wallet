@@ -10,6 +10,7 @@ const selectedSendType = defineModel("sendType")
 const selectedReceiverType = defineModel("receiverType")
 
 const handleSwitchSendType = () => {
+	if (!props.token) return
 	if (!props.token.hasPrivateTransfers || !props.token.hasPublicTransfers)
 		return
 
@@ -18,6 +19,7 @@ const handleSwitchSendType = () => {
 }
 
 const handleSwitchReceiverType = () => {
+	if (!props.token) return
 	if (!props.token.hasPrivateBalances || !props.token.hasPublicBalances)
 		return
 
