@@ -202,6 +202,21 @@ export class TokenBalanceService extends Service {
 		}
 	}
 
+	private readonly onAccountDeleted = async (account: Account) => {
+        console.debug(`account ${account.address} deleted, remove related token balanes`);
+        this.queue.clear();
+		for (const tb of (await this.balances.getValues()).filter(x => x.account === account.address)) {
+            console.debug(`remove token balane #${tb.id}`);
+			await this.balances.delete(`${tb.id}`);
+			this.emit(
+				new TokenBalanceServiceEventMessage(
+					TokenBalanceServiceEvent.TokenBalanceDeleted,
+					this.getTokenBalanceInfo(tb)
+				)
+			)
+		}
+	}
+
 	private readonly onTokenAdded = async (token: Token) => {
 		this.tokens.set(token.id, token)
 		for (const account of await this.accountService.getAccounts(
@@ -263,6 +278,7 @@ export class TokenBalanceService extends Service {
 					this.onDefaultNetworkChanged
 				)
 				this.accountService.onAccountAdded.push(this.onAccountAdded)
+				this.accountService.onAccountDeleted.push(this.onAccountDeleted)
 				this.tokenService.onTokenAdded.push(this.onTokenAdded)
 				this.tokenService.onTokenUpdated.push(this.onTokenUpdated)
 				this.tokenService.onTokenDeleted.push(this.onTokenDeleted)

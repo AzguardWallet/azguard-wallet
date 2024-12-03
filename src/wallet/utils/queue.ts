@@ -10,6 +10,11 @@ export class Queue<TKey, TValue> {
         return this.items.length;
     }
 
+    public clear() {
+        this.items.splice(0, this.items.length);
+        this.keys.clear();
+    }
+
     public enqueue(item: TValue) {
         const key = this.key(item);
         if (this.keys.has(key)) {

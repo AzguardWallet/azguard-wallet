@@ -65,7 +65,7 @@ export class ExecutionServiceClient extends ServiceClient {
         token: number,
         transferType: TransferType,
         recipient: string,
-        amount: number | bigint | string,
+        amount: number | bigint,
     ): Promise<string> {
         return this.request(new ExecuteTransferRequest(
             network,

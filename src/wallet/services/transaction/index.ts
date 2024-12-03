@@ -1,6 +1,11 @@
 import { createPXEClient, PXE, TxHash, TxStatus as AztecTxStatus } from "@aztec/aztec.js";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
+import { AccountService } from "@/wallet/services/account";
+import { Account } from "@/wallet/services/account/client";
+import { NetworkService } from "@/wallet/services/network";
+import { Network } from "@/wallet/services/network/client";
+import { TokenBalanceService } from "@/wallet/services/token-balance";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
 import {
@@ -18,9 +23,6 @@ import {
     TxStatus,
     TxBlock,
 } from "./client";
-import { NetworkService } from "../network";
-import { Network } from "../network/client";
-import { TokenBalanceService } from "../token-balance";
 
 export class TransactionService extends Service {
     public readonly onTransactionAdded: ((tx: Tx) => void)[] = [];
@@ -32,6 +34,7 @@ export class TransactionService extends Service {
     private readonly worker: Promise<void>;
 
     constructor(
+        private readonly accountService: AccountService,
         private readonly networkService: NetworkService,
         private readonly tokenBalanceService: TokenBalanceService,
         emit: (event: EventMessage) => void,
@@ -116,8 +119,24 @@ export class TransactionService extends Service {
         return tx;
     }
 
+    public async waitForTx(txHash: string) {
+        while (this.pending.has(txHash)) {
+            await sleep(100);
+        }
+    }
+
     private readonly onDefaultNetworkChanged = async (network: Network) => {
         this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
+    }
+
+    private readonly onAccountDeleted = async (account: Account) => {
+        console.debug(`account ${account.address} deleted, remove related txs`);
+        for (const tx of (await this.txs.getValues()).filter(x => x.account === account.address)) {
+            console.debug(`remove tx ${tx.hash}`);
+            this.pending.delete(tx.hash);
+            await this.txs.delete(tx.hash);
+            this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionDeleted, tx));
+        }
     }
 
     private async init() {
@@ -127,6 +146,7 @@ export class TransactionService extends Service {
                     this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
                 }
 
+                this.accountService.onAccountDeleted.push(this.onAccountDeleted);
                 this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged);
 
                 for (const tx of (await this.txs.getValues()).filter(x => x.status === TxStatus.Pending)) {

@@ -30,6 +30,7 @@ export class AccountServiceClient extends ServiceClient {
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onAccountAdded Callback, called when a new account was created.
      * @param onAccountUpdated Callback, called when an existing account was updated.
+     * @param onAccountDeleted Callback, called when an existing account was deleted.
      */
     constructor(
         private readonly profile: Profile,
@@ -38,6 +39,7 @@ export class AccountServiceClient extends ServiceClient {
         onDisconnected?: () => void,
         private readonly onAccountAdded?: (account: Account) => void,
         private readonly onAccountUpdated?: (account: Account) => void,
+        private readonly onAccountDeleted?: (account: Account) => void,
     ) {
         super(ACCOUNT_SERVICE_NAME, onConnected, onDisconnected);
     }
@@ -55,6 +57,12 @@ export class AccountServiceClient extends ServiceClient {
                 case AccountServiceEvent.AccountUpdated:
                     if (this.onAccountUpdated) {
                         try {this.onAccountUpdated(account);}
+                        catch {}
+                    }
+                    break;
+                case AccountServiceEvent.AccountDeleted:
+                    if (this.onAccountDeleted) {
+                        try {this.onAccountDeleted(account);}
                         catch {}
                     }
                     break;

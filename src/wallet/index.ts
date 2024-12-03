@@ -11,6 +11,7 @@ import { sleep } from "./utils";
 import { TokenBalanceService } from "./services/token-balance";
 import { TransactionService } from "./services/transaction";
 import { ExecutionService } from "./services/execution";
+import { FaucetService } from "./services/faucet";
 
 export async function init() {
     console.debug("Init BarretenbergSync...");
@@ -44,7 +45,7 @@ export async function stop() {
 // services
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(broadcast);
-const accountService = new AccountService(profileService, broadcast);
+const accountService = new AccountService(profileService, networkService, broadcast);
 const tokenService = new TokenService(networkService, accountService, broadcast);
 const tokenBalanceService = new TokenBalanceService(
     profileService,
@@ -54,6 +55,7 @@ const tokenBalanceService = new TokenBalanceService(
     broadcast,
 );
 const transactionService = new TransactionService(
+    accountService,
     networkService,
     tokenBalanceService,
     broadcast,
@@ -65,6 +67,14 @@ const executionService = new ExecutionService(
     tokenService,
     transactionService,
     broadcast
+);
+const faucetService = new FaucetService(
+    profileService,
+    networkService,
+    accountService,
+    executionService,
+    tokenService,
+    broadcast,
 );
 const interactionService = new InteractionService(executionService, broadcast);
 const walletConnectService = new WalletConnectService(interactionService, broadcast);
