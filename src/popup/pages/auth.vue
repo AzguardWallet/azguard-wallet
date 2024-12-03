@@ -1,7 +1,11 @@
 <script setup>
 /** Utils */
 import { AccountServiceClient } from "@/wallet/services/account/client"
-import { managers, initTokenService } from "@/utils/core"
+import {
+	managers,
+	initTokenService,
+	initTransactionService,
+} from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -65,8 +69,13 @@ const handleUnlockWallet = async () => {
 			network: appStore.network,
 			account: appStore.account,
 		})
+		initTransactionService(() => {
+			appStore.isAwaitingTransaction = false
+		})
+
 		await appStore.syncLocalTokens()
-		await appStore.syncBalances()
+		appStore.syncBalances()
+		await appStore.syncTransactions()
 		appStore.initBalanceListeners()
 
 		appStore.isLogined = true

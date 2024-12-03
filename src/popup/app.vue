@@ -5,7 +5,12 @@ import LogoStar from "@/components/LogoStar.vue"
 import PopupManager from "./components/popups/PopupManager.vue"
 
 /** Utils */
-import { managers, initNetworks, initTokenService } from "@/utils/core.js"
+import {
+	managers,
+	initNetworks,
+	initTokenService,
+	initTransactionService,
+} from "@/utils/core.js"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { InteractionServiceClient } from "@/wallet/services/interaction/client"
@@ -17,6 +22,8 @@ const { syncLocalSettings } = useSettings()
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
+
+import Test from "@/assets/logo.svg?raw"
 
 const route = useRoute()
 const router = useRouter()
@@ -71,8 +78,14 @@ const init = async () => {
 			network: appStore.network,
 			account: appStore.account,
 		})
+		initTransactionService((tx) => {
+			appStore.transactions.push(tx)
+			appStore.isAwaitingTransaction = false
+		})
+
 		await appStore.syncLocalTokens()
-		await appStore.syncBalances()
+		appStore.syncBalances()
+		await appStore.syncTransactions()
 		appStore.initBalanceListeners()
 
 		appStore.isLogined = true
@@ -103,6 +116,38 @@ const init = async () => {
 	router.push("/popup/register")
 }
 init()
+
+onMounted(() => {
+	/** DevTools Warnings -> Logo + Scam Prevention */
+	const svgDataUrl = `data:image/svg+xml;base64,${btoa(Test)}`
+
+	console.log(
+		"%c ",
+		`
+  background-image: url(${svgDataUrl});
+  padding-bottom: 100px;
+  padding-left: 100px;
+  margin: 20px;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+`
+	)
+
+	const styleTitle = "color: #fff; font-family: sans-serif; font-size: 10em;"
+	const styleText =
+		"color: #fff; font-family: sans-serif; font-size: 2em; padding: 40px; border-radius: 24px; border: 2px solid orange; background: #1f1f1f; line-height: 160%"
+	console.log("%cHold up!", styleTitle)
+	console.log(
+		"%cIf someone asks you to do something in this interface (DevTools), 100% they are trying to scam you. If you don't know what you are doing, close this window (cross in the upper right corner).",
+		styleText
+	)
+	console.log(
+		"%cYou can report a scam through the form: https://azguardwallet.io/forms/report-scam",
+		styleText
+	)
+	/****************** */
+})
 
 watch(
 	() => route.name,

@@ -51,7 +51,7 @@ const showFullscreen = ref(false)
 	}
 
 	&.displace {
-		transform: scale(calc(0.99 - (var(--displace) / 100)));
+		transform: translateY(15px);
 	}
 
 	&::-webkit-scrollbar {

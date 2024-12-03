@@ -10,13 +10,16 @@ import AccountsPopup from "./AccountsPopup.vue"
 import NewAccountPopup from "./NewAccountPopup.vue"
 import SendPopup from "./SendPopup.vue"
 import ConnectByURI from "./ConnectByURI.vue"
+import FaucetPopup from "./FaucetPopup.vue"
 import ReceivePopup from "./ReceivePopup.vue"
 import ResetPopup from "./ResetPopup.vue"
 import ForgotPasswordPopup from "./ForgotPasswordPopup.vue"
 import ConfirmPopup from "./ConfirmPopup.vue"
 import SelectTokenPopup from "./SelectTokenPopup.vue"
 import TokensPopup from "./TokensPopup.vue"
+import TokenMetadataPopup from "./TokenMetadataPopup.vue"
 import NewTokenPopup from "./NewTokenPopup.vue"
+import TransactionPopup from "./TransactionPopup.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -27,6 +30,10 @@ const popupStore = usePopupStore()
 	<MenuPopup
 		:show="popupStore.isOpened('menu')"
 		@onClose="popupStore.close('menu')"
+	/>
+	<FaucetPopup
+		:show="popupStore.isOpened('faucet')"
+		@onClose="popupStore.close('faucet')"
 	/>
 	<NetworksPopup
 		:show="popupStore.isOpened('networks')"
@@ -88,8 +95,16 @@ const popupStore = usePopupStore()
 		:show="popupStore.isOpened('tokens')"
 		@onClose="popupStore.close('tokens')"
 	/>
+	<TokenMetadataPopup
+		:show="popupStore.isOpened('token_metadata')"
+		@onClose="popupStore.close('token_metadata')"
+	/>
 	<NewTokenPopup
 		:show="popupStore.isOpened('new_token')"
 		@onClose="popupStore.close('new_token')"
+	/>
+	<TransactionPopup
+		:show="popupStore.isOpened('tx')"
+		@onClose="popupStore.close('tx')"
 	/>
 </template>

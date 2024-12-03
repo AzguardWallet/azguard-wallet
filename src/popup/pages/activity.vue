@@ -9,22 +9,11 @@ const appStore = useAppStore()
 
 const router = useRouter()
 
-const transactions = ref([])
-const initTransactions = async () => {
-	transactions.value = (
-		await managers.transaction.getTransactions(appStore.account)
-	).filter((t) => t.account === appStore.account.address)
-
-	console.log(transactions.value)
-}
-
 onMounted(async () => {
 	if (!appStore.isLogined && appStore.isSessionChecked) {
 		router.push("/popup/auth")
 		return
 	}
-
-	if (appStore.isLogined) initTransactions()
 })
 
 watch(
@@ -36,13 +25,6 @@ watch(
 		}
 	}
 )
-
-watch(
-	() => appStore.isLogined,
-	() => {
-		initTransactions()
-	}
-)
 </script>
 
 <template>
@@ -52,36 +34,16 @@ watch(
 		gap="20"
 		:class="$style.wrapper"
 	>
-		<Text size="13" weight="600" color="primary"> Today </Text>
+		<Text size="13" weight="600" color="primary"> Transactions </Text>
 
 		<Flex direction="column" gap="8" :class="$style.list">
-			<Flex wide align="center" gap="12" :class="$style.item">
-				<Flex
-					align="center"
-					justify="center"
-					:class="$style.activity_icon"
-				>
-					<Spinner size="16" color="--txt-primary" />
-
-					<Icon
-						name="zap-circle"
-						size="14"
-						color="blue"
-						:class="$style.check_icon"
-					/>
-				</Flex>
-
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">
-						Transaction in progress
-					</Text>
-					<Text size="12" weight="500" color="tertiary">
-						Awaiting confirmation
-					</Text>
-				</Flex>
-			</Flex>
-
-			<Flex wide align="center" gap="12" :class="$style.item">
+			<Flex
+				v-if="!appStore.transactions.length"
+				wide
+				align="center"
+				gap="12"
+				:class="$style.item"
+			>
 				<Flex
 					align="center"
 					justify="center"
@@ -111,7 +73,7 @@ watch(
 				</Flex>
 			</Flex>
 
-			<template v-if="!transactions.length">
+			<template v-if="!appStore.transactions.length">
 				<Flex align="center" gap="12" :class="$style.dummy">
 					<Flex
 						align="center"
@@ -143,11 +105,11 @@ watch(
 				</Flex>
 			</template>
 
-			<TransactionsList :transactions />
+			<TransactionsList :transactions="appStore.transactions" />
 		</Flex>
 
 		<Flex
-			v-if="!transactions.length"
+			v-if="!appStore.transactions.length"
 			direction="column"
 			ap
 			align="center"

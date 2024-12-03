@@ -6,6 +6,7 @@ type OpenedPopups = {
 
 export const usePopupStore = defineStore("popup", () => {
 	const popups = ref<OpenedPopups>({})
+	const len = computed(() => Object.keys(popups.value).length)
 
 	const isOpened = (target: string) => {
 		return target in popups.value
@@ -20,5 +21,5 @@ export const usePopupStore = defineStore("popup", () => {
 		popups.value = {}
 	}
 
-	return { popups, isOpened, open, close, closeAll }
+	return { popups, len, isOpened, open, close, closeAll }
 })

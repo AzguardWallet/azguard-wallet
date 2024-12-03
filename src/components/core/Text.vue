@@ -71,7 +71,7 @@ const classes = computed(() => {
 </script>
 
 <template>
-	<span :class="classes">
+	<span :class="[classes]">
 		<slot />
 	</span>
 </template>

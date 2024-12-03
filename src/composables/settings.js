@@ -1,14 +1,17 @@
 const SETTINGS_STORAGE_KEY = "azguard:ui:settings"
 const defaultSettings = {
 	appearance: {
-		theme: "light",
+		theme: "dark",
 		sidePanel: false,
+	},
+	developer: {
+		advancedMode: false,
 	},
 }
 
 const root = document.querySelector("html")
 
-const settings = ref()
+const settings = ref({})
 
 export const useSettings = () => {
 	const syncLocalSettings = async () => {
@@ -25,6 +28,29 @@ export const useSettings = () => {
 
 		if (SETTINGS_STORAGE_KEY in localSettings) {
 			settings.value = localSettings[SETTINGS_STORAGE_KEY]
+
+			/** restore */
+			if (
+				Object.keys(localSettings[SETTINGS_STORAGE_KEY]).length !==
+				Object.keys(defaultSettings).length
+			) {
+				const missingSettings = []
+
+				for (const setting of Object.keys(defaultSettings)) {
+					if (!(setting in localSettings[SETTINGS_STORAGE_KEY])) {
+						missingSettings.push(setting)
+					}
+				}
+
+				for (const missingSetting of missingSettings) {
+					settings.value[missingSetting] =
+						defaultSettings[missingSetting]
+				}
+
+				await chrome.storage.local.set({
+					[SETTINGS_STORAGE_KEY]: settings.value,
+				})
+			}
 		}
 
 		/** Theme */

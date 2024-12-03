@@ -46,6 +46,9 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 	border-radius: 12px;
 	overflow: hidden;
 	box-shadow: 0 1px 2px var(--shadow-5), inset 0 0 0 1px var(--border);
+
+	opacity: 0.5;
+	pointer-events: none;
 }
 
 .card {

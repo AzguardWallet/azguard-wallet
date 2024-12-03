@@ -40,6 +40,7 @@ export const normalizeAmount = (target) => {
 	target.split("").forEach((char) => {
 		if (char === ".") dotCounter++
 	})
+
 	if (dotCounter > 1) return target.slice(0, target.length - 1)
 
 	if (target[target.length - 1] === ".") return target

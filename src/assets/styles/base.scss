@@ -190,6 +190,7 @@ $grayscale: (
 
 a {
 	text-decoration: none;
+	color: var(--blue);
 
 	&:focus {
 		outline: none;
@@ -256,13 +257,12 @@ body {
 
 .opacity-enter-active,
 .opacity-leave-active {
-	transition: all 0.2s var(--bezier);
+	transition: all 0.2s ease;
 }
 
 .opacity-enter-from,
 .opacity-leave-to {
 	opacity: 0;
-	transform: scale(0.96);
 }
 
 .navigation-enter-active,

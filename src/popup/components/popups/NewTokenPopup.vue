@@ -17,6 +17,10 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.new_token
+})
+
 const props = defineProps({
 	show: Boolean,
 })
@@ -82,8 +86,12 @@ watch(
 </script>
 
 <template>
-	<Popup :show="show" @onClose="emit('onClose')">
-		<PopupCard>
+	<Popup
+		:show="show"
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.new_token"
+	>
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Text size="14" weight="600" color="primary"> New token </Text>
 
@@ -131,8 +139,8 @@ watch(
 					height="140"
 					align="center"
 				>
-					New accounts do not require the creation of a new seed
-					phrase, just select the account type
+					Importing the token may take time and additional
+					configuration may be required
 				</Text>
 			</Flex>
 		</PopupCard>

@@ -8,11 +8,17 @@ import { managers } from "@/utils/core.js"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
 
 const router = useRouter()
 
 const emit = defineEmits(["onClose"])
+
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.menu
+})
 
 const handleLockWallet = () => {
 	emit("onClose")
@@ -23,8 +29,8 @@ const handleLockWallet = () => {
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')">
-		<PopupCard>
+	<Popup @onClose="emit('onClose')" :displaceIdx="popupStore.popups.menu">
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Flex direction="column" gap="12">
 					<Text size="14" weight="600" color="primary">

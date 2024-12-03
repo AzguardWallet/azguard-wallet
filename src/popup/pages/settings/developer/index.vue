@@ -35,7 +35,27 @@ import Navigation from "../../../components/Navigation.vue"
 							Networks
 						</Text>
 						<Text size="13" weight="500" color="tertiary">
-							Manage networks
+							Add, edit, remove networks
+						</Text>
+					</Flex>
+
+					<Icon
+						name="chevron"
+						size="16"
+						color="tertiary"
+						:class="$style.item_icon"
+					/>
+				</Flex>
+			</RouterLink>
+
+			<RouterLink to="/popup/settings/developer/advanced">
+				<Flex align="center" justify="between" :class="$style.item">
+					<Flex direction="column" gap="6">
+						<Text size="14" weight="600" color="primary">
+							Advanced
+						</Text>
+						<Text size="13" weight="500" color="tertiary">
+							Access to advanced features
 						</Text>
 					</Flex>
 

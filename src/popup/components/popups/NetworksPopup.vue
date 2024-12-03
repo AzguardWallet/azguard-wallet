@@ -17,6 +17,10 @@ const props = defineProps({
 	show: Boolean,
 })
 
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.networks
+})
+
 const router = useRouter()
 
 const handleSelectNetwork = (target) => {
@@ -32,8 +36,12 @@ const handleManageNetworks = () => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
-		<PopupCard>
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.networks"
+	>
+		<PopupCard :displaceIdx>
 			<Flex
 				wide
 				direction="column"
@@ -90,7 +98,7 @@ const handleManageNetworks = () => {
 									{{ network.name }}
 								</Text>
 
-								<Badge variant="warning">
+								<Badge variant="purple">
 									<Text size="11" weight="700"> Custom </Text>
 								</Badge>
 							</Flex>

@@ -75,8 +75,8 @@ const handleOpenPopup = (target) => {
 			justify="center"
 			:class="[$style.button, !appStore.isLogined && $style.disabled]"
 		>
-			<Icon name="globe" size="18" color="primary" />
-			<div :class="$style.dot" />
+			<Icon name="globe" size="18" color="purple" />
+			<!-- <div :class="$style.dot" /> -->
 		</Flex>
 	</Flex>
 </template>

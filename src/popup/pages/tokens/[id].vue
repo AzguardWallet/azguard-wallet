@@ -1,12 +1,21 @@
 <script setup>
 /** Components */
 import BalanceView from "../../components/modules/general/BalanceView.vue"
+import SplittedBalancesView from "../../components/modules/general/SplittedBalancesView.vue"
 import RecentActivityView from "../../components/modules/general/RecentActivityView.vue"
 import Navigation from "../../components/Navigation.vue"
 
+/** Composables */
+import { useSettings } from "@/composables/settings"
+const { settings } = useSettings()
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
+import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
+const cacheStore = useCacheStore()
 
 const router = useRouter()
 const route = useRoute()
@@ -28,6 +37,11 @@ watch(
 			router.push("/popup/auth")
 	}
 )
+
+const handleViewTokenMetadata = () => {
+	cacheStore.activeTokenIdx = token.value.id
+	popupStore.open("token_metadata")
+}
 </script>
 
 <template>
@@ -35,7 +49,20 @@ watch(
 		<BalanceView :token />
 
 		<Flex direction="column" gap="32" :class="$style.content">
+			<SplittedBalancesView :token />
+
 			<RecentActivityView />
+
+			<Button
+				v-if="settings.developer.advancedMode"
+				@click="handleViewTokenMetadata"
+				type="secondary"
+				size="small"
+				square
+			>
+				<Icon name="info" size="14" color="secondary" />
+				View token medata
+			</Button>
 		</Flex>
 
 		<Navigation />

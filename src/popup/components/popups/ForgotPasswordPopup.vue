@@ -10,7 +10,7 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.popups.reset
+	return popupStore.len - popupStore.popups.forgot_password
 })
 
 const emit = defineEmits(["onClose"])
@@ -20,8 +20,12 @@ const props = defineProps({
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
-		<PopupCard :displaceIdx="displaceIdx">
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.forgot_password"
+	>
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
 					<Flex align="center" gap="6">
@@ -101,9 +105,16 @@ const props = defineProps({
 					color="tertiary"
 					height="160"
 					align="center"
+					style="padding: 0 20px"
 				>
-					For security, the wallet does not provide functionality for
-					recovering a forgotten password
+					If you enter your password correctly, but still can't get
+					into your wallet -
+					<a
+						href="https://azguardwallet.io/forms/report-issue"
+						target="_blank"
+					>
+						contact us
+					</a>
 				</Text>
 			</Flex>
 		</PopupCard>

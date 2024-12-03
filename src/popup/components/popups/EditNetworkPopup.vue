@@ -16,7 +16,7 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.popups.new_account
+	return popupStore.len - popupStore.popups.edit_network
 })
 
 const emit = defineEmits(["onClose"])
@@ -89,8 +89,12 @@ const onKeydown = (e) => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
-		<PopupCard :displaceIdx="displaceIdx">
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.edit_network"
+	>
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Text size="14" weight="600" color="primary">
 					Edit network
@@ -105,7 +109,7 @@ const onKeydown = (e) => {
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">
-								<Icon name="warning" size="12" color="orange" />
+								<Icon name="warning" size="12" color="red" />
 								<Text size="12" weight="600" color="primary">
 									Already exist
 								</Text>

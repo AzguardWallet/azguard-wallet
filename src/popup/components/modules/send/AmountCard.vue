@@ -1,4 +1,7 @@
 <script setup>
+/** Vendor */
+import BN from "bignumber.js"
+
 /** Utils */
 import { purgeNumber, normalizeAmount, comma } from "@/utils/amount.js"
 
@@ -27,14 +30,31 @@ onMounted(() => {
 	inputEl.value.focus()
 })
 
-const handleFromInput = () => {
-	const normalizedAmount = normalizeAmount(model.value)
+const handleAmountInput = (e) => {
+	const purgedAmount = purgeNumber(model.value)
+	model.value = purgedAmount
+
+	if (["0", ","].includes(e.data) && model.value.length === 1)
+		model.value = "0."
+
+	const normalizedAmount = normalizeAmount(purgedAmount)
 	if (typeof normalizedAmount === "string") {
 		model.value = normalizedAmount
 		return
 	}
+}
 
-	model.value = comma(purgeNumber(model.value), ",", 4)
+const isFocused = ref(false)
+const handleAmountFocus = () => {
+	isFocused.value = true
+}
+const handleAmountBlur = () => {
+	isFocused.value = false
+
+	if (!model.value) return
+	if (model.value.toString().includes(",")) return model.value
+
+	model.value = comma(model.value, ",", 4)
 }
 
 const amountInUSD = computed(
@@ -43,21 +63,29 @@ const amountInUSD = computed(
 
 const handleMax = () => {
 	if (!props.tokenBalanceByType) return
-	model.value = comma(props.tokenBalanceByType)
+	model.value = props.tokenBalanceByType
 }
 
 const handleHalf = () => {
-	model.value = comma(Number.parseFloat(purgeNumber(model.value)) / 2)
+	if (!model.value) return
+	model.value = Number.parseFloat(purgeNumber(model.value)) / 2
 }
 </script>
 
 <template>
-	<Flex gap="16" direction="column" :class="$style.wrapper">
+	<Flex
+		@click="inputEl.focus()"
+		gap="16"
+		direction="column"
+		:class="[$style.wrapper, isFocused && $style.focused]"
+	>
 		<Flex direction="column" gap="8">
 			<input
 				ref="inputEl"
 				v-model="model"
-				@input="handleFromInput"
+				@input="handleAmountInput"
+				@focus="handleAmountFocus"
+				@blur="handleAmountBlur"
 				placeholder="0.00"
 				:class="$style.input_field"
 			/>
@@ -71,7 +99,12 @@ const handleHalf = () => {
 				<Button @click="handleHalf" type="secondary" size="mini" round>
 					Half
 				</Button>
-				<Button @click="model = 0" type="secondary" size="mini" round>
+				<Button
+					@click="model = null"
+					type="secondary"
+					size="mini"
+					round
+				>
 					Clear
 				</Button>
 			</Flex>
@@ -101,11 +134,18 @@ const handleHalf = () => {
 .wrapper {
 	width: 100%;
 
+	cursor: text;
 	background: var(--card-bg);
 	border-radius: 12px;
 	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--shadow-5);
 
 	padding: 16px;
+
+	transition: all 0.2s var(--bezier);
+
+	&.focused {
+		box-shadow: inset 0 0 0 2px var(--blue);
+	}
 }
 
 .input_field {

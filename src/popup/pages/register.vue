@@ -23,6 +23,15 @@ watch(
 onMounted(() => {
 	if (appStore.isLogined) router.push("/popup/general")
 })
+
+const handleOpen = (target) => {
+	chrome.windows.create({
+		type: "popup",
+		url: `https://azguardwallet.io/${target}`,
+		width: 360,
+		height: 600,
+	})
+}
 </script>
 
 <template>
@@ -47,6 +56,11 @@ onMounted(() => {
 			>
 				Get power of privacy on Ethereum with Aztec Blockchain
 			</Text>
+
+			<Button type="secondary" size="mini" disabled>
+				<Icon name="warning" size="16" color="primary" />
+				Azguard Alpha Testing
+			</Button>
 		</Flex>
 
 		<Flex direction="column" gap="16" align="center" :class="$style.bottom">
@@ -79,8 +93,14 @@ onMounted(() => {
 				align="center"
 			>
 				By continuing, you are confirming that you read and agree to
-				<Text color="secondary">Terms of Use</Text> and
-				<Text color="secondary">Privacy Policy</Text>
+
+				<Text @click="handleOpen('terms')" color="secondary"
+					>Terms of Use</Text
+				>
+				and
+				<Text @click="handleOpen('privacy')" color="secondary"
+					>Privacy Policy</Text
+				>
 			</Text>
 
 			<Flex align="center" gap="4" :class="$style.theme_switcher">

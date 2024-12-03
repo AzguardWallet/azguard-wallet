@@ -77,7 +77,6 @@ const balanceInUSD = computed(
 
 <style module>
 .wrapper {
-	background: var(--gray-3);
 	border: 1px solid var(--border);
 	box-shadow: 0 1px 2px transparent;
 	border-radius: 12px;
@@ -90,7 +89,7 @@ const balanceInUSD = computed(
 	&:hover {
 		border-color: var(--border-hovered);
 		box-shadow: 0 1px 2px var(--shadow-5);
-		background: var(--gray-5);
+		background: var(--gray-3);
 	}
 }
 

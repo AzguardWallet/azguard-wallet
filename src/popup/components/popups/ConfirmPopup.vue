@@ -10,7 +10,7 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.popups.confirm
+	return popupStore.len - popupStore.popups.confirm
 })
 
 const emit = defineEmits(["onClose"])
@@ -25,11 +25,15 @@ const handleConfirm = () => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
-		<PopupCard :displaceIdx="displaceIdx">
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.confirm"
+	>
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
-					<Flex align="center" gap="6">
+					<Flex direction="column" align="center" gap="12">
 						<Icon name="warning" size="18" color="orange" />
 						<Text size="16" weight="600" color="primary">
 							{{

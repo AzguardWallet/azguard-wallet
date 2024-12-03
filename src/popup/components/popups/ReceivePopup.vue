@@ -21,6 +21,10 @@ const props = defineProps({
 	show: Boolean,
 })
 
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.receive
+})
+
 const account = computed(() => appStore.account)
 
 watch(
@@ -42,8 +46,12 @@ const handleCopyAddress = () => {
 </script>
 
 <template>
-	<Popup :show="show" @onClose="emit('onClose')">
-		<PopupCard>
+	<Popup
+		:show="show"
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.receive"
+	>
+		<PopupCard :displaceIdx>
 			<Flex
 				wide
 				align="center"

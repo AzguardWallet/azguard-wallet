@@ -24,7 +24,7 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.popups.tokens
+	return popupStore.len - popupStore.popups.tokens
 })
 
 const handleDeleteToken = (target) => {
@@ -44,7 +44,11 @@ const handleDeleteToken = (target) => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')">
+	<Popup
+		:show
+		@onClose="emit('onClose')"
+		:displaceIdx="popupStore.popups.tokens"
+	>
 		<PopupCard :displaceIdx>
 			<Flex
 				wide
@@ -106,31 +110,16 @@ const handleDeleteToken = (target) => {
 					</Button>
 				</Flex>
 
-				<Flex direction="column" gap="16">
-					<Button
-						@click="popupStore.open('new_token')"
-						wide
-						type="secondary"
-						size="medium"
-						leftIcon="plus-circle"
-						leftIconColor="primary"
-					>
-						New token
-					</Button>
-
-					<Text
-						size="12"
-						weight="500"
-						color="tertiary"
-						height="140"
-						align="center"
-					>
-						Default networks
-						<Text color="secondary">Mainnet</Text> &
-						<Text color="secondary">Testnet</Text> cannot be edited
-						or deleted, you can only edit custom networks.
-					</Text>
-				</Flex>
+				<Button
+					@click="popupStore.open('new_token')"
+					wide
+					type="secondary"
+					size="medium"
+					leftIcon="plus-circle"
+					leftIconColor="primary"
+				>
+					New token
+				</Button>
 			</Flex>
 		</PopupCard>
 	</Popup>
