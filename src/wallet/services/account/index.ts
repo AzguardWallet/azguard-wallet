@@ -1,4 +1,4 @@
-import { createPXEClient, Fr, PXE, sleep, SyncStatus } from "@aztec/aztec.js"
+import { Fr } from "@aztec/aztec.js"
 import { poseidon2Hash } from "@aztec/foundation/crypto"
 import {
 	RequestMessage,
@@ -7,7 +7,6 @@ import {
 } from "@/wallet/base/messages"
 import { Service } from "@/wallet/base/service"
 import { NetworkService } from "@/wallet/services/network"
-import { Network } from "@/wallet/services/network/client"
 import { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max } from "@/wallet/utils"
@@ -17,7 +16,6 @@ import {
 	AccountServiceEvent,
 	AccountServiceEventMessage,
 	AccountServiceMethod,
-	AccountSyncStatus,
 	AccountType,
 	ChangeAccountNameRequest,
 	ChangeAccountNameResponse,
@@ -42,14 +40,6 @@ type AccountDto = {
 export class AccountService extends Service {
 	public readonly onAccountAdded: ((account: Account) => void)[] = []
 	public readonly onAccountDeleted: ((account: Account) => void)[] = []
-    
-	private profile?: string = undefined
-    private readonly pxes: Map<number, PXE> = new Map();
-    private readonly addresses: Map<number, Set<string>> = new Map();
-    private worker: Promise<void>;
-
-    private readonly head: Map<number, number> = new Map();
-    private readonly syncStatus: Map<number, SyncStatus> = new Map();
 
 	constructor(
 		private readonly profiles: ProfileService,
@@ -58,7 +48,6 @@ export class AccountService extends Service {
 	) {
 		super(ACCOUNT_SERVICE_NAME, emit)
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
-        this.worker = this.startWorker();
 	}
 
 	public async process(
@@ -209,7 +198,6 @@ export class AccountService extends Service {
 						v.type,
 						v.name,
 						v.visible,
-                        this.getSyncStatus(chainId, k),
 					)
 			)
 	}
@@ -230,7 +218,6 @@ export class AccountService extends Service {
 				account.type,
 				account.name,
 				account.visible,
-                this.getSyncStatus(chainId, address),
 			)
 		}
 		return undefined
@@ -269,10 +256,6 @@ export class AccountService extends Service {
 		}
 
 		await storage.set(address, { index, type, name, visible: true })
-        if (!this.addresses.has(chainId)) {
-            this.addresses.set(chainId, new Set());
-        }
-        this.addresses.get(chainId)!.add(address);
 		return new Account(profileId, chainId, address, index, type, name, true)
 	}
 
@@ -295,7 +278,6 @@ export class AccountService extends Service {
 				account.type,
 				account.name,
 				account.visible,
-                this.getSyncStatus(chainId, address),
 			)
 		}
 		return undefined
@@ -321,7 +303,6 @@ export class AccountService extends Service {
 				account.type,
 				account.name,
 				account.visible,
-                this.getSyncStatus(chainId, address),
 			)
 		}
 		return undefined
@@ -410,7 +391,6 @@ export class AccountService extends Service {
 		const dto = await storage.get(address)
         if (dto) {
             await storage.delete(address)
-            this.addresses.get(chainId)?.delete(address);
             const account = new Account(
 				profileId,
 				chainId,
@@ -448,143 +428,5 @@ export class AccountService extends Service {
 			`azguard:core:accounts:${profileId}:${chainId}`,
 			StorageType.Local
 		)
-	}
-
-    private getSyncStatus(chainId: number, address: string): AccountSyncStatus | undefined {
-        const head = this.head.get(chainId);
-        const syncStatus = this.syncStatus.get(chainId);
-        if (head === undefined || syncStatus?.notes[address] === undefined) {
-            return undefined;
-        }
-        return new AccountSyncStatus(
-            head,
-            syncStatus.blocks,
-            syncStatus.notes[address],
-        );
-    }
-
-	private readonly onSessionOpened = async (profileId: string) => {
-		this.profile = profileId
-        for (const chainId of this.pxes.keys()) {
-            const storage = this._getStorage(this.profile, chainId);
-            if (!this.addresses.has(chainId)) {
-                this.addresses.set(chainId, new Set());
-            }
-            for (const address of await storage.getKeys()) {
-                this.addresses.get(chainId)!.add(address);
-            }
-        }
-	}
-
-	private readonly onSessionClosed = async () => {
-		this.profile = undefined
-	}
-
-	private readonly onDefaultNetworkChanged = async (network: Network) => {
-		this.pxes.set(network.chainId, createPXEClient(network.rpcUrl))
-	}
-
-	private async init() {
-		while (true) {
-			try {
-                this.profile = (
-					await this.profiles.readActiveProfile()
-				)?.id
-
-				for (const network of (
-					await this.networks.getNetworks()
-				).filter((x) => x.isDefault)) {
-					this.pxes.set(
-						network.chainId,
-						createPXEClient(network.rpcUrl)
-					)
-				}
-
-                if (this.profile) {
-                    for (const chainId of this.pxes.keys()) {
-                        const storage = this._getStorage(this.profile, chainId);
-                        if (!this.addresses.has(chainId)) {
-                            this.addresses.set(chainId, new Set());
-                        }
-                        for (const address of await storage.getKeys()) {
-                            this.addresses.get(chainId)!.add(address);
-                        }
-                    }
-                }
-
-				this.profiles.onSessionOpened.push(this.onSessionOpened)
-				this.profiles.onSessionClosed.push(this.onSessionClosed)
-				this.networks.onDefaultNetworkChanged.push(
-					this.onDefaultNetworkChanged
-				)
-
-				console.debug("Account service initialized")
-				break
-			} catch (error) {
-				console.error(
-					"Failed to initialize account service. Retry..."
-				)
-				await sleep(1000)
-			}
-		}
-	}
-
-	private async startWorker() {
-		await this.init()
-		while (true) {
-			if (this.profile) {
-                for (const [chainId, pxe] of this.pxes) {
-                    const updated = new Set<string>();
-                    const addresses = this.addresses.get(chainId);
-                    if (addresses?.size) {
-                        try {
-                            const [head, syncStatus] = await Promise.all([
-                                pxe.getBlockNumber(),
-                                pxe.getSyncStatus(),
-                            ])
-                            for (const address of addresses.values()) {
-                                if (syncStatus.notes[address] === undefined) {
-                                    console.warn(`account ${address} not registered`);
-                                    const account = await this.getAccountContract(this.profile, chainId, address);
-                                    await account.register(pxe);
-                                }
-                                else {
-                                    const current = this.getSyncStatus(chainId, address);
-                                    if (current?.head !== head ||
-                                        current?.blocks !== syncStatus.blocks ||
-                                        current?.notes !== syncStatus.notes[address]
-                                    ) {
-                                        updated.add(address);
-                                    }
-                                }
-                            }
-                            this.head.set(chainId, head);
-                            this.syncStatus.set(chainId, syncStatus);
-                        } catch (error) {
-                            console.error(`Failed to sync accounts for chain ${chainId}.`, error)
-                            if (this.head.has(chainId) || this.syncStatus.has(chainId)) {
-                                for (const address of addresses) {
-                                    updated.add(address);
-                                }
-                            }
-                            this.head.delete(chainId)
-                            this.syncStatus.delete(chainId)
-                        }
-                    }
-                    if (updated.size) {
-                        try {
-                            for (const account of (await this.getAccounts(this.profile, chainId, true)).filter(x => updated.has(x.address))) {
-                                this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountUpdated, account));
-                            }                            
-                        }
-                        catch (error) {
-                            console.error("Failed to emit account status updated event.", error);
-                        }
-                    }
-                }
-                console.debug("Accounts synced.");
-			}
-			await sleep(5000)
-		}
 	}
 }

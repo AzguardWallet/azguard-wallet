@@ -203,7 +203,7 @@ export class TransactionService extends Service {
         tx.updatedAt = Date.now();
         tx.status = status;
         tx.block = receipt.blockHash && receipt.blockNumber
-            ? new TxBlock(receipt.blockHash.toString("hex"), receipt.blockNumber)
+            ? new TxBlock(receipt.blockHash.toString(), receipt.blockNumber)
             : undefined;
         tx.fee = receipt.transactionFee?.toString();
         tx.error = receipt.error;

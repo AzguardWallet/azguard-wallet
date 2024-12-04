@@ -18,6 +18,7 @@ import {
 import {
     computePartialAddress,
     ContractInstanceWithAddress,
+    GasFees,
     GasSettings,
     GeneratorIndex,
     TxContext,
@@ -60,13 +61,6 @@ export class AzguardV0 implements IAccountContract {
             }
         );
         this.address = this.instance.address;
-    }
-
-    public async register(pxe: PXE): Promise<void> {
-        console.debug('registering account...');
-        await pxe.registerAccount(this.secret, computePartialAddress(this.instance));
-        console.debug('registering contract...');
-        await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
     }
 
     public signPayload(payload: Uint8Array): string {
@@ -149,7 +143,7 @@ export class AzguardV0 implements IAccountContract {
         batchAuthwits.push(authwit);
 
         const nodeInfo = await pxe.getNodeInfo();
-        const gasSettings = GasSettings.default();
+        const gasSettings = GasSettings.default({maxFeesPerGas: new GasFees(10, 10)});
         const txContext = new TxContext(nodeInfo.l1ChainId, nodeInfo.protocolVersion, gasSettings);
 
         const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits);
@@ -242,7 +236,7 @@ export class AzguardV0 implements IAccountContract {
         batchAuthwits.push(authwit);
 
         const nodeInfo = await pxe.getNodeInfo();
-        const gasSettings = GasSettings.default();
+        const gasSettings = GasSettings.default({maxFeesPerGas: new GasFees(10, 10)});
         const txContext = new TxContext(nodeInfo.l1ChainId, nodeInfo.protocolVersion, gasSettings);
 
         const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits);

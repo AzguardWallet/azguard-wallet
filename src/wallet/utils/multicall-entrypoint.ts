@@ -91,6 +91,7 @@ export const getMulticallEntrypointFn = () => ({
         }
     ],
     returnTypes: [],
+    errorTypes: {},
 } as FunctionAbi);
 
 export const getMulticallEntrypointSelector = () => {
