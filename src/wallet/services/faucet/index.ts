@@ -180,11 +180,11 @@ export class FaucetService extends Service {
                 new CallAction(
                     instance.address.toString(),
                     "mint_to_private",
-                    [accountAddress, amount],
+                    [accountAddress, accountAddress, amount],
                 ),
                 new CallAction(
                     instance.address.toString(),
-                    "mint_public",
+                    "mint_to_public",
                     [accountAddress, amount],
                 ),
             ]

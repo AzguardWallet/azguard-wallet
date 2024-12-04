@@ -177,11 +177,18 @@ export class NetworkService extends Service {
 		if (networks.length === 0) {
 			return [
 				await this._addNetwork(
-					"Sandbox",
+					"Shared PXE",
 					"https://rpc.sandbox.azguardwallet.io",
-					31337,
+					41337,
 					1,
 					true
+				),
+				await this._addNetwork(
+					"Local PXE",
+					"http://localhost:8080",
+					31337,
+					1,
+					false
 				),
 			]
 		}
