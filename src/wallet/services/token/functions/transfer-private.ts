@@ -34,7 +34,7 @@ export abstract class TransferPrivateFn extends Fn {
 			let p = 0;
 			if (n.includes("transfer")) {
 				p += 1;
-				if (n === "transfer_from") {
+				if (n === "transfer_in_private") {
 					p += 2;
 				} else if (n === "transfer") {
 					p += 4;
@@ -47,7 +47,7 @@ export abstract class TransferPrivateFn extends Fn {
 	}
 
 	public static getDefault(candidates: TransferPrivateFn[]): TransferPrivateFn | undefined {
-		return candidates[0].name === "transfer" || candidates[0].name === "transfer_from" ? candidates[0] : undefined;
+		return candidates[0].name === "transfer" || candidates[0].name === "transfer_in_private" ? candidates[0] : undefined;
 	}
 }
 
