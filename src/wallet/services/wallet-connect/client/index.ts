@@ -75,12 +75,12 @@ export class WalletConnectServiceClient extends ServiceClient {
         return this.request(new ConnectByURIRequest(uri));
     }
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public validateProposal(payload: any, address: string): Promise<void> {
-        return this.request(new ValidateProposalRequest(payload, address));
+    public validateProposal(payload: any, addresses: Map<number, string>): Promise<void> {
+        return this.request(new ValidateProposalRequest(payload, addresses));
     }
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public approveDappSession(payload: any, profileId: string, accounts: Array<Account>): Promise<DappSession | undefined> {
-        return this.request(new ApproveDappSessionRequest(payload, profileId, accounts));
+    public approveDappSession(payload: any, profileId: string, chainIds: Array<number>, accounts: Array<Account>): Promise<DappSession | undefined> {
+        return this.request(new ApproveDappSessionRequest(payload, profileId, chainIds, accounts));
     }
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public rejectDappSession(payload: any): Promise<void> {

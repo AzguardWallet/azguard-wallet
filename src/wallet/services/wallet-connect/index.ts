@@ -34,7 +34,7 @@ const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783"
 const WALLET_CONNECT_METADATA = {
     name: "Azguard Wallet",
     description: "Azguard Wallet Description",
-    url: "https://aztec.network",
+    url: "https://azguardwallet.io",
     icons: [],
 }
 const WALLET_CONNECT_LOG_LEVEL = "silent"
@@ -42,11 +42,11 @@ const WALLET_CONNECT_LOG_LEVEL = "silent"
 const CAIP_PREFIX = "aztec";
 const AZTEC_CHAIN_ID = "31337";
 const CAIP = {
-    chain() {
-        return `${CAIP_PREFIX}:${AZTEC_CHAIN_ID}`;
+    chain(chainId: number) {
+        return `${CAIP_PREFIX}:${chainId}`;
     },
-    address(address: string) {
-        return `${CAIP_PREFIX}:${AZTEC_CHAIN_ID}:${address}`;
+    address(chainId: number, address: string) {
+        return `${CAIP_PREFIX}:${chainId}:${address}`;
     },
 };
 const AZTEC_METHODS = ["aztec_execute"]
@@ -83,24 +83,23 @@ export class WalletConnectService extends Service {
             case WalletConnectServiceMethod.ValidateProposal: {
                 const _request = request as ValidateProposalRequest;
                 try {
-                    const result = await this.validateProposal(_request.payload, _request.address)
+                    const result = await this.validateProposal(_request.payload, new Map(_request.addressesEntries))
                     
                     return new ValidateProposalResponse(_request, result);
                 }
 
                 catch (error: unknown) {
                     if (error instanceof Error) {
-                        return new ValidateProposalResponse(_request, false, error.message);
+                        return new ValidateProposalResponse(_request, undefined, error.message);
                     }
 
-                    return new ValidateProposalResponse(_request, false, 'Unknown error occurred');
+                    return new ValidateProposalResponse(_request, undefined, 'Unknown error occurred');
                 }
             }
             case WalletConnectServiceMethod.ApproveDappSession: {
                 const _request = request as ApproveDappSessionRequest;
                 try {
-                    const dappSession = await this.approveSession(_request.payload, _request.profileId, _request.accounts)
-                    // this.emit(new AccountServiceEventMessage(AccountServiceEvent.AccountAdded, account));
+                    const dappSession = await this.approveSession(_request.payload, _request.profileId, _request.chainIds, _request.accounts)
                     return new ApproveDappSessionResponse(_request, dappSession);
                 }
 
@@ -200,7 +199,7 @@ export class WalletConnectService extends Service {
         
                 this.setupWalletKitEvents();
                 
-                console.debug("Account service initialized")
+                console.debug("Wallet connect service initialized")
                 break
             } catch (error) {
                 console.error("Failed to initialize wallet connect service. Retry...");
@@ -251,7 +250,7 @@ export class WalletConnectService extends Service {
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async validateProposal(payload: any, address: string): Promise<boolean> {
+    public async validateProposal(payload: any, addresses: Map<number, string>): Promise<any> {
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.")
         }
@@ -261,15 +260,15 @@ export class WalletConnectService extends Service {
                 proposal: payload.params,
                 supportedNamespaces: {
                     aztec: {
-                        chains: [CAIP.chain()],
+                        chains: Array.from(addresses, ([chainId, _]) => CAIP.chain(chainId)),
                         methods: AZTEC_METHODS,
                         events: AZTEC_EVENTS,
-                        accounts: [CAIP.address(address)],
+                        accounts: Array.from(addresses, ([chainId, address]) => CAIP.address(chainId, address)),
                     },
                 },
             })
 
-            return true
+            return approvedNamespaces
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(error.message)
@@ -291,7 +290,7 @@ export class WalletConnectService extends Service {
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async approveSession(payload: any, profileId: string, accounts: Array<Account>): Promise<DappSession | undefined> {
+    private async approveSession(payload: any, profileId: string, chainIds: Array<number>, accounts: Array<Account>): Promise<DappSession | undefined> {
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.");
         }
@@ -300,10 +299,10 @@ export class WalletConnectService extends Service {
             proposal: payload.params,
             supportedNamespaces: {
                 aztec: {
-                    chains: [CAIP.chain()],
+                    chains: chainIds.map(id => CAIP.chain(id)),
                     methods: AZTEC_METHODS,
                     events: AZTEC_EVENTS,
-                    accounts: accounts.map(acc => CAIP.address(acc.address)),
+                    accounts: accounts.map(acc => CAIP.address(acc.chainId, acc.address)),
                 },
             },
         })
@@ -318,15 +317,10 @@ export class WalletConnectService extends Service {
             
             const { name, url, icons } = session.peer.metadata
 
-            // Build wc session params
             const sessionParams = await this._buildDappSessionParams(session)
             const dappSession = await this.interaction.addDappSession(
-                name, sessionParams, profileId, accounts, url ?? '', icons.length > 0 ? icons[0] : '', true
+                name, sessionParams, profileId, chainIds, accounts, url ?? '', icons.length > 0 ? icons[0] : '', true
             )
-
-            // const dappSession = await this.interaction.addDappSession(
-            //     name, session.topic, session.expiry, profileId, accounts, url ?? '', icons.length > 0 ? icons[0] : '', true
-            // )
     
             return dappSession
         } catch (error: unknown) {

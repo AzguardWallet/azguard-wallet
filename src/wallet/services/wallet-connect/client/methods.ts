@@ -33,19 +33,23 @@ export class ConnectByURIResponse extends ResponseMessage {
 }
 
 export class ValidateProposalRequest extends RequestMessage {
+    public readonly addressesEntries: [number, string][];
+
     constructor(
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         public readonly payload: any,
-        public readonly address: string,
+        public readonly addresses: Map<number, string>,
     ) {
         super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.ValidateProposal);
+        this.addressesEntries = [...addresses.entries()];
     }
 }
 
 export class ValidateProposalResponse extends ResponseMessage {
     constructor(
         request: ValidateProposalRequest,
-        result?: boolean,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        result?: any,
         error?: string,
     ) {
         super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
@@ -57,6 +61,7 @@ export class ApproveDappSessionRequest extends RequestMessage {
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         public readonly payload: any,
         public readonly profileId: string,
+        public readonly chainIds: Array<number>,
         public readonly accounts: Array<Account>,
     ) {
         super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.ApproveDappSession);

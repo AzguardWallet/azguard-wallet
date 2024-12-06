@@ -54,6 +54,7 @@ export class AddDappSessionRequest extends RequestMessage {
         public readonly name: string,
         public readonly params: WCSessionParams,
         public readonly profileId: string,
+        public readonly chainIds: Array<number>,
         public readonly accounts: Array<Account>,
         public readonly url?: string,
         public readonly icon?: string,

@@ -43,15 +43,17 @@ export class DappSession {
      * @param name Dapp name.
      * @param params WC session params.
      * @param profileId Profile id.
+     * @param chainIds List of chain ids using by the dApp.
      * @param accounts List of accounts shared with the dApp.
      * @param url Dapp url.
-     * @param icon Dapp logo. chain ids, profileId, accounts.addresses
+     * @param icon Dapp logo.
      */
     constructor(
         public readonly id: string,
         public readonly name: string,
         public readonly params: WCSessionParams,
         public readonly profileId: string,
+        public readonly chainIds: Array<number>,
         public readonly accounts: Array<Account>,
         public readonly url?: string,
         public readonly icon?: string,

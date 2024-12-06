@@ -88,6 +88,7 @@ const services = new Map<string, Service>([
     [tokenBalanceService.name, tokenBalanceService],
     [transactionService.name, transactionService],
     [executionService.name, executionService],
+    [faucetService.name, faucetService],
     [interactionService.name, interactionService],
     [walletConnectService.name, walletConnectService],
 ]);

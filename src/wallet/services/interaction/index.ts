@@ -33,6 +33,7 @@ type DappSessionDto = {
     name: string,
     params: WCSessionParams,
     profileId: string,
+    chainIds: Array<number>,
     accounts: Array<Account>,
     url: string,
     icon: string,
@@ -91,7 +92,7 @@ export class InteractionService extends Service {
             case InteractionServiceMethod.AddDappSession: {
                 const _request = request as AddDappSessionRequest
                 try {
-                    const dappSession = await this.addDappSession(_request.name, _request.params, _request.profileId, _request.accounts, _request.url, _request.icon)
+                    const dappSession = await this.addDappSession(_request.name, _request.params, _request.profileId, _request.chainIds, _request.accounts, _request.url, _request.icon)
                     this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession))
                     return new AddDappSessionResponse(_request, dappSession)
                 }
@@ -190,7 +191,7 @@ export class InteractionService extends Service {
         if (!dappSessions) {
             return [];
         }
-        return dappSessions.map(({ key, entity }) => new DappSession(key, entity.name, entity.params, entity.profileId, entity.accounts, entity.url, entity.icon))
+        return dappSessions.map(({ key, entity }) => new DappSession(key, entity.name, entity.params, entity.profileId, entity.chainIds, entity.accounts, entity.url, entity.icon))
     }
 
 
@@ -215,11 +216,20 @@ export class InteractionService extends Service {
             return undefined
         }
 
-        return new DappSession(key, ds.name, ds.params, ds.profileId, ds.accounts, ds.url, ds.icon)
+        return new DappSession(key, ds.name, ds.params, ds.profileId,  ds.chainIds, ds.accounts,ds.url, ds.icon)
     }
     
-    public async addDappSession(name: string, params: WCSessionParams, profileId: string, accounts: Array<Account>, url?: string, icon?: string, emit?: boolean): Promise<DappSession> {
-        const dappSession = await this._addDappSession(name, params, profileId, accounts, url, icon)
+    public async addDappSession(
+        name: string,
+        params: WCSessionParams,
+        profileId: string,
+        chainIds: Array<number>,
+        accounts: Array<Account>,
+        url?: string,
+        icon?: string,
+        emit?: boolean
+    ): Promise<DappSession> {
+        const dappSession = await this._addDappSession(name, params, profileId, chainIds, accounts, url, icon)
         if (emit) {
             this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession))
         }
@@ -227,12 +237,20 @@ export class InteractionService extends Service {
         return dappSession
     }
 
-    private async _addDappSession(name: string, params: WCSessionParams, profileId: string, accounts: Array<Account>, url?: string, icon?: string): Promise<DappSession> {
+    private async _addDappSession(
+        name: string,
+        params: WCSessionParams,
+        profileId: string,
+        chainIds: Array<number>,
+        accounts: Array<Account>,
+        url?: string,
+        icon?: string
+    ): Promise<DappSession> {
         let id: string;
         do { id = getRandomHex(8); }
         while (await this.dappSessions.contains(id));
-        await this.dappSessions.set(id, {name, params, profileId, accounts, url: url ?? '', icon: icon ?? ''});
-        const dappSession = new DappSession(id, name, params, profileId, accounts, url, icon);
+        await this.dappSessions.set(id, {name, params, profileId, chainIds, accounts, url: url ?? '', icon: icon ?? ''});
+        const dappSession = new DappSession(id, name, params, profileId, chainIds, accounts, url, icon);
 
         return dappSession
     }

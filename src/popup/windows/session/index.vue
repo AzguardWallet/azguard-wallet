@@ -4,6 +4,7 @@ import { onMounted, onUnmounted } from "vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
+import { AccountServiceClient } from "@/wallet/services/account/client"
 import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/client"
 
 /** Store */
@@ -30,11 +31,35 @@ const selectedAccounts = ref([])
 
 const interactionRequest = ref()
 const dapp = ref()
+
 const chains = ref()
 const methods = ref()
 const events = ref()
+
 const profile = computed(() => appStore.profile)
-const accounts = computed(() => appStore.accounts)
+const networks = computed(() => appStore.networks)
+const accounts = ref([])
+
+async function fetchAccounts() {
+	const uniqueNetworks = Array.from(
+		new Map(networks.value.map((n) => [n.chainId, n])).values()
+	)
+
+	const results = await Promise.all(
+		uniqueNetworks.map(async (network) => {
+			const accountClient = new AccountServiceClient(profile.value, network)
+			const accounts = await accountClient.getAccounts(true)
+			return [...accounts]
+		})
+	)
+	
+	accounts.value = results.flat()
+	if (appStore.account) {
+		selectedAccounts.value.push({ ...appStore.account })
+	}
+}
+
+const validationResult = ref()
 const isProposalExpired = ref(false)
 
 const processingError = ref({
@@ -44,8 +69,34 @@ const processingError = ref({
 
 const validateProposal = async () => {
 	try {
-		await walletConnectServiceClient.validateProposal(interactionRequest.value.payload, appStore.account.address)
+		validationResult.value = await walletConnectServiceClient.validateProposal(
+			interactionRequest.value.payload,
+			new Map(accounts.value.map(acc => [acc.chainId, acc.address]))
+		)
+
+		const values = Object.values(validationResult.value)
+		chains.value = values.flatMap(v => v.chains)
+		methods.value = values.flatMap(v => v.methods)
+		events.value = values.flatMap(v => v.events)
 	} catch(error) {
+		const values = [
+			...Object.values(interactionRequest.value.payload.params.requiredNamespaces),
+			...Object.values(interactionRequest.value.payload.params.optionalNamespaces)
+		].reduce((acc, curr) => {
+			acc.chains = Array.from(new Set([...acc.chains, ...curr.chains]))
+			acc.methods = Array.from(new Set([...acc.methods, ...curr.methods]))
+			acc.events = Array.from(new Set([...acc.events, ...curr.events]))
+
+			return acc
+		}, {
+			chains: [],
+			methods: [],
+			events: []
+		})
+		chains.value = values.chains
+		methods.value = values.methods
+		events.value = values.events
+		
 		processingError.value = {
 			show: true,
 			title: "Proposal validation error. Failed to connect to this dApp."
@@ -57,12 +108,6 @@ const init = async () => {
 	try {
 		interactionRequest.value = await managers.interaction.getInteractionRequest(requestId)
 		dapp.value = interactionRequest.value.payload.params.proposer.metadata
-		chains.value = Object.values(interactionRequest.value.payload.params.requiredNamespaces)
-			.flatMap(namespace => namespace.chains)
-		methods.value = Object.values(interactionRequest.value.payload.params.requiredNamespaces)
-			.flatMap(namespace => namespace.methods)
-		events.value = Object.values(interactionRequest.value.payload.params.requiredNamespaces)
-			.flatMap(namespace => namespace.events)
 	} catch (error) {
 		console.error('Unexpected error', error);
 		
@@ -74,10 +119,11 @@ const init = async () => {
 }
 
 const handleAccountSelect = (account) => {
-	if (!selectedAccounts.value.includes(account)) {
+	const index = selectedAccounts.value.findIndex(acc => acc.address === account.address)
+	if (index < 0) {
 		selectedAccounts.value.push(account)
 	} else {
-		selectedAccounts.value = selectedAccounts.value.filter(acc => acc !== account)
+		selectedAccounts.value.splice(index, 1)
 	}
 }
 
@@ -86,8 +132,11 @@ const handleApprove = async () => {
 	isActionCalled.value = true
 
 	try {
-		await walletConnectServiceClient.approveDappSession(interactionRequest.value.payload, profile.value.id, selectedAccounts.value)
-
+		const uniqueChains = Array.from(new Set(selectedAccounts.value.map(acc => acc.chainId)))
+		await walletConnectServiceClient.approveDappSession(interactionRequest.value.payload, profile.value.id, uniqueChains, selectedAccounts.value)
+		console.log('appStore', appStore.dappSessions);
+		
+		alert(123)
 		closeWindow()
 	} catch (error) {
 		console.error('Unexpected error', error);
@@ -129,19 +178,28 @@ const handleWindowClose = () => {
 }
 
 watch(
-	() => appStore.account,
+	() => [appStore.networks, appStore.profile],
 	async () => {
+		if (appStore.networks && appStore.profile && !accounts.value) {
+			await fetchAccounts()
+			await validateProposal()
+		}
+	}
+)
+
+watch(
+	() => appStore.account,
+	() => {
 		if (appStore.account && !selectedAccounts.value.length) {
 			selectedAccounts.value.push(appStore.account)
-			await validateProposal()
 		}
 	}
 )
 
 onMounted( async () => {
 	await init()
-	if (appStore.account) {
-		selectedAccounts.value.push(appStore.account)
+	if (appStore.networks && appStore.profile) {
+		await fetchAccounts()
 		await validateProposal()
 	}
 
@@ -235,14 +293,19 @@ onUnmounted(() => {
 				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
 					<Flex v-for="acc in accounts" @click="handleAccountSelect(acc)" gap="10" :class="[$style.account, (isLoading || processingError.show) && $style.disabled]">
 						<Flex align="center">
-							<Icon v-if="selectedAccounts?.includes(acc)" name="check-circle" size="16" color="green" />
+							<Icon v-if="selectedAccounts?.find(a => a.address === acc.address)" name="check-circle" size="16" color="green" />
 							<Icon v-else name="circle" size="16" color="secondary" />
 						</Flex>				
 
-						<Flex direction="column" gap="4">
-							<Text size="14" weight="600" color="primary">
-								{{ acc.name }}
-							</Text>
+						<Flex direction="column" gap="4" wide>
+							<Flex align="center" justify="between" gap="12">
+								<Text size="14" weight="600" color="primary">
+									{{ acc.name }}
+								</Text>
+								<Text size="13" color="tertiary">
+									{{ `aztec:${acc.chainId}` }}
+								</Text>
+							</Flex>
 							<Text size="13" weight="600" color="tertiary">
 								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
 							</Text>
