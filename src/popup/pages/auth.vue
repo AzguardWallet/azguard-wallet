@@ -66,6 +66,7 @@ const handleUnlockWallet = async () => {
 		})
 
 		managers.profile.onLocked = () => {
+			appStore.isLogined = false
 			router.push("/popup/auth")
 		}
 

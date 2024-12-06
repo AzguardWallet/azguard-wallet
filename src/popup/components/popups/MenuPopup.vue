@@ -12,8 +12,6 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const router = useRouter()
-
 const emit = defineEmits(["onClose"])
 
 const displaceIdx = computed(() => {
