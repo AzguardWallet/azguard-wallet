@@ -48,6 +48,7 @@ export abstract class GetDecimalsFn extends ViewFn {
 	}
 
 	public static getDefault(candidates: GetDecimalsFn[]): GetDecimalsFn | undefined {
+		if (!candidates.length) return undefined;
 		return candidates[0].name === "private_get_decimals" || candidates[0].name === "public_get_decimals"
 			? candidates[0]
 			: undefined;
