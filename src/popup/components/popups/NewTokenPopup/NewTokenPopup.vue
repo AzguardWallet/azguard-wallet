@@ -55,7 +55,7 @@ const handleCreateToken = async () => {
 
 	const parsingResult = await managers.token.parseInterface(contractAddressTerm.value)
 
-	if (parsingResult.isComplete) {
+	if (!parsingResult.isComplete) {
 		isLoadingParseResult.value = false
 		appStore.isLoading = false
 

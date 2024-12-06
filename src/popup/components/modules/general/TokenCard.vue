@@ -10,7 +10,7 @@ const props = defineProps({
 	token: Object,
 })
 
-const balance = computed(() => appStore.balances.find(b => b.token.id === props.token.id))
+const balance = computed(() => appStore.balances.filter(Boolean).find(b => b.token.id === props.token.id))
 const totalBalance = computed(() => {
 	if (!balance.value) return 0
 

@@ -23,7 +23,7 @@ const props = defineProps({
 const balanceEl = useTemplateRef("balanceEl")
 const dynamicFontSize = ref(2)
 
-const tokenBalance = computed(() => appStore.balances.find(b => b.token.id === props.token?.id))
+const tokenBalance = computed(() => appStore.balances.filter(Boolean).find(b => b.token?.id === props.token?.id))
 const totalTokenBalance = computed(() => {
 	if (!tokenBalance.value) return 0
 

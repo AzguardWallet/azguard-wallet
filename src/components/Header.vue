@@ -1,23 +1,22 @@
 <script setup>
+/** Composables */
+import { useSettings } from "@/composables/settings.js"
+const { settings } = useSettings()
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const handleOpenPopup = (target) => {
+const handleOpenPopup = target => {
 	if (!appStore.isLogined) return
 	popupStore.open(target)
 }
 </script>
 
 <template>
-	<Flex
-		v-if="!appStore._isHomeScreenOpened"
-		align="center"
-		justify="between"
-		:class="$style.wrapper"
-	>
+	<Flex v-if="!appStore._isHomeScreenOpened" align="center" justify="between" :class="$style.wrapper">
 		<Flex
 			@click="handleOpenPopup('menu')"
 			align="center"
@@ -36,22 +35,16 @@ const handleOpenPopup = (target) => {
 				:class="$style.account"
 			>
 				<Transition name="fade">
-					<Icon
-						v-if="!appStore.isLoading"
-						name="vault"
-						size="18"
-						color="primary"
-					/>
+					<Icon v-if="!appStore.isLoading" name="vault" size="18" color="primary" />
 					<Spinner v-else size="16" color="--txt-primary" />
 				</Transition>
 
-				<Text
-					size="13"
-					weight="600"
-					color="primary"
-					:class="$style.account_name"
-				>
+				<Text size="13" weight="600" color="primary" :class="$style.account_name">
 					{{ appStore.account.name }}
+				</Text>
+
+				<Text v-if="settings.developer.advancedMode" size="13" weight="600" color="tertiary">
+					{{ appStore.network.name }}
 				</Text>
 
 				<!-- <Text
