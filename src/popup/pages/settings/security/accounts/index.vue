@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
@@ -14,49 +22,30 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const router = useRouter()
+const accounts = computed(() => appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index))
+const hiddenAccounts = computed(() => appStore.accounts.filter(a => !a.visible))
 
-const accounts = computed(() =>
-	appStore.accounts.filter((a) => a.visible).sort((a, b) => a.index - b.index)
-)
-const hiddenAccounts = computed(() =>
-	appStore.accounts.filter((a) => !a.visible)
-)
-
-onMounted(() => {
-	if (!appStore.isLogined && appStore.isSessionChecked)
-		router.push("/popup/auth")
-})
-
-watch(
-	() => appStore.isSessionChecked,
-	() => {
-		if (!appStore.isLogined && appStore.isSessionChecked)
-			router.push("/popup/auth")
-	}
-)
-
-const handleSelectAccount = (acc) => {
+const handleSelectAccount = acc => {
 	appStore.selectAccount(acc)
 	appStore.syncBalances()
 }
 
-const handleEditAccount = (target) => {
+const handleEditAccount = target => {
 	cacheStore.accountToEditIdx = target.address
 	popupStore.open("edit_account")
 }
 
-const handleHideAccount = (acc) => {
+const handleHideAccount = acc => {
 	appStore.changeAccountVisibility(acc, false)
 	openToast({ label: "Account successfully hidden" })
 }
 
-const handleShowAccount = (acc) => {
+const handleShowAccount = acc => {
 	appStore.changeAccountVisibility(acc, true)
 	openToast({ label: "Account visible again" })
 }
 
-const handleCopyAddress = (target) => {
+const handleCopyAddress = target => {
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Address is copied", icon: "copy" })
 }
@@ -66,43 +55,20 @@ const handleCopyAddress = (target) => {
 	<Flex direction="column" gap="12" :class="$style.wrapper">
 		<Flex align="center" gap="8">
 			<RouterLink to="/popup/settings">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Settings
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
 			<RouterLink to="/popup/settings/security">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Security
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Security </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
-			<Text
-				size="13"
-				weight="600"
-				color="tertiary"
-				style="line-height: 16px"
-			>
-				Accounts
-			</Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Accounts </Text>
 		</Flex>
 
 		<Flex direction="column" gap="40">
 			<Flex direction="column" gap="16">
 				<Text size="16" weight="600" color="primary">
-					Accounts &nbsp;<Text color="tertiary"
-						>{{ appStore.accounts.length }}
-					</Text>
+					Accounts &nbsp;<Text color="tertiary">{{ appStore.accounts.length }} </Text>
 				</Text>
 
 				<Flex direction="column" gap="6">
@@ -115,25 +81,12 @@ const handleCopyAddress = (target) => {
 					>
 						<Flex align="center" gap="10">
 							<Icon
-								:name="
-									acc?.address === appStore.account?.address
-										? 'check-circle'
-										: 'vault'
-								"
+								:name="acc?.address === appStore.account?.address ? 'check-circle' : 'vault'"
 								size="16"
-								:color="
-									acc?.address === appStore.account?.address
-										? 'green'
-										: 'primary'
-								"
+								:color="acc?.address === appStore.account?.address ? 'green' : 'primary'"
 							/>
 
-							<Text
-								size="14"
-								weight="600"
-								color="primary"
-								:class="$style.account_name"
-							>
+							<Text size="14" weight="600" color="primary" :class="$style.account_name">
 								{{ acc.name }}
 							</Text>
 
@@ -184,9 +137,7 @@ const handleCopyAddress = (target) => {
 			<Flex v-if="hiddenAccounts.length" direction="column" gap="16">
 				<Flex direction="column" gap="6">
 					<Flex align="center" justify="between">
-						<Text size="13" weight="600" color="body">
-							Hidden accounts
-						</Text>
+						<Text size="13" weight="600" color="body"> Hidden accounts </Text>
 
 						<Text size="13" weight="600" color="secondary">
 							{{ hiddenAccounts.length }}
@@ -202,25 +153,12 @@ const handleCopyAddress = (target) => {
 					>
 						<Flex align="center" gap="10">
 							<Icon
-								:name="
-									acc?.address === appStore.account?.address
-										? 'check-circle'
-										: 'vault'
-								"
+								:name="acc?.address === appStore.account?.address ? 'check-circle' : 'vault'"
 								size="16"
-								:color="
-									acc?.address === appStore.account?.address
-										? 'green'
-										: 'tertiary'
-								"
+								:color="acc?.address === appStore.account?.address ? 'green' : 'tertiary'"
 							/>
 
-							<Text
-								size="14"
-								weight="600"
-								color="secondary"
-								:class="$style.account_name"
-							>
+							<Text size="14" weight="600" color="secondary" :class="$style.account_name">
 								{{ acc.name }}
 							</Text>
 
@@ -237,19 +175,13 @@ const handleCopyAddress = (target) => {
 							</Text>
 						</Flex>
 
-						<Icon
-							name="arrow-back-up"
-							size="14"
-							color="secondary"
-						/>
+						<Icon name="arrow-back-up" size="14" color="secondary" />
 					</Flex>
 				</Flex>
 
 				<Flex align="center" gap="4">
 					<Icon name="info" size="12" color="support" />
-					<Text size="12" weight="600" color="support">
-						Click on the account you want to make visible
-					</Text>
+					<Text size="12" weight="600" color="support"> Click on the account you want to make visible </Text>
 				</Flex>
 			</Flex>
 		</Flex>
@@ -284,8 +216,7 @@ const handleCopyAddress = (target) => {
 
 	&:hover {
 		background: var(--gray-3);
-		box-shadow: inset 0 0 0 1px var(--border-hovered),
-			0 1px 2px var(--shadow-5);
+		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-5);
 
 		& .icons {
 			opacity: 1;

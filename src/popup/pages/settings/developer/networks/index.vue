@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
@@ -17,33 +25,19 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const router = useRouter()
-
-onMounted(() => {
-	if (!appStore.isLogined && appStore.isSessionChecked)
-		router.push("/popup/auth")
-})
-
-watch(
-	() => appStore.isSessionChecked,
-	() => {
-		if (!appStore.isLogined && appStore.isSessionChecked)
-			router.push("/popup/auth")
-	}
-)
-
-const handleSelectNetwork = (target) => {
+const handleSelectNetwork = target => {
 	if (appStore.network.id === target.id) return
 	appStore.network = target
 	managers.network.setDefault(appStore.network.id)
+	chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
 }
 
-const handleEdit = (target) => {
+const handleEdit = target => {
 	cacheStore.networkToEditIdx = target.id
 	popupStore.open("edit_network")
 }
 
-const handleDelete = (target) => {
+const handleDelete = target => {
 	if (appStore.networks.length === 1) return
 
 	cacheStore.confirm.description =
@@ -53,6 +47,7 @@ const handleDelete = (target) => {
 
 		appStore.network = appStore.networks[0]
 		managers.network.setDefault(appStore.networks[0].id)
+		chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
 
 		openToast({ label: "Network is deleted" })
 	}
@@ -65,41 +60,20 @@ const handleDelete = (target) => {
 	<Flex direction="column" gap="12" :class="$style.wrapper">
 		<Flex align="center" gap="8">
 			<RouterLink to="/popup/settings">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Settings
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
 			<RouterLink to="/popup/settings/developer">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Developer
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
-			<Text
-				size="13"
-				weight="600"
-				color="tertiary"
-				style="line-height: 16px"
-			>
-				Networks
-			</Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Networks </Text>
 		</Flex>
 
 		<Flex direction="column" gap="16">
 			<Text size="16" weight="600" color="primary">Networks</Text>
 
-			<Flex direction="column" gap="6">
+			<Flex v-if="appStore.network" direction="column" gap="6">
 				<Flex
 					v-for="network in appStore.networks"
 					@click="handleSelectNetwork(network)"
@@ -109,17 +83,9 @@ const handleDelete = (target) => {
 				>
 					<Flex align="center" gap="10">
 						<Icon
-							:name="
-								appStore.network.id == network.id
-									? 'check-circle'
-									: 'globe'
-							"
+							:name="appStore.network.id == network.id ? 'check-circle' : 'globe'"
 							size="16"
-							:color="
-								appStore.network.id === network.id
-									? 'green'
-									: 'tertiary'
-							"
+							:color="appStore.network.id === network.id ? 'green' : 'tertiary'"
 						/>
 
 						<Text size="14" weight="600" color="primary">
@@ -131,22 +97,35 @@ const handleDelete = (target) => {
 						</Badge>
 					</Flex>
 
-					<Flex align="center" gap="8" :class="$style.icons">
-						<Icon
-							@click.stop="handleEdit(network)"
-							name="edit"
-							size="14"
-							color="tertiary"
-							:class="$style.icon_btn"
-						/>
-						<Icon
-							v-if="appStore.networks.length > 1"
-							@click.stop="handleDelete(network)"
-							name="close-circle"
-							size="16"
-							color="tertiary"
-							:class="$style.icon_btn"
-						/>
+					<Flex align="center" gap="14" :class="$style.icons">
+						<Flex align="center" gap="8">
+							<Icon
+								@click.stop="handleEdit(network)"
+								name="edit"
+								size="14"
+								color="tertiary"
+								:class="$style.icon_btn"
+							/>
+							<Icon
+								v-if="appStore.networks.length > 1"
+								@click.stop="handleDelete(network)"
+								name="close-circle"
+								size="16"
+								color="tertiary"
+								:class="$style.icon_btn"
+							/>
+						</Flex>
+
+						<Tooltip position="end">
+							<Icon name="info" size="16" color="tertiary" />
+
+							<template #content>
+								<Flex direction="column" gap="6" align="center">
+									<Text> <Text color="secondary">Chain ID:</Text> {{ network.chainId }} </Text>
+									<Text> <Text color="secondary">RPC Link:</Text> {{ network.rpcUrl }} </Text>
+								</Flex>
+							</template>
+						</Tooltip>
 					</Flex>
 				</Flex>
 			</Flex>
@@ -193,8 +172,7 @@ const handleDelete = (target) => {
 
 	&:hover {
 		background: var(--gray-3);
-		box-shadow: inset 0 0 0 1px var(--border-hovered),
-			0 1px 2px var(--shadow-10);
+		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-10);
 
 		& .icons {
 			opacity: 1;

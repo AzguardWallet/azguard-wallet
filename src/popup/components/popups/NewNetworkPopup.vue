@@ -25,18 +25,14 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const notAllowedNetworkNames = computed(() =>
-	appStore.networks.map((n) => n.name)
-)
+const notAllowedNetworkNames = computed(() => appStore.networks.map(n => n.name))
 
 const nameTerm = ref("")
 const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
 
 const isUrlHasError = ref(false)
 
-const isAlreadyExist = computed(() =>
-	notAllowedNetworkNames.value.includes(nameTerm.value)
-)
+const isAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value))
 const isAvailableToCreateNetwork = computed(() => {
 	if (!nameTerm.value.length) return
 	if (!urlTerm.value.length) return
@@ -52,13 +48,14 @@ const handleCreateNetwork = async () => {
 
 	try {
 		isCreating.value = true
-		const network = await managers.network.addNetwork(
-			nameTerm.value,
-			urlTerm.value
-		)
+		const network = await managers.network.addNetwork(nameTerm.value, urlTerm.value)
 		isCreating.value = false
 
+		/** todo: ref */
 		appStore.network = network
+		managers.network.setDefault(appStore.network.id)
+		chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
+
 		appStore.networks = await managers.network.getNetworks()
 
 		emit("onClose")
@@ -86,39 +83,26 @@ watch(
 		} else {
 			document.addEventListener("keydown", onKeydown)
 		}
-	}
+	},
 )
 
-const onKeydown = (e) => {
-	if (e.code === "Enter") handleCreateNetwork()
+const onKeydown = e => {
+	if (e.key === "Enter") handleCreateNetwork()
 }
 </script>
 
 <template>
-	<Popup
-		:show
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.new_network"
-	>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_network">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary">
-					New network
-				</Text>
+				<Text size="14" weight="600" color="primary"> New network </Text>
 
-				<Input
-					label="Name"
-					placeholder="My Network"
-					v-model="nameTerm"
-					autofocus
-				>
+				<Input label="Name" placeholder="My Network" v-model="nameTerm" autofocus>
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary">
-									Already exist
-								</Text>
+								<Text size="12" weight="600" color="primary"> Already exist </Text>
 							</Flex>
 						</Transition>
 					</template>
@@ -134,9 +118,7 @@ const onKeydown = (e) => {
 						<Transition name="fade">
 							<Flex v-if="isUrlHasError" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary">
-									Failed to fetch node info
-								</Text>
+								<Text size="12" weight="600" color="primary"> Failed to fetch node info </Text>
 							</Flex>
 						</Transition>
 					</template>
@@ -153,16 +135,8 @@ const onKeydown = (e) => {
 					<Text color="inverse">Create</Text>
 				</Button>
 
-				<Text
-					size="12"
-					weight="500"
-					color="tertiary"
-					height="140"
-					align="center"
-					style="padding: 0 20px"
-				>
-					We will check the availability of the specified RPC before
-					adding it
+				<Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
+					We will check the availability of the specified RPC before adding it
 				</Text>
 			</Flex>
 		</PopupCard>

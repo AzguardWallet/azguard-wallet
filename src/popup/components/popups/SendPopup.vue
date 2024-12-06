@@ -27,6 +27,8 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
+const route = useRoute()
+
 const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
@@ -39,12 +41,12 @@ const displaceIdx = computed(() => {
 
 const activeToken = computed(() =>
 	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
-	appStore.tokens.find((t) => t.id == cacheStore.activeTokenIdx)
+	appStore.tokens.find(t => t.id == cacheStore.activeTokenIdx),
 )
 const tokenBalance = computed(() => {
 	return appStore.balances.find(
 		// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
-		(b) => b.token.id == cacheStore.activeTokenIdx
+		b => b.token.id == cacheStore.activeTokenIdx,
 	)
 })
 const tokenBalanceByType = computed(() => {
@@ -58,10 +60,7 @@ const selectedSendType = ref("private")
 const selectedReceiverType = ref("private")
 const initSendType = () => {
 	if (!activeToken.value) return
-	if (
-		activeToken.value.hasPrivateTransfers &&
-		activeToken.value.hasPublicTransfers
-	) {
+	if (activeToken.value.hasPrivateTransfers && activeToken.value.hasPublicTransfers) {
 		selectedSendType.value = cacheStore.preselectedBalanceType
 	}
 
@@ -75,10 +74,7 @@ const initSendType = () => {
 }
 const initReceiverType = () => {
 	if (!activeToken.value) return
-	if (
-		activeToken.value.hasPrivateBalances &&
-		activeToken.value.hasPublicBalances
-	) {
+	if (activeToken.value.hasPrivateBalances && activeToken.value.hasPublicBalances) {
 		selectedReceiverType.value = "private"
 	}
 
@@ -95,29 +91,23 @@ const amountTerm = ref()
 
 const destinationAddressTerm = ref("")
 const selfAccountDestination = computed(() =>
-	appStore.accounts.findLast(
-		(a) => a.address === destinationAddressTerm.value
-	)
+	appStore.accounts.findLast(a => a.address === destinationAddressTerm.value),
 )
 
 const isAllowedToSend = computed(() => {
 	if (!amountTerm.value) return
 
 	const amountToSend = new BN(
-		typeof amountTerm.value === "string"
-			? amountTerm.value?.replace(",", "")
-			: amountTerm.value
+		typeof amountTerm.value === "string" ? amountTerm.value?.replace(",", "") : amountTerm.value,
 	)
 
 	if (!tokenBalanceByType.value) return
 	if (Number.isNaN(amountToSend)) return
-	if (amountToSend < 0.01) return
-	if (
-		!destinationAddressTerm.value.length ||
-		destinationAddressTerm.value.length !== 66
-	)
-		return
+	if (amountToSend < 0.00000001) return
+	if (!amountToSend) return
+	if (!destinationAddressTerm.value.length || destinationAddressTerm.value.length !== 66) return
 	if (!destinationAddressTerm.value.startsWith("0x")) return
+	if (amountToSend > tokenBalanceByType.value) return
 
 	return true
 })
@@ -125,34 +115,20 @@ const isAllowedToSend = computed(() => {
 const handleSend = async () => {
 	if (!isAllowedToSend.value) return
 
-	const amountToSend = new BN(
-		amountTerm.value?.trim().replace(",", "")
-	).times(10 ** activeToken.value.decimals)
+	const amountToSend = new BN(amountTerm.value?.trim().replace(",", "")).times(10 ** activeToken.value.decimals)
 
 	let type
 
-	if (
-		selectedSendType.value === "private" &&
-		selectedReceiverType.value === "private"
-	) {
+	if (selectedSendType.value === "private" && selectedReceiverType.value === "private") {
 		type = TransferType.Private
 	}
-	if (
-		selectedSendType.value === "private" &&
-		selectedReceiverType.value === "public"
-	) {
+	if (selectedSendType.value === "private" && selectedReceiverType.value === "public") {
 		type = TransferType.PrivateToPublic
 	}
-	if (
-		selectedSendType.value === "public" &&
-		selectedReceiverType.value === "private"
-	) {
+	if (selectedSendType.value === "public" && selectedReceiverType.value === "private") {
 		type = TransferType.PublicToPrivate
 	}
-	if (
-		selectedSendType.value === "public" &&
-		selectedReceiverType.value === "public"
-	) {
+	if (selectedSendType.value === "public" && selectedReceiverType.value === "public") {
 		type = TransferType.Public
 	}
 
@@ -163,7 +139,7 @@ const handleSend = async () => {
 		activeToken.value.id,
 		type,
 		destinationAddressTerm.value,
-		amountToSend
+		amountToSend,
 	)
 
 	openToast({ label: "Transaction is sent" })
@@ -178,7 +154,7 @@ watch(
 		initReceiverType()
 
 		amountTerm.value = null
-	}
+	},
 )
 
 watch(
@@ -187,77 +163,49 @@ watch(
 		if (props.show) {
 			initSendType()
 			initReceiverType()
+
+			if (route.params.id) {
+				cacheStore.activeTokenIdx = route.params.id
+			}
+
+			if (!cacheStore.activeTokenIdx && appStore.tokens.length) {
+				cacheStore.activeTokenIdx = appStore.tokens[0]?.id
+			}
 		} else {
 			amountTerm.value = null
 			destinationAddressTerm.value = ""
 
 			cacheStore.preselectedBalanceType = "private"
 		}
-	}
+	},
 )
 </script>
 
 <template>
-	<Popup
-		:show
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.send"
-	>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.send">
 		<PopupCard large :displaceIdx>
-			<Flex
-				wide
-				direction="column"
-				justify="between"
-				:class="$style.wrapper"
-			>
-				<Flex
-					align="center"
-					direction="column"
-					gap="16"
-					:class="$style.top"
-				>
+			<Flex wide direction="column" justify="between" :class="$style.wrapper">
+				<Flex align="center" direction="column" gap="16" :class="$style.top">
 					<Tooltip>
 						<Flex align="center" gap="6">
-							<Flex
-								align="center"
-								justify="center"
-								:class="$style.send_icon"
-							>
-								<Icon
-									name="arrow-top-right-circle"
-									size="16"
-									color="primary"
-								/>
+							<Flex align="center" justify="center" :class="$style.send_icon">
+								<Icon name="arrow-top-right-circle" size="16" color="primary" />
 
-								<Icon
-									name="globe"
-									size="12"
-									color="purple"
-									:class="$style.warning_icon"
-								/>
+								<Icon name="globe" size="12" color="purple" :class="$style.warning_icon" />
 							</Flex>
-							<Text
-								size="16"
-								weight="600"
-								color="primary"
-								style="transform: translate3d(0, 0, 0, 0)"
-							>
+							<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
 								Send
 							</Text>
 
-							<Text size="16" weight="600" color="tertiary">
-								in {{ appStore.network.name }}
-							</Text>
+							<Text size="16" weight="600" color="tertiary"> in {{ appStore.network.name }} </Text>
 						</Flex>
 
-						<template #content>
-							This tx will execute on the custom network
-						</template>
+						<template #content> This tx will execute on the custom network </template>
 					</Tooltip>
 
 					<Flex wide direction="column" gap="16">
 						<Flex direction="column" gap="8">
-							<SelectTokenCard />
+							<SelectTokenCard :token="activeToken" />
 
 							<SendTypesCard
 								v-model:sendType="selectedSendType"
@@ -275,33 +223,17 @@ watch(
 
 						<Input
 							v-model="destinationAddressTerm"
-							:label="`${capitalize(
-								selectedReceiverType
-							)} destination`"
+							:label="`${capitalize(selectedReceiverType)} destination`"
 							placeholder="0xABCD"
 							wide
 						>
 							<template #suffix>
-								<Icon
-									v-if="isAllowedToSend"
-									name="check-circle"
-									size="14"
-									color="green"
-								/>
+								<Icon v-if="isAllowedToSend" name="check-circle" size="14" color="green" />
 							</template>
 							<template #right>
-								<Flex
-									v-if="selfAccountDestination"
-									align="center"
-									gap="6"
-								>
+								<Flex v-if="selfAccountDestination" align="center" gap="6">
 									<Icon name="vault" size="12" color="blue" />
-									<Text
-										size="13"
-										weight="600"
-										color="primary"
-										noWrap
-									>
+									<Text size="13" weight="600" color="primary" noWrap>
 										{{ selfAccountDestination.name }}
 									</Text>
 								</Flex>

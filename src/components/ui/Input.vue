@@ -13,6 +13,9 @@ const props = defineProps({
 	type: {
 		type: String,
 	},
+	max: {
+		type: [String, Number],
+	},
 	label: {
 		type: String,
 	},
@@ -64,7 +67,7 @@ watch(
 	() => props.modelValue,
 	() => {
 		text.value = props.modelValue
-	}
+	},
 )
 
 const getInputType = computed(() => {
@@ -78,16 +81,14 @@ const handleInput = () => {
 	if (props.type === "number") {
 		emit(
 			"update:modelValue",
-			Number.isNaN(Number.parseFloat(text.value))
-				? text.value
-				: Number.parseFloat(text.value)
+			Number.isNaN(Number.parseFloat(text.value)) ? text.value : Number.parseFloat(text.value),
 		)
 	} else {
 		emit("update:modelValue", text.value)
 	}
 }
 
-const handleKeydown = (e) => {
+const handleKeydown = e => {
 	if (props.disabled && e.key !== "Tab") e.preventDefault()
 	if (props.type === "number") {
 		if (e.key === "-") e.preventDefault()
@@ -108,7 +109,7 @@ const handleBlur = () => {
 	emit("blur")
 }
 
-const handlePaste = (e) => {
+const handlePaste = e => {
 	if (props.disablePaste) e.preventDefault()
 }
 </script>
@@ -125,22 +126,16 @@ const handlePaste = (e) => {
 			ref="base"
 			@click="handleClick"
 			gap="12"
-			:class="[
-				$style.base,
-				isFocused && $style.focused,
-				disabled && $style.disabled,
-				$style[size],
-			]"
+			:class="[$style.base, isFocused && $style.focused, disabled && $style.disabled, $style[size]]"
 		>
 			<Flex align="center" gap="6" wide :class="$style.left">
 				<Icon v-if="icon" :name="icon" size="14" color="tertiary" />
-				<Text v-if="leftText" size="13" weight="600" color="tertiary">{{
-					leftText
-				}}</Text>
+				<Text v-if="leftText" size="13" weight="600" color="tertiary">{{ leftText }}</Text>
 
 				<input
 					ref="inputEl"
 					:type="getInputType"
+					:max="max"
 					v-model="text"
 					@input="handleInput"
 					@focus="handleFocus"
@@ -185,7 +180,7 @@ const handlePaste = (e) => {
 }
 
 .base.focused {
-	box-shadow: inset 0 0 0 2px var(--blue);
+	box-shadow: inset 0 0 0 1px var(--blue), 0 0 0 1px var(--blue);
 }
 
 .base.disabled {

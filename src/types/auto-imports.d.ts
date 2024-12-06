@@ -51,6 +51,7 @@ declare global {
   const h: typeof import('vue')['h']
   const ignorableWatch: typeof import("@vueuse/core")["ignorableWatch"]
   const initNetworks: typeof import('../utils/core.js')['initNetworks']
+  const initProfileService: typeof import('../utils/core.js')['initProfileService']
   const initTokenService: typeof import('../utils/core.js')['initTokenService']
   const initTransactionService: typeof import('../utils/core.js')['initTransactionService']
   const inject: typeof import('vue')['inject']

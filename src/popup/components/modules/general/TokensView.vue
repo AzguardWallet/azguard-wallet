@@ -30,12 +30,7 @@ const popupStore = usePopupStore()
 			</Flex>
 		</template>
 		<template v-else>
-			<Button
-				@click="popupStore.open('new_token')"
-				type="secondary"
-				size="small"
-				leftIcon="plus-circle"
-			>
+			<Button @click="popupStore.open('new_token')" type="secondary" size="small" leftIcon="plus-circle">
 				New token
 			</Button>
 		</template>

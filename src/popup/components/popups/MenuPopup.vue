@@ -12,8 +12,6 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const router = useRouter()
-
 const emit = defineEmits(["onClose"])
 
 const displaceIdx = computed(() => {
@@ -23,7 +21,6 @@ const displaceIdx = computed(() => {
 const handleLockWallet = () => {
 	emit("onClose")
 	appStore.isLogined = false
-	router.push("/popup/auth")
 	managers.profile.lock()
 }
 </script>
@@ -33,16 +30,12 @@ const handleLockWallet = () => {
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Flex direction="column" gap="12">
-					<Text size="14" weight="600" color="primary">
-						Profiles
-					</Text>
+					<Text size="14" weight="600" color="primary"> Profiles </Text>
 
 					<Flex align="center" justify="between" :class="$style.link">
 						<Flex align="center" gap="10">
 							<Icon name="check-circle" size="16" color="green" />
-							<Text size="14" weight="600" color="primary">
-								My Profile
-							</Text>
+							<Text size="14" weight="600" color="primary"> My Profile </Text>
 						</Flex>
 
 						<Flex align="center" gap="8" :class="$style.icons">
@@ -52,22 +45,10 @@ const handleLockWallet = () => {
 				</Flex>
 
 				<Flex direction="column" gap="12">
-					<Button
-						type="secondary"
-						size="medium"
-						leftIcon="plus-circle"
-						leftIconColor="primary"
-						disabled
-					>
+					<Button type="secondary" size="medium" leftIcon="plus-circle" leftIconColor="primary" disabled>
 						Create new profile
 					</Button>
-					<Button
-						type="secondary"
-						size="medium"
-						leftIcon="text"
-						leftIconColor="primary"
-						disabled
-					>
+					<Button type="secondary" size="medium" leftIcon="text" leftIconColor="primary" disabled>
 						Import using seed phrase
 					</Button>
 				</Flex>
@@ -105,8 +86,7 @@ const handleLockWallet = () => {
 
 	&:hover {
 		background: var(--gray-3);
-		box-shadow: inset 0 0 0 1px var(--border-hovered),
-			0 1px 2px var(--shadow-5);
+		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-5);
 	}
 
 	&:active {

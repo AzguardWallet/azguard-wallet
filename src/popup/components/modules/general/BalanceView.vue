@@ -20,17 +20,36 @@ const props = defineProps({
 	},
 })
 
-const tokenBalance = computed(() =>
-	appStore.balances.find((b) => b.token.id === props.token.id)
-)
+const balanceEl = useTemplateRef("balanceEl")
+const dynamicFontSize = ref(2)
+
+const tokenBalance = computed(() => appStore.balances.filter(Boolean).find(b => b.token?.id === props.token?.id))
 const totalTokenBalance = computed(() => {
 	if (!tokenBalance.value) return 0
 
 	return (
-		(Number.parseFloat(tokenBalance.value.privateBalance) +
-			Number.parseFloat(tokenBalance.value.publicBalance)) /
+		(Number.parseFloat(tokenBalance.value.privateBalance) + Number.parseFloat(tokenBalance.value.publicBalance)) /
 		10 ** tokenBalance.value.token.decimals
 	)
+})
+
+const calcDynamicFontSize = () => {
+	const aWidth = balanceEl.value.wrapper.getBoundingClientRect().width
+	dynamicFontSize.value = Math.min(2, (300 / aWidth) * 2)
+}
+
+watch(
+	() => totalTokenBalance.value,
+	async () => {
+		await nextTick()
+		calcDynamicFontSize()
+	},
+)
+
+onMounted(async () => {
+	if (!totalTokenBalance.value) return
+
+	calcDynamicFontSize()
 })
 
 const isCopied = ref(false)
@@ -47,22 +66,13 @@ const handleCopyAddress = () => {
 <template>
 	<Flex direction="column" align="center" gap="32" :class="$style.wrapper">
 		<Flex direction="column" align="center" gap="20">
-			<Flex
-				@click="handleCopyAddress"
-				align="center"
-				gap="6"
-				:class="[$style.badge]"
-			>
+			<Flex @click="handleCopyAddress" align="center" gap="6" :class="[$style.badge]">
 				<Text size="13" weight="600" color="secondary">
 					{{ appStore.account.address.slice(0, 6) }}
 					•••
 					{{ appStore.account.address.slice(-4) }}
 				</Text>
-				<Icon
-					:name="isCopied ? 'check-circle' : 'copy'"
-					size="12"
-					:color="isCopied ? 'green' : 'tertiary'"
-				/>
+				<Icon :name="isCopied ? 'check-circle' : 'copy'" size="12" :color="isCopied ? 'green' : 'tertiary'" />
 			</Flex>
 
 			<Flex direction="column" gap="12" align="center">
@@ -70,15 +80,13 @@ const handleCopyAddress = () => {
 					{{ token ? `${token.symbol} Token` : "Account" }} Value
 				</Text>
 
-				<div
-					@click="
-						appStore.isPrivacyModeEnabled =
-							!appStore.isPrivacyModeEnabled
-					"
+				<Flex
+					@click="appStore.isPrivacyModeEnabled = !appStore.isPrivacyModeEnabled"
+					justify="center"
 					:class="$style.balance"
 				>
-					<Tooltip :disabled="token">
-						<Flex align="center" gap="8">
+					<Tooltip :disabled="!!token">
+						<Flex align="center" gap="8" ref="balanceEl">
 							<Icon
 								v-if="!token"
 								name="warning"
@@ -86,41 +94,30 @@ const handleCopyAddress = () => {
 								color="tertiary"
 								:class="$style.warning_icon"
 							/>
-							<Text
-								v-if="!token"
-								size="32"
-								weight="500"
-								height="100"
-								color="tertiary"
-							>
-								$0.00
-							</Text>
+							<Text v-if="!token" size="32" weight="500" height="100" color="tertiary"> $0.00 </Text>
 							<Text
 								v-else
-								size="32"
 								weight="500"
 								height="100"
 								color="primary"
+								tabular
+								:style="{ fontSize: `${dynamicFontSize}rem` }"
+								:class="$style.amount_wrapper"
 							>
-								{{ comma(totalTokenBalance) }}
+								{{ comma(totalTokenBalance, ",", 8) }}
 								<Text color="tertiary">{{ token.symbol }}</Text>
 							</Text>
 						</Flex>
 
 						<template #content>
-							Price quotes to calculate the total value of your
-							wallet are planned in the next updates
+							Price quotes to calculate the total value of your wallet are planned in the next updates
 						</template>
 					</Tooltip>
-				</div>
-
-				<!-- <Flex justify="center" gap="12"> </Flex> -->
+				</Flex>
 			</Flex>
 		</Flex>
 
 		<ActionButtonsView :token />
-
-		<div :class="$style.test" />
 	</Flex>
 </template>
 
@@ -132,21 +129,12 @@ const handleCopyAddress = () => {
 	padding: 20px 0 16px 0;
 }
 
-.test {
-	position: absolute;
-	top: 0;
-	left: -24px;
-	right: -24px;
-	isolation: isolate;
-
-	height: 20px;
-
-	/* background: linear-gradient(var(--gray-5), transparent); */
-	pointer-events: none;
-}
-
 .balance {
 	cursor: pointer;
+}
+
+.amount_wrapper {
+	white-space: nowrap;
 }
 
 .wallet_name {

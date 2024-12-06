@@ -5,12 +5,6 @@ import BN from "bignumber.js"
 /** Utils */
 import { purgeNumber, normalizeAmount, comma } from "@/utils/amount.js"
 
-/** Store */
-import { useAppStore } from "@/stores/app.store"
-import { useCacheStore } from "@/stores/cache.store"
-const appStore = useAppStore()
-const cacheStore = useCacheStore()
-
 const props = defineProps({
 	selectedSendType: {
 		type: String,
@@ -30,12 +24,12 @@ onMounted(() => {
 	inputEl.value.focus()
 })
 
-const handleAmountInput = (e) => {
+const handleAmountInput = e => {
 	const purgedAmount = purgeNumber(model.value)
+
 	model.value = purgedAmount
 
-	if (["0", ","].includes(e.data) && model.value.length === 1)
-		model.value = "0."
+	if (["0", ","].includes(e.data) && model.value.length === 1) model.value = "0."
 
 	const normalizedAmount = normalizeAmount(purgedAmount)
 	if (typeof normalizedAmount === "string") {
@@ -54,12 +48,10 @@ const handleAmountBlur = () => {
 	if (!model.value) return
 	if (model.value.toString().includes(",")) return model.value
 
-	model.value = comma(model.value, ",", 4)
+	model.value = comma(model.value, ",", 8)
 }
 
-const amountInUSD = computed(
-	() => Number.parseFloat(purgeNumber(model.value || 0)) * 3.4
-)
+const amountInUSD = computed(() => Number.parseFloat(purgeNumber(model.value || 0)) * 3.4)
 
 const handleMax = () => {
 	if (!props.tokenBalanceByType) return
@@ -67,18 +59,17 @@ const handleMax = () => {
 }
 
 const handleHalf = () => {
-	if (!model.value) return
-	model.value = Number.parseFloat(purgeNumber(model.value)) / 2
+	if (!model.value) {
+		if (!props.tokenBalanceByType) return
+		model.value = new BN(props.tokenBalanceByType) / 2
+	} else {
+		model.value = Number.parseFloat(purgeNumber(model.value)) / 2
+	}
 }
 </script>
 
 <template>
-	<Flex
-		@click="inputEl.focus()"
-		gap="16"
-		direction="column"
-		:class="[$style.wrapper, isFocused && $style.focused]"
-	>
+	<Flex @click="inputEl.focus()" gap="16" direction="column" :class="[$style.wrapper, isFocused && $style.focused]">
 		<Flex direction="column" gap="8">
 			<input
 				ref="inputEl"
@@ -89,24 +80,13 @@ const handleHalf = () => {
 				placeholder="0.00"
 				:class="$style.input_field"
 			/>
-			<Text size="14" weight="500" color="tertiary">
-				${{ comma(amountInUSD) }}
-			</Text>
+			<Text size="14" weight="500" color="tertiary"> ${{ comma(amountInUSD) }} </Text>
 		</Flex>
 
 		<Flex justify="between">
 			<Flex align="center" gap="6">
-				<Button @click="handleHalf" type="secondary" size="mini" round>
-					Half
-				</Button>
-				<Button
-					@click="model = null"
-					type="secondary"
-					size="mini"
-					round
-				>
-					Clear
-				</Button>
+				<Button @click="handleHalf" type="secondary" size="mini" round> Half </Button>
+				<Button @click="model = null" type="secondary" size="mini" round> Clear </Button>
 			</Flex>
 
 			<Button
@@ -116,15 +96,16 @@ const handleHalf = () => {
 				size="mini"
 				round
 				:disabled="!tokenBalanceByType"
+				:class="$style.test"
 			>
 				<Icon
-					:name="
-						selectedSendType === 'private' ? 'key-square' : 'face'
-					"
+					:name="selectedSendType === 'private' ? 'key-square' : 'face'"
 					size="16"
 					:color="selectedSendType === 'private' ? 'green' : 'orange'"
 				/>
-				{{ comma(tokenBalanceByType) }}
+				<Text :class="$style.testtest">
+					{{ comma(tokenBalanceByType, ",", 8) }}
+				</Text>
 				<Text color="tertiary">{{ token.symbol }}</Text>
 			</Button>
 		</Flex>
@@ -159,5 +140,14 @@ const handleHalf = () => {
 	&::placeholder {
 		color: var(--txt-tertiary);
 	}
+}
+
+.test {
+	max-width: 180px;
+}
+
+.testtest {
+	text-overflow: ellipsis;
+	overflow: hidden;
 }
 </style>

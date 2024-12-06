@@ -14,14 +14,14 @@ const props = defineProps({
 	side: {
 		type: String,
 		default: "bottom",
-		validator: (value) => {
+		validator: value => {
 			return ["top", "bottom", "left", "right"].includes(value)
 		},
 	},
 	position: {
 		type: String,
 		default: "start",
-		validator: (value) => {
+		validator: value => {
 			return ["start", "end"].includes(value)
 		},
 	},
@@ -66,15 +66,15 @@ watch(
 	() => props.forceOpen,
 	() => {
 		isOpen.value = props.forceOpen
-	}
+	},
 )
 
-const toggleDropdown = (event) => {
+const toggleDropdown = event => {
 	if (event) event.stopPropagation()
 	if (props.disabled) return
 	isOpen.value = !isOpen.value
 }
-const close = (event) => {
+const close = event => {
 	if (event) event.stopPropagation()
 
 	isOpen.value = false
@@ -85,9 +85,9 @@ const close = (event) => {
 const dropdownStyles = ref({})
 
 let removeOutside
-const handleOutside = (e) => {
+const handleOutside = e => {
 	const path = e.path ? e.path : e.composedPath()
-	if (path.find((el) => el.id === "trigger")) {
+	if (path.find(el => el.id === "trigger")) {
 		return
 	}
 
@@ -102,9 +102,7 @@ watch(isOpen, () => {
 		if (Object.prototype.hasOwnProperty.call(dropdownStyles.value, "top")) {
 			dropdownStyles.value.top = undefined
 		}
-		if (
-			Object.prototype.hasOwnProperty.call(dropdownStyles.value, "bottom")
-		) {
+		if (Object.prototype.hasOwnProperty.call(dropdownStyles.value, "bottom")) {
 			dropdownStyles.value.bottom = undefined
 		}
 
@@ -124,9 +122,8 @@ watch(isOpen, () => {
 
 		switch (props.position) {
 			case "start":
-				dropdownStyles.value.right = `${
-					window.innerWidth - triggerRect.x - triggerRect.width
-				}px`
+				dropdownStyles.value.right = `${window.innerWidth - triggerRect.x - triggerRect.width}px`
+				if (props.wide) dropdownStyles.value.left = `${triggerRect.x}px`
 				break
 
 			case "end":
@@ -146,30 +143,17 @@ watch(isOpen, () => {
 			switch (props.side) {
 				case "top":
 					if (triggerRect.top < dropdownRect.height) {
-						dropdownStyles.value.top = `${
-							triggerRect.y + triggerRect.height + 8
-						}px`
+						dropdownStyles.value.top = `${triggerRect.y + triggerRect.height + 8}px`
 					} else {
-						dropdownStyles.value.bottom = `${
-							window.innerHeight - triggerRect.y + 8
-						}px`
+						dropdownStyles.value.bottom = `${window.innerHeight - triggerRect.y + 8}px`
 					}
 					break
 
 				case "bottom":
-					if (
-						window.innerHeight -
-							dropdownRect.height -
-							triggerRect.top <
-						50
-					) {
-						dropdownStyles.value.bottom = `${
-							window.innerHeight - triggerRect.y + 8
-						}px`
+					if (window.innerHeight - dropdownRect.height - triggerRect.top < 50) {
+						dropdownStyles.value.bottom = `${window.innerHeight - triggerRect.y + 8}px`
 					} else {
-						dropdownStyles.value.top = `${
-							triggerRect.y + triggerRect.height + 8
-						}px`
+						dropdownStyles.value.top = `${triggerRect.y + triggerRect.height + 8}px`
 					}
 					break
 			}
@@ -197,23 +181,17 @@ onBeforeUnmount(() => {
 	document.removeEventListener("keydown", onKeydown)
 })
 
-const onKeydown = (event) => {
+const onKeydown = event => {
 	if (event.key === "Escape") close()
 	if (event.key === "Enter") {
 		document.activeElement.click()
 	}
 
 	if (event.key === "ArrowDown") {
-		const itemsToNavigate =
-			dropdown.value.wrapper.querySelectorAll('[tabindex = "1"]')
-		const activeItemIdx = [...itemsToNavigate].findIndex((item) =>
-			item.isEqualNode(document.activeElement)
-		)
+		const itemsToNavigate = dropdown.value.wrapper.querySelectorAll('[tabindex = "1"]')
+		const activeItemIdx = [...itemsToNavigate].findIndex(item => item.isEqualNode(document.activeElement))
 
-		if (
-			activeItemIdx === -1 ||
-			activeItemIdx === itemsToNavigate.length - 1
-		) {
+		if (activeItemIdx === -1 || activeItemIdx === itemsToNavigate.length - 1) {
 			itemsToNavigate[0].focus()
 		} else {
 			itemsToNavigate[activeItemIdx + 1].focus()
@@ -221,11 +199,8 @@ const onKeydown = (event) => {
 	}
 
 	if (event.key === "ArrowUp") {
-		const itemsToNavigate =
-			dropdown.value.wrapper.querySelectorAll('[tabindex = "1"]')
-		const activeItemIdx = [...itemsToNavigate].findIndex((item) =>
-			item.isEqualNode(document.activeElement)
-		)
+		const itemsToNavigate = dropdown.value.wrapper.querySelectorAll('[tabindex = "1"]')
+		const activeItemIdx = [...itemsToNavigate].findIndex(item => item.isEqualNode(document.activeElement))
 
 		if (activeItemIdx === -1 || activeItemIdx === 0) {
 			itemsToNavigate[itemsToNavigate.length - 1].focus()
@@ -238,12 +213,7 @@ const onKeydown = (event) => {
 
 <template>
 	<div :class="$style.wrapper">
-		<div
-			ref="trigger"
-			id="trigger"
-			@click="toggleDropdown"
-			:class="[$style.trigger, wide && $style.wide]"
-		>
+		<div ref="trigger" id="trigger" @click="toggleDropdown" :class="[$style.trigger]">
 			<slot />
 			<slot name="trigger" :isOpen="isOpen" />
 		</div>
@@ -258,9 +228,7 @@ const onKeydown = (event) => {
 					@click="close"
 					:class="[
 						$style.dropdown,
-						dropdownStyles.top
-							? $style.transform_origin_top
-							: $style.transform_origin_bottom,
+						dropdownStyles.top ? $style.transform_origin_top : $style.transform_origin_bottom,
 					]"
 					:style="{
 						...dropdownStyles,
@@ -282,10 +250,6 @@ const onKeydown = (event) => {
 
 .trigger {
 	width: 100%;
-
-	&.wide {
-		width: 100%;
-	}
 }
 
 .canvas {

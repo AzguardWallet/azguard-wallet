@@ -1,14 +1,10 @@
 <script setup lang="ts">
 /** Local Components */
 import WalletPasswordContent from "./WalletPasswordContent.vue"
-// import WalletTypeContent from "./WalletTypeContent.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
-import {
-	AccountServiceClient,
-	AccountType,
-} from "@/wallet/services/account/client"
+import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -19,61 +15,52 @@ const router = useRouter()
 const walletPassword = ref<string>("")
 const repeatedPassword = ref<string>("")
 
+const handlePasswordInput = () => {
+	if (walletPassword.value.length > 64) {
+		walletPassword.value = walletPassword.value.slice(0, 64)
+	}
+}
+
+const handleRepeatedPasswordInput = () => {
+	if (repeatedPassword.value.length > 64) {
+		repeatedPassword.value = repeatedPassword.value.slice(0, 64)
+	}
+}
+
+const isCreatingProfile = ref(false)
 const handleCreateProfile = async () => {
 	if (!isAllowedToContinue.value) return
 
-	const profile = await managers.profile.createProfile(
-		"My Wallet",
-		walletPassword.value
-	)
+	isCreatingProfile.value = true
+
+	const profile = await managers.profile.createProfile("My Profile", walletPassword.value)
 
 	managers.account = new AccountServiceClient(profile, appStore.network)
 
-	const account = await managers.account.createAccount(
-		AccountType.Azguard_v0,
-		"Vault"
-	)
+	const account = await managers.account.createAccount(AccountType.Azguard_v0, "Account")
 
 	appStore.profile = profile
 	appStore.account = account
 	appStore.accounts = await managers.account.getAccounts(true)
+	isCreatingProfile.value = false
+
+	await appStore.syncLocalTokens()
 
 	appStore.isLogined = true
 
 	await chrome.storage.local.set({
 		"azguard:ui:activeAccount": account.address,
 	})
-	await chrome.storage.local.set({
-		[`azguard:ui:profileCreatedAt@${profile.id}`]: new Date().getTime(),
-	})
 
 	router.push("/popup/general")
 }
 
-const stepIdx = ref<number>(0)
-watch(
-	() => stepIdx.value,
-	() => {
-		if (stepIdx.value !== 1) return
-		handleCreateProfile()
-	}
-)
-const handleNextStep = () => {
-	if (!isAllowedToContinue.value) return
-
-	stepIdx.value += 1
-}
-const handlePrevStep = () => {
-	if (!stepIdx.value) {
-		appStore.showRegisterPopup = false
-		return
-	}
-
-	stepIdx.value -= 1
+const handleCancel = () => {
+	appStore.showRegisterPopup = false
 }
 
 const onKeydown = (e: KeyboardEvent) => {
-	if (e.key === "Enter") handleNextStep()
+	if (e.key === "Enter") handleCreateProfile()
 }
 
 onMounted(() => {
@@ -85,18 +72,11 @@ onUnmounted(() => {
 })
 
 const isAllowedToContinue = computed(() => {
-	if (
-		stepIdx.value === 0 &&
-		(!walletPassword.value.length || walletPassword.value.length < 8)
-	) {
+	if (!walletPassword.value.length || walletPassword.value.length < 8) {
 		return false
 	}
 
-	if (
-		stepIdx.value === 0 &&
-		(!repeatedPassword.value ||
-			walletPassword.value !== repeatedPassword.value)
-	) {
+	if (!repeatedPassword.value || walletPassword.value !== repeatedPassword.value) {
 		return false
 	}
 
@@ -109,20 +89,13 @@ const isAllowedToContinue = computed(() => {
 		<Flex direction="column" :class="$style.card">
 			<div :class="$style.badges_wrapper">
 				<Flex align="center" gap="16" :class="$style.badges">
-					<Flex
-						align="center"
-						gap="8"
-						:class="[$style.badge, $style.dummy]"
-					>
+					<Flex align="center" gap="8" :class="[$style.badge, $style.dummy]">
 						<Icon name="password" size="16" color="white" />
 						<div :class="$style.rect" />
 					</Flex>
 					<Flex align="center" gap="8" :class="[$style.badge]">
 						<Icon name="vault" size="20" color="inverse" />
-						<div
-							v-if="!walletPassword.length"
-							:class="$style.rect"
-						/>
+						<div v-if="!walletPassword.length" :class="$style.rect" />
 						<Flex v-else align="center" gap="2">
 							<Icon
 								v-for="_ in Math.min(8, walletPassword.length)"
@@ -132,11 +105,7 @@ const isAllowedToContinue = computed(() => {
 							/>
 						</Flex>
 					</Flex>
-					<Flex
-						align="center"
-						gap="8"
-						:class="[$style.badge, $style.dummy]"
-					>
+					<Flex align="center" gap="8" :class="[$style.badge, $style.dummy]">
 						<Icon name="user" size="16" color="white" />
 						<div :class="$style.rect" />
 					</Flex>
@@ -144,17 +113,12 @@ const isAllowedToContinue = computed(() => {
 			</div>
 
 			<Flex direction="column" justify="between" :class="$style.content">
-				<Transition name="fade" mode="out-in">
-					<WalletPasswordContent
-						v-if="stepIdx === 0"
-						v-model:password="walletPassword"
-						v-model:repeatedPassword="repeatedPassword"
-					/>
-					<!-- <WalletTypeContent
-						v-else-if="stepIdx === 1"
-						v-model="walletType"
-					/> -->
-				</Transition>
+				<WalletPasswordContent
+					v-model:password="walletPassword"
+					v-model:repeatedPassword="repeatedPassword"
+					@onPasswordInput="handlePasswordInput"
+					@onRepeatedPasswordInput="handleRepeatedPasswordInput"
+				/>
 
 				<Flex direction="column" gap="8">
 					<Button
@@ -163,15 +127,11 @@ const isAllowedToContinue = computed(() => {
 						size="medium"
 						wide
 						:disabled="!isAllowedToContinue"
+						:loading="isCreatingProfile"
 					>
 						<Text color="inverse">Create</Text>
 					</Button>
-					<Button
-						@click="handlePrevStep"
-						type="secondary"
-						size="medium"
-						wide
-					>
+					<Button @click="handleCancel" type="secondary" size="medium" wide :disabled="isCreatingProfile">
 						Cancel
 					</Button>
 				</Flex>

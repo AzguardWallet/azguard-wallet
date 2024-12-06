@@ -3,14 +3,17 @@ const route = useRoute()
 
 const navigationLinks = [
 	{
+		name: "activity",
 		path: "/popup/activity",
 		icon: "zap-circle",
 	},
 	{
+		name: "general",
 		path: "/popup/general",
 		icon: "wallet",
 	},
 	{
+		name: "settings",
 		path: "/popup/settings",
 		icon: "settings",
 	},
@@ -21,10 +24,14 @@ const navigationLinks = [
 	<Flex align="center" justify="center" gap="32" :class="$style.wrapper">
 		<RouterLink v-for="link in navigationLinks" :to="link.path">
 			<Flex :class="$style.button">
+				<Icon :name="link.icon" size="24" :color="route.path === link.path ? 'primary' : 'tertiary'" />
+
 				<Icon
-					:name="link.icon"
-					size="24"
-					:color="route.path.includes(link.path) ? 'primary' : 'tertiary'"
+					v-if="route.name === 'popup-tokens-id' && link.name === 'general'"
+					name="banknote"
+					size="14"
+					color="primary"
+					:class="$style.banknote_icon"
 				/>
 			</Flex>
 		</RouterLink>
@@ -46,6 +53,8 @@ const navigationLinks = [
 }
 
 .button {
+	position: relative;
+
 	border-radius: 12px;
 
 	padding: 8px 16px;
@@ -53,5 +62,17 @@ const navigationLinks = [
 	&:hover {
 		background: linear-gradient(var(--gray-3), var(--gray-5));
 	}
+}
+
+.banknote_icon {
+	position: absolute;
+	top: 2px;
+	right: 8px;
+
+	background: var(--card-bg);
+	box-sizing: content-box;
+	border-radius: 6px;
+
+	padding: 1px;
 }
 </style>

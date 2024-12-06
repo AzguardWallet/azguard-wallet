@@ -1,11 +1,15 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
-import {
-	Dropdown,
-	DropdownItem,
-	DropdownTrigger,
-} from "@/components/ui/Dropdown"
+import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown"
 
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
@@ -17,7 +21,7 @@ watch(
 	() => theme.value,
 	() => {
 		root.setAttribute("theme", theme.value)
-	}
+	},
 )
 
 const isSidePanelEnabled = ref(settings.value.appearance.sidePanel)
@@ -39,7 +43,7 @@ watch(
 		} else {
 			window.close()
 		}
-	}
+	},
 )
 </script>
 
@@ -47,106 +51,53 @@ watch(
 	<Flex direction="column" gap="20" :class="$style.wrapper">
 		<Flex align="center" gap="8">
 			<RouterLink to="/popup/settings">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Settings
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
 			<RouterLink to="/popup/settings/general">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					General
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> General </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
-			<Text
-				size="13"
-				weight="600"
-				color="tertiary"
-				style="line-height: 16px"
-			>
-				Appearance
-			</Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Appearance </Text>
 		</Flex>
 
 		<Flex direction="column" gap="24">
 			<Flex justify="between">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">
-						Dark Theme
-					</Text>
-					<Text size="12" weight="500" color="tertiary">
-						Application theme
-					</Text>
+					<Text size="13" weight="600" color="primary"> Dark Theme </Text>
+					<Text size="12" weight="500" color="tertiary"> Application theme </Text>
 				</Flex>
 
 				<Dropdown>
 					<template #trigger>
 						<DropdownTrigger>
 							<Icon
-								:name="
-									(theme === 'dark' && 'moon') ||
-									(theme === 'light' && 'sun')
-								"
+								:name="(theme === 'dark' && 'moon') || (theme === 'light' && 'sun')"
 								size="14"
 								color="primary"
 							/>
-							<Text
-								size="13"
-								weight="600"
-								color="primary"
-								style="text-transform: capitalize"
-							>
+							<Text size="13" weight="600" color="primary" style="text-transform: capitalize">
 								{{ settings.appearance.theme }}
 							</Text>
 						</DropdownTrigger>
 					</template>
 
 					<template #popup>
-						<DropdownItem
-							@click="
-								updateSettings('appearance', 'theme', 'dark')
-							"
-						>
+						<DropdownItem @click="updateSettings('appearance', 'theme', 'dark')">
 							<Flex align="center" gap="8">
-								<Icon
-									:name="theme === 'dark' ? 'check' : ''"
-									size="14"
-									color="primary"
-								/>
+								<Icon :name="theme === 'dark' ? 'check' : ''" size="14" color="primary" />
 								Dark
 							</Flex>
 						</DropdownItem>
-						<DropdownItem
-							@click="
-								updateSettings('appearance', 'theme', 'light')
-							"
-						>
+						<DropdownItem @click="updateSettings('appearance', 'theme', 'light')">
 							<Flex align="center" gap="8">
-								<Icon
-									:name="theme === 'light' ? 'check' : ''"
-									size="14"
-									color="primary"
-								/>
+								<Icon :name="theme === 'light' ? 'check' : ''" size="14" color="primary" />
 								Light
 							</Flex>
 						</DropdownItem>
 						<DropdownItem disabled>
 							<Flex align="center" gap="8">
-								<Icon
-									:name="theme === 'system' ? 'check' : ''"
-									size="14"
-									color="primary"
-								/>
+								<Icon :name="theme === 'system' ? 'check' : ''" size="14" color="primary" />
 								System
 							</Flex>
 						</DropdownItem>
@@ -156,12 +107,8 @@ watch(
 
 			<Flex justify="between">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">
-						Open as Side Panel
-					</Text>
-					<Text size="12" weight="500" color="tertiary">
-						Open as side panel instead of popup
-					</Text>
+					<Text size="13" weight="600" color="primary"> Open as Side Panel </Text>
+					<Text size="12" weight="500" color="tertiary"> Open as side panel instead of popup </Text>
 				</Flex>
 
 				<Toggle v-model="isSidePanelEnabled" />

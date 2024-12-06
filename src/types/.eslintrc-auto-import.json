@@ -314,6 +314,7 @@
     "initTokenService": true,
     "purgeNumber": true,
     "normalizeAmount": true,
-    "initTransactionService": true
+    "initTransactionService": true,
+    "initProfileService": true
   }
 }

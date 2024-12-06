@@ -1,6 +1,17 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
+
+/** Utils */
+import { managers } from "@/utils/core"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -9,8 +20,10 @@ const { openToast } = useToast()
 const { settings, updateSettings } = useSettings()
 
 /** Store */
+import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
+const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
@@ -20,21 +33,17 @@ const isDeveloperModeEnabled = ref(settings.value.developer.advancedMode)
 watch(
 	() => isDeveloperModeEnabled.value,
 	async () => {
-		updateSettings(
-			"developer",
-			"advancedMode",
-			isDeveloperModeEnabled.value
-		)
-	}
+		updateSettings("developer", "advancedMode", isDeveloperModeEnabled.value)
+	},
 )
 
 const handleFullReset = () => {
-	cacheStore.confirm.description =
-		"You want to completely delete all local data - settings and so on"
+	cacheStore.confirm.description = "You want to completely delete all local data - settings and so on"
 	cacheStore.confirm.callback = async () => {
+		await managers.profile.deleteProfile(appStore.profile.id)
 		await chrome.storage.local.clear()
-		openToast({ label: "Local data deleted" })
-		router.push("/popup/register")
+		await chrome.storage.session.clear()
+		chrome.runtime.reload()
 	}
 
 	popupStore.open("confirm")
@@ -45,45 +54,20 @@ const handleFullReset = () => {
 	<Flex direction="column" gap="24" :class="$style.wrapper">
 		<Flex align="center" gap="8">
 			<RouterLink to="/popup/settings">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Settings
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
 			<RouterLink to="/popup/settings/developer">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Developer
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
-			<Text
-				size="13"
-				weight="600"
-				color="tertiary"
-				style="line-height: 16px"
-			>
-				Advanced
-			</Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Advanced </Text>
 		</Flex>
 
 		<Flex justify="between">
 			<Flex direction="column" gap="6">
-				<Text size="13" weight="600" color="primary">
-					Developer Mode
-				</Text>
-				<Text size="12" weight="500" color="tertiary">
-					Access to entity metadata, etc
-				</Text>
+				<Text size="13" weight="600" color="primary"> Developer Mode </Text>
+				<Text size="12" weight="500" color="tertiary"> Access to entity metadata, etc </Text>
 			</Flex>
 
 			<Toggle v-model="isDeveloperModeEnabled" />
@@ -91,17 +75,11 @@ const handleFullReset = () => {
 
 		<Flex v-if="isDeveloperModeEnabled" direction="column" gap="12">
 			<Flex direction="column" gap="6">
-				<Text size="13" weight="600" color="primary">
-					Full storage reset
-				</Text>
-				<Text size="12" weight="500" height="140" color="tertiary">
-					All local data will be deleted
-				</Text>
+				<Text size="13" weight="600" color="primary"> Full storage reset </Text>
+				<Text size="12" weight="500" height="140" color="tertiary"> All local data will be deleted </Text>
 			</Flex>
 
-			<Button @click="handleFullReset" type="red" size="small">
-				Full Reset
-			</Button>
+			<Button @click="handleFullReset" type="red" size="small" disabled> Full Reset </Button>
 		</Flex>
 
 		<Navigation />

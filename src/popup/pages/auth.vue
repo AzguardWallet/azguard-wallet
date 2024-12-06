@@ -1,11 +1,15 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": false
+	}
+}
+</route>
+
 <script setup>
 /** Utils */
 import { AccountServiceClient } from "@/wallet/services/account/client"
-import {
-	managers,
-	initTokenService,
-	initTransactionService,
-} from "@/utils/core"
+import { managers, initTokenService, initTransactionService } from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -42,10 +46,7 @@ const handleUnlockWallet = async () => {
 
 	try {
 		isAwaitingResponse.value = true
-		const activeProfile = await managers.profile.unlockProfile(
-			appStore.profile.id,
-			password.value
-		)
+		const activeProfile = await managers.profile.unlockProfile(appStore.profile.id, password.value)
 		isAwaitingResponse.value = false
 
 		if (!activeProfile) {
@@ -56,10 +57,7 @@ const handleUnlockWallet = async () => {
 		password.value = ""
 
 		appStore.profile = activeProfile
-		managers.account = new AccountServiceClient(
-			appStore.profile,
-			appStore.network
-		)
+		managers.account = new AccountServiceClient(appStore.profile, appStore.network)
 
 		initTokenService({
 			profile: appStore.profile,
@@ -69,6 +67,11 @@ const handleUnlockWallet = async () => {
 		initTransactionService(() => {
 			appStore.isAwaitingTransaction = false
 		})
+
+		managers.profile.onLocked = () => {
+			appStore.isLogined = false
+			router.push("/popup/auth")
+		}
 
 		await appStore.syncLocalTokens()
 		appStore.syncBalances()
@@ -88,8 +91,8 @@ const handleUnlockWallet = async () => {
 	}
 }
 
-const onKeydown = (e) => {
-	if (e.code === "Enter") handleUnlockWallet()
+const onKeydown = e => {
+	if (e.key === "Enter") handleUnlockWallet()
 }
 
 onMounted(() => {
@@ -100,6 +103,13 @@ onMounted(() => {
 onBeforeUnmount(() => {
 	document.removeEventListener("keydown", onKeydown)
 })
+
+watch(
+	() => appStore.isLogined,
+	() => {
+		router.push("/popup/general")
+	},
+)
 </script>
 
 <template>
@@ -116,21 +126,8 @@ onBeforeUnmount(() => {
 			</Flex>
 
 			<Flex align="center" direction="column" gap="16">
-				<Text
-					size="24"
-					weight="600"
-					color="primary"
-					style="line-height: 16px"
-				>
-					Password required
-				</Text>
-				<Text
-					size="14"
-					weight="500"
-					color="tertiary"
-					align="center"
-					height="140"
-				>
+				<Text size="24" weight="600" color="primary" style="line-height: 16px"> Password required </Text>
+				<Text size="14" weight="500" color="tertiary" align="center" height="140">
 					Enter your profile password to continue
 				</Text>
 			</Flex>
@@ -149,9 +146,7 @@ onBeforeUnmount(() => {
 						<Transition name="fade">
 							<Flex v-if="isWrongPassword" align="center" gap="4">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary">
-									Wrong password
-								</Text>
+								<Text size="12" weight="600" color="primary"> Wrong password </Text>
 							</Flex>
 						</Transition>
 					</template>
@@ -183,23 +178,12 @@ onBeforeUnmount(() => {
 		</Flex>
 
 		<Flex align="center" direction="column" gap="12">
-			<Button
-				@click="popupStore.open('forgot_password')"
-				type="secondary"
-				size="mini"
-			>
+			<Button @click="popupStore.open('forgot_password')" type="secondary" size="mini">
 				<Icon name="info" size="16" color="primary" /> Forgot Password
 			</Button>
 
-			<Text
-				size="12"
-				weight="500"
-				color="support"
-				height="140"
-				align="center"
-			>
-				The session has ended and the wallet has been locked. See
-				"Forgot Password" for options.
+			<Text size="12" weight="500" color="support" height="140" align="center">
+				The session has ended and the wallet has been locked. See "Forgot Password" for options.
 			</Text>
 		</Flex>
 	</Flex>

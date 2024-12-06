@@ -11,7 +11,7 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const emit = defineEmits(["onClose"])
+const emit = defineEmits(["onSelectToken", "onClose"])
 const props = defineProps({
 	show: Boolean,
 	displaceIdx: Number,
@@ -21,39 +21,36 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.select_token
 })
 
-const handleSelectToken = (target) => {
-	cacheStore.activeTokenIdx = target.id
+const handleSelectToken = id => {
+	cacheStore.activeTokenIdx = id
 	emit("onClose")
 }
 </script>
 
 <template>
-	<Popup
-		:show
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.select_token"
-	>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_token">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Flex direction="column" gap="12">
-					<Text size="14" weight="600" color="primary">
-						Select token
-					</Text>
+					<Text size="14" weight="600" color="primary"> Select token </Text>
 
 					<Flex direction="column" gap="8">
 						<Flex
 							v-for="token in appStore.tokens"
-							@click="handleSelectToken(token)"
+							@click="handleSelectToken(token.id)"
 							align="center"
 							justify="between"
 							:class="$style.token"
 						>
 							<Flex align="center" gap="8">
 								<Icon
-									name="banknote"
+									v-if="token.id === cacheStore.activeTokenIdx"
+									name="check-circle"
 									size="16"
-									color="primary"
+									color="green"
 								/>
+								<Icon v-else name="banknote" size="16" color="primary" />
+
 								<Text size="14" weight="600" color="primary">
 									{{ token.symbol }}
 								</Text>
@@ -61,27 +58,12 @@ const handleSelectToken = (target) => {
 									{{ token.name }}
 								</Text>
 							</Flex>
-
-							<Flex align="center" gap="8">
-								<Icon
-									name="chevron"
-									size="16"
-									color="tertiary"
-									style="transform: rotate(-90deg)"
-								/>
-							</Flex>
 						</Flex>
 					</Flex>
 				</Flex>
 
 				<Flex direction="column" gap="12">
-					<Button
-						@click="popupStore.open('tokens')"
-						type="secondary"
-						size="medium"
-					>
-						Manage tokens
-					</Button>
+					<Button @click="popupStore.open('tokens')" type="secondary" size="medium"> Manage tokens </Button>
 				</Flex>
 			</Flex>
 		</PopupCard>
@@ -104,8 +86,7 @@ const handleSelectToken = (target) => {
 
 	&:hover {
 		background: var(--gray-3);
-		box-shadow: inset 0 0 0 1px var(--border-hovered),
-			0 1px 2px var(--shadow-5);
+		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-5);
 	}
 
 	&:active {

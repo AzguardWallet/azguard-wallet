@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import BalanceView from "../components/modules/general/BalanceView.vue"
@@ -9,21 +17,6 @@ import Navigation from "../components/Navigation.vue"
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
-
-const router = useRouter()
-
-onMounted(async () => {
-	if (!appStore.isLogined && appStore.isSessionChecked)
-		router.push("/popup/auth")
-})
-
-watch(
-	() => appStore.isSessionChecked,
-	() => {
-		if (!appStore.isLogined && appStore.isSessionChecked)
-			router.push("/popup/auth")
-	}
-)
 </script>
 
 <template>

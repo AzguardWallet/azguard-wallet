@@ -28,16 +28,16 @@ export const comma = (target, symbol = ",", fixed = 2) => {
 	return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, symbol)
 }
 
-export const purgeNumber = (target) => {
+export const purgeNumber = target => {
 	if (/^(0|[1-9]\d*)(\.\d+)?$/.test(target)) return target
 	return target.replace(/[^0-9.]/g, "")
 }
 
-export const normalizeAmount = (target) => {
+export const normalizeAmount = target => {
 	if (target === ".") return "0."
 
 	let dotCounter = 0
-	target.split("").forEach((char) => {
+	target.split("").forEach(char => {
 		if (char === ".") dotCounter++
 	})
 
@@ -46,6 +46,5 @@ export const normalizeAmount = (target) => {
 	if (target[target.length - 1] === ".") return target
 	if (!target.length) return ""
 	if (target.length === 1 && !/^(0|[1-9]\d*)(\.\d+)?$/.test(target)) return ""
-	if (Number.parseFloat(purgeNumber(target)) >= 9_999_999_999_999)
-		return "9,999,999,999,999"
+	if (Number.parseFloat(purgeNumber(target)) >= 9_999_999_999_999) return "9999999999999"
 }

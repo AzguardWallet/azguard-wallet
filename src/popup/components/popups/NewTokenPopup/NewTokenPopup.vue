@@ -1,8 +1,8 @@
 <script setup>
-// import { AztecAddress } from "@aztec/aztec.js"
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import CandidatesForm from "./CandidatesForm.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
@@ -30,15 +30,9 @@ const emit = defineEmits(["onClose"])
 const contractAddressTerm = ref("")
 
 const isLoadingParseResult = ref(false)
-const isAlreadyExist = computed(() =>
-	appStore.tokens.findLast((t) => t.contract === contractAddressTerm.value)
-)
+const isAlreadyExist = computed(() => appStore.tokens.findLast(t => t.contract === contractAddressTerm.value))
 const isAvailableToCreateToken = computed(() => {
-	if (
-		!contractAddressTerm.value.length ||
-		contractAddressTerm.value.length !== 66
-	)
-		return
+	if (!contractAddressTerm.value.length || contractAddressTerm.value.length !== 66) return
 	if (!contractAddressTerm.value.startsWith("0x")) return
 	if (isLoadingParseResult.value) return
 	if (isAlreadyExist.value) return
@@ -46,15 +40,30 @@ const isAvailableToCreateToken = computed(() => {
 	return true
 })
 
+const isCompleted = ref(true)
+const rawToken = ref()
+
+const handleSelectCandidate = (target, candidate) => {
+	rawToken.value[target] = candidate
+}
+
 const handleCreateToken = async () => {
 	if (!isAvailableToCreateToken.value) return
 
 	isLoadingParseResult.value = true
 	appStore.isLoading = true
 
-	const parsingResult = await managers.token.parseInterface(
-		contractAddressTerm.value
-	)
+	const parsingResult = await managers.token.parseInterface(contractAddressTerm.value)
+
+	if (!parsingResult.isComplete) {
+		isLoadingParseResult.value = false
+		appStore.isLoading = false
+
+		isCompleted.value = false
+		rawToken.value = parsingResult
+
+		return
+	}
 
 	isLoadingParseResult.value = false
 	appStore.isLoading = false
@@ -74,6 +83,17 @@ const handleCreateToken = async () => {
 
 	emit("onClose")
 }
+const handleSaveToken = async () => {
+	const newToken = await managers.token.addToken(rawToken.value)
+	appStore.tokens.push(newToken)
+
+	await appStore.syncBalances()
+	appStore.tokenAwaitingBalanceIdx = newToken.id
+
+	openToast({ label: `${rawToken.value.symbol} is added to tokens` })
+
+	emit("onClose")
+}
 
 watch(
 	() => props.show,
@@ -81,16 +101,12 @@ watch(
 		if (!props.show) {
 			contractAddressTerm.value = ""
 		}
-	}
+	},
 )
 </script>
 
 <template>
-	<Popup
-		:show="show"
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.new_token"
-	>
+	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_token">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Text size="14" weight="600" color="primary"> New token </Text>
@@ -102,26 +118,22 @@ watch(
 					:disabled="isLoadingParseResult"
 				>
 					<template #suffix>
-						<Icon
-							v-if="isAvailableToCreateToken"
-							name="check-circle"
-							size="14"
-							color="green"
-						/>
+						<Icon v-if="isAvailableToCreateToken" name="check-circle" size="14" color="green" />
 					</template>
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="4">
 								<Icon name="warning" size="12" color="orange" />
-								<Text size="12" weight="600" color="primary">
-									Already imported
-								</Text>
+								<Text size="12" weight="600" color="primary"> Already imported </Text>
 							</Flex>
 						</Transition>
 					</template>
 				</Input>
 
+				<CandidatesForm v-if="!isCompleted" :token="rawToken" @onSelect="handleSelectCandidate" />
+
 				<Button
+					v-if="isCompleted"
 					@click="handleCreateToken"
 					wide
 					type="primary"
@@ -131,16 +143,19 @@ watch(
 				>
 					<Text color="inverse">Import new token</Text>
 				</Button>
-
-				<Text
-					size="12"
-					weight="500"
-					color="tertiary"
-					height="140"
-					align="center"
+				<Button
+					v-else
+					@click="handleSaveToken"
+					wide
+					type="primary"
+					size="medium"
+					:disabled="!isAvailableToCreateToken"
 				>
-					Importing the token may take time and additional
-					configuration may be required
+					<Text color="inverse">Save new token</Text>
+				</Button>
+
+				<Text size="12" weight="500" color="tertiary" height="140" align="center">
+					Importing the token may take time and additional configuration may be required
 				</Text>
 			</Flex>
 		</PopupCard>
