@@ -24,14 +24,11 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const networkToEdit = computed(() =>
-	appStore.networks.find((n) => n.id === cacheStore.networkToEditIdx)
-)
+const networkToEdit = computed(() => appStore.networks.find(n => n.id === cacheStore.networkToEditIdx))
 
-const notAllowedNetworkNames = computed(() =>
-	appStore.networks.map((n) => n.name)
-)
+const notAllowedNetworkNames = computed(() => appStore.networks.map(n => n.name))
 
+const isStartedEditing = ref(false)
 const nameTerm = ref("")
 const urlTerm = ref("")
 const handleFillFieldsWithDefaultValues = () => {
@@ -39,9 +36,7 @@ const handleFillFieldsWithDefaultValues = () => {
 	urlTerm.value = networkToEdit.value.rpcUrl
 }
 
-const isAlreadyExist = computed(() =>
-	notAllowedNetworkNames.value.includes(nameTerm.value)
-)
+const isAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value) && isStartedEditing.value)
 const isAvailableToUpdateNetwork = computed(() => {
 	if (!nameTerm.value.length) return
 	if (!urlTerm.value.length) return
@@ -56,11 +51,7 @@ const handleUpdateNetwork = async () => {
 	if (!isAvailableToUpdateNetwork.value) return
 
 	isNetworkUpdateInProgress.value = true
-	await appStore.updateNetwork(
-		cacheStore.networkToEditIdx,
-		nameTerm.value,
-		urlTerm.value
-	)
+	await appStore.updateNetwork(cacheStore.networkToEditIdx, nameTerm.value, urlTerm.value)
 	isNetworkUpdateInProgress.value = false
 
 	emit("onClose")
@@ -80,49 +71,41 @@ watch(
 
 			handleFillFieldsWithDefaultValues()
 		}
-	}
+	},
 )
 
-const onKeydown = (e) => {
-	if (e.code === "Enter") handleCreateNetwork()
+const onKeydown = e => {
+	if (e.key === "Enter") handleCreateNetwork()
 }
 </script>
 
 <template>
-	<Popup
-		:show
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.edit_network"
-	>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_network">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary">
-					Edit network
-				</Text>
+				<Flex direction="column" gap="8">
+					<Text size="14" weight="600" color="primary"> Edit network </Text>
+					<Text size="13" weight="600" color="tertiary"> Chain ID: {{ networkToEdit.chainId }} </Text>
+				</Flex>
 
 				<Input
 					label="New name"
 					placeholder="My Network"
 					v-model="nameTerm"
 					autofocus
+					@input="isStartedEditing = true"
 				>
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary">
-									Already exist
-								</Text>
+								<Text size="12" weight="600" color="primary"> Already exist </Text>
 							</Flex>
 						</Transition>
 					</template>
 				</Input>
 
-				<Input
-					label="New RPC Link"
-					placeholder="http://localhost:1337"
-					v-model="urlTerm"
-				/>
+				<Input label="New RPC Link" placeholder="http://localhost:1337" v-model="urlTerm" />
 
 				<Flex direction="column" gap="12">
 					<Button
@@ -135,25 +118,13 @@ const onKeydown = (e) => {
 					>
 						<Text color="inverse">Update</Text>
 					</Button>
-					<Button
-						@click="handleFillFieldsWithDefaultValues"
-						wide
-						type="secondary"
-						size="medium"
-					>
+					<Button @click="handleFillFieldsWithDefaultValues" wide type="secondary" size="medium">
 						Reset changes
 					</Button>
 				</Flex>
 
-				<Text
-					size="12"
-					weight="500"
-					color="tertiary"
-					height="140"
-					align="center"
-				>
-					We will check the availability of the specified RPC before
-					adding it
+				<Text size="12" weight="500" color="tertiary" height="140" align="center">
+					We will check the availability of the specified RPC before adding it
 				</Text>
 			</Flex>
 		</PopupCard>

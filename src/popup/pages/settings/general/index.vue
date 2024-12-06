@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
@@ -7,44 +15,21 @@ import Navigation from "../../../components/Navigation.vue"
 	<Flex direction="column" gap="12" :class="$style.wrapper">
 		<Flex align="center" gap="8">
 			<RouterLink to="/popup/settings">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Settings
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
-			<Text
-				size="13"
-				weight="600"
-				color="tertiary"
-				style="line-height: 16px"
-			>
-				General
-			</Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> General </Text>
 		</Flex>
 
 		<Flex direction="column" gap="8">
 			<RouterLink to="/popup/settings/general/appearance">
 				<Flex align="center" justify="between" :class="$style.item">
 					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary">
-							Appearance
-						</Text>
-						<Text size="13" weight="500" color="tertiary">
-							Theme
-						</Text>
+						<Text size="14" weight="600" color="primary"> Appearance </Text>
+						<Text size="13" weight="500" color="tertiary"> Theme </Text>
 					</Flex>
 
-					<Icon
-						name="chevron"
-						size="16"
-						color="tertiary"
-						:class="$style.item_icon"
-					/>
+					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
 				</Flex>
 			</RouterLink>
 		</Flex>

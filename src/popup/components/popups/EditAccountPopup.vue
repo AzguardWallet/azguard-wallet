@@ -24,14 +24,11 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const accountToEdit = computed(() =>
-	appStore.accounts.find((n) => n.address === cacheStore.accountToEditIdx)
-)
+const accountToEdit = computed(() => appStore.accounts.find(n => n.address === cacheStore.accountToEditIdx))
 
-const notAllowedAccountNames = computed(() =>
-	appStore.accounts.map((n) => n.name)
-)
+const notAllowedAccountNames = computed(() => appStore.accounts.map(n => n.name))
 
+const isStartedEditing = ref(false)
 const nameTerm = ref("")
 const addressTerm = ref("")
 const handleFillFieldsWithDefaultValues = () => {
@@ -39,9 +36,7 @@ const handleFillFieldsWithDefaultValues = () => {
 	addressTerm.value = accountToEdit.value.address
 }
 
-const isAlreadyExist = computed(() =>
-	notAllowedAccountNames.value.includes(nameTerm.value)
-)
+const isAlreadyExist = computed(() => notAllowedAccountNames.value.includes(nameTerm.value) && isStartedEditing.value)
 const isAvailableToUpdateAccount = computed(() => {
 	if (!nameTerm.value.length) return
 	if (!addressTerm.value.length) return
@@ -75,50 +70,38 @@ watch(
 
 			handleFillFieldsWithDefaultValues()
 		}
-	}
+	},
 )
 
-const onKeydown = (e) => {
-	if (e.code === "Enter") handleUpdateAccount()
+const onKeydown = e => {
+	if (e.key === "Enter") handleUpdateAccount()
 }
 </script>
 
 <template>
-	<Popup
-		:show
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.edit_account"
-	>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_account">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary">
-					Edit account
-				</Text>
+				<Text size="14" weight="600" color="primary"> Edit account </Text>
 
 				<Input
 					label="New name"
 					placeholder="My Vault"
 					v-model="nameTerm"
 					autofocus
+					@input="isStartedEditing = true"
 				>
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary">
-									Already exist
-								</Text>
+								<Text size="12" weight="600" color="primary"> Already exist </Text>
 							</Flex>
 						</Transition>
 					</template>
 				</Input>
 
-				<Input
-					v-model="addressTerm"
-					label="Address"
-					placeholder="Address"
-					disabled
-				/>
+				<Input v-model="addressTerm" label="Address" placeholder="Address" disabled />
 
 				<Flex direction="column" gap="12">
 					<Button
@@ -131,12 +114,7 @@ const onKeydown = (e) => {
 					>
 						<Text color="inverse">Update</Text>
 					</Button>
-					<Button
-						@click="handleFillFieldsWithDefaultValues"
-						wide
-						type="secondary"
-						size="medium"
-					>
+					<Button @click="handleFillFieldsWithDefaultValues" wide type="secondary" size="medium">
 						Reset changes
 					</Button>
 				</Flex>

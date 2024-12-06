@@ -1,98 +1,62 @@
 <script setup>
 /** Store */
-import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
-import { useCacheStore } from "@/stores/cache.store"
-const appStore = useAppStore()
 const popupStore = usePopupStore()
-const cacheStore = useCacheStore()
 
-const selectedToken = computed(() => {
-	if (cacheStore.activeTokenIdx)
-		// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
-		return appStore.tokens.find((t) => t.id == cacheStore.activeTokenIdx)
-	return appStore.tokens[0]
+const props = defineProps({
+	token: {
+		type: Object,
+	},
 })
-const isTokenRestricted = computed(() => {
-	if (!selectedToken.value) return
 
-	return (
-		!selectedToken.value.hasPrivateTransfers ||
-		!selectedToken.value.hasPublicTransfers
-	)
+const isTokenRestricted = computed(() => {
+	if (!props.token) return
+	return !props.token.hasPrivateTransfers || !props.token.hasPublicTransfers
 })
 
 const handleSelectToken = () => {
-	if (!selectedToken.value) return
+	if (!props.token) return
 	popupStore.open("select_token")
 }
 </script>
 
 <template>
-	<Flex
-		@click="handleSelectToken"
-		align="center"
-		justify="between"
-		:class="$style.wrapper"
-	>
-		<template v-if="selectedToken">
+	<Flex @click="handleSelectToken" align="center" justify="between" :class="$style.wrapper">
+		<template v-if="token">
 			<Flex align="center" gap="8">
 				<Tooltip :disabled="!isTokenRestricted" position="start">
-					<Flex
-						align="center"
-						justify="center"
-						:class="$style.token_icon"
-					>
+					<Flex align="center" justify="center" :class="$style.token_icon">
 						<Icon name="banknote" size="16" color="primary" />
 						<Icon
 							v-if="isTokenRestricted"
-							:name="
-								!selectedToken.hasPrivateTransfers
-									? 'face'
-									: 'key-square'
-							"
+							:name="!token.hasPrivateTransfers ? 'face' : 'key-square'"
 							size="10"
-							:color="
-								!selectedToken.hasPrivateTransfers
-									? 'orange'
-									: 'green'
-							"
+							:color="!token.hasPrivateTransfers ? 'orange' : 'green'"
 							:class="$style.type_icon"
 						/>
 					</Flex>
 
 					<template #content>
 						Restricted token, only
-						{{
-							selectedToken.hasPrivateTransfers
-								? "private"
-								: "public"
-						}}
+						{{ token.hasPrivateTransfers ? "private" : "public" }}
 						transfers
 					</template>
 				</Tooltip>
 
 				<Text size="13" weight="600" color="primary">
-					{{ selectedToken.symbol }}
+					{{ token.symbol }}
 				</Text>
 				<Text size="13" weight="600" color="body">
-					{{ selectedToken.name }}
+					{{ token.name }}
 				</Text>
 			</Flex>
 
-			<Icon
-				name="chevron"
-				size="16"
-				color="primary"
-				style="transform: rotate(-90deg)"
-			/>
+			<Icon name="chevron" size="16" color="primary" style="transform: rotate(-90deg)" />
 		</template>
 
 		<Flex v-else wide justify="center" align="center" gap="8">
 			<Icon name="banknote" size="16" color="secondary" />
-			<Text size="13" weight="600" color="tertiary">
-				No available tokens
-			</Text>
+			<Text size="13" weight="600" color="tertiary"> No available tokens </Text>
 		</Flex>
 	</Flex>
 </template>

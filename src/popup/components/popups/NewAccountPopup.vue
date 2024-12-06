@@ -26,9 +26,7 @@ const inputEl = useTemplateRef("inputEl")
 
 const name = ref("")
 
-const isAlreadyExist = computed(
-	() => !!appStore.accounts.find((a) => a.name === name.value)
-)
+const isAlreadyExist = computed(() => !!appStore.accounts.find(a => a.name === name.value))
 
 const isAvailableToCreateAccount = computed(() => {
 	if (!name.value.length) return
@@ -40,10 +38,7 @@ const isAvailableToCreateAccount = computed(() => {
 const handleCreateAccount = async () => {
 	if (!isAvailableToCreateAccount.value) return
 
-	const account = await managers.account.createAccount(
-		AccountType.Azguard_v0,
-		name.value.trim()
-	)
+	const account = await managers.account.createAccount(AccountType.Azguard_v0, name.value.trim())
 
 	appStore.account = account
 	appStore.accounts.push(account)
@@ -65,46 +60,31 @@ watch(
 		} else {
 			document.addEventListener("keydown", onKeydown)
 
-			name.value = `Account ${
-				appStore.accounts.sort((a, b) => b.index - a.index)[0].index + 1
-			}`
+			name.value = `Account ${appStore.accounts.sort((a, b) => b.index - a.index)[0].index + 1}`
 
 			await nextTick()
 			inputEl.value.inputEl.focus()
 		}
-	}
+	},
 )
 
-const onKeydown = (e) => {
-	if (e.code === "Enter") handleCreateAccount()
+const onKeydown = e => {
+	if (e.key === "Enter") handleCreateAccount()
 }
 </script>
 
 <template>
-	<Popup
-		:show
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.new_account"
-	>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_account">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary">
-					New account
-				</Text>
+				<Text size="14" weight="600" color="primary"> New account </Text>
 
-				<Input
-					ref="inputEl"
-					v-model="name"
-					label="Account name"
-					placeholder="My Vault"
-				>
+				<Input ref="inputEl" v-model="name" label="Account name" placeholder="My Vault">
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary">
-									Already exist
-								</Text>
+								<Text size="12" weight="600" color="primary"> Already exist </Text>
 							</Flex>
 						</Transition>
 					</template>
@@ -120,16 +100,8 @@ const onKeydown = (e) => {
 					<Text color="inverse">Create</Text>
 				</Button>
 
-				<Text
-					size="12"
-					weight="500"
-					color="tertiary"
-					height="140"
-					align="center"
-					style="padding: 0 20px"
-				>
-					New accounts do not require the creation of a new seed
-					phrase
+				<Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
+					New accounts do not require the creation of a new seed phrase
 				</Text>
 			</Flex>
 		</PopupCard>

@@ -21,51 +21,39 @@ const props = defineProps({
 	},
 })
 
-const tokenBalance = computed(() =>
-	appStore.balances.find((b) => b.token.id === props.token.id)
-)
-const getBalance = (target) => {
-	return (
-		Number.parseFloat(tokenBalance.value[target]) /
-		10 ** tokenBalance.value.token.decimals
-	)
+const tokenBalance = computed(() => appStore.balances.find(b => b.token.id == props.token.id))
+const getBalance = target => {
+	if (!tokenBalance.value) return 0
+	return Number.parseFloat(tokenBalance.value[target]) / 10 ** tokenBalance.value.token.decimals
 }
 
-const handleOpenSendPopup = (target) => {
+const handleOpenSendPopup = target => {
 	cacheStore.preselectedBalanceType = target
-
 	popupStore.open("send")
 }
 </script>
 
 <template>
-	<Flex direction="column" gap="12" :class="$style.wrapper">
+	<Flex v-if="appStore.isBalancesSynced" direction="column" gap="12" :class="$style.wrapper">
 		<Text size="13" weight="600" color="secondary">Balances</Text>
 
-		<Flex gap="4">
+		<Flex direction="column" gap="4">
 			<Flex
 				@click="handleOpenSendPopup('private')"
 				wide
 				align="center"
 				gap="12"
-				:class="[
-					$style.item,
-					$style.left,
-					!token.hasPrivateTransfers && $style.disabled,
-				]"
+				:class="[$style.item, $style.left, !token.hasPrivateTransfers && $style.disabled]"
 			>
-				<Flex wide direction="column" gap="4">
+				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">
-						{{ comma(getBalance("privateBalance")) }}
-						<Text color="tertiary"> {{ token.symbol }} </Text>
+						{{ comma(getBalance("privateBalance"), ",", 8) }}
 					</Text>
-					<Text size="12" weight="500" color="tertiary">
-						Private Balance
-					</Text>
+					<Text size="11" weight="500" color="tertiary"> Private Balance </Text>
 				</Flex>
 
 				<Flex align="center" justify="center" :class="$style.left_icon">
-					<Icon name="key-square" size="16" color="green" />
+					<Icon name="key-square" size="16" color="tertiary" />
 				</Flex>
 			</Flex>
 
@@ -74,24 +62,17 @@ const handleOpenSendPopup = (target) => {
 				wide
 				align="center"
 				gap="12"
-				:class="[
-					$style.item,
-					$style.right,
-					!token.hasPublicTransfers && $style.disabled,
-				]"
+				:class="[$style.item, $style.right, !token.hasPublicTransfers && $style.disabled]"
 			>
-				<Flex wide direction="column" gap="4">
+				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">
-						{{ comma(getBalance("privateBalance")) }}
-						<Text color="tertiary"> {{ token.symbol }} </Text>
+						{{ comma(getBalance("publicBalance"), ",", 8) }}
 					</Text>
-					<Text size="12" weight="500" color="tertiary">
-						Public Balance
-					</Text>
+					<Text size="11" weight="500" color="tertiary"> Public Balance </Text>
 				</Flex>
 
 				<Flex align="center" justify="center" :class="$style.left_icon">
-					<Icon name="face" size="16" color="orange" />
+					<Icon name="face" size="16" color="tertiary" />
 				</Flex>
 			</Flex>
 		</Flex>
@@ -107,7 +88,7 @@ const handleOpenSendPopup = (target) => {
 	cursor: pointer;
 	background: var(--gray-5);
 
-	padding: 8px;
+	padding: 10px 16px 10px 10px;
 
 	transition: all 0.2s var(--bezier);
 
@@ -120,11 +101,11 @@ const handleOpenSendPopup = (target) => {
 	}
 
 	&.left {
-		border-radius: 8px 4px 4px 8px;
+		border-radius: 8px 8px 4px 4px;
 	}
 
 	&.right {
-		border-radius: 4px 8px 8px 4px;
+		border-radius: 4px 4px 8px 8px;
 	}
 
 	&.disabled {

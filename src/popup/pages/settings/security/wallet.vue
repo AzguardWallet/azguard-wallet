@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
@@ -11,55 +19,26 @@ const popupStore = usePopupStore()
 	<Flex direction="column" gap="20" :class="$style.wrapper">
 		<Flex align="center" gap="8">
 			<RouterLink to="/popup/settings">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Settings
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
 			<RouterLink to="/popup/settings/security">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Security
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Security </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
-			<Text
-				size="13"
-				weight="600"
-				color="tertiary"
-				style="line-height: 16px"
-			>
-				Wallet
-			</Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Wallet </Text>
 		</Flex>
 
 		<Flex direction="column" gap="24">
 			<Flex direction="column" gap="12">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">
-						Full wallet reset
-					</Text>
+					<Text size="13" weight="600" color="primary"> Full wallet reset </Text>
 					<Text size="12" weight="500" height="140" color="tertiary">
-						Your wallet can't be restored if you didn't save the
-						seed phrase
+						Your wallet can't be restored if you didn't save the seed phrase
 					</Text>
 				</Flex>
 
-				<Button
-					@click="popupStore.open('reset')"
-					type="red"
-					size="small"
-					>Reset Wallet</Button
-				>
+				<Button @click="popupStore.open('reset')" type="red" size="small">Reset Wallet</Button>
 			</Flex>
 		</Flex>
 

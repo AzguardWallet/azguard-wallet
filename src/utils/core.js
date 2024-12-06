@@ -14,12 +14,12 @@ const faucetService = new FaucetServiceClient()
 const executionService = new ExecutionServiceClient(
 	null,
 	null,
-	(tx) => {
+	tx => {
 		console.log(tx)
 	},
-	(tx) => {
+	tx => {
 		console.log(tx)
-	}
+	},
 )
 
 export const managers = {
@@ -40,10 +40,6 @@ export const initTokenService = ({ profile, network, account }) => {
 	managers.token = new TokenServiceClient(profile, network, account)
 }
 
-export const initTransactionService = (onTransactionAdded) => {
-	managers.transaction = new TransactionServiceClient(
-		null,
-		null,
-		onTransactionAdded
-	)
+export const initTransactionService = onTransactionAdded => {
+	managers.transaction = new TransactionServiceClient(null, null, onTransactionAdded)
 }

@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": false
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
@@ -10,21 +18,15 @@ const { settings, updateSettings } = useSettings()
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
-const router = useRouter()
-
 const root = document.querySelector("html")
 
-const theme = computed(() => settings.value.appearance.theme)
+const theme = computed(() => settings.value.appearance?.theme)
 watch(
 	() => theme.value,
-	() => [root.setAttribute("theme", theme.value)]
+	() => [root.setAttribute("theme", theme.value)],
 )
 
-onMounted(() => {
-	if (appStore.isLogined) router.push("/popup/general")
-})
-
-const handleOpen = (target) => {
+const handleOpen = target => {
 	chrome.windows.create({
 		type: "popup",
 		url: `https://azguardwallet.io/${target}`,
@@ -35,72 +37,36 @@ const handleOpen = (target) => {
 </script>
 
 <template>
-	<Flex
-		wide
-		direction="column"
-		align="center"
-		justify="between"
-		:class="$style.wrapper"
-	>
+	<Flex wide direction="column" align="center" justify="between" :class="$style.wrapper">
 		<Flex direction="column" align="center" gap="16">
-			<Text size="32" weight="500" align="center" :class="$style.title">
-				Privacy of finances is paramount
-			</Text>
-			<Text
-				size="14"
-				weight="500"
-				color="body"
-				height="140"
-				align="center"
-				:class="$style.description"
-			>
+			<Text size="32" weight="500" align="center" :class="$style.title"> Privacy of finances is paramount </Text>
+			<Text size="14" weight="500" color="body" height="140" align="center" :class="$style.description">
 				Get power of privacy on Ethereum with Aztec Blockchain
 			</Text>
 
-			<Button type="secondary" size="mini" disabled>
-				<Icon name="warning" size="16" color="primary" />
+			<Button type="secondary" size="mini">
+				<Icon name="warning" size="16" color="orange" />
 				Azguard Alpha Testing
 			</Button>
 		</Flex>
 
 		<Flex direction="column" gap="16" align="center" :class="$style.bottom">
 			<Flex wide direction="column" gap="8">
-				<Button
-					@click="appStore.showRegisterPopup = true"
-					size="medium"
-					type="primary"
-					wide
-				>
+				<Button @click="appStore.showRegisterPopup = true" size="medium" type="primary" wide>
 					<Flex align="center" gap="6">
 						<Text size="13" color="inverse">Create Profile</Text>
-						<Icon
-							name="arrow-circle-broken-right"
-							size="16"
-							color="inverse"
-						/>
+						<Icon name="arrow-circle-broken-right" size="16" color="inverse" />
 					</Flex>
 				</Button>
-				<Button size="medium" type="secondary" wide disabled>
-					Import Profile
-				</Button>
+				<Button size="medium" type="secondary" wide disabled> Import Profile </Button>
 			</Flex>
 
-			<Text
-				size="11"
-				weight="500"
-				color="tertiary"
-				height="140"
-				align="center"
-			>
+			<Text size="11" weight="500" color="tertiary" height="140" align="center">
 				By continuing, you are confirming that you read and agree to
 
-				<Text @click="handleOpen('terms')" color="secondary"
-					>Terms of Use</Text
-				>
+				<Text @click="handleOpen('terms')" color="secondary">Terms of Use</Text>
 				and
-				<Text @click="handleOpen('privacy')" color="secondary"
-					>Privacy Policy</Text
-				>
+				<Text @click="handleOpen('privacy')" color="secondary">Privacy Policy</Text>
 			</Text>
 
 			<Flex align="center" gap="4" :class="$style.theme_switcher">

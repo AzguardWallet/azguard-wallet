@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import TransactionsList from "../components/modules/activity/TransactionsList.vue"
@@ -6,80 +14,16 @@ import Navigation from "../components/Navigation.vue"
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
-
-const router = useRouter()
-
-onMounted(async () => {
-	if (!appStore.isLogined && appStore.isSessionChecked) {
-		router.push("/popup/auth")
-		return
-	}
-})
-
-watch(
-	() => appStore.isSessionChecked,
-	() => {
-		if (!appStore.isLogined && appStore.isSessionChecked) {
-			router.push("/popup/auth")
-			return
-		}
-	}
-)
 </script>
 
 <template>
-	<Flex
-		v-if="appStore.isLogined"
-		direction="column"
-		gap="20"
-		:class="$style.wrapper"
-	>
+	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
 		<Text size="13" weight="600" color="primary"> Transactions </Text>
 
 		<Flex direction="column" gap="8" :class="$style.list">
-			<Flex
-				v-if="!appStore.transactions.length"
-				wide
-				align="center"
-				gap="12"
-				:class="$style.item"
-			>
-				<Flex
-					align="center"
-					justify="center"
-					:class="$style.activity_icon"
-				>
-					<Icon name="wallet" size="16" color="primary" />
-
-					<Icon
-						name="check-circle"
-						size="14"
-						color="green"
-						:class="$style.check_icon"
-					/>
-				</Flex>
-
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">
-						Wallet created
-					</Text>
-					<Text size="12" weight="500" color="tertiary">
-						{{
-							new Date(
-								appStore._wallet.created_at
-							).toLocaleString()
-						}}
-					</Text>
-				</Flex>
-			</Flex>
-
 			<template v-if="!appStore.transactions.length">
 				<Flex align="center" gap="12" :class="$style.dummy">
-					<Flex
-						align="center"
-						justify="center"
-						:class="$style.dummy_circle"
-					>
+					<Flex align="center" justify="center" :class="$style.dummy_circle">
 						<div />
 					</Flex>
 
@@ -90,11 +34,7 @@ watch(
 				</Flex>
 
 				<Flex align="center" gap="12" :class="$style.dummy">
-					<Flex
-						align="center"
-						justify="center"
-						:class="$style.dummy_circle"
-					>
+					<Flex align="center" justify="center" :class="$style.dummy_circle">
 						<div />
 					</Flex>
 
@@ -119,18 +59,9 @@ watch(
 			<Icon name="zap-circle" size="20" color="tertiary" />
 
 			<Flex direction="column" align="center" gap="6">
-				<Text size="13" weight="600" color="secondary" align="center">
-					Almost empty activity
-				</Text>
-				<Text
-					size="12"
-					weight="500"
-					height="140"
-					color="tertiary"
-					align="center"
-				>
-					Once you start working with your wallet, all activities will
-					be displayed here
+				<Text size="13" weight="600" color="secondary" align="center"> So far, it's empty </Text>
+				<Text size="12" weight="500" height="140" color="tertiary" align="center">
+					Once you start working with your assets, all activities will be displayed here
 				</Text>
 			</Flex>
 		</Flex>

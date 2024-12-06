@@ -12,17 +12,8 @@ const emit = defineEmits(["update:modelValue"])
 		:class="[$style.wrapper, disabled && $style.disabled]"
 		tabindex="0"
 	>
-		<Flex
-			align="center"
-			justify="center"
-			:class="[$style.checkbox, (modelValue || checked) && $style.active]"
-		>
-			<Icon
-				v-if="modelValue || checked"
-				name="check"
-				size="14"
-				color="white"
-			/>
+		<Flex align="center" justify="center" :class="[$style.checkbox, (modelValue || checked) && $style.active]">
+			<Icon v-if="modelValue || checked" name="check" size="14" color="white" />
 		</Flex>
 
 		<slot />
@@ -53,7 +44,7 @@ const emit = defineEmits(["update:modelValue"])
 	outline: none;
 
 	.checkbox {
-		border: 1px solid var(--gray-15);
+		box-shadow: 0 0 0 2px var(--blue);
 	}
 
 	.checkbox.active {

@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import BalanceView from "../../components/modules/general/BalanceView.vue"
@@ -17,29 +25,28 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const router = useRouter()
 const route = useRoute()
 
 const token = computed(() =>
 	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
-	appStore.tokens.find((t) => t.id == route.params.id)
+	appStore.tokens.find(t => t.id == route.params.id),
+)
+watch(
+	() => token.value,
+	() => {
+		cacheStore.activeTokenIdx = token.value?.id
+	},
 )
 
-onMounted(async () => {
-	if (!appStore.isLogined && appStore.isSessionChecked)
-		router.push("/popup/auth")
+onMounted(() => {
+	cacheStore.activeTokenIdx = token.value?.id
 })
 
-watch(
-	() => appStore.isSessionChecked,
-	() => {
-		if (!appStore.isLogined && appStore.isSessionChecked)
-			router.push("/popup/auth")
-	}
-)
+onBeforeUnmount(() => {
+	cacheStore.activeTokenIdx = null
+})
 
 const handleViewTokenMetadata = () => {
-	cacheStore.activeTokenIdx = token.value.id
 	popupStore.open("token_metadata")
 }
 </script>
@@ -48,10 +55,12 @@ const handleViewTokenMetadata = () => {
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
 		<BalanceView :token />
 
-		<Flex direction="column" gap="32" :class="$style.content">
-			<SplittedBalancesView :token />
+		<Flex direction="column" justify="between" :class="$style.content">
+			<Flex direction="column" gap="32">
+				<SplittedBalancesView :token />
 
-			<RecentActivityView />
+				<RecentActivityView :token />
+			</Flex>
 
 			<Button
 				v-if="settings.developer.advancedMode"
@@ -84,6 +93,8 @@ const handleViewTokenMetadata = () => {
 }
 
 .content {
+	flex: 1;
+
 	border-top: 1px solid var(--gray-10);
 	background: linear-gradient(rgba(0, 0, 0, 3%), rgba(0, 0, 0, 0%));
 

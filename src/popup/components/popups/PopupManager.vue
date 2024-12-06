@@ -16,7 +16,7 @@ import ConfirmPopup from "./ConfirmPopup.vue"
 import SelectTokenPopup from "./SelectTokenPopup.vue"
 import TokensPopup from "./TokensPopup.vue"
 import TokenMetadataPopup from "./TokenMetadataPopup.vue"
-import NewTokenPopup from "./NewTokenPopup.vue"
+import NewTokenPopup from "./NewTokenPopup/NewTokenPopup.vue"
 import TransactionPopup from "./TransactionPopup.vue"
 
 /** Store */
@@ -25,76 +25,25 @@ const popupStore = usePopupStore()
 </script>
 
 <template>
-	<MenuPopup
-		:show="popupStore.isOpened('menu')"
-		@onClose="popupStore.close('menu')"
-	/>
-	<FaucetPopup
-		:show="popupStore.isOpened('faucet')"
-		@onClose="popupStore.close('faucet')"
-	/>
-	<NetworksPopup
-		:show="popupStore.isOpened('networks')"
-		@onClose="popupStore.close('networks')"
-	/>
-	<NewNetworkPopup
-		:show="popupStore.isOpened('new_network')"
-		@onClose="popupStore.close('new_network')"
-	/>
-	<EditNetworkPopup
-		:show="popupStore.isOpened('edit_network')"
-		@onClose="popupStore.close('edit_network')"
-	/>
-	<EditAccountPopup
-		:show="popupStore.isOpened('edit_account')"
-		@onClose="popupStore.close('edit_account')"
-	/>
-	<AccountsPopup
-		:show="popupStore.isOpened('accounts')"
-		@onClose="popupStore.close('accounts')"
-	/>
-	<NewAccountPopup
-		:show="popupStore.isOpened('new_account')"
-		@onClose="popupStore.close('new_account')"
-	/>
-	<SendPopup
-		:show="popupStore.isOpened('send')"
-		@onClose="popupStore.close('send')"
-	/>
-	<ReceivePopup
-		:show="popupStore.isOpened('receive')"
-		@onClose="popupStore.close('receive')"
-	/>
-	<ResetPopup
-		:show="popupStore.isOpened('reset')"
-		@onClose="popupStore.close('reset')"
-	/>
+	<MenuPopup :show="popupStore.isOpened('menu')" @onClose="popupStore.close('menu')" />
+	<FaucetPopup :show="popupStore.isOpened('faucet')" @onClose="popupStore.close('faucet')" />
+	<NetworksPopup :show="popupStore.isOpened('networks')" @onClose="popupStore.close('networks')" />
+	<NewNetworkPopup :show="popupStore.isOpened('new_network')" @onClose="popupStore.close('new_network')" />
+	<EditNetworkPopup :show="popupStore.isOpened('edit_network')" @onClose="popupStore.close('edit_network')" />
+	<EditAccountPopup :show="popupStore.isOpened('edit_account')" @onClose="popupStore.close('edit_account')" />
+	<AccountsPopup :show="popupStore.isOpened('accounts')" @onClose="popupStore.close('accounts')" />
+	<NewAccountPopup :show="popupStore.isOpened('new_account')" @onClose="popupStore.close('new_account')" />
+	<SendPopup :show="popupStore.isOpened('send')" @onClose="popupStore.close('send')" />
+	<ReceivePopup :show="popupStore.isOpened('receive')" @onClose="popupStore.close('receive')" />
+	<ResetPopup :show="popupStore.isOpened('reset')" @onClose="popupStore.close('reset')" />
 	<ForgotPasswordPopup
 		:show="popupStore.isOpened('forgot_password')"
 		@onClose="popupStore.close('forgot_password')"
 	/>
-	<ConfirmPopup
-		:show="popupStore.isOpened('confirm')"
-		@onClose="popupStore.close('confirm')"
-	/>
-	<SelectTokenPopup
-		:show="popupStore.isOpened('select_token')"
-		@onClose="popupStore.close('select_token')"
-	/>
-	<TokensPopup
-		:show="popupStore.isOpened('tokens')"
-		@onClose="popupStore.close('tokens')"
-	/>
-	<TokenMetadataPopup
-		:show="popupStore.isOpened('token_metadata')"
-		@onClose="popupStore.close('token_metadata')"
-	/>
-	<NewTokenPopup
-		:show="popupStore.isOpened('new_token')"
-		@onClose="popupStore.close('new_token')"
-	/>
-	<TransactionPopup
-		:show="popupStore.isOpened('tx')"
-		@onClose="popupStore.close('tx')"
-	/>
+	<ConfirmPopup :show="popupStore.isOpened('confirm')" @onClose="popupStore.close('confirm')" />
+	<SelectTokenPopup :show="popupStore.isOpened('select_token')" @onClose="popupStore.close('select_token')" />
+	<TokensPopup :show="popupStore.isOpened('tokens')" @onClose="popupStore.close('tokens')" />
+	<TokenMetadataPopup :show="popupStore.isOpened('token_metadata')" @onClose="popupStore.close('token_metadata')" />
+	<NewTokenPopup :show="popupStore.isOpened('new_token')" @onClose="popupStore.close('new_token')" />
+	<TransactionPopup :show="popupStore.isOpened('tx')" @onClose="popupStore.close('tx')" />
 </template>

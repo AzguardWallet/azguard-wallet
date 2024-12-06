@@ -10,6 +10,10 @@ const props = defineProps({
 		type: [String, Number],
 		default: 120,
 	},
+	wide: {
+		type: Boolean,
+		default: false,
+	},
 	isOpen: {
 		type: Boolean,
 	},
@@ -25,7 +29,7 @@ const handleBlur = () => {
 	triggerEl.value.wrapper.removeEventListener("keydown", handleEnterKey)
 }
 
-const handleEnterKey = (e) => {
+const handleEnterKey = e => {
 	if (e.key !== "Enter") return
 
 	emit("toggle")
@@ -52,25 +56,20 @@ onBeforeUnmount(() => {
 		align="center"
 		justify="between"
 		:class="$style.wrapper"
-		:style="{ width: `${width}px` }"
+		:style="{ width: wide ? '100%' : `${width}px` }"
 		tabindex="0"
 	>
 		<Flex align="center" gap="8">
 			<slot />
 		</Flex>
 
-		<Icon
-			name="chevron"
-			size="12"
-			color="secondary"
-			:style="{ transform: `rotate(${isOpen ? '180deg' : '0'})` }"
-		/>
+		<Icon name="chevron" size="12" color="secondary" :style="{ transform: `rotate(${isOpen ? '180deg' : '0'})` }" />
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
-	height: 32px;
+	height: 36px;
 
 	box-shadow: inset 0 0 0 1px var(--border);
 	border-radius: 10px;

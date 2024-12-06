@@ -1,4 +1,6 @@
 <script setup>
+const emit = defineEmits(["onPasswordInput", "onRepeatedPasswordInput"])
+
 const password = defineModel("password")
 const repeatedPassword = defineModel("repeatedPassword")
 
@@ -15,17 +17,16 @@ onMounted(() => {
 	<Flex direction="column" gap="24">
 		<Flex direction="column" gap="8">
 			<Text size="20" weight="600" color="primary"> Password </Text>
-			<Text size="13" weight="500" color="tertiary">
-				Will be used to protect your wallet
-			</Text>
+			<Text size="13" weight="500" color="tertiary"> Will be used to protect your wallet </Text>
 		</Flex>
 
 		<Flex direction="column" gap="12">
 			<Input
 				ref="inputElement"
 				v-model="password"
-				placeholder="Strong password"
+				@input="emit('onPasswordInput')"
 				:type="isPasswordType ? 'password' : 'text'"
+				placeholder="Strong password"
 			>
 				<template #suffix>
 					<Icon
@@ -40,8 +41,9 @@ onMounted(() => {
 
 			<Input
 				v-model="repeatedPassword"
-				placeholder="Repeat password"
 				:type="isPasswordType ? 'password' : 'text'"
+				@input="emit('onRepeatedPasswordInput')"
+				placeholder="Repeat password"
 			/>
 		</Flex>
 

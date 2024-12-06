@@ -23,23 +23,23 @@ $grayscale: (
 	--base-height: 600px;
 
 	/** general */
-	--app-bg: #f5f5f7;
-	--card-bg: #fff;
-	--border: var(--gray-10);
-	--border-hovered: var(--gray-15);
+	--app-bg: #121212;
+	--card-bg: #1d1d1d;
+	--border: var(--gray-7);
+	--border-hovered: var(--gray-10);
 
-	/* text */
-	--txt-primary: rgba(0, 0, 0, 88%);
-	--txt-secondary: rgba(0, 0, 0, 60%);
-	--txt-body: rgba(0, 0, 0, 45%);
-	--txt-tertiary: rgba(0, 0, 0, 35%);
-	--txt-support: rgba(0, 0, 0, 25%);
+	/** text */
+	--txt-primary: rgba(255, 255, 255, 90%);
+	--txt-secondary: rgba(255, 255, 255, 60%);
+	--txt-body: rgba(255, 255, 255, 45%);
+	--txt-tertiary: rgba(255, 255, 255, 30%);
+	--txt-support: rgba(255, 255, 255, 25%);
 	--txt-white: rgba(255, 255, 255, 95%);
-	--txt-inverse: rgba(255, 255, 255, 90%);
+	--txt-inverse: rgba(0, 0, 0, 90%);
 
 	/** buttons */
-	--btn-primary-bg: linear-gradient(rgba(0, 0, 0, 90%), rgba(0, 0, 0, 70%));
-	--action-btn-bg: linear-gradient(#fff, var(--gray-5));
+	--btn-primary-bg: linear-gradient(#fff, rgba(255, 255, 255, 80%));
+	--action-btn-bg: var(--gray-8);
 
 	/** colors */
 	--blue: #007aff;
@@ -49,11 +49,11 @@ $grayscale: (
 	--purple: #5856de;
 
 	@each $gray, $value in $grayscale {
-		--op-#{$gray}: rgba(255, 255, 255, #{$value});
+		--op-#{$gray}: rgba(0, 0, 0, #{$value});
 	}
 
 	@each $gray, $value in $grayscale {
-		--gray-#{$gray}: rgba(0, 0, 0, #{$value});
+		--gray-#{$gray}: rgba(255, 255, 255, #{$value});
 	}
 
 	@each $gray, $value in $grayscale {
@@ -91,6 +91,7 @@ $grayscale: (
 	--green: #14ae5c;
 	--orange: #ff9500;
 	--red: #f03c3c;
+	--purple: #5856de;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(255, 255, 255, #{$value});
@@ -135,6 +136,7 @@ $grayscale: (
 	--green: #14ae5c;
 	--orange: #ff9500;
 	--red: #f03c3c;
+	--purple: #5856de;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(0, 0, 0, #{$value});
@@ -153,8 +155,7 @@ $grayscale: (
 
 @font-face {
 	font-family: "ClashDisplay";
-	src: local("ClashDisplay-Medium"),
-		url("./assets/fonts/ClashDisplay-Medium.ttf");
+	src: local("ClashDisplay-Medium"), url("./assets/fonts/ClashDisplay-Medium.ttf");
 }
 
 @font-face {
@@ -200,9 +201,8 @@ input {
 }
 
 body {
-	font-family: "InterVariable", -apple-system, BlinkMacSystemFont, "Segoe UI",
-		Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
-		"Helvetica Neue", sans-serif;
+	font-family: "InterVariable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
+		"Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;

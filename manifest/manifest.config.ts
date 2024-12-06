@@ -3,9 +3,7 @@ import packageJson from "../package.json"
 
 const { version, name, description, displayName } = packageJson
 
-const [major, minor, patch, label = "0"] = version
-	.replace(/[^\d.-]+/g, "")
-	.split(/[.-]/)
+const [major, minor, patch, label = "0"] = version.replace(/[^\d.-]+/g, "").split(/[.-]/)
 
 export default {
 	name: displayName || name,
@@ -14,7 +12,7 @@ export default {
 	version_name: version,
 	manifest_version: 3,
 	action: {
-		default_popup: "src/popup/index.html",
+		default_popup: "src/popup/index.html#/popup/general",
 	},
 	background: {
 		service_worker: "src/background/index.ts",
