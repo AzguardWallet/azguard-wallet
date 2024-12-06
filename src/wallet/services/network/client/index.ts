@@ -1,7 +1,7 @@
 import { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
 import { NetworkServiceEvent, NetworkServiceEventMessage } from "./events";
-import { Network } from "./models";
+import { Network, NodeStatus } from "./models";
 import {
     AddNetworkRequest,
     DeleteNetworkRequest,
@@ -9,6 +9,7 @@ import {
     GetNetworksRequest,
     UpdateNetworkRequest,
     SetDefaultRequest,
+    GetNodeStatusRequest,
 } from "./methods";
 
 export * from './events';
@@ -130,5 +131,14 @@ export class NetworkServiceClient extends ServiceClient {
      */
     public setDefault(id: string): Promise<Network> {
         return this.request(new SetDefaultRequest(id));
+    }
+
+    /**
+     * Fetches and validates node info from RPC, and returns the status.
+     * @param id Network id.
+     * @throws If the network with the specified id doesn't exist.
+     */
+    public getNodeStatus(id: string): Promise<NodeStatus> {
+        return this.request(new GetNodeStatusRequest(id));
     }
 }

@@ -18,3 +18,9 @@ export class Network {
         public readonly isDefault: boolean,
     ) {}
 }
+
+export enum NodeStatus {
+    Active,
+    Inactive,
+    InvalidChain,
+}

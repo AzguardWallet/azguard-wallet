@@ -17,10 +17,13 @@ import {
 	NetworkServiceEvent,
 	NetworkServiceEventMessage,
 	NetworkServiceMethod,
+	GetNodeStatusRequest,
+	GetNodeStatusResponse,
 	SetDefaultRequest,
 	SetDefaultResponse,
 	UpdateNetworkRequest,
 	UpdateNetworkResponse,
+	NodeStatus,
 } from "./client";
 
 type NetworkDto = {
@@ -105,6 +108,15 @@ export class NetworkService extends Service {
 					return new SetDefaultResponse(_request, network);
 				} catch (error: any) {
 					return new SetDefaultResponse(_request, undefined, error.message);
+				}
+			}
+			case NetworkServiceMethod.GetNodeStatus: {
+				const _request = request as GetNodeStatusRequest;
+				try {
+					const status = await this.getNodeStatus(_request.networkId);
+					return new GetNodeStatusResponse(_request, status);
+				} catch (error: any) {
+					return new GetNodeStatusResponse(_request, undefined, error.message);
 				}
 			}
 			default: {
@@ -193,6 +205,23 @@ export class NetworkService extends Service {
 			return this.makeNetwork(id, network);
 		} finally {
 			this.lock.leave();
+		}
+	}
+
+	public async getNodeStatus(id: string): Promise<NodeStatus> {
+		const network = await this.storage.get(id);
+		if (!network) {
+			throw new Error("unknown network id");
+		}
+		try {
+			const [chainId, protocolVersion] = await this.getNodeInfo(network.rpcUrl);
+			if (chainId !== network.chainId || protocolVersion !== network.protocolVersion) {
+				return NodeStatus.InvalidChain;
+			}
+			return NodeStatus.Active;
+		}
+		catch {
+			return NodeStatus.Inactive;
 		}
 	}
 
