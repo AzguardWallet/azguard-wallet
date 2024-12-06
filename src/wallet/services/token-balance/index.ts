@@ -197,7 +197,7 @@ export class TokenBalanceService extends Service {
 	}
 
 	private readonly onAccountAdded = async (account: Account) => {
-		for (const token of this.tokens.values()) {
+		for (const token of this.tokens.values().filter(x => x.chainId === account.chainId)) {
 			await this.createTokenBalance(token, account)
 		}
 	}
