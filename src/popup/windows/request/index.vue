@@ -3,8 +3,9 @@
 import { computed, onMounted, onUnmounted } from "vue"
 
 /** Components */
-import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue";
 import FeeJuiceCard from "../../components/modules/send/FeeJuiceCard.vue"
+import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue";
+import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -23,16 +24,14 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const router = useRouter()
-
 const params = new URLSearchParams(window.location.search)
 const requestId = params.get('requestId')
-
-if (!appStore.isLogined) {
-	appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${params.toString()}`)
-	router.push({
-		path: "/popup/auth",
-	})
-}
+// if (!appStore.isLogined) {
+// 	appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
+// 	router.push({
+// 		path: "/popup/auth",
+// 	});
+// }
 
 const isLoading = ref(false)
 const isActionCalled = ref(false)
@@ -49,8 +48,25 @@ const isRequestExpired = ref(false)
 const processingError = ref({
 	show: false,
 	title: "",
+	tooltip: "",
 })
+function fillError(title, tooltip) {
+	if (!title) {
+		processingError.value = {
+			show: false,
+			title: "",
+			tooltip: "",
+		}
 
+		return
+	}
+
+	processingError.value = {
+		show: true,
+		title,
+		tooltip,
+	}
+}
 
 const init = async () => {
 	try {
@@ -58,35 +74,33 @@ const init = async () => {
 		payload.value = interactionRequest.value?.payload
 
 		if (!payload.value) {
-			processingError.value = { show: true, title: "Failed to load operation payload. Try sending request again." }
+			fillError("Failed to load operation payload. Try sending request again.")
 			return
 		}
 
 		dappSession.value = await managers.interaction.getDappSession({topic: payload.value.topic})
 		if (!dappSession.value) {
-			processingError.value = { show: true, title: "No active session found. Try reconnecting dApp." }
+			fillError("No active session found. Try reconnecting dApp.")
 			return
 		}
 
 		account.value = dappSession.value?.accounts.find(acc => acc.address === payload.value.params?.request?.account)
 		if (!account.value) {
-			processingError.value = { show: true, title: "Requested account not found. Try reconnecting dApp." }
+			fillError("Requested account not found. Try reconnecting dApp.")
 			return
 		}
 
 		const chainId = payload.value.params.chainId?.split(':')?.pop()
 		networks.value = await managers.network.getNetworks(Number(chainId))
 		if (!networks.value.length) {
-			processingError.value = { show: true, title: `Not supported network ${payload.value.params.chainId}.` }
+			fillError(`Not supported network ${payload.value.params.chainId}.`)
 			return
 		}
 
 		cacheStore.selectedNetwork = networks.value[0]
 		cacheStore.proposedNetworks = networks.value
 	} catch (error) {
-		console.error('Unexpected error', error);
-		
-		processingError.value = { show: true, title: "Operation pre-processing error." }
+		fillError("Operation pre-processing error.", error)
 	}
 }
 
@@ -104,11 +118,7 @@ const handleConfirm = async () => {
 		closeWindow()
 	} catch (error) {
 		isLoading.value = false
-
-		processingError.value = {
-			show: true,
-			title: error || "Unknown processing error."
-		}
+		fillError("Processing error.", error)
 	}
 }
 
@@ -151,6 +161,17 @@ const handleCopy = () => {
 	}, 1_500)
 }
 
+onBeforeMount(async () => {
+	if (!appStore.isLogined) {
+		setTimeout(() => {
+			appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
+			router.push({
+				path: "/popup/auth",
+			});
+		}, 500);
+	}
+})
+
 onMounted( async () => {
 	await init()
 
@@ -163,7 +184,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<Flex direction="column" justify="between" :class="$style.wrapper">
+	<Flex v-if="appStore.isLogined" direction="column" justify="between" :class="$style.wrapper">
 		<Flex direction="column" gap="14">
 			<Flex align="center" justify="center" gap="8" :style="{paddingTop: '8px'}">
 				<Text size="16" weight="600" color="primary">Confirm operation</Text>
@@ -245,9 +266,13 @@ onUnmounted(() => {
 						</Flex>				
 
 						<Flex direction="column" gap="4">
-							<Text size="14" weight="600" color="primary">
-								{{ selectedNetwork.name }}
-							</Text>
+							<Flex align="center" gap="10">
+								<Text size="14" weight="600" color="primary">
+									{{ selectedNetwork.name }}
+								</Text>
+
+								<NetworkBadge :chainId="selectedNetwork.chainId" />
+							</Flex>
 							<Text size="13" weight="600" color="tertiary">
 								{{ selectedNetwork.rpcUrl }}
 							</Text>
@@ -276,12 +301,21 @@ onUnmounted(() => {
 			<FeeJuiceCard />
 		</Flex>
 
-		<Flex direction="column" gap="12">
-			<Flex align="center" justify="start" wide>
-				<Text v-if="processingError.show" size="12" weight="600" color="red" :style="{paddingLeft: '4px'}">
-					{{ processingError.title }}
-				</Text>
-			</Flex>
+		<Flex direction="column" gap="10">
+			<Tooltip v-if="processingError.show" side="top" position="start" :disabled="!processingError.tooltip">
+				<Flex align="center" wide>
+					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
+					<Text size="12" weight="600" color="secondary" :style="{paddingLeft: '4px'}">
+						{{ processingError.title }}
+					</Text>
+				</Flex>
+
+				<template #content>
+					<Text size="12" color="secondary">
+						{{ processingError.tooltip }}
+					</Text>
+				</template>
+			</Tooltip>
 
 			<Flex align="center" justify="between" gap="12">
 				<Button
@@ -434,7 +468,7 @@ onUnmounted(() => {
 	border-radius: 12px;
 	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
 
-	padding: 8px;
+	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
 }
@@ -451,7 +485,7 @@ onUnmounted(() => {
 	cursor: pointer;
 	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
 
-	padding: 8px;
+	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
 

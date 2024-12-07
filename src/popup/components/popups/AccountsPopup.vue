@@ -38,6 +38,8 @@ const address = computed(() => appStore.account.address.toString())
 const handleSelectAccount = acc => {
 	appStore.selectAccount(acc)
 	appStore.syncBalances()
+
+	emit("onClose")
 }
 
 const handleCopyAddress = target => {

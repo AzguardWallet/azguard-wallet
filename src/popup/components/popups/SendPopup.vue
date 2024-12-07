@@ -14,6 +14,7 @@ import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 import { managers } from "@/utils/core.js"
 import { capitalize } from "@/utils/string"
 import { TransferType } from "@/wallet/services/transaction/client"
+import { getNetworkColor } from "@/components/ui/utils.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -46,7 +47,7 @@ const activeToken = computed(() =>
 const tokenBalance = computed(() => {
 	return appStore.balances.find(
 		// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
-		b => b.token.id == cacheStore.activeTokenIdx,
+		b => b?.token.id == cacheStore.activeTokenIdx,
 	)
 })
 const tokenBalanceByType = computed(() => {
@@ -191,7 +192,7 @@ watch(
 							<Flex align="center" justify="center" :class="$style.send_icon">
 								<Icon name="arrow-top-right-circle" size="16" color="primary" />
 
-								<Icon name="globe" size="12" color="purple" :class="$style.warning_icon" />
+								<Icon name="globe" size="12" :color="getNetworkColor(appStore.network?.chainId)" :class="$style.warning_icon" />
 							</Flex>
 							<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
 								Send

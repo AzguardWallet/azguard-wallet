@@ -1,5 +1,6 @@
 <script setup>
 /** Components */
+import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
@@ -76,9 +77,7 @@ watch(
 											{{ network.name }}
 										</Text>
 
-										<Badge variant="warning">
-											<Text size="11" weight="700"> Custom </Text>
-										</Badge>
+										<NetworkBadge :chainId="network.chainId" />
 									</Flex>
 
 									<Text size="13" weight="600" color="tertiary">

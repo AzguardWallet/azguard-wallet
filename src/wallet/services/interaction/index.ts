@@ -303,7 +303,7 @@ export class InteractionService extends Service {
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async dappSessionRequest(payload: any): Promise<void> {
-        await this._openWindow('request', payload, 760)
+        await this._openWindow('request', payload, 780)
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>

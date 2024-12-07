@@ -24,7 +24,7 @@ const navigationLinks = [
 	<Flex align="center" justify="center" gap="32" :class="$style.wrapper">
 		<RouterLink v-for="link in navigationLinks" :to="link.path">
 			<Flex :class="$style.button">
-				<Icon :name="link.icon" size="24" :color="route.path === link.path ? 'primary' : 'tertiary'" />
+				<Icon :name="link.icon" size="24" :color="route.path.includes(link.path) ? 'primary' : 'tertiary'" />
 
 				<Icon
 					v-if="route.name === 'popup-tokens-id' && link.name === 'general'"

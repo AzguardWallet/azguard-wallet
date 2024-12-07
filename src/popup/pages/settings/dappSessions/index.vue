@@ -1,3 +1,11 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
@@ -13,14 +21,14 @@ const popupStore = usePopupStore()
 
 const router = useRouter()
 
-if (!appStore.isLogined) {	
-	const redirect = `${window.location.pathname}${window.location.hash}`
+// if (!appStore.isLogined) {	
+// 	const redirect = `${window.location.pathname}${window.location.hash}`
 	
-	router.push({
-		path: "/popup/auth",
-		query: { redirect },
-	})
-}
+// 	router.push({
+// 		path: "/popup/auth",
+// 		query: { redirect },
+// 	})
+// }
 
 const dappSessions = computed(() => {
 	const arr = [...appStore.dappSessions]

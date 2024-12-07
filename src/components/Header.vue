@@ -1,4 +1,7 @@
 <script setup>
+/** Utils */
+import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
+
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
 const { settings } = useSettings()
@@ -43,8 +46,8 @@ const handleOpenPopup = target => {
 					{{ appStore.account.name }}
 				</Text>
 
-				<Text v-if="settings.developer.advancedMode" size="13" weight="600" color="tertiary">
-					{{ appStore.network.name }}
+				<Text v-if="settings.developer.advancedMode" size="13" weight="600" color="tertiary" :class="$style.network_type">
+					{{ getNetworkType(appStore.network.chainId) }}
 				</Text>
 
 				<!-- <Text
@@ -68,7 +71,7 @@ const handleOpenPopup = target => {
 			justify="center"
 			:class="[$style.button, !appStore.isLogined && $style.disabled]"
 		>
-			<Icon name="globe" size="18" color="purple" />
+			<Icon name="globe" size="18" :color="getNetworkColor(appStore.network?.chainId)" />
 			<!-- <div :class="$style.dot" /> -->
 		</Flex>
 	</Flex>
@@ -143,6 +146,15 @@ const handleOpenPopup = target => {
 .account_name {
 	max-width: 90px;
 
+	text-wrap: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.network_type{
+	max-width: 90px;
+
+	text-wrap: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }

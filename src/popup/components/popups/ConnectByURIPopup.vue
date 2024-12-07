@@ -14,13 +14,13 @@ const emit = defineEmits(["onClose"])
 
 const uri = ref("")
 const isLoading = ref(false)
-const connectionError = ref({
+const processingError = ref({
 	show: false,
 	title: "",
 })
 
 const handleConnectByURI = async () => {
-	connectionError.value.show = false
+	processingError.value.show = false
 
 	try {
 		isLoading.value = true
@@ -30,17 +30,17 @@ const handleConnectByURI = async () => {
 	} catch (error) {
 		isLoading.value = false
 		if (error.includes("Missing or invalid. pair() uri")) {
-			connectionError.value = {
+			processingError.value = {
 				show: true,
 				title: 'Invalid connection URI.',
 			}
 		} else if (error.includes("Pairing already exists")) {
-			connectionError.value = {
+			processingError.value = {
 				show: true,
-				title: 'Pairing already exists, please try again with new URI.',
+				title: 'Pairing already exists, try again with new URI.',
 			}
 		} else {
-			connectionError.value = {
+			processingError.value = {
 				show: true,
 				title: 'Unexpected connection error, please try again.',
 			}
@@ -50,7 +50,7 @@ const handleConnectByURI = async () => {
 
 const closePopup = () => {
 	isLoading.value = false
-	connectionError.value.show = false
+	processingError.value.show = false
 	uri.value = ""
 
 	emit('onClose')
@@ -59,7 +59,7 @@ const closePopup = () => {
 watch(
 	() => uri.value,
 	() => {
-		connectionError.value.show = false
+		processingError.value.show = false
 	}
 )
 
@@ -87,24 +87,39 @@ onMounted(() => {
 						:style="{flex: 1}"
 					/>
 
-					<Text v-if="connectionError.show" size="12" weight="600" color="red" :style="{paddingLeft: '4px'}">
-						{{ connectionError.title }}
-					</Text>
 				</Flex>
 
-				<Button
-					@click="handleConnectByURI()"
-					wide
-					type="secondary"
-					size="medium"
-					leftIcon="arrow-right-circle"
-					leftIconColor="blue"
-					:loading="isLoading"
-					:disabled="!uri"
-					:class="connectionError.show && $style.shake"
-				>
-					Connect
-				</Button>
+				<Flex direction="column" gap="10">
+					<Tooltip v-if="processingError.show" side="top" position="start" wide :disabled="!processingError.tooltip">
+						<Flex align="center" wide>
+							<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
+							
+							<Text size="12" weight="600" color="secondary" :style="{paddingLeft: '4px'}">
+								{{ processingError.title }}
+							</Text>
+						</Flex>
+
+						<template #content>
+							<Text size="12" color="secondary">
+								{{ processingError.tooltip }}
+							</Text>
+						</template>
+					</Tooltip>
+
+					<Button
+						@click="handleConnectByURI()"
+						wide
+						type="secondary"
+						size="medium"
+						leftIcon="arrow-right-circle"
+						leftIconColor="blue"
+						:loading="isLoading"
+						:disabled="!uri"
+						:class="processingError.show && $style.shake"
+					>
+						Connect
+					</Button>
+				</Flex>
 			</Flex>
 		</PopupCard>
 	</Popup>
@@ -124,13 +139,13 @@ onMounted(() => {
 		transform: translateX(0);
 	}
 	25% {
-		transform: translateX(-5px);
+		transform: translateX(-2px);
 	}
 	50% {
-		transform: translateX(5px);
+		transform: translateX(2px);
 	}
 	75% {
-		transform: translateX(-5px);
+		transform: translateX(-2px);
 	}
 }
 </style>

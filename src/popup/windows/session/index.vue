@@ -1,6 +1,9 @@
 <script setup>
 /** Vendor */
-import { onMounted, onUnmounted } from "vue"
+import { onBeforeMount, onMounted, onUnmounted } from "vue"
+
+/** Components */
+import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
@@ -15,14 +18,13 @@ const router = useRouter()
 
 const params = new URLSearchParams(window.location.search)
 const requestId = params.get('requestId')
+// if (!appStore.isLogined) {
+// 	appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
 
-if (!appStore.isLogined) {
-	appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${params.toString()}`)
-
-	router.push({
-		path: "/popup/auth",
-	})
-}
+// 	router.push({
+// 		path: "/popup/auth",
+// 	})
+// }
 
 const isLoading = ref(false)
 const isActionCalled = ref(false)
@@ -33,6 +35,7 @@ const interactionRequest = ref()
 const dapp = ref()
 
 const chains = ref()
+const requiredChains = ref([])
 const methods = ref()
 const events = ref()
 
@@ -41,6 +44,8 @@ const networks = computed(() => appStore.networks)
 const accounts = ref([])
 
 async function fetchAccounts() {
+	if (accounts.value.length) return
+
 	const uniqueNetworks = Array.from(
 		new Map(networks.value.map((n) => [n.chainId, n])).values()
 	)
@@ -54,6 +59,31 @@ async function fetchAccounts() {
 	)
 	
 	accounts.value = results.flat()
+
+	if (requiredChains.value.length) {
+		const chainsOrder = requiredChains.value.map(ch => ch.split(":").pop())
+		
+		const chainIdPriority = chainsOrder.reduce((acc, chainId, index) => {
+			acc[chainId] = index
+			return acc
+		}, {})
+
+		accounts.value.sort((a, b) => {
+			const priorityA = chainIdPriority[a.chainId] ?? 99
+			const priorityB = chainIdPriority[b.chainId] ?? 99
+
+			if (priorityA !== priorityB) {
+				return priorityA - priorityB
+			}
+
+			if (a.chainId !== b.chainId) {
+				return a.chainId - b.chainId
+			}
+
+			return a.index - b.index
+		})
+	}
+	
 	if (appStore.account) {
 		selectedAccounts.value.push({ ...appStore.account })
 	}
@@ -65,9 +95,32 @@ const isProposalExpired = ref(false)
 const processingError = ref({
 	show: false,
 	title: "",
+	tooltip: "",
+	type: "",
 })
+function fillError(title, tooltip, type) {
+	if (!title) {
+		processingError.value = {
+			show: false,
+			title: "",
+			tooltip: "",
+			type: "",
+		}
+
+		return
+	}
+
+	processingError.value = {
+		show: true,
+		title,
+		tooltip,
+		type: type ? type : "error",
+	}
+}
 
 const validateProposal = async () => {
+	if (!accounts.value.length) return
+
 	try {
 		validationResult.value = await walletConnectServiceClient.validateProposal(
 			interactionRequest.value.payload,
@@ -97,28 +150,24 @@ const validateProposal = async () => {
 		methods.value = values.methods
 		events.value = values.events
 		
-		processingError.value = {
-			show: true,
-			title: "Proposal validation error. Failed to connect to this dApp."
-		}
+		fillError("Proposal validation error.", error)
 	}
 }
 
 const init = async () => {
 	try {
 		interactionRequest.value = await managers.interaction.getInteractionRequest(requestId)
+		requiredChains.value = Object.values(interactionRequest.value.payload.params.requiredNamespaces).flatMap(n => n.chains)
 		dapp.value = interactionRequest.value.payload.params.proposer.metadata
 	} catch (error) {
-		console.error('Unexpected error', error);
-		
-		processingError.value = {
-			show: true,
-			title: "Proposal processing error."
-		}
+		fillError("Proposal pre-processing error.", error)
 	}
 }
 
 const handleAccountSelect = (account) => {
+	if (processingError.value.show && processingError.value.type === "warning") {
+		fillError()
+	}
 	const index = selectedAccounts.value.findIndex(acc => acc.address === account.address)
 	if (index < 0) {
 		selectedAccounts.value.push(account)
@@ -127,25 +176,38 @@ const handleAccountSelect = (account) => {
 	}
 }
 
+function checkSelectedAccounts() {
+	const requiredNetwroks = requiredChains.value.map(ch => Number(ch.split(":").pop()))
+	const selectedAccountsNetworks = Array.from(
+		new Set(selectedAccounts.value.map(acc => acc.chainId))
+	)
+
+	return requiredNetwroks.every(ch => selectedAccountsNetworks.includes(ch))
+}
+
+const handleProposalExpiredEvent = (payload) => {
+	if (interactionRequest.value?.payload?.id === payload.id) {
+		isProposalExpired.value = true
+	}
+}
+const walletConnectServiceClient = new WalletConnectServiceClient(undefined, undefined, handleProposalExpiredEvent)
+
 const handleApprove = async () => {
+	if (!checkSelectedAccounts()) {
+		fillError("Pre-processing error.", `You must select at least one account for each required network: ${requiredChains.value.join(", ")}`, "warning")
+
+		return
+	}
+
 	isLoading.value = true
 	isActionCalled.value = true
-
 	try {
 		const uniqueChains = Array.from(new Set(selectedAccounts.value.map(acc => acc.chainId)))
 		await walletConnectServiceClient.approveDappSession(interactionRequest.value.payload, profile.value.id, uniqueChains, selectedAccounts.value)
-		console.log('appStore', appStore.dappSessions);
-		
-		alert(123)
 		closeWindow()
 	} catch (error) {
-		console.error('Unexpected error', error);
-
 		isLoading.value = false
-		processingError.value = {
-			show: true,
-			title: "Unexpected proposal processing error."
-		}
+		fillError("Unexpected proposal processing error.", error)
 	}
 }
 
@@ -155,13 +217,6 @@ const handleReject = async () => {
 	walletConnectServiceClient.rejectDappSession(interactionRequest.value.payload)
 	closeWindow()
 }
-
-const handleProposalExpiredEvent = (payload) => {
-	if (interactionRequest.value?.payload?.id === payload.id) {
-		isProposalExpired.value = true
-	}
-}
-const walletConnectServiceClient = new WalletConnectServiceClient(undefined, undefined, handleProposalExpiredEvent)
 
 const closeWindow = () => {
 	chrome.windows.getCurrent((currentWindow) => {
@@ -180,11 +235,15 @@ const handleWindowClose = () => {
 watch(
 	() => [appStore.networks, appStore.profile],
 	async () => {
-		if (appStore.networks && appStore.profile && !accounts.value) {
-			await fetchAccounts()
-			await validateProposal()
+		if (appStore.networks && appStore.profile) {
+			if (!accounts.value.length) {
+				await fetchAccounts()
+			}
+			if (!validationResult.value) {
+				await validateProposal()
+			}
 		}
-	}
+	},
 )
 
 watch(
@@ -196,9 +255,21 @@ watch(
 	}
 )
 
+onBeforeMount(async () => {
+	if (!appStore.isLogined) {
+		setTimeout(() => {
+			appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
+			router.push({
+				path: "/popup/auth",
+			});
+		}, 500);
+	}
+})
+
 onMounted( async () => {
 	await init()
-	if (appStore.networks && appStore.profile) {
+	
+	if (appStore.networks?.length && appStore.profile?.id) {
 		await fetchAccounts()
 		await validateProposal()
 	}
@@ -285,13 +356,13 @@ onUnmounted(() => {
 				</Flex>
 			</Flex>
 
-			<Flex direction="column" align="start" justify="start" gap="12" :class="$style.accounts_section">
+			<Flex v-if="accounts.length" direction="column" align="start" justify="start" gap="12" :class="$style.accounts_section">
 				<Flex direction="column" align="start" justify="start" gap="4">
 					<Text size="15" weight="600" color="primary">Select accounts</Text>
 					<Text size="13" color="secondary">to be connected to the dApp</Text>
 				</Flex>
 				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-					<Flex v-for="acc in accounts" @click="handleAccountSelect(acc)" gap="10" :class="[$style.account, (isLoading || processingError.show) && $style.disabled]">
+					<Flex v-for="acc in accounts" @click="handleAccountSelect(acc)" gap="10" :class="[$style.account, (isLoading || (processingError.show && processingError.type === 'error')) && $style.disabled]">
 						<Flex align="center">
 							<Icon v-if="selectedAccounts?.find(a => a.address === acc.address)" name="check-circle" size="16" color="green" />
 							<Icon v-else name="circle" size="16" color="secondary" />
@@ -302,9 +373,16 @@ onUnmounted(() => {
 								<Text size="14" weight="600" color="primary">
 									{{ acc.name }}
 								</Text>
-								<Text size="13" color="tertiary">
-									{{ `aztec:${acc.chainId}` }}
-								</Text>
+
+								<Tooltip v-if="networks.length > 1">
+									<NetworkBadge :chainId="acc.chainId" />
+
+									<template #content>
+										<Text size="13" color="secondary">
+											{{ `aztec:${acc.chainId}` }}
+										</Text>
+									</template>
+								</Tooltip>
 							</Flex>
 							<Text size="13" weight="600" color="tertiary">
 								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
@@ -315,12 +393,21 @@ onUnmounted(() => {
 			</Flex>
 		</Flex>
 
-		<Flex direction="column" gap="6">
-			<Flex align="center" justify="start" wide>
-				<Text v-if="processingError.show" size="12" weight="600" color="red" :style="{paddingLeft: '4px'}">
-					{{ processingError.title }}
-				</Text>
-			</Flex>
+		<Flex direction="column" gap="10">
+			<Tooltip v-if="processingError.show" side="top" position="start" wide :disabled="!processingError.tooltip">
+				<Flex align="center" wide>
+					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
+					<Text size="12" weight="600" color="secondary" :style="{paddingLeft: '4px'}">
+						{{ processingError.title }}
+					</Text>
+				</Flex>
+
+				<template #content>
+					<Text size="12" color="secondary">
+						{{ processingError.tooltip }}
+					</Text>
+				</template>
+			</Tooltip>
 
 			<Flex align="center" justify="between" gap="12">
 				<Button
@@ -466,7 +553,7 @@ onUnmounted(() => {
 
 .accounts {
 	width: 100%;
-	max-height: 170px;
+	max-height: 172px;
 	overflow: auto;
 
 	/* scrollbar-width: thin; */
@@ -478,7 +565,7 @@ onUnmounted(() => {
 	cursor: pointer;
 	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
 
-	padding: 8px;
+	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
 

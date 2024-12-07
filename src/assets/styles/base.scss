@@ -46,7 +46,9 @@ $grayscale: (
 	--green: #14ae5c;
 	--orange: #ff9500;
 	--red: #f03c3c;
-	--purple: #5856de;	  
+	--purple: #5856de;
+	--gray: #8e8e93;
+	--sand: #b88555;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(0, 0, 0, #{$value});
@@ -92,6 +94,8 @@ $grayscale: (
 	--orange: #ff9500;
 	--red: #f03c3c;
 	--purple: #5856de;
+	--gray: #8e8e93;
+	--sand: #b88555;
 
 	/** json viewer */
 	--json-property-name: #998418;
@@ -143,6 +147,8 @@ $grayscale: (
 	--orange: #ff9500;
 	--red: #f03c3c;
 	--purple: #5856de;
+	--gray: #8e8e93;
+	--sand: #b88555;
 
 	/** json viewer */
 	--json-property-name: #A99D5E;

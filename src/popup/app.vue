@@ -60,8 +60,6 @@ watch(
 			await appStore.setupActiveAccount()
 
 			await appStore.syncLocalTokens()
-
-			console.log(appStore.account)
 		} else {
 			await appStore.setupActiveAccount()
 

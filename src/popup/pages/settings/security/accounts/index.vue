@@ -96,6 +96,7 @@ const handleCopyAddress = target => {
 								weight="600"
 								color="tertiary"
 								class="copyable"
+								:class="$style.account_address"
 							>
 								{{ acc.address.slice(0, 6) }}
 								•••
@@ -231,6 +232,15 @@ const handleCopyAddress = target => {
 .account_name {
 	max-width: 120px;
 
+	text-wrap: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.account_address{
+	max-width: 110px;
+
+	text-wrap: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }

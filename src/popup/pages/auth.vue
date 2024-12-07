@@ -81,8 +81,8 @@ const handleUnlockWallet = async () => {
 		appStore.isLogined = true
 		
 		if (appStore.pageAwaitingAuth) {
-			router.go(-1)
 			appStore.pageAwaitingAuth = ""
+			router.go(-1)
 		} else {
 			router.push("/popup/general")
 		}
@@ -107,7 +107,13 @@ onBeforeUnmount(() => {
 watch(
 	() => appStore.isLogined,
 	() => {
-		router.push("/popup/general")
+		if (appStore.pageAwaitingAuth) {
+			appStore.pageAwaitingAuth = ""
+			router.go(-1)
+		} else {
+			router.push("/popup/general")
+		}
+		// router.push("/popup/general")
 	},
 )
 </script>
