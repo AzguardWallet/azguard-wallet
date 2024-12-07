@@ -60,6 +60,8 @@ async function fetchAccounts() {
 	)
 	
 	accounts.value = results.flat()
+	console.log('accounts.value before', accounts.value);
+	
 
 	if (requiredChains.value.length) {
 		const chainsOrder = requiredChains.value.map(ch => ch.split(":").pop())
@@ -68,6 +70,9 @@ async function fetchAccounts() {
 			acc[chainId] = index
 			return acc
 		}, {})
+
+		console.log('chainIdPriority', chainIdPriority);
+		
 
 		accounts.value.sort((a, b) => {
 			const priorityA = chainIdPriority[a.chainId] ?? 99
@@ -83,6 +88,9 @@ async function fetchAccounts() {
 
 			return a.index - b.index
 		})
+
+		console.log('accounts.value sorted', accounts.value);
+		
 	}
 	
 	if (appStore.account) {
@@ -129,7 +137,7 @@ const validateProposal = async () => {
 		)
 
 		const values = Object.values(validationResult.value)
-		chains.value = values.flatMap(v => v.chains).map(ch => getNetworkType(Number(ch.split(":").pop())))
+		chains.value = values.flatMap(v => v.chains)
 		methods.value = values.flatMap(v => v.methods)
 		events.value = values.flatMap(v => v.events)
 	} catch(error) {
@@ -147,7 +155,7 @@ const validateProposal = async () => {
 			methods: [],
 			events: []
 		})
-		chains.value = values.chains.map(ch => getNetworkType(Number(ch.split(":").pop())))
+		chains.value = values.chains
 		methods.value = values.methods
 		events.value = values.events
 		
@@ -161,7 +169,6 @@ const init = async () => {
 		requiredChains.value =
 			Object.values(interactionRequest.value.payload.params.requiredNamespaces)
 			.flatMap(n => n.chains)
-			.map(ch => getNetworkType(Number(ch.split(":").pop())))
 		
 		dapp.value = interactionRequest.value.payload.params.proposer.metadata
 	} catch (error) {
@@ -199,7 +206,11 @@ const walletConnectServiceClient = new WalletConnectServiceClient(undefined, und
 
 const handleApprove = async () => {
 	if (!checkSelectedAccounts()) {
-		fillError("Pre-processing error.", `You must select at least one account for each required network: ${requiredChains.value.join(", ")}`, "warning")
+		fillError(
+			"Pre-processing error.",
+			`You must select at least one account for each required network: ${requiredChains.value.map(ch => getNetworkType(Number(ch.split(":").pop()))).join(", ")}`,
+			"warning"
+		)
 
 		return
 	}
@@ -347,7 +358,7 @@ onUnmounted(() => {
 
 				<Flex align="center" gap="4">
 					<Text size="13" color="secondary">Networks:</Text>
-					<Text size="13" color="secondary"> {{ chains?.join(', ') }} </Text>
+					<Text size="13" color="secondary"> {{ chains?.map(ch => getNetworkType(Number(ch.split(":").pop()))).join(', ') }} </Text>
 				</Flex>
 				
 				<Flex align="center" gap="4">
@@ -379,15 +390,7 @@ onUnmounted(() => {
 									{{ acc.name }}
 								</Text>
 
-								<Tooltip v-if="networks.length > 1">
-									<NetworkBadge :chainId="acc.chainId" />
-
-									<template #content>
-										<Text size="13" color="secondary">
-											{{ `aztec:${acc.chainId}` }}
-										</Text>
-									</template>
-								</Tooltip>
+								<NetworkBadge :chainId="acc.chainId" />
 							</Flex>
 							<Text size="13" weight="600" color="tertiary">
 								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
