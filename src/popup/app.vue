@@ -61,6 +61,7 @@ watch(
 
 			await appStore.syncLocalTokens()
 		} else {
+			appStore.syncNetworkStatus()
 			await appStore.setupActiveAccount()
 
 			initTokenService({
@@ -159,6 +160,7 @@ const init = async () => {
 		appStore.network = networks.findLast(n => n.isDefault)
 		managers.network.setDefault(appStore.network.id)
 	}
+	appStore.syncNetworkStatus()
 
 	loadProfile()
 }
