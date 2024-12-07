@@ -9,6 +9,7 @@ import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 import { managers } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/client"
+import { getNetworkType } from "@/components/ui/utils.js"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -128,7 +129,7 @@ const validateProposal = async () => {
 		)
 
 		const values = Object.values(validationResult.value)
-		chains.value = values.flatMap(v => v.chains)
+		chains.value = values.flatMap(v => v.chains).map(ch => getNetworkType(Number(ch.split(":").pop())))
 		methods.value = values.flatMap(v => v.methods)
 		events.value = values.flatMap(v => v.events)
 	} catch(error) {
@@ -146,7 +147,7 @@ const validateProposal = async () => {
 			methods: [],
 			events: []
 		})
-		chains.value = values.chains
+		chains.value = values.chains.map(ch => getNetworkType(Number(ch.split(":").pop())))
 		methods.value = values.methods
 		events.value = values.events
 		
@@ -157,7 +158,11 @@ const validateProposal = async () => {
 const init = async () => {
 	try {
 		interactionRequest.value = await managers.interaction.getInteractionRequest(requestId)
-		requiredChains.value = Object.values(interactionRequest.value.payload.params.requiredNamespaces).flatMap(n => n.chains)
+		requiredChains.value =
+			Object.values(interactionRequest.value.payload.params.requiredNamespaces)
+			.flatMap(n => n.chains)
+			.map(ch => getNetworkType(Number(ch.split(":").pop())))
+		
 		dapp.value = interactionRequest.value.payload.params.proposer.metadata
 	} catch (error) {
 		fillError("Proposal pre-processing error.", error)
