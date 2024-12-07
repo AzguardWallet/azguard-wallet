@@ -48,6 +48,7 @@ export abstract class GetNameFn extends ViewFn {
 	}
 
 	public static getDefault(candidates: GetNameFn[]): GetNameFn | undefined {
+		if (!candidates.length) return undefined;
 		return candidates[0].name === "private_get_name" || candidates[0].name === "public_get_name"
 			? candidates[0]
 			: undefined;

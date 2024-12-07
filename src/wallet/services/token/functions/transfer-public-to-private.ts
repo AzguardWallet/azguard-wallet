@@ -44,6 +44,7 @@ export abstract class TransferPublicToPrivateFn extends Fn {
 	}
 
 	public static getDefault(candidates: TransferPublicToPrivateFn[]): TransferPublicToPrivateFn | undefined {
+		if (!candidates.length) return undefined;
 		return candidates[0].name === "transfer_to_private" ? candidates[0] : undefined;
 	}
 }
