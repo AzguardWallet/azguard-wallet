@@ -118,6 +118,7 @@ watch(
 			tokenNameTerm.value = ""
 			tokenSymbolTerm.value = ""
 			amountTerm.value = ""
+			isPreselected.value = false
 		} else {
 			document.addEventListener("keydown", onKeydown)
 
