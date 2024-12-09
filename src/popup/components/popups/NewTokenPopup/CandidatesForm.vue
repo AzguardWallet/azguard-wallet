@@ -2,30 +2,26 @@
 /** Components */
 import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
-const emit = defineEmits(["onSelect"])
+const emit = defineEmits(["onFieldSelect"])
 const props = defineProps({
 	token: {
 		type: Object,
 	},
+	selectedFields: {
+		type: Object,
+	},
 })
 
-const selectedFields = ref([])
 const handleSelectCandidate = (target, candidate) => {
-	selectedFields.value.push(target)
-	emit("onSelect", target, candidate)
+	emit("onFieldSelect", target, candidate)
 }
 </script>
 
 <template>
 	<Flex direction="column" gap="16">
-		<Banner>
-			You must fill in the fields below to save the imported token
-			<Text color="tertiary">- {{ token.name }} ({{ token.symbol }})</Text></Banner
-		>
-
 		<!-- BALANCES -> Private / Public -->
 		<Flex align="center" justify="between" gap="16">
-			<Flex wide direction="column" gap="8">
+			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
 					<Text size="13" weight="600" color="secondary">Balance of private</Text>
 					<Icon
@@ -38,18 +34,16 @@ const handleSelectCandidate = (target, candidate) => {
 				<Dropdown wide>
 					<template #trigger>
 						<DropdownTrigger wide>
-							<Icon
-								name="key-square"
-								size="14"
-								:color="selectedFields.includes('balanceOfPrivateFn') ? 'primary' : 'tertiary'"
-							/>
 							<Text
 								size="13"
 								weight="600"
-								:color="selectedFields.includes('balanceOfPrivateFn') ? 'primary' : 'secondary'"
-								style="text-transform: capitalize"
+								:color="'balanceOfPrivateFn' in selectedFields ? 'primary' : 'secondary'"
 							>
-								{{ selectedFields.includes("balanceOfPrivateFn") ? "Selected" : "Select fn" }}
+								{{
+									"balanceOfPrivateFn" in selectedFields
+										? selectedFields["balanceOfPrivateFn"]?.name
+										: "Select function"
+								}}
 							</Text>
 						</DropdownTrigger>
 					</template>
@@ -65,7 +59,7 @@ const handleSelectCandidate = (target, candidate) => {
 				</Dropdown>
 			</Flex>
 
-			<Flex wide direction="column" gap="8">
+			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
 					<Text size="13" weight="600" color="secondary">Balance of public</Text>
 					<Icon
@@ -78,18 +72,16 @@ const handleSelectCandidate = (target, candidate) => {
 				<Dropdown wide>
 					<template #trigger>
 						<DropdownTrigger wide>
-							<Icon
-								name="face"
-								size="14"
-								:color="selectedFields.includes('balanceOfPublicFn') ? 'primary' : 'tertiary'"
-							/>
 							<Text
 								size="13"
 								weight="600"
-								:color="selectedFields.includes('balanceOfPublicFn') ? 'primary' : 'secondary'"
-								style="text-transform: capitalize"
+								:color="'balanceOfPublicFn' in selectedFields ? 'primary' : 'secondary'"
 							>
-								{{ selectedFields.includes("balanceOfPublicFn") ? "Selected" : "Select fn" }}
+								{{
+									"balanceOfPublicFn" in selectedFields
+										? selectedFields["balanceOfPublicFn"]?.name
+										: "Select function"
+								}}
 							</Text>
 						</DropdownTrigger>
 					</template>
@@ -108,7 +100,7 @@ const handleSelectCandidate = (target, candidate) => {
 
 		<!-- TRANFSERS: Private / Public -->
 		<Flex align="center" justify="between" gap="16">
-			<Flex wide direction="column" gap="8">
+			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
 					<Text size="13" weight="600" color="secondary">Tranfser private</Text>
 					<Icon
@@ -121,18 +113,16 @@ const handleSelectCandidate = (target, candidate) => {
 				<Dropdown wide>
 					<template #trigger>
 						<DropdownTrigger wide>
-							<Icon
-								name="key-square"
-								size="14"
-								:color="selectedFields.includes('transferPrivateFn') ? 'primary' : 'tertiary'"
-							/>
 							<Text
 								size="13"
 								weight="600"
-								:color="selectedFields.includes('transferPrivateFn') ? 'primary' : 'secondary'"
-								style="text-transform: capitalize"
+								:color="'transferPrivateFn' in selectedFields ? 'primary' : 'secondary'"
 							>
-								{{ selectedFields.includes("transferPrivateFn") ? "Selected" : "Select fn" }}
+								{{
+									"transferPrivateFn" in selectedFields
+										? selectedFields["transferPrivateFn"]?.name
+										: "Select function"
+								}}
 							</Text>
 						</DropdownTrigger>
 					</template>
@@ -148,7 +138,7 @@ const handleSelectCandidate = (target, candidate) => {
 				</Dropdown>
 			</Flex>
 
-			<Flex wide direction="column" gap="8">
+			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
 					<Text size="13" weight="600" color="secondary">Tranfser public</Text>
 					<Icon
@@ -161,18 +151,16 @@ const handleSelectCandidate = (target, candidate) => {
 				<Dropdown wide>
 					<template #trigger>
 						<DropdownTrigger wide>
-							<Icon
-								name="face"
-								size="14"
-								:color="selectedFields.includes('transferPublicFn') ? 'primary' : 'tertiary'"
-							/>
 							<Text
 								size="13"
 								weight="600"
-								:color="selectedFields.includes('transferPublicFn') ? 'primary' : 'secondary'"
-								style="text-transform: capitalize"
+								:color="'transferPublicFn' in selectedFields ? 'primary' : 'secondary'"
 							>
-								{{ selectedFields.includes("transferPublicFn") ? "Selected" : "Select fn" }}
+								{{
+									"transferPublicFn" in selectedFields
+										? selectedFields["transferPublicFn"]?.name
+										: "Select function"
+								}}
 							</Text>
 						</DropdownTrigger>
 					</template>
@@ -191,7 +179,7 @@ const handleSelectCandidate = (target, candidate) => {
 
 		<!-- TRANSFERS: Private to Public / Public to Private -->
 		<Flex align="center" justify="between" gap="16">
-			<Flex wide direction="column" gap="8">
+			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
 					<Text size="13" weight="600" color="secondary">Private to public</Text>
 					<Icon
@@ -204,18 +192,16 @@ const handleSelectCandidate = (target, candidate) => {
 				<Dropdown wide>
 					<template #trigger>
 						<DropdownTrigger wide>
-							<Icon
-								name="key-square"
-								size="14"
-								:color="selectedFields.includes('transferPrivateToPublicFn') ? 'primary' : 'tertiary'"
-							/>
 							<Text
 								size="13"
 								weight="600"
-								:color="selectedFields.includes('transferPrivateToPublicFn') ? 'primary' : 'secondary'"
-								style="text-transform: capitalize"
+								:color="'transferPrivateToPublicFn' in selectedFields ? 'primary' : 'secondary'"
 							>
-								{{ selectedFields.includes("transferPrivateToPublicFn") ? "Selected" : "Select fn" }}
+								{{
+									"transferPrivateToPublicFn" in selectedFields
+										? selectedFields["transferPrivateToPublicFn"]?.name
+										: "Select function"
+								}}
 							</Text>
 						</DropdownTrigger>
 					</template>
@@ -231,7 +217,7 @@ const handleSelectCandidate = (target, candidate) => {
 				</Dropdown>
 			</Flex>
 
-			<Flex wide direction="column" gap="8">
+			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
 					<Text size="13" weight="600" color="secondary">Public to private</Text>
 					<Icon
@@ -244,18 +230,16 @@ const handleSelectCandidate = (target, candidate) => {
 				<Dropdown wide>
 					<template #trigger>
 						<DropdownTrigger wide>
-							<Icon
-								name="face"
-								size="14"
-								:color="selectedFields.includes('transferPublicToPrivateFn') ? 'primary' : 'tertiary'"
-							/>
 							<Text
 								size="13"
 								weight="600"
-								:color="selectedFields.includes('transferPublicToPrivateFn') ? 'primary' : 'secondary'"
-								style="text-transform: capitalize"
+								:color="'transferPublicToPrivateFn' in selectedFields ? 'primary' : 'secondary'"
 							>
-								{{ selectedFields.includes("transferPublicToPrivateFn") ? "Selected" : "Select fn" }}
+								{{
+									"transferPublicToPrivateFn" in selectedFields
+										? selectedFields["transferPublicToPrivateFn"]?.name
+										: "Select function"
+								}}
 							</Text>
 						</DropdownTrigger>
 					</template>
@@ -274,7 +258,7 @@ const handleSelectCandidate = (target, candidate) => {
 
 		<!-- OTHER -> Name / Symbol -->
 		<Flex align="center" justify="between" gap="16">
-			<Flex wide direction="column" gap="8">
+			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
 					<Text size="13" weight="600" color="secondary">Get name</Text>
 					<Icon
@@ -287,18 +271,16 @@ const handleSelectCandidate = (target, candidate) => {
 				<Dropdown wide>
 					<template #trigger>
 						<DropdownTrigger wide>
-							<Icon
-								name="text"
-								size="14"
-								:color="selectedFields.includes('getNameFn') ? 'primary' : 'tertiary'"
-							/>
 							<Text
 								size="13"
 								weight="600"
-								:color="selectedFields.includes('getNameFn') ? 'primary' : 'secondary'"
-								style="text-transform: capitalize"
+								:color="'getNameFn' in selectedFields ? 'primary' : 'secondary'"
 							>
-								{{ selectedFields.includes("getNameFn") ? "Selected" : "Select fn" }}
+								{{
+									"getNameFn" in selectedFields
+										? selectedFields["getNameFn"]?.name
+										: "Select function"
+								}}
 							</Text>
 						</DropdownTrigger>
 					</template>
@@ -314,7 +296,7 @@ const handleSelectCandidate = (target, candidate) => {
 				</Dropdown>
 			</Flex>
 
-			<Flex wide direction="column" gap="8">
+			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
 					<Text size="13" weight="600" color="secondary">Get symbol</Text>
 					<Icon
@@ -327,18 +309,16 @@ const handleSelectCandidate = (target, candidate) => {
 				<Dropdown wide>
 					<template #trigger>
 						<DropdownTrigger wide>
-							<Icon
-								name="banknote"
-								size="14"
-								:color="selectedFields.includes('getSymbolFn') ? 'primary' : 'tertiary'"
-							/>
 							<Text
 								size="13"
 								weight="600"
-								:color="selectedFields.includes('getSymbolFn') ? 'primary' : 'secondary'"
-								style="text-transform: capitalize"
+								:color="'getSymbolFn' in selectedFields ? 'primary' : 'secondary'"
 							>
-								{{ selectedFields.includes("getSymbolFn") ? "Selected" : "Select fn" }}
+								{{
+									"getSymbolFn" in selectedFields
+										? selectedFields["getSymbolFn"]?.name
+										: "Select function"
+								}}
 							</Text>
 						</DropdownTrigger>
 					</template>
@@ -354,10 +334,54 @@ const handleSelectCandidate = (target, candidate) => {
 				</Dropdown>
 			</Flex>
 		</Flex>
+
+		<Flex wide direction="column" gap="8">
+			<Flex align="center" gap="6">
+				<Text size="13" weight="600" color="secondary">Get decimals</Text>
+				<Icon
+					:name="token.getDecimalsFn ? 'check-circle' : 'close-circle'"
+					size="12"
+					:color="token.getDecimalsFn ? 'green' : 'red'"
+				/>
+			</Flex>
+
+			<Dropdown wide>
+				<template #trigger>
+					<DropdownTrigger wide>
+						<Text
+							size="13"
+							weight="600"
+							:color="'getDecimalsFn' in selectedFields ? 'primary' : 'secondary'"
+						>
+							{{
+								"getDecimalsFn" in selectedFields
+									? selectedFields["getDecimalsFn"]?.name
+									: "Select function"
+							}}
+						</Text>
+					</DropdownTrigger>
+				</template>
+
+				<template #popup>
+					<DropdownItem
+						v-for="candidate in token.getDecimalsFnCandidates"
+						@click="handleSelectCandidate('getDecimalsFn', candidate)"
+					>
+						{{ candidate.name }}
+					</DropdownItem>
+				</template>
+			</Dropdown>
+		</Flex>
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
+}
+
+.field {
+	flex: 1;
+
+	max-width: 152px;
 }
 </style>

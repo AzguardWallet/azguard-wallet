@@ -59,7 +59,7 @@ onBeforeUnmount(() => {
 		:style="{ width: wide ? '100%' : `${width}px` }"
 		tabindex="0"
 	>
-		<Flex align="center" gap="8">
+		<Flex align="center" gap="8" :class="$style.slot">
 			<slot />
 		</Flex>
 
@@ -83,5 +83,14 @@ onBeforeUnmount(() => {
 .wrapper:hover {
 	box-shadow: inset 0 0 0 1px var(--border-hovered);
 	background: rgba(255, 255, 255, 0.05);
+}
+
+.slot {
+	overflow: hidden;
+
+	& span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 }
 </style>
