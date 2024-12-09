@@ -5,6 +5,7 @@ export const useCacheStore = defineStore("cache", () => {
 
 	const networkToEditIdx = ref()
 	const accountToEditIdx = ref()
+	const tokenToEditIdx = ref()
 
 	const activeTokenIdx = ref()
 	const activeTxHash = ref()
@@ -17,6 +18,7 @@ export const useCacheStore = defineStore("cache", () => {
 		confirm,
 		networkToEditIdx,
 		accountToEditIdx,
+		tokenToEditIdx,
 		activeTokenIdx,
 		activeTxHash,
 		proposedNetworks,

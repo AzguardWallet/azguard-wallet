@@ -42,9 +42,15 @@ const isAvailableToCreateToken = computed(() => {
 
 const isCompleted = ref(true)
 const rawToken = ref()
-
+const rawTokenForReset = ref()
+const selectedFields = ref({})
 const handleSelectCandidate = (target, candidate) => {
+	selectedFields.value[target] = candidate
 	rawToken.value[target] = candidate
+}
+const handleResetChanges = () => {
+	rawToken.value = { ...rawTokenForReset.value }
+	selectedFields.value = {}
 }
 
 const handleCreateToken = async () => {
@@ -60,7 +66,8 @@ const handleCreateToken = async () => {
 		appStore.isLoading = false
 
 		isCompleted.value = false
-		rawToken.value = parsingResult
+		rawToken.value = { ...parsingResult }
+		rawTokenForReset.value = { ...parsingResult }
 
 		return
 	}
@@ -77,7 +84,7 @@ const handleCreateToken = async () => {
 	appStore.tokens.push(newToken)
 
 	await appStore.syncBalances()
-	appStore.tokenAwaitingBalanceIdx = newToken.id
+	// appStore.tokenAwaitingBalanceIdx = newToken.id
 
 	openToast({ label: `${parsingResult.symbol} is added to tokens` })
 
@@ -88,7 +95,7 @@ const handleSaveToken = async () => {
 	appStore.tokens.push(newToken)
 
 	await appStore.syncBalances()
-	appStore.tokenAwaitingBalanceIdx = newToken.id
+	// appStore.tokenAwaitingBalanceIdx = newToken.id
 
 	openToast({ label: `${rawToken.value.symbol} is added to tokens` })
 
@@ -100,6 +107,10 @@ watch(
 	() => {
 		if (!props.show) {
 			contractAddressTerm.value = ""
+
+			isCompleted.value = true
+
+			selectedFields.value = {}
 		}
 	},
 )
@@ -115,6 +126,7 @@ watch(
 					v-model="contractAddressTerm"
 					label="Contract address"
 					placeholder="0x"
+					autofocus
 					:disabled="isLoadingParseResult"
 				>
 					<template #suffix>
@@ -130,29 +142,46 @@ watch(
 					</template>
 				</Input>
 
-				<CandidatesForm v-if="!isCompleted" :token="rawToken" @onSelect="handleSelectCandidate" />
+				<CandidatesForm
+					v-if="!isCompleted"
+					:selectedFields
+					@onFieldSelect="handleSelectCandidate"
+					:token="rawToken"
+				/>
 
-				<Button
-					v-if="isCompleted"
-					@click="handleCreateToken"
-					wide
-					type="primary"
-					size="medium"
-					:loading="isLoadingParseResult"
-					:disabled="!isAvailableToCreateToken"
-				>
-					<Text color="inverse">Import new token</Text>
-				</Button>
-				<Button
-					v-else
-					@click="handleSaveToken"
-					wide
-					type="primary"
-					size="medium"
-					:disabled="!isAvailableToCreateToken"
-				>
-					<Text color="inverse">Save new token</Text>
-				</Button>
+				<Flex direction="column" gap="8">
+					<Button
+						v-if="isCompleted"
+						@click="handleCreateToken"
+						wide
+						type="primary"
+						size="medium"
+						:loading="isLoadingParseResult"
+						:disabled="!isAvailableToCreateToken"
+					>
+						<Text color="inverse">Import new token</Text>
+					</Button>
+					<Button
+						v-else
+						@click="handleSaveToken"
+						wide
+						type="primary"
+						size="medium"
+						:disabled="!isAvailableToCreateToken"
+					>
+						<Text color="inverse">Save new token</Text>
+					</Button>
+					<Button
+						v-if="!isCompleted"
+						@click="handleResetChanges"
+						wide
+						type="secondary"
+						size="medium"
+						:disabled="!Object.keys(selectedFields).length"
+					>
+						Reset changes
+					</Button>
+				</Flex>
 
 				<Text size="12" weight="500" color="tertiary" height="140" align="center">
 					Importing the token may take time and additional configuration may be required

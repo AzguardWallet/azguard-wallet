@@ -9,25 +9,12 @@ const { toast, closeToast } = useToast()
 		<template v-if="toast">
 			<Teleport to="#toast">
 				<Flex justify="center" :class="$style.wrapper">
-					<Flex
-						@click="closeToast"
-						align="center"
-						gap="8"
-						:class="$style.card"
-					>
-						<Icon
-							:name="toast.icon || 'check-circle'"
-							size="14"
-							color="primary"
-						/>
-						<Text
-							size="13"
-							weight="600"
-							color="primary"
-							style="white-space: nowrap"
-						>
+					<Flex @click="closeToast" align="center" gap="8" :class="$style.card">
+						<Icon :name="toast.icon || 'check-circle'" size="14" color="primary" />
+						<Text size="13" weight="600" color="primary" style="white-space: nowrap">
 							{{ toast.label }}
 						</Text>
+						<Icon name="close-circle" size="12" color="tertiary" :class="$style.close_icon" />
 					</Flex>
 				</Flex>
 			</Teleport>
@@ -39,9 +26,11 @@ const { toast, closeToast } = useToast()
 .wrapper {
 	position: absolute;
 	top: 10px;
-	left: 0;
+	left: 50%;
 	right: 0;
 	z-index: 2000;
+
+	transform: translateX(-50%);
 }
 
 .card {
@@ -50,7 +39,18 @@ const { toast, closeToast } = useToast()
 	background: var(--card-bg);
 	box-shadow: inset 0 0 0 1px var(--border), 0 4px 8px var(--shadow-10);
 	border-radius: 50px;
+	cursor: pointer;
 
 	padding: 0 12px;
+
+	& .close_icon {
+		transition: all 0.2s ease;
+	}
+
+	&:hover {
+		.close_icon {
+			fill: var(--txt-primary);
+		}
+	}
 }
 </style>

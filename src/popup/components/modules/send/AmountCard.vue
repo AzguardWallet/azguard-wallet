@@ -80,7 +80,16 @@ const handleHalf = () => {
 				placeholder="0.00"
 				:class="$style.input_field"
 			/>
-			<Text size="14" weight="500" color="tertiary"> ${{ comma(amountInUSD) }} </Text>
+
+			<Tooltip position="start">
+				<Flex align="center" gap="4" style="opacity: 0.5">
+					<Text size="14" weight="500" color="tertiary"> $0.00 </Text>
+					<Icon name="warning" size="12" color="tertiary" />
+				</Flex>
+
+				<template #content> No quotes available at the moment</template>
+			</Tooltip>
+			<!-- <Text size="14" weight="500" color="tertiary"> ${{ comma(amountInUSD) }} </Text> -->
 		</Flex>
 
 		<Flex justify="between">

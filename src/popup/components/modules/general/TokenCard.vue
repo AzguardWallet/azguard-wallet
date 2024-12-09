@@ -52,7 +52,7 @@ const totalBalance = computed(() => {
 						<Icon name="warning" size="12" color="tertiary" />
 					</Flex>
 
-					<template #content> No quotes available </template>
+					<template #content> No quotes available at the moment </template>
 				</Tooltip>
 			</Flex>
 		</Flex>

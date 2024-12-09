@@ -19,6 +19,7 @@ import SelectTokenPopup from "./SelectTokenPopup.vue"
 import TokensPopup from "./TokensPopup.vue"
 import TokenMetadataPopup from "./TokenMetadataPopup.vue"
 import NewTokenPopup from "./NewTokenPopup/NewTokenPopup.vue"
+import EditTokenPopup from "./EditTokenPopup.vue"
 import TransactionPopup from "./TransactionPopup.vue"
 
 /** Store */
@@ -46,5 +47,6 @@ const popupStore = usePopupStore()
 	<TokensPopup :show="popupStore.isOpened('tokens')" @onClose="popupStore.close('tokens')" />
 	<TokenMetadataPopup :show="popupStore.isOpened('token_metadata')" @onClose="popupStore.close('token_metadata')" />
 	<NewTokenPopup :show="popupStore.isOpened('new_token')" @onClose="popupStore.close('new_token')" />
+	<EditTokenPopup :show="popupStore.isOpened('edit_token')" @onClose="popupStore.close('edit_token')" />
 	<TransactionPopup :show="popupStore.isOpened('tx')" @onClose="popupStore.close('tx')" />
 </template>

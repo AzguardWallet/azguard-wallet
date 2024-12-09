@@ -31,6 +31,7 @@ defineProps({
 	line-height: 14px;
 	color: var(--txt-primary);
 	white-space: nowrap;
+	overflow: hidden;
 
 	cursor: pointer;
 
