@@ -21,15 +21,6 @@ const popupStore = usePopupStore()
 
 const router = useRouter()
 
-// if (!appStore.isLogined) {	
-// 	const redirect = `${window.location.pathname}${window.location.hash}`
-	
-// 	router.push({
-// 		path: "/popup/auth",
-// 		query: { redirect },
-// 	})
-// }
-
 const dappSessions = computed(() => {
 	const arr = [...appStore.dappSessions]
 	for (let index = 0; index < arr.length; index++) {
@@ -88,7 +79,7 @@ const handleDropAllSessions = () => {
 				<Flex align="center" justify="between">
 					<Text size="16" weight="600" color="primary">Sessions</Text>
 
-					<Tooltip v-if="dappSessions.length">
+					<Tooltip v-if="dappSessions.length" position="end">
 						<Icon @click="handleDropAllSessions" name="log-out" size="16" color="tertiary" :class="$style.disconnect_all">Disconnect All</Icon>
 
 						<template #content>
