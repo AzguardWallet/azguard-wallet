@@ -59,6 +59,7 @@ const handleReset = () => {
 
 		appStore.isLogined = false
 		appStore.isSessionChecked = false
+		appStore.tokenAwaitingBalanceIdx = false
 
 		router.push("/popup/register")
 
