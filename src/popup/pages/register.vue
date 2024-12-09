@@ -44,7 +44,7 @@ const handleOpen = target => {
 				Get power of privacy on Ethereum with Aztec Blockchain
 			</Text>
 
-			<Button type="secondary" size="mini">
+			<Button type="secondary" size="mini" disabled>
 				<Icon name="warning" size="16" color="orange" />
 				Azguard Alpha Testing
 			</Button>
