@@ -4,12 +4,8 @@ import { computed, onMounted, onUnmounted } from "vue"
 
 /** Components */
 import FeeJuiceCard from "../../components/modules/send/FeeJuiceCard.vue"
-import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue";
+import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
-
-/** Composables */
-import { useToast } from "@/composables/toast"
-const { openToast } = useToast()
 
 /** Utils */
 import { managers } from "@/utils/core"
@@ -35,7 +31,6 @@ const requestId = params.get('requestId')
 
 const isLoading = ref(false)
 const isActionCalled = ref(false)
-const isCopied = ref(false)
 
 const interactionRequest = ref()
 const payload = ref()
@@ -148,17 +143,6 @@ const handleWindowClose = () => {
 	if (!isActionCalled.value && !isRequestExpired.value) {
 		handleReject()
 	}
-}
-
-const handleCopy = () => {
-	window.navigator.clipboard.writeText(JSON.stringify(payload.value?.params))
-
-	openToast({ label: "Payload is copied", icon: "copy" })
-
-	isCopied.value = true
-	setTimeout(() => {
-		isCopied.value = false
-	}, 1_500)
 }
 
 onBeforeMount(async () => {
@@ -284,17 +268,10 @@ onUnmounted(() => {
 			<Flex v-if="payload?.params" direction="column" align="start" justify="start" gap="8">
 				<Flex justify="between">
 					<Text size="14" weight="600" color="primary">Request parameters:</Text>
-					<Icon
-						@click="handleCopy"
-						:name="!isCopied ? 'copy' : 'check'"
-						:color="!isCopied ? 'tertiary' : 'green'"
-						size="16"
-						:class="$style.copy_icon"
-					/>
 				</Flex>
 
 				<Flex align="start" direction="column" justify="start" gap="12" :class="$style.json_viewer">
-					<JsonViewer :data="payload?.params" />
+					<JsonViewer :data="payload?.params" :requestId="requestId" />
 				</Flex>
 			</Flex>
 
@@ -495,26 +472,6 @@ onUnmounted(() => {
 
 	&:active {
 		background: var(--gray-5);
-	}
-}
-
-.copy_icon {
-	position: absolute;
-	right: 30px;
-	transform: translateY(30px);
-	z-index: 1;
-
-	background: transparent;
-	box-sizing: content-box;
-	cursor: pointer;
-	border-radius: 5px;
-
-	padding: 4px;
-
-	transition: all 0.5s ease;
-
-	&:hover {
-		background: var(--op-10);
 	}
 }
 

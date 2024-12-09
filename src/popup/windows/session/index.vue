@@ -60,8 +60,6 @@ async function fetchAccounts() {
 	)
 	
 	accounts.value = results.flat()
-	console.log('accounts.value before', accounts.value);
-	
 
 	if (requiredChains.value.length) {
 		const chainsOrder = requiredChains.value.map(ch => ch.split(":").pop())
@@ -70,9 +68,6 @@ async function fetchAccounts() {
 			acc[chainId] = index
 			return acc
 		}, {})
-
-		console.log('chainIdPriority', chainIdPriority);
-		
 
 		accounts.value.sort((a, b) => {
 			const priorityA = chainIdPriority[a.chainId] ?? 99
@@ -88,9 +83,6 @@ async function fetchAccounts() {
 
 			return a.index - b.index
 		})
-
-		console.log('accounts.value sorted', accounts.value);
-		
 	}
 	
 	if (appStore.account) {

@@ -16,6 +16,7 @@ import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
+import { getNetworkType } from "@/components/ui/utils.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -162,7 +163,7 @@ onMounted( async () => {
 
 			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
 				<Text size="13" color="secondary">Networks:</Text>
-				<Text size="13" color="secondary"> {{ session?.params.chains.join(', ') }} </Text>
+				<Text size="13" color="secondary"> {{ session?.params.chains.map(ch => getNetworkType(Number(ch.split(':').pop()))).join(', ') }} </Text>
 			</Flex>
 			
 			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">

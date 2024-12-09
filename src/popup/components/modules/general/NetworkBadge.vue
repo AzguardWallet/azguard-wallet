@@ -1,6 +1,6 @@
 <script setup>
 /** Utils */
-import { getNetworkColor } from "@/components/ui/utils.js"
+import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
 
 const props = defineProps({
 	chainId: {
@@ -10,16 +10,12 @@ const props = defineProps({
 })
 
 const chain = computed(() => {
-	switch (props.chainId) {
-		case 1337:
-			return 'Devnet'
-		case 31337:
-			return 'Sandbox'
-		case 41337:
-			return 'AzguardBox'
-		default:
-			return 'Custom'
+	const chainType = getNetworkType(props.chainId)
+	if (chainType.toLowerCase().includes("custom")) {
+		return "Custom"
 	}
+
+	return chainType
 })
 
 </script>

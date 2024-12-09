@@ -29,6 +29,7 @@ import {
     WCSessionParams,
 } from "./client";
 
+type LogLevel = "trace" | "debug" | "info" | "error" | "silent"
 
 const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783"
 const WALLET_CONNECT_METADATA = {
@@ -59,7 +60,8 @@ export class WalletConnectService extends Service {
         private readonly interaction: InteractionService,
         emit: (event: EventMessage) => void
     ) {
-        super(WALLET_CONNECT_SERVICE_NAME, emit);
+        super(WALLET_CONNECT_SERVICE_NAME, emit)
+        this.init()
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -190,16 +192,18 @@ export class WalletConnectService extends Service {
                 const core = new Core({
                     projectId: WALLET_CONNECT_PROJECT_ID,
                     logger: WALLET_CONNECT_LOG_LEVEL,
-                });
+                })
+
+                this.configureLoggers(core, WALLET_CONNECT_LOG_LEVEL)
         
                 this.walletKit = await WalletKit.init({
                     core,
                     metadata: WALLET_CONNECT_METADATA,
-                });
+                })
         
-                this.setupWalletKitEvents();
+                this.setupWalletKitEvents()
                 
-                console.debug("Wallet connect service initialized")
+                console.debug("Wallet connect service initialized");
                 break
             } catch (error) {
                 console.error("Failed to initialize wallet connect service. Retry...");
@@ -207,6 +211,41 @@ export class WalletConnectService extends Service {
             }
         }
     }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private createLogger(level: LogLevel): any {
+        const noop = () => {}
+        return {
+            error: level !== 'silent' ? console.error : noop,
+            debug: ['trace', 'debug', 'info'].includes(level) ? console.debug : noop,
+            info: ['trace', 'debug', 'info'].includes(level) ? console.info : noop,
+            trace: level === 'trace' ? console.trace : noop,
+        }
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private configureLoggers = (core: any, level: LogLevel) => {
+        const loggerConfig = this.createLogger(level)
+        const paths = [
+            "logger",
+            "history.logger",
+            "relayer.logger",
+            "relayer.messages.logger",
+            "relayer.publisher.logger",
+            "relayer.subscriber.logger",
+            "expirer.logger",
+            "pairing.logger",
+            "pairing.pairings.logger",
+        ]
+    
+        // biome-ignore lint/complexity/noForEach: <explanation>
+        paths.forEach(path => {
+            const keys = path.split('.')
+            const target = keys.reduce((obj, key) => obj[key], core)
+            Object.assign(target, loggerConfig)
+        })
+    }
+    
 
     private setupWalletKitEvents(): void {
         if (!this.walletKit) {

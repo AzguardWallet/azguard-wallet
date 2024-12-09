@@ -133,6 +133,7 @@ const loadProfile = async () => {
 		}
 	} else {
 		await initAccount()
+		await uploadDappSessions()
 	}
 
 	appStore.isSessionChecked = true

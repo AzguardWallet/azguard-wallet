@@ -42,9 +42,16 @@ const handleSelectAccount = acc => {
 	emit("onClose")
 }
 
+const isCopied = ref(false)
 const handleCopyAddress = target => {
+	isCopied.value = true
+
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Address is copied", icon: "copy" })
+
+	setTimeout(() => {
+		isCopied.value = false
+	}, 1_500)
 }
 
 const handleManageAccounts = () => {
@@ -117,17 +124,21 @@ const handleManageAccounts = () => {
 								{{ acc.name }}
 							</Text>
 
-							<Text
-								@click.stop="handleCopyAddress(acc.address)"
-								size="13"
-								weight="600"
-								color="tertiary"
-								class="copyable"
-							>
+							<Text size="13" weight="600" color="tertiary">
 								{{ acc.address.slice(0, 6) }}
 								•••
 								{{ acc.address.slice(-4) }}
 							</Text>
+						</Flex>
+
+						<Flex align="center" gap="8" :class="$style.icons">
+							<Icon
+								@click.stop="handleCopyAddress(acc.address)"
+								:name="isCopied ? 'check-circle' : 'copy'"
+								size="14"
+								:color="isCopied ? 'green' : 'tertiary'"
+								:class="$style.icon_btn"
+							/>
 						</Flex>
 					</Flex>
 
@@ -179,6 +190,10 @@ const handleManageAccounts = () => {
 	&:hover {
 		background: var(--gray-3);
 		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-5);
+
+		& .icons {
+			opacity: 1;
+		}
 	}
 
 	&:active {
@@ -206,5 +221,15 @@ const handleManageAccounts = () => {
 			fill: var(--txt-secondary);
 		}
 	}
+}
+
+.icons {
+	opacity: 0;
+
+	transition: all 0.2s var(--bezier);
+}
+
+.icon_btn {
+	transition: all 0.2s var(--bezier);
 }
 </style>
