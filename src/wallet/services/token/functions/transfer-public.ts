@@ -44,6 +44,7 @@ export abstract class TransferPublicFn extends Fn {
 	}
 
 	public static getDefault(candidates: TransferPublicFn[]): TransferPublicFn | undefined {
+		if (!candidates.length) return undefined;
 		return candidates[0].name === "transfer_in_public" ? candidates[0] : undefined;
 	}
 }

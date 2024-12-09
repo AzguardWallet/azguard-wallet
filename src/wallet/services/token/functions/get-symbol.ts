@@ -48,6 +48,7 @@ export abstract class GetSymbolFn extends ViewFn {
 	}
 
 	public static getDefault(candidates: GetSymbolFn[]): GetSymbolFn | undefined {
+		if (!candidates.length) return undefined;
 		return candidates[0].name === "private_get_symbol" || candidates[0].name === "public_get_symbol"
 			? candidates[0]
 			: undefined;

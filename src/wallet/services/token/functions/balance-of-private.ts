@@ -37,6 +37,7 @@ export abstract class BalanceOfPrivateFn extends ViewFn {
 	}
 
 	public static getDefault(candidates: BalanceOfPrivateFn[]): BalanceOfPrivateFn | undefined {
+		if (!candidates.length) return undefined;
 		return candidates[0].name === "balance_of_private" ? candidates[0] : undefined;
 	}
 }

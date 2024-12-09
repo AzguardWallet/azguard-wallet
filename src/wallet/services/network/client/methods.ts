@@ -1,5 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Network, NETWORK_SERVICE_NAME } from ".";
+import { Network, NETWORK_SERVICE_NAME, NodeStatus } from ".";
 
 export enum NetworkServiceMethod {
     GetNetworks,
@@ -8,6 +8,7 @@ export enum NetworkServiceMethod {
     UpdateNetwork,
     DeleteNetwork,
     SetDefault,
+    GetNodeStatus,
 }
 
 export class GetNetworksRequest extends RequestMessage {
@@ -113,6 +114,24 @@ export class SetDefaultResponse extends ResponseMessage {
     constructor(
         request: SetDefaultRequest,
         result?: Network,
+        error?: string,
+    ) {
+        super(NETWORK_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class GetNodeStatusRequest extends RequestMessage {
+    constructor(
+        public readonly networkId: string,
+    ) {
+        super(NETWORK_SERVICE_NAME, NetworkServiceMethod.GetNodeStatus);
+    }
+}
+
+export class GetNodeStatusResponse extends ResponseMessage {
+    constructor(
+        request: GetNodeStatusRequest,
+        result?: NodeStatus,
         error?: string,
     ) {
         super(NETWORK_SERVICE_NAME, request.id, result, error);
