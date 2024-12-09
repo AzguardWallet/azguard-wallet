@@ -6,7 +6,9 @@ import PopupManager from "./components/popups/PopupManager.vue"
 
 /** Utils */
 import { managers, initNetworks, initTokenService, initTransactionService } from "@/utils/core.js"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
+import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
@@ -26,6 +28,12 @@ const initAccount = async () => {
 	appStore.accounts = await managers.account.getAccounts(true)
 	await appStore.setupActiveAccount()
 }
+
+// Update appStore
+const uploadDappSessions = async () => {
+	appStore.dappSessions = await managers.interaction.getDappSessions(appStore.profile.id)
+}
+const interactionServiceClient = new InteractionServiceClient(undefined, undefined, uploadDappSessions, uploadDappSessions)
 
 /** todo: ref */
 watch(
@@ -52,9 +60,8 @@ watch(
 			await appStore.setupActiveAccount()
 
 			await appStore.syncLocalTokens()
-
-			console.log(appStore.account)
 		} else {
+			appStore.syncNetworkStatus()
 			await appStore.setupActiveAccount()
 
 			initTokenService({
@@ -81,6 +88,7 @@ const loadProfile = async () => {
 		appStore.profile = activeProfile
 
 		await initAccount()
+		await uploadDappSessions()
 
 		initTokenService({
 			profile: appStore.profile,
@@ -116,6 +124,7 @@ const loadProfile = async () => {
 			appStore.profile = profiles[0]
 
 			await initAccount()
+			await uploadDappSessions()
 
 			appStore.isSessionChecked = true
 
@@ -124,6 +133,7 @@ const loadProfile = async () => {
 		}
 	} else {
 		await initAccount()
+		await uploadDappSessions()
 	}
 
 	appStore.isSessionChecked = true
@@ -151,6 +161,7 @@ const init = async () => {
 		appStore.network = networks.findLast(n => n.isDefault)
 		managers.network.setDefault(appStore.network.id)
 	}
+	appStore.syncNetworkStatus()
 
 	loadProfile()
 }
@@ -192,8 +203,8 @@ onMounted(async () => {
 watch(
 	() => route.name,
 	() => {
-		appStore._isHomeScreenOpened = route.name === "popup-register"
-	},
+		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name.includes("windows-")
+	}
 )
 </script>
 

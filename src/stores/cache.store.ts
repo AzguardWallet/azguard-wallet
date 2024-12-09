@@ -11,6 +11,9 @@ export const useCacheStore = defineStore("cache", () => {
 	const activeTxHash = ref()
 	const preselectedBalanceType = ref("private")
 
+	const proposedNetworks = ref([])
+	const selectedNetwork = ref()
+
 	return {
 		confirm,
 		networkToEditIdx,
@@ -18,6 +21,8 @@ export const useCacheStore = defineStore("cache", () => {
 		tokenToEditIdx,
 		activeTokenIdx,
 		activeTxHash,
+		proposedNetworks,
+		selectedNetwork,
 		preselectedBalanceType,
 	}
 })

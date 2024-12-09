@@ -1,4 +1,5 @@
 import type { Account } from "@/wallet/services/account/client"
+import { NodeStatus } from "@/wallet/services/network/client"
 
 import { defineStore } from "pinia"
 
@@ -20,6 +21,7 @@ export const useAppStore = defineStore("app", () => {
 	const accounts = ref<Account[]>([])
 	const isLogined = ref<boolean>(false)
 	const isSessionChecked = ref<boolean>(false)
+	const pageAwaitingAuth = ref<string>("")
 
 	const setupActiveAccount = async () => {
 		const activeAccountResult = await chrome.storage.local.get("azguard:ui:activeAccount")
@@ -116,7 +118,14 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const network = ref()
+	const networkStatus = ref()
 	const networks = ref([])
+
+	const syncNetworkStatus = async () => {
+		networkStatus.value = "sync"
+		const status = await managers.network.getNodeStatus(network.value.id)
+		networkStatus.value = NodeStatus[status]
+	}
 	const updateNetwork = async (id, name, url) => {
 		await managers.network.updateNetwork(id, name, url)
 		networks.value = await managers.network.getNetworks()
@@ -133,6 +142,8 @@ export const useAppStore = defineStore("app", () => {
 			.sort((a, b) => b.updatedAt - a.updatedAt)
 	}
 
+	const dappSessions = ref([])
+
 	const showSendPopup = ref(false)
 	const showRegisterPopup = ref(false)
 
@@ -147,6 +158,7 @@ export const useAppStore = defineStore("app", () => {
 		account,
 		isLogined,
 		isSessionChecked,
+		pageAwaitingAuth,
 		accounts,
 		setupActiveAccount,
 		selectAccount,
@@ -161,7 +173,10 @@ export const useAppStore = defineStore("app", () => {
 		syncBalances,
 		initBalanceListeners,
 		network,
+		networkStatus,
+		syncNetworkStatus,
 		networks,
+		dappSessions,
 		updateNetwork,
 		removeNetwork,
 		transactions,

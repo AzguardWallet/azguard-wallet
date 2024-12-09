@@ -62,6 +62,8 @@ $textColors: (
 	"green": "--green",
 	"red": "--red",
 	"yellow": "--yellow",
+	"gray": "--gray",
+	"sand": "--sand",
 );
 
 @each $key, $value in $textColors {

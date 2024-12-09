@@ -4,10 +4,12 @@ import MenuPopup from "./MenuPopup.vue"
 import NetworksPopup from "./NetworksPopup.vue"
 import NewNetworkPopup from "./NewNetworkPopup.vue"
 import EditNetworkPopup from "./EditNetworkPopup.vue"
+import SelectNetworksPopup from "./SelectNetworksPopup.vue"
 import EditAccountPopup from "./EditAccountPopup.vue"
 import AccountsPopup from "./AccountsPopup.vue"
 import NewAccountPopup from "./NewAccountPopup.vue"
 import SendPopup from "./SendPopup.vue"
+import ConnectByURIPopup from "./ConnectByURIPopup.vue"
 import FaucetPopup from "./FaucetPopup.vue"
 import ReceivePopup from "./ReceivePopup.vue"
 import ResetPopup from "./ResetPopup.vue"
@@ -31,16 +33,15 @@ const popupStore = usePopupStore()
 	<NetworksPopup :show="popupStore.isOpened('networks')" @onClose="popupStore.close('networks')" />
 	<NewNetworkPopup :show="popupStore.isOpened('new_network')" @onClose="popupStore.close('new_network')" />
 	<EditNetworkPopup :show="popupStore.isOpened('edit_network')" @onClose="popupStore.close('edit_network')" />
+	<SelectNetworksPopup :show="popupStore.isOpened('select_network')" @onClose="popupStore.close('select_network')" />
 	<EditAccountPopup :show="popupStore.isOpened('edit_account')" @onClose="popupStore.close('edit_account')" />
 	<AccountsPopup :show="popupStore.isOpened('accounts')" @onClose="popupStore.close('accounts')" />
 	<NewAccountPopup :show="popupStore.isOpened('new_account')" @onClose="popupStore.close('new_account')" />
 	<SendPopup :show="popupStore.isOpened('send')" @onClose="popupStore.close('send')" />
+	<ConnectByURIPopup :show="popupStore.isOpened('connect_by_uri')" @onClose="popupStore.close('connect_by_uri')" />
 	<ReceivePopup :show="popupStore.isOpened('receive')" @onClose="popupStore.close('receive')" />
 	<ResetPopup :show="popupStore.isOpened('reset')" @onClose="popupStore.close('reset')" />
-	<ForgotPasswordPopup
-		:show="popupStore.isOpened('forgot_password')"
-		@onClose="popupStore.close('forgot_password')"
-	/>
+	<ForgotPasswordPopup :show="popupStore.isOpened('forgot_password')" @onClose="popupStore.close('forgot_password')" />
 	<ConfirmPopup :show="popupStore.isOpened('confirm')" @onClose="popupStore.close('confirm')" />
 	<SelectTokenPopup :show="popupStore.isOpened('select_token')" @onClose="popupStore.close('select_token')" />
 	<TokensPopup :show="popupStore.isOpened('tokens')" @onClose="popupStore.close('tokens')" />

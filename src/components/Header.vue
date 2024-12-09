@@ -1,4 +1,7 @@
 <script setup>
+/** Utils */
+import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
+
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
 const { settings } = useSettings()
@@ -43,8 +46,8 @@ const handleOpenPopup = target => {
 					{{ appStore.account.name }}
 				</Text>
 
-				<Text v-if="settings.developer.advancedMode" size="13" weight="600" color="tertiary">
-					{{ appStore.network.name }}
+				<Text v-if="settings.developer.advancedMode" size="13" weight="600" color="tertiary" :class="$style.network_type">
+					{{ getNetworkType(appStore.network.chainId) }}
 				</Text>
 
 				<!-- <Text
@@ -62,15 +65,24 @@ const handleOpenPopup = target => {
 			</Flex>
 		</Flex>
 
-		<Flex
-			@click="handleOpenPopup('networks')"
-			align="center"
-			justify="center"
-			:class="[$style.button, !appStore.isLogined && $style.disabled]"
-		>
-			<Icon name="globe" size="18" color="purple" />
-			<!-- <div :class="$style.dot" /> -->
-		</Flex>
+		<Tooltip side="left">
+			<Flex
+				@click="handleOpenPopup('networks')"
+				align="center"
+				justify="center"
+				:class="[$style.button, !appStore.isLogined && $style.disabled]"
+			>
+				<Icon name="globe" size="18" :color="getNetworkColor(appStore.network?.chainId)" />
+				<div :class="[$style.dot, $style[String(appStore.networkStatus).toLowerCase()]]" />
+			</Flex>
+
+			<template #content>
+				<Flex align="center" gap="2">
+					<Text size="12" color="secondary">Node status:</Text>
+					<Text size="12" :class="$style[String(appStore.networkStatus).toLowerCase()]"> {{ appStore.networkStatus }} </Text>
+				</Flex>
+			</template>
+		</Tooltip>
 	</Flex>
 </template>
 
@@ -108,6 +120,28 @@ const handleOpenPopup = target => {
 	}
 }
 
+@keyframes loading {
+	0% {
+		opacity: 1;
+	}
+
+	25% {
+		opacity: 0.8;
+	}
+
+	50% {
+		opacity: 0.4;
+	}
+
+	70% {
+		opacity: 0.8;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
 .dot {
 	position: absolute;
 	top: 5px;
@@ -120,7 +154,35 @@ const handleOpenPopup = target => {
 	box-shadow: 0 0 0 2px var(--card-bg);
 
 	border-radius: 50%;
-	background: var(--orange);
+	background: var(--gray);
+
+	&.active {
+		background: var(--green);
+	}
+	&.inactive {
+		background: var(--red);
+	}
+	&.invalidchain {
+		background: var(--red);
+	}
+	&.sync {
+		background: var(--gray);
+		animation: loading 1.5s infinite linear;
+	}
+}
+
+.active {
+	color: var(--green);
+}
+.inactive {
+	color: var(--red);
+}
+.invalidchain {
+	color: var(--red);
+}
+.sync {
+	color: var(--gray);
+	animation: loading 1.5s infinite linear;
 }
 
 .account {
@@ -143,6 +205,15 @@ const handleOpenPopup = target => {
 .account_name {
 	max-width: 90px;
 
+	text-wrap: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.network_type{
+	max-width: 90px;
+
+	text-wrap: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }

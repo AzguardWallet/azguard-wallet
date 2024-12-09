@@ -1,5 +1,6 @@
 <script setup>
 /** Components */
+import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
@@ -28,6 +29,8 @@ const handleSelectNetwork = target => {
 	appStore.network = target
 	managers.network.setDefault(appStore.network.id)
 	chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
+
+	emit("onClose")
 }
 
 const handleManageNetworks = () => {
@@ -73,9 +76,7 @@ const handleManageNetworks = () => {
 									{{ network.name }}
 								</Text>
 
-								<Badge variant="purple">
-									<Text size="11" weight="700"> Custom </Text>
-								</Badge>
+								<NetworkBadge :chainId="network.chainId" />
 							</Flex>
 
 							<Tooltip position="end">

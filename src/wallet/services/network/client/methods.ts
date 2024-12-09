@@ -12,7 +12,9 @@ export enum NetworkServiceMethod {
 }
 
 export class GetNetworksRequest extends RequestMessage {
-    constructor() {
+    constructor(
+        public readonly chainId?: number,
+    ) {
         super(NETWORK_SERVICE_NAME, NetworkServiceMethod.GetNetworks);
     }
 }

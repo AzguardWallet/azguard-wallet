@@ -1,4 +1,4 @@
-import { storage, StorageArea, StorageType } from ".";
+import { storage, type StorageArea, StorageType } from ".";
 
 export class EntityStorage<T> {
     private readonly storage: StorageArea;
@@ -17,7 +17,7 @@ export class EntityStorage<T> {
 
     public async get(id: string): Promise<T | undefined> {
         const key = `${this.root}@${id}`;
-        var res = await this.storage.get(key);
+        const res = await this.storage.get(key);
         if (key in res) {
             return JSON.parse(res[key]);
         }
@@ -54,5 +54,14 @@ export class EntityStorage<T> {
         return Object.entries(res)
             .filter(([k, _]) => k.startsWith(path))
             .map(([_, v]) => JSON.parse(v));
+    }
+
+    public async findByPredicate(predicate: (entity: T) => boolean): Promise<Array<{ key: string, entity: T }>> {
+        const allEntities = await this.getAll()
+        const foundEntities = allEntities
+            .filter(([, entity]) => predicate(entity))
+            .map(([key, entity]) => ({ key, entity }))
+
+        return foundEntities
     }
 }

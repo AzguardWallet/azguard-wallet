@@ -2,12 +2,12 @@ const toast = ref()
 let closeTm
 
 export const useToast = () => {
-	const openToast = (newToast) => {
+	const openToast = (newToast, duration = 5_000) => {
 		toast.value = newToast
 
 		closeTm = setTimeout(() => {
 			toast.value = null
-		}, 5_000)
+		}, duration)
 	}
 
 	const closeToast = () => {

@@ -64,9 +64,13 @@ const handleOpen = target => {
 			<Text size="11" weight="500" color="tertiary" height="140" align="center">
 				By continuing, you are confirming that you read and agree to
 
-				<Text @click="handleOpen('terms')" color="secondary">Terms of Use</Text>
+				<Text @click="handleOpen('terms')" color="secondary" :class="$style.link"
+					>Terms of Use</Text
+				>
 				and
-				<Text @click="handleOpen('privacy')" color="secondary">Privacy Policy</Text>
+				<Text @click="handleOpen('privacy')" color="secondary" :class="$style.link"
+					>Privacy Policy</Text
+				>
 			</Text>
 
 			<Flex align="center" gap="4" :class="$style.theme_switcher">
@@ -125,6 +129,14 @@ const handleOpen = target => {
 	margin-bottom: 24px;
 
 	transition: all 0.5s var(--bezier);
+}
+
+.link {
+	cursor: pointer;
+
+	&:hover {
+		color: var(--txt-primary);
+	}
 }
 
 .theme_switcher {

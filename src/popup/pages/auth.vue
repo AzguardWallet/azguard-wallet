@@ -17,9 +17,12 @@ import { usePopupStore } from "@/stores/popup.store.ts"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
+const route = useRoute()
 const router = useRouter()
 
-if (appStore.isLogined) router.push("/popup/general")
+if (appStore.isLogined) {
+	router.go(-1)
+}
 
 const inputElement = useTemplateRef("inputElement")
 const password = ref("")
@@ -76,8 +79,13 @@ const handleUnlockWallet = async () => {
 		appStore.initBalanceListeners()
 
 		appStore.isLogined = true
-
-		router.push("/popup/general")
+		
+		if (appStore.pageAwaitingAuth) {
+			appStore.pageAwaitingAuth = ""
+			router.go(-1)
+		} else {
+			router.push("/popup/general")
+		}
 	} catch (err) {
 		console.log(err)
 	}
@@ -99,7 +107,13 @@ onBeforeUnmount(() => {
 watch(
 	() => appStore.isLogined,
 	() => {
-		router.push("/popup/general")
+		if (appStore.pageAwaitingAuth) {
+			appStore.pageAwaitingAuth = ""
+			router.go(-1)
+		} else {
+			router.push("/popup/general")
+		}
+		// router.push("/popup/general")
 	},
 )
 </script>

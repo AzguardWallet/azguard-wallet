@@ -99,9 +99,25 @@ const handleOpen = target => {
 			</Flex>
 
 			<Flex wide align="center" gap="10">
-				<Text @click="handleOpen('terms')" size="12" weight="600" color="blue"> Terms of Use </Text>
+				<Text
+					@click="handleOpen('terms')"
+					size="12"
+					weight="600"
+					color="blue"
+					:class="$style.link"
+				>
+					Terms of Use
+				</Text>
 				<Text size="12" color="support">•</Text>
-				<Text @click="handleOpen('privacy')" size="12" weight="600" color="blue"> Privacy Policy </Text>
+				<Text
+					@click="handleOpen('privacy')"
+					size="12"
+					weight="600"
+					color="blue"
+					:class="$style.link"
+				>
+					Privacy Policy
+				</Text>
 			</Flex>
 		</Flex>
 
@@ -140,5 +156,9 @@ const handleOpen = target => {
 	&:active {
 		background: var(--gray-5);
 	}
+}
+
+.link {
+	cursor: pointer;
 }
 </style>

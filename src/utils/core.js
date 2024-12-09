@@ -1,5 +1,7 @@
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
+import { InteractionServiceClient } from "@/wallet/services/interaction/client"
+import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { ExecutionServiceClient } from "@/wallet/services/execution/client"
@@ -8,6 +10,8 @@ import { FaucetServiceClient } from "@/wallet/services/faucet/client"
 
 const profileService = new ProfileServiceClient()
 const networkService = new NetworkServiceClient()
+const walletConnectService = new WalletConnectServiceClient()
+const interactionSevice = new InteractionServiceClient()
 const balanceService = new TokenBalanceServiceClient()
 
 const faucetService = new FaucetServiceClient()
@@ -25,6 +29,8 @@ const executionService = new ExecutionServiceClient(
 export const managers = {
 	profile: profileService,
 	network: networkService,
+	wallectConnect: walletConnectService,
+	interaction: interactionSevice,
 	balance: balanceService,
 	execution: executionService,
 	faucet: faucetService,

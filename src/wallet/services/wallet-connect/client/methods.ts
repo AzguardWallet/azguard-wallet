@@ -1,0 +1,157 @@
+import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { WALLET_CONNECT_SERVICE_NAME } from ".";
+import type { DappSession } from "@/wallet/services/interaction/client/models";
+import type { Account } from "@/wallet/services/account/client/models";
+
+// biome-ignore lint/style/useEnumInitializers: <explanation>
+export enum WalletConnectServiceMethod {
+    ConnectByURI,
+    ValidateProposal,
+    ApproveDappSession,
+    RejectDappSession,
+    DropDappSession,
+    ConfirmSessionRequest,
+    RejectSessionRequest,
+}
+
+export class ConnectByURIRequest extends RequestMessage {
+    constructor(
+        public readonly uri: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.ConnectByURI);
+    }
+}
+
+export class ConnectByURIResponse extends ResponseMessage {
+    constructor(
+        request: ConnectByURIRequest,
+        result?: boolean,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class ValidateProposalRequest extends RequestMessage {
+    public readonly addressesEntries: [number, string][];
+
+    constructor(
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly payload: any,
+        public readonly addresses: Map<number, string>,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.ValidateProposal);
+        this.addressesEntries = [...addresses.entries()];
+    }
+}
+
+export class ValidateProposalResponse extends ResponseMessage {
+    constructor(
+        request: ValidateProposalRequest,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        result?: any,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class ApproveDappSessionRequest extends RequestMessage {
+    constructor(
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly payload: any,
+        public readonly profileId: string,
+        public readonly chainIds: Array<number>,
+        public readonly accounts: Array<Account>,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.ApproveDappSession);
+    }
+}
+
+export class ApproveDappSessionResponse extends ResponseMessage {
+    constructor(
+        request: ApproveDappSessionRequest,
+        result?: DappSession,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class RejectDappSessionRequest extends RequestMessage {
+    constructor(
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly payload: any,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.RejectDappSession);
+    }
+}
+
+export class RejectDappSessionResponse extends ResponseMessage {
+    constructor(
+        request: RejectDappSessionRequest,
+        result?: boolean,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class DropDappSessionRequest extends RequestMessage {
+    constructor(
+        public readonly dappSession: DappSession,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.DropDappSession);
+    }
+}
+
+export class DropDappSessionResponse extends ResponseMessage {
+    constructor(
+        request: DropDappSessionRequest,
+        result?: boolean,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class ConfirmSessionRequestRequest extends RequestMessage {
+    constructor(
+        public readonly networkId: string,
+        public readonly accountAddress: string,
+        public readonly dappName: string,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly payload: any,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.ConfirmSessionRequest);
+    }
+}
+
+export class ConfirmSessionRequestResponse extends ResponseMessage {
+    constructor(
+        request: ConfirmSessionRequestRequest,
+        result?: string | boolean,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class RejectSessionRequestRequest extends RequestMessage {
+    constructor(
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly payload: any,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, WalletConnectServiceMethod.RejectSessionRequest);
+    }
+}
+
+export class RejectSessionRequestResponse extends ResponseMessage {
+    constructor(
+        request: RejectSessionRequestRequest,
+        result?: boolean,
+        error?: string,
+    ) {
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+    }
+}

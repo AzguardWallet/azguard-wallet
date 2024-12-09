@@ -4,6 +4,8 @@ import { Service } from "./base/service";
 import { AccountService } from "./services/account";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
+import { InteractionService } from "./services/interaction";
+import { WalletConnectService } from "./services/wallet-connect";
 import { TokenService } from "./services/token";
 import { sleep } from "./utils";
 import { TokenBalanceService } from "./services/token-balance";
@@ -74,6 +76,8 @@ const faucetService = new FaucetService(
     tokenService,
     broadcast,
 );
+const interactionService = new InteractionService(executionService, broadcast);
+const walletConnectService = new WalletConnectService(interactionService, broadcast);
 
 const services = new Map<string, Service>([
     [profileService.name, profileService],
@@ -84,6 +88,8 @@ const services = new Map<string, Service>([
     [transactionService.name, transactionService],
     [executionService.name, executionService],
     [faucetService.name, faucetService],
+    [interactionService.name, interactionService],
+    [walletConnectService.name, walletConnectService],
 ]);
 
 // state

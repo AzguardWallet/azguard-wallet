@@ -9,6 +9,10 @@
 <script setup>
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
+import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
+
+/** Utils */
+import { managers } from "@/utils/core"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -89,9 +93,7 @@ const handleDelete = target => {
 							{{ network.name }}
 						</Text>
 
-						<Badge variant="purple">
-							<Text size="11" weight="700"> Custom </Text>
-						</Badge>
+						<NetworkBadge :chainId="network.chainId" />
 					</Flex>
 
 					<Flex align="center" gap="14" :class="$style.icons">

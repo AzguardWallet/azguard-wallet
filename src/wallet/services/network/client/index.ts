@@ -77,8 +77,8 @@ export class NetworkServiceClient extends ServiceClient {
     /**
      * Returns a list of networks.
      */
-    public getNetworks(): Promise<Network[]> {
-        return this.request(new GetNetworksRequest());
+    public getNetworks(chainId?: number): Promise<Network[]> {
+        return this.request(new GetNetworksRequest(chainId));
     }
 
     /**
