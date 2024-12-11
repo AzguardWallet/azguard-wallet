@@ -10,10 +10,10 @@ import { defineViteConfig as define } from "./define.config"
 
 export default defineConfig({
 	server: {
-		port: 8080,
+		port: 8088,
 		strictPort: true,
 		hmr: {
-			port: 8080,
+			port: 8088,
 		},
 	},
 	resolve: {

@@ -83,7 +83,7 @@ export abstract class ServiceClient {
                 if (requestPromise) {
                     console.debug(`Response for request #${response.requestId} received.`);
                     const [resolve, reject] = requestPromise;
-                    if (response.error) reject(response.error);
+                    if (response.error !== undefined) reject(response.error);
                     else resolve(response.result);
                     this.requests.delete(response.requestId);
                     console.debug(`Request #${response.requestId} processed. Total: ${this.requests.size}.`);

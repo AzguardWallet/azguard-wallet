@@ -2,7 +2,7 @@ import { Fr } from "@aztec/aztec.js";
 import { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import { EntityStorage, SimpleStorage, StorageType } from "@/wallet/storage";
-import { array_equals, getRandomHex } from "@/wallet/utils";
+import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
 import { EncryptionKey } from "./encryption-key";
 import {
     ChangeProfileNameRequest,
@@ -25,13 +25,15 @@ import {
     ImportEncryptedResponse,
     ImportPlainRequest,
     ImportPlainResponse,
-    LockRequest,
-    LockResponse,
+    LockActiveProfileRequest,
+    LockActiveProfileResponse,
     PROFILE_SERVICE_NAME,
     Profile,
     ProfileServiceEvent,
     ProfileServiceEventMessage,
     ProfileServiceMethod,
+    RefreshSessionRequest,
+    RefreshSessionResponse,
     UnlockProfileRequest,
     UnlockProfileResponse
 } from "./client";
@@ -48,20 +50,31 @@ type SessionDto = {
     since: number;
 }
 
+type ActiveSession = {
+    profile: ProfileDto,
+    session: SessionDto,
+    key: EncryptionKey,
+}
+
 const encryptionGuard = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
+const sessionTtl = 600_000; // 10 minutes. TODO: configure it in settings
 
 export class ProfileService extends Service {
     public readonly onProfileDeleted: ((profileId: string) => void)[] = [];
-    public readonly onSessionOpened: ((profileId: string) => void)[] = [];
-    public readonly onSessionClosed: (() => void)[] = [];
+    public readonly onActiveProfileChanged: ((profileId?: string) => void)[] = [];
 
     private readonly profiles: EntityStorage<ProfileDto>;
     private readonly session: SimpleStorage<SessionDto>;
+    private readonly lock = new Lock();
+
+    private initPromise?: Promise<void>;
+    private activeSession?: ActiveSession;
 
     constructor(emit: (event: EventMessage) => void) {
         super(PROFILE_SERVICE_NAME, emit);
         this.profiles = new EntityStorage('azguard:core:profiles', StorageType.Local);
         this.session = new SimpleStorage('azguard:core:profiles', StorageType.Session);
+        this.initPromise = this._initSession();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -90,7 +103,6 @@ export class ProfileService extends Service {
                 const _request = request as CreateProfileRequest;
                 try {
                     const profile = await this.createProfile(_request.name, _request.password);
-                    this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileAdded, profile));
                     return new CreateProfileResponse(_request, profile);
                 }
                 catch (error: any) {
@@ -101,33 +113,36 @@ export class ProfileService extends Service {
                 const _request = request as UnlockProfileRequest;
                 try {
                     const profile = await this.unlockProfile(_request.profileId, _request.password);
-                    if (profile) {
-                        this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileUnlocked, profile));
-                    }
                     return new UnlockProfileResponse(_request, profile);
                 }
                 catch (error: any) {
                     return new UnlockProfileResponse(_request, undefined, error.message);
                 }
             }
-            case ProfileServiceMethod.Lock: {
-                const _request = request as LockRequest;
+            case ProfileServiceMethod.LockActiveProfile: {
+                const _request = request as LockActiveProfileRequest;
                 try {
-                    await this.lock();
-                    this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.Locked));
-                    return new LockResponse(_request);
+                    await this.lockActiveProfile();
+                    return new LockActiveProfileResponse(_request);
                 }
                 catch (error: any) {
-                    return new LockResponse(_request);
+                    return new LockActiveProfileResponse(_request);
+                }
+            }
+            case ProfileServiceMethod.RefreshSession: {
+                const _request = request as RefreshSessionRequest;
+                try {
+                    await this.refreshSession();
+                    return new RefreshSessionResponse(_request);
+                }
+                catch (error: any) {
+                    return new RefreshSessionResponse(_request);
                 }
             }
             case ProfileServiceMethod.ChangeProfileName: {
                 const _request = request as ChangeProfileNameRequest;
                 try {
                     const profile = await this.changeProfileName(_request.profileId, _request.name);
-                    if (profile) {
-                        this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileUpdated, profile));
-                    }
                     return new ChangeProfileNameResponse(_request, profile);
                 }
                 catch (error: any) {
@@ -138,9 +153,6 @@ export class ProfileService extends Service {
                 const _request = request as ChangeProfilePasswordRequest;
                 try {
                     const profile = await this.changeProfilePassword(_request.profileId, _request.oldPassword, _request.newPassword);
-                    if (profile) {
-                        this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileUpdated, profile));
-                    }
                     return new ChangeProfilePasswordResponse(_request, profile);
                 }
                 catch (error: any) {
@@ -151,25 +163,16 @@ export class ProfileService extends Service {
                 const _request = request as DeleteProfileRequest;
                 try {
                     const profile = await this.deleteProfile(_request.profileId);
-                    if (profile) {
-                        this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileDeleted, profile));
-                        for (const emit of this.onProfileDeleted) {
-                            try {emit(profile.id)} catch {}
-                        }
-                    }
                     return new DeleteProfileResponse(_request, profile);
                 }
                 catch (error: any) {
-                    return new DeleteProfileResponse(_request);
+                    return new DeleteProfileResponse(_request, undefined, error.message);
                 }
             }
             case ProfileServiceMethod.ImportEncrypted: {
                 const _request = request as ImportEncryptedRequest;
                 try {
                     const profile = await this.importEncrypted(_request.name, _request.secret, _request.password);
-                    if (profile) {
-                        this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileAdded, profile));
-                    }
                     return new ImportEncryptedResponse(_request, profile);
                 }
                 catch (error: any) {
@@ -180,7 +183,6 @@ export class ProfileService extends Service {
                 const _request = request as ImportPlainRequest;
                 try {
                     const profile = await this.importPlain(_request.name, _request.secret, _request.password);
-                    this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileAdded, profile));
                     return new ImportPlainResponse(_request, profile);
                 }
                 catch (error: any) {
@@ -215,13 +217,8 @@ export class ProfileService extends Service {
     }
 
     public async getProfiles(): Promise<Array<Profile>> {
-        const records = await this.profiles.getAll();
-        return records.map(([k, v]) => new Profile(k, v.name))
-    }
-
-    public async getProfile(id: string): Promise<Profile | undefined> {
-        const profile = await this.profiles.get(id);
-        return profile !== undefined ? new Profile(id, profile.name) : undefined;
+        const entries = await this.profiles.getAll();
+        return entries.map(([id, profile]) => new Profile(id, profile.name))
     }
 
     public async createProfile(name: string, password: string): Promise<Profile> {
@@ -229,115 +226,165 @@ export class ProfileService extends Service {
         const key = await EncryptionKey.fromPasshash(passhash);
         const guard = await key.encrypt(encryptionGuard);
         const secret = await key.encrypt(Fr.random().toBuffer());
-        
-        let id: string;
-        do { id = getRandomHex(8); }
-        while (await this.profiles.contains(id));
-        
-        const profileDto = {
-            name,
-            guard: Buffer.from(guard.buffer).toString('base64'),
-            secret: Buffer.from(secret.buffer).toString('base64'),
-        };
-        await this.profiles.set(id, profileDto);
+        try {
+            await this.lock.enter();
 
-        await this._openSession(id, passhash);
+            let id: string;
+            do { id = getRandomHex(8); }
+            while (await this.profiles.contains(id));
+            
+            const profileDto: ProfileDto = {
+                name,
+                guard: Buffer.from(guard.buffer).toString('base64'),
+                secret: Buffer.from(secret.buffer).toString('base64'),
+            };
+            await this.profiles.set(id, profileDto);
 
-        return new Profile(id, name);
+            const profile = new Profile(id, name);
+            this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileAdded, profile));
+            
+            await this.initPromise;
+            await this._openSession(id, profileDto, key, passhash);
+
+            return profile;
+        }
+        finally {
+            this.lock.leave();
+        }
     }
 
-    public async unlockProfile(id: string, password: string): Promise<Profile | undefined> {
-        const profile = await this.profiles.get(id);
-        if (profile !== undefined) {
-            try {
-                const passhash = await EncryptionKey.getPasshash(password);
-                const key = await EncryptionKey.fromPasshash(passhash);
-                const guard = await key.decrypt(Buffer.from(profile.guard, 'base64'));
-                if (array_equals(guard, encryptionGuard)) {
-                    await this._openSession(id, passhash);
-                    return new Profile(id, profile.name);
-                }
-            }
-            catch { }
-        }
-        return undefined;
-    }
+    public async unlockProfile(id: string, password: string): Promise<Profile> {
+        const passhash = await EncryptionKey.getPasshash(password);
+        const key = await EncryptionKey.fromPasshash(passhash);
+        try {
+            await this.lock.enter();
 
-    public async readActiveProfile(): Promise<Profile | undefined> {
-        const session = await this._getActiveSession();
-        const day = 1000 * 60 * 60 * 24; // TODO: use settings
-        if (session) {
-            if (session.since > Date.now() - day) {
-                const profile = await this.profiles.get(session.profile);
-                if (profile !== undefined) {
-                    const passhash = Buffer.from(session.passhash, 'base64');
-                    const key = await EncryptionKey.fromPasshash(passhash);
-                    const guard = await key.decrypt(Buffer.from(profile.guard, 'base64'));
-                    if (array_equals(guard, encryptionGuard)) {
-                        return new Profile(session.profile, profile.name);
-                    }
-                }
+            const profileDto = await this.profiles.get(id);
+            if (!profileDto) {
+                throw new Error("Invalid profile id");
             }
-            await this._closeSession();
+
+            const guard = await this.tryDecrypt(Buffer.from(profileDto.guard, 'base64'), key);
+            if (!guard || !array_equals(guard, encryptionGuard)) {
+                throw new Error("Invalid profile password");
+            }
+
+            await this.initPromise;
+            await this._openSession(id, profileDto, key, passhash);
+
+            return new Profile(id, profileDto.name);
         }
-        return undefined;
+        finally {
+            this.lock.leave();
+        }
     }
 
     public async getActiveProfile(): Promise<Profile | undefined> {
-        const activeProfile = await this.readActiveProfile();
-        if (activeProfile) await this._extendSession();
-        return activeProfile;
+        try {
+            await this.lock.enter();
+
+            const session = await this._getSession();
+            return session
+                ? new Profile(session.session.profile, session.profile.name)
+                : undefined;
+        }
+        finally {
+            this.lock.leave();
+        }
     }
 
-    public async getProfileSecret(id: string): Promise<Fr | undefined> {
-        const session = await this._getActiveSession();
-        const day = 1000 * 60 * 60 * 24; // TODO: use settings
-        
-        if (session?.profile === id && session.since > Date.now() - day) {
-            const profile = await this.profiles.get(session.profile);
-            if (profile !== undefined) {
-                const passhash = Buffer.from(session.passhash, 'base64');
-                const key = await EncryptionKey.fromPasshash(passhash);
-                const guard = await this._tryDecrypt(Buffer.from(profile.guard, 'base64'), key);
-                if (guard && array_equals(guard, encryptionGuard)) {
-                    const secret = await this._tryDecrypt(Buffer.from(profile.secret, 'base64'), key);
-                    if (secret) {
-                        return Fr.fromBuffer(Buffer.from(secret));
-                    }
-                }
+    public async getProfileSecret(id: string): Promise<Fr> {
+        try {
+            await this.lock.enter();
+
+            const session = await this._getSession();
+            if (session?.session.profile !== id) {
+                throw new Error("Profile locked");
             }
-        }
-        return undefined;
-    }
-
-    public async lock(): Promise<void> {
-        await this._closeSession();
-    }
-
-    public async changeProfileName(id: string, newName: string): Promise<Profile | undefined> {
-        const profile = await this.profiles.get(id);
-        if (profile) {
-            await this.profiles.set(id, {...profile, name: newName});
-            return new Profile(id, newName);
-        }
-        return undefined;
-    }
-
-    public async changeProfilePassword(id: string, oldPassword: string, newPassword: string): Promise<Profile | undefined> {
-        const activeProfile = await this.getActiveProfile();
-        const profile = await this.profiles.get(id);
-        if (profile) {
-            const oldPasshash = await EncryptionKey.getPasshash(oldPassword);
-            const oldKey = await EncryptionKey.fromPasshash(oldPasshash);
             
-            const guard = await this._tryDecrypt(Buffer.from(profile.guard, 'base64'), oldKey);
-            if (!guard || !array_equals(guard, encryptionGuard)) {
-                throw new Error('wrong password');
+            const secret = await this.tryDecrypt(Buffer.from(session.profile.secret, 'base64'), session.key);
+            if (!secret) {
+                throw new Error("Profile session corrupted");
             }
 
-            const secret = await this._tryDecrypt(Buffer.from(profile.secret, 'base64'), oldKey);
+            return Fr.fromBuffer(Buffer.from(secret));
+        }
+        finally {
+            this.lock.leave();
+        }
+    }
+    
+    public async lockActiveProfile(): Promise<void> {
+        try {
+            await this.lock.enter();
+
+            await this.initPromise;
+            await this._closeSession();
+        }
+        finally {
+            this.lock.leave();
+        }
+    }
+
+    public async refreshSession(): Promise<void> {
+        try {
+            await this.lock.enter();
+
+            await this.initPromise;
+            await this._refreshSession();
+        }
+        finally {
+            this.lock.leave();
+        }
+    }
+
+    public async changeProfileName(id: string, newName: string): Promise<Profile> {
+        try {
+            await this.lock.enter();
+
+            const profileDto = await this.profiles.get(id);
+            if (!profileDto) {
+                throw new Error("Invalid profile id");
+            }
+
+            profileDto.name = newName;
+            await this.profiles.set(id, profileDto);
+
+            const profile = new Profile(id, profileDto.name);
+            this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileUpdated, profile));
+
+            await this.initPromise;
+            const session = await this._getSession();
+            if (session?.session.profile === id) {
+                session.profile = profileDto;
+            }
+
+            return profile;
+        }
+        finally {
+            this.lock.leave();
+        }
+    }
+
+    public async changeProfilePassword(id: string, oldPassword: string, newPassword: string): Promise<Profile> {
+        const oldPasshash = await EncryptionKey.getPasshash(oldPassword);
+        const oldKey = await EncryptionKey.fromPasshash(oldPasshash);
+        try {
+            await this.lock.enter();
+
+            const profileDto = await this.profiles.get(id);
+            if (!profileDto) {
+                throw new Error("Invalid profile id");
+            }
+
+            const guard = await this.tryDecrypt(Buffer.from(profileDto.guard, 'base64'), oldKey);
+            if (!guard || !array_equals(guard, encryptionGuard)) {
+                throw new Error('Invalid profile old password');
+            }
+
+            const secret = await this.tryDecrypt(Buffer.from(profileDto.secret, 'base64'), oldKey);
             if (!secret) {
-                throw new Error('storage corrupted');
+                throw new Error('Profile storage corrupted');
             }
 
             const newPasshash = await EncryptionKey.getPasshash(newPassword);
@@ -345,43 +392,76 @@ export class ProfileService extends Service {
             const newGuard = await newKey.encrypt(guard);
             const newSecret = await newKey.encrypt(secret);
             
-            const profileDto = {
-                ...profile,
-                guard: Buffer.from(newGuard.buffer).toString('base64'),
-                secret: Buffer.from(newSecret.buffer).toString('base64'),
-            };
+            profileDto.guard = Buffer.from(newGuard.buffer).toString('base64');
+            profileDto.secret = Buffer.from(newSecret.buffer).toString('base64');
             await this.profiles.set(id, profileDto);
-    
-            if (activeProfile?.id === id) {
-                await this._openSession(id, newPasshash);
+            
+            const profile = new Profile(id, profileDto.name);
+            this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileUpdated, profile));
+
+            await this.initPromise;
+            const session = await this._getSession();
+            if (session?.session.profile === id) {
+                await this._openSession(id, profileDto, newKey, newPasshash);
             }
 
-            return new Profile(id, profile.name);
-        }
-        return undefined;
-    }
-
-    public async deleteProfile(id: string): Promise<Profile | undefined> {
-        const activeProfile = await this.getActiveProfile();
-        if (activeProfile?.id === id) {
-            await this._closeSession();
-            await this.profiles.delete(id);
-            return activeProfile;
-        }
-        const profile = await this.getProfile(id);
-        if (profile) {
-            await this.profiles.delete(id);
             return profile;
         }
-        return undefined;
+        finally {
+            this.lock.leave();
+        }
     }
 
-    public async importEncrypted(name: string, secret: string, password: string): Promise<Profile | undefined> {
-        throw new Error('not implemented');
+    public async deleteProfile(id: string): Promise<Profile> {
+        try {
+            await this.lock.enter();
+
+            const profileDto = await this.profiles.get(id);
+            if (!profileDto) {
+                throw new Error("Invalid profile id");
+            }
+
+            await this.profiles.delete(id);
+            
+            const profile = new Profile(id, profileDto.name);
+            this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileDeleted, profile));
+            for (const emit of this.onProfileDeleted) {
+                try {emit(id)} catch {}
+            }
+            
+            await this.initPromise;
+            const session = await this._getSession();
+            if (session?.session.profile === id) {
+                await this._closeSession();
+            }
+
+            return profile;
+        }
+        finally {
+            this.lock.leave();
+        }
+    }
+
+    public async importEncrypted(name: string, secret: string, password: string): Promise<Profile> {
+        try {
+            await this.lock.enter();
+
+            throw new Error('not implemented');
+        }
+        finally {
+            this.lock.leave();
+        }
     }
 
     public async importPlain(name: string, secret: string, password: string): Promise<Profile> {
-        throw new Error('not implemented');
+        try {
+            await this.lock.enter();
+
+            throw new Error('not implemented');
+        }
+        finally {
+            this.lock.leave();
+        }
     }
 
     public async exportEncrypted(id: string): Promise<string> {
@@ -392,43 +472,117 @@ export class ProfileService extends Service {
         throw new Error('not implemented');
     }
 
-    private async _openSession(profile: string, passhash: ArrayBuffer): Promise<void> {
-        const session: SessionDto = {
-            profile,
-            passhash: Buffer.from(passhash).toString('base64'),
-            since: Date.now(),
-        };
-        await this.session.set('active_session', session);
-        for (const emit of this.onSessionOpened) {
-            try {emit(profile)} catch {}
+    private async _initSession() {
+        try {
+            const session = await this.session.get('active_profile');
+            if (session) {
+                if (session.since + sessionTtl > Date.now()) {
+                    const profile = await this.profiles.get(session.profile);
+                    if (profile) {
+                        const passhash = Buffer.from(session.passhash, 'base64');
+                        const key = await EncryptionKey.fromPasshash(passhash);
+                        const guard = await this.tryDecrypt(Buffer.from(profile.guard, 'base64'), key);
+                        if (guard && array_equals(guard, encryptionGuard)) {
+                            console.debug('session restored');
+                            this.activeSession = {profile, session, key};
+                        }
+                        else {
+                            console.debug('session contains wrong credentials');
+                            await this._closeSession();
+                        }
+                    }
+                    else {
+                        console.debug('session refers wrong profile');
+                        await this._closeSession();
+                    }
+                }
+                else {
+                    console.debug('session expired');
+                    await this._closeSession();
+                }
+            }
         }
-    }
-
-    private async _extendSession(): Promise<void> {
-        const session = await this.session.get('active_session');
-        if (session) {
-            session.since = Date.now();
-            await this.session.set('active_session', session);
+        catch (error) {
+            console.error("Failed to initialize profile session", error);
         }
-    }
-
-    private _getActiveSession(): Promise<SessionDto | null> {
-        return this.session.get('active_session');
     }
     
     private async _closeSession(): Promise<void> {
-        await this.session.delete('active_session');
-        for (const emit of this.onSessionClosed) {
-            try {emit()} catch {}
+        try {
+            await this.session.delete('active_profile');
+            if (this.activeSession) {
+                this.activeSession = undefined;
+                this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ActiveProfileChanged, undefined));
+                for (const emit of this.onActiveProfileChanged) {
+                    try {emit(undefined)} catch {}
+                }
+            }
+        }
+        catch (error) {
+            console.error("Failed to close profile session", error);
         }
     }
 
-    private _tryDecrypt(payload: Uint8Array, key: EncryptionKey): Promise<Uint8Array | undefined> {
-        try {
-            return key.decrypt(payload);
+    private async _getSession(): Promise<ActiveSession | undefined> {
+        if (this.activeSession) {
+            if (this.activeSession.session.since + sessionTtl > Date.now()) {
+                return this.activeSession;
+            }
+            else {
+                console.debug('session expired');
+                await this._closeSession();
+            }
         }
-        catch {
-            return Promise.resolve(undefined);
+        return undefined;
+    }
+
+    private async _refreshSession(): Promise<void> {
+        try {
+            const session = await this._getSession();
+            if (session) {
+                session.session.since = Date.now();
+                await this.session.set('active_profile', session.session);
+            }
+        }
+        catch (error) {
+            console.error("Failed to refresh profile session", error);
+        }
+    }
+
+    private async _openSession(
+        profileId: string,
+        profile: ProfileDto,
+        key: EncryptionKey,
+        passhash: ArrayBuffer,
+    ): Promise<void> {
+        try {
+            const session: SessionDto = {
+                profile: profileId,
+                passhash: Buffer.from(passhash).toString('base64'),
+                since: Date.now(),
+            };
+            await this.session.set('active_profile', session);
+            this.activeSession = {profile, session, key};
+            this.emit(new ProfileServiceEventMessage(
+                ProfileServiceEvent.ActiveProfileChanged,
+                new Profile(profileId, profile.name)),
+            );
+            for (const emit of this.onActiveProfileChanged) {
+                try {emit(profileId)} catch {}
+            }
+        }
+        catch (error) {
+            console.error("Failed to open profile session", error);
+        }
+    }
+
+    private async tryDecrypt(payload: Uint8Array, key: EncryptionKey): Promise<Uint8Array | undefined> {
+        try {
+            return await key.decrypt(payload);
+        }
+        catch (error) {
+            console.debug("Failed to decrypt payload", error);
+            return undefined;
         }
     }
 }

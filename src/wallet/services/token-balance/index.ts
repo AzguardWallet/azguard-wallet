@@ -184,12 +184,8 @@ export class TokenBalanceService extends Service {
 		this.queue.priorityPass(tb)
 	}
 
-	private readonly onSessionOpened = async (profileId: string) => {
+	private readonly onActiveProfileChanged = async (profileId?: string) => {
 		this.profile = profileId
-	}
-
-	private readonly onSessionClosed = async () => {
-		this.profile = undefined
 	}
 
 	private readonly onDefaultNetworkChanged = async (network: Network) => {
@@ -256,7 +252,7 @@ export class TokenBalanceService extends Service {
 		while (true) {
 			try {
 				this.profile = (
-					await this.profileService.readActiveProfile()
+					await this.profileService.getActiveProfile()
 				)?.id
 
 				for (const network of (
@@ -272,8 +268,7 @@ export class TokenBalanceService extends Service {
 					this.tokens.set(token.id, token)
 				}
 
-				this.profileService.onSessionOpened.push(this.onSessionOpened)
-				this.profileService.onSessionClosed.push(this.onSessionClosed)
+				this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged)
 				this.networkService.onDefaultNetworkChanged.push(
 					this.onDefaultNetworkChanged
 				)

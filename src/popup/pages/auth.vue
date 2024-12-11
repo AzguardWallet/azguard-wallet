@@ -45,13 +45,16 @@ const handleUnlockWallet = async () => {
 	if (!isAllowedToContinue.value) return
 
 	try {
-		isAwaitingResponse.value = true
-		const activeProfile = await managers.profile.unlockProfile(appStore.profile.id, password.value)
-		isAwaitingResponse.value = false
-
-		if (!activeProfile) {
+		let activeProfile
+		try {
+			isAwaitingResponse.value = true
+			activeProfile = await managers.profile.unlockProfile(appStore.profile.id, password.value)
+		} catch (error) {
+			// TODO: not all errors are about wrong password
 			isWrongPassword.value = true
 			return
+		} finally {
+			isAwaitingResponse.value = false
 		}
 
 		password.value = ""
@@ -68,9 +71,12 @@ const handleUnlockWallet = async () => {
 			appStore.isAwaitingTransaction = false
 		})
 
-		managers.profile.onLocked = () => {
-			appStore.isLogined = false
-			router.push("/popup/auth")
+		// TODO: set event handlers in client's constructor instead
+		managers.profile.onActiveProfileChanged = profile => {
+			if (!profile) {
+				appStore.isLogined = false
+				router.push("/popup/auth")
+			}
 		}
 
 		await appStore.syncLocalTokens()
@@ -79,7 +85,7 @@ const handleUnlockWallet = async () => {
 		appStore.initBalanceListeners()
 
 		appStore.isLogined = true
-		
+
 		if (appStore.pageAwaitingAuth) {
 			appStore.pageAwaitingAuth = ""
 			router.go(-1)

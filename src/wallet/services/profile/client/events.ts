@@ -5,8 +5,7 @@ export enum ProfileServiceEvent {
     ProfileAdded,
     ProfileUpdated,
     ProfileDeleted,
-    ProfileUnlocked,
-    Locked,
+    ActiveProfileChanged,
 }
 
 export class ProfileServiceEventMessage extends EventMessage {

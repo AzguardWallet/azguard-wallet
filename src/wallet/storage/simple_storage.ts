@@ -9,13 +9,13 @@ export class SimpleStorage<T> {
         this.storage = type === StorageType.Local ? storage.local : storage.session;
     }
     
-    public async get(key: string): Promise<T | null> {
+    public async get(key: string): Promise<T | undefined> {
         const path = `${this.root}:${key}`;
         var res = await this.storage.get(path);
         if (path in res) {
             return JSON.parse(res[path]);
         }
-        return null;
+        return undefined;
     }
 
     public set(key: string, value: T): Promise<void> {

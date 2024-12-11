@@ -33,7 +33,12 @@ const initAccount = async () => {
 const uploadDappSessions = async () => {
 	appStore.dappSessions = await managers.interaction.getDappSessions(appStore.profile.id)
 }
-const interactionServiceClient = new InteractionServiceClient(undefined, undefined, uploadDappSessions, uploadDappSessions)
+const interactionServiceClient = new InteractionServiceClient(
+	undefined,
+	undefined,
+	uploadDappSessions,
+	uploadDappSessions,
+)
 
 /** todo: ref */
 watch(
@@ -85,6 +90,8 @@ watch(
 const loadProfile = async () => {
 	const activeProfile = await managers.profile.getActiveProfile()
 	if (activeProfile) {
+		// TODO: also refresh session after some actions in the UI
+		const _ = managers.profile.refreshSession();
 		appStore.profile = activeProfile
 
 		await initAccount()
@@ -100,9 +107,12 @@ const loadProfile = async () => {
 			appStore.isAwaitingTransaction = false
 		})
 
-		managers.profile.onLocked = () => {
-			appStore.isLogined = false
-			router.push("/popup/auth")
+		// TODO: set event handlers in client's constructor instead
+		managers.profile.onActiveProfileChanged = profile => {
+			if (!profile) {
+				appStore.isLogined = false
+				router.push("/popup/auth")
+			}
 		}
 
 		await appStore.syncLocalTokens()
@@ -204,7 +214,7 @@ watch(
 	() => route.name,
 	() => {
 		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name.includes("windows-")
-	}
+	},
 )
 </script>
 

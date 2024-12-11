@@ -6,7 +6,8 @@ export enum ProfileServiceMethod {
     GetProfiles,
     CreateProfile,
     UnlockProfile,
-    Lock,
+    LockActiveProfile,
+    RefreshSession,
     ChangeProfileName,
     ChangeProfilePassword,
     DeleteProfile,
@@ -86,15 +87,29 @@ export class UnlockProfileResponse extends ResponseMessage {
     }
 }
 
-export class LockRequest extends RequestMessage {
+export class LockActiveProfileRequest extends RequestMessage {
     constructor() {
-        super(PROFILE_SERVICE_NAME, ProfileServiceMethod.Lock);
+        super(PROFILE_SERVICE_NAME, ProfileServiceMethod.LockActiveProfile);
     }
 }
 
-export class LockResponse extends ResponseMessage {
+export class LockActiveProfileResponse extends ResponseMessage {
     constructor(
-        request: LockRequest,
+        request: LockActiveProfileRequest,
+    ) {
+        super(PROFILE_SERVICE_NAME, request.id);
+    }
+}
+
+export class RefreshSessionRequest extends RequestMessage {
+    constructor() {
+        super(PROFILE_SERVICE_NAME, ProfileServiceMethod.RefreshSession);
+    }
+}
+
+export class RefreshSessionResponse extends ResponseMessage {
+    constructor(
+        request: RefreshSessionRequest,
     ) {
         super(PROFILE_SERVICE_NAME, request.id);
     }

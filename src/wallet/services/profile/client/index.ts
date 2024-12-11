@@ -12,7 +12,8 @@ import {
     GetProfilesRequest,
     ImportEncryptedRequest,
     ImportPlainRequest,
-    LockRequest,
+    LockActiveProfileRequest,
+    RefreshSessionRequest,
     UnlockProfileRequest
 } from './methods';
 import { Profile } from './models';
@@ -34,8 +35,7 @@ export class ProfileServiceClient extends ServiceClient {
      * @param onProfileAdded Callback, called when a new profile was created.
      * @param onProfileUpdated Callback, called when an existing profile was updated.
      * @param onProfileDeleted Callback, called when an existing profile was deleted.
-     * @param onProfileUnlocked Callback, called when a profile was unlocked.
-     * @param onLocked Callback, called when the wallet was locked.
+     * @param onActiveProfileChanged Callback, called when an active profile was changed.
      */
     constructor(
         onConnected?: () => void,
@@ -43,8 +43,7 @@ export class ProfileServiceClient extends ServiceClient {
         private readonly onProfileAdded?: (profile: Profile) => void,
         private readonly onProfileUpdated?: (profile: Profile) => void,
         private readonly onProfileDeleted?: (profile: Profile) => void,
-        private readonly onProfileUnlocked?: (profile: Profile) => void,
-        private readonly onLocked?: () => void,
+        private readonly onActiveProfileChanged?: (profile?: Profile) => void,
     ) {
         super(PROFILE_SERVICE_NAME, onConnected, onDisconnected);
     }
@@ -69,15 +68,9 @@ export class ProfileServiceClient extends ServiceClient {
                     catch {}
                 }
                 break;
-            case ProfileServiceEvent.ProfileUnlocked:
-                if (this.onProfileUnlocked) {
-                    try {this.onProfileUnlocked((message as ProfileServiceEventMessage).profile!);}
-                    catch {}
-                }
-                break;
-            case ProfileServiceEvent.Locked:
-                if (this.onLocked) {
-                    try {this.onLocked();}
+            case ProfileServiceEvent.ActiveProfileChanged:
+                if (this.onActiveProfileChanged) {
+                    try {this.onActiveProfileChanged((message as ProfileServiceEventMessage).profile);}
                     catch {}
                 }
                 break;
@@ -89,6 +82,7 @@ export class ProfileServiceClient extends ServiceClient {
     
     /**
      * If there is an active session, returns an unlocked profile, or undefined otherwise.
+     * @emits `ActiveProfileChanged` with undefined profile, if active session has expired.
      */
     public getActiveProfile(): Promise<Profile | undefined> {
         return this.request(new GetActiveProfileRequest());
@@ -105,57 +99,76 @@ export class ProfileServiceClient extends ServiceClient {
      * Creates and returns a new profile.
      * @param name Display name.
      * @param password Password for storage encryption.
-     * @emits `ProfileAdded` event.
+     * @emits `ProfileAdded` with created profile.
+     * @emits `ActiveProfileChanged` with created profile.
      */
     public createProfile(name: string, password: string): Promise<Profile> {
         return this.request(new CreateProfileRequest(name, password));
     }
 
     /**
-     * Tries to unlock a profile with the specified id and returns it, or undefined if failed.
+     * Unlocks a profile with the specified id.
      * @param id Profile id.
      * @param password Profile password.
-     * @emits `ProfileUnlocked` event.
+     * @emits `ActiveProfileChanged` with unlocked profile.
+     * @throws "Invalid profile id" if profile doesn't exist.
+     * @throws "Invalid profile password" if password is invalid.
      */
-    public unlockProfile(id: string, password: string): Promise<Profile | undefined> {
+    public unlockProfile(id: string, password: string): Promise<Profile> {
         return this.request(new UnlockProfileRequest(id, password));
     }
 
     /**
-     * Locks the wallet, closing active sessions, if some.
-     * @emits `Locked` event.
+     * Locks active profile, closing active session.
+     * @emits `ActiveProfileChanged` with undefined profile.
      */
-    public lock(): Promise<void> {
-        return this.request(new LockRequest());
+    public lockActiveProfile(): Promise<void> {
+        return this.request(new LockActiveProfileRequest());
     }
 
     /**
-     * Changes profile name and returns the updated profile, or undefined if it didn't exist.
+     * Resets expiration of active session.
+     * @emits `ActiveProfileChanged` with undefined profile, if active session has already expired.
+     */
+    public refreshSession(): Promise<void> {
+        return this.request(new RefreshSessionRequest());
+    }
+
+    /**
+     * Changes profile name and returns the updated profile.
      * @param id Profile id.
      * @param name New display name.
-     * @emits `ProfileUpdated` event.
+     * @emits `ProfileUpdated` with updated profile.
+     * @emits `ActiveProfileChanged` with undefined profile, if active session has expired.
+     * @throws "Invalid profile id" if profile doesn't exist.
      */
-    public changeProfileName(id: string, name: string): Promise<Profile | undefined> {
+    public changeProfileName(id: string, name: string): Promise<Profile> {
         return this.request(new ChangeProfileNameRequest(id, name));
     }
 
     /**
-     * Changes profile password and returns the updated profile, or undefined if it didn't exist.
+     * Changes profile password and returns the updated profile.
      * @param id Profile id.
      * @param oldPassword Old password, to decrypt storage.
      * @param newPassword New password, to encrypt storage.
-     * @emits `ProfileUpdated` event.
+     * @emits `ProfileUpdated` with updated profile.
+     * @emits `ActiveProfileChanged` with undefined profile, if active session has expired, or active profile.
+     * @throws "Invalid profile id" if profile doesn't exist.
+     * @throws "Invalid profile old password" if old password is invalid.
+     * @throws "Profile storage corrupted" if something has broken.
      */
-    public changeProfilePassword(id: string, oldPassword: string, newPassword: string): Promise<Profile | undefined> {
+    public changeProfilePassword(id: string, oldPassword: string, newPassword: string): Promise<Profile> {
         return this.request(new ChangeProfilePasswordRequest(id, oldPassword, newPassword));
     }
 
     /**
-     * Deletes a profile and returns the deleted profile, undefined if it didn't exist.
+     * Deletes a profile and returns the deleted profile.
      * @param id Profile id.
-     * @emits `ProfileDeleted` event. 
+     * @emits `ProfileDeleted` with deleted profile.
+     * @emits `ActiveProfileChanged` with undefined profile.
+     * @throws "Invalid profile id" if profile doesn't exist.
      */
-    public deleteProfile(id: string): Promise<Profile | undefined> {
+    public deleteProfile(id: string): Promise<Profile> {
         return this.request(new DeleteProfileRequest(id));
     }
 
@@ -164,7 +177,9 @@ export class ProfileServiceClient extends ServiceClient {
      * @param name Display name.
      * @param secret Encrypted secret.
      * @param password Password to decrypt (and then encrypt) the secret.
-     * @emits `ProfileAdded` event.
+     * @emits `ProfileAdded` with created profile.
+     * @emits `ActiveProfileChanged` with created profile.
+     * @throws "Invalid profile password" if password is invalid.
      */
     public importEncrypted(name: string, secret: string, password: string): Promise<Profile> {
         return this.request(new ImportEncryptedRequest(name, secret, password));
@@ -175,7 +190,8 @@ export class ProfileServiceClient extends ServiceClient {
      * @param name Display name.
      * @param secret Plain secret.
      * @param password Password to encrypt the secret.
-     * @emits `ProfileAdded` event.
+     * @emits `ProfileAdded` with created profile.
+     * @emits `ActiveProfileChanged` with created profile.
      */
     public importPlain(name: string, secret: string, password: string): Promise<Profile> {
         return this.request(new ImportPlainRequest(name, secret, password));
@@ -184,6 +200,7 @@ export class ProfileServiceClient extends ServiceClient {
     /**
      * Returns encrypted profile secret.
      * @param id Profile id.
+     * @throws "Invalid profile id" if profile doesn't exist.
      */
     public exportEncrypted(id: string): Promise<string> {
         return this.request(new ExportEncryptedRequest(id));
@@ -193,6 +210,8 @@ export class ProfileServiceClient extends ServiceClient {
      * Returns plain profile secret.
      * @param id Profile id.
      * @param password Password to decrypt the secret.
+     * @throws "Invalid profile id" if profile doesn't exist.
+     * @throws "Invalid profile password" if password is invalid.
      */
     public exportPlain(id: string, password: string): Promise<string> {
         return this.request(new ExportPlainRequest(id, password));

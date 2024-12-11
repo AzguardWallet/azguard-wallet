@@ -21,7 +21,7 @@ const displaceIdx = computed(() => {
 const handleLockWallet = () => {
 	emit("onClose")
 	appStore.isLogined = false
-	managers.profile.lock()
+	managers.profile.lockActiveProfile()
 }
 </script>
 

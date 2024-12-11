@@ -40,7 +40,11 @@ watch(
 const handleFullReset = () => {
 	cacheStore.confirm.description = "You want to completely delete all local data - settings and so on"
 	cacheStore.confirm.callback = async () => {
-		await managers.profile.deleteProfile(appStore.profile.id)
+		try {
+			await managers.profile.deleteProfile(appStore.profile.id)
+		} catch (error) {
+			// TODO: handle errors
+		}
 		await chrome.storage.local.clear()
 		await chrome.storage.session.clear()
 		chrome.runtime.reload()
