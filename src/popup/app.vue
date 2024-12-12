@@ -6,7 +6,6 @@ import PopupManager from "./components/popups/PopupManager.vue"
 
 /** Utils */
 import { managers, initNetworks, initTokenService, initTransactionService } from "@/utils/core.js"
-import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 
@@ -16,7 +15,9 @@ const { syncLocalSettings } = useSettings()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
 
 import LogoIcon from "@/assets/logo.svg?raw"
 
@@ -91,7 +92,7 @@ const loadProfile = async () => {
 	const activeProfile = await managers.profile.getActiveProfile()
 	if (activeProfile) {
 		// TODO: also refresh session after some actions in the UI
-		const _ = managers.profile.refreshSession();
+		const _ = managers.profile.refreshSession()
 		appStore.profile = activeProfile
 
 		await initAccount()
@@ -110,6 +111,7 @@ const loadProfile = async () => {
 		// TODO: set event handlers in client's constructor instead
 		managers.profile.onActiveProfileChanged = profile => {
 			if (!profile) {
+				popupStore.closeAll()
 				appStore.isLogined = false
 				router.push("/popup/auth")
 			}

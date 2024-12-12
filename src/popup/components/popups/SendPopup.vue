@@ -14,7 +14,7 @@ import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 import { managers } from "@/utils/core.js"
 import { capitalize } from "@/utils/string"
 import { TransferType } from "@/wallet/services/transaction/client"
-import { getNetworkColor } from "@/components/ui/utils.js"
+import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -43,6 +43,9 @@ const displaceIdx = computed(() => {
 const activeToken = computed(() =>
 	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 	appStore.tokens.find(t => t.id == cacheStore.activeTokenIdx),
+)
+const isBlockedTranfer = computed(
+	() => !activeToken.value?.hasPrivateTransfers && !activeToken.value?.hasPublicTransfers,
 )
 const tokenBalance = computed(() => {
 	return appStore.balances.find(
@@ -103,6 +106,7 @@ const isAllowedToSend = computed(() => {
 	)
 
 	if (!tokenBalanceByType.value) return
+	if (isBlockedTranfer.value) return
 	if (Number.isNaN(amountToSend)) return
 	if (amountToSend < 0.00000001) return
 	if (!amountToSend) return
@@ -187,28 +191,32 @@ watch(
 		<PopupCard large :displaceIdx>
 			<Flex wide direction="column" justify="between" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="16" :class="$style.top">
-					<Tooltip>
-						<Flex align="center" gap="6">
-							<Flex align="center" justify="center" :class="$style.send_icon">
-								<Icon name="arrow-top-right-circle" size="16" color="primary" />
+					<Flex align="center" gap="6">
+						<Flex align="center" justify="center" :class="$style.send_icon">
+							<Icon name="arrow-top-right-circle" size="16" color="primary" />
 
-								<Icon name="globe" size="12" :color="getNetworkColor(appStore.network?.chainId)" :class="$style.warning_icon" />
-							</Flex>
-							<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
-								Send
-							</Text>
-
-							<Text size="16" weight="600" color="tertiary"> in {{ appStore.network.name }} </Text>
+							<Icon
+								name="globe"
+								size="12"
+								:color="getNetworkColor(appStore.network?.chainId)"
+								:class="$style.warning_icon"
+							/>
 						</Flex>
+						<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
+							Send
+						</Text>
 
-						<template #content> This tx will execute on the custom network </template>
-					</Tooltip>
+						<Text size="16" weight="600" color="tertiary">
+							in {{ getNetworkType(appStore.network.chainId) }}
+						</Text>
+					</Flex>
 
 					<Flex wide direction="column" gap="16">
 						<Flex direction="column" gap="8">
 							<SelectTokenCard :token="activeToken" />
 
 							<SendTypesCard
+								v-if="!isBlockedTranfer"
 								v-model:sendType="selectedSendType"
 								v-model:receiverType="selectedReceiverType"
 								:token="activeToken"

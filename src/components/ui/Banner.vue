@@ -7,11 +7,14 @@ const props = defineProps({
 	text: {
 		type: String,
 	},
+	wide: {
+		type: Boolean,
+	},
 })
 </script>
 
 <template>
-	<Flex gap="8" :class="[$style.wrapper, $style[variant]]">
+	<Flex gap="8" :wide="wide" :class="[$style.wrapper, $style[variant]]">
 		<Flex align="center" justify="center" :class="$style.icon">
 			<Icon name="info" size="16" color="secondary" />
 		</Flex>
@@ -30,6 +33,16 @@ const props = defineProps({
 
 	&.info {
 		background: var(--gray-5);
+	}
+
+	&.error {
+		background: var(--gray-5);
+
+		& .icon {
+			& svg {
+				fill: var(--red);
+			}
+		}
 	}
 }
 

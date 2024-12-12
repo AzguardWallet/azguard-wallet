@@ -74,6 +74,7 @@ const handleUnlockWallet = async () => {
 		// TODO: set event handlers in client's constructor instead
 		managers.profile.onActiveProfileChanged = profile => {
 			if (!profile) {
+				popupStore.closeAll()
 				appStore.isLogined = false
 				router.push("/popup/auth")
 			}

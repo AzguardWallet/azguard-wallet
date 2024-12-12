@@ -26,8 +26,8 @@ const router = useRouter()
 
 const handleSelectNetwork = target => {
 	if (appStore.network.id === target.id) return
-	appStore.network = target
 	managers.network.setDefault(appStore.network.id)
+	appStore.network = target
 	chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
 
 	emit("onClose")

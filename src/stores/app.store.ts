@@ -73,7 +73,8 @@ export const useAppStore = defineStore("app", () => {
 
 	const tokens = ref([])
 	const syncLocalTokens = async () => {
-		tokens.value = (await managers.token?.getTokens()) || []
+		const rawTokens = await managers.token?.getTokens()
+		tokens.value = rawTokens.length ? rawTokens.filter(t => t.chainId == network.value.chainId) : []
 	}
 
 	const tokenAwaitingBalanceIdx = ref()

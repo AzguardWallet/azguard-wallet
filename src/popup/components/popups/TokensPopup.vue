@@ -55,13 +55,13 @@ const handleDeleteToken = target => {
 					<Text size="14" weight="600" color="primary"> Manage tokens </Text>
 
 					<Flex v-if="appStore.tokens.length" direction="column" gap="6">
-						<Flex v-for="token in appStore.tokens" align="center" justify="between" :class="$style.network">
-							<Flex align="center" gap="8">
+						<Flex v-for="token in appStore.tokens" align="center" justify="between" :class="$style.card">
+							<Flex align="center" gap="8" :class="$style.left">
 								<Icon name="banknote" size="16" color="primary" />
 								<Text size="14" weight="600" color="primary">
 									{{ token.symbol }}
 								</Text>
-								<Text size="14" weight="600" color="tertiary">
+								<Text size="14" weight="600" color="tertiary" :class="$style.label">
 									{{ token.name }}
 								</Text>
 							</Flex>
@@ -110,7 +110,7 @@ const handleDeleteToken = target => {
 	padding: 0 20px 24px 20px;
 }
 
-.network {
+.card {
 	border-radius: 12px;
 	cursor: pointer;
 	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
@@ -131,6 +131,16 @@ const handleDeleteToken = target => {
 	&:hover .icons {
 		opacity: 1;
 	}
+}
+
+.left {
+	min-width: 0;
+	overflow: hidden;
+}
+
+.label {
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .icons {

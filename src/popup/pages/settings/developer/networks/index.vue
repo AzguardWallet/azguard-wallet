@@ -28,8 +28,8 @@ const cacheStore = useCacheStore()
 
 const handleSelectNetwork = target => {
 	if (appStore.network.id === target.id) return
-	appStore.network = target
 	managers.network.setDefault(appStore.network.id)
+	appStore.network = target
 	chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
 }
 
@@ -97,6 +97,17 @@ const handleDelete = target => {
 					</Flex>
 
 					<Flex align="center" gap="14" :class="$style.icons">
+						<Tooltip position="end">
+							<Icon name="info" size="16" color="tertiary" />
+
+							<template #content>
+								<Flex direction="column" gap="6" align="center">
+									<Text> <Text color="secondary">Chain ID:</Text> {{ network.chainId }} </Text>
+									<Text> <Text color="secondary">RPC Link:</Text> {{ network.rpcUrl }} </Text>
+								</Flex>
+							</template>
+						</Tooltip>
+
 						<Flex align="center" gap="8">
 							<Icon
 								@click.stop="handleEdit(network)"
@@ -114,17 +125,6 @@ const handleDelete = target => {
 								:class="$style.icon_btn"
 							/>
 						</Flex>
-
-						<Tooltip position="end">
-							<Icon name="info" size="16" color="tertiary" />
-
-							<template #content>
-								<Flex direction="column" gap="6" align="center">
-									<Text> <Text color="secondary">Chain ID:</Text> {{ network.chainId }} </Text>
-									<Text> <Text color="secondary">RPC Link:</Text> {{ network.rpcUrl }} </Text>
-								</Flex>
-							</template>
-						</Tooltip>
 					</Flex>
 				</Flex>
 			</Flex>

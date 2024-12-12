@@ -2,7 +2,7 @@
 /** Components */
 import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
-const emit = defineEmits(["onFieldSelect"])
+const emit = defineEmits(["onFieldSelect", "onFieldClear"])
 const props = defineProps({
 	token: {
 		type: Object,
@@ -14,6 +14,9 @@ const props = defineProps({
 
 const handleSelectCandidate = (target, candidate) => {
 	emit("onFieldSelect", target, candidate)
+}
+const handleClearCandidate = target => {
+	emit("onFieldClear", target)
 }
 </script>
 
@@ -33,7 +36,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 				<Dropdown wide>
 					<template #trigger>
-						<DropdownTrigger wide>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['balanceOfPrivateFn']"
+							@onClear="handleClearCandidate('balanceOfPrivateFn')"
+						>
 							<Text
 								size="13"
 								weight="600"
@@ -71,7 +79,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 				<Dropdown wide>
 					<template #trigger>
-						<DropdownTrigger wide>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['balanceOfPublicFn']"
+							@onClear="handleClearCandidate('balanceOfPublicFn')"
+						>
 							<Text
 								size="13"
 								weight="600"
@@ -112,7 +125,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 				<Dropdown wide>
 					<template #trigger>
-						<DropdownTrigger wide>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['transferPrivateFn']"
+							@onClear="handleClearCandidate('transferPrivateFn')"
+						>
 							<Text
 								size="13"
 								weight="600"
@@ -150,7 +168,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 				<Dropdown wide>
 					<template #trigger>
-						<DropdownTrigger wide>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['transferPublicFn']"
+							@onClear="handleClearCandidate('transferPublicFn')"
+						>
 							<Text
 								size="13"
 								weight="600"
@@ -191,7 +214,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 				<Dropdown wide>
 					<template #trigger>
-						<DropdownTrigger wide>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['transferPrivateToPublicFn']"
+							@onClear="handleClearCandidate('transferPrivateToPublicFn')"
+						>
 							<Text
 								size="13"
 								weight="600"
@@ -229,7 +257,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 				<Dropdown wide>
 					<template #trigger>
-						<DropdownTrigger wide>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['transferPublicToPrivateFn']"
+							@onClear="handleClearCandidate('transferPublicToPrivateFn')"
+						>
 							<Text
 								size="13"
 								weight="600"
@@ -270,7 +303,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 				<Dropdown wide>
 					<template #trigger>
-						<DropdownTrigger wide>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['getNameFn']"
+							@onClear="handleClearCandidate('getNameFn')"
+						>
 							<Text
 								size="13"
 								weight="600"
@@ -308,7 +346,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 				<Dropdown wide>
 					<template #trigger>
-						<DropdownTrigger wide>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['getSymbolFn']"
+							@onClear="handleClearCandidate('getSymbolFn')"
+						>
 							<Text
 								size="13"
 								weight="600"
@@ -347,7 +390,12 @@ const handleSelectCandidate = (target, candidate) => {
 
 			<Dropdown wide>
 				<template #trigger>
-					<DropdownTrigger wide>
+					<DropdownTrigger
+						wide
+						clearable
+						:value="selectedFields['getDecimalsFn']"
+						@onClear="handleClearCandidate('getDecimalsFn')"
+					>
 						<Text
 							size="13"
 							weight="600"

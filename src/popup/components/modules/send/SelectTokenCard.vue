@@ -13,6 +13,9 @@ const isTokenRestricted = computed(() => {
 	if (!props.token) return
 	return !props.token.hasPrivateTransfers || !props.token.hasPublicTransfers
 })
+const isTokenBlocked = computed(() => {
+	return !props.token.hasPrivateTransfers && !props.token.hasPublicTransfers
+})
 
 const handleSelectToken = () => {
 	if (!props.token) return
@@ -24,11 +27,12 @@ const handleSelectToken = () => {
 	<Flex @click="handleSelectToken" align="center" justify="between" :class="$style.wrapper">
 		<template v-if="token">
 			<Flex align="center" gap="8">
-				<Tooltip :disabled="!isTokenRestricted" position="start">
+				<Tooltip :disabled="!isTokenRestricted || !isTokenBlocked" position="start">
 					<Flex align="center" justify="center" :class="$style.token_icon">
 						<Icon name="banknote" size="16" color="primary" />
+						<Icon v-if="isTokenBlocked" name="warning" size="10" color="red" :class="$style.type_icon" />
 						<Icon
-							v-if="isTokenRestricted"
+							v-else-if="isTokenRestricted"
 							:name="!token.hasPrivateTransfers ? 'face' : 'key-square'"
 							size="10"
 							:color="!token.hasPrivateTransfers ? 'orange' : 'green'"
@@ -37,9 +41,12 @@ const handleSelectToken = () => {
 					</Flex>
 
 					<template #content>
-						Restricted token, only
-						{{ token.hasPrivateTransfers ? "private" : "public" }}
-						transfers
+						<template v-if="isTokenBlocked"> Private and public transfers disabled </template>
+						<template v-else>
+							Restricted token, only
+							{{ token.hasPrivateTransfers ? "private" : "public" }}
+							transfers
+						</template>
 					</template>
 				</Tooltip>
 

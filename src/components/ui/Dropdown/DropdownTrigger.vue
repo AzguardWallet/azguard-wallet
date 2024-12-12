@@ -4,7 +4,7 @@
  */
 import { ref, onMounted, onBeforeUnmount } from "vue"
 
-const emit = defineEmits(["toggle"])
+const emit = defineEmits(["toggle", "onClear"])
 const props = defineProps({
 	width: {
 		type: [String, Number],
@@ -16,6 +16,12 @@ const props = defineProps({
 	},
 	isOpen: {
 		type: Boolean,
+	},
+	clearable: {
+		type: Boolean,
+	},
+	value: {
+		type: Object,
 	},
 })
 
@@ -63,7 +69,21 @@ onBeforeUnmount(() => {
 			<slot />
 		</Flex>
 
-		<Icon name="chevron" size="12" color="secondary" :style="{ transform: `rotate(${isOpen ? '180deg' : '0'})` }" />
+		<Icon
+			v-if="clearable && value"
+			@click.stop="emit('onClear')"
+			name="close-circle"
+			size="12"
+			color="secondary"
+			:class="$style.clear_icon"
+		/>
+		<Icon
+			v-else
+			name="chevron"
+			size="12"
+			color="secondary"
+			:style="{ transform: `rotate(${isOpen ? '180deg' : '0'})` }"
+		/>
 	</Flex>
 </template>
 
@@ -91,6 +111,14 @@ onBeforeUnmount(() => {
 	& span {
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+}
+
+.clear_icon {
+	transition: all 0.2s ease;
+
+	&:hover {
+		fill: var(--txt-primary);
 	}
 }
 </style>

@@ -67,7 +67,9 @@ const handleAmountInput = e => {
 
 const isAllowedToMint = computed(() => {
 	if (!tokenNameTerm.value.length) return
+	if (tokenNameTerm.value.length >= 32) return
 	if (!tokenSymbolTerm.value.length) return
+	if (tokenSymbolTerm.value.length >= 32) return
 	if (!amountTerm.value || new BN(amountTerm.value) <= 0) return
 	if (new BN(amountTerm.value) > 100_000) return
 

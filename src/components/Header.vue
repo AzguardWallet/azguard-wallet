@@ -46,8 +46,14 @@ const handleOpenPopup = target => {
 					{{ appStore.account.name }}
 				</Text>
 
-				<Text v-if="settings.developer.advancedMode" size="13" weight="600" color="tertiary" :class="$style.network_type">
-					{{ getNetworkType(appStore.network.chainId) }}
+				<Text
+					v-if="settings.developer.advancedMode"
+					size="13"
+					weight="600"
+					color="tertiary"
+					:class="$style.network_type"
+				>
+					• &nbsp;{{ getNetworkType(appStore.network.chainId) }}
 				</Text>
 
 				<!-- <Text
@@ -79,7 +85,9 @@ const handleOpenPopup = target => {
 			<template #content>
 				<Flex align="center" gap="2">
 					<Text size="12" color="secondary">Node status:</Text>
-					<Text size="12" :class="$style[String(appStore.networkStatus).toLowerCase()]"> {{ appStore.networkStatus }} </Text>
+					<Text size="12" :class="$style[String(appStore.networkStatus).toLowerCase()]">
+						{{ appStore.networkStatus }}
+					</Text>
 				</Flex>
 			</template>
 		</Tooltip>
@@ -210,7 +218,7 @@ const handleOpenPopup = target => {
 	text-overflow: ellipsis;
 }
 
-.network_type{
+.network_type {
 	max-width: 90px;
 
 	text-wrap: nowrap;

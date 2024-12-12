@@ -48,6 +48,10 @@ const handleSelectCandidate = (target, candidate) => {
 	selectedFields.value[target] = candidate
 	rawToken.value[target] = candidate
 }
+const handleClearCandidate = target => {
+	delete selectedFields.value[target]
+	rawToken.value[target] = rawTokenForReset.value[target]
+}
 const handleResetChanges = () => {
 	rawToken.value = { ...rawTokenForReset.value }
 	selectedFields.value = {}
@@ -146,6 +150,7 @@ watch(
 					v-if="!isCompleted"
 					:selectedFields
 					@onFieldSelect="handleSelectCandidate"
+					@onFieldClear="handleClearCandidate"
 					:token="rawToken"
 				/>
 

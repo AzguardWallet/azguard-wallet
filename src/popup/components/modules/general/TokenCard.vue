@@ -24,24 +24,24 @@ const totalBalance = computed(() => {
 <template>
 	<RouterLink :to="`/popup/tokens/${token.id}`">
 		<Flex align="center" justify="between" :class="$style.wrapper">
-			<Flex align="center" gap="12">
+			<Flex align="center" gap="12" :class="$style.left">
 				<Flex align="center" justify="center" :class="$style.token_icon">
 					<Spinner v-if="appStore.tokenAwaitingBalanceIdx === token.id" size="16" color="--txt-primary" />
 					<Icon v-else name="banknote" size="20" color="primary" />
 				</Flex>
 
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">
+				<Flex direction="column" gap="6" :class="$style.text">
+					<Text size="13" weight="600" color="primary" :class="$style.label">
 						{{ token.symbol }}
 					</Text>
-					<Text size="12" weight="500" color="tertiary">
+					<Text size="12" weight="500" color="tertiary" :class="$style.label">
 						{{ token.name }}
 					</Text>
 				</Flex>
 			</Flex>
 
 			<Flex direction="column" align="end" gap="6">
-				<Text size="13" weight="600" color="primary">
+				<Text size="13" weight="600" color="primary" noWrap>
 					{{ balance ? comma(totalBalance, ",", 8) : 0 }}
 					<Text color="tertiary">{{ token.symbol }}</Text>
 				</Text>
@@ -77,9 +77,22 @@ const totalBalance = computed(() => {
 	}
 }
 
+.left {
+	overflow: hidden;
+}
+
+.text {
+	overflow: hidden;
+}
+
+.label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
 .token_icon {
-	width: 32px;
-	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
 
 	border-radius: 8px;
 	background: var(--gray-5);

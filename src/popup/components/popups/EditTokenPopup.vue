@@ -37,6 +37,7 @@ const isAvailableToUpdateToken = computed(() => {
 })
 
 const rawToken = ref()
+const rawTokenForReset = ref()
 const selectedFields = ref({
 	balanceOfPrivateFn: null,
 	balanceOfPublicFn: null,
@@ -48,19 +49,31 @@ const selectedFields = ref({
 	getSymbolFn: null,
 	getDecimalsFn: null,
 })
+const availableFields = Object.keys(selectedFields.value)
 const handleSelectCandidate = (target, candidate) => {
 	selectedFields.value[target] = candidate
 	rawToken.value[target] = candidate
 }
+const handleClearCandidate = target => {
+	delete selectedFields.value[target]
+	rawToken.value[target] = null
+}
 const handleResetChanges = () => {
-	rawToken.value = { ...tokenToEdit.value }
-	selectedFields.value = {}
+	rawToken.value = { ...rawTokenForReset.value }
+
+	for (const fieldName of availableFields) {
+		if (rawTokenForReset.value[fieldName]) {
+			selectedFields.value[fieldName] = rawTokenForReset.value[fieldName]
+		} else {
+			delete selectedFields.value[fieldName]
+		}
+	}
 }
 
 const handleSaveToken = async () => {
 	const updatedToken = await managers.token.updateToken(cacheStore.tokenToEditIdx, rawToken.value)
 
-	const updatedTokenIdx = appStore.tokens.findLast(t => t.id == cacheStore.tokenToEditIdx)
+	const updatedTokenIdx = appStore.tokens.findLastIndex(t => t.id == cacheStore.tokenToEditIdx)
 	appStore.tokens[updatedTokenIdx] = updatedToken
 
 	await appStore.syncBalances()
@@ -71,6 +84,8 @@ const handleSaveToken = async () => {
 }
 
 const isAwaitingTokenInterface = ref(true)
+const error = ref()
+const isErrorOccurred = computed(() => !!error.value)
 watch(
 	() => props.show,
 	async () => {
@@ -78,17 +93,28 @@ watch(
 			rawToken.value = null
 			selectedFields.value = {}
 			isAwaitingTokenInterface.value = false
+			error.value = null
 		} else {
-			isAwaitingTokenInterface.value = true
-			const tokenInterface = await managers.token.getInterface(cacheStore.tokenToEditIdx)
+			try {
+				isAwaitingTokenInterface.value = true
+				const tokenInterface = await managers.token.getInterface(cacheStore.tokenToEditIdx)
 
-			rawToken.value = { ...tokenInterface }
+				rawToken.value = { ...tokenInterface }
+				rawTokenForReset.value = { ...tokenInterface }
 
-			for (const fieldName of Object.keys(selectedFields.value)) {
-				selectedFields.value[fieldName] = rawToken.value[fieldName]
+				for (const fieldName of availableFields) {
+					if (rawToken.value[fieldName]) {
+						selectedFields.value[fieldName] = rawToken.value[fieldName]
+					} else {
+						delete selectedFields.value[fieldName]
+					}
+				}
+			} catch (err) {
+				error.value = err
+				isAwaitingTokenInterface.value = false
+			} finally {
+				isAwaitingTokenInterface.value = false
 			}
-
-			isAwaitingTokenInterface.value = false
 		}
 	},
 )
@@ -104,6 +130,20 @@ watch(
 					Loading token interface
 				</Button>
 
+				<template v-else-if="isErrorOccurred && !isAwaitingTokenInterface">
+					<Flex direction="column" gap="16">
+						<Tooltip wide>
+							<Banner variant="error" wide> Something went wrong </Banner>
+
+							<template #content>
+								{{ error }}
+							</template>
+						</Tooltip>
+
+						<Button @click="emit('onClose')" type="secondary" size="medium" wide>Close</Button>
+					</Flex>
+				</template>
+
 				<template v-else>
 					<Flex direction="column" gap="8">
 						<Text size="12" weight="600" color="primary">
@@ -114,7 +154,12 @@ watch(
 						</Text>
 					</Flex>
 
-					<CandidatesForm :selectedFields @onFieldSelect="handleSelectCandidate" :token="rawToken" />
+					<CandidatesForm
+						:selectedFields
+						@onFieldSelect="handleSelectCandidate"
+						@onFieldClear="handleClearCandidate"
+						:token="rawToken"
+					/>
 
 					<Flex gap="8">
 						<Button

@@ -57,6 +57,10 @@ const handleViewTokenMetadata = () => {
 
 		<Flex direction="column" justify="between" :class="$style.content">
 			<Flex direction="column" gap="32">
+				<Banner v-if="!token.hasPublicTransfers && !token.hasPrivateTransfers" variant="error">
+					Private and public transfers disabled
+				</Banner>
+
 				<SplittedBalancesView :token />
 
 				<RecentActivityView :token />
