@@ -1,4 +1,7 @@
 <script setup>
+/** Utils */
+import { managers } from "@/utils/core.js"
+
 const props = defineProps({
 	show: {
 		type: Boolean,
@@ -9,6 +12,15 @@ const props = defineProps({
 	},
 })
 const emit = defineEmits(["onClose"])
+
+watch(
+	() => props.show,
+	() => {
+		if (props.show) {
+			const _ = managers.profile?.refreshSession()
+		}
+	}
+)
 </script>
 
 <template>

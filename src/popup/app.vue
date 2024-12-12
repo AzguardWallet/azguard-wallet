@@ -215,6 +215,10 @@ onMounted(async () => {
 watch(
 	() => route.name,
 	() => {
+		if (appStore.isLogined) {
+			const _ = managers.profile?.refreshSession()
+		}		
+		
 		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name.includes("windows-")
 	},
 )
