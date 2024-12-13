@@ -90,7 +90,7 @@ const handleCreateToken = async () => {
 	await appStore.syncBalances()
 	// appStore.tokenAwaitingBalanceIdx = newToken.id
 
-	openToast({ label: `${parsingResult.symbol} is added to tokens` })
+	openToast({ label: "New token has been added" })
 
 	emit("onClose")
 }
@@ -101,7 +101,7 @@ const handleSaveToken = async () => {
 	await appStore.syncBalances()
 	// appStore.tokenAwaitingBalanceIdx = newToken.id
 
-	openToast({ label: `${rawToken.value.symbol} is added to tokens` })
+	openToast({ label: "New token has been added" })
 
 	emit("onClose")
 }

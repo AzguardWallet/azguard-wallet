@@ -49,6 +49,9 @@ export class GetTokenResponse extends ResponseMessage {
 
 export class AddTokenRequest extends RequestMessage {
     constructor(
+        public readonly profileId: string,
+        public readonly networkId: string,
+        public readonly address: string,
         public readonly tokenInterface: TokenInterface,
     ) {
         super(TOKEN_SERVICE_NAME, TokenServiceMethod.AddToken);
@@ -67,6 +70,9 @@ export class AddTokenResponse extends ResponseMessage {
 
 export class UpdateTokenRequest extends RequestMessage {
     constructor(
+        public readonly profileId: string,
+        public readonly networkId: string,
+        public readonly address: string,
         public readonly tokenId: number,
         public readonly tokenInterface: TokenInterface,
     ) {
@@ -104,9 +110,7 @@ export class DeleteTokenResponse extends ResponseMessage {
 
 export class GetInterfaceRequest extends RequestMessage {
     constructor(
-        public readonly profileId: string,
         public readonly networkId: string,
-        public readonly address: string,
         public readonly tokenId: number,
     ) {
         super(TOKEN_SERVICE_NAME, TokenServiceMethod.GetInterface);
@@ -125,9 +129,7 @@ export class GetInterfaceResponse extends ResponseMessage {
 
 export class ParseInterfaceRequest extends RequestMessage {
     constructor(
-        public readonly profileId: string,
         public readonly networkId: string,
-        public readonly address: string,
         public readonly contract: string,
     ) {
         super(TOKEN_SERVICE_NAME, TokenServiceMethod.ParseInterface);

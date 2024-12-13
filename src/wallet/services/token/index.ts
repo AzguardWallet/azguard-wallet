@@ -120,7 +120,12 @@ export class TokenService extends Service {
 			case TokenServiceMethod.AddToken: {
 				const _request = request as AddTokenRequest
 				try {
-					const token = await this.addToken(_request.tokenInterface)
+					const token = await this.addToken(
+						_request.profileId,
+						_request.networkId,
+						_request.address,
+						_request.tokenInterface
+					)
 					return new AddTokenResponse(_request, token)
 				} catch (error: any) {
 					return new AddTokenResponse(
@@ -134,6 +139,9 @@ export class TokenService extends Service {
 				const _request = request as UpdateTokenRequest
 				try {
 					const token = await this.updateToken(
+						_request.profileId,
+						_request.networkId,
+						_request.address,
 						_request.tokenId,
 						_request.tokenInterface
 					)
@@ -163,9 +171,7 @@ export class TokenService extends Service {
 				const _request = request as GetInterfaceRequest
 				try {
 					const tokenInterface = await this.getTokenInterface(
-						_request.profileId,
 						_request.networkId,
-						_request.address,
 						_request.tokenId
 					)
 					return new GetInterfaceResponse(_request, tokenInterface)
@@ -181,9 +187,7 @@ export class TokenService extends Service {
 				const _request = request as ParseInterfaceRequest
 				try {
 					const tokenInterface = await this.parseTokenInterface(
-						_request.profileId,
 						_request.networkId,
-						_request.address,
 						_request.contract
 					)
 					return new ParseInterfaceResponse(_request, tokenInterface)
@@ -225,16 +229,22 @@ export class TokenService extends Service {
 		return token
 	}
 
-	public async addToken(ti: TokenInterface): Promise<TokenInfo> {
+	public async addToken(
+		profileId: string,
+		networkId: string,
+		address: string,
+		ti: TokenInterface
+	): Promise<TokenInfo> {
 		let token = await this.findToken(ti.chainId, ti.contract)
 		if (!token) {
+			const [name, symbol, decimals] = await this.getTokenMetadata(profileId, networkId, address, ti);
 			token = {
 				id: array_max((await this.tokens.getKeys()).map((x) => +x)) + 1,
 				chainId: ti.chainId,
 				contract: ti.contract,
-				name: ti.name,
-				symbol: ti.symbol,
-				decimals: ti.decimals,
+				name: name,
+				symbol: symbol,
+				decimals: decimals,
 				getNameFn: ti.getNameFn,
 				getSymbolFn: ti.getSymbolFn,
 				getDecimalsFn: ti.getDecimalsFn,
@@ -252,6 +262,9 @@ export class TokenService extends Service {
 	}
 
 	public async updateToken(
+		profileId: string,
+		networkId: string,
+		address: string,
 		id: number,
 		ti: TokenInterface
 	): Promise<TokenInfo> {
@@ -262,13 +275,14 @@ export class TokenService extends Service {
 		if (_token.chainId !== ti.chainId || _token.contract !== ti.contract) {
 			throw new Error("token chain id and contract cannot change")
 		}
+		const [name, symbol, decimals] = await this.getTokenMetadata(profileId, networkId, address, ti);
 		const token: Token = {
 			id: _token.id,
 			chainId: ti.chainId,
 			contract: ti.contract,
-			name: ti.name,
-			symbol: ti.symbol,
-			decimals: ti.decimals,
+			name: name,
+			symbol: symbol,
+			decimals: decimals,
 			getNameFn: ti.getNameFn,
 			getSymbolFn: ti.getSymbolFn,
 			getDecimalsFn: ti.getDecimalsFn,
@@ -295,9 +309,7 @@ export class TokenService extends Service {
 	}
 
 	public async getTokenInterface(
-		profileId: string,
 		networkId: string,
-		address: string,
 		id: number
 	): Promise<TokenInterface> {
 		const token = await this.tokens.get(`${id}`)
@@ -357,57 +369,9 @@ export class TokenService extends Service {
 			TransferPublicToPrivateFn.getCandidates(artifact)
 		const transferPublicToPrivateFn = token.transferPublicToPrivateFn
 
-		const _getNameFn = getNameFn
-			? GetNameFn.new(getNameFn.name, getNameFn.impl)
-			: undefined
-		const _getSymbolFn = getSymbolFn
-			? GetSymbolFn.new(getSymbolFn.name, getSymbolFn.impl)
-			: undefined
-		const _getDecimalsFn = getDecimalsFn
-			? GetDecimalsFn.new(getDecimalsFn.name, getDecimalsFn.impl)
-			: undefined
-
-		const account = await this.accounts.getAccountContract(
-			profileId,
-			network.chainId,
-			address
-		)
-		const [name, symbol, decimals] = await Promise.all([
-			_getNameFn
-				? simulate(
-						pxe,
-						account,
-						token.contract,
-						_getNameFn,
-						_getNameFn.buildArgs()
-				  )
-				: Promise.resolve("<name>"),
-			_getSymbolFn
-				? simulate(
-						pxe,
-						account,
-						token.contract,
-						_getSymbolFn,
-						_getSymbolFn.buildArgs()
-				  )
-				: Promise.resolve("<symbol>"),
-			_getDecimalsFn
-				? simulate(
-						pxe,
-						account,
-						token.contract,
-						_getDecimalsFn,
-						_getDecimalsFn.buildArgs()
-				  )
-				: Promise.resolve(0),
-		])
-
 		return new TokenInterface(
 			token.chainId,
 			token.contract,
-			name,
-			symbol,
-			decimals,
 			getNameFn,
 			getNameFnCandidates.map((x) => x.getImpl()),
 			getSymbolFn,
@@ -430,9 +394,7 @@ export class TokenService extends Service {
 	}
 
 	public async parseTokenInterface(
-		profileId: string,
 		networkId: string,
-		address: string,
 		contract: string
 	): Promise<TokenInterface> {
 		const network = await this.networks.getNetwork(networkId)
@@ -499,47 +461,9 @@ export class TokenService extends Service {
 			transferPublicToPrivateFnCandidates
 		)
 
-		const account = await this.accounts.getAccountContract(
-			profileId,
-			network.chainId,
-			address
-		)
-		const [name, symbol, decimals] = await Promise.all([
-			getNameFn
-				? simulate(
-						pxe,
-						account,
-						contract,
-						getNameFn,
-						getNameFn.buildArgs()
-				  )
-				: Promise.resolve("<name>"),
-			getSymbolFn
-				? simulate(
-						pxe,
-						account,
-						contract,
-						getSymbolFn,
-						getSymbolFn.buildArgs()
-				  )
-				: Promise.resolve("<symbol>"),
-			getDecimalsFn
-				? simulate(
-						pxe,
-						account,
-						contract,
-						getDecimalsFn,
-						getDecimalsFn.buildArgs()
-				  )
-				: Promise.resolve(0),
-		])
-
 		return new TokenInterface(
 			network.chainId,
 			contract,
-			name,
-			symbol,
-			decimals,
 			getNameFn?.getImpl(),
 			getNameFnCandidates.map((x) => x.getImpl()),
 			getSymbolFn?.getImpl(),
@@ -591,6 +515,60 @@ export class TokenService extends Service {
 		)
 		const args = viewFn.buildArgs(account.address)
 		return await simulate(pxe, account, token.contract, viewFn, args)
+	}
+
+	private async getTokenMetadata(
+		profileId: string,
+		networkId: string,
+		address: string,
+		ti: TokenInterface
+	): Promise<[string, string, number]> {
+		const network = await this.networks.getNetwork(networkId)
+		if (!network) {
+			throw new Error("unknown network id")
+		}
+
+		const account = await this.accounts.getAccountContract(
+			profileId,
+			network.chainId,
+			address
+		)
+
+		const pxe = createPXEClient(network.rpcUrl)
+
+		const getNameFn = ti.getNameFn ? GetNameFn.new(ti.getNameFn.name, ti.getNameFn.impl) : undefined;
+		const getSymbolFn = ti.getSymbolFn ? GetSymbolFn.new(ti.getSymbolFn.name, ti.getSymbolFn.impl) : undefined;
+		const getDecimalsFn = ti.getDecimalsFn ? GetDecimalsFn.new(ti.getDecimalsFn.name, ti.getDecimalsFn.impl) : undefined;
+
+		return await Promise.all([
+			getNameFn
+				? simulate(
+						pxe,
+						account,
+						ti.contract,
+						getNameFn,
+						getNameFn.buildArgs()
+				)
+				: Promise.resolve("<name>"),
+			getSymbolFn
+				? simulate(
+						pxe,
+						account,
+						ti.contract,
+						getSymbolFn,
+						getSymbolFn.buildArgs()
+				)
+				: Promise.resolve("<symbol>"),
+			getDecimalsFn
+				? simulate(
+						pxe,
+						account,
+						ti.contract,
+						getDecimalsFn,
+						getDecimalsFn.buildArgs()
+				)
+				: Promise.resolve(0),
+		])
 	}
 
 	private async findToken(

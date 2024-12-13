@@ -78,7 +78,7 @@ const handleSaveToken = async () => {
 
 	await appStore.syncBalances()
 
-	openToast({ label: `${rawToken.value.symbol} is added to tokens` })
+	openToast({ label: "Token has been updated" })
 
 	emit("onClose")
 }
@@ -146,9 +146,6 @@ watch(
 
 				<template v-else>
 					<Flex direction="column" gap="8">
-						<Text size="12" weight="600" color="primary">
-							{{ rawToken.symbol }} <Text color="secondary">{{ rawToken.name }}</Text>
-						</Text>
 						<Text size="12" weight="600" color="tertiary">
 							{{ rawToken.contract.slice(0, 6) }} ••• {{ rawToken.contract.slice(-4) }}
 						</Text>

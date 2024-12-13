@@ -48,9 +48,6 @@ export class TokenInterface {
      * Creates TokenInterface instance
      * @param chainId Chain id.
      * @param contract Contract address.
-     * @param name Token name.
-     * @param symbol Token symbol.
-     * @param decimals Token decimals.
      * @param getNameFn Function to get token name.
      * @param getNameFnCandidates Functions with `getNameFn`-like signature.
      * @param getSymbolFn Function to get token symbol.
@@ -74,10 +71,6 @@ export class TokenInterface {
         public readonly chainId: number,
         public readonly contract: string,
         
-        public readonly name: string,
-        public readonly symbol: string,
-        public readonly decimals: number,
-
         public readonly getNameFn: FnImpl | undefined,
         public readonly getNameFnCandidates: FnImpl[],
         

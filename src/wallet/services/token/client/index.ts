@@ -99,7 +99,7 @@ export class TokenServiceClient extends ServiceClient {
      * @emits `TokenAdded` event.
      */
     public addToken(tokenInterface: TokenInterface): Promise<TokenInfo> {
-        return this.request(new AddTokenRequest(tokenInterface));
+        return this.request(new AddTokenRequest(this.profile.id, this.network.id, this.account.address, tokenInterface));
     }
     
     /**
@@ -109,7 +109,7 @@ export class TokenServiceClient extends ServiceClient {
      * @emits `TokenUpdated` event.
      */
     public updateToken(id: number, tokenInterface: TokenInterface): Promise<TokenInfo> {
-        return this.request(new UpdateTokenRequest(id, tokenInterface));
+        return this.request(new UpdateTokenRequest(this.profile.id, this.network.id, this.account.address, id, tokenInterface));
     }
 
     /**
@@ -126,7 +126,7 @@ export class TokenServiceClient extends ServiceClient {
      * @param id Token id.
      */
     public getInterface(id: number): Promise<TokenInfo> {
-        return this.request(new GetInterfaceRequest(this.profile.id, this.network.id, this.account.address, id));
+        return this.request(new GetInterfaceRequest(this.network.id, id));
     }
 
     /**
@@ -134,6 +134,6 @@ export class TokenServiceClient extends ServiceClient {
      * @param contract Token contract address.
      */
     public parseInterface(contract: string): Promise<TokenInfo> {
-        return this.request(new ParseInterfaceRequest(this.profile.id, this.network.id, this.account.address, contract));
+        return this.request(new ParseInterfaceRequest(this.network.id, contract));
     }
 }
