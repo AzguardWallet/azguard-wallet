@@ -31,17 +31,17 @@ export default {
 	// ],
 	options_page: "src/options/index.html",
 	offline_enabled: true,
-	permissions: ["storage", "tabs", "background", "sidePanel"],
-	web_accessible_resources: [
-		{
-			matches: ["*://*/*"],
-			resources: ["src/content-script/index.ts"],
-		},
-		{
-			matches: ["*://*/*"],
-			resources: ["src/content-script/iframe/index.html"],
-		},
-	],
+	permissions: ["storage",/* "tabs",*/ "background", "sidePanel"],
+	// web_accessible_resources: [
+	// 	{
+	// 		matches: ["*://*/*"],
+	// 		resources: ["src/content-script/index.ts"],
+	// 	},
+	// 	{
+	// 		matches: ["*://*/*"],
+	// 		resources: ["src/content-script/iframe/index.html"],
+	// 	},
+	// ],
 	content_security_policy: {
 		extension_pages: "script-src 'self' 'wasm-unsafe-eval'",
 	},
