@@ -5,6 +5,7 @@ import {
 } from "@/wallet/base/messages"
 import { Service } from "@/wallet/base/service"
 import { NetworkService } from "@/wallet/services/network"
+import { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import {
 	AddTokenRequest,
@@ -47,6 +48,8 @@ import { IAccountContract } from "../account/contracts"
 
 export type Token = {
 	id: number
+	profileId: string
+
 	chainId: number
 	contract: string
 
@@ -73,6 +76,7 @@ export class TokenService extends Service {
 	private readonly tokens: EntityStorage<Token>
 
 	constructor(
+		private readonly profiles: ProfileService,
 		private readonly networks: NetworkService,
 		private readonly accounts: AccountService,
 		emit: (event: EventMessage) => void
@@ -82,6 +86,7 @@ export class TokenService extends Service {
 			"azguard:core:tokens",
 			StorageType.Local
 		)
+		this.profiles.onProfileDeleted.push(this.onProfileDeleted);
 	}
 
 	public async process(
@@ -91,7 +96,7 @@ export class TokenService extends Service {
 			case TokenServiceMethod.GetTokens: {
 				const _request = request as GetTokensRequest
 				try {
-					const tokens = await this.getTokens()
+					const tokens = await this.getTokens(_request.profileId, _request.chainId)
 					return new GetTokensResponse(
 						_request,
 						tokens.map(this.getTokenInfo, this)
@@ -206,10 +211,12 @@ export class TokenService extends Service {
 		}
 	}
 
-	public async getTokens(chainId?: number): Promise<Array<Token>> {
+	public async getTokens(profileId?: string, chainId?: number): Promise<Array<Token>> {
 		const tokens = await this.tokens.getValues()
 		return tokens.filter(
-			(token) => chainId === undefined || token.chainId === chainId
+			(token) =>
+				(profileId === undefined || token.profileId === profileId) &&
+				(chainId === undefined || token.chainId === chainId)
 		)
 	}
 
@@ -235,11 +242,12 @@ export class TokenService extends Service {
 		address: string,
 		ti: TokenInterface
 	): Promise<TokenInfo> {
-		let token = await this.findToken(ti.chainId, ti.contract)
+		let token = await this.findToken(profileId, ti.chainId, ti.contract)
 		if (!token) {
 			const [name, symbol, decimals] = await this.getTokenMetadata(profileId, networkId, address, ti);
 			token = {
 				id: array_max((await this.tokens.getKeys()).map((x) => +x)) + 1,
+				profileId,
 				chainId: ti.chainId,
 				contract: ti.contract,
 				name: name,
@@ -272,14 +280,15 @@ export class TokenService extends Service {
 		if (!_token) {
 			throw new Error("unknown token id")
 		}
-		if (_token.chainId !== ti.chainId || _token.contract !== ti.contract) {
-			throw new Error("token chain id and contract cannot change")
+		if (_token.profileId !== profileId || _token.chainId !== ti.chainId || _token.contract !== ti.contract) {
+			throw new Error("token profile id, chain id and contract cannot change")
 		}
 		const [name, symbol, decimals] = await this.getTokenMetadata(profileId, networkId, address, ti);
 		const token: Token = {
 			id: _token.id,
-			chainId: ti.chainId,
-			contract: ti.contract,
+			profileId: _token.profileId,
+			chainId: _token.chainId,
+			contract: _token.contract,
 			name: name,
 			symbol: symbol,
 			decimals: decimals,
@@ -572,12 +581,13 @@ export class TokenService extends Service {
 	}
 
 	private async findToken(
+		profileId: string,
 		chainId: number,
 		contract: string
 	): Promise<Token | undefined> {
 		const tokens = await this.tokens.getValues()
 		return tokens.find(
-			(token) => token.chainId === chainId && token.contract === contract
+			(token) => token.profileId === profileId && token.chainId === chainId && token.contract === contract
 		)
 	}
 
@@ -639,4 +649,12 @@ export class TokenService extends Service {
 			} catch {}
 		}
 	}
+
+    private readonly onProfileDeleted = async (profileId: string) => {
+        console.debug(`profile ${profileId} deleted, remove related tokens`);
+		for (const token of (await this.tokens.getValues()).filter(x => x.profileId === profileId)) {
+			console.debug(`remove token ${token.id}`);
+			await this.deleteToken(token.id);
+		}
+    }
 }

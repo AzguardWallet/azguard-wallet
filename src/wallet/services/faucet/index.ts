@@ -191,16 +191,14 @@ export class FaucetService extends Service {
         );
         console.debug("faucet mint tx:", mintTx);
 
-        const tokens = await this.tokenService.getTokens();
+        const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
         if (!tokens.some(x => x.contract === instance.address.toString())) {
             console.debug("adding faucet token...");
             const ti = await this.tokenService.parseTokenInterface(
-                profile.id,
                 networkId,
-                accountAddress,
                 instance.address.toString(),
             );
-            const token = await this.tokenService.addToken(ti);
+            const token = await this.tokenService.addToken(profile.id, networkId, accountAddress, ti);
             console.debug("faucet token:", token);
         }
     }

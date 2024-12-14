@@ -13,6 +13,7 @@ export enum TokenServiceMethod {
 
 export class GetTokensRequest extends RequestMessage {
     constructor(
+        public readonly profileId: string,
         public readonly chainId: number,
     ) {
         super(TOKEN_SERVICE_NAME, TokenServiceMethod.GetTokens);

@@ -5,6 +5,7 @@ import { AccountService } from "@/wallet/services/account";
 import { Account } from "@/wallet/services/account/client";
 import { NetworkService } from "@/wallet/services/network";
 import { Network } from "@/wallet/services/network/client";
+import { ProfileService } from "@/wallet/services/profile"
 import { TokenBalanceService } from "@/wallet/services/token-balance";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
@@ -28,12 +29,14 @@ export class TransactionService extends Service {
     public readonly onTransactionAdded: ((tx: Tx) => void)[] = [];
     public readonly onTransactionUpdated: ((tx: Tx) => void)[] = [];
 
+	private profile?: string = undefined
     private readonly txs: EntityStorage<Tx>;
     private readonly pending: Map<string, Tx> = new Map();
     private readonly pxes: Map<number, PXE> = new Map();
     private readonly worker: Promise<void>;
 
     constructor(
+        private readonly profileService: ProfileService,
         private readonly accountService: AccountService,
         private readonly networkService: NetworkService,
         private readonly tokenBalanceService: TokenBalanceService,
@@ -125,6 +128,16 @@ export class TransactionService extends Service {
         }
     }
 
+	private readonly onActiveProfileChanged = async (profileId?: string) => {
+		this.profile = profileId
+		if (profileId) {
+			this.pxes.clear();
+            for (const network of (await this.networkService.getNetworks()).filter(x => x.isDefault)) {
+                this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
+            }
+		}
+	}
+
     private readonly onDefaultNetworkChanged = async (network: Network) => {
         this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
     }
@@ -142,10 +155,17 @@ export class TransactionService extends Service {
     private async init() {
         while(true) {
             try {
-                for (const network of (await this.networkService.getNetworks()).filter(x => x.isDefault)) {
-                    this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
-                }
+				this.profile = (
+					await this.profileService.getActiveProfile()
+				)?.id
+                
+				if (this.profile) {
+                    for (const network of (await this.networkService.getNetworks()).filter(x => x.isDefault)) {
+                        this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
+                    }
+				}
 
+				this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged)
                 this.accountService.onAccountDeleted.push(this.onAccountDeleted);
                 this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged);
 
@@ -167,19 +187,21 @@ export class TransactionService extends Service {
         await this.init();
 
         while (true) {
-            try {
-                if (this.pending.size) {
-                    console.debug(`Sync ${this.pending.size} transactions...`);
-                    const start = Date.now();
-                    await Promise.allSettled(
-                        this.pending.values().map(x => this.updateTx(x)),
-                    );
-                    const end = Date.now();
-                    console.debug(`Transactions synced in ${end - start}ms`);
+			if (this.profile) {
+                try {
+                    if (this.pending.size) {
+                        console.debug(`Sync ${this.pending.size} transactions...`);
+                        const start = Date.now();
+                        await Promise.allSettled(
+                            this.pending.values().map(x => this.updateTx(x)),
+                        );
+                        const end = Date.now();
+                        console.debug(`Transactions synced in ${end - start}ms`);
+                    }
                 }
-            }
-            catch (error) {
-                console.error("Failed to sync transaction status.", error);
+                catch (error) {
+                    console.error("Failed to sync transaction status.", error);
+                }
             }
             await sleep(1000);
         }

@@ -186,6 +186,16 @@ export class TokenBalanceService extends Service {
 
 	private readonly onActiveProfileChanged = async (profileId?: string) => {
 		this.profile = profileId
+		if (profileId) {
+			this.pxes.clear();
+			for (const network of (await this.networkService.getNetworks()).filter((x) => x.isDefault)) {
+				this.pxes.set(network.chainId, createPXEClient(network.rpcUrl))
+			}
+			this.tokens.clear();
+			for (const token of await this.tokenService.getTokens(profileId)) {
+				this.tokens.set(token.id, token)
+			}
+		}
 	}
 
 	private readonly onDefaultNetworkChanged = async (network: Network) => {
@@ -195,21 +205,6 @@ export class TokenBalanceService extends Service {
 	private readonly onAccountAdded = async (account: Account) => {
 		for (const token of this.tokens.values().filter(x => x.chainId === account.chainId)) {
 			await this.createTokenBalance(token, account)
-		}
-	}
-
-	private readonly onAccountDeleted = async (account: Account) => {
-        console.debug(`account ${account.address} deleted, remove related token balanes`);
-        this.queue.clear();
-		for (const tb of (await this.balances.getValues()).filter(x => x.account === account.address)) {
-            console.debug(`remove token balane #${tb.id}`);
-			await this.balances.delete(`${tb.id}`);
-			this.emit(
-				new TokenBalanceServiceEventMessage(
-					TokenBalanceServiceEvent.TokenBalanceDeleted,
-					this.getTokenBalanceInfo(tb)
-				)
-			)
 		}
 	}
 
@@ -255,25 +250,18 @@ export class TokenBalanceService extends Service {
 					await this.profileService.getActiveProfile()
 				)?.id
 
-				for (const network of (
-					await this.networkService.getNetworks()
-				).filter((x) => x.isDefault)) {
-					this.pxes.set(
-						network.chainId,
-						createPXEClient(network.rpcUrl)
-					)
-				}
-
-				for (const token of await this.tokenService.getTokens()) {
-					this.tokens.set(token.id, token)
+				if (this.profile) {
+					for (const network of (await this.networkService.getNetworks()).filter((x) => x.isDefault)) {
+						this.pxes.set(network.chainId, createPXEClient(network.rpcUrl))
+					}
+					for (const token of await this.tokenService.getTokens(this.profile)) {
+						this.tokens.set(token.id, token)
+					}
 				}
 
 				this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged)
-				this.networkService.onDefaultNetworkChanged.push(
-					this.onDefaultNetworkChanged
-				)
+				this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged)
 				this.accountService.onAccountAdded.push(this.onAccountAdded)
-				this.accountService.onAccountDeleted.push(this.onAccountDeleted)
 				this.tokenService.onTokenAdded.push(this.onTokenAdded)
 				this.tokenService.onTokenUpdated.push(this.onTokenUpdated)
 				this.tokenService.onTokenDeleted.push(this.onTokenDeleted)
@@ -338,11 +326,6 @@ export class TokenBalanceService extends Service {
 			const token = this.tokens.get(tb.token)
 			if (!token) {
 				console.error("Unknown token")
-				return
-			}
-
-			if (!token.balanceOfPrivateFn && !token.balanceOfPublicFn) {
-				console.warn("Unconfigured token")
 				return
 			}
 

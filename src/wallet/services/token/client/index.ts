@@ -82,7 +82,7 @@ export class TokenServiceClient extends ServiceClient {
      * Returns a list of tokens.
      */
     public getTokens(): Promise<TokenInfo[]> {
-        return this.request(new GetTokensRequest(this.network.chainId));
+        return this.request(new GetTokensRequest(this.profile.id, this.network.chainId));
     }
 
     /**
@@ -125,7 +125,7 @@ export class TokenServiceClient extends ServiceClient {
      * Returns interface of the token with the specified id.
      * @param id Token id.
      */
-    public getInterface(id: number): Promise<TokenInfo> {
+    public getInterface(id: number): Promise<TokenInterface> {
         return this.request(new GetInterfaceRequest(this.network.id, id));
     }
 
@@ -133,7 +133,7 @@ export class TokenServiceClient extends ServiceClient {
      * Parses contract and returns token interface.
      * @param contract Token contract address.
      */
-    public parseInterface(contract: string): Promise<TokenInfo> {
+    public parseInterface(contract: string): Promise<TokenInterface> {
         return this.request(new ParseInterfaceRequest(this.network.id, contract));
     }
 }
