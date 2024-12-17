@@ -14,6 +14,7 @@ import { managers, initTokenService, initTransactionService } from "@/utils/core
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store.ts"
+import { sleep } from "@/wallet/utils";
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
@@ -49,6 +50,9 @@ const handleUnlockWallet = async () => {
 		try {
 			isAwaitingResponse.value = true
 			activeProfile = await managers.profile.unlockProfile(appStore.profile.id, password.value)
+			while (!appStore.isLogined) {
+				await sleep(100) // wait for services initialization
+			}
 		} catch (error) {
 			// TODO: not all errors are about wrong password
 			isWrongPassword.value = true
@@ -71,21 +75,10 @@ const handleUnlockWallet = async () => {
 			appStore.isAwaitingTransaction = false
 		})
 
-		// TODO: set event handlers in client's constructor instead
-		managers.profile.onActiveProfileChanged = profile => {
-			if (!profile) {
-				popupStore.closeAll()
-				appStore.isLogined = false
-				router.push("/popup/auth")
-			}
-		}
-
 		await appStore.syncLocalTokens()
 		appStore.syncBalances()
 		await appStore.syncTransactions()
 		appStore.initBalanceListeners()
-
-		appStore.isLogined = true
 
 		if (appStore.pageAwaitingAuth) {
 			appStore.pageAwaitingAuth = ""

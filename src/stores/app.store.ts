@@ -30,13 +30,13 @@ export const useAppStore = defineStore("app", () => {
 			const activeAccount = accounts.value.find(a => a.address === activeAccountAddress)
 			if (activeAccount) {
 				account.value = activeAccount
-			} else {
-				account.value = accounts.value[0]
-				await chrome.storage.local.set({
-					"azguard:ui:activeAccount": account.value?.address,
-				})
+				return
 			}
 		}
+		account.value = accounts.value[0]
+		await chrome.storage.local.set({
+			"azguard:ui:activeAccount": account.value?.address,
+		})
 	}
 	const selectAccount = async (acc: Account) => {
 		account.value = acc

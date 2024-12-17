@@ -97,6 +97,7 @@ const handleOpenPopup = target => {
 <style module>
 .wrapper {
 	height: 48px;
+	min-height: 48px;
 
 	padding: 0 20px;
 }

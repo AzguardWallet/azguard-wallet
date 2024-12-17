@@ -1,6 +1,7 @@
 import { createPXEClient } from "@aztec/aztec.js";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
+import { ProfileService } from "@/wallet/services/profile";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
@@ -24,9 +25,12 @@ import {
 	UpdateNetworkRequest,
 	UpdateNetworkResponse,
 	NodeStatus,
+	GetOrInitNetworksRequest,
+	GetOrInitNetworksResponse,
 } from "./client";
 
 type NetworkDto = {
+	profileId: string,
 	name: string;
 	rpcUrl: string;
 	chainId: number;
@@ -40,13 +44,26 @@ export class NetworkService extends Service {
 	private readonly storage: EntityStorage<NetworkDto>;
 	private readonly lock = new Lock();
 
-	constructor(emit: (event: EventMessage) => void) {
+	constructor(
+		private readonly profiles: ProfileService,
+		emit: (event: EventMessage) => void
+	) {
 		super(NETWORK_SERVICE_NAME, emit);
 		this.storage = new EntityStorage("azguard:core:networks", StorageType.Local);
+        this.profiles.onProfileDeleted.push(this.onProfileDeleted);
 	}
 
 	public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
 		switch (request.method) {
+			case NetworkServiceMethod.GetOrInitNetworks: {
+				const _request = request as GetOrInitNetworksRequest;
+				try {
+					const networks = await this.getOrInitNetworks()
+					return new GetOrInitNetworksResponse(_request, networks)
+				} catch (error: any) {
+					return new GetOrInitNetworksResponse(_request, undefined, error.message);
+				}
+			}
 			case NetworkServiceMethod.GetNetworks: {
 				const _request = request as GetNetworksRequest;
 				try {
@@ -65,51 +82,6 @@ export class NetworkService extends Service {
 					return new GetNetworkResponse(_request, undefined, error.message);
 				}
 			}
-			case NetworkServiceMethod.AddNetwork: {
-				const _request = request as AddNetworkRequest;
-				try {
-					const network = await this.addNetwork(_request.name, _request.rpcUrl);
-					this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkAdded, network));
-					return new AddNetworkResponse(_request, network);
-				} catch (error: any) {
-					return new AddNetworkResponse(_request, undefined, error.message);
-				}
-			}
-			case NetworkServiceMethod.UpdateNetwork: {
-				const _request = request as UpdateNetworkRequest;
-				try {
-					const network = await this.updateNetwork(_request.networkId, _request.name, _request.rpcUrl);
-					this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkUpdated, network));
-					return new UpdateNetworkResponse(_request, network);
-				} catch (error: any) {
-					return new UpdateNetworkResponse(_request, undefined, error.message);
-				}
-			}
-			case NetworkServiceMethod.DeleteNetwork: {
-				const _request = request as DeleteNetworkRequest;
-				try {
-					const network = await this.deleteNetwork(_request.networkId);
-					this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkDeleted, network));
-					return new DeleteNetworkResponse(_request, network);
-				} catch (error: any) {
-					return new DeleteNetworkResponse(_request, undefined, error.message);
-				}
-			}
-			case NetworkServiceMethod.SetDefault: {
-				const _request = request as SetDefaultRequest;
-				try {
-					const network = await this.setDefault(_request.networkId);
-					this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, network));
-					for (const emit of this.onDefaultNetworkChanged) {
-						try {
-							emit(network);
-						} catch {}
-					}
-					return new SetDefaultResponse(_request, network);
-				} catch (error: any) {
-					return new SetDefaultResponse(_request, undefined, error.message);
-				}
-			}
 			case NetworkServiceMethod.GetNodeStatus: {
 				const _request = request as GetNodeStatusRequest;
 				try {
@@ -119,6 +91,42 @@ export class NetworkService extends Service {
 					return new GetNodeStatusResponse(_request, undefined, error.message);
 				}
 			}
+			case NetworkServiceMethod.AddNetwork: {
+				const _request = request as AddNetworkRequest;
+				try {
+					const network = await this.addNetwork(_request.name, _request.rpcUrl);
+					return new AddNetworkResponse(_request, network);
+				} catch (error: any) {
+					return new AddNetworkResponse(_request, undefined, error.message);
+				}
+			}
+			case NetworkServiceMethod.UpdateNetwork: {
+				const _request = request as UpdateNetworkRequest;
+				try {
+					const network = await this.updateNetwork(_request.networkId, _request.name, _request.rpcUrl);
+					return new UpdateNetworkResponse(_request, network);
+				} catch (error: any) {
+					return new UpdateNetworkResponse(_request, undefined, error.message);
+				}
+			}
+			case NetworkServiceMethod.DeleteNetwork: {
+				const _request = request as DeleteNetworkRequest;
+				try {
+					const network = await this.deleteNetwork(_request.networkId);
+					return new DeleteNetworkResponse(_request, network);
+				} catch (error: any) {
+					return new DeleteNetworkResponse(_request, undefined, error.message);
+				}
+			}
+			case NetworkServiceMethod.SetDefault: {
+				const _request = request as SetDefaultRequest;
+				try {
+					const network = await this.setDefault(_request.networkId);
+					return new SetDefaultResponse(_request, network);
+				} catch (error: any) {
+					return new SetDefaultResponse(_request, undefined, error.message);
+				}
+			}
 			default: {
 				console.error(`Invalid request method ${request.method}.`);
 				return undefined;
@@ -126,44 +134,79 @@ export class NetworkService extends Service {
 		}
 	}
 
+	public async getOrInitNetworks(): Promise<Array<Network>> {
+		const profile = await this.profiles.getActiveProfile();
+		if (!profile) {
+			throw new Error("Profile locked");
+		}
+		try {
+			await this.lock.enter();
+			const networks = (await this.storage.getAll()).filter(([_, v]) => v.profileId === profile.id);
+			if (networks.length) {
+				return networks.map(([id, network]) => this.makeNetwork(id, network));
+			}
+			return [
+				await this._addNetwork(profile.id, "Shared PXE", "https://rpc.sandbox.azguardwallet.io", 41337, 1, true),
+				await this._addNetwork(profile.id, "Local PXE", "http://localhost:8080", 31337, 1, true),
+			];
+		} finally {
+			this.lock.leave();
+		}
+	}
+
 	public async getNetworks(chainId?: number): Promise<Array<Network>> {
-		const networks = await this.storage.getAll()
-		if (chainId) {
-			return networks.filter(([_, _network]) => _network.chainId === chainId).map(([id, network]) => this.makeNetwork(id, network))
+		const profile = await this.profiles.getActiveProfile();
+		if (!profile) {
+			throw new Error("Profile locked");
 		}
-
-		if (networks.length) {
-			return networks.map(([id, network]) => this.makeNetwork(id, network));
-		}
-
-		return this.seedNetworks();
+		return (await this.storage.getAll())
+			.filter(([_, network]) => 
+				network.profileId === profile.id && (chainId === undefined || network.chainId === chainId)
+			)
+			.map(([id, network]) =>
+				this.makeNetwork(id, network)
+			);
 	}
 
 	public async getNetwork(id: string): Promise<Network> {
+		const profile = await this.profiles.getActiveProfile();
+		if (!profile) {
+			throw new Error("Profile locked");
+		}
 		const network = await this.storage.get(id);
-		if (!network) {
-			throw new Error("unknown network id");
+		if (network?.profileId !== profile.id) {
+			throw new Error("Invalid id");
 		}
 		return this.makeNetwork(id, network);
 	}
 
 	public async addNetwork(name: string, rpcUrl: string): Promise<Network> {
+		const profile = await this.profiles.getActiveProfile();
+		if (!profile) {
+			throw new Error("Profile locked");
+		}
 		const [chainId, protocolVersion] = await this.getNodeInfo(rpcUrl);
 		try {
 			await this.lock.enter();
-			return this._addNetwork(name, rpcUrl, chainId, protocolVersion, false);
+			const network = await this._addNetwork(profile.id, name, rpcUrl, chainId, protocolVersion, false);
+			this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkAdded, network));
+			return network;
 		} finally {
 			this.lock.leave();
 		}
 	}
 
 	public async updateNetwork(id: string, name: string, rpcUrl: string): Promise<Network> {
+		const profile = await this.profiles.getActiveProfile();
+		if (!profile) {
+			throw new Error("Profile locked");
+		}
 		const [chainId, protocolVersion] = await this.getNodeInfo(rpcUrl);
 		try {
 			await this.lock.enter();
 			const network = await this.storage.get(id);
-			if (!network) {
-				throw new Error("unknown network id");
+			if (network?.profileId !== profile.id) {
+				throw new Error("Invalid id");
 			}
 			network.isDefault = network.chainId === chainId ? network.isDefault : false;
 			network.name = name;
@@ -171,35 +214,50 @@ export class NetworkService extends Service {
 			network.chainId = chainId;
 			network.protocolVersion = protocolVersion;
 			await this.storage.set(id, network);
-			return this.makeNetwork(id, network);
+			const res = this.makeNetwork(id, network);
+			this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkUpdated, res));
+			return res;
 		} finally {
 			this.lock.leave();
 		}
 	}
 
 	public async deleteNetwork(id: string): Promise<Network> {
+		const profile = await this.profiles.getActiveProfile();
+		if (!profile) {
+			throw new Error("Profile locked");
+		}
 		try {
 			await this.lock.enter();
 			const network = await this.storage.get(id);
-			if (!network) {
-				throw new Error("unknown network id");
+			if (network?.profileId !== profile.id) {
+				throw new Error("Invalid id");
 			}
 			await this.storage.delete(id);
-			return this.makeNetwork(id, network);
+			const res = this.makeNetwork(id, network);
+			this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkDeleted, res));
+			return res;
 		} finally {
 			this.lock.leave();
 		}
 	}
 
 	public async setDefault(id: string): Promise<Network> {
+		const profile = await this.profiles.getActiveProfile();
+		if (!profile) {
+			throw new Error("Profile locked");
+		}
 		try {
 			await this.lock.enter();
 			const network = await this.storage.get(id);
-			if (!network) {
-				throw new Error("unknown network id");
+			if (network?.profileId !== profile.id) {
+				throw new Error("Invalid id");
 			}
 			const networks = (await this.storage.getAll()).filter(
-				([_, _network]) => _network.chainId === network.chainId && _network.isDefault,
+				([_, _network]) =>
+					_network.profileId === network.profileId &&
+					_network.chainId === network.chainId &&
+					_network.isDefault
 			);
 			for (const [id, _network] of networks) {
 				_network.isDefault = false;
@@ -207,16 +265,25 @@ export class NetworkService extends Service {
 			}
 			network.isDefault = true;
 			await this.storage.set(id, network);
-			return this.makeNetwork(id, network);
+			const res = this.makeNetwork(id, network);
+			this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, res));
+			for (const emit of this.onDefaultNetworkChanged) {
+				try {emit(res)} catch {}
+			}
+			return res;
 		} finally {
 			this.lock.leave();
 		}
 	}
 
 	public async getNodeStatus(id: string): Promise<NodeStatus> {
+		const profile = await this.profiles.getActiveProfile();
+		if (!profile) {
+			throw new Error("Profile locked");
+		}
 		const network = await this.storage.get(id);
-		if (!network) {
-			throw new Error("unknown network id");
+		if (network?.profileId !== profile.id) {
+			throw new Error("Invalid id");
 		}
 		try {
 			const [chainId, protocolVersion] = await this.getNodeInfo(network.rpcUrl);
@@ -230,23 +297,8 @@ export class NetworkService extends Service {
 		}
 	}
 
-	private async seedNetworks(): Promise<Array<Network>> {
-		try {
-			await this.lock.enter();
-			const networks = await this.storage.getAll();
-			if (networks.length) {
-				return networks.map(([id, network]) => this.makeNetwork(id, network));
-			}
-			return [
-				await this._addNetwork("Shared PXE", "https://rpc.sandbox.azguardwallet.io", 41337, 1, true),
-				await this._addNetwork("Local PXE", "http://localhost:8080", 31337, 1, true),
-			];
-		} finally {
-			this.lock.leave();
-		}
-	}
-
 	private async _addNetwork(
+		profileId: string,
 		name: string,
 		rpcUrl: string,
 		chainId: number,
@@ -258,6 +310,7 @@ export class NetworkService extends Service {
 			id = getRandomHex(8);
 		} while (await this.storage.contains(id));
 		const network: NetworkDto = {
+			profileId,
 			name,
 			rpcUrl,
 			chainId,
@@ -274,7 +327,7 @@ export class NetworkService extends Service {
 			const nodeInfo = await pxe.getNodeInfo();
 			return [nodeInfo.l1ChainId, nodeInfo.protocolVersion];
 		} catch {
-			throw new Error("failed to fetch node info");
+			throw new Error("Failed to fetch node info");
 		}
 	}
 
@@ -288,4 +341,19 @@ export class NetworkService extends Service {
 			network.isDefault,
 		);
 	}
+
+    private readonly onProfileDeleted = async (profileId: string) => {
+        console.debug(`profile ${profileId} deleted, remove related networks`);
+        try {
+			await this.lock.enter();
+			const networks = (await this.storage.getAll()).filter(([_, network]) => network.profileId === profileId);
+			for (const [id, network] of networks) {
+				console.debug(`remove network #${id}`);
+				await this.storage.delete(id);
+				this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkDeleted, this.makeNetwork(id, network)));
+			}
+		} finally {
+			this.lock.leave();
+		}
+    }
 }

@@ -2,6 +2,7 @@ import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Network, NETWORK_SERVICE_NAME, NodeStatus } from ".";
 
 export enum NetworkServiceMethod {
+    GetOrInitNetworks,
     GetNetworks,
     GetNetwork,
     AddNetwork,
@@ -9,6 +10,22 @@ export enum NetworkServiceMethod {
     DeleteNetwork,
     SetDefault,
     GetNodeStatus,
+}
+
+export class GetOrInitNetworksRequest extends RequestMessage {
+    constructor() {
+        super(NETWORK_SERVICE_NAME, NetworkServiceMethod.GetOrInitNetworks);
+    }
+}
+
+export class GetOrInitNetworksResponse extends ResponseMessage {
+    constructor(
+        request: GetOrInitNetworksRequest,
+        result?: Network[],
+        error?: string,
+    ) {
+        super(NETWORK_SERVICE_NAME, request.id, result, error);
+    }
 }
 
 export class GetNetworksRequest extends RequestMessage {

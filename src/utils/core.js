@@ -1,5 +1,4 @@
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { NetworkServiceClient } from "@/wallet/services/network/client"
 import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
@@ -9,7 +8,6 @@ import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { FaucetServiceClient } from "@/wallet/services/faucet/client"
 
 const profileService = new ProfileServiceClient()
-const networkService = new NetworkServiceClient()
 const walletConnectService = new WalletConnectServiceClient()
 const interactionSevice = new InteractionServiceClient()
 const balanceService = new TokenBalanceServiceClient()
@@ -28,7 +26,7 @@ const executionService = new ExecutionServiceClient(
 
 export const managers = {
 	profile: profileService,
-	network: networkService,
+	network: null, // must be initialized after profile.onActiveProfileChanged
 	wallectConnect: walletConnectService,
 	interaction: interactionSevice,
 	balance: balanceService,
@@ -36,10 +34,6 @@ export const managers = {
 	faucet: faucetService,
 	transaction: null,
 	token: null,
-}
-
-export const initNetworks = async () => {
-	return await managers.network.getNetworks()
 }
 
 export const initTokenService = ({ profile, network, account }) => {

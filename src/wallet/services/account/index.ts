@@ -31,6 +31,8 @@ import {
 import { AzguardV0, IAccountContract } from "./contracts"
 
 type AccountDto = {
+	profileId: string,
+	chainId: number,
 	index: number
 	type: AccountType
 	name: string
@@ -40,6 +42,8 @@ type AccountDto = {
 export class AccountService extends Service {
 	public readonly onAccountAdded: ((account: Account) => void)[] = []
 	public readonly onAccountDeleted: ((account: Account) => void)[] = []
+	
+	private readonly storage: EntityStorage<AccountDto>;
 
 	constructor(
 		private readonly profiles: ProfileService,
@@ -47,6 +51,7 @@ export class AccountService extends Service {
 		emit: (event: EventMessage) => void
 	) {
 		super(ACCOUNT_SERVICE_NAME, emit)
+		this.storage = new EntityStorage("azguard:core:accounts", StorageType.Local);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
 	}
 
@@ -184,10 +189,12 @@ export class AccountService extends Service {
 		chainId: number,
 		all?: boolean
 	): Promise<Array<Account>> {
-		const storage = this._getStorage(profileId, chainId)
-		const accounts = await storage.getAll()
-		return accounts
-			.filter(([_, v]) => !!all || v.visible)
+		return (await this.storage.getAll())
+			.filter(([_, v]) =>
+				v.profileId === profileId &&
+				v.chainId === chainId &&
+				(!!all || v.visible)
+			)
 			.map(
 				([k, v]) =>
 					new Account(
@@ -207,9 +214,8 @@ export class AccountService extends Service {
 		chainId: number,
 		address: string
 	): Promise<Account | undefined> {
-		const storage = this._getStorage(profileId, chainId)
-		const account = await storage.get(address)
-		if (account !== undefined) {
+		const account = await this.storage.get(address)
+		if (account?.profileId === profileId && account.chainId === chainId) {
 			return new Account(
 				profileId,
 				chainId,
@@ -229,8 +235,8 @@ export class AccountService extends Service {
 		type: AccountType,
 		name: string
 	): Promise<Account> {
-		const storage = this._getStorage(profileId, chainId)
-		const accounts = await storage.getValues()
+		const accounts = (await this.storage.getValues())
+			.filter(v => v.profileId === profileId && v.chainId === chainId);
 		const index =
 			accounts.length > 0
 				? array_max(
@@ -255,7 +261,7 @@ export class AccountService extends Service {
 				throw new Error("unsupported account type")
 		}
 
-		await storage.set(address, { index, type, name, visible: true })
+		await this.storage.set(address, { profileId, chainId, index, type, name, visible: true })
 		return new Account(profileId, chainId, address, index, type, name, true)
 	}
 
@@ -265,11 +271,10 @@ export class AccountService extends Service {
 		address: string,
 		name: string
 	): Promise<Account | undefined> {
-		const storage = this._getStorage(profileId, chainId)
-		const account = await storage.get(address)
-		if (account !== undefined) {
+		const account = await this.storage.get(address)
+		if (account?.profileId === profileId && account.chainId === chainId) {
 			account.name = name
-			await storage.set(address, account)
+			await this.storage.set(address, account)
 			return new Account(
 				profileId,
 				chainId,
@@ -289,12 +294,11 @@ export class AccountService extends Service {
 		address: string,
 		visible: boolean
 	): Promise<Account | undefined> {
-		const storage = this._getStorage(profileId, chainId)
-		const account = await storage.get(address)
-		if (account !== undefined) {
+		const account = await this.storage.get(address)
+		if (account?.profileId === profileId && account.chainId === chainId) {
 			account.visible = visible
 
-			await storage.set(address, account)
+			await this.storage.set(address, account)
 			return new Account(
 				profileId,
 				chainId,
@@ -314,9 +318,8 @@ export class AccountService extends Service {
 		address: string,
 		payload: string
 	): Promise<string> {
-		const storage = this._getStorage(profileId, chainId)
-		const account = await storage.get(address)
-		if (!account) {
+		const account = await this.storage.get(address)
+		if (account?.profileId !== profileId || account.chainId !== chainId) {
 			throw new Error("account doesn't exist")
 		}
 		switch (account.type) {
@@ -341,9 +344,8 @@ export class AccountService extends Service {
 		chainId: number,
 		address: string
 	): Promise<IAccountContract> {
-		const storage = this._getStorage(profileId, chainId)
-		const account = await storage.get(address)
-		if (!account) {
+		const account = await this.storage.get(address)
+		if (account?.profileId !== profileId || account.chainId !== chainId) {
 			throw new Error("unknown account address")
 		}
 
@@ -372,14 +374,11 @@ export class AccountService extends Service {
 
     private readonly onProfileDeleted = async (profileId: string) => {
         console.debug(`profile ${profileId} deleted, remove related accounts`);
-        // TODO: rework accounts to not depend on networks and delete directly
-        for (const network of await this.networks.getNetworks()) {
-            const storage = this._getStorage(profileId, network.chainId);
-            for (const address of await storage.getKeys()) {
-                console.debug(`remove account ${address}`);
-                await this.deleteAccount(profileId, network.chainId, address);
-            }
-        }
+		const accounts = (await this.storage.getAll()).filter(([_, v]) => v.profileId === profileId);
+		for (const [address, account] of accounts) {
+			console.debug(`remove account ${address}`);
+			await this.deleteAccount(account.profileId, account.chainId, address);
+		}
     }
 
 	private async deleteAccount(
@@ -387,10 +386,9 @@ export class AccountService extends Service {
 		chainId: number,
 		address: string,
 	) {
-		const storage = this._getStorage(profileId, chainId)
-		const dto = await storage.get(address)
-        if (dto) {
-            await storage.delete(address)
+		const dto = await this.storage.get(address)
+		if (dto?.profileId === profileId && dto.chainId === chainId) {
+            await this.storage.delete(address)
             const account = new Account(
 				profileId,
 				chainId,
@@ -418,15 +416,5 @@ export class AccountService extends Service {
 			throw new Error("unauthorized")
 		}
 		return poseidon2Hash([master, chainId, type, index])
-	}
-
-	private _getStorage(
-		profileId: string,
-		chainId: number
-	): EntityStorage<AccountDto> {
-		return new EntityStorage(
-			`azguard:core:accounts:${profileId}:${chainId}`,
-			StorageType.Local
-		)
 	}
 }

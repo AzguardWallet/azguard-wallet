@@ -301,7 +301,6 @@
     "usePopupStore": true,
     "useManagers": true,
     "managers": true,
-    "initNetworks": true,
     "useCacheStore": true,
     "comma": true,
     "useTheme": true,

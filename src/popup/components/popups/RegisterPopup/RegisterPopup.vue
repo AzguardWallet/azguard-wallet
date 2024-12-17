@@ -8,6 +8,7 @@ import { AccountServiceClient, AccountType } from "@/wallet/services/account/cli
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { sleep } from "@/wallet/utils";
 const appStore = useAppStore()
 
 const router = useRouter()
@@ -34,6 +35,9 @@ const handleCreateProfile = async () => {
 	isCreatingProfile.value = true
 
 	const profile = await managers.profile.createProfile("My Profile", walletPassword.value)
+	while (!appStore.isLogined) {
+		await sleep(100) // wait for services initialization
+	}
 
 	managers.account = new AccountServiceClient(profile, appStore.network)
 
@@ -45,8 +49,6 @@ const handleCreateProfile = async () => {
 	isCreatingProfile.value = false
 
 	await appStore.syncLocalTokens()
-
-	appStore.isLogined = true
 
 	await chrome.storage.local.set({
 		"azguard:ui:activeAccount": account.address,

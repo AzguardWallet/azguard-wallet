@@ -480,7 +480,7 @@ export class ProfileService extends Service {
                     const profile = await this.profiles.get(session.profile);
                     if (profile) {
                         const passhash = Buffer.from(session.passhash, 'base64');
-                        const key = await EncryptionKey.fromPasshash(passhash);
+                        const key = await EncryptionKey.fromPasshash(passhash.buffer);
                         const guard = await this.tryDecrypt(Buffer.from(profile.guard, 'base64'), key);
                         if (guard && array_equals(guard, encryptionGuard)) {
                             console.debug('session restored');

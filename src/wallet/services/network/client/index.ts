@@ -10,6 +10,7 @@ import {
     UpdateNetworkRequest,
     SetDefaultRequest,
     GetNodeStatusRequest,
+    GetOrInitNetworksRequest,
 } from "./methods";
 
 export * from './events';
@@ -75,7 +76,16 @@ export class NetworkServiceClient extends ServiceClient {
     }
 
     /**
+     * Returns a list of existing networks if any, or seeds and returns default networks otherwise.
+     * @throws "Profile locked" if profile is locked.
+     */
+    public getOrInitNetworks(): Promise<Network[]> {
+        return this.request(new GetOrInitNetworksRequest());
+    }
+
+    /**
      * Returns a list of networks.
+     * @throws "Profile locked" if profile is locked.
      */
     public getNetworks(chainId?: number): Promise<Network[]> {
         return this.request(new GetNetworksRequest(chainId));
@@ -84,7 +94,8 @@ export class NetworkServiceClient extends ServiceClient {
     /**
      * Returns a network with the specified id, or undefined if it doesn't exist.
      * @param id Network id.
-     * @throws If the network with the specified id doesn't exist.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
      */
     public getNetwork(id: string): Promise<Network> {
         return this.request(new GetNetworkRequest(id));
@@ -95,7 +106,8 @@ export class NetworkServiceClient extends ServiceClient {
      * @param name Display name.
      * @param rpcUrl RPC URL the wallet will connect to.
      * @emits `NetworkAdded` event.
-     * @throws If the specified RPC is invalid or not responding.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Failed to fetch node info" if the specified RPC is invalid or not responding.
      */
     public addNetwork(name: string, rpcUrl: string): Promise<Network> {
         return this.request(new AddNetworkRequest(rpcUrl, name));
@@ -107,7 +119,9 @@ export class NetworkServiceClient extends ServiceClient {
      * @param name New display name.
      * @param rpcUrl New RPC URL.
      * @emits `NetworkUpdated` event.
-     * @throws If the network with the specified id doesn't exist, or the specified RPC is invalid or not responding.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
+     * @throws "Failed to fetch node info" if the specified RPC is invalid or not responding.
      */
     public updateNetwork(id: string, name: string, rpcUrl: string): Promise<Network> {
         return this.request(new UpdateNetworkRequest(id, rpcUrl, name));
@@ -117,7 +131,8 @@ export class NetworkServiceClient extends ServiceClient {
      * Deletes network with the specified id.
      * @param id Network id.
      * @emits `NetworkDeleted` event.
-     * @throws If the network with the specified id doesn't exist.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
      */
     public deleteNetwork(id: string): Promise<Network> {
         return this.request(new DeleteNetworkRequest(id));
@@ -127,7 +142,8 @@ export class NetworkServiceClient extends ServiceClient {
      * Deletes network with the specified id.
      * @param id Network id.
      * @emits `NetworkUpdated` events (two).
-     * @throws If the network with the specified id doesn't exist.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
      */
     public setDefault(id: string): Promise<Network> {
         return this.request(new SetDefaultRequest(id));
@@ -136,7 +152,8 @@ export class NetworkServiceClient extends ServiceClient {
     /**
      * Fetches and validates node info from RPC, and returns the status.
      * @param id Network id.
-     * @throws If the network with the specified id doesn't exist.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
      */
     public getNodeStatus(id: string): Promise<NodeStatus> {
         return this.request(new GetNodeStatusRequest(id));

@@ -5,9 +5,10 @@ import LogoStar from "@/components/LogoStar.vue"
 import PopupManager from "./components/popups/PopupManager.vue"
 
 /** Utils */
-import { managers, initNetworks, initTokenService, initTransactionService } from "@/utils/core.js"
+import { managers, initTokenService, initTransactionService } from "@/utils/core.js"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 import { InteractionServiceClient } from "@/wallet/services/interaction/client"
+import { NetworkServiceClient } from "@/wallet/services/network/client"
 
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
@@ -23,6 +24,24 @@ import LogoIcon from "@/assets/logo.svg?raw"
 
 const route = useRoute()
 const router = useRouter()
+
+const initNetworks = async () => {
+	managers.network = new NetworkServiceClient();
+	appStore.networks = (await managers.network.getOrInitNetworks())
+		.sort((a, b) =>
+			a.chainId === b.chainId
+				? a.name.localeCompare(b.name)
+				: a.chainId - b.chainId
+		)
+	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
+	if ("azguard:ui:activeNetwork" in activeNetworkResult) {
+		const localActiveNetworkId = activeNetworkResult["azguard:ui:activeNetwork"]
+		appStore.network = appStore.networks.find(n => n.id === localActiveNetworkId)
+	}
+	appStore.network ??= appStore.networks.findLast(n => n.isDefault) // TODO: change to .find() after dropping shared pxe
+	managers.network.setDefault(appStore.network.id)
+	appStore.syncNetworkStatus()
+}
 
 const initAccount = async () => {
 	managers.account = new AccountServiceClient(appStore.profile, appStore.network)
@@ -48,7 +67,9 @@ watch(
 		if (!appStore.account || !appStore.isLogined) return
 
 		appStore.syncBalances()
-		appStore.syncTransactions()
+		if (managers.transaction) {
+			appStore.syncTransactions()
+		}
 	},
 )
 /** todo: ref */
@@ -89,12 +110,29 @@ watch(
 )
 
 const loadProfile = async () => {
+	// TODO: set event handlers in client's constructor instead
+	managers.profile.onActiveProfileChanged = async profile => {
+		if (profile) {
+			appStore.profile = profile;
+			await initNetworks()
+			await initAccount()
+			await uploadDappSessions()
+			appStore.isLogined = true
+			// TODO: initialize all services here
+			// TODO: redirect to /general
+		} else {
+			// TODO: deinitialize all services here
+			popupStore.closeAll()
+			appStore.isLogined = false
+			router.push("/popup/auth")
+		}
+	}
+
 	const activeProfile = await managers.profile.getActiveProfile()
 	if (activeProfile) {
-		// TODO: also refresh session after some actions in the UI
-		const _ = managers.profile.refreshSession()
 		appStore.profile = activeProfile
 
+		await initNetworks()
 		await initAccount()
 		await uploadDappSessions()
 
@@ -107,15 +145,6 @@ const loadProfile = async () => {
 			appStore.transactions.unshift(tx)
 			appStore.isAwaitingTransaction = false
 		})
-
-		// TODO: set event handlers in client's constructor instead
-		managers.profile.onActiveProfileChanged = profile => {
-			if (!profile) {
-				popupStore.closeAll()
-				appStore.isLogined = false
-				router.push("/popup/auth")
-			}
-		}
 
 		await appStore.syncLocalTokens()
 		appStore.syncBalances()
@@ -135,17 +164,11 @@ const loadProfile = async () => {
 		if (profiles.length) {
 			appStore.profile = profiles[0]
 
-			await initAccount()
-			await uploadDappSessions()
-
 			appStore.isSessionChecked = true
 
 			router.push("/popup/auth")
 			return
 		}
-	} else {
-		await initAccount()
-		await uploadDappSessions()
 	}
 
 	appStore.isSessionChecked = true
@@ -157,24 +180,8 @@ const init = async () => {
 	await syncLocalSettings()
 
 	/**
-	 * Wallet init: networks, active profile, etc
+	 * Wallet init: active profile, etc
 	 */
-	const networks = await initNetworks()
-	appStore.networks = networks
-
-	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
-
-	if ("azguard:ui:activeNetwork" in activeNetworkResult) {
-		const localActiveNetworkIdx = activeNetworkResult["azguard:ui:activeNetwork"]
-		const localActiveNetwork = appStore.networks.findLast(n => n.id === localActiveNetworkIdx)
-		appStore.network = localActiveNetwork || appStore.networks.findLast(n => n.isDefault)
-		managers.network.setDefault(appStore.network.id)
-	} else {
-		appStore.network = networks.findLast(n => n.isDefault)
-		managers.network.setDefault(appStore.network.id)
-	}
-	appStore.syncNetworkStatus()
-
 	loadProfile()
 }
 
