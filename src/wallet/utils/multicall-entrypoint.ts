@@ -1,7 +1,7 @@
-import { AztecAddress } from "@aztec/aztec.js";
-import { FunctionAbi, FunctionSelector } from "@aztec/foundation/abi";
+import { AztecAddress } from "@aztec/aztec.js"
+import { FunctionAbi, FunctionSelector } from "@aztec/foundation/abi"
 
-export const getMulticallEntrypointAddress = () => AztecAddress.fromBigInt(4n);
+export const getMulticallEntrypointAddress = () => AztecAddress.fromBigInt(4n)
 
 export const getMulticallEntrypointFn = () => ({
     name: "entrypoint",
@@ -13,6 +13,7 @@ export const getMulticallEntrypointFn = () => ({
         {
             name: "app_payload",
             type: {
+                kind: "struct",
                 fields: [
                     {
                         name: "function_calls",
@@ -20,81 +21,80 @@ export const getMulticallEntrypointFn = () => ({
                             kind: "array",
                             length: 4,
                             type: {
+                                kind: "struct",
                                 fields: [
                                     {
                                         name: "args_hash",
                                         type: {
-                                            kind: "field"
-                                        }
+                                            kind: "field",
+                                        },
                                     },
                                     {
                                         name: "function_selector",
                                         type: {
+                                            kind: "struct",
                                             fields: [
                                                 {
                                                     name: "inner",
                                                     type: {
                                                         kind: "integer",
                                                         sign: "unsigned",
-                                                        width: 32
-                                                    }
-                                                }
+                                                        width: 32,
+                                                    },
+                                                },
                                             ],
-                                            kind: "struct",
-                                            path: "authwit::aztec::protocol_types::abis::function_selector::FunctionSelector"
-                                        }
+                                            path: "authwit::aztec::protocol_types::abis::function_selector::FunctionSelector",
+                                        },
                                     },
                                     {
                                         name: "target_address",
                                         type: {
+                                            kind: "struct",
                                             fields: [
                                                 {
                                                     name: "inner",
                                                     type: {
-                                                        kind: "field"
-                                                    }
-                                                }
+                                                        kind: "field",
+                                                    },
+                                                },
                                             ],
-                                            kind: "struct",
-                                            path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress"
-                                        }
+                                            path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress",
+                                        },
                                     },
                                     {
                                         name: "is_public",
                                         type: {
-                                            kind: "boolean"
-                                        }
+                                            kind: "boolean",
+                                        },
                                     },
                                     {
                                         name: "is_static",
                                         type: {
-                                            kind: "boolean"
-                                        }
-                                    }
+                                            kind: "boolean",
+                                        },
+                                    },
                                 ],
-                                kind: "struct",
-                                path: "authwit::entrypoint::function_call::FunctionCall"
-                            }
-                        }
+                                path: "authwit::entrypoint::function_call::FunctionCall",
+                            },
+                        },
                     },
                     {
                         name: "nonce",
                         type: {
-                            kind: "field"
-                        }
-                    }
+                            kind: "field",
+                        },
+                    },
                 ],
-                kind: "struct",
-                path: "authwit::entrypoint::app::AppPayload"
+                path: "authwit::entrypoint::app::AppPayload",
             },
-            visibility: "private"
-        }
+            visibility: "private",
+        },
     ],
     returnTypes: [],
     errorTypes: {},
-} as FunctionAbi);
+} as FunctionAbi)
 
 export const getMulticallEntrypointSelector = () => {
-    const fn = getMulticallEntrypointFn();
-    return FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
-};
+	const fn = getMulticallEntrypointFn()
+	return FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)
+}
