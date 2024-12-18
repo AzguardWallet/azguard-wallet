@@ -77,6 +77,8 @@ watch(
 	() => appStore.network,
 	async () => {
 		if (!appStore.isLogined) return
+		
+		appStore.syncNetworkStatus()
 
 		managers.account = new AccountServiceClient(appStore.profile, appStore.network)
 		appStore.accounts = await managers.account.getAccounts(true)
@@ -88,7 +90,6 @@ watch(
 
 			await appStore.syncLocalTokens()
 		} else {
-			appStore.syncNetworkStatus()
 			await appStore.setupActiveAccount()
 
 			initTokenService({
