@@ -12,6 +12,7 @@ import { TokenBalanceService } from "./services/token-balance";
 import { TransactionService } from "./services/transaction";
 import { ExecutionService } from "./services/execution";
 import { FaucetService } from "./services/faucet";
+import { PxeService } from "./services/pxe";
 
 export async function init() {
     console.debug("Init BarretenbergSync...");
@@ -61,12 +62,14 @@ const transactionService = new TransactionService(
     tokenBalanceService,
     broadcast,
 );
+const pxeService = new PxeService(networkService, broadcast);
 const executionService = new ExecutionService(
     profileService,
     networkService,
     accountService,
     tokenService,
     transactionService,
+    pxeService,
     broadcast
 );
 const faucetService = new FaucetService(
@@ -91,6 +94,7 @@ const services = new Map<string, Service>([
     [faucetService.name, faucetService],
     [interactionService.name, interactionService],
     [walletConnectService.name, walletConnectService],
+    [pxeService.name, pxeService],
 ]);
 
 // state

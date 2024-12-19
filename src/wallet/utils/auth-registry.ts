@@ -1,4 +1,4 @@
-import { AztecAddress } from "@aztec/aztec.js"
+import { AztecAddress, PXE } from "@aztec/aztec.js"
 import { FunctionAbi, FunctionSelector } from "@aztec/foundation/abi"
 
 export const getAuthRegistryAddress = () => AztecAddress.fromBigInt(1n)
@@ -45,4 +45,8 @@ export const getSetAuthorizedFn = () => ({
 export const getSetAuthorizedSelector = () => {
 	const fn = getSetAuthorizedFn()
 	return FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)
+}
+
+export const isPublicAuthwitConsumable = async (pxe: PXE, owner: string, message_hash: string) => {
+    return await pxe.simulateUnconstrained("unconstrained_is_consumable", [owner, message_hash], getAuthRegistryAddress()) === true;
 }

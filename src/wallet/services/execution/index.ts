@@ -61,6 +61,7 @@ import {
     IAction,
     AddContractAction,
 } from "./client";
+import { PxeService } from "../pxe";
 
 export class ExecutionService extends Service {
     constructor(
@@ -69,6 +70,7 @@ export class ExecutionService extends Service {
         private readonly accountService: AccountService,
         private readonly tokenService: TokenService,
         private readonly transactionService: TransactionService,
+        private readonly pxeService: PxeService,
         emit: (event: EventMessage) => void,
     ) {
         super(EXECUTION_SERVICE_NAME, emit);
@@ -240,12 +242,18 @@ export class ExecutionService extends Service {
                             fn.name,
                             [messageHash, true],
                         ));
+                        await this.pxeService.addCallAuthwit(
+                            accountAddress, messageHash.toString(), _action.caller, _action.contract, _action.method, _action.args, true
+                        );
                         console.debug(`Call to authwit registry from ${dappName} enqueued.`);
                     }
                     else {
                         console.debug(`Adding call authwit from ${dappName}...`);
                         const authwit = await account.buildAuthWitness(messageHash);
                         await pxe.addAuthWitness(authwit);
+                        await this.pxeService.addCallAuthwit(
+                            accountAddress, messageHash.toString(), _action.caller, _action.contract, _action.method, _action.args, false
+                        );
                         console.debug(`Call authwit from ${dappName} added.`);
                     }
                     break;
@@ -278,12 +286,18 @@ export class ExecutionService extends Service {
                             fn.name,
                             [messageHash, true],
                         ));
+                        await this.pxeService.addIntentAuthwit(
+                            accountAddress, messageHash.toString(), _action.consumer, _action.intent, true
+                        );
                         console.debug(`Call to authwit registry from ${dappName} enqueued.`);
                     }
                     else {
                         console.debug(`Adding intent authwit from ${dappName}...`);
                         const authwit = await account.buildAuthWitness(messageHash);
                         await pxe.addAuthWitness(authwit);
+                        await this.pxeService.addIntentAuthwit(
+                            accountAddress, messageHash.toString(), _action.consumer, _action.intent, false
+                        );
                         console.debug(`Intent authwit from ${dappName} added.`);
                     }
                     break;
