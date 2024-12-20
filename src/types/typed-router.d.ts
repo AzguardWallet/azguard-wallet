@@ -45,18 +45,6 @@ declare module 'vue-router/auto/routes' {
       Record<never, never>,
       Record<never, never>
     >
-    '/iframe/': RouteRecordInfo<
-      '/iframe/',
-      '/iframe',
-      Record<never, never>,
-      Record<never, never>
-    >
-    '/options/': RouteRecordInfo<
-      '/options/',
-      '/options',
-      Record<never, never>,
-      Record<never, never>
-    >
     '/popup/': RouteRecordInfo<
       '/popup/',
       '/popup',

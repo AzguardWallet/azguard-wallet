@@ -67,10 +67,6 @@ export default defineConfig({
 					dir: "src/popup/windows",
 					baseRoute: "windows",
 				},
-				{
-					dir: "src/options/pages",
-					baseRoute: "options",
-				},
 			],
 		}),
 
@@ -114,7 +110,6 @@ export default defineConfig({
 			input: {
 				popup: "src/popup/index.html",
 				setup: "src/setup/index.html",
-				options: "src/options/index.html",
 			},
 		},
 	},
