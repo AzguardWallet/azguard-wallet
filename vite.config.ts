@@ -6,7 +6,7 @@ import useAutoImport from "unplugin-auto-import/vite"
 import useComponents from "unplugin-vue-components/vite"
 import { defineConfig } from "vite"
 import { nodePolyfills } from "vite-plugin-node-polyfills"
-import { defineViteConfig as define } from "./define.config"
+import packageJson from "./package.json"
 
 export default defineConfig({
 	server: {
@@ -71,10 +71,6 @@ export default defineConfig({
 					dir: "src/options/pages",
 					baseRoute: "options",
 				},
-				{
-					dir: "src/content-script/iframe/pages",
-					baseRoute: "iframe",
-				},
 			],
 		}),
 
@@ -116,7 +112,6 @@ export default defineConfig({
 		target: "esnext",
 		rollupOptions: {
 			input: {
-				iframe: "src/content-script/iframe/index.html",
 				popup: "src/popup/index.html",
 				setup: "src/setup/index.html",
 				options: "src/options/index.html",
@@ -130,5 +125,10 @@ export default defineConfig({
 			target: "esnext",
 		},
 	},
-	define,
+	define: {
+		__VERSION__: JSON.stringify(packageJson.version),
+		__NAME__: JSON.stringify(packageJson.name),
+		__DISPLAY_NAME__: JSON.stringify(packageJson.displayName),
+		"import.meta.env.HTML_TITLE": JSON.stringify(packageJson.displayName),
+	},
 })

@@ -8,9 +8,6 @@ viteConfig.plugins?.push(
 	crx({
 		manifest,
 		browser: "chrome",
-		contentScripts: {
-			injectCss: true,
-		},
 	})
 )
 
