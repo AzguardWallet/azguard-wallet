@@ -158,7 +158,7 @@ watch(
 			<Flex justify="between">
 				<Flex direction="column" gap="6">
 					<Text size="13" weight="600" color="primary"> Disable animations </Text>
-					<Text size="12" weight="500" color="tertiary"> Minimize the use of amination </Text>
+					<Text size="12" weight="500" color="tertiary"> Minimize the use of animations </Text>
 				</Flex>
 
 				<Toggle v-model="isAnimationsDisabled" />

@@ -23,7 +23,6 @@ const popupStore = usePopupStore()
 
 /** Update theme */
 const root = document.querySelector("html")
-
 const theme = computed(() => settings.value.appearance?.theme)
 watch(
 	() => theme.value,
@@ -38,6 +37,15 @@ watch(
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", event => {
 	if (theme.value === "system") root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
 })
+
+watch(
+	() => settings.value,
+	() => {
+		if (settings.value.appearance.disableAnimations) {
+			document.querySelector("html").classList.add("noanimations")
+		}
+	},
+)
 
 import LogoIcon from "@/assets/logo.svg?raw"
 

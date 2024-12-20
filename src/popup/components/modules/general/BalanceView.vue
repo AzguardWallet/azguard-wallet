@@ -1,7 +1,7 @@
 <script setup>
 /** Components */
 import ActionButtonsView from "./ActionButtonsView.vue"
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
+import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
 
 /** Utils */
 import { comma } from "@/utils/amount.js"
@@ -13,8 +13,10 @@ const { openToast } = useToast()
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
+import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
+const cacheStore = useCacheStore()
 
 const props = defineProps({
 	token: {
@@ -110,6 +112,24 @@ const handleCopyContractAddress = () => {
 		isCopied.value = false
 	}, 2500)
 }
+
+const handleEditToken = () => {
+	cacheStore.tokenToEditIdx = props.token.id
+	popupStore.open("edit_token")
+}
+
+const handleDeleteToken = () => {
+	cacheStore.confirm.description =
+		"Removing a token only affects the display in the UI and it does not affect the token balance"
+	cacheStore.confirm.callback = async () => {
+		await managers.token.deleteToken(props.token.id)
+		appStore.tokens = appStore.tokens.filter(t => t.id !== props.token.id)
+		appStore.balances = appStore.balances.filter(b => b.token.id !== props.token.id)
+		openToast({ label: "Token successfully deleted" })
+	}
+
+	popupStore.open("confirm")
+}
 </script>
 
 <template>
@@ -156,6 +176,19 @@ const handleCopyContractAddress = () => {
 					</Flex>
 
 					<template #popup>
+						<DropdownItem @click="handleEditToken">
+							<Flex align="center" gap="6">
+								<Icon name="edit" size="14" color="tertiary" />
+								Edit token
+							</Flex>
+						</DropdownItem>
+						<DropdownItem @click="handleDeleteToken">
+							<Flex align="center" gap="6">
+								<Icon name="close-circle" size="14" color="tertiary" />
+								Remove token
+							</Flex>
+						</DropdownItem>
+						<DropdownDivider />
 						<DropdownItem @click="popupStore.open('token_metadata')">
 							<Flex align="center" gap="6">
 								<Icon name="zap" size="14" color="tertiary" />
