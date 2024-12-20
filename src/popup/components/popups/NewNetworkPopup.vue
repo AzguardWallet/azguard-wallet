@@ -60,7 +60,7 @@ const handleCreateNetwork = async () => {
 
 		emit("onClose")
 
-		openToast({ label: "Network is updated" })
+		openToast({ label: "Node is created" })
 	} catch (error) {
 		isCreating.value = false
 
@@ -95,9 +95,9 @@ const onKeydown = e => {
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_network">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> New network </Text>
+				<Text size="14" weight="600" color="primary"> New node </Text>
 
-				<Input label="Name" placeholder="My Network" v-model="nameTerm" autofocus>
+				<Input label="Name" placeholder="My node" v-model="nameTerm" autofocus>
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">

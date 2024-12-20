@@ -36,11 +36,9 @@ const handleFillFieldsWithDefaultValues = () => {
 	addressTerm.value = accountToEdit.value.address
 }
 
-const isAlreadyExist = computed(() => notAllowedAccountNames.value.includes(nameTerm.value) && isStartedEditing.value)
 const isAvailableToUpdateAccount = computed(() => {
 	if (!nameTerm.value.length) return
 	if (!addressTerm.value.length) return
-	if (isAlreadyExist.value) return
 
 	return true
 })
@@ -91,14 +89,6 @@ const onKeydown = e => {
 					autofocus
 					@input="isStartedEditing = true"
 				>
-					<template #right>
-						<Transition name="fade">
-							<Flex v-if="isAlreadyExist" align="center" gap="6">
-								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary"> Already exist </Text>
-							</Flex>
-						</Transition>
-					</template>
 				</Input>
 
 				<Input v-model="addressTerm" label="Address" placeholder="Address" disabled />

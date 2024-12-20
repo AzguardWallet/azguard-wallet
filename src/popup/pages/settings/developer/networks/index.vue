@@ -68,11 +68,11 @@ const handleDelete = target => {
 				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Networks </Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Nodes </Text>
 		</Flex>
 
 		<Flex direction="column" gap="16">
-			<Text size="16" weight="600" color="primary">Networks</Text>
+			<Text size="16" weight="600" color="primary">Nodes</Text>
 
 			<Flex v-if="appStore.network" direction="column" gap="6">
 				<Flex
@@ -137,7 +137,7 @@ const handleDelete = target => {
 				leftIcon="plus-circle"
 				leftIconColor="primary"
 			>
-				<Text size="13">Add network</Text>
+				<Text size="13">Add node</Text>
 			</Button>
 		</Flex>
 

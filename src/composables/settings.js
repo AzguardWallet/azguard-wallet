@@ -3,6 +3,9 @@ const defaultSettings = {
 	appearance: {
 		theme: "dark",
 		sidePanel: false,
+		showNode: true,
+		showPopupFullscreen: false,
+		disableAnimations: false,
 	},
 	developer: {
 		advancedMode: false,
@@ -15,9 +18,7 @@ const settings = ref({})
 
 export const useSettings = () => {
 	const syncLocalSettings = async () => {
-		const localSettings = await chrome.storage.local.get(
-			SETTINGS_STORAGE_KEY
-		)
+		const localSettings = await chrome.storage.local.get(SETTINGS_STORAGE_KEY)
 
 		if (!Object.keys(localSettings).length) {
 			settings.value = defaultSettings
@@ -30,10 +31,7 @@ export const useSettings = () => {
 			settings.value = localSettings[SETTINGS_STORAGE_KEY]
 
 			/** restore */
-			if (
-				Object.keys(localSettings[SETTINGS_STORAGE_KEY]).length !==
-				Object.keys(defaultSettings).length
-			) {
+			if (Object.keys(localSettings[SETTINGS_STORAGE_KEY]).length !== Object.keys(defaultSettings).length) {
 				const missingSettings = []
 
 				for (const setting of Object.keys(defaultSettings)) {
@@ -43,14 +41,30 @@ export const useSettings = () => {
 				}
 
 				for (const missingSetting of missingSettings) {
-					settings.value[missingSetting] =
-						defaultSettings[missingSetting]
+					settings.value[missingSetting] = defaultSettings[missingSetting]
 				}
 
 				await chrome.storage.local.set({
 					[SETTINGS_STORAGE_KEY]: settings.value,
 				})
 			}
+		}
+
+		let hasNestedMismatch = false
+		for (const setting of Object.keys(settings.value)) {
+			if (Object.keys(settings.value[setting]).length !== Object.keys(defaultSettings[setting]).length) {
+				hasNestedMismatch = true
+				for (const nestedSetting of Object.keys(defaultSettings[setting])) {
+					if (!(nestedSetting in settings.value[setting])) {
+						settings.value[setting][nestedSetting] = defaultSettings[setting][nestedSetting]
+					}
+				}
+			}
+		}
+		if (hasNestedMismatch) {
+			await chrome.storage.local.set({
+				[SETTINGS_STORAGE_KEY]: settings.value,
+			})
 		}
 
 		/** Theme */

@@ -29,9 +29,6 @@ const props = defineProps({
 
 const emit = defineEmits(["onClose"])
 
-// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
-const tokenToEdit = computed(() => appStore.tokens.find(t => t.id == cacheStore.tokenToEditIdx))
-
 const isAvailableToUpdateToken = computed(() => {
 	return true
 })
@@ -70,21 +67,32 @@ const handleResetChanges = () => {
 	}
 }
 
+const error = ref()
+
+const isUpdatingTokenInterface = ref(false)
 const handleSaveToken = async () => {
-	const updatedToken = await managers.token.updateToken(cacheStore.tokenToEditIdx, rawToken.value)
+	isUpdatingTokenInterface.value = true
 
-	const updatedTokenIdx = appStore.tokens.findLastIndex(t => t.id == cacheStore.tokenToEditIdx)
-	appStore.tokens[updatedTokenIdx] = updatedToken
+	try {
+		const updatedToken = await managers.token.updateToken(cacheStore.tokenToEditIdx, rawToken.value)
 
-	await appStore.syncBalances()
+		const updatedTokenIdx = appStore.tokens.findLastIndex(t => t.id == cacheStore.tokenToEditIdx)
+		appStore.tokens[updatedTokenIdx] = updatedToken
 
-	openToast({ label: "Token has been updated" })
+		await appStore.syncBalances()
+
+		openToast({ label: "Token has been updated" })
+	} catch (error) {
+		error.value = err
+		isUpdatingTokenInterface.value = false
+	} finally {
+		isUpdatingTokenInterface.value = false
+	}
 
 	emit("onClose")
 }
 
 const isAwaitingTokenInterface = ref(true)
-const error = ref()
 const isErrorOccurred = computed(() => !!error.value)
 watch(
 	() => props.show,
@@ -118,6 +126,11 @@ watch(
 		}
 	},
 )
+
+const handleCopyContractAddress = () => {
+	window.navigator.clipboard.writeText(rawToken.value.contract)
+	openToast({ label: "Contract address is copied", icon: "copy" })
+}
 </script>
 
 <template>
@@ -145,11 +158,9 @@ watch(
 				</template>
 
 				<template v-else>
-					<Flex direction="column" gap="8">
-						<Text size="12" weight="600" color="tertiary">
-							{{ rawToken.contract.slice(0, 6) }} ••• {{ rawToken.contract.slice(-4) }}
-						</Text>
-					</Flex>
+					<Text @click="handleCopyContractAddress" size="12" weight="600" color="tertiary" class="copyable">
+						{{ rawToken.contract.slice(0, 6) }} ••• {{ rawToken.contract.slice(-4) }}
+					</Text>
 
 					<CandidatesForm
 						:selectedFields
@@ -164,7 +175,7 @@ watch(
 							wide
 							type="secondary"
 							size="medium"
-							:disabled="!Object.keys(selectedFields).length"
+							:disabled="!Object.keys(selectedFields).length || isUpdatingTokenInterface"
 						>
 							Reset changes
 						</Button>
@@ -173,9 +184,12 @@ watch(
 							wide
 							type="primary"
 							size="medium"
-							:disabled="!isAvailableToUpdateToken"
+							:disabled="!isAvailableToUpdateToken || isUpdatingTokenInterface"
+							:loading="isUpdatingTokenInterface"
 						>
-							<Text color="inverse">Update token</Text>
+							<Text color="inverse">
+								{{ isUpdatingTokenInterface ? "Updating" : "Update token" }}
+							</Text>
 						</Button>
 					</Flex>
 				</template>

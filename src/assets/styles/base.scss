@@ -99,9 +99,9 @@ $grayscale: (
 
 	/** json viewer */
 	--json-property-name: #998418;
-	--json-string: #B56959;
-	--json-number: #2F798A;
-	--json-bool: #1E754F;
+	--json-string: #b56959;
+	--json-number: #2f798a;
+	--json-bool: #1e754f;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(255, 255, 255, #{$value});
@@ -151,10 +151,10 @@ $grayscale: (
 	--sand: #b88555;
 
 	/** json viewer */
-	--json-property-name: #A99D5E;
-	--json-string: #BD8276;
-	--json-number: #4C9A91;
-	--json-bool: #4D9375;
+	--json-property-name: #a99d5e;
+	--json-string: #bd8276;
+	--json-number: #4c9a91;
+	--json-bool: #4d9375;
 
 	@each $gray, $value in $grayscale {
 		--op-#{$gray}: rgba(0, 0, 0, #{$value});
@@ -292,4 +292,10 @@ body {
 
 .capitalize {
 	text-transform: capitalize;
+}
+
+.noanimations {
+	& * {
+		transition: none !important;
+	}
 }

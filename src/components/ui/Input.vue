@@ -44,6 +44,10 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	clearable: {
+		type: Boolean,
+		default: false,
+	},
 	disablePaste: {
 		type: Boolean,
 		default: false,
@@ -112,6 +116,11 @@ const handleBlur = () => {
 const handlePaste = e => {
 	if (props.disablePaste) e.preventDefault()
 }
+
+const handleClear = () => {
+	text.value = null
+	emit("blur")
+}
 </script>
 
 <template>
@@ -147,7 +156,15 @@ const handlePaste = e => {
 				/>
 			</Flex>
 
-			<slot name="suffix" />
+			<Icon
+				v-if="clearable && text"
+				@click.stop="handleClear"
+				name="close-circle"
+				size="14"
+				color="tertiary"
+				:class="$style.clear_btn"
+			/>
+			<slot v-else name="suffix" />
 		</Flex>
 	</Flex>
 </template>
@@ -214,5 +231,15 @@ const handlePaste = e => {
 
 .left {
 	height: 100%;
+}
+
+.clear_btn {
+	cursor: pointer;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		fill: var(--txt-primary);
+	}
 }
 </style>

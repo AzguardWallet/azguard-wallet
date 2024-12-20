@@ -65,11 +65,22 @@ const handleAmountInput = e => {
 	}
 }
 
+const handleNameInput = () => {
+	if (tokenNameTerm.value.length >= 32) {
+		tokenNameTerm.value = tokenNameTerm.value.slice(0, 32)
+	}
+}
+const handleSymbolInput = () => {
+	if (tokenSymbolTerm.value.length >= 32) {
+		tokenSymbolTerm.value = tokenSymbolTerm.value.slice(0, 32)
+	}
+}
+
 const isAllowedToMint = computed(() => {
 	if (!tokenNameTerm.value.length) return
-	if (tokenNameTerm.value.length >= 32) return
+	if (tokenNameTerm.value.length > 32) return
 	if (!tokenSymbolTerm.value.length) return
-	if (tokenSymbolTerm.value.length >= 32) return
+	if (tokenSymbolTerm.value.length > 32) return
 	if (!amountTerm.value || new BN(amountTerm.value) <= 0) return
 	if (new BN(amountTerm.value) > 100_000) return
 
@@ -158,6 +169,7 @@ const onKeydown = e => {
 					v-model="tokenNameTerm"
 					:disabled="isPreselected"
 					@focus="error = null"
+					@input="handleNameInput"
 					:autofocus="!token"
 				/>
 				<Input
@@ -166,6 +178,7 @@ const onKeydown = e => {
 					v-model="tokenSymbolTerm"
 					:disabled="isPreselected"
 					@focus="error = null"
+					@input="handleSymbolInput"
 				/>
 				<Input
 					label="Amount"
@@ -186,7 +199,7 @@ const onKeydown = e => {
 						:disabled="!isAllowedToMint"
 						:loading="isMinting"
 					>
-						<Text color="inverse">{{ isMinting ? "Minting in progress" : "Mint" }}</Text>
+						<Text color="inverse">{{ isMinting ? "Minting" : "Mint" }}</Text>
 					</Button>
 
 					<Tooltip v-if="isErrorOccurred" side="top">

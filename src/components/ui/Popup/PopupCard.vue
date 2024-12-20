@@ -1,4 +1,8 @@
 <script setup>
+/** Composables */
+import { useSettings } from "@/composables/settings.js"
+const { settings } = useSettings()
+
 const props = defineProps({
 	large: {
 		type: Boolean,
@@ -9,7 +13,13 @@ const props = defineProps({
 	},
 })
 
-const showFullscreen = ref(false)
+const showFullscreen = ref(settings.value.appearance.showPopupFullscreen)
+
+onMounted(() => {
+	if (window.innerHeight > 600) {
+		showFullscreen.value = true
+	}
+})
 </script>
 
 <template>
@@ -17,11 +27,7 @@ const showFullscreen = ref(false)
 		align="center"
 		direction="column"
 		gap="20"
-		:class="[
-			$style.wrapper,
-			large && $style.large,
-			displaceIdx > 1 && $style.displace,
-		]"
+		:class="[$style.wrapper, large && $style.large, displaceIdx > 1 && $style.displace]"
 		:style="{
 			'--displace': displaceIdx - 1,
 			flex: showFullscreen ? '10' : null,

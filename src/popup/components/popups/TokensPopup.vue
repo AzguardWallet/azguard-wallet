@@ -55,7 +55,13 @@ const handleDeleteToken = target => {
 					<Text size="14" weight="600" color="primary"> Manage tokens </Text>
 
 					<Flex v-if="appStore.tokens.length" direction="column" gap="6">
-						<Flex v-for="token in appStore.tokens" align="center" justify="between" :class="$style.card">
+						<Flex
+							v-for="token in appStore.tokens"
+							align="center"
+							justify="between"
+							gap="16"
+							:class="$style.card"
+						>
 							<Flex align="center" gap="8" :class="$style.left">
 								<Icon name="banknote" size="16" color="primary" />
 								<Text size="14" weight="600" color="primary">

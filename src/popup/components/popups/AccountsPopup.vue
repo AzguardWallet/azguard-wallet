@@ -24,16 +24,9 @@ const emit = defineEmits(["onClose"])
 const account = computed(() => appStore.account)
 
 const showAllOtherAccounts = ref(false)
-const otherAccounts = computed(() => {
-	return appStore.accounts
-		.filter(a => a.address !== account.value.address)
-		.filter(a => a.visible)
-		.sort((a, b) => a.index - b.index)
+const accounts = computed(() => {
+	return appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index)
 })
-const hiddenAccounts = computed(() =>
-	appStore.accounts.filter(a => a.address !== account.value.address).filter(a => !a.visible),
-)
-const address = computed(() => appStore.account.address.toString())
 
 const handleSelectAccount = acc => {
 	appStore.selectAccount(acc)
@@ -64,71 +57,46 @@ const handleManageAccounts = () => {
 	<Popup @onClose="emit('onClose')" :displaceIdx="popupStore.popups.accounts">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<Flex direction="column" gap="16">
-					<Flex align="center" justify="between">
-						<Text size="14" weight="600" color="primary"> Accounts </Text>
+				<Flex align="center" justify="between">
+					<Text size="14" weight="600" color="primary"> Accounts </Text>
 
-						<Flex
-							@click="handleManageAccounts"
-							align="center"
-							gap="4"
-							:class="['clickable', $style.txt_button]"
-						>
-							<Text size="13" weight="600" color="tertiary"> Manage accounts </Text>
-							<Icon name="arrow-narrow-up-right" size="12" color="tertiary" />
-						</Flex>
-					</Flex>
-
-					<Flex direction="column" gap="8">
-						<Flex align="center" justify="between" :class="$style.account">
-							<Flex gap="10">
-								<Icon name="check-circle" size="16" color="green" />
-
-								<Flex direction="column" gap="8">
-									<Text size="14" weight="600" color="primary">
-										{{ account.name }}
-									</Text>
-									<Text size="13" weight="600" color="tertiary">
-										<Text @click="handleCopyAddress(account.address)" color="body" class="copyable">
-											{{ address.slice(0, 6) }}
-											•••
-											{{ address.slice(-4) }}
-										</Text>
-									</Text>
-								</Flex>
-							</Flex>
-						</Flex>
+					<Flex
+						@click="handleManageAccounts"
+						align="center"
+						gap="4"
+						:class="['clickable', $style.txt_button]"
+					>
+						<Text size="13" weight="600" color="tertiary"> Manage accounts </Text>
+						<Icon name="arrow-narrow-up-right" size="12" color="tertiary" />
 					</Flex>
 				</Flex>
 
-				<Flex v-if="otherAccounts.length" direction="column" gap="6">
-					<Flex align="center" justify="between">
-						<Text size="13" weight="600" color="body"> Switch to </Text>
-						<Text v-if="hiddenAccounts.length" size="12" weight="600" color="tertiary" align="center">
-							<Text color="secondary">{{ hiddenAccounts.length }}</Text>
-							hidden
-						</Text>
-					</Flex>
-
+				<Flex direction="column" gap="8">
 					<Flex
-						v-for="acc in otherAccounts.slice(0, showAllOtherAccounts ? appStore.accounts.length : 3)"
+						v-for="acc in accounts.slice(0, showAllOtherAccounts ? appStore.accounts.length : 3)"
 						@click="handleSelectAccount(acc)"
 						align="center"
 						justify="between"
 						:class="$style.account"
 					>
-						<Flex align="center" gap="10">
-							<Icon name="vault" size="16" color="primary" />
+						<Flex gap="10">
+							<Icon
+								:name="account.address === acc.address ? 'check-circle' : 'vault'"
+								size="16"
+								:color="account.address === acc.address ? 'green' : 'secondary'"
+							/>
 
-							<Text size="14" weight="600" color="primary" :class="$style.account_name">
-								{{ acc.name }}
-							</Text>
+							<Flex direction="column" gap="8">
+								<Text size="14" weight="600" color="primary" :class="$style.account_name">
+									{{ acc.name }}
+								</Text>
 
-							<Text size="13" weight="600" color="tertiary">
-								{{ acc.address.slice(0, 6) }}
-								•••
-								{{ acc.address.slice(-4) }}
-							</Text>
+								<Text size="13" weight="600" color="tertiary">
+									{{ acc.address.slice(0, 6) }}
+									•••
+									{{ acc.address.slice(-4) }}
+								</Text>
+							</Flex>
 						</Flex>
 
 						<Flex align="center" gap="8" :class="$style.icons">
@@ -143,9 +111,9 @@ const handleManageAccounts = () => {
 					</Flex>
 
 					<Button
-						v-if="otherAccounts.length > 3"
+						v-if="accounts.length > 3"
 						@click="showAllOtherAccounts = !showAllOtherAccounts"
-						type="tertiary"
+						type="secondary"
 						size="small"
 						square
 					>
@@ -153,21 +121,15 @@ const handleManageAccounts = () => {
 					</Button>
 				</Flex>
 
-				<Flex direction="column" gap="12">
-					<Button
-						@click="popupStore.open('new_account')"
-						type="secondary"
-						size="medium"
-						leftIcon="plus-circle"
-						leftIconColor="primary"
-					>
-						New account
-					</Button>
-
-					<Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
-						Creating new account do not require the creation of a new seed phrase
-					</Text>
-				</Flex>
+				<Button
+					@click="popupStore.open('new_account')"
+					type="secondary"
+					size="medium"
+					leftIcon="plus-circle"
+					leftIconColor="primary"
+				>
+					New account
+				</Button>
 			</Flex>
 		</PopupCard>
 	</Popup>
@@ -231,5 +193,9 @@ const handleManageAccounts = () => {
 
 .icon_btn {
 	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		fill: var(--txt-primary);
+	}
 }
 </style>

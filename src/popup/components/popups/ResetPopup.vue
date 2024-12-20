@@ -135,7 +135,7 @@ watch(
 						<Text color="tertiary" wrap="wrap">
 							<Text color="secondary">{{ appStore.accounts.length }} accounts</Text>
 							with a total balance
-							<Text color="secondary">$22,256.12</Text>
+							<Text color="secondary">$0.00</Text>
 						</Text>
 					</Button>
 

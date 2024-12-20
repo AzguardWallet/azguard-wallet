@@ -10,7 +10,16 @@
 /** Components */
 import Navigation from "../../components/Navigation.vue"
 
+/** Composables */
+import { useToast } from "@/composables/toast"
+const { openToast } = useToast()
+
 const version = __VERSION__
+
+const handleCopyVersion = () => {
+	window.navigator.clipboard.writeText(version)
+	openToast({ label: "Version is copied", icon: "copy" })
+}
 
 const handleOpen = target => {
 	chrome.windows.create({
@@ -35,7 +44,9 @@ const handleOpen = target => {
 
 			<Flex wide align="start" direction="column" gap="8">
 				<Text size="13" weight="600" color="primary"> Azguard Wallet </Text>
-				<Text size="12" weight="500" color="support"> Version {{ version }} - Alpha Testing </Text>
+				<Text @click="handleCopyVersion" size="12" weight="500" color="support" class="copyable">
+					Version {{ version }} - Alpha Testing
+				</Text>
 			</Flex>
 
 			<Flex wide direction="column" gap="16">
@@ -99,23 +110,11 @@ const handleOpen = target => {
 			</Flex>
 
 			<Flex wide align="center" gap="10">
-				<Text
-					@click="handleOpen('terms')"
-					size="12"
-					weight="600"
-					color="blue"
-					:class="$style.link"
-				>
+				<Text @click="handleOpen('terms')" size="12" weight="600" color="blue" :class="$style.link">
 					Terms of Use
 				</Text>
 				<Text size="12" color="support">•</Text>
-				<Text
-					@click="handleOpen('privacy')"
-					size="12"
-					weight="600"
-					color="blue"
-					:class="$style.link"
-				>
+				<Text @click="handleOpen('privacy')" size="12" weight="600" color="blue" :class="$style.link">
 					Privacy Policy
 				</Text>
 			</Flex>

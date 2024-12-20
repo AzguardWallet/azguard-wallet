@@ -45,7 +45,7 @@ const handleManageNetworks = () => {
 			<Flex wide direction="column" justify="between" gap="16" :class="$style.wrapper">
 				<Flex direction="column" gap="16">
 					<Flex align="center" justify="between">
-						<Text size="14" weight="600" color="primary"> Select network </Text>
+						<Text size="14" weight="600" color="primary"> Select node </Text>
 
 						<Flex
 							@click="handleManageNetworks"
@@ -53,7 +53,7 @@ const handleManageNetworks = () => {
 							gap="4"
 							:class="['clickable', $style.txt_button]"
 						>
-							<Text size="13" weight="600" color="tertiary"> Manage networks </Text>
+							<Text size="13" weight="600" color="tertiary"> Manage node </Text>
 							<Icon name="arrow-narrow-up-right" size="12" color="tertiary" />
 						</Flex>
 					</Flex>
@@ -102,11 +102,11 @@ const handleManageNetworks = () => {
 						leftIcon="plus-circle"
 						leftIconColor="primary"
 					>
-						Add network
+						Add node
 					</Button>
 
 					<Text size="12" weight="500" color="tertiary" height="140" align="center">
-						To add a new network, come up with a unique name and provide an RPC link
+						To add a new node, come up with a unique name and provide an RPC link
 					</Text>
 				</Flex>
 			</Flex>

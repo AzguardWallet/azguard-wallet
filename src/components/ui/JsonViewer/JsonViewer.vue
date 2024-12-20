@@ -3,19 +3,26 @@
 import { onMounted, ref } from "vue"
 import { EditorView } from "codemirror"
 import { EditorState } from "@codemirror/state"
-import { keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, drawSelection } from "@codemirror/view"
+import {
+	keymap,
+	lineNumbers,
+	highlightActiveLine,
+	highlightActiveLineGutter,
+	highlightSpecialChars,
+	drawSelection,
+} from "@codemirror/view"
 import { bracketMatching, foldGutter } from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search"
 import { json } from "@codemirror/lang-json"
-import { indentationMarkers } from '@replit/codemirror-indentation-markers';
+import { indentationMarkers } from "@replit/codemirror-indentation-markers"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
 
 /** Services */
-import { customViewerTheme } from "./theme.js";
+import { customViewerTheme } from "./theme.js"
 
 const props = defineProps({
 	data: {
@@ -29,7 +36,7 @@ const props = defineProps({
 	fullscreen: {
 		type: Boolean,
 		default: false,
-	}
+	},
 })
 
 const editorRef = ref(null)
@@ -37,12 +44,10 @@ const editorRef = ref(null)
 const fullscreenSettings = [
 	lineNumbers(),
 	foldGutter(),
-	indentationMarkers(
-		{
-			markerType: "codeOnly",
-			thickness: 1,
-		},
-	),
+	indentationMarkers({
+		markerType: "codeOnly",
+		thickness: 1,
+	}),
 ]
 const initViewer = () => {
 	const state = EditorState.create({
@@ -85,10 +90,9 @@ const handleCopy = () => {
 
 const handleFullscreenView = () => {
 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/json"))
-	url.searchParams.set('requestId', props.requestId)
+	url.searchParams.set("requestId", props.requestId)
 
-
-	chrome.windows.create({type: 'popup', url: url.toString(), height: 700, width: 900})
+	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 900 })
 }
 
 onMounted(() => {

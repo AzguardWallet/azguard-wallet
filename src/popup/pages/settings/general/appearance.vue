@@ -15,16 +15,9 @@ import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdow
 import { useSettings } from "@/composables/settings.js"
 const { settings, updateSettings } = useSettings()
 
-const root = document.querySelector("html")
-const theme = computed(() => settings.value.appearance.theme)
-watch(
-	() => theme.value,
-	() => {
-		root.setAttribute("theme", theme.value)
-	},
-)
+const theme = computed(() => settings.value?.appearance?.theme)
 
-const isSidePanelEnabled = ref(settings.value.appearance.sidePanel)
+const isSidePanelEnabled = ref(settings.value?.appearance?.sidePanel)
 watch(
 	() => isSidePanelEnabled.value,
 	async () => {
@@ -45,10 +38,40 @@ watch(
 		}
 	},
 )
+
+const isShowNodeNameEnabled = ref(settings.value?.appearance?.showNode)
+watch(
+	() => isShowNodeNameEnabled.value,
+	async () => {
+		updateSettings("appearance", "showNode", isShowNodeNameEnabled.value)
+	},
+)
+
+const isShowPopupFullscreen = ref(settings.value?.appearance?.showPopupFullscreen)
+watch(
+	() => isShowPopupFullscreen.value,
+	async () => {
+		updateSettings("appearance", "showPopupFullscreen", isShowPopupFullscreen.value)
+	},
+)
+
+const isAnimationsDisabled = ref(settings.value?.appearance?.disableAnimations)
+watch(
+	() => isAnimationsDisabled.value,
+	async () => {
+		updateSettings("appearance", "disableAnimations", isAnimationsDisabled.value)
+
+		if (isAnimationsDisabled.value) {
+			document.querySelector("html").classList.add("noanimations")
+		} else {
+			document.querySelector("html").classList.remove("noanimations")
+		}
+	},
+)
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
+	<Flex v-if="settings" direction="column" gap="20" :class="$style.wrapper">
 		<Flex align="center" gap="8">
 			<RouterLink to="/popup/settings">
 				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
@@ -112,6 +135,33 @@ watch(
 				</Flex>
 
 				<Toggle v-model="isSidePanelEnabled" />
+			</Flex>
+
+			<Flex justify="between">
+				<Flex direction="column" gap="6">
+					<Text size="13" weight="600" color="primary"> Show Node name </Text>
+					<Text size="12" weight="500" color="tertiary"> Always show node name in the header </Text>
+				</Flex>
+
+				<Toggle v-model="isShowNodeNameEnabled" />
+			</Flex>
+
+			<Flex justify="between">
+				<Flex direction="column" gap="6">
+					<Text size="13" weight="600" color="primary"> Full-height popups </Text>
+					<Text size="12" weight="500" color="tertiary"> Open popups to to the full height </Text>
+				</Flex>
+
+				<Toggle v-model="isShowPopupFullscreen" />
+			</Flex>
+
+			<Flex justify="between">
+				<Flex direction="column" gap="6">
+					<Text size="13" weight="600" color="primary"> Disable animations </Text>
+					<Text size="12" weight="500" color="tertiary"> Minimize the use of amination </Text>
+				</Flex>
+
+				<Toggle v-model="isAnimationsDisabled" />
 			</Flex>
 		</Flex>
 

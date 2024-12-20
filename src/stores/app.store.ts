@@ -14,6 +14,8 @@ export const useAppStore = defineStore("app", () => {
 
 	const isAwaitingTransaction = ref(false)
 
+	const displayOption = ref("total_account_value")
+
 	const profile = ref()
 	const isRegistered = computed(() => !!profile.value)
 
@@ -154,6 +156,7 @@ export const useAppStore = defineStore("app", () => {
 		_isHomeScreenOpened,
 		isLoading,
 		isAwaitingTransaction,
+		displayOption,
 		profile,
 		isRegistered,
 		account,

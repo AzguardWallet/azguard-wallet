@@ -9,6 +9,7 @@ import EditAccountPopup from "./EditAccountPopup.vue"
 import AccountsPopup from "./AccountsPopup.vue"
 import NewAccountPopup from "./NewAccountPopup.vue"
 import SendPopup from "./SendPopup.vue"
+import NotePopup from "./NotePopup.vue"
 import ConnectByURIPopup from "./ConnectByURIPopup.vue"
 import FaucetPopup from "./FaucetPopup.vue"
 import ReceivePopup from "./ReceivePopup.vue"
@@ -21,6 +22,7 @@ import TokenMetadataPopup from "./TokenMetadataPopup.vue"
 import NewTokenPopup from "./NewTokenPopup/NewTokenPopup.vue"
 import EditTokenPopup from "./EditTokenPopup.vue"
 import TransactionPopup from "./TransactionPopup.vue"
+import SelectBalanceTypePopup from "./SelectBalanceTypePopup.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -38,10 +40,14 @@ const popupStore = usePopupStore()
 	<AccountsPopup :show="popupStore.isOpened('accounts')" @onClose="popupStore.close('accounts')" />
 	<NewAccountPopup :show="popupStore.isOpened('new_account')" @onClose="popupStore.close('new_account')" />
 	<SendPopup :show="popupStore.isOpened('send')" @onClose="popupStore.close('send')" />
+	<NotePopup :show="popupStore.isOpened('note')" @onClose="popupStore.close('note')" />
 	<ConnectByURIPopup :show="popupStore.isOpened('connect_by_uri')" @onClose="popupStore.close('connect_by_uri')" />
 	<ReceivePopup :show="popupStore.isOpened('receive')" @onClose="popupStore.close('receive')" />
 	<ResetPopup :show="popupStore.isOpened('reset')" @onClose="popupStore.close('reset')" />
-	<ForgotPasswordPopup :show="popupStore.isOpened('forgot_password')" @onClose="popupStore.close('forgot_password')" />
+	<ForgotPasswordPopup
+		:show="popupStore.isOpened('forgot_password')"
+		@onClose="popupStore.close('forgot_password')"
+	/>
 	<ConfirmPopup :show="popupStore.isOpened('confirm')" @onClose="popupStore.close('confirm')" />
 	<SelectTokenPopup :show="popupStore.isOpened('select_token')" @onClose="popupStore.close('select_token')" />
 	<TokensPopup :show="popupStore.isOpened('tokens')" @onClose="popupStore.close('tokens')" />
@@ -49,4 +55,8 @@ const popupStore = usePopupStore()
 	<NewTokenPopup :show="popupStore.isOpened('new_token')" @onClose="popupStore.close('new_token')" />
 	<EditTokenPopup :show="popupStore.isOpened('edit_token')" @onClose="popupStore.close('edit_token')" />
 	<TransactionPopup :show="popupStore.isOpened('tx')" @onClose="popupStore.close('tx')" />
+	<SelectBalanceTypePopup
+		:show="popupStore.isOpened('select_balance_type')"
+		@onClose="popupStore.close('select_balance_type')"
+	/>
 </template>

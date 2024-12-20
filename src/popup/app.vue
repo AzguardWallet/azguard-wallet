@@ -6,13 +6,14 @@ import PopupManager from "./components/popups/PopupManager.vue"
 
 /** Utils */
 import { managers, initTokenService, initTransactionService } from "@/utils/core.js"
+import { isPrefersDarkScheme } from "@/utils/general"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
 
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
-const { syncLocalSettings } = useSettings()
+const { settings, syncLocalSettings } = useSettings()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -20,19 +21,34 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
+/** Update theme */
+const root = document.querySelector("html")
+
+const theme = computed(() => settings.value.appearance?.theme)
+watch(
+	() => theme.value,
+	() => {
+		if (theme.value === "system") {
+			root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
+		} else {
+			root.setAttribute("theme", theme.value)
+		}
+	},
+)
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", event => {
+	if (theme.value === "system") root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
+})
+
 import LogoIcon from "@/assets/logo.svg?raw"
 
 const route = useRoute()
 const router = useRouter()
 
 const initNetworks = async () => {
-	managers.network = new NetworkServiceClient();
-	appStore.networks = (await managers.network.getOrInitNetworks())
-		.sort((a, b) =>
-			a.chainId === b.chainId
-				? a.name.localeCompare(b.name)
-				: a.chainId - b.chainId
-		)
+	managers.network = new NetworkServiceClient()
+	appStore.networks = (await managers.network.getOrInitNetworks()).sort((a, b) =>
+		a.chainId === b.chainId ? a.name.localeCompare(b.name) : a.chainId - b.chainId,
+	)
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
 	if ("azguard:ui:activeNetwork" in activeNetworkResult) {
 		const localActiveNetworkId = activeNetworkResult["azguard:ui:activeNetwork"]
@@ -77,7 +93,7 @@ watch(
 	() => appStore.network,
 	async () => {
 		if (!appStore.isLogined) return
-		
+
 		appStore.syncNetworkStatus()
 
 		managers.account = new AccountServiceClient(appStore.profile, appStore.network)
@@ -88,6 +104,11 @@ watch(
 			appStore.accounts = await managers.account.getAccounts(true)
 			await appStore.setupActiveAccount()
 
+			initTokenService({
+				profile: appStore.profile,
+				network: appStore.network,
+				account: appStore.account,
+			})
 			await appStore.syncLocalTokens()
 		} else {
 			await appStore.setupActiveAccount()
@@ -96,10 +117,6 @@ watch(
 				profile: appStore.profile,
 				network: appStore.network,
 				account: appStore.account,
-			})
-			initTransactionService(tx => {
-				appStore.transactions.unshift(tx)
-				appStore.isAwaitingTransaction = false
 			})
 
 			await appStore.syncLocalTokens()
@@ -114,7 +131,7 @@ const loadProfile = async () => {
 	// TODO: set event handlers in client's constructor instead
 	managers.profile.onActiveProfileChanged = async profile => {
 		if (profile) {
-			appStore.profile = profile;
+			appStore.profile = profile
 			await initNetworks()
 			await initAccount()
 			await uploadDappSessions()
@@ -225,8 +242,8 @@ watch(
 	() => {
 		if (appStore.isLogined) {
 			const _ = managers.profile?.refreshSession()
-		}		
-		
+		}
+
 		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name.includes("windows-")
 	},
 )

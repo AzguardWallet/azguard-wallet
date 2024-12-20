@@ -30,6 +30,8 @@ const emit = defineEmits(["onClose"])
 const contractAddressTerm = ref("")
 
 const isLoadingParseResult = ref(false)
+const isAddingNewToken = ref(false)
+
 const isAlreadyExist = computed(() => appStore.tokens.findLast(t => t.contract === contractAddressTerm.value))
 const isAvailableToCreateToken = computed(() => {
 	if (!contractAddressTerm.value.length || contractAddressTerm.value.length !== 66) return
@@ -57,51 +59,73 @@ const handleResetChanges = () => {
 	selectedFields.value = {}
 }
 
+const error = ref()
+const isErrorOccurred = computed(() => !!error.value)
+
 const handleCreateToken = async () => {
 	if (!isAvailableToCreateToken.value) return
 
 	isLoadingParseResult.value = true
-	appStore.isLoading = true
 
-	const parsingResult = await managers.token.parseInterface(contractAddressTerm.value)
+	try {
+		console.log(managers.token)
+		const parsingResult = await managers.token.parseInterface(contractAddressTerm.value)
 
-	if (!parsingResult.isComplete) {
+		if (!parsingResult.isComplete) {
+			isLoadingParseResult.value = false
+
+			isCompleted.value = false
+			rawToken.value = { ...parsingResult }
+			rawTokenForReset.value = { ...parsingResult }
+
+			return
+		}
+
+		isAddingNewToken.value = true
 		isLoadingParseResult.value = false
-		appStore.isLoading = false
 
-		isCompleted.value = false
-		rawToken.value = { ...parsingResult }
-		rawTokenForReset.value = { ...parsingResult }
+		if (!parsingResult.isComplete) {
+			openToast({ label: "Something went wrong", icon: "close-circle" })
+			return
+		}
 
-		return
+		const newToken = await managers.token.addToken(parsingResult)
+
+		isAddingNewToken.value = false
+
+		appStore.tokens.push(newToken)
+
+		await appStore.syncBalances()
+
+		openToast({ label: "New token has been added" })
+
+		emit("onClose")
+	} catch (err) {
+		error.value = err
+		// 0x1b137fdaf8d656f5ae36a88598190dc676e858731640a52376b0f5e34b058273
+		isAddingNewToken.value = false
+		isLoadingParseResult.value = false
 	}
-
-	isLoadingParseResult.value = false
-	appStore.isLoading = false
-
-	if (!parsingResult.isComplete) {
-		openToast({ label: "Something went wrong", icon: "close-circle" })
-		return
-	}
-
-	const newToken = await managers.token.addToken(parsingResult)
-	appStore.tokens.push(newToken)
-
-	await appStore.syncBalances()
-	// appStore.tokenAwaitingBalanceIdx = newToken.id
-
-	openToast({ label: "New token has been added" })
-
-	emit("onClose")
 }
+
+const isSavingToken = ref(false)
 const handleSaveToken = async () => {
-	const newToken = await managers.token.addToken(rawToken.value)
-	appStore.tokens.push(newToken)
+	isSavingToken.value = true
 
-	await appStore.syncBalances()
-	// appStore.tokenAwaitingBalanceIdx = newToken.id
+	try {
+		const newToken = await managers.token.addToken(rawToken.value)
+		appStore.tokens.push(newToken)
 
-	openToast({ label: "New token has been added" })
+		await appStore.syncBalances()
+
+		openToast({ label: "New token has been added" })
+	} catch (error) {
+		error.value = err
+
+		isSavingToken.value = false
+	} finally {
+		isSavingToken.value = false
+	}
 
 	emit("onClose")
 }
@@ -115,6 +139,8 @@ watch(
 			isCompleted.value = true
 
 			selectedFields.value = {}
+
+			error.value = null
 		}
 	},
 )
@@ -128,6 +154,7 @@ watch(
 
 				<Input
 					v-model="contractAddressTerm"
+					@click="error = null"
 					label="Contract address"
 					placeholder="0x"
 					autofocus
@@ -154,17 +181,23 @@ watch(
 					:token="rawToken"
 				/>
 
-				<Flex direction="column" gap="8">
+				<Flex direction="column" align="center" gap="12">
 					<Button
 						v-if="isCompleted"
 						@click="handleCreateToken"
 						wide
 						type="primary"
 						size="medium"
-						:loading="isLoadingParseResult"
+						:loading="isLoadingParseResult || isAddingNewToken"
 						:disabled="!isAvailableToCreateToken"
 					>
-						<Text color="inverse">Import new token</Text>
+						<Text color="inverse">
+							{{
+								(isLoadingParseResult && "Awaiting token interface") ||
+								(isAddingNewToken && "Adding new token") ||
+								"Import new token"
+							}}
+						</Text>
 					</Button>
 					<Button
 						v-else
@@ -172,9 +205,10 @@ watch(
 						wide
 						type="primary"
 						size="medium"
+						:loading="isSavingToken"
 						:disabled="!isAvailableToCreateToken"
 					>
-						<Text color="inverse">Save new token</Text>
+						<Text color="inverse">{{ isSavingToken ? "Saving" : "Save new token" }}</Text>
 					</Button>
 					<Button
 						v-if="!isCompleted"
@@ -186,11 +220,18 @@ watch(
 					>
 						Reset changes
 					</Button>
-				</Flex>
 
-				<Text size="12" weight="500" color="tertiary" height="140" align="center">
-					Importing the token may take time and additional configuration may be required
-				</Text>
+					<Tooltip v-if="isErrorOccurred" side="top">
+						<Flex align="center" gap="6">
+							<Icon name="info" size="12" color="red" />
+							<Text size="12" weight="500" color="secondary">
+								Error occurred while importing a new token
+							</Text>
+						</Flex>
+
+						<template #content> {{ error }} </template>
+					</Tooltip>
+				</Flex>
 			</Flex>
 		</PopupCard>
 	</Popup>

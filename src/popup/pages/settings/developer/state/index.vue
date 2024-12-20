@@ -8,7 +8,7 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../components/Navigation.vue"
+import Navigation from "../../../../components/Navigation.vue"
 </script>
 
 <template>
@@ -18,42 +18,50 @@ import Navigation from "../../../components/Navigation.vue"
 				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
 			</RouterLink>
 			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
+			<RouterLink to="/popup/settings/developer">
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
+			</RouterLink>
+			<Text color="support">•</Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> State </Text>
 		</Flex>
 
 		<Flex direction="column" gap="8">
-			<RouterLink to="/popup/settings/developer/networks">
+			<RouterLink to="/popup/settings/developer/state/notes">
 				<Flex align="center" justify="between" :class="$style.item">
 					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Nodes </Text>
-						<Text size="13" weight="500" color="tertiary"> Add, edit, remove nodes </Text>
+						<Text size="14" weight="600" color="primary"> Notes </Text>
+						<Text size="13" weight="500" color="tertiary"> View all notes </Text>
 					</Flex>
 
 					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
 				</Flex>
 			</RouterLink>
+			<Flex align="center" justify="between" :class="[$style.item, $style.disabled]">
+				<Flex direction="column" gap="6">
+					<Text size="14" weight="600" color="primary"> Authwits </Text>
+					<Text size="13" weight="500" color="tertiary"> View all authwits </Text>
+				</Flex>
 
-			<RouterLink to="/popup/settings/developer/advanced">
+				<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
+			</Flex>
+			<RouterLink to="/popup/settings/developer/state/contracts">
 				<Flex align="center" justify="between" :class="$style.item">
 					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Advanced </Text>
-						<Text size="13" weight="500" color="tertiary"> Access to advanced features </Text>
+						<Text size="14" weight="600" color="primary"> Contracts </Text>
+						<Text size="13" weight="500" color="tertiary"> View all contracts </Text>
 					</Flex>
 
 					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
 				</Flex>
 			</RouterLink>
-
-			<RouterLink to="/popup/settings/developer/state">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> State </Text>
-						<Text size="13" weight="500" color="tertiary"> Notes, authwits, contracts, contacts </Text>
-					</Flex>
-
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
+			<Flex align="center" justify="between" :class="[$style.item, $style.disabled]">
+				<Flex direction="column" gap="6">
+					<Text size="14" weight="600" color="primary"> Contacts </Text>
+					<Text size="13" weight="500" color="tertiary"> View all contacts </Text>
 				</Flex>
-			</RouterLink>
+
+				<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
+			</Flex>
 		</Flex>
 
 		<Navigation />
@@ -92,6 +100,11 @@ import Navigation from "../../../components/Navigation.vue"
 
 	&:active {
 		background: var(--gray-5);
+	}
+
+	&.disabled {
+		opacity: 0.4;
+		pointer-events: none;
 	}
 }
 

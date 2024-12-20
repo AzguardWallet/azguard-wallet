@@ -13,16 +13,10 @@ import SplittedBalancesView from "../../components/modules/general/SplittedBalan
 import RecentActivityView from "../../components/modules/general/RecentActivityView.vue"
 import Navigation from "../../components/Navigation.vue"
 
-/** Composables */
-import { useSettings } from "@/composables/settings"
-const { settings } = useSettings()
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
-const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const route = useRoute()
@@ -45,10 +39,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
 	cacheStore.activeTokenIdx = null
 })
-
-const handleViewTokenMetadata = () => {
-	popupStore.open("token_metadata")
-}
 </script>
 
 <template>
@@ -65,17 +55,6 @@ const handleViewTokenMetadata = () => {
 
 				<RecentActivityView :token />
 			</Flex>
-
-			<Button
-				v-if="settings.developer.advancedMode"
-				@click="handleViewTokenMetadata"
-				type="secondary"
-				size="small"
-				square
-			>
-				<Icon name="info" size="14" color="secondary" />
-				View token medata
-			</Button>
 		</Flex>
 
 		<Navigation />

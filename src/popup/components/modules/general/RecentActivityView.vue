@@ -35,7 +35,7 @@ const handleSelectTx = () => {
 <template>
 	<Flex v-if="latestTransaction" direction="column" gap="16">
 		<Flex align="center" justify="between">
-			<Text size="13" weight="600" color="secondary"> Latest activity </Text>
+			<Text size="13" weight="600" color="secondary"> Latest transaction </Text>
 			<Text
 				@click="router.push('/popup/activity')"
 				size="12"

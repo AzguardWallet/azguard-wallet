@@ -6,11 +6,13 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 import { ExecutionServiceClient } from "@/wallet/services/execution/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { FaucetServiceClient } from "@/wallet/services/faucet/client"
+import { PxeServiceClient } from "@/wallet/services/pxe/client"
 
 const profileService = new ProfileServiceClient()
 const walletConnectService = new WalletConnectServiceClient()
 const interactionSevice = new InteractionServiceClient()
 const balanceService = new TokenBalanceServiceClient()
+const pxeClientService = new PxeServiceClient()
 
 const faucetService = new FaucetServiceClient()
 const executionService = new ExecutionServiceClient(
@@ -34,6 +36,7 @@ export const managers = {
 	faucet: faucetService,
 	transaction: null,
 	token: null,
+	pxe: pxeClientService,
 }
 
 export const initTokenService = ({ profile, network, account }) => {

@@ -56,7 +56,7 @@ const handleUpdateNetwork = async () => {
 
 	emit("onClose")
 
-	openToast({ label: "Network is updated" })
+	openToast({ label: "Node is updated" })
 }
 
 watch(
@@ -84,13 +84,13 @@ const onKeydown = e => {
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Flex direction="column" gap="8">
-					<Text size="14" weight="600" color="primary"> Edit network </Text>
+					<Text size="14" weight="600" color="primary"> Edit node </Text>
 					<Text size="13" weight="600" color="tertiary"> Chain ID: {{ networkToEdit.chainId }} </Text>
 				</Flex>
 
 				<Input
 					label="New name"
-					placeholder="My Network"
+					placeholder="My node"
 					v-model="nameTerm"
 					autofocus
 					@input="isStartedEditing = true"

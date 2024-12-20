@@ -314,6 +314,7 @@
     "purgeNumber": true,
     "normalizeAmount": true,
     "initTransactionService": true,
-    "initProfileService": true
+    "initProfileService": true,
+    "isPrefersDarkScheme": true
   }
 }

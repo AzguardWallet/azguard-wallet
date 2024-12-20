@@ -18,13 +18,7 @@ const { settings, updateSettings } = useSettings()
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
-const root = document.querySelector("html")
-
 const theme = computed(() => settings.value.appearance?.theme)
-watch(
-	() => theme.value,
-	() => [root.setAttribute("theme", theme.value)],
-)
 
 const handleOpen = target => {
 	chrome.windows.create({
@@ -64,13 +58,9 @@ const handleOpen = target => {
 			<Text size="11" weight="500" color="tertiary" height="140" align="center">
 				By continuing, you are confirming that you read and agree to
 
-				<Text @click="handleOpen('terms')" color="secondary" :class="$style.link"
-					>Terms of Use</Text
-				>
+				<Text @click="handleOpen('terms')" color="secondary" :class="$style.link"> Terms of Use </Text>
 				and
-				<Text @click="handleOpen('privacy')" color="secondary" :class="$style.link"
-					>Privacy Policy</Text
-				>
+				<Text @click="handleOpen('privacy')" color="secondary" :class="$style.link"> Privacy Policy </Text>
 			</Text>
 
 			<Flex align="center" gap="4" :class="$style.theme_switcher">
@@ -87,6 +77,13 @@ const handleOpen = target => {
 					size="14"
 					color="tertiary"
 					:class="theme === 'dark' && $style.active"
+				/>
+				<Icon
+					@click="updateSettings('appearance', 'theme', 'system')"
+					name="settings"
+					size="14"
+					color="tertiary"
+					:class="theme === 'system' && $style.active"
 				/>
 			</Flex>
 		</Flex>

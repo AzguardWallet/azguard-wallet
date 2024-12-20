@@ -1,6 +1,6 @@
 <script setup>
 /** Utils */
-import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
+import { getNetworkType } from "@/components/ui/utils.js"
 
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
@@ -21,6 +21,7 @@ const handleOpenPopup = target => {
 <template>
 	<Flex v-if="!appStore._isHomeScreenOpened" align="center" justify="between" :class="$style.wrapper">
 		<Flex
+			v-if="appStore.isLogined"
 			@click="handleOpenPopup('menu')"
 			align="center"
 			justify="center"
@@ -37,17 +38,14 @@ const handleOpenPopup = target => {
 				gap="6"
 				:class="$style.account"
 			>
-				<Transition name="fade">
-					<Icon v-if="!appStore.isLoading" name="vault" size="18" color="primary" />
-					<Spinner v-else size="16" color="--txt-primary" />
-				</Transition>
+				<Icon name="vault" size="18" color="primary" />
 
 				<Text size="13" weight="600" color="primary" :class="$style.account_name">
 					{{ appStore.account.name }}
 				</Text>
 
 				<Text
-					v-if="settings.developer.advancedMode"
+					v-if="settings.appearance.showNode"
 					size="13"
 					weight="600"
 					color="tertiary"
@@ -56,29 +54,19 @@ const handleOpenPopup = target => {
 					• &nbsp;{{ getNetworkType(appStore.network.chainId) }}
 				</Text>
 
-				<!-- <Text
-				@click.stop="handleCopyAddress"
-				size="13"
-				weight="600"
-				color="body"
-				class="copyable"
-			>
-				{{ appStore.account.address.slice(0, 4) }}
-				•••
-				{{ appStore.account.address.slice(-4) }}
-			</Text> -->
 				<Icon name="chevron" size="12" color="secondary" />
 			</Flex>
 		</Flex>
 
 		<Tooltip side="left">
 			<Flex
+				v-if="appStore.isLogined"
 				@click="handleOpenPopup('networks')"
 				align="center"
 				justify="center"
 				:class="[$style.button, !appStore.isLogined && $style.disabled]"
 			>
-				<Icon name="globe" size="18" :color="getNetworkColor(appStore.network?.chainId)" />
+				<Icon name="globe" size="18" color="primary" />
 				<div :class="[$style.dot, $style[String(appStore.networkStatus).toLowerCase()]]" />
 			</Flex>
 

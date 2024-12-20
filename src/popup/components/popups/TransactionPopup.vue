@@ -28,11 +28,8 @@ const props = defineProps({
 })
 
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
-
 const call = computed(() => tx.value.calls[0])
-
 const transfer = computed(() => (call.value.transfers ? call.value.transfers[0] : null))
-
 const token = computed(() => appStore.tokens.find(t => call.value.contract === t.contract))
 
 watch(
@@ -88,9 +85,11 @@ const handleCopy = target => {
 							<Text size="12" weight="500" color="tertiary"> From </Text>
 						</Flex>
 
-						<Flex align="center" justify="center" :class="$style.left_icon">
-							<Icon name="key-square" size="16" color="green" />
-						</Flex>
+						<Icon
+							:name="['transfer', 'transfer_to_public'].includes(call.method) ? 'key-square' : 'face'"
+							size="16"
+							:color="['transfer', 'transfer_to_public'].includes(call.method) ? 'green' : 'orange'"
+						/>
 					</Flex>
 
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.right]">
@@ -102,9 +101,11 @@ const handleCopy = target => {
 							<Text size="12" weight="500" color="tertiary"> Destination </Text>
 						</Flex>
 
-						<Flex align="center" justify="center" :class="$style.left_icon">
-							<Icon name="face" size="16" color="orange" />
-						</Flex>
+						<Icon
+							:name="['transfer', 'transfer_to_private'].includes(call.method) ? 'key-square' : 'face'"
+							size="16"
+							:color="['transfer', 'transfer_to_private'].includes(call.method) ? 'green' : 'orange'"
+						/>
 					</Flex>
 				</Flex>
 

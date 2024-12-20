@@ -1,0 +1,156 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
+<script setup>
+/** Components */
+import Navigation from "../../../../../components/Navigation.vue"
+
+/** Utils */
+import { managers } from "@/utils/core.js"
+
+/** Composables */
+import { useToast } from "@/composables/toast.js"
+const { openToast } = useToast()
+
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
+import { useCacheStore } from "@/stores/cache.store"
+const appStore = useAppStore()
+const popupStore = usePopupStore()
+const cacheStore = useCacheStore()
+
+const notes = ref([])
+const isFetchingNotes = ref(false)
+const error = ref()
+const isErrorOccurred = computed(() => !!error.value)
+const fetchNotes = async isRefetching => {
+	if (isRefetching) openToast({ label: "Fetching notes again", icon: "zap" })
+	isFetchingNotes.value = true
+
+	try {
+		notes.value = await managers.pxe.getNotes(appStore.network.id, appStore.account.address)
+		console.log(notes.value)
+	} catch (err) {
+		error.value = err
+
+		isFetchingNotes.value = false
+	} finally {
+		isFetchingNotes.value = false
+	}
+}
+
+const handleOpenNotePopup = note => {
+	cacheStore.activeNote = note
+	popupStore.open("note")
+}
+
+onMounted(async () => {
+	if (appStore.network && appStore.isLogined) fetchNotes()
+})
+
+watch(
+	() => appStore.account,
+	() => {
+		fetchNotes()
+	},
+)
+</script>
+
+<template>
+	<Flex v-if="appStore.isLogined" direction="column" gap="12" :class="$style.wrapper">
+		<Flex align="center" gap="8">
+			<RouterLink to="/popup/settings">
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
+			</RouterLink>
+			<Text color="support">•</Text>
+			<RouterLink to="/popup/settings/developer">
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
+			</RouterLink>
+			<Text color="support">•</Text>
+			<RouterLink to="/popup/settings/developer/state">
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> State </Text>
+			</RouterLink>
+			<Text color="support">•</Text>
+			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Notes </Text>
+		</Flex>
+
+		<Flex direction="column" gap="16">
+			<Text size="16" weight="600" color="primary">Notes</Text>
+
+			<Banner v-if="isFetchingNotes" isLoading> Fetching notes </Banner>
+
+			<Tooltip v-else-if="isErrorOccurred" wide>
+				<Banner :action="{ name: 'Try again', callback: () => fetchNotes(true) }" variant="error" wide>
+					Something went wrong
+				</Banner>
+
+				<template #content>
+					{{ error }}
+				</template>
+			</Tooltip>
+
+			<Flex v-else-if="notes.length" direction="column" gap="8">
+				<Flex v-for="note in notes" @click="handleOpenNotePopup(note)" justify="between" :class="$style.card">
+					<Flex gap="10">
+						<Icon name="zap" size="16" color="tertiary" />
+
+						<Flex direction="column" gap="8">
+							<Text size="14" weight="600" color="primary"> Note </Text>
+							<Text size="13" weight="600" color="tertiary"> Type ID - {{ note.noteTypeId }} </Text>
+						</Flex>
+					</Flex>
+
+					<Icon name="arrow-narrow-up-right" size="12" color="tertiary" />
+				</Flex>
+			</Flex>
+
+			<Banner v-else> So far, it's empty </Banner>
+		</Flex>
+
+		<Navigation />
+	</Flex>
+</template>
+
+<style module>
+.wrapper {
+	flex: 1;
+
+	background: var(--card-bg);
+	box-shadow: 0 0 0 1px var(--gray-5);
+	overflow: auto;
+
+	border-top-left-radius: 24px;
+	border-top-right-radius: 24px;
+
+	padding: 20px 24px 80px 24px;
+}
+
+.card {
+	border-radius: 12px;
+	cursor: pointer;
+	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
+
+	padding: 12px;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--gray-3);
+		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-10);
+
+		& .icons {
+			opacity: 1;
+		}
+	}
+
+	&:active {
+		background: var(--gray-5);
+	}
+}
+</style>

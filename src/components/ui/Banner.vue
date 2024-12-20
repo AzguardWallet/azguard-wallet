@@ -10,17 +10,31 @@ const props = defineProps({
 	wide: {
 		type: Boolean,
 	},
+	action: {
+		type: Object,
+	},
+	isLoading: {
+		type: Boolean,
+		default: false,
+	},
 })
 </script>
 
 <template>
-	<Flex gap="8" :wide="wide" :class="[$style.wrapper, $style[variant]]">
-		<Flex align="center" justify="center" :class="$style.icon">
-			<Icon name="info" size="16" color="secondary" />
+	<Flex justify="between" align="center" :wide="wide" :class="[$style.wrapper, $style[variant]]">
+		<Flex gap="8">
+			<Flex align="center" justify="center" :class="$style.icon">
+				<Icon v-if="!isLoading" name="info" size="16" color="secondary" />
+				<Spinner v-else size="16" color="--txt-primary" />
+			</Flex>
+
+			<Text size="12" weight="600" color="primary" :class="$style.text">
+				<slot />
+			</Text>
 		</Flex>
 
-		<Text size="12" weight="600" color="primary" :class="$style.text">
-			<slot />
+		<Text v-if="action" @click="action.callback()" size="12" weight="600" color="blue" :class="$style.action_btn">
+			{{ action.name }}
 		</Text>
 	</Flex>
 </template>
@@ -29,7 +43,7 @@ const props = defineProps({
 .wrapper {
 	border-radius: 8px;
 
-	padding: 8px;
+	padding: 8px 16px 8px 8px;
 
 	&.info {
 		background: var(--gray-5);
@@ -56,5 +70,9 @@ const props = defineProps({
 
 .text {
 	line-height: 20px !important;
+}
+
+.action_btn {
+	cursor: pointer;
 }
 </style>

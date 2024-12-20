@@ -23,7 +23,7 @@ const totalBalance = computed(() => {
 
 <template>
 	<RouterLink :to="`/popup/tokens/${token.id}`">
-		<Flex align="center" justify="between" :class="$style.wrapper">
+		<Flex align="center" justify="between" gap="24" :class="$style.wrapper">
 			<Flex align="center" gap="12" :class="$style.left">
 				<Flex align="center" justify="center" :class="$style.token_icon">
 					<Spinner v-if="appStore.tokenAwaitingBalanceIdx === token.id" size="16" color="--txt-primary" />
@@ -40,10 +40,10 @@ const totalBalance = computed(() => {
 				</Flex>
 			</Flex>
 
-			<Flex direction="column" align="end" gap="6">
-				<Text size="13" weight="600" color="primary" noWrap>
-					{{ balance ? comma(totalBalance, ",", 8) : 0 }}
-					<Text color="tertiary">{{ token.symbol }}</Text>
+			<Flex direction="column" align="end" gap="6" :class="$style.right">
+				<Text size="13" weight="600" color="tertiary" noWrap :class="$style.balance_text">
+					<Text color="primary">{{ balance ? comma(totalBalance, ",", 8) : 0 }}</Text>
+					{{ token.symbol }}
 				</Text>
 
 				<Tooltip position="end">
@@ -78,7 +78,25 @@ const totalBalance = computed(() => {
 }
 
 .left {
+	min-width: 0;
+	width: 100%;
+
 	overflow: hidden;
+}
+
+.right {
+	min-width: 0;
+	width: 100%;
+}
+
+.balance_text {
+	min-width: 0;
+	width: 100%;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+
+	text-align: end;
 }
 
 .text {

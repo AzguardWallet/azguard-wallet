@@ -77,29 +77,20 @@ const handleEditCurrentAccount = () => {
 					</Flex>
 				</RouterLink>
 
-			<RouterLink to="/popup/settings/dappSessions">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex gap="10">
-						<Icon name="dapp" size="15" color="secondary" />
+				<RouterLink to="/popup/settings/dappSessions">
+					<Flex align="center" justify="between" :class="$style.item">
+						<Flex gap="10">
+							<Icon name="dapp" size="15" color="secondary" />
 
-						<Flex direction="column" gap="6" :style="{paddingLeft: '1px'}">
-							<Text size="14" weight="600" color="primary">
-								Dapp Sessions
-							</Text>
-							<Text size="13" weight="500" color="tertiary">
-								Connect dApps and manage sessions
-							</Text>
+							<Flex direction="column" gap="6" :style="{ paddingLeft: '1px' }">
+								<Text size="14" weight="600" color="primary"> Sessions </Text>
+								<Text size="13" weight="500" color="tertiary"> Connect dApps and manage sessions </Text>
+							</Flex>
 						</Flex>
-					</Flex>
 
-					<Icon
-						name="chevron"
-						size="16"
-						color="tertiary"
-						:class="$style.item_icon"
-					/>
-				</Flex>
-			</RouterLink>
+						<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
+					</Flex>
+				</RouterLink>
 
 				<RouterLink to="/popup/settings/developer">
 					<Flex align="center" justify="between" :class="$style.item">
@@ -153,6 +144,7 @@ const handleEditCurrentAccount = () => {
 .wrapper {
 	flex: 1;
 
+	overflow: auto;
 	background: var(--card-bg);
 	border-top: 2px solid var(--gray-8);
 	box-shadow: inset 0 10px 8px -2px var(--gray-3);
