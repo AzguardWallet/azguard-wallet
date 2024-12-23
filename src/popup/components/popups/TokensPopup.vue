@@ -50,7 +50,7 @@ const handleDeleteToken = target => {
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.tokens">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" justify="between" gap="16" :class="$style.wrapper">
+			<Flex wide direction="column" gap="16" :class="$style.wrapper">
 				<Flex direction="column" gap="16">
 					<Text size="14" weight="600" color="primary"> Manage tokens </Text>
 

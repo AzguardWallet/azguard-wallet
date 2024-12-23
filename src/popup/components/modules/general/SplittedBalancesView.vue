@@ -22,6 +22,8 @@ const props = defineProps({
 })
 
 const tokenBalance = computed(() => appStore.balances.find(b => b.token.id == props.token?.id))
+console.log(tokenBalance.value)
+
 const getBalance = target => {
 	if (!tokenBalance.value) return 0
 	return Number.parseFloat(tokenBalance.value[target]) / 10 ** tokenBalance.value.token.decimals

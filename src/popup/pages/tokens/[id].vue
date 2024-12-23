@@ -47,7 +47,7 @@ onBeforeUnmount(() => {
 
 		<Flex direction="column" justify="between" :class="$style.content">
 			<Flex direction="column" gap="32">
-				<Banner v-if="!token?.hasPublicTransfers && !token?.hasPrivateTransfers" variant="error">
+				<Banner v-if="!token?.hasPublicTransfers && !token?.hasPrivateTransfers" variant="warning">
 					Private and public transfers disabled
 				</Banner>
 
