@@ -118,7 +118,7 @@ const handleCreateToken = async () => {
 		emit("onClose")
 	} catch (err) {
 		error.value = err
-		// 0x1b137fdaf8d656f5ae36a88598190dc676e858731640a52376b0f5e34b058273
+
 		isAddingNewToken.value = false
 		isLoadingParseResult.value = false
 	}
