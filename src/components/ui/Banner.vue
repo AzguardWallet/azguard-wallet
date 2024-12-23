@@ -38,7 +38,7 @@ const props = defineProps({
 					<slot name="title" />
 				</Text>
 
-				<Text size="12" weight="500" color="tertiary">
+				<Text size="12" weight="500" color="tertiary" :style="{ marginBottom: !action && '4px' }">
 					<slot name="description" />
 				</Text>
 

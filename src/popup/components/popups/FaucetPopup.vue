@@ -156,10 +156,9 @@ const onKeydown = e => {
 				<Flex direction="column" gap="12">
 					<Text size="14" weight="600" color="primary"> Faucet </Text>
 
-					<Banner>
-						The Faucet functionality is here temporarily<Text color="tertiary"
-							>, it will be moved elsewhere in the next updates.
-						</Text>
+					<Banner direction="vertical">
+						<template #title> The Faucet functionality is here temporarily </template>
+						<template #description> It will be moved elsewhere in the future </template>
 					</Banner>
 				</Flex>
 
