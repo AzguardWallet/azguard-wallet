@@ -81,9 +81,9 @@ const handleManageAccounts = () => {
 					>
 						<Flex gap="10">
 							<Icon
-								:name="account.address === acc.address ? 'check-circle' : 'vault'"
+								:name="account.address === acc.address ? 'check-circle' : 'circle'"
 								size="16"
-								:color="account.address === acc.address ? 'green' : 'secondary'"
+								:color="account.address === acc.address ? 'green' : 'tertiary'"
 							/>
 
 							<Flex direction="column" gap="8">
