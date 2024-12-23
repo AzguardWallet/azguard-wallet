@@ -98,7 +98,7 @@ export const useAppStore = defineStore("app", () => {
 
 		for (const token of tokens.value) {
 			const tokenBalance = (await managers.balance.getTokenBalances(token.id, account.value?.address))[0]
-			balances.value.push(tokenBalance)
+			if (tokenBalance) balances.value.push(tokenBalance)
 		}
 
 		isBalancesSynced.value = true

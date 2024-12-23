@@ -21,8 +21,9 @@ const props = defineProps({
 	},
 })
 
-const tokenBalance = computed(() => appStore.balances.find(b => b.token.id == props.token?.id))
-console.log(tokenBalance.value)
+const tokenBalance = computed(() => {
+	return appStore.balances.find(b => b.token.id == props.token?.id)
+})
 
 const getBalance = target => {
 	if (!tokenBalance.value) return 0

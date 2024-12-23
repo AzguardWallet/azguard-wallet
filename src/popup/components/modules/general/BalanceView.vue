@@ -127,6 +127,7 @@ const handleDeleteToken = () => {
 		await managers.token.deleteToken(props.token.id)
 		appStore.tokens = appStore.tokens.filter(t => t.id !== props.token.id)
 		appStore.balances = appStore.balances.filter(b => b.token.id !== props.token.id)
+
 		router.push("/popup/general")
 		openToast({ label: "Token successfully deleted" })
 	}

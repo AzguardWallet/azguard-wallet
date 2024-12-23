@@ -34,15 +34,17 @@ const handleClearCandidate = target => {
 					/>
 				</Flex>
 
-				<Dropdown wide>
+				<Dropdown wide :disabled="!token.balanceOfPrivateFnCandidates.length">
 					<template #trigger>
 						<DropdownTrigger
 							wide
 							clearable
 							:value="selectedFields['balanceOfPrivateFn']"
+							:disabled="!token.balanceOfPrivateFnCandidates.length"
 							@onClear="handleClearCandidate('balanceOfPrivateFn')"
 						>
 							<Text
+								v-if="token.balanceOfPrivateFnCandidates.length"
 								size="13"
 								weight="600"
 								:color="'balanceOfPrivateFn' in selectedFields ? 'primary' : 'secondary'"
@@ -53,6 +55,7 @@ const handleClearCandidate = target => {
 										: "Select function"
 								}}
 							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 						</DropdownTrigger>
 					</template>
 
@@ -77,15 +80,17 @@ const handleClearCandidate = target => {
 					/>
 				</Flex>
 
-				<Dropdown wide>
+				<Dropdown wide :disabled="!token.balanceOfPublicFnCandidates.length">
 					<template #trigger>
 						<DropdownTrigger
 							wide
 							clearable
 							:value="selectedFields['balanceOfPublicFn']"
+							:disabled="!token.balanceOfPublicFnCandidates.length"
 							@onClear="handleClearCandidate('balanceOfPublicFn')"
 						>
 							<Text
+								v-if="token.balanceOfPublicFnCandidates.length"
 								size="13"
 								weight="600"
 								:color="'balanceOfPublicFn' in selectedFields ? 'primary' : 'secondary'"
@@ -96,6 +101,7 @@ const handleClearCandidate = target => {
 										: "Select function"
 								}}
 							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 						</DropdownTrigger>
 					</template>
 
@@ -123,15 +129,17 @@ const handleClearCandidate = target => {
 					/>
 				</Flex>
 
-				<Dropdown wide>
+				<Dropdown wide :disabled="!token.transferPrivateFnCandidates.length">
 					<template #trigger>
 						<DropdownTrigger
 							wide
 							clearable
 							:value="selectedFields['transferPrivateFn']"
+							:disabled="!token.transferPrivateFnCandidates.length"
 							@onClear="handleClearCandidate('transferPrivateFn')"
 						>
 							<Text
+								v-if="token.transferPrivateFnCandidates.length"
 								size="13"
 								weight="600"
 								:color="'transferPrivateFn' in selectedFields ? 'primary' : 'secondary'"
@@ -142,6 +150,7 @@ const handleClearCandidate = target => {
 										: "Select function"
 								}}
 							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 						</DropdownTrigger>
 					</template>
 
@@ -166,15 +175,17 @@ const handleClearCandidate = target => {
 					/>
 				</Flex>
 
-				<Dropdown wide>
+				<Dropdown wide :disabled="!token.transferPublicFnCandidates.length">
 					<template #trigger>
 						<DropdownTrigger
 							wide
 							clearable
 							:value="selectedFields['transferPublicFn']"
+							:disabled="!token.transferPublicFnCandidates.length"
 							@onClear="handleClearCandidate('transferPublicFn')"
 						>
 							<Text
+								v-if="token.transferPublicFnCandidates.length"
 								size="13"
 								weight="600"
 								:color="'transferPublicFn' in selectedFields ? 'primary' : 'secondary'"
@@ -185,6 +196,7 @@ const handleClearCandidate = target => {
 										: "Select function"
 								}}
 							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 						</DropdownTrigger>
 					</template>
 
@@ -212,15 +224,17 @@ const handleClearCandidate = target => {
 					/>
 				</Flex>
 
-				<Dropdown wide>
+				<Dropdown wide :disabled="!token.transferPrivateToPublicFnCandidates.length">
 					<template #trigger>
 						<DropdownTrigger
 							wide
 							clearable
 							:value="selectedFields['transferPrivateToPublicFn']"
+							:disabled="!token.transferPrivateToPublicFnCandidates.length"
 							@onClear="handleClearCandidate('transferPrivateToPublicFn')"
 						>
 							<Text
+								v-if="token.transferPrivateToPublicFnCandidates.length"
 								size="13"
 								weight="600"
 								:color="'transferPrivateToPublicFn' in selectedFields ? 'primary' : 'secondary'"
@@ -231,6 +245,7 @@ const handleClearCandidate = target => {
 										: "Select function"
 								}}
 							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 						</DropdownTrigger>
 					</template>
 
@@ -255,15 +270,17 @@ const handleClearCandidate = target => {
 					/>
 				</Flex>
 
-				<Dropdown wide>
+				<Dropdown wide :disabled="!token.transferPublicToPrivateFnCandidates.length">
 					<template #trigger>
 						<DropdownTrigger
 							wide
 							clearable
 							:value="selectedFields['transferPublicToPrivateFn']"
+							:disabled="!token.transferPublicToPrivateFnCandidates.length"
 							@onClear="handleClearCandidate('transferPublicToPrivateFn')"
 						>
 							<Text
+								v-if="token.transferPublicToPrivateFnCandidates.length"
 								size="13"
 								weight="600"
 								:color="'transferPublicToPrivateFn' in selectedFields ? 'primary' : 'secondary'"
@@ -274,6 +291,7 @@ const handleClearCandidate = target => {
 										: "Select function"
 								}}
 							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 						</DropdownTrigger>
 					</template>
 
@@ -301,15 +319,17 @@ const handleClearCandidate = target => {
 					/>
 				</Flex>
 
-				<Dropdown wide>
+				<Dropdown wide :disabled="!token.getNameFnCandidates.length">
 					<template #trigger>
 						<DropdownTrigger
 							wide
 							clearable
 							:value="selectedFields['getNameFn']"
+							:disabled="!token.getNameFnCandidates.length"
 							@onClear="handleClearCandidate('getNameFn')"
 						>
 							<Text
+								v-if="token.getNameFnCandidates.length"
 								size="13"
 								weight="600"
 								:color="'getNameFn' in selectedFields ? 'primary' : 'secondary'"
@@ -320,6 +340,7 @@ const handleClearCandidate = target => {
 										: "Select function"
 								}}
 							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 						</DropdownTrigger>
 					</template>
 
@@ -344,15 +365,17 @@ const handleClearCandidate = target => {
 					/>
 				</Flex>
 
-				<Dropdown wide>
+				<Dropdown wide :disabled="!token.getSymbolFnCandidates.length">
 					<template #trigger>
 						<DropdownTrigger
 							wide
 							clearable
 							:value="selectedFields['getSymbolFn']"
+							:disabled="!token.getSymbolFnCandidates.length"
 							@onClear="handleClearCandidate('getSymbolFn')"
 						>
 							<Text
+								v-if="token.getSymbolFnCandidates.length"
 								size="13"
 								weight="600"
 								:color="'getSymbolFn' in selectedFields ? 'primary' : 'secondary'"
@@ -363,6 +386,7 @@ const handleClearCandidate = target => {
 										: "Select function"
 								}}
 							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 						</DropdownTrigger>
 					</template>
 
@@ -388,15 +412,17 @@ const handleClearCandidate = target => {
 				/>
 			</Flex>
 
-			<Dropdown wide>
+			<Dropdown wide :disabled="!token.getDecimalsFnCandidates.length">
 				<template #trigger>
 					<DropdownTrigger
 						wide
 						clearable
 						:value="selectedFields['getDecimalsFn']"
+						:disabled="!token.getDecimalsFnCandidates.length"
 						@onClear="handleClearCandidate('getDecimalsFn')"
 					>
 						<Text
+							v-if="token.getDecimalsFnCandidates.length"
 							size="13"
 							weight="600"
 							:color="'getDecimalsFn' in selectedFields ? 'primary' : 'secondary'"
@@ -407,6 +433,7 @@ const handleClearCandidate = target => {
 									: "Select function"
 							}}
 						</Text>
+						<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
 					</DropdownTrigger>
 				</template>
 

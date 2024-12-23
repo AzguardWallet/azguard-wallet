@@ -23,6 +23,10 @@ const props = defineProps({
 	value: {
 		type: Object,
 	},
+	disabled: {
+		type: Boolean,
+		default: false,
+	},
 })
 
 const triggerEl = ref(null)
@@ -61,7 +65,7 @@ onBeforeUnmount(() => {
 		ref="triggerEl"
 		align="center"
 		justify="between"
-		:class="$style.wrapper"
+		:class="[$style.wrapper, disabled && $style.disabled]"
 		:style="{ width: wide ? '100%' : `${width}px` }"
 		tabindex="0"
 	>
@@ -78,7 +82,7 @@ onBeforeUnmount(() => {
 			:class="$style.clear_icon"
 		/>
 		<Icon
-			v-else
+			v-else-if="!disabled"
 			name="chevron"
 			size="12"
 			color="secondary"
@@ -98,6 +102,10 @@ onBeforeUnmount(() => {
 	padding: 0 12px;
 
 	transition: all 0.2s ease;
+
+	&.disabled {
+		pointer-events: none;
+	}
 }
 
 .wrapper:hover {
