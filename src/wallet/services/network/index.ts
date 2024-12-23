@@ -145,10 +145,17 @@ export class NetworkService extends Service {
 			if (networks.length) {
 				return networks.map(([id, network]) => this.makeNetwork(id, network));
 			}
-			return [
+			const defaultNetworks = [
 				await this._addNetwork(profile.id, "Shared PXE", "https://rpc.sandbox.azguardwallet.io", 41337, 1, true),
 				await this._addNetwork(profile.id, "Local PXE", "http://localhost:8080", 31337, 1, true),
 			];
+			for (const network of defaultNetworks) {
+				this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, network));
+				for (const emit of this.onDefaultNetworkChanged) {
+					try {emit(network)} catch {}
+				}
+			}
+			return defaultNetworks;
 		} finally {
 			this.lock.leave();
 		}
