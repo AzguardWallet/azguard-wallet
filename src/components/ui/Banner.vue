@@ -4,6 +4,10 @@ const props = defineProps({
 		type: String,
 		default: "info",
 	},
+	direction: {
+		type: String,
+		default: "horizontal",
+	},
 	text: {
 		type: String,
 	},
@@ -22,18 +26,44 @@ const props = defineProps({
 
 <template>
 	<Flex justify="between" align="center" :wide="wide" :class="[$style.wrapper, $style[variant]]">
-		<Flex gap="8">
+		<Flex :align="direction === 'horizontal' ? 'center' : 'start'" gap="8">
 			<Flex align="center" justify="center" :class="$style.icon">
 				<Icon v-if="!isLoading" name="info" size="16" color="secondary" />
 				<Spinner v-else size="16" color="--txt-primary" />
 			</Flex>
 
-			<Text size="12" weight="600" color="primary" :class="$style.text">
-				<slot />
-			</Text>
+			<Flex :direction="direction === 'horizontal' ? 'row' : 'column'" gap="8">
+				<Text size="12" weight="600" color="primary" :style="{ marginTop: direction === 'vertical' && '4px' }">
+					<slot />
+					<slot name="title" />
+				</Text>
+
+				<Text size="12" weight="500" color="tertiary">
+					<slot name="description" />
+				</Text>
+
+				<Text
+					v-if="action && direction === 'vertical'"
+					@click="action.callback()"
+					size="12"
+					weight="600"
+					color="blue"
+					:class="$style.action_btn"
+					style="margin-bottom: 4px"
+				>
+					{{ action.name }}
+				</Text>
+			</Flex>
 		</Flex>
 
-		<Text v-if="action" @click="action.callback()" size="12" weight="600" color="blue" :class="$style.action_btn">
+		<Text
+			v-if="action && direction === 'horizontal'"
+			@click="action.callback()"
+			size="12"
+			weight="600"
+			color="blue"
+			:class="$style.action_btn"
+		>
 			{{ action.name }}
 		</Text>
 	</Flex>
@@ -47,6 +77,16 @@ const props = defineProps({
 
 	&.info {
 		background: var(--gray-5);
+	}
+
+	&.warning {
+		background: var(--gray-5);
+
+		& .icon {
+			& svg {
+				fill: var(--orange);
+			}
+		}
 	}
 
 	&.error {

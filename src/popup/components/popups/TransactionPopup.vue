@@ -70,10 +70,21 @@ const handleCopy = target => {
 				<Flex v-if="transfer" align="center" direction="column" gap="8">
 					<Text size="24" weight="500" color="primary">
 						{{ new BN(transfer.amount / 10 ** 8).toFixed() }}
-						<Text color="tertiary">{{ token.symbol }}</Text>
+						<Text color="tertiary">{{ transfer.token.symbol }}</Text>
 					</Text>
 					<Text size="12" weight="500" color="tertiary"> Transfer Amount </Text>
 				</Flex>
+
+				<Banner
+					v-if="transfer && !token"
+					variant="warning"
+					direction="vertical"
+					:action="{ name: 'Copy token address', callback: () => handleCopy(call.contract) }"
+					wide
+				>
+					<template #title> {{ transfer.token.symbol }} is missing </template>
+					<template #description> This token not found in your token list </template>
+				</Banner>
 
 				<Flex v-if="transfer" wide gap="4">
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.left]">
