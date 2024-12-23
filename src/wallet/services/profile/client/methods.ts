@@ -13,8 +13,10 @@ export enum ProfileServiceMethod {
     DeleteProfile,
     ImportEncrypted,
     ImportPlain,
+    ImportMnemonic,
     ExportEncrypted,
     ExportPlain,
+    ExportMnemonic,
 }
 
 export class GetActiveProfileRequest extends RequestMessage {
@@ -212,6 +214,26 @@ export class ImportPlainResponse extends ResponseMessage {
     }
 }
 
+export class ImportMnemonicRequest extends RequestMessage {
+    constructor(
+        public readonly name: string,
+        public readonly mnemonic: string[],
+        public readonly password: string,
+    ) {
+        super(PROFILE_SERVICE_NAME, ProfileServiceMethod.ImportMnemonic);
+    }
+}
+
+export class ImportMnemonicResponse extends ResponseMessage {
+    constructor(
+        request: ImportMnemonicRequest,
+        result?: Profile,
+        error?: string,
+    ) {
+        super(PROFILE_SERVICE_NAME, request.id, result, error);
+    }
+}
+
 export class ExportEncryptedRequest extends RequestMessage {
     constructor(
         public readonly profileId: string,
@@ -243,6 +265,25 @@ export class ExportPlainResponse extends ResponseMessage {
     constructor(
         request: ExportPlainRequest,
         result?: string,
+        error?: string,
+    ) {
+        super(PROFILE_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class ExportMnemonicRequest extends RequestMessage {
+    constructor(
+        public readonly profileId: string,
+        public readonly password: string,
+    ) {
+        super(PROFILE_SERVICE_NAME, ProfileServiceMethod.ExportMnemonic);
+    }
+}
+
+export class ExportMnemonicResponse extends ResponseMessage {
+    constructor(
+        request: ExportMnemonicRequest,
+        result?: string[],
         error?: string,
     ) {
         super(PROFILE_SERVICE_NAME, request.id, result, error);

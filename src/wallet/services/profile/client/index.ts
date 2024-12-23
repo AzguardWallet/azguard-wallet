@@ -7,10 +7,12 @@ import {
     CreateProfileRequest,
     DeleteProfileRequest,
     ExportEncryptedRequest,
+    ExportMnemonicRequest,
     ExportPlainRequest,
     GetActiveProfileRequest,
     GetProfilesRequest,
     ImportEncryptedRequest,
+    ImportMnemonicRequest,
     ImportPlainRequest,
     LockActiveProfileRequest,
     RefreshSessionRequest,
@@ -173,9 +175,9 @@ export class ProfileServiceClient extends ServiceClient {
     }
 
     /**
-     * Imports and returns a new profile from encrypted secret.
+     * Imports profile from encrypted secret and signs in.
      * @param name Display name.
-     * @param secret Encrypted secret.
+     * @param secret Encrypted secret (base64).
      * @param password Password to decrypt (and then encrypt) the secret.
      * @emits `ProfileAdded` with created profile.
      * @emits `ActiveProfileChanged` with created profile.
@@ -186,9 +188,9 @@ export class ProfileServiceClient extends ServiceClient {
     }
 
     /**
-     * Imports and returns a new profile from plain secret.
+     * Imports profile from plain secret and signs in.
      * @param name Display name.
-     * @param secret Plain secret.
+     * @param secret Plain secret (base64).
      * @param password Password to encrypt the secret.
      * @emits `ProfileAdded` with created profile.
      * @emits `ActiveProfileChanged` with created profile.
@@ -198,7 +200,22 @@ export class ProfileServiceClient extends ServiceClient {
     }
 
     /**
-     * Returns encrypted profile secret.
+     * Imports profile from 24-words mnemonic phrase, representing plain secret, and signs in.
+     * @param name Display name.
+     * @param words 24-words mnemonic phrase.
+     * @param password Password to encrypt the secret.
+     * @emits `ProfileAdded` with created profile.
+     * @emits `ActiveProfileChanged` with created profile.
+     * @throws "Invalid mnemonic length" if mnemonic is empty of contains wrong number of words.
+     * @throws "Invalid mnemonic word '{word}'" if mnemonic contains invalid word.
+     * @throws "Invalid checksum" if mnemonic is invalid.
+     */
+    public importMnemonic(name: string, words: string[], password: string): Promise<Profile> {
+        return this.request(new ImportMnemonicRequest(name, words, password));
+    }
+
+    /**
+     * Returns encrypted profile secret (base64).
      * @param id Profile id.
      * @throws "Invalid profile id" if profile doesn't exist.
      */
@@ -207,7 +224,7 @@ export class ProfileServiceClient extends ServiceClient {
     }
 
     /**
-     * Returns plain profile secret.
+     * Returns plain profile secret (base64).
      * @param id Profile id.
      * @param password Password to decrypt the secret.
      * @throws "Invalid profile id" if profile doesn't exist.
@@ -215,5 +232,16 @@ export class ProfileServiceClient extends ServiceClient {
      */
     public exportPlain(id: string, password: string): Promise<string> {
         return this.request(new ExportPlainRequest(id, password));
+    }
+
+    /**
+     * Returns 24-words mnemonic phrase, representing plain profile secret.
+     * @param id Profile id.
+     * @param password Password to decrypt the secret.
+     * @throws "Invalid profile id" if profile doesn't exist.
+     * @throws "Invalid profile password" if password is invalid.
+     */
+    public exportMnemonic(id: string, password: string): Promise<string> {
+        return this.request(new ExportMnemonicRequest(id, password));
     }
 }
