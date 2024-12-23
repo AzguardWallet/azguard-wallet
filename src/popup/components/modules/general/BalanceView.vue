@@ -30,7 +30,6 @@ const props = defineProps({
 
 const balanceEl = useTemplateRef("balanceEl")
 const dynamicFontSize = ref(2)
-console.log(props.token)
 
 const tokenToDisplay = computed(() => appStore.tokens.find(t => appStore.displayOption === t.id))
 watch(
@@ -59,10 +58,6 @@ const totalTokenBalance = computed(() => {
 		10 ** tokenBalance.value.token.decimals
 	)
 })
-
-const latestTransaction = computed(
-	() => appStore.transactions.filter(t => t.calls[0]?.contract === props.token?.contract)[0],
-)
 
 const calcDynamicFontSize = () => {
 	const aWidth = balanceEl.value.wrapper.getBoundingClientRect().width
@@ -221,23 +216,6 @@ const handleDeleteToken = () => {
 								<Text>Remove token</Text>
 							</Flex>
 						</DropdownItem>
-						<template v-if="latestTransaction">
-							<DropdownDivider />
-							<Flex
-								@click="handleCopyLatestTransactionHash"
-								direction="column"
-								gap="6"
-								style="margin: 4px 12px"
-							>
-								<Text size="12" weight="500" color="tertiary"> Latest transaction </Text>
-								<Text size="12" weight="500" color="tertiary" class="copyable">
-									{{ latestTransaction.hash.slice(0, 6) }}
-									<Text color="dark">•••</Text>
-									{{ latestTransaction.hash.slice(-6) }}
-								</Text>
-							</Flex>
-						</template>
-
 						<DropdownDivider />
 						<DropdownItem disabled>
 							<Flex align="center" gap="8">
