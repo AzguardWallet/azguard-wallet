@@ -31,10 +31,10 @@ const totalBalance = computed(() => {
 				</Flex>
 
 				<Flex direction="column" gap="6" :class="$style.text">
-					<Text size="13" weight="600" color="primary" :class="$style.label">
+					<Text size="13" weight="600" color="primary" noWrap :class="$style.label">
 						{{ token.symbol }}
 					</Text>
-					<Text size="12" weight="500" color="tertiary" :class="$style.label">
+					<Text size="12" weight="500" color="tertiary" noWrap :class="$style.label">
 						{{ token.name }}
 					</Text>
 				</Flex>
@@ -43,7 +43,7 @@ const totalBalance = computed(() => {
 			<Flex direction="column" align="end" gap="6" :class="$style.right">
 				<Text size="13" weight="600" color="tertiary" noWrap :class="$style.balance_text">
 					<Text color="primary">{{ balance ? comma(totalBalance, ",", 8) : 0 }}</Text>
-					{{ token.symbol }}
+					<Text :class="$style.symbol_wrapper">&nbsp;{{ token.symbol }}</Text>
 				</Text>
 
 				<Tooltip position="end">
@@ -78,6 +78,8 @@ const totalBalance = computed(() => {
 }
 
 .left {
+	flex: 3;
+
 	min-width: 0;
 	width: 100%;
 
@@ -85,16 +87,10 @@ const totalBalance = computed(() => {
 }
 
 .right {
-	min-width: 0;
-	width: 100%;
 }
 
 .balance_text {
-	min-width: 0;
-	width: 100%;
-
-	overflow: hidden;
-	text-overflow: ellipsis;
+	display: flex;
 
 	text-align: end;
 }
@@ -115,5 +111,14 @@ const totalBalance = computed(() => {
 	border-radius: 8px;
 	background: var(--gray-5);
 	box-sizing: border-box;
+}
+
+.symbol_wrapper {
+	display: block;
+
+	max-width: 80px;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 </style>

@@ -53,6 +53,11 @@ const handleSelectOption = async option => {
 	chrome.storage.local.set({ "azguard:ui:balanceDisplayOption": option.ref })
 }
 
+const amountToPreview = ref("$0.00")
+const onHover = str => {
+	amountToPreview.value = str
+}
+
 watch(
 	() => props.show,
 	() => {
@@ -85,36 +90,55 @@ watch(
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_balance_type">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> Configure the balance display </Text>
+				<Flex direction="column" gap="6">
+					<Text size="14" weight="600" color="primary"> Configure the balance display </Text>
+					<Text size="13" weight="500" color="tertiary" height="140">
+						Select what you want to see on the main page
+					</Text>
+				</Flex>
+
+				<Flex direction="column" align="center" gap="12" :class="$style.preview_card">
+					<Text size="20" weight="500" color="primary">{{ amountToPreview }}</Text>
+					<Flex align="center" gap="6">
+						<Icon name="zap" size="12" color="tertiary" />
+						<Text size="12" weight="600" color="tertiary">Balance Display Preview</Text>
+					</Flex>
+				</Flex>
 
 				<Flex direction="column" gap="8">
 					<Flex
 						v-for="option in displayOptions"
 						@click="handleSelectOption(option)"
+						@pointerenter="
+							onHover(option.token ? `${comma(option.token?.balance)} ${option.token.symbol}` : '$0.00')
+						"
 						align="center"
 						justify="between"
+						gap="16"
 						:class="$style.card"
 					>
-						<Flex gap="10">
+						<Flex gap="10" :class="$style.left">
 							<Icon
 								:name="option.ref === selectedOptionRef ? 'check-circle' : 'circle'"
 								size="16"
 								:color="option.ref === selectedOptionRef ? 'green' : 'tertiary'"
 							/>
 
-							<Flex direction="column" gap="8">
-								<Text size="14" weight="600" color="primary"> {{ option.title }} </Text>
+							<Flex direction="column" gap="8" :class="$style.labels">
+								<Text size="14" weight="600" color="primary" noWrap> {{ option.title }} </Text>
 								<Text size="13" weight="600" color="tertiary"> {{ option.description }} </Text>
 							</Flex>
 						</Flex>
 
 						<Flex v-if="option.token" align="center" :class="$style.amount_badge">
-							<Text size="12" weight="600" color="primary">
+							<Text size="12" weight="600" color="primary" noWrap>
 								{{ comma(option.token?.balance) }}
 								<Text color="tertiary">{{ option.token.symbol }}</Text>
 							</Text>
 						</Flex>
-						<Icon v-else :name="option.icon" size="16" color="secondary" />
+						<Flex v-else align="center" :class="$style.amount_badge">
+							<Text size="12" weight="600" color="primary"> $0.00 </Text>
+						</Flex>
 					</Flex>
 				</Flex>
 			</Flex>
@@ -125,6 +149,13 @@ watch(
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.preview_card {
+	border-radius: 12px;
+	background: var(--gray-3);
+
+	padding: 12px 0;
 }
 
 .card {
@@ -143,6 +174,23 @@ watch(
 
 	&:active {
 		background: var(--gray-5);
+	}
+}
+
+.left {
+	min-width: 0;
+	width: 100%;
+	overflow: hidden;
+}
+
+.labels {
+	min-width: 0;
+	width: 100%;
+	overflow: hidden;
+
+	& span {
+		text-overflow: ellipsis;
+		overflow: hidden;
 	}
 }
 
