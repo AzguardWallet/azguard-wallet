@@ -106,23 +106,24 @@ const handleDropAllSessions = () => {
 					</Flex>
 				</Flex>
 
-				<Flex v-else direction="column" align="center" justify="center" gap="6" :style="{ marginTop: '72px' }">
-					<Text size="13" weight="600" color="secondary">There are no active sessions</Text>
-					<Text size="13" color="secondary">You can connect dApp directly by URI</Text>
+				<Flex v-else direction="column" ap align="center" gap="12" :class="$style.empty_banner">
+					<Icon name="zap-circle" size="20" color="tertiary" />
+
+					<Flex direction="column" align="center" gap="6">
+						<Text size="13" weight="600" color="secondary" align="center">
+							There are no active sessions
+						</Text>
+						<Text size="12" weight="500" height="140" color="tertiary" align="center">
+							You can connect dApp directly by URI
+						</Text>
+					</Flex>
 				</Flex>
 			</Flex>
 		</Flex>
 
 		<Flex direction="column" gap="6" :class="$style.uri_connect_section">
-			<Button
-				@click="handleOpenConnectByURIPopup"
-				wide
-				type="secondary"
-				size="medium"
-				leftIcon="arrow-right-circle"
-				leftIconColor="blue"
-			>
-				<Text size="13">Connect new Dapp</Text>
+			<Button @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plus-circle">
+				Connect new Dapp
 			</Button>
 
 			<Navigation />
@@ -201,5 +202,11 @@ const handleDropAllSessions = () => {
 	opacity: 0;
 
 	transition: all 0.2s var(--bezier);
+}
+
+.empty_banner {
+	max-width: 250px;
+
+	margin: 40px auto 0 auto;
 }
 </style>

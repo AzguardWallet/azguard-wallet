@@ -25,24 +25,24 @@ const handleConnectByURI = async () => {
 	try {
 		isLoading.value = true
 		await managers.wallectConnect.connectByURI(uri.value)
-		
+
 		closePopup()
 	} catch (error) {
 		isLoading.value = false
 		if (error.includes("Missing or invalid. pair() uri")) {
 			processingError.value = {
 				show: true,
-				title: 'Invalid connection URI.',
+				title: "Invalid connection URI.",
 			}
 		} else if (error.includes("Pairing already exists")) {
 			processingError.value = {
 				show: true,
-				title: 'Pairing already exists, try again with new URI.',
+				title: "Pairing already exists, try again with new URI.",
 			}
 		} else {
 			processingError.value = {
 				show: true,
-				title: 'Unexpected connection error, please try again.',
+				title: "Unexpected connection error, please try again.",
 			}
 		}
 	}
@@ -53,17 +53,17 @@ const closePopup = () => {
 	processingError.value.show = false
 	uri.value = ""
 
-	emit('onClose')
+	emit("onClose")
 }
 
 watch(
 	() => uri.value,
 	() => {
 		processingError.value.show = false
-	}
+	},
 )
 
-const onKeydown = (e) => {
+const onKeydown = e => {
 	if (e.code === "Enter" && uri.value) handleConnectByURI()
 }
 
@@ -73,28 +73,36 @@ onMounted(() => {
 </script>
 
 <template>
-	<Popup @onClose="closePopup" :displaceIdx=popupStore.popups.connect_by_uri>
+	<Popup @onClose="closePopup" :displaceIdx="popupStore.popups.connect_by_uri">
 		<PopupCard>
 			<Flex wide direction="column" gap="12" :class="$style.wrapper">
-				<Text size="13" weight="500" color="primary"> Connect by URI </Text>
+				<Text size="13" weight="600" color="primary"> Connect by URI </Text>
 
 				<Flex direction="column" gap="4">
 					<Input
 						v-model="uri"
 						placeholder="wc:a377a2acb5653eacb0abea97a53e0517a2d.."
-						size="small"
 						autofocus
-						:style="{flex: 1}"
+						:style="{ flex: 1 }"
 					/>
-
 				</Flex>
 
 				<Flex direction="column" gap="10">
-					<Tooltip v-if="processingError.show" side="top" position="start" wide :disabled="!processingError.tooltip">
+					<Tooltip
+						v-if="processingError.show"
+						side="top"
+						position="start"
+						wide
+						:disabled="!processingError.tooltip"
+					>
 						<Flex align="center" wide>
-							<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
-							
-							<Text size="12" weight="600" color="secondary" :style="{paddingLeft: '4px'}">
+							<Icon
+								name="info"
+								size="14"
+								:color="processingError.type === 'warning' ? 'orange' : 'red'"
+							/>
+
+							<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
 								{{ processingError.title }}
 							</Text>
 						</Flex>
@@ -135,7 +143,8 @@ onMounted(() => {
 }
 
 @keyframes shake {
-	0%, 100% {
+	0%,
+	100% {
 		transform: translateX(0);
 	}
 	25% {
