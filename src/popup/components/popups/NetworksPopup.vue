@@ -67,7 +67,7 @@ const handleManageNetworks = () => {
 						>
 							<Flex align="center" gap="10">
 								<Icon
-									:name="appStore.network.id === network.id ? 'check-circle' : 'globe'"
+									:name="appStore.network.id === network.id ? 'check-circle' : 'circle'"
 									size="16"
 									:color="appStore.network.id === network.id ? 'green' : 'tertiary'"
 								/>
