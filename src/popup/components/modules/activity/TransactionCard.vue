@@ -11,9 +11,9 @@ const props = defineProps({
 
 const call = computed(() => props.tx.calls[0])
 
-const transfer = computed(() => (call.value.transfers ? call.value.transfers[0] : null))
-const amount = computed(() => new BN(transfer.value.amount / 10 ** 8).toFixed())
-const token = computed(() => transfer.value.token)
+const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
+const amount = computed(() => new BN((transfer.value?.amount ?? 0) / 10 ** 8).toFixed())
+const token = computed(() => transfer.value?.token)
 </script>
 
 <template>
@@ -21,7 +21,7 @@ const token = computed(() => transfer.value.token)
 		<Flex align="center" gap="12">
 			<Flex align="center" justify="center" :class="$style.activity_icon">
 				<Icon
-					:name="tx.calls[0].method.startsWith('transfer') ? 'arrow-narrow-up-right' : 'zap'"
+					:name="tx.calls[0]?.method.startsWith('transfer') ? 'arrow-narrow-up-right' : 'zap'"
 					size="16"
 					color="primary"
 				/>
@@ -31,7 +31,7 @@ const token = computed(() => transfer.value.token)
 
 			<Flex direction="column" gap="6">
 				<Text size="13" weight="600" color="primary">
-					{{ tx.calls[0].method.startsWith("transfer") ? "Transfer" : "Transaction" }}
+					{{ tx.calls[0]?.method.startsWith("transfer") ? "Transfer" : "Transaction" }}
 				</Text>
 				<Text size="12" weight="500" color="tertiary">
 					{{ DateTime.fromSeconds(tx.updatedAt / 1_000).toFormat("LLL dd, hh:mm") }}

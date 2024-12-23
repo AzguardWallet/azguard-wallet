@@ -1,4 +1,4 @@
-export enum ActionType {
+export enum ActionKind {
     AddCapsule = "add_capsule",
     AddNote = "add_note",
     AddContact = "add_contact",
@@ -6,14 +6,15 @@ export enum ActionType {
     AuthorizeCall = "authorize_call",
     AuthorizeIntent = "authorize_intent",
     Call = "call",
+    FunctionCall = "function_call",
 }
   
 export interface IAction {
-    readonly type: ActionType;
+    readonly kind: ActionKind;
 }
 
 export class AddCapsuleAction implements IAction {
-    public readonly type = ActionType.AddCapsule;
+    public readonly kind = ActionKind.AddCapsule;
 
     constructor(
         public readonly capsule: string[],
@@ -21,7 +22,7 @@ export class AddCapsuleAction implements IAction {
 }
 
 export class AddNoteAction implements IAction {
-    public readonly type = ActionType.AddNote;
+    public readonly kind = ActionKind.AddNote;
 
     constructor(
         public readonly note: string,
@@ -29,7 +30,7 @@ export class AddNoteAction implements IAction {
 }
 
 export class AddContactAction implements IAction {
-    public readonly type = ActionType.AddContact;
+    public readonly kind = ActionKind.AddContact;
 
     constructor(
         public readonly address: string,
@@ -37,7 +38,7 @@ export class AddContactAction implements IAction {
 }
 
 export class AddContractAction implements IAction {
-public readonly type = ActionType.AddContract;
+public readonly kind = ActionKind.AddContract;
 
     constructor(
         public readonly address: string,
@@ -47,10 +48,10 @@ public readonly type = ActionType.AddContract;
 }
 
 export class AuthorizeCallAction implements IAction {
-    public readonly type = ActionType.AuthorizeCall;
+    public readonly kind = ActionKind.AuthorizeCall;
 
     constructor(
-        public readonly registry: boolean,
+        public readonly isPublic: boolean,
         public readonly caller: string,
         public readonly contract: string,
         public readonly method: string,
@@ -59,21 +60,35 @@ export class AuthorizeCallAction implements IAction {
 }
 
 export class AuthorizeIntentAction implements IAction {
-    public readonly type = ActionType.AuthorizeIntent;
+    public readonly kind = ActionKind.AuthorizeIntent;
 
     constructor(
-        public readonly registry: boolean,
+        public readonly isPublic: boolean,
         public readonly consumer: string,
         public readonly intent: string[],
     ) {}
 }
 
 export class CallAction implements IAction {
-    public readonly type = ActionType.Call;
+    public readonly kind = ActionKind.Call;
 
     constructor(
         public readonly contract: string,
         public readonly method: string,
         public readonly args: any[],
+    ) {}
+}
+
+export class FunctionCallAction implements IAction {
+    public readonly kind = ActionKind.FunctionCall;
+
+    constructor(
+        public readonly to: string,
+        public readonly name: string,
+        public readonly selector: string,
+        public readonly type: string,
+        public readonly isStatic: boolean,
+        public readonly args: any[],
+        public readonly returnTypes: unknown[],
     ) {}
 }

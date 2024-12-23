@@ -45,7 +45,7 @@ import {
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import { Fn } from "@/wallet/utils/fn";
 import {
-    ActionType,
+    ActionKind,
     AddCapsuleAction,
     AddNoteAction,
     AddContactAction,
@@ -60,6 +60,7 @@ import {
     ExecutionServiceMethod,
     IAction,
     AddContractAction,
+    FunctionCallAction,
 } from "./client";
 import { PxeService } from "../pxe";
 
@@ -168,33 +169,33 @@ export class ExecutionService extends Service {
         const calls = [];
         const txCalls = [];
         for (const action of actions) {
-            switch (action.type) {
-                case ActionType.AddCapsule: {
+            switch (action.kind) {
+                case ActionKind.AddCapsule: {
                     const _action = (action as AddCapsuleAction)!;
                     console.debug(`Adding capsule from ${dappName}...`);
                     await pxe.addCapsule(_action.capsule.map(Fr.fromString));
                     console.debug(`Capsule from ${dappName} added.`);
                     break;
                 }
-                case ActionType.AddNote: {
+                case ActionKind.AddNote: {
                     const _action = (action as AddNoteAction)!;
                     console.debug(`Adding note from ${dappName}...`);
                     await pxe.addNote(ExtendedNote.fromString(_action.note), account.address);
                     console.debug(`Note from ${dappName} added.`);
                     break;
                 }
-                case ActionType.AddContact: {
+                case ActionKind.AddContact: {
                     const _action = (action as AddContactAction)!;
                     console.debug(`Adding contact from ${dappName}...`);
                     await pxe.registerContact(AztecAddress.fromString(_action.address));
                     console.debug(`Contact from ${dappName} added.`);
                     break;
                 }
-                case ActionType.AddContract: {
+                case ActionKind.AddContract: {
                     // contracts are registered above
                     break;
                 }
-                case ActionType.AuthorizeCall: {
+                case ActionKind.AuthorizeCall: {
                     const _action = (action as AuthorizeCallAction)!;
                     const instance = instances.get(_action.contract);
                     if (!instance) {
@@ -226,7 +227,7 @@ export class ExecutionService extends Service {
                             version: new Fr(network.protocolVersion),
                         },
                     );
-                    if (_action.registry) {
+                    if (_action.isPublic) {
                         const fn = getSetAuthorizedFn();
                         const packedArgs = PackedValues.fromValues(encodeArguments(fn, [messageHash, true]));
                         args.push(packedArgs);
@@ -258,7 +259,7 @@ export class ExecutionService extends Service {
                     }
                     break;
                 }
-                case ActionType.AuthorizeIntent: {
+                case ActionKind.AuthorizeIntent: {
                     const _action = (action as AuthorizeIntentAction)!;
                     const messageHash = computeAuthWitMessageHash(
                         {
@@ -270,7 +271,7 @@ export class ExecutionService extends Service {
                             version: new Fr(network.protocolVersion),
                         },
                     );
-                    if (_action.registry) {
+                    if (_action.isPublic) {
                         const fn = getSetAuthorizedFn();
                         const packedArgs = PackedValues.fromValues(encodeArguments(fn, [messageHash, true]));
                         args.push(packedArgs);
@@ -302,7 +303,7 @@ export class ExecutionService extends Service {
                     }
                     break;
                 }
-                case ActionType.Call: {
+                case ActionKind.Call: {
                     const _action = (action as CallAction)!;
                     const instance = instances.get(_action.contract);
                     if (!instance) {
@@ -332,6 +333,25 @@ export class ExecutionService extends Service {
                         _action.args,
                     ));
                     console.debug(`Call from ${dappName} enqueued.`);
+                    break;
+                }
+                case ActionKind.FunctionCall: {
+                    const _action = (action as FunctionCallAction)!;
+                    const packedArgs = PackedValues.fromValues(_action.args);
+                    args.push(packedArgs);
+                    calls.push(new AzguardFunctionCall(
+                        AztecAddress.fromString(_action.to),
+                        FunctionSelector.fromString(_action.selector),
+                        packedArgs.hash,
+                        _action.type === FunctionType.PUBLIC,
+                        _action.isStatic,
+                    ));
+                    txCalls.push(new TxCall(
+                        _action.to,
+                        _action.name,
+                        _action.args,
+                    ));
+                    console.debug(`Function call from ${dappName} enqueued.`);
                     break;
                 }
             }
@@ -488,7 +508,7 @@ export class ExecutionService extends Service {
     private async prepareInstances(pxe: PXE, actions: IAction[]): Promise<Map<string, ContractInstanceWithAddress>> {
         console.debug("Prepare instances...");
         const instances = new Map<string, ContractInstanceWithAddress>();
-        for (const action of actions.filter(x => x.type === ActionType.AddContract)) {
+        for (const action of actions.filter(x => x.kind === ActionKind.AddContract)) {
             const _action = action as AddContractAction;
             if (_action.instance) {
                 instances.set(_action.address, _action.instance as ContractInstanceWithAddress);
@@ -498,14 +518,16 @@ export class ExecutionService extends Service {
         const contracts = new Set(
             actions
                 .filter(x => 
-                    x.type === ActionType.AddContract ||
-                    x.type === ActionType.AuthorizeCall ||
-                    x.type === ActionType.Call
+                    x.kind === ActionKind.AddContract ||
+                    x.kind === ActionKind.AuthorizeCall ||
+                    x.kind === ActionKind.Call ||
+                    x.kind === ActionKind.FunctionCall
                 )
                 .map(x => 
                     (x as AddContractAction)?.address ??
                     (x as AuthorizeCallAction)?.contract ??
-                    (x as CallAction).contract
+                    (x as CallAction).contract ??
+                    (x as FunctionCallAction).to
                 )
                 .filter(x => !instances.has(x))
         );
@@ -531,7 +553,7 @@ export class ExecutionService extends Service {
     private async prepareArtifacts(pxe: PXE, actions: IAction[], instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
         console.debug("Prepare artifacts...");
         const artifacts = new Map<string, ContractArtifact>();
-        for (const action of actions.filter(x => x.type === ActionType.AddContract)) {
+        for (const action of actions.filter(x => x.kind === ActionKind.AddContract)) {
             const _action = action as AddContractAction;
             if (_action.artifact) {
                 const instance = instances.get(_action.address)!;
