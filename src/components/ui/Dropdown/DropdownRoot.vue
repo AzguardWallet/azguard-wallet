@@ -221,7 +221,7 @@ const onKeydown = event => {
 		<teleport to="#dropdown">
 			<div v-if="isOpen" :class="$style.canvas" />
 
-			<Transition name="fastfade">
+			<Transition name="dropdown">
 				<Flex
 					v-if="isOpen"
 					ref="dropdown"
