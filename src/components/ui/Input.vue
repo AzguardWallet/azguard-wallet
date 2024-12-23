@@ -166,6 +166,8 @@ const handleClear = () => {
 			/>
 			<slot v-else name="suffix" />
 		</Flex>
+
+		<slot name="bottom" />
 	</Flex>
 </template>
 
