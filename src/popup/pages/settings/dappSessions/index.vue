@@ -31,7 +31,7 @@ const dappSessions = computed(() => {
 	return arr
 })
 
-const onImageError = (ds) => {
+const onImageError = ds => {
 	ds.imageLoaded = false
 }
 
@@ -40,7 +40,7 @@ const handleOpenConnectByURIPopup = () => {
 	popupStore.open("connect_by_uri")
 }
 
-const handleDropSession = (session) => {
+const handleDropSession = session => {
 	managers.wallectConnect.dropDappSession(session)
 }
 
@@ -56,37 +56,30 @@ const handleDropAllSessions = () => {
 		<Flex direction="column" gap="16">
 			<Flex align="center" gap="8">
 				<RouterLink to="/popup/settings">
-					<Text
-						size="13"
-						weight="600"
-						color="tertiary"
-						style="line-height: 16px"
-					>
-						Settings
-					</Text>
+					<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
 				</RouterLink>
 				<Text color="support">•</Text>
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Dapp Sessions
-				</Text>
+				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Sessions </Text>
 			</Flex>
 			<Flex direction="column" gap="16">
 				<Flex align="center" justify="between">
 					<Text size="16" weight="600" color="primary">Sessions</Text>
 
 					<Tooltip v-if="dappSessions.length" position="end">
-						<Icon @click="handleDropAllSessions" name="log-out" size="16" color="tertiary" :class="$style.disconnect_all">Disconnect All</Icon>
+						<Icon
+							@click="handleDropAllSessions"
+							name="log-out"
+							size="16"
+							color="tertiary"
+							:class="$style.disconnect_all"
+							>Disconnect All</Icon
+						>
 
 						<template #content>
 							<Text size="12" color="secondary">Disconnect all dApps</Text>
 						</template>
 					</Tooltip>
-				</Flex>				
+				</Flex>
 
 				<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
 					<Flex
@@ -98,40 +91,22 @@ const handleDropAllSessions = () => {
 					>
 						<Flex align="center" gap="10">
 							<div v-if="ds.imageLoaded" :class="$style.avatar_container">
-								<img
-									:src="ds.icon"
-									@error="onImageError(ds)"
-									:class="$style.avatar_image"
-								/>
+								<img :src="ds.icon" @error="onImageError(ds)" :class="$style.avatar_image" />
 							</div>
-							<Icon
-								v-else
-								name="dapp"
-								size="22"
-								color="blue"
-							/>
+							<Icon v-else name="dapp" size="22" color="blue" />
 
 							<Text size="15" weight="600" color="primary">
 								{{ ds.name }}
 							</Text>
 						</Flex>
-						
-						<Flex
-							align="center"
-							gap="8"
-							:class="$style.icons"
-						>
-							<Icon
-								@click.stop="handleDropSession(ds)"
-								name="close-circle"
-								size="16"
-								color="tertiary"
-							/>
+
+						<Flex align="center" gap="8" :class="$style.icons">
+							<Icon @click.stop="handleDropSession(ds)" name="close-circle" size="16" color="tertiary" />
 						</Flex>
 					</Flex>
 				</Flex>
 
-				<Flex v-else direction="column" align="center" justify="center" gap="6" :style="{marginTop: '72px'}">
+				<Flex v-else direction="column" align="center" justify="center" gap="6" :style="{ marginTop: '72px' }">
 					<Text size="13" weight="600" color="secondary">There are no active sessions</Text>
 					<Text size="13" color="secondary">You can connect dApp directly by URI</Text>
 				</Flex>
@@ -160,7 +135,8 @@ const handleDropAllSessions = () => {
 	flex: 1;
 
 	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
+	border-top: 2px solid var(--gray-8);
+	box-shadow: inset 0 10px 8px -2px var(--gray-3);
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
