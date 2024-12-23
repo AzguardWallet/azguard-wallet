@@ -23,7 +23,7 @@ const availableTokensIdx = computed(() => appStore.tokens.map(t => t.contract))
 const latestTransaction = computed(() =>
 	props.token
 		? appStore.transactions.filter(t => t.calls[0]?.contract === props.token?.contract)[0]
-		: appStore.transactions.filter(t => availableTokensIdx.value.includes(t.calls[0]?.contract))[0],
+		: appStore.transactions[0],
 )
 
 const handleSelectTx = () => {

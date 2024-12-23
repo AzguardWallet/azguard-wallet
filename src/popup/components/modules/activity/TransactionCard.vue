@@ -10,7 +10,6 @@ const props = defineProps({
 })
 
 const call = computed(() => props.tx.calls[0])
-
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
 const amount = computed(() => new BN((transfer.value?.amount ?? 0) / 10 ** 8).toFixed())
 const token = computed(() => transfer.value?.token)
