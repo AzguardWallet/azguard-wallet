@@ -41,6 +41,13 @@ const popupStore = usePopupStore()
 						<DropdownDivider />
 						<DropdownItem disabled>
 							<Flex align="center" gap="8">
+								<Icon name="settings" size="14" color="primary" />
+								Display settings
+							</Flex>
+						</DropdownItem>
+						<DropdownDivider />
+						<DropdownItem disabled>
+							<Flex align="center" gap="8">
 								<Icon name="refresh-circle" size="14" color="primary" />
 								Refresh balances
 							</Flex>
