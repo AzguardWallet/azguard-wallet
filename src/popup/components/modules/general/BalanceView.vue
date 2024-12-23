@@ -196,16 +196,16 @@ const handleDeleteToken = () => {
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
-						<DropdownItem @click="handleCopyContractAddress">
-							<Flex align="center" gap="8">
-								<Icon name="copy" size="14" color="primary" />
-								Copy contract address
-							</Flex>
-						</DropdownItem>
 						<DropdownItem @click="popupStore.open('token_metadata')">
 							<Flex align="center" gap="8">
 								<Icon name="code-circle" size="14" color="primary" />
 								Show token metadata
+							</Flex>
+						</DropdownItem>
+						<DropdownItem @click="handleCopyContractAddress">
+							<Flex align="center" gap="8">
+								<Icon name="copy" size="14" color="primary" />
+								Copy contract address
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
