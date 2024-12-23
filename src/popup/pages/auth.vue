@@ -126,7 +126,7 @@ watch(
 				<Icon
 					name="lock"
 					size="20"
-					:color="isWrongPassword ? 'red' : 'orange'"
+					:color="isWrongPassword ? 'red' : 'blue'"
 					:class="[$style.lock_icon, isWrongPassword && $style.shake]"
 				/>
 			</Flex>
