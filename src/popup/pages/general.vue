@@ -35,8 +35,6 @@ const appStore = useAppStore()
 
 <style module>
 .wrapper {
-	position: relative;
-
 	flex: 1;
 
 	overflow: auto;

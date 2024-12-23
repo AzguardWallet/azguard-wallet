@@ -57,13 +57,7 @@ const props = defineProps({
 const style = useCssModule()
 
 const getStyles = () => {
-	const hasCorrectSize = [
-		"large",
-		"medium",
-		"small",
-		"mini",
-		"dynamic",
-	].includes(props.size)
+	const hasCorrectSize = ["large", "medium", "small", "mini", "dynamic", "micro"].includes(props.size)
 
 	return [
 		style.wrapper,
@@ -84,10 +78,7 @@ const getStyles = () => {
 		:target="target"
 		:class="[...getStyles(), loading && $style.loading]"
 	>
-		<Spinner
-			v-if="loading"
-			:color="type === 'primary' ? '--txt-inverse' : '--txt-primary'"
-		/>
+		<Spinner v-if="loading" :color="type === 'primary' ? '--txt-inverse' : '--txt-primary'" />
 		<Icon
 			v-if="leftIcon"
 			:name="leftIcon"
@@ -203,6 +194,18 @@ const getStyles = () => {
 	padding: 0 8px;
 }
 
+.wrapper.micro {
+	height: 18px;
+
+	gap: 6px;
+
+	border-radius: 50px;
+
+	font-size: 12px;
+
+	padding: 0 6px;
+}
+
 /** TYPES */
 .wrapper.success {
 	background: var(--btn-success-bg);
@@ -277,6 +280,10 @@ const getStyles = () => {
 
 .wrapper.square {
 	border-radius: 10px;
+}
+
+.wrapper.micro.square {
+	border-radius: 6px;
 }
 
 .left_icon {

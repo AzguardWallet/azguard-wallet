@@ -122,7 +122,7 @@ const handleDropAllSessions = () => {
 		</Flex>
 
 		<Flex direction="column" gap="6" :class="$style.uri_connect_section">
-			<Button @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plus-circle">
+			<Button @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plug-circle">
 				Connect new Dapp
 			</Button>
 
