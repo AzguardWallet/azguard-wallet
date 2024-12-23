@@ -51,7 +51,7 @@ const handleEditCurrentAccount = () => {
 					</Text>
 					<Text @click="handleCopyAddress" size="12" weight="600" color="tertiary" class="copyable">
 						{{ appStore.account.address.slice(0, 6) }}
-						•••
+						<Text color="dark">•••</Text>
 						{{ appStore.account.address.slice(-4) }}
 					</Text>
 				</Flex>

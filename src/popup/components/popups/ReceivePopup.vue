@@ -36,7 +36,7 @@ watch(
 			const qrCode = generate(appStore.account.address)
 			qrCode.toCanvas(document.getElementById("my-qr-code"))
 		})
-	}
+	},
 )
 
 const handleCopyAddress = () => {
@@ -46,28 +46,12 @@ const handleCopyAddress = () => {
 </script>
 
 <template>
-	<Popup
-		:show="show"
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.receive"
-	>
+	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.receive">
 		<PopupCard :displaceIdx>
-			<Flex
-				wide
-				align="center"
-				direction="column"
-				gap="24"
-				:class="$style.wrapper"
-			>
+			<Flex wide align="center" direction="column" gap="24" :class="$style.wrapper">
 				<Flex align="center" gap="6">
-					<Icon
-						name="arrow-bottom-circle"
-						size="16"
-						color="primary"
-					/>
-					<Text size="16" weight="600" color="primary">
-						Receive
-					</Text>
+					<Icon name="arrow-bottom-circle" size="16" color="primary" />
+					<Text size="16" weight="600" color="primary"> Receive </Text>
 				</Flex>
 
 				<Flex wide direction="column" align="center" gap="8">
@@ -79,15 +63,10 @@ const handleCopyAddress = () => {
 								{{ account.name }}
 							</Text>
 
-							<Flex
-								@click="handleCopyAddress"
-								align="center"
-								gap="6"
-								class="copyable"
-							>
+							<Flex @click="handleCopyAddress" align="center" gap="6" class="copyable">
 								<Text size="13" weight="600" color="body">
 									{{ account.address.slice(0, 6) }}
-									•••
+									<Text color="dark">•••</Text>
 									{{ account.address.slice(-4) }}
 								</Text>
 
@@ -97,14 +76,7 @@ const handleCopyAddress = () => {
 					</Flex>
 				</Flex>
 
-				<Button
-					@click="popupStore.close('receive')"
-					wide
-					type="secondary"
-					size="medium"
-				>
-					Close
-				</Button>
+				<Button @click="popupStore.close('receive')" wide type="secondary" size="medium"> Close </Button>
 			</Flex>
 		</PopupCard>
 	</Popup>

@@ -136,7 +136,7 @@ const handleSaveToken = async () => {
 		await appStore.syncBalances()
 
 		openToast({ label: "New token has been added" })
-	} catch (error) {
+	} catch (err) {
 		error.value = err
 
 		isSavingToken.value = false

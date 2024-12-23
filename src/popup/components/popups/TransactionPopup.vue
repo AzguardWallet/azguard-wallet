@@ -60,7 +60,7 @@ const handleCopy = target => {
 					<Flex @click="handleCopy(tx.hash)" align="center" gap="6" class="copyable">
 						<Text size="12" weight="600" color="tertiary">
 							{{ tx.hash.slice(0, 4) }}
-							•••
+							<Text color="dark">•••</Text>
 							{{ tx.hash.slice(-4) }}
 						</Text>
 						<Icon name="copy" size="12" color="tertiary" />
@@ -90,7 +90,8 @@ const handleCopy = target => {
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.left]">
 						<Flex @click="handleCopy(transfer.from)" wide direction="column" gap="4" class="copyable">
 							<Text size="13" weight="600" color="primary">
-								{{ transfer.from.slice(0, 6) }} •••
+								{{ transfer.from.slice(0, 6) }}
+								<Text color="dark">•••</Text>
 								{{ transfer.from.slice(-4) }}
 							</Text>
 							<Text size="12" weight="500" color="tertiary"> From </Text>
@@ -106,7 +107,8 @@ const handleCopy = target => {
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.right]">
 						<Flex @click="handleCopy(transfer.to)" wide direction="column" gap="4" class="copyable">
 							<Text size="13" weight="600" color="primary">
-								{{ transfer.to.slice(0, 6) }} •••
+								{{ transfer.to.slice(0, 6) }}
+								<Text color="dark">•••</Text>
 								{{ transfer.to.slice(-4) }}
 							</Text>
 							<Text size="12" weight="500" color="tertiary"> Destination </Text>

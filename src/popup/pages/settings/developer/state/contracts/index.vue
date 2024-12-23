@@ -100,7 +100,9 @@ watch(
 						<Flex direction="column" gap="8">
 							<Text size="14" weight="600" color="primary"> Contract </Text>
 							<Text size="13" weight="600" color="tertiary">
-								{{ contract.slice(0, 6) }} ••• {{ contract.slice(-4) }}
+								{{ contract.slice(0, 6) }}
+								<Text color="dark">•••</Text>
+								{{ contract.slice(-4) }}
 							</Text>
 						</Flex>
 					</Flex>

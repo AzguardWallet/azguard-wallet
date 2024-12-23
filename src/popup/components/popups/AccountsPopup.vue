@@ -93,7 +93,7 @@ const handleManageAccounts = () => {
 
 								<Text size="13" weight="600" color="tertiary">
 									{{ acc.address.slice(0, 6) }}
-									•••
+									<Text color="dark">•••</Text>
 									{{ acc.address.slice(-4) }}
 								</Text>
 							</Flex>

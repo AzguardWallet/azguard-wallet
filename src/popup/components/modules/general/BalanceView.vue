@@ -30,6 +30,7 @@ const props = defineProps({
 
 const balanceEl = useTemplateRef("balanceEl")
 const dynamicFontSize = ref(2)
+console.log(props.token)
 
 const tokenToDisplay = computed(() => appStore.tokens.find(t => appStore.displayOption === t.id))
 watch(
@@ -58,6 +59,10 @@ const totalTokenBalance = computed(() => {
 		10 ** tokenBalance.value.token.decimals
 	)
 })
+
+const latestTransaction = computed(
+	() => appStore.transactions.filter(t => t.calls[0]?.contract === props.token?.contract)[0],
+)
 
 const calcDynamicFontSize = () => {
 	const aWidth = balanceEl.value.wrapper.getBoundingClientRect().width
@@ -114,6 +119,10 @@ const handleCopyContractAddress = () => {
 		isCopied.value = false
 	}, 2500)
 }
+const handleCopyLatestTransactionHash = () => {
+	window.navigator.clipboard.writeText()
+	openToast({ label: "Transaction hash is copied", icon: "copy" })
+}
 
 const handleEditToken = () => {
 	cacheStore.tokenToEditIdx = props.token.id
@@ -141,9 +150,9 @@ const handleDeleteToken = () => {
 		<Flex direction="column" align="center" gap="20">
 			<Tooltip v-if="!token">
 				<Flex @click="handleCopyAccountAddress" align="center" gap="6" :class="[$style.badge]">
-					<Text size="13" weight="600" color="secondary">
+					<Text size="12" weight="600" color="secondary">
 						{{ appStore.account.address.slice(0, 6) }}
-						•••
+						<Text color="dark">•••</Text>
 						{{ appStore.account.address.slice(-4) }}
 					</Text>
 					<Icon
@@ -159,9 +168,9 @@ const handleDeleteToken = () => {
 			<Flex v-else align="center" gap="6">
 				<Tooltip>
 					<Flex @click="handleCopyContractAddress" align="center" gap="6" :class="[$style.badge]">
-						<Text size="13" weight="600" color="secondary">
+						<Text size="12" weight="600" color="secondary">
 							{{ token.contract.slice(0, 6) }}
-							•••
+							<Text color="dark">•••</Text>
 							{{ token.contract.slice(-4) }}
 						</Text>
 						<Icon
@@ -180,23 +189,60 @@ const handleDeleteToken = () => {
 					</Flex>
 
 					<template #popup>
-						<DropdownItem @click="handleEditToken">
-							<Flex align="center" gap="6">
-								<Icon name="edit" size="14" color="tertiary" />
-								Edit token
-							</Flex>
-						</DropdownItem>
-						<DropdownItem @click="handleDeleteToken">
-							<Flex align="center" gap="6">
-								<Icon name="close-circle" size="14" color="tertiary" />
-								Remove token
+						<DropdownItem disabled>
+							<Flex align="center" gap="8">
+								<Icon name="heart-add" size="14" color="primary" />
+								Add to Favorites
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
+						<DropdownItem @click="handleCopyContractAddress">
+							<Flex align="center" gap="8">
+								<Icon name="copy" size="14" color="primary" />
+								Copy contract address
+							</Flex>
+						</DropdownItem>
 						<DropdownItem @click="popupStore.open('token_metadata')">
-							<Flex align="center" gap="6">
-								<Icon name="zap" size="14" color="tertiary" />
-								View token metadata
+							<Flex align="center" gap="8">
+								<Icon name="code-circle" size="14" color="primary" />
+								Show token metadata
+							</Flex>
+						</DropdownItem>
+						<DropdownDivider />
+						<DropdownItem @click="handleEditToken">
+							<Flex align="center" gap="8">
+								<Icon name="edit" size="14" color="primary" />
+								Edit token
+							</Flex>
+						</DropdownItem>
+						<DropdownItem @click="handleDeleteToken" :class="$style.hover_red">
+							<Flex align="center" gap="8">
+								<Icon name="trash" size="14" color="primary" />
+								<Text>Remove token</Text>
+							</Flex>
+						</DropdownItem>
+						<template v-if="latestTransaction">
+							<DropdownDivider />
+							<Flex
+								@click="handleCopyLatestTransactionHash"
+								direction="column"
+								gap="6"
+								style="margin: 4px 12px"
+							>
+								<Text size="12" weight="500" color="tertiary"> Latest transaction </Text>
+								<Text size="12" weight="500" color="tertiary" class="copyable">
+									{{ latestTransaction.hash.slice(0, 6) }}
+									<Text color="dark">•••</Text>
+									{{ latestTransaction.hash.slice(-6) }}
+								</Text>
+							</Flex>
+						</template>
+
+						<DropdownDivider />
+						<DropdownItem disabled>
+							<Flex align="center" gap="8">
+								<Icon name="arrow-narrow-up-right" size="14" color="tertiary" />
+								<Text size="12" weight="600" color="tertiary">Learn about tokens </Text>
 							</Flex>
 						</DropdownItem>
 					</template>
@@ -321,6 +367,23 @@ const handleDeleteToken = () => {
 		& span {
 			fill: var(--txt-primary);
 			color: var(--txt-primary);
+		}
+	}
+}
+
+.hover_red {
+	& svg,
+	& span {
+		transition: all 0.2s var(--bezier);
+	}
+
+	&:hover {
+		svg {
+			fill: var(--red);
+		}
+
+		span {
+			color: var(--red);
 		}
 	}
 }

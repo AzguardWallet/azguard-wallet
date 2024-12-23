@@ -99,7 +99,7 @@ const handleCopyAddress = target => {
 								:class="$style.account_address"
 							>
 								{{ acc.address.slice(0, 6) }}
-								•••
+								<Text color="dark">•••</Text>
 								{{ acc.address.slice(-4) }}
 							</Text>
 						</Flex>
@@ -171,7 +171,7 @@ const handleCopyAddress = target => {
 								class="copyable"
 							>
 								{{ acc.address.slice(0, 6) }}
-								•••
+								<Text color="dark">•••</Text>
 								{{ acc.address.slice(-4) }}
 							</Text>
 						</Flex>

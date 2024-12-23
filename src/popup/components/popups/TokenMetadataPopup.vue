@@ -73,7 +73,8 @@ watch(
 						<Text size="12" weight="600" color="tertiary"> Contract Address </Text>
 
 						<Text @click="handleCopyAddress" size="12" weight="600" color="secondary" class="copyable">
-							{{ token.contract.slice(0, 6) }} •••
+							{{ token.contract.slice(0, 6) }}
+							<Text color="dark">•••</Text>
 							{{ token.contract.slice(-4) }}
 						</Text>
 					</Flex>

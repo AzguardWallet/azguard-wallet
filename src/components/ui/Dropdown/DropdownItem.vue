@@ -17,6 +17,7 @@ defineProps({
 
 	min-width: 120px;
 	padding: 7px 8px;
+	margin: 0 4px;
 
 	transform-style: preserve-3d;
 	-webkit-transform-style: preserve-3d;

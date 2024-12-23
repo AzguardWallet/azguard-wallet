@@ -5,7 +5,8 @@
 <style module>
 .wrapper {
 	width: 100%;
-	height: 2px;
-	background: var(--gray-5);
+	height: 1px;
+
+	background: var(--gray-10);
 }
 </style>
