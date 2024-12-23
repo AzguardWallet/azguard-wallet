@@ -95,7 +95,11 @@ watch(
 					<template #trigger>
 						<DropdownTrigger>
 							<Icon
-								:name="(theme === 'dark' && 'moon') || (theme === 'light' && 'sun')"
+								:name="
+									(theme === 'dark' && 'moon') ||
+									(theme === 'light' && 'sun') ||
+									(theme === 'system' && 'settings')
+								"
 								size="14"
 								color="primary"
 							/>
@@ -118,7 +122,7 @@ watch(
 								Light
 							</Flex>
 						</DropdownItem>
-						<DropdownItem disabled>
+						<DropdownItem @click="updateSettings('appearance', 'theme', 'system')">
 							<Flex align="center" gap="8">
 								<Icon :name="theme === 'system' ? 'check' : ''" size="14" color="primary" />
 								System
