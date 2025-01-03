@@ -240,7 +240,7 @@ onUnmounted(() => {
 
 			<Flex v-if="networks.length" direction="column" align="start" justify="start" gap="8" :class="$style.section">
 				<Flex align="end" justify="start" gap="4">
-					<Text size="14" weight="600" color="primary">Select netwrok</Text>
+					<Text size="14" weight="600" color="primary">Select node</Text>
 					<Text size="13" color="secondary">to execute the operation</Text>
 				</Flex>
 				<Flex direction="column" align="start" justify="start" gap="6" :class="[$style.networks, (isLoading || processingError.show) && $style.disabled]">

@@ -315,6 +315,9 @@
     "normalizeAmount": true,
     "initTransactionService": true,
     "initProfileService": true,
-    "isPrefersDarkScheme": true
+    "isPrefersDarkScheme": true,
+    "CAIP": true,
+    "AZTEC_EVENTS": true,
+    "AZTEC_METHODS": true
   }
 }

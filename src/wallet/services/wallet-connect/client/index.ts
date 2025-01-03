@@ -53,18 +53,6 @@ export class WalletConnectServiceClient extends ServiceClient {
                     catch {}
                 }
                 break;
-                // case NetworkServiceEvent.NetworkUpdated:
-            //     if (this.onNetworkUpdated) {
-            //         try {this.onNetworkUpdated((message as NetworkServiceEventMessage).network);}
-            //         catch {}
-            //     }
-            //     break;
-            // case NetworkServiceEvent.NetworkDeleted:
-            //     if (this.onNetworkDeleted) {
-            //         try {this.onNetworkDeleted((message as NetworkServiceEventMessage).network);}
-            //         catch {}
-            //     }
-            //     break;
             default:
                 console.error(`Unexpected event type ${message.event}.`);
                 break;

@@ -6,9 +6,10 @@ import { onBeforeMount, onMounted, onUnmounted } from "vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
+import { AZTEC_EVENTS, AZTEC_METHODS, CAIP } from "@/utils/general.js"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { AccountServiceClient } from "@/wallet/services/account/client"
-import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/client"
+import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 import { getNetworkType } from "@/components/ui/utils.js"
 
 /** Store */
@@ -19,13 +20,6 @@ const router = useRouter()
 
 const params = new URLSearchParams(window.location.search)
 const requestId = params.get('requestId')
-// if (!appStore.isLogined) {
-// 	appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
-
-// 	router.push({
-// 		path: "/popup/auth",
-// 	})
-// }
 
 const isLoading = ref(false)
 const isActionCalled = ref(false)
@@ -35,10 +29,10 @@ const selectedAccounts = ref([])
 const interactionRequest = ref()
 const dapp = ref()
 
-const chains = ref()
+const chains = ref([])
 const requiredChains = ref([])
-const methods = ref()
-const events = ref()
+const methods = ref([])
+const events = ref([])
 
 const profile = computed(() => appStore.profile)
 const networks = computed(() => appStore.networks)
@@ -123,41 +117,53 @@ const validateProposal = async () => {
 	if (!accounts.value.length) return
 
 	try {
-		validationResult.value = await walletConnectServiceClient.validateProposal(
-			interactionRequest.value.payload,
-			new Map(accounts.value.map(acc => [acc.chainId, acc.address]))
-		)
+		const requiredNamespaces = interactionRequest.value.payload.params.requiredNamespaces
+		const optionalNamespaces = interactionRequest.value.payload.params.optionalNamespaces
+		const supportedNamespaces = {
+			aztec: {
+				chains: [...new Set(accounts.value.map(acc => CAIP.chain(acc.chainId)))],
+				methods: AZTEC_METHODS,
+				events: AZTEC_EVENTS,
+			}
+		}
 
-		const values = Object.values(validationResult.value)
+		validationResult.value = await interactionServiceClient.buildApprovedNamespaces(supportedNamespaces, requiredNamespaces)
+
+		let values = Object.values(validationResult.value)
 		chains.value = values.flatMap(v => v.chains)
-		methods.value = values.flatMap(v => v.methods)
-		events.value = values.flatMap(v => v.events)
-	} catch(error) {
-		const values = [
-			...Object.values(interactionRequest.value.payload.params.requiredNamespaces),
-			...Object.values(interactionRequest.value.payload.params.optionalNamespaces)
-		].reduce((acc, curr) => {
-			acc.chains = Array.from(new Set([...acc.chains, ...curr.chains]))
-			acc.methods = Array.from(new Set([...acc.methods, ...curr.methods]))
-			acc.events = Array.from(new Set([...acc.events, ...curr.events]))
+		if (chains.value.length) {
+			methods.value = values.flatMap(v => v.methods)
+			events.value = values.flatMap(v => v.events)
+		} else {
+			values = [
+				...Object.values(requiredNamespaces),
+				...Object.values(optionalNamespaces)
+			].reduce((acc, curr) => {
+				acc.chains = Array.from(new Set([...acc.chains, ...curr.chains]))
+				acc.methods = Array.from(new Set([...acc.methods, ...curr.methods]))
+				acc.events = Array.from(new Set([...acc.events, ...curr.events]))
 
-			return acc
-		}, {
-			chains: [],
-			methods: [],
-			events: []
-		})
-		chains.value = values.chains
-		methods.value = values.methods
-		events.value = values.events
-		
-		fillError("Proposal validation error.", error)
+				return acc
+			}, {
+				chains: [],
+				methods: [],
+				events: [],
+			})
+
+			chains.value = values.chains
+			methods.value = values.methods
+			events.value = values.events
+			
+			fillError("Proposal validation error.", "No match between networks required by app and networks supported by wallet.")
+		}
+	} catch(error) {
+		fillError("Unexpected proposal validation error.", error)
 	}
 }
 
 const init = async () => {
 	try {
-		interactionRequest.value = await managers.interaction.getInteractionRequest(requestId)
+		interactionRequest.value = await interactionServiceClient.getInteractionRequest(requestId)
 		requiredChains.value =
 			Object.values(interactionRequest.value.payload.params.requiredNamespaces)
 			.flatMap(n => n.chains)
@@ -189,12 +195,11 @@ function checkSelectedAccounts() {
 	return requiredNetwroks.every(ch => selectedAccountsNetworks.includes(ch))
 }
 
-const handleProposalExpiredEvent = (payload) => {
-	if (interactionRequest.value?.payload?.id === payload.id) {
+const handleProposalExpiredEvent = (request) => {
+	if (interactionRequest.value?.id === request.id) {
 		isProposalExpired.value = true
 	}
 }
-const walletConnectServiceClient = new WalletConnectServiceClient(undefined, undefined, handleProposalExpiredEvent)
 
 const handleApprove = async () => {
 	if (!checkSelectedAccounts()) {
@@ -211,7 +216,17 @@ const handleApprove = async () => {
 	isActionCalled.value = true
 	try {
 		const uniqueChains = Array.from(new Set(selectedAccounts.value.map(acc => acc.chainId)))
-		await walletConnectServiceClient.approveDappSession(interactionRequest.value.payload, profile.value.id, uniqueChains, selectedAccounts.value)
+		const namespaces = {
+			aztec: {
+				chains: uniqueChains.map(id => CAIP.chain(id)),
+				methods: methods.value,
+				events: events.value,
+				accounts: selectedAccounts.value.map(acc => CAIP.address(acc.chainId, acc.address)),
+			},
+		}
+
+		interactionServiceClient.approveInteractionRequest(interactionRequest.value?.id, namespaces, profile.value?.id)
+
 		closeWindow()
 	} catch (error) {
 		isLoading.value = false
@@ -222,7 +237,8 @@ const handleApprove = async () => {
 const handleReject = async () => {
 	isActionCalled.value = true
 
-	walletConnectServiceClient.rejectDappSession(interactionRequest.value.payload)
+	interactionServiceClient.rejectInteractionRequest(interactionRequest.value?.id)
+
 	closeWindow()
 }
 
@@ -233,12 +249,15 @@ const closeWindow = () => {
 }
 
 const handleWindowClose = () => {
-	managers.interaction.deleteInteractionRequest(requestId)
+	interactionServiceClient.deleteInteractionRequest(requestId)
 
 	if (!isActionCalled.value && !isProposalExpired.value) {
 		handleReject()
 	}
 }
+
+const profileServiceClient = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, handleReject)
+const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, undefined, handleProposalExpiredEvent)
 
 watch(
 	() => [appStore.networks, appStore.profile],

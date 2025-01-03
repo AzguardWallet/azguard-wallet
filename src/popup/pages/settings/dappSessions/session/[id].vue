@@ -15,28 +15,87 @@ import Navigation from "../../../../components/Navigation.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
 import { getNetworkType } from "@/components/ui/utils.js"
+import { AccountServiceClient } from "@/wallet/services/account/client"
+import { NetworkServiceClient } from "@/wallet/services/network/client"
+import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
+
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+const appStore = useAppStore()
+
 const { openToast } = useToast()
 
 const route = useRoute()
 const router = useRouter()
 
+const interactionServiceClient = new InteractionServiceClient()
+
 const session = ref()
+const accounts = ref([])
+const chains = ref([])
+const methods = ref([])
+const events = ref([])
+
 const fetchSession = async () => {
 	const id = route.params.id
 	
-	session.value = await managers.interaction.getDappSession({ id })
+	session.value = await interactionServiceClient.getDappSession(id)
 	
 	if (!session.value) {
 		router.push('/popup/settings/dappSessions')
 		return
 	}
 
-	session.value.imageLoaded = !!session.value.icon
+
+
+	session.value.imageLoaded = !!session.value.dappMetadata.icon
+}
+
+async function fetchAccounts() {
+	const networkServiceClient = new NetworkServiceClient()
+	const accMap = new Map()
+
+	for (const n of Object.values(session.value.namespaces)) {
+		for (const acc of n.accounts) {
+			const [ _, chainId, address ] = acc.split(":")
+			if (!accMap[chainId]) {
+				accMap[chainId] = []
+			}
+
+			accMap[chainId].push(address)
+		}
+	}
+	
+	for (const chainId of Object.keys(accMap)) {
+		const networks = await networkServiceClient.getNetworks(Number(chainId))
+		if (networks.length) {
+			const network = networks[0]
+			const accountServiceClient = new AccountServiceClient(appStore.profile, network)
+
+			for (const address of accMap[chainId]) {
+				const account = await accountServiceClient.getAccount(address)
+				if (account) {
+					accounts.value.push(account)
+				}
+			}
+		}		
+	}	
+}
+
+async function fetchSessionParams() {
+	for (const n of Object.values(session.value.namespaces)) {
+		chains.value = [...chains.value, ...n.chains]
+		methods.value = [...methods.value, ...n.methods]
+		events.value = [...events.value, ...n.events]
+	}
+
+	chains.value = [...new Set(chains.value)]
+	methods.value = [...new Set(methods.value)]
+	events.value = [...new Set(events.value)]
 }
 
 const onImageError = () => {
@@ -44,7 +103,7 @@ const onImageError = () => {
 }
 
 const handleDropSession = () => {
-	managers.wallectConnect.dropDappSession(session.value)
+	interactionServiceClient.dropDappSession(session.value.id, true)
 
 	router.push('/popup/settings/dappSessions')
 }
@@ -56,6 +115,8 @@ const handleCopyAddress = (target) => {
 
 onMounted( async () => {
 	await fetchSession()
+	await fetchAccounts()
+	await fetchSessionParams()
 })
 </script>
 
@@ -90,7 +151,7 @@ onMounted( async () => {
 				color="tertiary"
 				style="line-height: 16px"
 			>
-				{{ session?.name }}
+				{{ session?.dappMetadata.name }}
 			</Text>
 		</Flex>
 
@@ -99,7 +160,7 @@ onMounted( async () => {
 				<Flex align="start" justify="start">
 					<img
 						v-if="session?.imageLoaded"
-						:src="session?.icon"
+						:src="session?.dappMetadata.icon"
 						@error="onImageError()"
 						width="48"
 						height="48"
@@ -119,10 +180,10 @@ onMounted( async () => {
 			<Flex justify="between" align="end">
 				<Flex direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">
-						{{ session?.name }}
+						{{ session?.dappMetadata.name }}
 					</Text>
 					<Text size="12" weight="600" color="tertiary" selectable>
-						{{ session?.url }}
+						{{ session?.dappMetadata.url }}
 					</Text>
 				</Flex>
 			</Flex>
@@ -132,7 +193,7 @@ onMounted( async () => {
 			<Text size="15" weight="600" color="primary">Shared accounts:</Text>
 
 			<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-				<Flex v-for="acc in session?.accounts" gap="10" :class="$style.account">
+				<Flex v-for="acc in accounts" gap="10" :class="$style.account">
 					<Flex direction="column" gap="4" wide>
 						<Flex align="center" justify="between" gap="12">
 							<Text size="14" weight="600" color="primary">
@@ -163,17 +224,17 @@ onMounted( async () => {
 
 			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
 				<Text size="13" color="secondary">Networks:</Text>
-				<Text size="13" color="secondary"> {{ session?.params.chains.map(ch => getNetworkType(Number(ch.split(':').pop()))).join(', ') }} </Text>
+				<Text size="13" color="secondary"> {{ chains.map(ch => getNetworkType(Number(ch.split(':').pop()))).join(', ') }} </Text>
 			</Flex>
 			
 			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
 				<Text size="13" color="secondary">Methods:</Text>
-				<Text size="13" color="secondary"> {{ session?.params.methods.join(', ') }} </Text>
+				<Text size="13" color="secondary"> {{ methods.join(', ') }} </Text>
 			</Flex>
 
 			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
 				<Text size="13" color="secondary">Events:</Text>
-				<Text size="13" color="secondary"> {{ session?.params.events.join(', ') }} </Text>
+				<Text size="13" color="secondary"> {{ events.join(', ') }} </Text>
 			</Flex>
 		</Flex>
 

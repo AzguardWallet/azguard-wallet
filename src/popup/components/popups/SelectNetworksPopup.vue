@@ -45,7 +45,7 @@ watch(
 				<Flex direction="column" gap="16">
 					<Flex align="center" justify="start">
 						<Text size="14" weight="600" color="primary">
-							Select network
+							Select node
 						</Text>
 					</Flex>
 					<Flex direction="column" gap="6">
