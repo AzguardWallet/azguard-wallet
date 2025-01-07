@@ -14,7 +14,7 @@ import { managers, initTokenService, initTransactionService } from "@/utils/core
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store.ts"
-import { sleep } from "@/wallet/utils";
+import { sleep } from "@/wallet/utils"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
@@ -126,7 +126,7 @@ watch(
 				<Icon
 					name="lock"
 					size="20"
-					:color="isWrongPassword ? 'red' : 'orange'"
+					:color="isWrongPassword ? 'red' : 'blue'"
 					:class="[$style.lock_icon, isWrongPassword && $style.shake]"
 				/>
 			</Flex>
@@ -200,7 +200,8 @@ watch(
 	flex: 1;
 
 	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
+	border-top: 2px solid var(--gray-8);
+	box-shadow: inset 0 10px 8px -2px var(--gray-3);
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;

@@ -138,7 +138,7 @@ const handleClear = () => {
 			:class="[$style.base, isFocused && $style.focused, disabled && $style.disabled, $style[size]]"
 		>
 			<Flex align="center" gap="6" wide :class="$style.left">
-				<Icon v-if="icon" :name="icon" size="14" color="tertiary" />
+				<Icon v-if="icon" :name="icon" size="16" color="tertiary" />
 				<Text v-if="leftText" size="13" weight="600" color="tertiary">{{ leftText }}</Text>
 
 				<input
@@ -166,6 +166,8 @@ const handleClear = () => {
 			/>
 			<slot v-else name="suffix" />
 		</Flex>
+
+		<slot name="bottom" />
 	</Flex>
 </template>
 

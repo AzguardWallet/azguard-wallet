@@ -25,6 +25,7 @@ $grayscale: (
 	/** general */
 	--app-bg: #121212;
 	--card-bg: #1d1d1d;
+	--dropdown-bg: #252525;
 	--border: var(--gray-7);
 	--border-hovered: var(--gray-10);
 
@@ -44,7 +45,7 @@ $grayscale: (
 	/** colors */
 	--blue: #007aff;
 	--green: #14ae5c;
-	--orange: #ff9500;
+	--orange: #ff5500;
 	--red: #f03c3c;
 	--purple: #5856de;
 	--gray: #8e8e93;
@@ -72,6 +73,7 @@ $grayscale: (
 	/** general */
 	--app-bg: #f5f5f7;
 	--card-bg: #fff;
+	--dropdown-bg: #fff;
 	--border: var(--gray-10);
 	--border-hovered: var(--gray-15);
 
@@ -91,7 +93,7 @@ $grayscale: (
 	/** colors */
 	--blue: #007aff;
 	--green: #14ae5c;
-	--orange: #ff9500;
+	--orange: #ff5500;
 	--red: #f03c3c;
 	--purple: #5856de;
 	--gray: #8e8e93;
@@ -125,6 +127,7 @@ $grayscale: (
 	/** general */
 	--app-bg: #121212;
 	--card-bg: #1d1d1d;
+	--dropdown-bg: #252525;
 	--border: var(--gray-7);
 	--border-hovered: var(--gray-10);
 
@@ -144,7 +147,7 @@ $grayscale: (
 	/** colors */
 	--blue: #007aff;
 	--green: #14ae5c;
-	--orange: #ff9500;
+	--orange: #ff5500;
 	--red: #f03c3c;
 	--purple: #5856de;
 	--gray: #8e8e93;
@@ -280,6 +283,16 @@ body {
 .navigation-leave-to {
 	opacity: 0.3;
 	transform: translateY(2px);
+}
+
+.dropdown-enter-active {
+	transition: all 0.3s var(--bezier);
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+	opacity: 0;
+	transform: translateY(-2px);
 }
 
 .clickable {

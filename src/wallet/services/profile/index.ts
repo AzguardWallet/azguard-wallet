@@ -3,6 +3,7 @@ import { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/mes
 import { Service } from "@/wallet/base/service";
 import { EntityStorage, SimpleStorage, StorageType } from "@/wallet/storage";
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
+import { getEntropy, getMnemonic } from "@/wallet/utils/mnemonic";
 import { EncryptionKey } from "./encryption-key";
 import {
     ChangeProfileNameRequest,
@@ -15,6 +16,8 @@ import {
     DeleteProfileResponse,
     ExportEncryptedRequest,
     ExportEncryptedResponse,
+    ExportMnemonicRequest,
+    ExportMnemonicResponse,
     ExportPlainRequest,
     ExportPlainResponse,
     GetActiveProfileRequest,
@@ -23,6 +26,8 @@ import {
     GetProfilesResponse,
     ImportEncryptedRequest,
     ImportEncryptedResponse,
+    ImportMnemonicRequest,
+    ImportMnemonicResponse,
     ImportPlainRequest,
     ImportPlainResponse,
     LockActiveProfileRequest,
@@ -189,6 +194,16 @@ export class ProfileService extends Service {
                     return new ImportPlainResponse(_request, undefined, error.message);
                 }
             }
+            case ProfileServiceMethod.ImportMnemonic: {
+                const _request = request as ImportMnemonicRequest;
+                try {
+                    const profile = await this.importMnemonic(_request.name, _request.mnemonic, _request.password);
+                    return new ImportMnemonicResponse(_request, profile);
+                }
+                catch (error: any) {
+                    return new ImportMnemonicResponse(_request, undefined, error.message);
+                }
+            }
             case ProfileServiceMethod.ExportEncrypted: {
                 const _request = request as ExportEncryptedRequest;
                 try {
@@ -207,6 +222,16 @@ export class ProfileService extends Service {
                 }
                 catch (error: any) {
                     return new ExportPlainResponse(_request, undefined, error.message);
+                }
+            }
+            case ProfileServiceMethod.ExportMnemonic: {
+                const _request = request as ExportMnemonicRequest;
+                try {
+                    const mnemonic = await this.exportMnemonic(_request.profileId, _request.password);
+                    return new ExportMnemonicResponse(_request, mnemonic);
+                }
+                catch (error: any) {
+                    return new ExportMnemonicResponse(_request, undefined, error.message);
                 }
             }
             default: {
@@ -443,33 +468,74 @@ export class ProfileService extends Service {
     }
 
     public async importEncrypted(name: string, secret: string, password: string): Promise<Profile> {
-        try {
-            await this.lock.enter();
-
-            throw new Error('not implemented');
+        const passhash = await EncryptionKey.getPasshash(password);
+        const key = await EncryptionKey.fromPasshash(passhash);
+        const guard = await key.encrypt(encryptionGuard);
+        const _secret = Buffer.from(secret, "base64");
+        if (!await this.tryDecrypt(_secret, key)) {
+            throw new Error("Invalid password");
         }
-        finally {
-            this.lock.leave();
-        }
+        return await this.importProfile(name, guard, _secret, key, passhash);
     }
 
     public async importPlain(name: string, secret: string, password: string): Promise<Profile> {
-        try {
-            await this.lock.enter();
+        const passhash = await EncryptionKey.getPasshash(password);
+        const key = await EncryptionKey.fromPasshash(passhash);
+        const guard = await key.encrypt(encryptionGuard);
+        const _secret = await key.encrypt(Buffer.from(secret, "base64"));
+        return await this.importProfile(name, guard, _secret, key, passhash);
+    }
 
-            throw new Error('not implemented');
-        }
-        finally {
-            this.lock.leave();
-        }
+    public async importMnemonic(name: string, mnemonic: string[], password: string): Promise<Profile> {
+        const passhash = await EncryptionKey.getPasshash(password);
+        const key = await EncryptionKey.fromPasshash(passhash);
+        const guard = await key.encrypt(encryptionGuard);
+        const _secret = await key.encrypt(await getEntropy(mnemonic));
+        return await this.importProfile(name, guard, _secret, key, passhash);
     }
 
     public async exportEncrypted(id: string): Promise<string> {
-        throw new Error('not implemented');
+        const profileDto = await this.profiles.get(id);
+        if (!profileDto) {
+            throw new Error("Invalid profile id");
+        }
+        return profileDto.secret;
     }
 
     public async exportPlain(id: string, password: string): Promise<string> {
-        throw new Error('not implemented');
+        const passhash = await EncryptionKey.getPasshash(password);
+        const key = await EncryptionKey.fromPasshash(passhash);
+        const profileDto = await this.profiles.get(id);
+        if (!profileDto) {
+            throw new Error("Invalid profile id");
+        }
+        const guard = await this.tryDecrypt(Buffer.from(profileDto.guard, "base64"), key);
+        if (!guard || !array_equals(guard, encryptionGuard)) {
+            throw new Error("Invalid profile password");
+        }
+        const secret = await this.tryDecrypt(Buffer.from(profileDto.secret, "base64"), key);
+        if (!secret) {
+            throw new Error("Profile storage corrupted");
+        }
+        return Buffer.from(secret).toString("base64");
+    }
+
+    public async exportMnemonic(id: string, password: string): Promise<string[]> {
+        const passhash = await EncryptionKey.getPasshash(password);
+        const key = await EncryptionKey.fromPasshash(passhash);
+        const profileDto = await this.profiles.get(id);
+        if (!profileDto) {
+            throw new Error("Invalid profile id");
+        }
+        const guard = await this.tryDecrypt(Buffer.from(profileDto.guard, "base64"), key);
+        if (!guard || !array_equals(guard, encryptionGuard)) {
+            throw new Error("Invalid profile old password");
+        }
+        const secret = await this.tryDecrypt(Buffer.from(profileDto.secret, "base64"), key);
+        if (!secret) {
+            throw new Error("Profile storage corrupted");
+        }
+        return await getMnemonic(secret);
     }
 
     private async _initSession() {
@@ -573,6 +639,40 @@ export class ProfileService extends Service {
         }
         catch (error) {
             console.error("Failed to open profile session", error);
+        }
+    }
+
+    private async importProfile(
+        name: string,
+        guard: Uint8Array,
+        secret: Uint8Array,
+        key: EncryptionKey,
+        passhash: ArrayBuffer,
+    ): Promise<Profile> {
+        try {
+            await this.lock.enter();
+
+            let id: string;
+            do { id = getRandomHex(8); }
+            while (await this.profiles.contains(id));
+            
+            const profileDto: ProfileDto = {
+                name,
+                guard: Buffer.from(guard.buffer).toString('base64'),
+                secret: Buffer.from(secret.buffer).toString('base64'),
+            };
+            await this.profiles.set(id, profileDto);
+
+            const profile = new Profile(id, name);
+            this.emit(new ProfileServiceEventMessage(ProfileServiceEvent.ProfileAdded, profile));
+            
+            await this.initPromise;
+            await this._openSession(id, profileDto, key, passhash);
+
+            return profile;
+        }
+        finally {
+            this.lock.leave();
         }
     }
 

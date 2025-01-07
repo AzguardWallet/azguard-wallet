@@ -100,7 +100,9 @@ watch(
 						<Flex direction="column" gap="8">
 							<Text size="14" weight="600" color="primary"> Contract </Text>
 							<Text size="13" weight="600" color="tertiary">
-								{{ contract.slice(0, 6) }} ••• {{ contract.slice(-4) }}
+								{{ contract.slice(0, 6) }}
+								<Text color="dark">•••</Text>
+								{{ contract.slice(-4) }}
 							</Text>
 						</Flex>
 					</Flex>
@@ -121,9 +123,11 @@ watch(
 .wrapper {
 	flex: 1;
 
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
 	overflow: auto;
+
+	background: var(--card-bg);
+	border-top: 2px solid var(--gray-8);
+	box-shadow: inset 0 10px 8px -2px var(--gray-3);
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;

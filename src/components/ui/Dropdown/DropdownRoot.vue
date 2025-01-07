@@ -221,7 +221,7 @@ const onKeydown = event => {
 		<teleport to="#dropdown">
 			<div v-if="isOpen" :class="$style.canvas" />
 
-			<Transition name="fastfade">
+			<Transition name="dropdown">
 				<Flex
 					v-if="isOpen"
 					ref="dropdown"
@@ -263,10 +263,11 @@ const onKeydown = event => {
 	z-index: 2001;
 
 	border-radius: 10px;
-	background: var(--card-bg);
-	box-shadow: inset 0 0 0 1px var(--border), 0px 2px 6px var(--shadow-5);
+	background: var(--dropdown-bg);
+	box-shadow: rgba(12, 12, 12, 0.1) 0px 0px 0px 1px, rgba(12, 12, 12, 0.2) 0px 3px 6px,
+		rgba(12, 12, 12, 0.4) 0px 10px 32px;
 
-	padding: 4px;
+	padding: 4px 0;
 }
 
 .dropdown.transform_origin_top {

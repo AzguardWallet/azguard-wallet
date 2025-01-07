@@ -7,7 +7,7 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Utils */
-import { purgeNumber, normalizeAmount } from "@/utils/amount.js"
+import { comma, purgeNumber, normalizeAmount } from "@/utils/amount.js"
 import { managers } from "@/utils/core"
 
 /** Composables */
@@ -102,7 +102,7 @@ const handleMint = async () => {
 			tokenNameTerm.value.trim(),
 			tokenSymbolTerm.value.trim(),
 			8,
-			new BN(amountTerm.value).times(10 ** 8),
+			new BN(amountTerm.value).times(10 ** 8).dividedBy(2),
 		)
 		isMinting.value = false
 
@@ -156,10 +156,9 @@ const onKeydown = e => {
 				<Flex direction="column" gap="12">
 					<Text size="14" weight="600" color="primary"> Faucet </Text>
 
-					<Banner>
-						The Faucet functionality is here temporarily<Text color="tertiary"
-							>, it will be moved elsewhere in the next updates.
-						</Text>
+					<Banner direction="vertical">
+						<template #title> The Faucet functionality is here temporarily </template>
+						<template #description> It will be moved elsewhere in the future </template>
 					</Banner>
 				</Flex>
 
@@ -181,13 +180,46 @@ const onKeydown = e => {
 					@input="handleSymbolInput"
 				/>
 				<Input
-					label="Amount"
+					label="Total Amount"
 					placeholder="0.00"
 					v-model="amountTerm"
 					@focus="error = null"
 					@input="handleAmountInput"
 					:autofocus="!!token"
 				>
+					<template #suffix>
+						<Text size="13" weight="600" color="tertiary">{{ tokenSymbolTerm }}</Text>
+					</template>
+					<template v-if="amountTerm" #right>
+						<Tooltip position="end" side="top">
+							<Icon name="info" size="12" color="tertiary" hoverColor="primary" />
+
+							<template #content>
+								<Flex direction="column" gap="12">
+									<Flex direction="column" gap="8">
+										<Flex align="center" justify="between">
+											<Text color="secondary">Private balance:</Text>
+											<Text color="primary">{{ comma(new BN(amountTerm).dividedBy(2)) }}</Text>
+										</Flex>
+
+										<Flex align="center" justify="between">
+											<Text color="secondary">Public balance:</Text>
+											<Text color="primary">{{ comma(new BN(amountTerm).dividedBy(2)) }}</Text>
+										</Flex>
+
+										<Flex align="center" justify="between">
+											<Text color="secondary">Total amount to mint:</Text>
+											<Text color="primary">
+												{{ comma(new BN(amountTerm)) }}
+											</Text>
+										</Flex>
+									</Flex>
+
+									<Text mono color="tertiary">Total Amount = Private + Public Balance</Text>
+								</Flex>
+							</template>
+						</Tooltip>
+					</template>
 				</Input>
 
 				<Flex align="center" direction="column" gap="12">

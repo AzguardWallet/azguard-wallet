@@ -21,7 +21,10 @@ const props = defineProps({
 	},
 })
 
-const tokenBalance = computed(() => appStore.balances.find(b => b.token.id == props.token.id))
+const tokenBalance = computed(() => {
+	return appStore.balances.find(b => b.token.id == props.token?.id)
+})
+
 const getBalance = target => {
 	if (!tokenBalance.value) return 0
 	return Number.parseFloat(tokenBalance.value[target]) / 10 ** tokenBalance.value.token.decimals
@@ -43,7 +46,7 @@ const handleOpenSendPopup = target => {
 				wide
 				align="center"
 				gap="12"
-				:class="[$style.item, $style.left, !token.hasPrivateTransfers && $style.disabled]"
+				:class="[$style.item, $style.left, !token?.hasPrivateTransfers && $style.disabled]"
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">
@@ -62,7 +65,7 @@ const handleOpenSendPopup = target => {
 				wide
 				align="center"
 				gap="12"
-				:class="[$style.item, $style.right, !token.hasPublicTransfers && $style.disabled]"
+				:class="[$style.item, $style.right, !token?.hasPublicTransfers && $style.disabled]"
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">

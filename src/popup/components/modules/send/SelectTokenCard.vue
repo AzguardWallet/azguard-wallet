@@ -18,8 +18,11 @@ const isTokenBlocked = computed(() => {
 })
 
 const handleSelectToken = () => {
-	if (!props.token) return
-	popupStore.open("select_token")
+	if (!props.token) {
+		popupStore.open("new_token")
+	} else {
+		popupStore.open("select_token")
+	}
 }
 </script>
 
@@ -61,9 +64,13 @@ const handleSelectToken = () => {
 			<Icon name="chevron" size="16" color="primary" style="transform: rotate(-90deg)" />
 		</template>
 
-		<Flex v-else wide justify="center" align="center" gap="8">
-			<Icon name="banknote" size="16" color="secondary" />
-			<Text size="13" weight="600" color="tertiary"> No available tokens </Text>
+		<Flex v-else wide align="center" justify="between">
+			<Flex align="center" gap="8">
+				<Icon name="info" size="16" color="orange" />
+				<Text size="13" weight="600" color="secondary"> No available tokens </Text>
+			</Flex>
+
+			<Text size="13" weight="600" color="blue"> Import token </Text>
 		</Flex>
 	</Flex>
 </template>

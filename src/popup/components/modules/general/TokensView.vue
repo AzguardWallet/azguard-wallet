@@ -1,6 +1,11 @@
 <script setup>
 /** Components */
 import TokenCard from "./TokenCard.vue"
+import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
+
+/** Composables */
+import { useSettings } from "@/composables/settings.js"
+const { settings } = useSettings()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -11,17 +16,45 @@ const popupStore = usePopupStore()
 
 <template>
 	<Flex direction="column" gap="12">
-		<Flex align="center" justify="between">
+		<Flex align="end" justify="between">
 			<Text size="13" weight="600" color="secondary"> Tokens </Text>
-			<Text
-				@click="popupStore.open('tokens')"
-				size="12"
-				weight="600"
-				color="tertiary"
-				:class="['clickable', $style.txt_button]"
-			>
-				Manage
-			</Text>
+
+			<Flex align="center" gap="6">
+				<Dropdown>
+					<Button type="secondary" size="micro" square>
+						<Icon name="dots" size="12" color="secondary" />
+					</Button>
+
+					<template #popup>
+						<DropdownItem @click="popupStore.open('new_token')">
+							<Flex align="center" gap="8">
+								<Icon name="plus-circle" size="14" color="primary" />
+								Import token
+							</Flex>
+						</DropdownItem>
+						<DropdownItem @click="popupStore.open('tokens')">
+							<Flex align="center" gap="8">
+								<Icon name="arrow-narrow-up-right-circle" size="14" color="primary" />
+								Manage tokens
+							</Flex>
+						</DropdownItem>
+						<DropdownDivider />
+						<DropdownItem disabled>
+							<Flex align="center" gap="8">
+								<Icon name="settings" size="14" color="primary" />
+								Display settings
+							</Flex>
+						</DropdownItem>
+						<DropdownDivider />
+						<DropdownItem disabled>
+							<Flex align="center" gap="8">
+								<Icon name="refresh-circle" size="14" color="primary" />
+								Refresh balances
+							</Flex>
+						</DropdownItem>
+					</template>
+				</Dropdown>
+			</Flex>
 		</Flex>
 
 		<template v-if="appStore.tokens.length">
@@ -36,13 +69,3 @@ const popupStore = usePopupStore()
 		</template>
 	</Flex>
 </template>
-
-<style module>
-.txt_button {
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		color: var(--txt-secondary);
-	}
-}
-</style>

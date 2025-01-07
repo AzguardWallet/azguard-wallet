@@ -30,7 +30,7 @@ const handleSelectToken = id => {
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_token">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="24" :class="$style.wrapper">
+			<Flex wide direction="column" gap="16" :class="$style.wrapper">
 				<Flex direction="column" gap="12">
 					<Text size="14" weight="600" color="primary"> Select token </Text>
 

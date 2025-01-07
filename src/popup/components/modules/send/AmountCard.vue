@@ -89,7 +89,6 @@ const handleHalf = () => {
 
 				<template #content> No quotes available at the moment</template>
 			</Tooltip>
-			<!-- <Text size="14" weight="500" color="tertiary"> ${{ comma(amountInUSD) }} </Text> -->
 		</Flex>
 
 		<Flex justify="between">

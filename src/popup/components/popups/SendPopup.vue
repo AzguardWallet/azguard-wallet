@@ -40,6 +40,8 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.send
 })
 
+const awaitingNewToken = ref(false)
+
 const activeToken = computed(() =>
 	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 	appStore.tokens.find(t => t.id == cacheStore.activeTokenIdx),
@@ -163,6 +165,17 @@ watch(
 )
 
 watch(
+	() => appStore.tokens,
+	() => {
+		if (appStore.tokens.length && awaitingNewToken.value) {
+			awaitingNewToken.value = false
+			cacheStore.activeTokenIdx = appStore.tokens[0]?.id
+		}
+	},
+	{ deep: true },
+)
+
+watch(
 	() => props.show,
 	() => {
 		if (props.show) {
@@ -176,9 +189,15 @@ watch(
 			if (!cacheStore.activeTokenIdx && appStore.tokens.length) {
 				cacheStore.activeTokenIdx = appStore.tokens[0]?.id
 			}
+
+			if (!appStore.tokens.length) {
+				awaitingNewToken.value = true
+			}
 		} else {
 			amountTerm.value = null
 			destinationAddressTerm.value = ""
+
+			awaitingNewToken.value = false
 
 			cacheStore.preselectedBalanceType = "private"
 		}

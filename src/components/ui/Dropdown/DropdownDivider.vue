@@ -6,6 +6,7 @@
 .wrapper {
 	width: 100%;
 	height: 1px;
-	background: var(--op-5);
+
+	background: var(--gray-10);
 }
 </style>

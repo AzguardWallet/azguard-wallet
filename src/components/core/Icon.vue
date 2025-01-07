@@ -7,6 +7,7 @@ const props = defineProps({
 	name: { type: String, required: true, default: "warning" },
 	size: { type: [String, Number], default: "16" },
 	color: { type: String, default: null },
+	hoverColor: { type: String, required: false },
 	rotate: { type: [String, Number], default: 0 },
 	fill: { type: Boolean, default: false },
 })
@@ -27,16 +28,16 @@ const classes = computed(() => {
 	return iconClasses
 })
 
+const hoverColorVar = computed(() => {
+	return `var(--txt-${props.hoverColor})`
+})
+
 const getIcon = () => {
 	return icons[props.name.charAt(0).toLowerCase() + props.name.slice(1)]
 }
 
 const isSplitted = () => {
-	return (
-		typeof icons[
-			props.name.charAt(0).toLowerCase() + props.name.slice(1)
-		] === "object"
-	)
+	return typeof icons[props.name.charAt(0).toLowerCase() + props.name.slice(1)] === "object"
 }
 </script>
 
@@ -46,16 +47,12 @@ const isSplitted = () => {
 		:width="size"
 		:height="size"
 		:style="styles"
-		:class="classes"
+		:class="[...classes, props.hoverColor && $style.hovered]"
 		role="img"
 	>
 		<path v-if="!isSplitted(name)" :d="getIcon(name)" />
 		<template v-else>
-			<path
-				v-if="!Array.isArray(getIcon(name))"
-				:d="getIcon(name)"
-				:style="{ opacity: path.opacity }"
-			/>
+			<path v-if="!Array.isArray(getIcon(name))" :d="getIcon(name)" :style="{ opacity: path.opacity }" />
 
 			<template v-else>
 				<path
@@ -71,3 +68,13 @@ const isSplitted = () => {
 		</template>
 	</svg>
 </template>
+
+<style module>
+.hovered {
+	transition: all 0.3s var(--bezier);
+
+	&:hover {
+		fill: v-bind(hoverColorVar);
+	}
+}
+</style>

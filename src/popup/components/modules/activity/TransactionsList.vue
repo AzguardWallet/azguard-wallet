@@ -1,7 +1,4 @@
 <script setup>
-/** Vendor */
-import { DateTime } from "luxon"
-
 /** Components */
 import TransactionCard from "./TransactionCard.vue"
 

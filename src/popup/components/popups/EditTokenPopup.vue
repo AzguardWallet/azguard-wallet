@@ -159,7 +159,8 @@ const handleCopyContractAddress = () => {
 
 				<template v-else>
 					<Text @click="handleCopyContractAddress" size="12" weight="600" color="tertiary" class="copyable">
-						{{ rawToken.contract.slice(0, 6) }} ••• {{ rawToken.contract.slice(-4) }}
+						{{ rawToken.contract.slice(0, 6) }} <Text color="dark">•••</Text>
+						{{ rawToken.contract.slice(-4) }}
 					</Text>
 
 					<CandidatesForm

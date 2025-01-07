@@ -81,9 +81,9 @@ const handleManageAccounts = () => {
 					>
 						<Flex gap="10">
 							<Icon
-								:name="account.address === acc.address ? 'check-circle' : 'vault'"
+								:name="account.address === acc.address ? 'check-circle' : 'circle'"
 								size="16"
-								:color="account.address === acc.address ? 'green' : 'secondary'"
+								:color="account.address === acc.address ? 'green' : 'tertiary'"
 							/>
 
 							<Flex direction="column" gap="8">
@@ -93,7 +93,7 @@ const handleManageAccounts = () => {
 
 								<Text size="13" weight="600" color="tertiary">
 									{{ acc.address.slice(0, 6) }}
-									•••
+									<Text color="dark">•••</Text>
 									{{ acc.address.slice(-4) }}
 								</Text>
 							</Flex>

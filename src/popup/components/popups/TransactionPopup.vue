@@ -29,8 +29,8 @@ const props = defineProps({
 
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
 const call = computed(() => tx.value.calls[0])
-const transfer = computed(() => (call.value.transfers ? call.value.transfers[0] : null))
-const token = computed(() => appStore.tokens.find(t => call.value.contract === t.contract))
+const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
+const token = computed(() => appStore.tokens.find(t => call.value?.contract === t.contract))
 
 watch(
 	() => props.show,
@@ -60,7 +60,7 @@ const handleCopy = target => {
 					<Flex @click="handleCopy(tx.hash)" align="center" gap="6" class="copyable">
 						<Text size="12" weight="600" color="tertiary">
 							{{ tx.hash.slice(0, 4) }}
-							•••
+							<Text color="dark">•••</Text>
 							{{ tx.hash.slice(-4) }}
 						</Text>
 						<Icon name="copy" size="12" color="tertiary" />
@@ -70,41 +70,54 @@ const handleCopy = target => {
 				<Flex v-if="transfer" align="center" direction="column" gap="8">
 					<Text size="24" weight="500" color="primary">
 						{{ new BN(transfer.amount / 10 ** 8).toFixed() }}
-						<Text color="tertiary">{{ token.symbol }}</Text>
+						<Text color="tertiary">{{ transfer.token.symbol }}</Text>
 					</Text>
 					<Text size="12" weight="500" color="tertiary"> Transfer Amount </Text>
 				</Flex>
+
+				<Banner
+					v-if="transfer && !token"
+					variant="warning"
+					direction="vertical"
+					:action="{ name: 'Copy token address', callback: () => handleCopy(call.contract) }"
+					wide
+				>
+					<template #title> {{ transfer.token.symbol }} is missing </template>
+					<template #description> This token not found in your token list </template>
+				</Banner>
 
 				<Flex v-if="transfer" wide gap="4">
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.left]">
 						<Flex @click="handleCopy(transfer.from)" wide direction="column" gap="4" class="copyable">
 							<Text size="13" weight="600" color="primary">
-								{{ transfer.from.slice(0, 6) }} •••
+								{{ transfer.from.slice(0, 6) }}
+								<Text color="dark">•••</Text>
 								{{ transfer.from.slice(-4) }}
 							</Text>
 							<Text size="12" weight="500" color="tertiary"> From </Text>
 						</Flex>
 
 						<Icon
-							:name="['transfer', 'transfer_to_public'].includes(call.method) ? 'key-square' : 'face'"
+							:name="['transfer', 'transfer_to_public'].includes(call?.method) ? 'key-square' : 'face'"
 							size="16"
-							:color="['transfer', 'transfer_to_public'].includes(call.method) ? 'green' : 'orange'"
+							:color="['transfer', 'transfer_to_public'].includes(call?.method) ? 'green' : 'orange'"
 						/>
 					</Flex>
 
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.right]">
 						<Flex @click="handleCopy(transfer.to)" wide direction="column" gap="4" class="copyable">
 							<Text size="13" weight="600" color="primary">
-								{{ transfer.to.slice(0, 6) }} •••
+								{{ transfer.to.slice(0, 6) }}
+								<Text color="dark">•••</Text>
 								{{ transfer.to.slice(-4) }}
 							</Text>
 							<Text size="12" weight="500" color="tertiary"> Destination </Text>
 						</Flex>
 
 						<Icon
-							:name="['transfer', 'transfer_to_private'].includes(call.method) ? 'key-square' : 'face'"
+							:name="['transfer', 'transfer_to_private'].includes(call?.method) ? 'key-square' : 'face'"
 							size="16"
-							:color="['transfer', 'transfer_to_private'].includes(call.method) ? 'green' : 'orange'"
+							:color="['transfer', 'transfer_to_private'].includes(call?.method) ? 'green' : 'orange'"
 						/>
 					</Flex>
 				</Flex>

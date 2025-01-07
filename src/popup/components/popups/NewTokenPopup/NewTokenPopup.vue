@@ -46,13 +46,24 @@ const isCompleted = ref(true)
 const rawToken = ref()
 const rawTokenForReset = ref()
 const selectedFields = ref({})
+const availableFields = [
+	"balanceOfPrivateFn",
+	"balanceOfPublicFn",
+	"transferPrivateFn",
+	"transferPublicFn",
+	"transferPrivateToPublicFn",
+	"transferPublicToPrivateFn",
+	"getNameFn",
+	"getSymbolFn",
+	"getDecimalsFn",
+]
 const handleSelectCandidate = (target, candidate) => {
 	selectedFields.value[target] = candidate
 	rawToken.value[target] = candidate
 }
 const handleClearCandidate = target => {
 	delete selectedFields.value[target]
-	rawToken.value[target] = rawTokenForReset.value[target]
+	rawToken.value[target] = null
 }
 const handleResetChanges = () => {
 	rawToken.value = { ...rawTokenForReset.value }
@@ -68,7 +79,6 @@ const handleCreateToken = async () => {
 	isLoadingParseResult.value = true
 
 	try {
-		console.log(managers.token)
 		const parsingResult = await managers.token.parseInterface(contractAddressTerm.value)
 
 		if (!parsingResult.isComplete) {
@@ -77,6 +87,12 @@ const handleCreateToken = async () => {
 			isCompleted.value = false
 			rawToken.value = { ...parsingResult }
 			rawTokenForReset.value = { ...parsingResult }
+
+			for (const fieldName of availableFields) {
+				if (rawToken.value[fieldName]) {
+					selectedFields.value[fieldName] = rawToken.value[fieldName]
+				}
+			}
 
 			return
 		}
@@ -102,7 +118,7 @@ const handleCreateToken = async () => {
 		emit("onClose")
 	} catch (err) {
 		error.value = err
-		// 0x1b137fdaf8d656f5ae36a88598190dc676e858731640a52376b0f5e34b058273
+
 		isAddingNewToken.value = false
 		isLoadingParseResult.value = false
 	}
@@ -114,12 +130,13 @@ const handleSaveToken = async () => {
 
 	try {
 		const newToken = await managers.token.addToken(rawToken.value)
+
 		appStore.tokens.push(newToken)
 
 		await appStore.syncBalances()
 
 		openToast({ label: "New token has been added" })
-	} catch (error) {
+	} catch (err) {
 		error.value = err
 
 		isSavingToken.value = false
@@ -158,7 +175,7 @@ watch(
 					label="Contract address"
 					placeholder="0x"
 					autofocus
-					:disabled="isLoadingParseResult"
+					:disabled="isLoadingParseResult || !isCompleted"
 				>
 					<template #suffix>
 						<Icon v-if="isAvailableToCreateToken" name="check-circle" size="14" color="green" />

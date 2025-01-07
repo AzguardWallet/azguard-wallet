@@ -219,6 +219,7 @@ export class WalletConnectService extends Service {
         const noop = () => {}
         return {
             error: level !== 'silent' ? console.error : noop,
+            warn: level !== 'silent' ? console.warn : noop,
             debug: ['trace', 'debug', 'info'].includes(level) ? console.debug : noop,
             info: ['trace', 'debug', 'info'].includes(level) ? console.info : noop,
             trace: level === 'trace' ? console.trace : noop,
