@@ -129,7 +129,7 @@ export class InteractionServiceClient extends ServiceClient {
         return this.request(new DeleteInteractionRequestRequest(id));
     }
 
-    public buildApprovedNamespaces(requiredNamespaces: Namespaces, supportedNamespaces: Namespaces): Promise<Namespaces> {
-        return this.request(new BuildApprovedNamespacesRequest(requiredNamespaces, supportedNamespaces));
+    public buildApprovedNamespaces(requiredNamespaces: Namespaces, supportedNamespaces: Namespaces, optionalNamespaces?: Namespaces): Promise<Namespaces> {
+        return this.request(new BuildApprovedNamespacesRequest(requiredNamespaces, supportedNamespaces, optionalNamespaces));
     }
 }

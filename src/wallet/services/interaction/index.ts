@@ -97,7 +97,7 @@ export class InteractionService extends Service {
             case InteractionServiceMethod.BuildApprovedNamespaces: {
                 const _request = request as BuildApprovedNamespacesRequest;
                 try {
-                    const approvedNamespaces = await this.buildApprovedNamespaces(_request.requiredNamespaces, _request.supportedNamespaces);
+                    const approvedNamespaces = await this.buildApprovedNamespaces(_request.requiredNamespaces, _request.supportedNamespaces, _request.optionaldNamespaces);
                     return new BuildApprovedNamespacesResponse(_request, approvedNamespaces);
                 }
                 catch (error: unknown) {
@@ -158,7 +158,7 @@ export class InteractionService extends Service {
             case InteractionServiceMethod.ApproveInteractionRequest: {
                 const _request = request as ApproveInteractionRequestRequest;
                 try {
-                    this.approveInteractionRequest(_request.requestId, _request.namespaces, _request.profileId);
+                    this.approveInteractionRequest(_request.requestId, _request.result);
                     return new RejectInteractionRequestResponse(_request, undefined);
                 }
                 catch (error: unknown) {
@@ -231,11 +231,12 @@ export class InteractionService extends Service {
         return new InteractionRequest(id, payload)
     }
 
-    public approveInteractionRequest(id: string, namespaces: Namespaces, profileId: string): void {
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public approveInteractionRequest(id: string, result: any): void {
         const interactionRequest = this.interactionRequests.get(id);
 
         if (interactionRequest?.resolve) {
-            interactionRequest.resolve( { namespaces, profileId } )
+            interactionRequest.resolve(result)
         }
 
         this.deleteInteractionRequest(id)
@@ -352,24 +353,29 @@ export class InteractionService extends Service {
 
 		for (const ns of Object.keys(requiredNamespaces)) {
 			if (supportedNamespaces[ns]) {
-                const chains = requiredNamespaces[ns].chains?.filter((ch: string) => supportedNamespaces[ns].chains?.includes(ch))
-                const methods = requiredNamespaces[ns].methods.filter((m: string) => supportedNamespaces[ns].methods?.includes(m))
-                const events = requiredNamespaces[ns].events?.filter((ev: string) => supportedNamespaces[ns].events?.includes(ev))
-                approvedNamespaces[ns] = { chains, methods, events }
+                const chains = requiredNamespaces[ns].chains?.filter((ch: string) => supportedNamespaces[ns].chains?.includes(ch)) || []
+                if (chains.length) {
+                    const methods = requiredNamespaces[ns].methods.filter((m: string) => supportedNamespaces[ns].methods?.includes(m)) || []
+                    const events = requiredNamespaces[ns].events?.filter((ev: string) => supportedNamespaces[ns].events?.includes(ev)) || []
 
-                if (optionalNamespaces?.[ns]) {
-                    if (approvedNamespaces[ns].chains?.length && optionalNamespaces[ns].chains?.length) {
-                        approvedNamespaces[ns].chains = [...new Set([...approvedNamespaces[ns].chains, ...optionalNamespaces[ns].chains])]
-                    }
-                    if (approvedNamespaces[ns].methods?.length && optionalNamespaces[ns].methods?.length) {
-                        approvedNamespaces[ns].methods = [...new Set([...approvedNamespaces[ns].methods, ...optionalNamespaces[ns].methods])]
-                    }
-                    if (approvedNamespaces[ns].events?.length && optionalNamespaces[ns].events?.length) {
-                        approvedNamespaces[ns].events = [...new Set([...approvedNamespaces[ns].events, ...optionalNamespaces[ns].events])]
-                    }
+                    approvedNamespaces[ns] = { chains, methods, events }
                 }
 			}
 		}
+        
+        if (Object.keys(approvedNamespaces).length && optionalNamespaces) {
+            for (const ns of Object.keys(optionalNamespaces)) {
+                const chains = optionalNamespaces[ns].chains?.filter((ch: string) => supportedNamespaces[ns].chains?.includes(ch)) || []
+                const methods = chains.length ? optionalNamespaces[ns].methods.filter((m: string) => supportedNamespaces[ns].methods?.includes(m)) : []
+                const events = (chains.length ? optionalNamespaces[ns].events?.filter((ev: string) => supportedNamespaces[ns].events?.includes(ev)) : []) || []
+                
+                approvedNamespaces[ns] = { 
+                    chains: [...new Set([...(approvedNamespaces[ns].chains || []), ...chains])],
+                    methods: [...new Set([...(approvedNamespaces[ns].methods || []), ...methods])],
+                    events: [...new Set([...(approvedNamespaces[ns].events || []), ...events])],
+                }
+            }
+        }
 
         return approvedNamespaces
     }
@@ -377,6 +383,29 @@ export class InteractionService extends Service {
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async dappSessionRequest(payload: any): Promise<any> {
         return await this._openWindow('request', payload, 780)
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    private async _openWindow<T>(name: string, payload: any, height?: number): Promise<T> {
+        const interactionRequest = await this.addInteractionRequest(payload)
+
+        const promise = new Promise<T>((resolve, reject) => {
+            this.interactionRequests.set(interactionRequest.id, { payload: interactionRequest.payload, resolve, reject });
+        });
+
+        const url = new URL(chrome.runtime.getURL(`src/popup/index.html#/windows/${name}`))
+        url.searchParams.set('requestId', interactionRequest.id)
+
+        chrome.windows.create(
+            {
+                type: 'popup',
+                url: url.toString(),
+                height: height || 660,
+                width: 400
+            }
+        )
+
+        return promise
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -391,21 +420,5 @@ export class InteractionService extends Service {
                 break
             }
         }
-    }
-    
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async _openWindow<T>(name: string, payload: any, height?: number): Promise<T> {
-        const interactionRequest = await this.addInteractionRequest(payload)
-
-        const promise = new Promise<T>((resolve, reject) => {
-            this.interactionRequests.set(interactionRequest.id, { payload: interactionRequest.payload, resolve, reject });
-        });
-
-        const url = new URL(chrome.runtime.getURL(`src/popup/index.html#/windows/${name}`))
-        url.searchParams.set('requestId', interactionRequest.id)
-
-        chrome.windows.create({type: 'popup', url: url.toString(), height: height || 660, width: 400})
-
-        return promise
     }
 }

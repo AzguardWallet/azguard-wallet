@@ -48,7 +48,7 @@ export class DappSession {
     /**
      * Creates Dapp session.
      * @param id Randomly generated id or WalletConnect topic.
-     * @param dappMetadata Dapp name.
+     * @param dappMetadata Dapp metadata.
      * @param namespaces Session permissions.
      * @param expiry Session expiration timestamp.
      * @param profileId Profile id.

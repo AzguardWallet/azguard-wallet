@@ -321,15 +321,14 @@ export class WalletConnectService extends Service {
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async handleSessionProposal(payload: any): Promise<any> {
+        console.debug('Session proposal received', payload);
+
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.");
         }
 
-        console.debug('Session proposal received', payload);
-
         try {
             const { namespaces, profileId } = await this.interaction.dappSessionProposal(payload)
-
             try {
                 if (namespaces && profileId)
                 this.approveSession(payload, namespaces, profileId)
@@ -351,8 +350,6 @@ export class WalletConnectService extends Service {
             proposal: payload.params,
             supportedNamespaces: namespaces as Record<string, { chains: string[]; methods: string[]; events: string[]; accounts: string[]; }>,
         })
-
-        console.log('approvedNamespaces', approvedNamespaces);        
 
         try {
             const session = await this.walletKit.approveSession({
@@ -397,8 +394,6 @@ export class WalletConnectService extends Service {
         console.debug('Session proposal expire received', payload);
 
         this.interaction.requestExpired(payload)
-
-        this.emit(new WalletConnectServiceEventMessage(WalletConnectServiceEvent.ProposalExpire, payload));
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -409,7 +404,42 @@ export class WalletConnectService extends Service {
             throw new Error("WalletKit is not initialized.");
         }
 
-        this.interaction.dappSessionRequest(payload)
+        try {
+            const result = await this.interaction.dappSessionRequest(payload)
+            console.log('handleSessionRequest result', result);
+            
+            try {
+                const { networkId, accountAddress, dappName } = result
+                console.log('handleSessionRequest networkId', networkId);
+                console.log('handleSessionRequest accountAddress', accountAddress);
+                console.log('handleSessionRequest dappName', dappName);
+                if (networkId && accountAddress && dappName ) {
+
+                    try {
+                        const txHash = await this.interaction.executeDappSessionRequest(networkId, accountAddress, dappName, payload.params?.request?.params)
+
+                        if (txHash) {
+                            const response = {
+                                id: payload.id,
+                                result: txHash,
+                                jsonrpc: '2.0',
+                            }
+                            
+                            this.walletKit.respondSessionRequest({ topic: payload.topic, response })
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        this.rejectSessionRequest(payload)
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                this.rejectSessionRequest(payload)
+            }
+        } catch (err) {
+            this.rejectSessionRequest(payload)
+        }
+        // this.interaction.dappSessionRequest(payload)
     }
     
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -455,7 +485,8 @@ export class WalletConnectService extends Service {
     public async handleSessionRequestExpire(payload: any): Promise<any> {
         console.debug('Session request expire received', payload);
         
-        this.emit(new WalletConnectServiceEventMessage(WalletConnectServiceEvent.RequestExpire, payload));
+        this.interaction.requestExpired(payload)
+        // this.emit(new WalletConnectServiceEventMessage(WalletConnectServiceEvent.RequestExpire, payload));
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>

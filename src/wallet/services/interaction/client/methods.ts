@@ -62,6 +62,7 @@ export class BuildApprovedNamespacesRequest extends RequestMessage {
     constructor(
         public readonly requiredNamespaces: Namespaces,
         public readonly supportedNamespaces: Namespaces,
+        public readonly optionaldNamespaces?: Namespaces,
     ) {
         super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.BuildApprovedNamespaces);
     }
@@ -139,8 +140,8 @@ export class GetInteractionRequestResponse extends ResponseMessage {
 export class ApproveInteractionRequestRequest extends RequestMessage {
     constructor(
         public readonly requestId: string,
-        public readonly namespaces: Namespaces,
-        public readonly profileId: string,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly result?: any,
     ) {
         super(INTERACTION_SERVICE_NAME, InteractionServiceMethod.ApproveInteractionRequest);
     }

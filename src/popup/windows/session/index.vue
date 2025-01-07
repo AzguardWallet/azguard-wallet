@@ -127,7 +127,7 @@ const validateProposal = async () => {
 			}
 		}
 
-		validationResult.value = await interactionServiceClient.buildApprovedNamespaces(supportedNamespaces, requiredNamespaces)
+		validationResult.value = await interactionServiceClient.buildApprovedNamespaces(supportedNamespaces, requiredNamespaces, optionalNamespaces)
 
 		let values = Object.values(validationResult.value)
 		chains.value = values.flatMap(v => v.chains)
@@ -137,7 +137,6 @@ const validateProposal = async () => {
 		} else {
 			values = [
 				...Object.values(requiredNamespaces),
-				...Object.values(optionalNamespaces)
 			].reduce((acc, curr) => {
 				acc.chains = Array.from(new Set([...acc.chains, ...curr.chains]))
 				acc.methods = Array.from(new Set([...acc.methods, ...curr.methods]))
@@ -225,7 +224,7 @@ const handleApprove = async () => {
 			},
 		}
 
-		interactionServiceClient.approveInteractionRequest(interactionRequest.value?.id, namespaces, profile.value?.id)
+		interactionServiceClient.approveInteractionRequest(interactionRequest.value?.id, { namespaces, profileId: profile.value?.id })
 
 		closeWindow()
 	} catch (error) {
@@ -243,17 +242,9 @@ const handleReject = async () => {
 }
 
 const closeWindow = () => {
-	chrome.windows.getCurrent((currentWindow) => {
-		chrome.windows.remove(currentWindow.id, () => {})
+	chrome.windows.getCurrent((window) => {
+		chrome.windows.remove(window.id)
 	})
-}
-
-const handleWindowClose = () => {
-	interactionServiceClient.deleteInteractionRequest(requestId)
-
-	if (!isActionCalled.value && !isProposalExpired.value) {
-		handleReject()
-	}
 }
 
 const profileServiceClient = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, handleReject)
@@ -301,11 +292,11 @@ onMounted( async () => {
 		await validateProposal()
 	}
 
-	window.addEventListener("beforeunload", handleWindowClose)
+	window.addEventListener('beforeunload', handleReject);
 })
 
 onUnmounted(() => {
-	window.removeEventListener("beforeunload", handleWindowClose);
+	window.removeEventListener('beforeunload', handleReject);
 })
 </script>
 

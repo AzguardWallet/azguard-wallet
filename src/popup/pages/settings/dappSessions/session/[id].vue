@@ -32,8 +32,6 @@ const { openToast } = useToast()
 const route = useRoute()
 const router = useRouter()
 
-const interactionServiceClient = new InteractionServiceClient()
-
 const session = ref()
 const accounts = ref([])
 const chains = ref([])
@@ -112,6 +110,8 @@ const handleCopyAddress = (target) => {
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Address is copied", icon: "copy" })
 }
+
+const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, handleDropSession, undefined)
 
 onMounted( async () => {
 	await fetchSession()
