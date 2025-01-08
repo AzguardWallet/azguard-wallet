@@ -5,28 +5,12 @@ import { buildApprovedNamespaces, getSdkError } from "@walletconnect/utils";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import type { InteractionService } from "@/wallet/services/interaction";
 import type { DappSession, Namespaces } from "@/wallet/services/interaction/client";
-import type { Account } from '../account/client';
 import { Service } from "@/wallet/base/service";
 import {
     type ConnectByURIRequest,
     ConnectByURIResponse,
-    type ApproveDappSessionRequest,
-    ApproveDappSessionResponse,
-    type RejectDappSessionRequest,
-    RejectDappSessionResponse,
-    type DropDappSessionRequest,
-    DropDappSessionResponse,
-    type ValidateProposalRequest,
-    ValidateProposalResponse,
-    type ConfirmSessionRequestRequest,
-    ConfirmSessionRequestResponse,
-    type RejectSessionRequestRequest,
-    RejectSessionRequestResponse,
     WALLET_CONNECT_SERVICE_NAME,
     WalletConnectServiceMethod,
-    WalletConnectServiceEventMessage,
-    WalletConnectServiceEvent,
-    WCSessionParams,
 } from "./client";
 
 type LogLevel = "trace" | "debug" | "info" | "error" | "silent"
@@ -39,18 +23,6 @@ const WALLET_CONNECT_METADATA = {
     icons: [],
 }
 const WALLET_CONNECT_LOG_LEVEL = "silent"
-
-const CAIP_PREFIX = "aztec";
-const CAIP = {
-    chain(chainId: number) {
-        return `${CAIP_PREFIX}:${chainId}`;
-    },
-    address(chainId: number, address: string) {
-        return `${CAIP_PREFIX}:${chainId}:${address}`;
-    },
-};
-const AZTEC_METHODS = ["aztec_execute"]
-const AZTEC_EVENTS = ["accountsChanged"]
 
 export class WalletConnectService extends Service {
     private walletKit: InstanceType<typeof WalletKit> | null = null;
@@ -79,101 +51,6 @@ export class WalletConnectService extends Service {
                     }
 
                     return new ConnectByURIResponse(_request, false, 'Unknown error occurred');
-                }
-            }
-            case WalletConnectServiceMethod.ValidateProposal: {
-                const _request = request as ValidateProposalRequest;
-                try {
-                    const result = await this.validateProposal(_request.payload, new Map(_request.addressesEntries))
-                    
-                    return new ValidateProposalResponse(_request, result);
-                }
-
-                catch (error: unknown) {
-                    if (error instanceof Error) {
-                        return new ValidateProposalResponse(_request, undefined, error.message);
-                    }
-
-                    return new ValidateProposalResponse(_request, undefined, 'Unknown error occurred');
-                }
-            }
-            // case WalletConnectServiceMethod.ApproveDappSession: {
-            //     const _request = request as ApproveDappSessionRequest;
-            //     try {
-            //         const dappSession = await this.approveSession(_request.payload, _request.profileId, _request.chainIds, _request.accounts)
-            //         return new ApproveDappSessionResponse(_request, dappSession);
-            //     }
-
-            //     catch (error: unknown) {
-            //         if (error instanceof Error) {
-            //             return new ApproveDappSessionResponse(_request, undefined, error.message);
-            //         }
-
-            //         return new ApproveDappSessionResponse(_request, undefined, 'Unknown error occurred');
-            //     }
-            // }
-            case WalletConnectServiceMethod.RejectDappSession: {
-                const _request = request as RejectDappSessionRequest;
-                try {
-                    const result = await this.rejectSession(_request.payload)
-
-                    return new RejectDappSessionResponse(_request, result);
-                }
-
-                catch (error: unknown) {
-                    if (error instanceof Error) {
-                        return new RejectDappSessionResponse(_request, undefined, error.message);
-                    }
-
-                    return new RejectDappSessionResponse(_request, undefined, 'Unknown error occurred');
-                }
-            }
-            // case WalletConnectServiceMethod.DropDappSession: {
-            //     const _request = request as DropDappSessionRequest;
-            //     try {
-            //         await this.dropDappSession(_request.dappSession)
-
-            //         return new DropDappSessionResponse(_request, true);
-            //     }
-
-            //     catch (error: unknown) {
-            //         if (error instanceof Error) {
-            //             return new DropDappSessionResponse(_request, false, error.message);
-            //         }
-
-            //         return new DropDappSessionResponse(_request, false, 'Unknown error occurred');
-            //     }
-            // }
-            case WalletConnectServiceMethod.ConfirmSessionRequest: {
-                const _request = request as ConfirmSessionRequestRequest;
-                try {
-                    const txHash = await this.confirmSessionRequest(_request.networkId, _request.accountAddress, _request.dappName, _request.payload)
-
-                    return new ConfirmSessionRequestResponse(_request, txHash);
-                }
-
-                catch (error: unknown) {
-                    if (error instanceof Error) {
-                        return new ConfirmSessionRequestResponse(_request, undefined, error.message);
-                    }
-
-                    return new ConfirmSessionRequestResponse(_request, undefined, 'Unknown error occurred');
-                }
-            }
-            case WalletConnectServiceMethod.RejectSessionRequest: {
-                const _request = request as RejectSessionRequestRequest;
-                try {
-                    await this.rejectSessionRequest(_request.payload)
-
-                    return new RejectSessionRequestResponse(_request, true);
-                }
-
-                catch (error: unknown) {
-                    if (error instanceof Error) {
-                        return new RejectSessionRequestResponse(_request, false, error.message);
-                    }
-
-                    return new RejectSessionRequestResponse(_request, false, 'Unknown error occurred');
                 }
             }
 
@@ -256,17 +133,11 @@ export class WalletConnectService extends Service {
         }
 
         // type Event = "session_proposal" | "session_request" | "session_delete" | "proposal_expire" | "session_request_expire" | "session_authenticate";
-
         this.walletKit.on('session_proposal', async (payload) => this.handleSessionProposal(payload))
-
         this.walletKit.on('proposal_expire', async (payload) => this.handleProposalExpire(payload))
-
         this.walletKit.on('session_delete', async (payload) => this.handleSessionDelete(payload))
-
         this.walletKit.on('session_request', async (payload) => this.handleSessionRequest(payload));
-
         this.walletKit.on('session_request_expire', async (payload) => this.handleSessionRequestExpire(payload));
-
         this.walletKit.on('session_authenticate', async (payload) => this.handleSessionAuthenticate(payload))
 
         console.debug("WalletKit event handlers set up.");
@@ -282,35 +153,6 @@ export class WalletConnectService extends Service {
             await this.walletKit.pair({ uri })
 
             return true
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                throw new Error(error.message)
-            }
-
-            throw new Error("Unknown error occurred")
-        }
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async validateProposal(payload: any, addresses: Map<number, string>): Promise<any> {
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.")
-        }
-        
-        try {
-            const approvedNamespaces = buildApprovedNamespaces({
-                proposal: payload.params,
-                supportedNamespaces: {
-                    aztec: {
-                        chains: Array.from(addresses, ([chainId, _]) => CAIP.chain(chainId)),
-                        methods: AZTEC_METHODS,
-                        events: AZTEC_EVENTS,
-                        accounts: Array.from(addresses, ([chainId, address]) => CAIP.address(chainId, address)),
-                    },
-                },
-            })
-
-            return approvedNamespaces
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(error.message)
@@ -342,7 +184,7 @@ export class WalletConnectService extends Service {
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async approveSession(payload: any, namespaces: Namespaces, profileId: string): Promise<DappSession | undefined> {
+    private async approveSession(payload: any, namespaces: Namespaces, profileId: string): Promise<void> {
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.");
         }
@@ -366,11 +208,9 @@ export class WalletConnectService extends Service {
                 icon: icons.length > 0 ? icons[0] : "",
             }
             
-            const dappSession = await this.interaction.addDappSession(
+            await this.interaction.addDappSession(
                 dappMetadata, approvedNamespaces, session.expiry, profileId, session.topic, true
             )
-            
-            return dappSession
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(error.message)
@@ -406,63 +246,30 @@ export class WalletConnectService extends Service {
         }
 
         try {
-            const result = await this.interaction.dappSessionRequest(payload)
-            console.log('handleSessionRequest result', result);
-            
-            try {
-                const { networkId, accountAddress, dappName } = result
-                console.log('handleSessionRequest networkId', networkId);
-                console.log('handleSessionRequest accountAddress', accountAddress);
-                console.log('handleSessionRequest dappName', dappName);
-                if (networkId && accountAddress && dappName ) {
+            const { networkId, accountAddress, dappName } = await this.interaction.dappSessionRequest(payload)
+            if (networkId && accountAddress && dappName ) {
 
-                    try {
-                        const txHash = await this.interaction.executeDappSessionRequest(networkId, accountAddress, dappName, payload.params?.request?.params)
+                try {
+                    const txHash = await this.interaction.executeDappSessionRequest(networkId, accountAddress, dappName, payload.params?.request?.params)
 
-                        if (txHash) {
-                            const response = {
-                                id: payload.id,
-                                result: txHash,
-                                jsonrpc: '2.0',
-                            }
-                            
-                            this.walletKit.respondSessionRequest({ topic: payload.topic, response })
+                    if (txHash) {
+                        const response = {
+                            id: payload.id,
+                            result: txHash,
+                            jsonrpc: '2.0',
                         }
-                    } catch (err) {
-                        console.error(err);
-                        this.rejectSessionRequest(payload)
+                        
+                        this.walletKit.respondSessionRequest({ topic: payload.topic, response })
                     }
+                } catch (err) {
+                    console.error(err);
+                    this.rejectSessionRequest(payload)
                 }
-            } catch (err) {
-                console.error(err);
+            } else {
                 this.rejectSessionRequest(payload)
             }
         } catch (err) {
             this.rejectSessionRequest(payload)
-        }
-        // this.interaction.dappSessionRequest(payload)
-    }
-    
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async confirmSessionRequest(networkId: string, accountAddress: string, dappName: string, payload: any): Promise<string> {
-        try {
-            const txHash = await this.interaction.executeDappSessionRequest(networkId, accountAddress, dappName, payload.params?.request?.params)
-
-            const response = {
-                id: payload.id,
-                result: txHash,
-                jsonrpc: '2.0',
-            }
-
-            await this.walletKit?.respondSessionRequest({ topic: payload.topic, response })
-    
-            return txHash
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                throw new Error(error.message);
-            }
-
-            throw new Error("Unknown error occurred");
         }
     }
     
@@ -487,7 +294,6 @@ export class WalletConnectService extends Service {
         console.debug('Session request expire received', payload);
         
         this.interaction.requestExpired(payload)
-        // this.emit(new WalletConnectServiceEventMessage(WalletConnectServiceEvent.RequestExpire, payload));
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -516,36 +322,6 @@ export class WalletConnectService extends Service {
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async _buildDappSessionParams(session: any): Promise<WCSessionParams> {
-        const chains: string[] = [];
-        const methods: string[] = [];
-        const events: string[] = [];
-        
-        const namespaces = session.namespaces
-        for (const key in namespaces) {
-            const ns = namespaces[key];
-            if (ns.chains) {
-                chains.push(...ns.chains);
-            }
-            if (ns.methods) {
-                methods.push(...ns.methods);
-            }
-            if (ns.events) {
-                events.push(...ns.events);
-            }
-        }
-    
-        return new WCSessionParams(
-            session.topic,
-            session.expiry,
-            [...new Set(chains)],
-            [...new Set(methods)],
-            [...new Set(events)]
-        );
-    }
-
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async handleSessionAuthenticate(payload: any): Promise<any> {
         console.debug('Session authenticate received', payload);
 
@@ -564,7 +340,6 @@ export class WalletConnectService extends Service {
         //     },
         // });
 
-        // console.log('namespaces', namespaces);
         // // return [await this._addNetwork("Sandbox", "https://rpc.sandbox.azguardwallet.io", 31337)];
         
 

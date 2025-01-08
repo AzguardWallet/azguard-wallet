@@ -1,9 +1,8 @@
 import type { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
 import { InteractionServiceEvent, type InteractionServiceEventMessage } from "./events";
-import type { GetDappSessionParams, DappSession, InteractionRequest, Namespaces } from "./models";
+import type { DappSession, InteractionRequest, Namespaces } from "./models";
 import {
-    AddDappSessionRequest,
     DeleteInteractionRequestRequest,
     DropDappSessionRequest,
     GetDappSessionRequest,
@@ -13,7 +12,6 @@ import {
     RejectInteractionRequestRequest,
     BuildApprovedNamespacesRequest,
 } from "./methods";
-import type { Account } from "../../account/client";
 
 export * from './events';
 export * from './methods';
@@ -110,11 +108,21 @@ export class InteractionServiceClient extends ServiceClient {
         return this.request(new GetInteractionRequestRequest(id));
     }
 
+    /**
+     * Approve an interaction request with the specified id and any result.
+     * @param id Interaction request id.
+     * @param result Any value or object passed as a result of an approved request.
+     */
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public approveInteractionRequest(id: string, namespaces: Namespaces, profileId: string): Promise<any> {
-        return this.request(new ApproveInteractionRequestRequest(id, namespaces, profileId));
+    public approveInteractionRequest(id: string, result: any): Promise<void> {
+        return this.request(new ApproveInteractionRequestRequest(id, result));
     }
 
+    /**
+     * Approve an interaction request with the specified id and any result.
+     * @param id Interaction request id.
+     * @param reason Any string value as a rejection reason.
+     */
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public rejectInteractionRequest(id: string, reason?: string): Promise<any> {
         return this.request(new RejectInteractionRequestRequest(id, reason));
@@ -129,7 +137,13 @@ export class InteractionServiceClient extends ServiceClient {
         return this.request(new DeleteInteractionRequestRequest(id));
     }
 
-    public buildApprovedNamespaces(requiredNamespaces: Namespaces, supportedNamespaces: Namespaces, optionalNamespaces?: Namespaces): Promise<Namespaces> {
-        return this.request(new BuildApprovedNamespacesRequest(requiredNamespaces, supportedNamespaces, optionalNamespaces));
+    /**
+     * Delete the interaction request with the specified id.
+     * @param supportedNamespaces Namespaces supported by wallet.
+     * @param requiredNamespaces Required namespaces for the dApp.
+     * @param optionalNamespaces Optional namespaces for the dApp.
+     */
+    public buildApprovedNamespaces(supportedNamespaces: Namespaces, requiredNamespaces: Namespaces, optionalNamespaces?: Namespaces): Promise<Namespaces> {
+        return this.request(new BuildApprovedNamespacesRequest(supportedNamespaces, requiredNamespaces, optionalNamespaces));
     }
 }

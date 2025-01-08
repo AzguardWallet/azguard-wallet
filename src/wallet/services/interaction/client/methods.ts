@@ -1,6 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import {
-    type GetDappSessionParams,
     type DappMetadata,
     type DappSession,
     type InteractionRequest,
@@ -16,7 +15,6 @@ export enum InteractionServiceMethod {
     AddDappSession,
     DropDappSession,
     GetInteractionRequest,
-    GetInteractionPromise,
     ApproveInteractionRequest,
     RejectInteractionRequest,
     DeleteInteractionRequest,

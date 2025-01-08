@@ -6,7 +6,6 @@ export class InteractionRequest {
      * Creates Interaction request.
      * @param id Randomly generated id.
      * @param payload Request payload.
-     * @param result Request result.
      */
     constructor(
         public readonly id: string,
@@ -23,11 +22,6 @@ export class InteractionRequest {
 /**
  * Dapp session info.
  */
-export type GetDappSessionParams = {
-    id?: string,
-    topic?: string,
-}
-
 export type Namespace = {
     chains?: string[],
     methods: string[],
@@ -47,7 +41,7 @@ export type DappMetadata = {
 export class DappSession {
     /**
      * Creates Dapp session.
-     * @param id Randomly generated id or WalletConnect topic.
+     * @param id Randomly generated id or WalletConnect session topic.
      * @param dappMetadata Dapp metadata.
      * @param namespaces Session permissions.
      * @param expiry Session expiration timestamp.

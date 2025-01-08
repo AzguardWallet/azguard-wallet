@@ -97,7 +97,7 @@ export class InteractionService extends Service {
             case InteractionServiceMethod.BuildApprovedNamespaces: {
                 const _request = request as BuildApprovedNamespacesRequest;
                 try {
-                    const approvedNamespaces = await this.buildApprovedNamespaces(_request.requiredNamespaces, _request.supportedNamespaces, _request.optionaldNamespaces);
+                    const approvedNamespaces = await this.buildApprovedNamespaces(_request.supportedNamespaces, _request.requiredNamespaces, _request.optionaldNamespaces);
                     return new BuildApprovedNamespacesResponse(_request, approvedNamespaces);
                 }
                 catch (error: unknown) {
@@ -163,10 +163,10 @@ export class InteractionService extends Service {
                 }
                 catch (error: unknown) {
                     if (error instanceof Error) {
-                        return new RejectInteractionRequestResponse(_request, undefined, error.message);
+                        return new ApproveInteractionRequestResponse(_request, undefined, error.message);
                     }
 
-                    return new RejectInteractionRequestResponse(_request, undefined, 'Unknown error occurred');
+                    return new ApproveInteractionRequestResponse(_request, undefined, 'Unknown error occurred');
                 }
             }
             case InteractionServiceMethod.RejectInteractionRequest: {
@@ -410,12 +410,8 @@ export class InteractionService extends Service {
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async requestExpired(payload: any): Promise<void> {
-        console.log('requestExpired');
-        
         for (const ir of this.interactionRequests) {
             if (ir[1].payload?.id === payload.id) {
-                console.log('requestExpired emit');
-                
                 this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.RequestExpired, new InteractionRequest(ir[0], ir[1].payload)))
                 break
             }

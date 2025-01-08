@@ -69,10 +69,8 @@ async function fetchAccount(address) {
 const init = async () => {
 	try {
 		interactionRequest.value = await interactionServiceClient.getInteractionRequest(requestId)
-		console.log('interactionRequest.value', interactionRequest.value);
-		
-		payload.value = interactionRequest.value?.payload
 
+		payload.value = interactionRequest.value?.payload
 		if (!payload.value) {
 			fillError("Failed to load operation payload. Try sending request again.")
 			return
@@ -85,27 +83,17 @@ const init = async () => {
 		}
 
 		const chainId = payload.value.params?.chainId?.split(':')?.pop()
-		console.log('chainId', chainId);
-		
 		networks.value = await networkServiceClient.getNetworks(Number(chainId))
 		if (!networks.value.length) {
 			fillError(`Not supported network ${payload.value.params.chainId}.`)
 			return
 		}
-
 		cacheStore.selectedNetwork = networks.value[0]
 		cacheStore.proposedNetworks = networks.value
 
 		const accounts = Object.values(dappSession.value?.namespaces).flatMap(v => v.accounts).map(acc => acc.split(":").pop())
-		console.log('accounts', accounts);
-		console.log('payload.value.params?.request?.account', payload.value.params?.request?.account);
-		console.log('payload.value.params?.chainId', payload.value.params?.chainId);
-		
 		const address = accounts.find(acc => acc === payload.value.params?.request?.account)
 		await fetchAccount(address)
-		
-		console.log('account.value', account.value);
-		
 		if (!account.value) {
 			fillError("Requested account not found. Try reconnecting dApp.")
 			return
