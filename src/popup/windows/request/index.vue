@@ -21,6 +21,7 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
+const route = useRoute()
 const router = useRouter()
 const params = new URLSearchParams(window.location.search)
 const requestId = params.get('requestId')
@@ -129,6 +130,8 @@ const handleConfirm = async () => {
 }
 
 const handleReject = async () => {
+	if (!appStore.isLogined) return
+
 	isActionCalled.value = true
 
 	interactionServiceClient.rejectInteractionRequest(interactionRequest.value?.id)
@@ -154,7 +157,7 @@ const interactionServiceClient = new InteractionServiceClient(undefined, undefin
 onBeforeMount(async () => {
 	if (!appStore.isLogined) {
 		setTimeout(() => {
-			appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
+			appStore.pageAwaitingAuth = `/windows/request?requestId=${requestId}`
 			router.push({
 				path: "/popup/auth",
 			});
@@ -164,6 +167,12 @@ onBeforeMount(async () => {
 
 onMounted( async () => {
 	await init()
+
+	// chrome.runtime.sendMessage({
+	// 	type: "createNotification",
+	// 	title: "Azguard Wallet",
+	// 	message: "asdqwe123sfdkxvsjdfh2uhew7hds87",
+	// });
 
 	window.addEventListener("beforeunload", handleReject)
 })

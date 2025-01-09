@@ -16,6 +16,19 @@ chrome.runtime.onInstalled.addListener(async (opt) => {
 	// }
 })
 
+chrome.runtime.onMessage.addListener((message) => {
+	if (message.type === "createNotification") {
+		chrome.notifications.create({
+			type: "basic",
+			iconUrl: "src/assets/logo.png",
+			title: message.title,
+			message: message.message
+		})
+	}
+
+	return undefined
+})
+
 chrome.runtime.setUninstallURL("https://azguardwallet.io/forms/uninstall")
 
 self.onerror = (message, source, lineno, colno, error) => {
