@@ -1,3 +1,5 @@
+import type { IAction } from "@/wallet/services/execution/client/models";
+
 /**
  * Interaction request info.
  */
@@ -15,7 +17,6 @@ export class InteractionRequest {
         public readonly resolve?: (value: any) => void,
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         public readonly reject?: (value: any) => void,
-        // public readonly result?: [(result: any) => void, (error: string) => void],
     ) {}
 }
 
@@ -53,5 +54,38 @@ export class DappSession {
         public readonly namespaces: Namespaces,
         public readonly expiry: number,
         public readonly profileId: string,
+    ) {}
+}
+
+/**
+ * Dapp requests
+ */
+export class DappSessionProposal {
+    /**
+     * Dapp session creation request.
+     * @param requiredNamespaces Required dapp session parameters.
+     * @param dappMetadata Dapp metadata.
+     * @param optionalNamespaces Optional dapp session parameters.
+     */
+    constructor(
+        public readonly requiredNamespaces: Namespaces,
+        public readonly dappMetadata: DappMetadata,
+        public readonly optionalNamespaces?: Namespaces,
+    ) {}
+}
+
+export class DappSessionRequest {
+    /**
+     * Request for payload execution.
+     * @param sessionId Existing dapp session id.
+     * @param accountAddress Address for execution.
+     * @param chainId Network for execution (CAIP format).
+     * @param actions Actions to be executed.
+     */
+    constructor(
+        public readonly sessionId: string,
+        public readonly accountAddress: string,
+        public readonly chainId: string,
+        public readonly actions: IAction[],
     ) {}
 }

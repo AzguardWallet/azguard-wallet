@@ -45,7 +45,7 @@ export class InteractionServiceClient extends ServiceClient {
         switch (message.event) {
             case InteractionServiceEvent.DappSessionAdded:
                 if (this.onDappSessionAdded) {
-                    const dappSession = (message as InteractionServiceEventMessage).dappSession
+                    const dappSession = (message as InteractionServiceEventMessage).dappSession;
                     if (dappSession) {
                         try {this.onDappSessionAdded(dappSession)}
                         catch {}
@@ -54,7 +54,7 @@ export class InteractionServiceClient extends ServiceClient {
                 break;
             case InteractionServiceEvent.DappSessionDroped:
                 if (this.onDappSessionDroped) {
-                    const dappSession = (message as InteractionServiceEventMessage).dappSession
+                    const dappSession = (message as InteractionServiceEventMessage).dappSession;
                     if (dappSession) {
                         try {this.onDappSessionDroped(dappSession)}
                         catch {}
@@ -63,7 +63,7 @@ export class InteractionServiceClient extends ServiceClient {
                 break;
             case InteractionServiceEvent.RequestExpired:
                 if (this.onRequestExpired) {
-                    const interactionRequest = (message as InteractionServiceEventMessage).interactionRequest
+                    const interactionRequest = (message as InteractionServiceEventMessage).interactionRequest;
                     if (interactionRequest) {
                         try {this.onRequestExpired(interactionRequest)}
                         catch {}
@@ -80,7 +80,7 @@ export class InteractionServiceClient extends ServiceClient {
      * Returns a list of active dapp sessions.
      */
     public getDappSessions(profileId: string): Promise<DappSession[]> {
-        return this.request(new GetDappSessionsRequest(profileId))
+        return this.request(new GetDappSessionsRequest(profileId));
     }
 
     /**
@@ -88,7 +88,7 @@ export class InteractionServiceClient extends ServiceClient {
      * @param id Dapp session id.
      */
     public getDappSession(id: string): Promise<DappSession | undefined> {
-        return this.request(new GetDappSessionRequest(id))
+        return this.request(new GetDappSessionRequest(id));
     }
     
     /**

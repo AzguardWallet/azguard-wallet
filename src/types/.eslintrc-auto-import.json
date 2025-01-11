@@ -318,6 +318,7 @@
     "isPrefersDarkScheme": true,
     "CAIP": true,
     "AZTEC_EVENTS": true,
-    "AZTEC_METHODS": true
+    "AZTEC_METHODS": true,
+    "createNotification": true
   }
 }

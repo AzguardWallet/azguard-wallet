@@ -117,8 +117,8 @@ const validateProposal = async () => {
 	if (!accounts.value.length) return
 
 	try {
-		const requiredNamespaces = interactionRequest.value.payload.params.requiredNamespaces
-		const optionalNamespaces = interactionRequest.value.payload.params.optionalNamespaces
+		const requiredNamespaces = interactionRequest.value.payload.requiredNamespaces
+		const optionalNamespaces = interactionRequest.value.payload.optionalNamespaces
 		const supportedNamespaces = {
 			aztec: {
 				chains: [...new Set(accounts.value.map(acc => CAIP.chain(acc.chainId)))],
@@ -164,10 +164,10 @@ const init = async () => {
 	try {
 		interactionRequest.value = await interactionServiceClient.getInteractionRequest(requestId)
 		requiredChains.value =
-			Object.values(interactionRequest.value.payload.params.requiredNamespaces)
+			Object.values(interactionRequest.value.payload.requiredNamespaces)
 			.flatMap(n => n.chains)
 		
-		dapp.value = interactionRequest.value.payload.params.proposer.metadata
+		dapp.value = interactionRequest.value.payload.dappMetadata
 	} catch (error) {
 		fillError("Proposal pre-processing error.", error)
 	}
@@ -314,7 +314,7 @@ onUnmounted(() => {
 					gap="6"
 					:class="$style.avatar"
 				>
-					<img v-if="dapp?.icons[0]" width="48" height="48" :src="dapp?.icons[0]" />
+					<img v-if="dapp?.icon" width="48" height="48" :src="dapp?.icon" />
 
 					<Icon
 						v-else

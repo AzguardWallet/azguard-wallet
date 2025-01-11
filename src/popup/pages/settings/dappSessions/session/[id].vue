@@ -8,6 +8,7 @@
 
 <script setup>
 /** Vendor */
+import { DateTime } from "luxon"
 import { onMounted } from "vue"
 
 /** Components */
@@ -47,8 +48,6 @@ const fetchSession = async () => {
 		router.push('/popup/settings/dappSessions')
 		return
 	}
-
-
 
 	session.value.imageLoaded = !!session.value.dappMetadata.icon
 }
@@ -121,121 +120,129 @@ onMounted( async () => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
+	<Flex direction="column" justify="between" :class="$style.wrapper">
+		<Flex direction="column" gap="20">
+			<Flex align="center" gap="8">
+				<RouterLink to="/popup/settings">
+					<Text
+						size="13"
+						weight="600"
+						color="tertiary"
+						style="line-height: 16px"
+					>
+						Settings
+					</Text>
+				</RouterLink>
+				<Text color="support">•</Text>
+				<RouterLink to="/popup/settings/dappSessions">
+					<Text
+						size="13"
+						weight="600"
+						color="tertiary"
+						style="line-height: 16px"
+					>
+						Dapp Sessions
+					</Text>
+				</RouterLink>
+				<Text color="support">•</Text>
 				<Text
 					size="13"
 					weight="600"
 					color="tertiary"
 					style="line-height: 16px"
 				>
-					Settings
+					{{ session?.dappMetadata.name }}
 				</Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<RouterLink to="/popup/settings/dappSessions">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Dapp Sessions
-				</Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text
-				size="13"
-				weight="600"
-				color="tertiary"
-				style="line-height: 16px"
-			>
-				{{ session?.dappMetadata.name }}
-			</Text>
-		</Flex>
-
-		<Flex direction="column" justify="between" :class="$style.session">
-			<Flex justify="between">
-				<Flex align="start" justify="start">
-					<img
-						v-if="session?.imageLoaded"
-						:src="session?.dappMetadata.icon"
-						@error="onImageError()"
-						width="48"
-						height="48"
-					/>
-
-					<Icon
-						v-else
-						name="dapp"
-						size="48"
-						color="blue"
-					/>
-				</Flex>
-
-				<Button @click="handleDropSession" type="secondary" size="mini">Disconnect</Button>
 			</Flex>
 
-			<Flex justify="between" align="end">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">
-						{{ session?.dappMetadata.name }}
-					</Text>
-					<Text size="12" weight="600" color="tertiary" selectable>
-						{{ session?.dappMetadata.url }}
-					</Text>
+			<Flex direction="column" justify="between" :class="$style.session">
+				<Flex justify="between">
+					<Flex align="start" justify="start">
+						<img
+							v-if="session?.imageLoaded"
+							:src="session?.dappMetadata.icon"
+							@error="onImageError()"
+							width="48"
+							height="48"
+						/>
+
+						<Icon
+							v-else
+							name="dapp"
+							size="48"
+							color="blue"
+						/>
+					</Flex>
+
+					<Button @click="handleDropSession" type="secondary" size="mini">Disconnect</Button>
 				</Flex>
-			</Flex>
-		</Flex>
 
-		<Flex direction="column" align="start" justify="start" gap="8" :class="$style.accounts_section">
-			<Text size="15" weight="600" color="primary">Shared accounts:</Text>
-
-			<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-				<Flex v-for="acc in accounts" gap="10" :class="$style.account">
-					<Flex direction="column" gap="4" wide>
-						<Flex align="center" justify="between" gap="12">
-							<Text size="14" weight="600" color="primary">
-								{{ acc.name }}
-							</Text>
-
-							<Tooltip>
-								<NetworkBadge :chainId="acc.chainId" />
-
-								<template #content>
-									<Text size="13" color="secondary">
-										{{ `aztec:${acc.chainId}` }}
-									</Text>
-								</template>
-							</Tooltip>
-						</Flex>
-
-						<Text @click="handleCopyAddress(acc.address)" size="13" weight="600" color="tertiary" class="copyable">
-							{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
+				<Flex justify="between" align="end">
+					<Flex direction="column" gap="6">
+						<Text size="13" weight="600" color="primary">
+							{{ session?.dappMetadata.name }}
+						</Text>
+						<Text size="12" weight="600" color="tertiary" selectable>
+							{{ session?.dappMetadata.url }}
 						</Text>
 					</Flex>
 				</Flex>
 			</Flex>
+
+			<Flex direction="column" align="start" justify="start" gap="8" :class="$style.accounts_section">
+				<Text size="15" weight="600" color="primary">Shared accounts:</Text>
+
+				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
+					<Flex v-for="acc in accounts" gap="10" :class="$style.account">
+						<Flex direction="column" gap="4" wide>
+							<Flex align="center" justify="between" gap="12">
+								<Text size="14" weight="600" color="primary">
+									{{ acc.name }}
+								</Text>
+
+								<Tooltip>
+									<NetworkBadge :chainId="acc.chainId" />
+
+									<template #content>
+										<Text size="13" color="secondary">
+											{{ `aztec:${acc.chainId}` }}
+										</Text>
+									</template>
+								</Tooltip>
+							</Flex>
+
+							<Text @click="handleCopyAddress(acc.address)" size="13" weight="600" color="tertiary" class="copyable">
+								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
+							</Text>
+						</Flex>
+					</Flex>
+				</Flex>
+			</Flex>
+
+			<Flex direction="column" align="start" justify="start" gap="8">
+				<Text size="15" weight="600" color="primary">Session allowances:</Text>
+
+				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
+					<Text size="13" color="secondary">Networks:</Text>
+					<Text size="13" color="secondary"> {{ chains.map(ch => getNetworkType(Number(ch.split(':').pop()))).join(', ') }} </Text>
+				</Flex>
+				
+				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
+					<Text size="13" color="secondary">Methods:</Text>
+					<Text size="13" color="secondary"> {{ methods.join(', ') }} </Text>
+				</Flex>
+
+				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
+					<Text size="13" color="secondary">Events:</Text>
+					<Text size="13" color="secondary"> {{ events.join(', ') }} </Text>
+				</Flex>
+			</Flex>
 		</Flex>
 
-		<Flex direction="column" align="start" justify="start" gap="8">
-			<Text size="15" weight="600" color="primary">Session allowances:</Text>
-
-			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
-				<Text size="13" color="secondary">Networks:</Text>
-				<Text size="13" color="secondary"> {{ chains.map(ch => getNetworkType(Number(ch.split(':').pop()))).join(', ') }} </Text>
-			</Flex>
-			
-			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
-				<Text size="13" color="secondary">Methods:</Text>
-				<Text size="13" color="secondary"> {{ methods.join(', ') }} </Text>
-			</Flex>
-
-			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
-				<Text size="13" color="secondary">Events:</Text>
-				<Text size="13" color="secondary"> {{ events.join(', ') }} </Text>
-			</Flex>
+		<Flex align="end" justify="end">
+			<Text size="12" weight="500" color="tertiary">
+				{{ DateTime.fromSeconds(session?.expiry / 1_000).toFormat("'Expires' LLL dd 'at' HH:mm") }}
+			</Text>
 		</Flex>
 
 		<Navigation />
@@ -252,7 +259,7 @@ onMounted( async () => {
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
 
-	padding: 20px 24px 24px 24px;
+	padding: 20px 24px 68px 24px;
 }
 
 .session {

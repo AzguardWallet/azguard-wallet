@@ -13,16 +13,16 @@ import {
     WalletConnectServiceMethod,
 } from "./client";
 
-type LogLevel = "trace" | "debug" | "info" | "error" | "silent"
+type LogLevel = "trace" | "debug" | "info" | "error" | "silent";
 
-const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783"
+const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783";
 const WALLET_CONNECT_METADATA = {
     name: "Azguard Wallet",
     description: "Azguard Wallet Description",
     url: "https://azguardwallet.io",
     icons: [],
 }
-const WALLET_CONNECT_LOG_LEVEL = "silent"
+const WALLET_CONNECT_LOG_LEVEL = "silent";
 
 export class WalletConnectService extends Service {
     private walletKit: InstanceType<typeof WalletKit> | null = null;
@@ -31,8 +31,8 @@ export class WalletConnectService extends Service {
         private readonly interaction: InteractionService,
         emit: (event: EventMessage) => void
     ) {
-        super(WALLET_CONNECT_SERVICE_NAME, emit)
-        this.init()
+        super(WALLET_CONNECT_SERVICE_NAME, emit);
+        this.init();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -40,7 +40,7 @@ export class WalletConnectService extends Service {
             case WalletConnectServiceMethod.ConnectByURI: {
                 const _request = request as ConnectByURIRequest;
                 try {
-                    await this.connectByURI(_request.uri)
+                    await this.connectByURI(_request.uri);
                     
                     return new ConnectByURIResponse(_request, true);
                 }
@@ -68,44 +68,44 @@ export class WalletConnectService extends Service {
                 const core = new Core({
                     projectId: WALLET_CONNECT_PROJECT_ID,
                     logger: WALLET_CONNECT_LOG_LEVEL,
-                })
+                });
 
-                this.configureLoggers(core, WALLET_CONNECT_LOG_LEVEL)
+                this.configureLoggers(core, WALLET_CONNECT_LOG_LEVEL);
         
                 this.walletKit = await WalletKit.init({
                     core,
                     metadata: WALLET_CONNECT_METADATA,
-                })
+                });
         
-                this.setupWalletKitEvents()
+                this.setupWalletKitEvents();
 
                 console.debug("Wallet connect service initialized");
 
-                this.interaction.onDappSessionDroped.push(this.dropDappSession)
+                this.interaction.onDappSessionDroped.push(this.dropDappSession);
 
-                break
+                break;
             } catch (error) {
                 console.error("Failed to initialize wallet connect service. Retry...");
-                await sleep(1000)
+                await sleep(1000);
             }
         }
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     private createLogger(level: LogLevel): any {
-        const noop = () => {}
+        const noop = () => {};
         return {
             error: level !== 'silent' ? console.error : noop,
             warn: level !== 'silent' ? console.warn : noop,
             debug: ['trace', 'debug', 'info'].includes(level) ? console.debug : noop,
             info: ['trace', 'debug', 'info'].includes(level) ? console.info : noop,
             trace: level === 'trace' ? console.trace : noop,
-        }
+        };
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     private configureLoggers = (core: any, level: LogLevel) => {
-        const loggerConfig = this.createLogger(level)
+        const loggerConfig = this.createLogger(level);
         const paths = [
             "logger",
             "history.logger",
@@ -120,10 +120,10 @@ export class WalletConnectService extends Service {
     
         // biome-ignore lint/complexity/noForEach: <explanation>
         paths.forEach(path => {
-            const keys = path.split('.')
-            const target = keys.reduce((obj, key) => obj[key], core)
-            Object.assign(target, loggerConfig)
-        })
+            const keys = path.split('.');
+            const target = keys.reduce((obj, key) => obj[key], core);
+            Object.assign(target, loggerConfig);
+        });
     }
     
 
@@ -133,12 +133,12 @@ export class WalletConnectService extends Service {
         }
 
         // type Event = "session_proposal" | "session_request" | "session_delete" | "proposal_expire" | "session_request_expire" | "session_authenticate";
-        this.walletKit.on('session_proposal', async (payload) => this.handleSessionProposal(payload))
-        this.walletKit.on('proposal_expire', async (payload) => this.handleProposalExpire(payload))
-        this.walletKit.on('session_delete', async (payload) => this.handleSessionDelete(payload))
+        this.walletKit.on('session_proposal', async (payload) => this.handleSessionProposal(payload));
+        this.walletKit.on('proposal_expire', async (payload) => this.handleProposalExpire(payload));
+        this.walletKit.on('session_delete', async (payload) => this.handleSessionDelete(payload));
         this.walletKit.on('session_request', async (payload) => this.handleSessionRequest(payload));
         this.walletKit.on('session_request_expire', async (payload) => this.handleSessionRequestExpire(payload));
-        this.walletKit.on('session_authenticate', async (payload) => this.handleSessionAuthenticate(payload))
+        this.walletKit.on('session_authenticate', async (payload) => this.handleSessionAuthenticate(payload));
 
         console.debug("WalletKit event handlers set up.");
     }
@@ -146,19 +146,19 @@ export class WalletConnectService extends Service {
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async connectByURI(uri: string): Promise<any> {
         if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.")
+            throw new Error("WalletKit is not initialized.");
         }
 
         try {
-            await this.walletKit.pair({ uri })
+            await this.walletKit.pair({ uri });
 
-            return true
+            return true;
         } catch (error: unknown) {
             if (error instanceof Error) {
-                throw new Error(error.message)
+                throw new Error(error.message);
             }
 
-            throw new Error("Unknown error occurred")
+            throw new Error("Unknown error occurred");
         }
     }
 
@@ -171,15 +171,26 @@ export class WalletConnectService extends Service {
         }
 
         try {
-            const { namespaces, profileId } = await this.interaction.dappSessionProposal(payload)
+            const { icons, ...metadata } = payload.params.proposer.metadata;
+            const dappMetadata = {
+                ...metadata,
+                icon: icons.length > 0 ? icons[0] : "",
+            };
+            const dappSessionPayload = {
+                requiredNamespaces: payload.params.requiredNamespaces,
+                dappMetadata: dappMetadata,
+                optionalNamespaces: payload.params.requiredNamespaces,
+            };
+            const { namespaces, profileId } = await this.interaction.dappSessionProposal(dappSessionPayload);
             try {
-                if (namespaces && profileId)
-                this.approveSession(payload, namespaces, profileId)
+                if (namespaces && profileId) {
+                    this.approveSession(payload, namespaces, profileId);
+                }                
             } catch (err) {
                 console.error(err);
             }
         } catch (err) {
-            this.rejectSession(payload)
+            this.rejectSession(payload);
         }
     }
 
@@ -192,17 +203,17 @@ export class WalletConnectService extends Service {
         const approvedNamespaces = buildApprovedNamespaces({
             proposal: payload.params,
             supportedNamespaces: namespaces as Record<string, { chains: string[]; methods: string[]; events: string[]; accounts: string[]; }>,
-        })
+        });
 
         try {
             const session = await this.walletKit.approveSession({
                 id: payload.id,
                 namespaces: approvedNamespaces,
-            })
+            });
     
-            if (!session) return undefined
+            if (!session) return undefined;
             
-            const { icons, ...metadata } = session.peer.metadata
+            const { icons, ...metadata } = session.peer.metadata;
             const dappMetadata = {
                 ...metadata,
                 icon: icons.length > 0 ? icons[0] : "",
@@ -210,13 +221,13 @@ export class WalletConnectService extends Service {
             
             await this.interaction.addDappSession(
                 dappMetadata, approvedNamespaces, session.expiry, profileId, session.topic, true
-            )
+            );
         } catch (error: unknown) {
             if (error instanceof Error) {
-                throw new Error(error.message)
+                throw new Error(error.message);
             }
 
-            throw new Error("Unknown error occurred")
+            throw new Error("Unknown error occurred");
         }
     }
 
@@ -225,16 +236,16 @@ export class WalletConnectService extends Service {
         await this.walletKit?.rejectSession({
             id: payload.id,
             reason: getSdkError("USER_REJECTED"),
-        })
+        });
 
-        return true
+        return true;
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async handleProposalExpire(payload: any): Promise<any> {
         console.debug('Session proposal expire received', payload);
 
-        this.interaction.requestExpired(payload)
+        this.interaction.requestExpired(payload);
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -246,30 +257,35 @@ export class WalletConnectService extends Service {
         }
 
         try {
-            const { networkId, accountAddress, dappName } = await this.interaction.dappSessionRequest(payload)
+            const dappSessionRequestPayload = {
+                sessionId: payload.topic,
+                accountAddress: payload.params?.request?.account,
+                chainId: payload.params.chainId,
+                actions: payload.params?.request?.params,
+            }
+            const { networkId, accountAddress, dappName } = await this.interaction.dappSessionRequest(dappSessionRequestPayload)
             if (networkId && accountAddress && dappName ) {
-
                 try {
-                    const txHash = await this.interaction.executeDappSessionRequest(networkId, accountAddress, dappName, payload.params?.request?.params)
+                    const txHash = await this.interaction.executeDappSessionRequest(networkId, accountAddress, dappName, payload.params?.request?.params);
 
                     if (txHash) {
                         const response = {
                             id: payload.id,
                             result: txHash,
                             jsonrpc: '2.0',
-                        }
+                        };
                         
-                        this.walletKit.respondSessionRequest({ topic: payload.topic, response })
+                        this.walletKit.respondSessionRequest({ topic: payload.topic, response });
                     }
                 } catch (err) {
                     console.error(err);
-                    this.rejectSessionRequest(payload)
+                    this.rejectSessionRequest(payload);
                 }
             } else {
-                this.rejectSessionRequest(payload)
+                this.rejectSessionRequest(payload);
             }
         } catch (err) {
-            this.rejectSessionRequest(payload)
+            this.rejectSessionRequest(payload);
         }
     }
     
@@ -282,25 +298,25 @@ export class WalletConnectService extends Service {
                 code: 5000,
                 message: 'User rejected.',
             },
-        }
+        };
 
-        await this.walletKit?.respondSessionRequest({ topic: payload.topic, response })
+        await this.walletKit?.respondSessionRequest({ topic: payload.topic, response });
 
-        return true
+        return true;
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async handleSessionRequestExpire(payload: any): Promise<any> {
         console.debug('Session request expire received', payload);
         
-        this.interaction.requestExpired(payload)
+        this.interaction.requestExpired(payload);
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async handleSessionDelete(payload: any): Promise<any> {
         console.debug('Session delete received', payload);
 
-        this.interaction.dropDappSession(payload.topic, true)
+        this.interaction.dropDappSession(payload.topic, true);
     }
     
     public readonly dropDappSession = async (dappSession: DappSession) => {
@@ -309,12 +325,12 @@ export class WalletConnectService extends Service {
         }
 
         try {
-            const sessions = this.walletKit.getActiveSessions()
+            const sessions = this.walletKit.getActiveSessions();
             if (Object.keys(sessions).includes(dappSession.id)) {
                 this.walletKit.disconnectSession({
                     topic: dappSession.id,
                     reason: getSdkError('USER_DISCONNECTED')
-                })
+                });
             }
         } catch (err) {
 

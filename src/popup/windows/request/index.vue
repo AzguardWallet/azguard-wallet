@@ -77,23 +77,23 @@ const init = async () => {
 			return
 		}
 
-		dappSession.value = await interactionServiceClient.getDappSession(payload.value.topic)
+		dappSession.value = await interactionServiceClient.getDappSession(payload.value.sessionId)
 		if (!dappSession.value) {
 			fillError("No active session found. Try reconnecting dApp.")
 			return
 		}
 
-		const chainId = payload.value.params?.chainId?.split(':')?.pop()
+		const chainId = payload.value.chainId?.split(':')?.pop()
 		networks.value = await networkServiceClient.getNetworks(Number(chainId))
 		if (!networks.value.length) {
-			fillError(`Not supported network ${payload.value.params.chainId}.`)
+			fillError(`Not supported network ${payload.value.chainId}.`)
 			return
 		}
 		cacheStore.selectedNetwork = networks.value[0]
 		cacheStore.proposedNetworks = networks.value
 
 		const accounts = Object.values(dappSession.value?.namespaces).flatMap(v => v.accounts).map(acc => acc.split(":").pop())
-		const address = accounts.find(acc => acc === payload.value.params?.request?.account)
+		const address = accounts.find(acc => acc === payload.value.accountAddress)
 		await fetchAccount(address)
 		if (!account.value) {
 			fillError("Requested account not found. Try reconnecting dApp.")
@@ -167,12 +167,6 @@ onBeforeMount(async () => {
 
 onMounted( async () => {
 	await init()
-
-	// chrome.runtime.sendMessage({
-	// 	type: "createNotification",
-	// 	title: "Azguard Wallet",
-	// 	message: "asdqwe123sfdkxvsjdfh2uhew7hds87",
-	// });
 
 	window.addEventListener("beforeunload", handleReject)
 })
@@ -280,13 +274,13 @@ onUnmounted(() => {
 				</Flex>
 			</Flex>
 
-			<Flex v-if="payload?.params" direction="column" align="start" justify="start" gap="8">
+			<Flex v-if="payload.actions" direction="column" align="start" justify="start" gap="8">
 				<Flex justify="between">
 					<Text size="14" weight="600" color="primary">Request parameters:</Text>
 				</Flex>
 
 				<Flex align="start" direction="column" justify="start" gap="12" :class="$style.json_viewer">
-					<JsonViewer :data="payload?.params" :requestId="requestId" />
+					<JsonViewer :data="payload" :requestId="requestId" />
 				</Flex>
 			</Flex>
 

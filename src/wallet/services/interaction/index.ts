@@ -19,6 +19,8 @@ import {
     InteractionRequest,
     type DappMetadata,
     DappSession,
+    type DappSessionProposal,
+    type DappSessionRequest,
     INTERACTION_SERVICE_NAME,
     InteractionServiceEvent,
     InteractionServiceEventMessage,
@@ -32,6 +34,7 @@ import {
     BuildApprovedNamespacesResponse,
 } from "./client";
 import type { IAction } from "@/wallet/services/execution/client/models";
+import { createNotification } from "../../utils/notifications"
 
 type DappSessionDto = {
     dappMetadata: DappMetadata,
@@ -63,6 +66,7 @@ export class InteractionService extends Service {
         super(INTERACTION_SERVICE_NAME, emit);
         this.dappSessions = new EntityStorage("azguard:core:dappSessions", StorageType.Local);
         this.interactionRequests = new Map();
+        this.checkDappSessionsExpiration();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -109,18 +113,18 @@ export class InteractionService extends Service {
                 }
             }
             case InteractionServiceMethod.AddDappSession: {
-                const _request = request as AddDappSessionRequest
+                const _request = request as AddDappSessionRequest;
                 try {
-                    const dappSession = await this.addDappSession(_request.dappMetadata, _request.namespaces, _request.expiry, _request.profileId, _request.topic)
-                    this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession))
-                    return new AddDappSessionResponse(_request, dappSession)
+                    const dappSession = await this.addDappSession(_request.dappMetadata, _request.namespaces, _request.expiry, _request.profileId, _request.topic);
+                    this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession));
+                    return new AddDappSessionResponse(_request, dappSession);
                 }
                 catch (error: unknown) {
                     if (error instanceof Error) {
-                        return new AddDappSessionResponse(_request, undefined, error.message)
+                        return new AddDappSessionResponse(_request, undefined, error.message);
                     }
 
-                    return new AddDappSessionResponse(_request, undefined, 'Unknown error occurred')
+                    return new AddDappSessionResponse(_request, undefined, 'Unknown error occurred');
                 }
             }
             case InteractionServiceMethod.DropDappSession: {
@@ -222,13 +226,13 @@ export class InteractionService extends Service {
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async _addInteractionRequest<T>(payload: any): Promise<InteractionRequest> {
-        let id: string
-        do { id = getRandomHex(8) }
-        while (this.interactionRequests.has(id))
+        let id: string;
+        do { id = getRandomHex(8); }
+        while (this.interactionRequests.has(id));
 
-        this.interactionRequests.set(id, {payload})
+        this.interactionRequests.set(id, {payload});
         
-        return new InteractionRequest(id, payload)
+        return new InteractionRequest(id, payload);
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -236,20 +240,20 @@ export class InteractionService extends Service {
         const interactionRequest = this.interactionRequests.get(id);
 
         if (interactionRequest?.resolve) {
-            interactionRequest.resolve(result)
+            interactionRequest.resolve(result);
         }
 
-        this.deleteInteractionRequest(id)
+        this.deleteInteractionRequest(id);
     }
 
     public rejectInteractionRequest(id: string, reason?: string): void {
         const interactionRequest = this.interactionRequests.get(id);
 
         if (interactionRequest?.reject) {
-            interactionRequest.reject(reason || "User rejected.")
+            interactionRequest.reject(reason || "User rejected.");
         }
 
-        this.deleteInteractionRequest(id)
+        this.deleteInteractionRequest(id);
     }
 
     public deleteInteractionRequest(id: string): void {
@@ -257,20 +261,28 @@ export class InteractionService extends Service {
     }
 
     public async getDappSessions(profileId: string): Promise<Array<DappSession>> {
-        const dappSessions = await this.dappSessions.findByPredicate(ds => ds.profileId === profileId)
+        const dappSessions = await this.dappSessions.findByPredicate(ds => ds.profileId === profileId);
         if (!dappSessions) {
             return [];
         }
-        return dappSessions.map(({ key, entity }) => new DappSession(key, entity.dappMetadata, entity.namespaces, entity.expiry, entity.profileId))
+        return dappSessions.map(({ key, entity }) => new DappSession(key, entity.dappMetadata, entity.namespaces, entity.expiry, entity.profileId));
     }
 
 
     public async getDappSession(id: string): Promise<DappSession | undefined> {
         const ds = await this.dappSessions.get(id);
 
-        return ds !== undefined ? new DappSession(id, ds.dappMetadata, ds.namespaces, ds.expiry, ds.profileId) : undefined
+        return ds !== undefined ? new DappSession(id, ds.dappMetadata, ds.namespaces, ds.expiry, ds.profileId) : undefined;
     }
     
+    public async checkDappSessionsExpiration(): Promise<void> {
+        for (const [key, ds] of await this.dappSessions.getAll()) {
+            if (ds.expiry < Math.floor(Date.now() / 1_000)) {
+                this.dropDappSession(key, true);
+            }
+        };
+    }
+
     public async addDappSession(
         dappMetadata: DappMetadata,
         namespaces: Namespaces,
@@ -279,12 +291,12 @@ export class InteractionService extends Service {
         topic?: string,
         emit?: boolean,
     ): Promise<DappSession> {
-        const dappSession = await this._addDappSession(dappMetadata, namespaces, expiry, profileId, topic)
+        const dappSession = await this._addDappSession(dappMetadata, namespaces, expiry, profileId, topic);
         if (emit) {
-            this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession))
+            this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionAdded, dappSession));
         }
 
-        return dappSession
+        return dappSession;
     }
 
     private async _addDappSession(
@@ -296,7 +308,7 @@ export class InteractionService extends Service {
     ): Promise<DappSession> {
         let id: string;
         if (topic) {
-            id = topic
+            id = topic;
         } else {
             do { id = getRandomHex(8); }
             while (await this.dappSessions.contains(id));
@@ -304,35 +316,35 @@ export class InteractionService extends Service {
 
         for (const [key, ds] of await this.dappSessions.getAll()) {
             if (dappMetadata.name === ds.dappMetadata.name) {
-                this.dropDappSession(key, true)
+                this.dropDappSession(key, true);
             }
         }
         
         await this.dappSessions.set(id, {dappMetadata, namespaces, expiry, profileId});
         const dappSession = new DappSession(id, dappMetadata, namespaces, expiry, profileId);
 
-        return dappSession
+        return dappSession;
     }
 
     public async dropDappSession(id: string, emit?: boolean): Promise<void> {
-        const dappSession = await this.getDappSession(id)
+        const dappSession = await this.getDappSession(id);
         if (dappSession) {
             if (emit) {
-                this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionDroped, dappSession))
+                this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.DappSessionDroped, dappSession));
             }
             for (const emit of this.onDappSessionDroped) {
                 try { emit(dappSession) } catch {}
             }
         }
 
-        return this.dappSessions.delete(id)
+        return this.dappSessions.delete(id);
     }
     
     public async executeDappSessionRequest(networkId: string, accountAddress: string, dappName: string, actions: IAction[], emit?: boolean): Promise<string> {
         try {
-            const txHash = await this.execution.executeBatch(networkId, accountAddress, dappName, actions)
+            const txHash = await this.execution.executeBatch(networkId, accountAddress, dappName, actions);
 
-            return txHash
+            return txHash;
         }
         catch (error: unknown) {
             if (error instanceof Error) {
@@ -344,57 +356,60 @@ export class InteractionService extends Service {
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async dappSessionProposal(payload: any): Promise<any> {
-        return await this._openWindow('session', payload)
+    public async dappSessionProposal(payload: DappSessionProposal): Promise<any> {
+        await this.checkDappSessionsExpiration();
+        
+        return await this._openWindow('session', payload);
     }
 
     public async buildApprovedNamespaces(supportedNamespaces: Namespaces, requiredNamespaces: Namespaces, optionalNamespaces?: Namespaces): Promise<Namespaces> {
-        const approvedNamespaces: Namespaces = {}
+        const approvedNamespaces: Namespaces = {};
 
 		for (const ns of Object.keys(requiredNamespaces)) {
 			if (supportedNamespaces[ns]) {
-                const chains = requiredNamespaces[ns].chains?.filter((ch: string) => supportedNamespaces[ns].chains?.includes(ch)) || []
+                const chains = requiredNamespaces[ns].chains?.filter((ch: string) => supportedNamespaces[ns].chains?.includes(ch)) || [];
                 if (chains.length) {
-                    const methods = requiredNamespaces[ns].methods.filter((m: string) => supportedNamespaces[ns].methods?.includes(m)) || []
-                    const events = requiredNamespaces[ns].events?.filter((ev: string) => supportedNamespaces[ns].events?.includes(ev)) || []
+                    const methods = requiredNamespaces[ns].methods.filter((m: string) => supportedNamespaces[ns].methods?.includes(m)) || [];
+                    const events = requiredNamespaces[ns].events?.filter((ev: string) => supportedNamespaces[ns].events?.includes(ev)) || [];
 
-                    approvedNamespaces[ns] = { chains, methods, events }
+                    approvedNamespaces[ns] = { chains, methods, events };
                 }
 			}
 		}
         
         if (Object.keys(approvedNamespaces).length && optionalNamespaces) {
             for (const ns of Object.keys(optionalNamespaces)) {
-                const chains = optionalNamespaces[ns].chains?.filter((ch: string) => supportedNamespaces[ns].chains?.includes(ch)) || []
-                const methods = chains.length ? optionalNamespaces[ns].methods.filter((m: string) => supportedNamespaces[ns].methods?.includes(m)) : []
-                const events = (chains.length ? optionalNamespaces[ns].events?.filter((ev: string) => supportedNamespaces[ns].events?.includes(ev)) : []) || []
+                const chains = optionalNamespaces[ns].chains?.filter((ch: string) => supportedNamespaces[ns].chains?.includes(ch)) || [];
+                const methods = chains.length ? optionalNamespaces[ns].methods.filter((m: string) => supportedNamespaces[ns].methods?.includes(m)) : [];
+                const events = (chains.length ? optionalNamespaces[ns].events?.filter((ev: string) => supportedNamespaces[ns].events?.includes(ev)) : []) || [];
                 
                 approvedNamespaces[ns] = { 
                     chains: [...new Set([...(approvedNamespaces[ns].chains || []), ...chains])],
                     methods: [...new Set([...(approvedNamespaces[ns].methods || []), ...methods])],
                     events: [...new Set([...(approvedNamespaces[ns].events || []), ...events])],
-                }
-            }
+                };
+            };
         }
 
-        return approvedNamespaces
+        return approvedNamespaces;
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async dappSessionRequest(payload: any): Promise<any> {
-        return await this._openWindow('request', payload, 780)
+    public async dappSessionRequest(payload: DappSessionRequest): Promise<any> {
+        await this.checkDappSessionsExpiration();
+
+        return await this._openWindow('request', payload, 780);
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async _openWindow<T>(name: string, payload: any, height?: number): Promise<T> {
-        const interactionRequest = await this.addInteractionRequest(payload)
+    private async _openWindow<T>(name: string, payload: DappSessionProposal | DappSessionRequest, height?: number): Promise<T> {
+        const interactionRequest = await this.addInteractionRequest(payload);
 
         const promise = new Promise<T>((resolve, reject) => {
             this.interactionRequests.set(interactionRequest.id, { payload: interactionRequest.payload, resolve, reject });
         });
 
-        const url = new URL(chrome.runtime.getURL(`src/popup/index.html#/windows/${name}`))
-        url.searchParams.set('requestId', interactionRequest.id)
+        const url = new URL(chrome.runtime.getURL(`src/popup/index.html#/windows/${name}`));
+        url.searchParams.set('requestId', interactionRequest.id);
 
         chrome.windows.create(
             {
@@ -403,17 +418,17 @@ export class InteractionService extends Service {
                 height: height || 660,
                 width: 400
             }
-        )
+        );
 
-        return promise
+        return promise;
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public async requestExpired(payload: any): Promise<void> {
         for (const ir of this.interactionRequests) {
             if (ir[1].payload?.id === payload.id) {
-                this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.RequestExpired, new InteractionRequest(ir[0], ir[1].payload)))
-                break
+                this.emit(new InteractionServiceEventMessage(InteractionServiceEvent.RequestExpired, new InteractionRequest(ir[0], ir[1].payload)));
+                break;
             }
         }
     }

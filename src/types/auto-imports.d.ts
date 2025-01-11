@@ -34,6 +34,7 @@ declare global {
   const createEventHook: typeof import("@vueuse/core")["createEventHook"]
   const createGlobalState: typeof import("@vueuse/core")["createGlobalState"]
   const createInjectionState: typeof import("@vueuse/core")["createInjectionState"]
+  const createNotification: typeof import('../utils/notifications.js')['createNotification']
   const createReactiveFn: typeof import("@vueuse/core")["createReactiveFn"]
   const createReusableTemplate: typeof import("@vueuse/core")["createReusableTemplate"]
   const createSharedComposable: typeof import("@vueuse/core")["createSharedComposable"]
