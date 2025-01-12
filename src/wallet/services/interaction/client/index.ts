@@ -1,16 +1,17 @@
 import type { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
 import { InteractionServiceEvent, type InteractionServiceEventMessage } from "./events";
-import type { GetDappSessionParams, DappSession, InteractionRequest } from "./models";
+import type { DappSession, InteractionRequest, Namespaces } from "./models";
 import {
-    AddDappSessionRequest,
     DeleteInteractionRequestRequest,
     DropDappSessionRequest,
     GetDappSessionRequest,
     GetDappSessionsRequest,
     GetInteractionRequestRequest,
+    ApproveInteractionRequestRequest,
+    RejectInteractionRequestRequest,
+    BuildApprovedNamespacesRequest,
 } from "./methods";
-import type { Account } from "../../account/client";
 
 export * from './events';
 export * from './methods';
@@ -27,13 +28,15 @@ export class InteractionServiceClient extends ServiceClient {
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onDappSessionAdded Callback, called when a new dapp session was added.
-     * @param onDappSessionDroped Callback, called when an existing dapp session was droped.
+     * @param onDappSessionDroped Callback, called when an existing dapp session has droped.
+     * @param onRequestExpired Callback, called when an existing interaction request has expired.
      */
     constructor(
         onConnected?: () => void,
         onDisconnected?: () => void,
         private readonly onDappSessionAdded?: (dappSession: DappSession) => void,
         private readonly onDappSessionDroped?: (dappSession: DappSession) => void,
+        private readonly onRequestExpired?: (interactionRequest: InteractionRequest) => void,
     ) {
         super(INTERACTION_SERVICE_NAME, onConnected, onDisconnected);
     }
@@ -42,14 +45,29 @@ export class InteractionServiceClient extends ServiceClient {
         switch (message.event) {
             case InteractionServiceEvent.DappSessionAdded:
                 if (this.onDappSessionAdded) {
-                    try {this.onDappSessionAdded((message as InteractionServiceEventMessage).dappSession);}
-                    catch {}
+                    const dappSession = (message as InteractionServiceEventMessage).dappSession;
+                    if (dappSession) {
+                        try {this.onDappSessionAdded(dappSession)}
+                        catch {}
+                        }
                 }
                 break;
             case InteractionServiceEvent.DappSessionDroped:
                 if (this.onDappSessionDroped) {
-                    try {this.onDappSessionDroped((message as InteractionServiceEventMessage).dappSession);}
-                    catch {}
+                    const dappSession = (message as InteractionServiceEventMessage).dappSession;
+                    if (dappSession) {
+                        try {this.onDappSessionDroped(dappSession)}
+                        catch {}
+                    }
+                }
+                break;
+            case InteractionServiceEvent.RequestExpired:
+                if (this.onRequestExpired) {
+                    const interactionRequest = (message as InteractionServiceEventMessage).interactionRequest;
+                    if (interactionRequest) {
+                        try {this.onRequestExpired(interactionRequest)}
+                        catch {}
+                    }
                 }
                 break;
             default:
@@ -69,30 +87,17 @@ export class InteractionServiceClient extends ServiceClient {
      * Returns a dapp session with the specified id, or undefined if it doesn't exist.
      * @param id Dapp session id.
      */
-    public getDappSession(params: GetDappSessionParams): Promise<DappSession | undefined> {
-        return this.request(new GetDappSessionRequest(params));
+    public getDappSession(id: string): Promise<DappSession | undefined> {
+        return this.request(new GetDappSessionRequest(id));
     }
-    
-    // /**
-    //  * Creates and returns a new dapp session.
-    //  * @param name Display dapp name.
-    //  * @param topic Wallet connect dapp session id.
-    //  * @param expiry Dapp session expiration timestamp.
-    //  * @param url Dapp URL.
-    //  * @param icon Dapp icon.
-    //  * @emits `DappSessionAdded` event.
-    //  */
-    // public addDappSession(name: string, topic: string, expiry: number, profileId: string, accounts: Array<Account>, url?: string, icon?: string): Promise<DappSession> {
-    //     return this.request(new AddDappSessionRequest(name, topic, expiry, profileId, accounts, url, icon));
-    // }
     
     /**
      * Drops dapp session with the specified id.
      * @param id Dapp session internal id.
      * @emits `DappSessionDrop` event.
      */
-    public dropDappSession(id: string): Promise<void> {
-        return this.request(new DropDappSessionRequest(id));
+    public dropDappSession(id: string, emit?: boolean): Promise<void> {
+        return this.request(new DropDappSessionRequest(id, emit));
     }
 
     /**
@@ -104,12 +109,41 @@ export class InteractionServiceClient extends ServiceClient {
     }
 
     /**
+     * Approve an interaction request with the specified id and any result.
+     * @param id Interaction request id.
+     * @param result Any value or object passed as a result of an approved request.
+     */
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public approveInteractionRequest(id: string, result: any): Promise<void> {
+        return this.request(new ApproveInteractionRequestRequest(id, result));
+    }
+
+    /**
+     * Approve an interaction request with the specified id and any result.
+     * @param id Interaction request id.
+     * @param reason Any string value as a rejection reason.
+     */
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    public rejectInteractionRequest(id: string, reason?: string): Promise<any> {
+        return this.request(new RejectInteractionRequestRequest(id, reason));
+    }
+
+    /**
      * Delete the interaction request with the specified id.
      * @param id Interaction request id.
      */
-    
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     public deleteInteractionRequest(id: string): Promise<any> {
         return this.request(new DeleteInteractionRequestRequest(id));
+    }
+
+    /**
+     * Delete the interaction request with the specified id.
+     * @param supportedNamespaces Namespaces supported by wallet.
+     * @param requiredNamespaces Required namespaces for the dApp.
+     * @param optionalNamespaces Optional namespaces for the dApp.
+     */
+    public buildApprovedNamespaces(supportedNamespaces: Namespaces, requiredNamespaces: Namespaces, optionalNamespaces?: Namespaces): Promise<Namespaces> {
+        return this.request(new BuildApprovedNamespacesRequest(supportedNamespaces, requiredNamespaces, optionalNamespaces));
     }
 }

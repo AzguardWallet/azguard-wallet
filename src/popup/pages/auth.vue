@@ -46,10 +46,9 @@ const handleUnlockWallet = async () => {
 	if (!isAllowedToContinue.value) return
 
 	try {
-		let activeProfile
 		try {
 			isAwaitingResponse.value = true
-			activeProfile = await managers.profile.unlockProfile(appStore.profile.id, password.value)
+			await managers.profile.unlockProfile(appStore.profile.id, password.value)
 			while (!appStore.isLogined) {
 				await sleep(100) // wait for services initialization
 			}
@@ -63,29 +62,30 @@ const handleUnlockWallet = async () => {
 
 		password.value = ""
 
-		appStore.profile = activeProfile
-		managers.account = new AccountServiceClient(appStore.profile, appStore.network)
+		// appStore.profile = activeProfile
+		// managers.account = new AccountServiceClient(appStore.profile, appStore.network)
 
-		initTokenService({
-			profile: appStore.profile,
-			network: appStore.network,
-			account: appStore.account,
-		})
-		initTransactionService(() => {
-			appStore.isAwaitingTransaction = false
-		})
+		// initTokenService({
+		// 	profile: appStore.profile,
+		// 	network: appStore.network,
+		// 	account: appStore.account,
+		// })
+		// initTransactionService(() => {
+		// 	appStore.isAwaitingTransaction = false
+		// })
 
-		await appStore.syncLocalTokens()
-		appStore.syncBalances()
-		await appStore.syncTransactions()
-		appStore.initBalanceListeners()
+		// await appStore.syncLocalTokens()
+		// appStore.syncBalances()
+		// await appStore.syncTransactions()
+		// appStore.initBalanceListeners()
 
-		if (appStore.pageAwaitingAuth) {
-			appStore.pageAwaitingAuth = ""
-			router.go(-1)
-		} else {
-			router.push("/popup/general")
-		}
+		// if (appStore.pageAwaitingAuth) {
+		// 	const redirect = appStore.pageAwaitingAuth
+		// 	appStore.pageAwaitingAuth = ""
+		// 	router.push(redirect)
+		// } else {
+		// 	router.push("/popup/general")
+		// }
 	} catch (err) {
 		console.log(err)
 	}
@@ -106,14 +106,16 @@ onBeforeUnmount(() => {
 
 watch(
 	() => appStore.isLogined,
-	() => {
-		if (appStore.pageAwaitingAuth) {
-			appStore.pageAwaitingAuth = ""
-			router.go(-1)
-		} else {
-			router.push("/popup/general")
+	async () => {
+		if (appStore.isLogined) {
+			if (appStore.pageAwaitingAuth) {
+				const redirect = appStore.pageAwaitingAuth
+				appStore.pageAwaitingAuth = ""
+				router.push(redirect)
+			} else {
+				router.push("/popup/general")
+			}
 		}
-		// router.push("/popup/general")
 	},
 )
 </script>

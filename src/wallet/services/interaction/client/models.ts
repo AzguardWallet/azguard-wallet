@@ -1,61 +1,91 @@
-import type { Account } from "@/wallet/services/account/client/models"
-import type { WCSessionParams } from "@/wallet/services/wallet-connect/client/models";
+import type { IAction } from "@/wallet/services/execution/client/models";
 
 /**
  * Interaction request info.
  */
-export enum Status {
-    Pending = 'pending',
-    Success = 'success',
-    Failed = 'failed',
-}
-
 export class InteractionRequest {
     /**
      * Creates Interaction request.
      * @param id Randomly generated id.
-     * @param status Request status.
      * @param payload Request payload.
-     * @param result Request result.
      */
     constructor(
         public readonly id: string,
-        public readonly status: Status,
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         public readonly payload: Record<string, any>,
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-        public readonly result?: Record<string, any>,
+        public readonly resolve?: (value: any) => void,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        public readonly reject?: (value: any) => void,
     ) {}
 }
 
 /**
  * Dapp session info.
  */
-export type GetDappSessionParams = {
-    id?: string,
-    topic?: string,
+export type Namespace = {
+    chains?: string[],
+    methods: string[],
+    events?: string[],
+    accounts?: string[],
+}
+
+export type Namespaces = Record<string, Namespace>
+
+export type DappMetadata = {
+    name: string,
+    description?: string,
+    url?: string,
+    icon?: string,
 }
 
 export class DappSession {
     /**
      * Creates Dapp session.
-     * @param id Randomly generated id.
-     * @param name Dapp name.
-     * @param params WC session params.
+     * @param id Randomly generated id or WalletConnect session topic.
+     * @param dappMetadata Dapp metadata.
+     * @param namespaces Session permissions.
+     * @param expiry Session expiration timestamp.
      * @param profileId Profile id.
-     * @param chainIds List of chain ids using by the dApp.
-     * @param accounts List of accounts shared with the dApp.
-     * @param url Dapp url.
-     * @param icon Dapp logo.
      */
     constructor(
         public readonly id: string,
-        public readonly name: string,
-        public readonly params: WCSessionParams,
+        public readonly dappMetadata: DappMetadata,
+        public readonly namespaces: Namespaces,
+        public readonly expiry: number,
         public readonly profileId: string,
-        public readonly chainIds: Array<number>,
-        public readonly accounts: Array<Account>,
-        public readonly url?: string,
-        public readonly icon?: string,
+    ) {}
+}
+
+/**
+ * Dapp requests
+ */
+export class DappSessionProposal {
+    /**
+     * Dapp session creation request.
+     * @param requiredNamespaces Required dapp session parameters.
+     * @param dappMetadata Dapp metadata.
+     * @param optionalNamespaces Optional dapp session parameters.
+     */
+    constructor(
+        public readonly requiredNamespaces: Namespaces,
+        public readonly dappMetadata: DappMetadata,
+        public readonly optionalNamespaces?: Namespaces,
+    ) {}
+}
+
+export class DappSessionRequest {
+    /**
+     * Request for payload execution.
+     * @param sessionId Existing dapp session id.
+     * @param accountAddress Address for execution.
+     * @param chainId Network for execution (CAIP format).
+     * @param actions Actions to be executed.
+     */
+    constructor(
+        public readonly sessionId: string,
+        public readonly accountAddress: string,
+        public readonly chainId: string,
+        public readonly actions: IAction[],
     ) {}
 }

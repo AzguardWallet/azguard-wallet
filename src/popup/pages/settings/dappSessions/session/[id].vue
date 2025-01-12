@@ -8,6 +8,7 @@
 
 <script setup>
 /** Vendor */
+import { DateTime } from "luxon"
 import { onMounted } from "vue"
 
 /** Components */
@@ -15,28 +16,83 @@ import Navigation from "../../../../components/Navigation.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
 import { getNetworkType } from "@/components/ui/utils.js"
+import { AccountServiceClient } from "@/wallet/services/account/client"
+import { NetworkServiceClient } from "@/wallet/services/network/client"
+import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
+
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+const appStore = useAppStore()
+
 const { openToast } = useToast()
 
 const route = useRoute()
 const router = useRouter()
 
 const session = ref()
+const accounts = ref([])
+const chains = ref([])
+const methods = ref([])
+const events = ref([])
+
 const fetchSession = async () => {
 	const id = route.params.id
 	
-	session.value = await managers.interaction.getDappSession({ id })
+	session.value = await interactionServiceClient.getDappSession(id)
 	
 	if (!session.value) {
 		router.push('/popup/settings/dappSessions')
 		return
 	}
 
-	session.value.imageLoaded = !!session.value.icon
+	session.value.imageLoaded = !!session.value.dappMetadata.icon
+}
+
+async function fetchAccounts() {
+	const networkServiceClient = new NetworkServiceClient()
+	const accMap = new Map()
+
+	for (const n of Object.values(session.value.namespaces)) {
+		for (const acc of n.accounts) {
+			const [ _, chainId, address ] = acc.split(":")
+			if (!accMap[chainId]) {
+				accMap[chainId] = []
+			}
+
+			accMap[chainId].push(address)
+		}
+	}
+	
+	for (const chainId of Object.keys(accMap)) {
+		const networks = await networkServiceClient.getNetworks(Number(chainId))
+		if (networks.length) {
+			const network = networks[0]
+			const accountServiceClient = new AccountServiceClient(appStore.profile, network)
+
+			for (const address of accMap[chainId]) {
+				const account = await accountServiceClient.getAccount(address)
+				if (account) {
+					accounts.value.push(account)
+				}
+			}
+		}		
+	}	
+}
+
+async function fetchSessionParams() {
+	for (const n of Object.values(session.value.namespaces)) {
+		chains.value = [...chains.value, ...n.chains]
+		methods.value = [...methods.value, ...n.methods]
+		events.value = [...events.value, ...n.events]
+	}
+
+	chains.value = [...new Set(chains.value)]
+	methods.value = [...new Set(methods.value)]
+	events.value = [...new Set(events.value)]
 }
 
 const onImageError = () => {
@@ -44,7 +100,7 @@ const onImageError = () => {
 }
 
 const handleDropSession = () => {
-	managers.wallectConnect.dropDappSession(session.value)
+	interactionServiceClient.dropDappSession(session.value.id, true)
 
 	router.push('/popup/settings/dappSessions')
 }
@@ -54,127 +110,139 @@ const handleCopyAddress = (target) => {
 	openToast({ label: "Address is copied", icon: "copy" })
 }
 
+const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, handleDropSession, undefined)
+
 onMounted( async () => {
 	await fetchSession()
+	await fetchAccounts()
+	await fetchSessionParams()
 })
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
+	<Flex direction="column" justify="between" :class="$style.wrapper">
+		<Flex direction="column" gap="20">
+			<Flex align="center" gap="8">
+				<RouterLink to="/popup/settings">
+					<Text
+						size="13"
+						weight="600"
+						color="tertiary"
+						style="line-height: 16px"
+					>
+						Settings
+					</Text>
+				</RouterLink>
+				<Text color="support">•</Text>
+				<RouterLink to="/popup/settings/dappSessions">
+					<Text
+						size="13"
+						weight="600"
+						color="tertiary"
+						style="line-height: 16px"
+					>
+						Dapp Sessions
+					</Text>
+				</RouterLink>
+				<Text color="support">•</Text>
 				<Text
 					size="13"
 					weight="600"
 					color="tertiary"
 					style="line-height: 16px"
 				>
-					Settings
+					{{ session?.dappMetadata.name }}
 				</Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<RouterLink to="/popup/settings/dappSessions">
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					Dapp Sessions
-				</Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text
-				size="13"
-				weight="600"
-				color="tertiary"
-				style="line-height: 16px"
-			>
-				{{ session?.name }}
-			</Text>
-		</Flex>
-
-		<Flex direction="column" justify="between" :class="$style.session">
-			<Flex justify="between">
-				<Flex align="start" justify="start">
-					<img
-						v-if="session?.imageLoaded"
-						:src="session?.icon"
-						@error="onImageError()"
-						width="48"
-						height="48"
-					/>
-
-					<Icon
-						v-else
-						name="dapp"
-						size="48"
-						color="blue"
-					/>
-				</Flex>
-
-				<Button @click="handleDropSession" type="secondary" size="mini">Disconnect</Button>
 			</Flex>
 
-			<Flex justify="between" align="end">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">
-						{{ session?.name }}
-					</Text>
-					<Text size="12" weight="600" color="tertiary" selectable>
-						{{ session?.url }}
-					</Text>
+			<Flex direction="column" justify="between" :class="$style.session">
+				<Flex justify="between">
+					<Flex align="start" justify="start">
+						<img
+							v-if="session?.imageLoaded"
+							:src="session?.dappMetadata.icon"
+							@error="onImageError()"
+							width="48"
+							height="48"
+						/>
+
+						<Icon
+							v-else
+							name="dapp"
+							size="48"
+							color="blue"
+						/>
+					</Flex>
+
+					<Button @click="handleDropSession" type="secondary" size="mini">Disconnect</Button>
 				</Flex>
-			</Flex>
-		</Flex>
 
-		<Flex direction="column" align="start" justify="start" gap="8" :class="$style.accounts_section">
-			<Text size="15" weight="600" color="primary">Shared accounts:</Text>
-
-			<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-				<Flex v-for="acc in session?.accounts" gap="10" :class="$style.account">
-					<Flex direction="column" gap="4" wide>
-						<Flex align="center" justify="between" gap="12">
-							<Text size="14" weight="600" color="primary">
-								{{ acc.name }}
-							</Text>
-
-							<Tooltip>
-								<NetworkBadge :chainId="acc.chainId" />
-
-								<template #content>
-									<Text size="13" color="secondary">
-										{{ `aztec:${acc.chainId}` }}
-									</Text>
-								</template>
-							</Tooltip>
-						</Flex>
-
-						<Text @click="handleCopyAddress(acc.address)" size="13" weight="600" color="tertiary" class="copyable">
-							{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
+				<Flex justify="between" align="end">
+					<Flex direction="column" gap="6">
+						<Text size="13" weight="600" color="primary">
+							{{ session?.dappMetadata.name }}
+						</Text>
+						<Text size="12" weight="600" color="tertiary" selectable>
+							{{ session?.dappMetadata.url }}
 						</Text>
 					</Flex>
 				</Flex>
 			</Flex>
+
+			<Flex direction="column" align="start" justify="start" gap="8" :class="$style.accounts_section">
+				<Text size="15" weight="600" color="primary">Shared accounts:</Text>
+
+				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
+					<Flex v-for="acc in accounts" gap="10" :class="$style.account">
+						<Flex direction="column" gap="4" wide>
+							<Flex align="center" justify="between" gap="12">
+								<Text size="14" weight="600" color="primary">
+									{{ acc.name }}
+								</Text>
+
+								<Tooltip>
+									<NetworkBadge :chainId="acc.chainId" />
+
+									<template #content>
+										<Text size="13" color="secondary">
+											{{ `aztec:${acc.chainId}` }}
+										</Text>
+									</template>
+								</Tooltip>
+							</Flex>
+
+							<Text @click="handleCopyAddress(acc.address)" size="13" weight="600" color="tertiary" class="copyable">
+								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
+							</Text>
+						</Flex>
+					</Flex>
+				</Flex>
+			</Flex>
+
+			<Flex direction="column" align="start" justify="start" gap="8">
+				<Text size="15" weight="600" color="primary">Session allowances:</Text>
+
+				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
+					<Text size="13" color="secondary">Networks:</Text>
+					<Text size="13" color="secondary"> {{ chains.map(ch => getNetworkType(Number(ch.split(':').pop()))).join(', ') }} </Text>
+				</Flex>
+				
+				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
+					<Text size="13" color="secondary">Methods:</Text>
+					<Text size="13" color="secondary"> {{ methods.join(', ') }} </Text>
+				</Flex>
+
+				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
+					<Text size="13" color="secondary">Events:</Text>
+					<Text size="13" color="secondary"> {{ events.join(', ') }} </Text>
+				</Flex>
+			</Flex>
 		</Flex>
 
-		<Flex direction="column" align="start" justify="start" gap="8">
-			<Text size="15" weight="600" color="primary">Session allowances:</Text>
-
-			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
-				<Text size="13" color="secondary">Networks:</Text>
-				<Text size="13" color="secondary"> {{ session?.params.chains.map(ch => getNetworkType(Number(ch.split(':').pop()))).join(', ') }} </Text>
-			</Flex>
-			
-			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
-				<Text size="13" color="secondary">Methods:</Text>
-				<Text size="13" color="secondary"> {{ session?.params.methods.join(', ') }} </Text>
-			</Flex>
-
-			<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
-				<Text size="13" color="secondary">Events:</Text>
-				<Text size="13" color="secondary"> {{ session?.params.events.join(', ') }} </Text>
-			</Flex>
+		<Flex align="end" justify="end">
+			<Text size="12" weight="500" color="tertiary">
+				{{ DateTime.fromSeconds(session?.expiry / 1_000).toFormat("'Expires' LLL dd 'at' HH:mm") }}
+			</Text>
 		</Flex>
 
 		<Navigation />
@@ -191,7 +259,7 @@ onMounted( async () => {
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
 
-	padding: 20px 24px 24px 24px;
+	padding: 20px 24px 68px 24px;
 }
 
 .session {

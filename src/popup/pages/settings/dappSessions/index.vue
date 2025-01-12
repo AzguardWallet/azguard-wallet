@@ -11,7 +11,7 @@
 import Navigation from "../../../components/Navigation.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
+import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -25,7 +25,7 @@ const dappSessions = computed(() => {
 	const arr = [...appStore.dappSessions]
 	for (let index = 0; index < arr.length; index++) {
 		const el = arr[index]
-		el.imageLoaded = !!el.icon
+		el.imageLoaded = !!el.dappMetadata.icon
 	}
 
 	return arr
@@ -40,15 +40,17 @@ const handleOpenConnectByURIPopup = () => {
 	popupStore.open("connect_by_uri")
 }
 
-const handleDropSession = session => {
-	managers.wallectConnect.dropDappSession(session)
+const handleDropSession = (session) => {
+	interactionServiceClient.dropDappSession(session.id)
 }
 
 const handleDropAllSessions = () => {
-	for (let i = 0; i < dappSessions.value.length; i++) {
-		handleDropSession(dappSessions.value[i])
+	for (const session of dappSessions.value) {
+		handleDropSession(session)
 	}
 }
+
+const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, handleDropSession, undefined)
 </script>
 
 <template>
@@ -91,12 +93,16 @@ const handleDropAllSessions = () => {
 					>
 						<Flex align="center" gap="10">
 							<div v-if="ds.imageLoaded" :class="$style.avatar_container">
-								<img :src="ds.icon" @error="onImageError(ds)" :class="$style.avatar_image" />
+								<img
+									:src="ds.dappMetadata.icon"
+									@error="onImageError(ds)"
+									:class="$style.avatar_image"
+								/>
 							</div>
 							<Icon v-else name="dapp" size="22" color="blue" />
 
 							<Text size="15" weight="600" color="primary">
-								{{ ds.name }}
+								{{ ds.dappMetadata.name }}
 							</Text>
 						</Flex>
 

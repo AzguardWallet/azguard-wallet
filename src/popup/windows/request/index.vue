@@ -8,8 +8,10 @@ import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
-import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/client"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { NetworkServiceClient } from "@/wallet/services/network/client"
+import { AccountServiceClient } from "@/wallet/services/account/client"
+import { InteractionServiceClient } from "@/wallet/services/interaction/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -19,24 +21,21 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
+const route = useRoute()
 const router = useRouter()
 const params = new URLSearchParams(window.location.search)
 const requestId = params.get('requestId')
-// if (!appStore.isLogined) {
-// 	appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
-// 	router.push({
-// 		path: "/popup/auth",
-// 	});
-// }
 
 const isLoading = ref(false)
 const isActionCalled = ref(false)
 
 const interactionRequest = ref()
 const payload = ref()
+const profile = computed(() => appStore.profile)
 const dappSession = ref()
-const selectedNetwork = computed(() => cacheStore.selectedNetwork)
+const dappMetadata = computed(() => dappSession.value?.dappMetadata)
 const networks = ref([])
+const selectedNetwork = computed(() => cacheStore.selectedNetwork)
 const account = ref()
 const isRequestExpired = ref(false)
 
@@ -63,37 +62,43 @@ function fillError(title, tooltip) {
 	}
 }
 
+async function fetchAccount(address) {
+	const accountServiceClient = new AccountServiceClient(profile.value, selectedNetwork.value)
+	account.value = await accountServiceClient.getAccount(address)
+}
+
 const init = async () => {
 	try {
-		interactionRequest.value = await managers.interaction.getInteractionRequest(requestId)
-		payload.value = interactionRequest.value?.payload
+		interactionRequest.value = await interactionServiceClient.getInteractionRequest(requestId)
 
+		payload.value = interactionRequest.value?.payload
 		if (!payload.value) {
 			fillError("Failed to load operation payload. Try sending request again.")
 			return
 		}
 
-		dappSession.value = await managers.interaction.getDappSession({topic: payload.value.topic})
+		dappSession.value = await interactionServiceClient.getDappSession(payload.value.sessionId)
 		if (!dappSession.value) {
 			fillError("No active session found. Try reconnecting dApp.")
 			return
 		}
 
-		account.value = dappSession.value?.accounts.find(acc => acc.address === payload.value.params?.request?.account)
+		const chainId = payload.value.chainId?.split(':')?.pop()
+		networks.value = await networkServiceClient.getNetworks(Number(chainId))
+		if (!networks.value.length) {
+			fillError(`Not supported network ${payload.value.chainId}.`)
+			return
+		}
+		cacheStore.selectedNetwork = networks.value[0]
+		cacheStore.proposedNetworks = networks.value
+
+		const accounts = Object.values(dappSession.value?.namespaces).flatMap(v => v.accounts).map(acc => acc.split(":").pop())
+		const address = accounts.find(acc => acc === payload.value.accountAddress)
+		await fetchAccount(address)
 		if (!account.value) {
 			fillError("Requested account not found. Try reconnecting dApp.")
 			return
 		}
-
-		const chainId = payload.value.params.chainId?.split(':')?.pop()
-		networks.value = await managers.network.getNetworks(Number(chainId))
-		if (!networks.value.length) {
-			fillError(`Not supported network ${payload.value.params.chainId}.`)
-			return
-		}
-
-		cacheStore.selectedNetwork = networks.value[0]
-		cacheStore.proposedNetworks = networks.value
 	} catch (error) {
 		fillError("Operation pre-processing error.", error)
 	}
@@ -108,7 +113,14 @@ const handleConfirm = async () => {
 	isActionCalled.value = true
 
 	try {
-		const txHash = await walletConnectServiceClient.confirmRequest(selectedNetwork.value?.id, account.value?.address, dappSession.value?.name, interactionRequest.value.payload)
+		interactionServiceClient.approveInteractionRequest(
+			interactionRequest.value?.id,
+			{
+				networkId: selectedNetwork.value?.id,
+				accountAddress: account.value?.address,
+				dappName: dappMetadata.value?.name,
+			}
+		)
 
 		closeWindow()
 	} catch (error) {
@@ -118,9 +130,12 @@ const handleConfirm = async () => {
 }
 
 const handleReject = async () => {
+	if (!appStore.isLogined) return
+
 	isActionCalled.value = true
 
-	walletConnectServiceClient.rejectRequest(interactionRequest.value.payload)
+	interactionServiceClient.rejectInteractionRequest(interactionRequest.value?.id)
+
 	closeWindow()
 }
 
@@ -129,26 +144,20 @@ const handleRequestExpiredEvent = (payload) => {
 		isRequestExpired.value = true
 	}
 }
-const walletConnectServiceClient = new WalletConnectServiceClient(undefined, undefined, undefined, handleRequestExpiredEvent)
-
 const closeWindow = () => {
 	chrome.windows.getCurrent((currentWindow) => {
 		chrome.windows.remove(currentWindow.id, () => {})
 	})
 }
 
-const handleWindowClose = () => {
-	managers.interaction.deleteInteractionRequest(requestId)
-
-	if (!isActionCalled.value && !isRequestExpired.value) {
-		handleReject()
-	}
-}
+const profileServiceClient = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, handleReject)
+const networkServiceClient = new NetworkServiceClient()
+const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, undefined, handleRequestExpiredEvent)
 
 onBeforeMount(async () => {
 	if (!appStore.isLogined) {
 		setTimeout(() => {
-			appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
+			appStore.pageAwaitingAuth = `/windows/request?requestId=${requestId}`
 			router.push({
 				path: "/popup/auth",
 			});
@@ -159,11 +168,11 @@ onBeforeMount(async () => {
 onMounted( async () => {
 	await init()
 
-	window.addEventListener("beforeunload", handleWindowClose)
+	window.addEventListener("beforeunload", handleReject)
 })
 
 onUnmounted(() => {
-	window.removeEventListener("beforeunload", handleWindowClose);
+	window.removeEventListener("beforeunload", handleReject);
 })
 </script>
 
@@ -182,7 +191,7 @@ onUnmounted(() => {
 					gap="6"
 					:class="$style.avatar"
 				>
-					<img v-if="dappSession?.icon" width="48" height="48" :src="dappSession?.icon" />
+					<img v-if="dappMetadata?.icon" width="48" height="48" :src="dappMetadata?.icon" />
 
 					<Icon
 						v-else
@@ -191,7 +200,7 @@ onUnmounted(() => {
 						color="blue"
 					/>
 
-					<Text size="13" weight="600" color="primary"> {{ dappSession?.name }} </Text>
+					<Text size="13" weight="600" color="primary"> {{ dappMetadata?.name }} </Text>
 				</Flex>
 
 				<Flex align="center" gap="12" :class="[$style.status_icon, isLoading && $style.processing]" :style="{paddingBottom: '13px'}">
@@ -213,7 +222,7 @@ onUnmounted(() => {
 			</Flex>
 
 			<Flex direction="column" align="center" justify="center" gap="4" :style="{marginTop: '-4px'}">
-					<Text size="13" weight="600" color="primary"> {{ dappSession?.url }} </Text>
+					<Text size="13" weight="600" color="primary"> {{ dappMetadata?.url }} </Text>
 					<Text size="13" color="secondary">requests operation to you</Text>
 			</Flex>
 
@@ -240,7 +249,7 @@ onUnmounted(() => {
 
 			<Flex v-if="networks.length" direction="column" align="start" justify="start" gap="8" :class="$style.section">
 				<Flex align="end" justify="start" gap="4">
-					<Text size="14" weight="600" color="primary">Select netwrok</Text>
+					<Text size="14" weight="600" color="primary">Select node</Text>
 					<Text size="13" color="secondary">to execute the operation</Text>
 				</Flex>
 				<Flex direction="column" align="start" justify="start" gap="6" :class="[$style.networks, (isLoading || processingError.show) && $style.disabled]">
@@ -265,13 +274,13 @@ onUnmounted(() => {
 				</Flex>
 			</Flex>
 
-			<Flex v-if="payload?.params" direction="column" align="start" justify="start" gap="8">
+			<Flex v-if="payload.actions" direction="column" align="start" justify="start" gap="8">
 				<Flex justify="between">
 					<Text size="14" weight="600" color="primary">Request parameters:</Text>
 				</Flex>
 
 				<Flex align="start" direction="column" justify="start" gap="12" :class="$style.json_viewer">
-					<JsonViewer :data="payload?.params" :requestId="requestId" />
+					<JsonViewer :data="payload" :requestId="requestId" />
 				</Flex>
 			</Flex>
 

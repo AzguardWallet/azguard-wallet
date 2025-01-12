@@ -4,7 +4,7 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
+import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/client"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -24,8 +24,10 @@ const handleConnectByURI = async () => {
 
 	try {
 		isLoading.value = true
-		await managers.wallectConnect.connectByURI(uri.value)
 
+		const wallectConnectClient = new WalletConnectServiceClient()
+		await wallectConnectClient.connectByURI(uri.value)
+		
 		closePopup()
 	} catch (error) {
 		isLoading.value = false
@@ -42,7 +44,8 @@ const handleConnectByURI = async () => {
 		} else {
 			processingError.value = {
 				show: true,
-				title: "Unexpected connection error, please try again.",
+				title: 'Unexpected connection error, please try again.',
+				tooltip: error,
 			}
 		}
 	}

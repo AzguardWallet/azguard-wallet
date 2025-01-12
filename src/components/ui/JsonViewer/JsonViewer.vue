@@ -30,7 +30,7 @@ const props = defineProps({
 		required: true,
 	},
 	requestId: {
-		type: Number,
+		type: [Number, String],
 		required: false,
 	},
 	fullscreen: {
