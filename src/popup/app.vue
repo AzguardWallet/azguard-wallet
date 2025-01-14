@@ -144,21 +144,6 @@ const loadProfile = async () => {
 			await initAccount()
 			await uploadDappSessions()
 
-			managers.account = new AccountServiceClient(appStore.profile, appStore.network)
-			initTokenService({
-				profile: appStore.profile,
-				network: appStore.network,
-				account: appStore.account,
-			})
-			initTransactionService(() => {
-				appStore.isAwaitingTransaction = false
-			})
-
-			await appStore.syncLocalTokens()
-			appStore.syncBalances()
-			await appStore.syncTransactions()
-			appStore.initBalanceListeners()
-
 			appStore.isLogined = true
 			// TODO: initialize all services here
 			// TODO: redirect to /general

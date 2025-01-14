@@ -155,6 +155,7 @@ const networkServiceClient = new NetworkServiceClient()
 const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, undefined, handleRequestExpiredEvent)
 
 onBeforeMount(async () => {
+	// TODO: remove after service initialization refactoring
 	if (!appStore.isLogined) {
 		setTimeout(() => {
 			appStore.pageAwaitingAuth = `/windows/request?requestId=${requestId}`
@@ -167,6 +168,13 @@ onBeforeMount(async () => {
 
 onMounted( async () => {
 	await init()
+
+	// TODO: remove after service initialization refactoring
+	if (appStore.isLogined) {
+		setTimeout(() => {
+			appStore.pageAwaitingAuth = ""
+		}, 500);
+	}
 
 	window.addEventListener("beforeunload", handleReject)
 })
@@ -274,7 +282,7 @@ onUnmounted(() => {
 				</Flex>
 			</Flex>
 
-			<Flex v-if="payload.actions" direction="column" align="start" justify="start" gap="8">
+			<Flex v-if="payload?.actions" direction="column" align="start" justify="start" gap="8">
 				<Flex justify="between">
 					<Text size="14" weight="600" color="primary">Request parameters:</Text>
 				</Flex>
