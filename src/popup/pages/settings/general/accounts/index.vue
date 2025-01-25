@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Accounts",
 		"isAuthRequired": true
 	}
 }
@@ -9,6 +10,7 @@
 <script setup>
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -52,22 +54,12 @@ const handleCopyAddress = target => {
 </script>
 
 <template>
-	<Flex direction="column" gap="12" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<RouterLink to="/popup/settings/security">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Security </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Accounts </Text>
-		</Flex>
+	<Flex direction="column" gap="20" :class="$style.wrapper">
+		<Breadcrumbs />
 
 		<Flex direction="column" gap="40">
 			<Flex direction="column" gap="16">
-				<Text size="16" weight="600" color="primary">
+				<Text size="13" weight="600" color="primary">
 					Accounts &nbsp;<Text color="tertiary">{{ appStore.accounts.length }} </Text>
 				</Text>
 

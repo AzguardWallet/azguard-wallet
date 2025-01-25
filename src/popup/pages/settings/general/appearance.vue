@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Appearance",
 		"isAuthRequired": true
 	}
 }
@@ -9,6 +10,7 @@
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown"
 
 /** Composables */
@@ -72,17 +74,7 @@ watch(
 
 <template>
 	<Flex v-if="settings" direction="column" gap="20" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<RouterLink to="/popup/settings/general">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> General </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Appearance </Text>
-		</Flex>
+		<Breadcrumbs />
 
 		<Flex direction="column" gap="24">
 			<Flex justify="between">

@@ -2,6 +2,7 @@
 /** Components */
 import TokenCard from "./TokenCard.vue"
 import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
@@ -58,9 +59,9 @@ const popupStore = usePopupStore()
 		</Flex>
 
 		<template v-if="appStore.tokens.length">
-			<Flex direction="column" gap="6">
+			<ItemsContainer>
 				<TokenCard v-for="token in appStore.tokens" :token />
-			</Flex>
+			</ItemsContainer>
 		</template>
 		<template v-else>
 			<Button @click="popupStore.open('new_token')" type="secondary" size="small" leftIcon="plus-circle">

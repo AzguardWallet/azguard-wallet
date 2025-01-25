@@ -2,6 +2,8 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -39,7 +41,7 @@ const checks = reactive({
 })
 
 const isReadyToReset = computed(
-	() => profileNameTerm.value === "My Profile" && checks.permament && checks.undone && checks.sure,
+	() => profileNameTerm.value === appStore.profile.name && checks.permament && checks.undone && checks.sure,
 )
 const handleReset = () => {
 	if (!isReadyToReset.value) return
@@ -51,7 +53,8 @@ const handleReset = () => {
 		managers.profile.deleteProfile(appStore.profile.id)
 		popupStore.closeAll()
 
-		appStore.profile = null
+		appStore.profiles = appStore.profiles.filter(p => p.id !== appStore.profile.id)
+		appStore.profile = appStore.profiles[0]
 		appStore.accounts = []
 		appStore.balances = []
 		appStore.tokens = []
@@ -61,9 +64,9 @@ const handleReset = () => {
 		appStore.isSessionChecked = false
 		appStore.tokenAwaitingBalanceIdx = false
 
-		router.push("/popup/register")
+		// router.push("/popup/register")
 
-		openToast({ label: "Wallet reseted", icon: "check-circle" })
+		openToast({ label: "Profile deleted", icon: "check-circle" })
 	}
 
 	popupStore.open("confirm")
@@ -92,20 +95,24 @@ watch(
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
 					<Flex align="center" gap="6">
-						<Icon name="trash" size="18" color="primary" />
-						<Text size="16" weight="600" color="primary"> Reset Wallet </Text>
+						<Icon name="trash" size="18" color="red" />
+						<Text size="16" weight="600" color="primary"> Reset Profile </Text>
 					</Flex>
 
 					<Text size="14" weight="500" color="body" height="140" align="center" style="padding: 0 12px">
-						Your wallet will be permanently removed and you can't undo this action
+						Your profile will be permanently removed and you can't undo this action
 					</Text>
 				</Flex>
+
+				<ItemsContainer title="Profile to reset">
+					<SettingItem :title="appStore.profile.name" :description="appStore.profile.id" icon="user" raw />
+				</ItemsContainer>
 
 				<Input
 					ref="inputEl"
 					v-model="profileNameTerm"
 					label="Type your profile name"
-					placeholder="My Profile"
+					:placeholder="appStore.profile.name"
 				/>
 
 				<Flex direction="column" gap="16">
@@ -124,7 +131,7 @@ watch(
 						</Checkbox>
 						<Checkbox v-model="checks.sure">
 							<Text size="14" weight="600" color="secondary" height="140">
-								I'm sure there's no assets left in my wallet
+								I'm sure there's no assets left in my profile
 							</Text>
 						</Checkbox>
 					</Flex>
@@ -140,11 +147,11 @@ watch(
 					</Button>
 
 					<Button @click="handleReset" type="red" size="medium" wide :disabled="!isReadyToReset">
-						Reset my wallet
+						Reset
 					</Button>
 
 					<Text size="12" weight="500" color="support" height="140" align="center" style="max-width: 300px">
-						You will be able to restore your wallet later if you have saved the seed phrase
+						You will be able to restore your profile later if you have saved the seed phrase
 					</Text>
 				</Flex>
 			</Flex>

@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Notes",
 		"isAuthRequired": true
 	}
 }
@@ -9,6 +10,9 @@
 <script setup>
 /** Components */
 import Navigation from "../../../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { managers } from "@/utils/core.js"
@@ -63,26 +67,10 @@ watch(
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" gap="12" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<RouterLink to="/popup/settings/developer">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<RouterLink to="/popup/settings/developer/state">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> State </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Notes </Text>
-		</Flex>
+	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
+		<Breadcrumbs />
 
 		<Flex direction="column" gap="16">
-			<Text size="16" weight="600" color="primary">Notes</Text>
-
 			<Banner v-if="isFetchingNotes" isLoading> Fetching notes </Banner>
 
 			<Tooltip v-else-if="isErrorOccurred" wide>

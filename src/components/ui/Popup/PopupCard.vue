@@ -26,7 +26,7 @@ onMounted(() => {
 	<Flex
 		align="center"
 		direction="column"
-		gap="20"
+		gap="16"
 		:class="[$style.wrapper, large && $style.large, displaceIdx > 1 && $style.displace]"
 		:style="{
 			'--displace': displaceIdx - 1,
@@ -34,6 +34,7 @@ onMounted(() => {
 		}"
 	>
 		<div @click="showFullscreen = !showFullscreen" :class="$style.bar" />
+
 		<slot />
 	</Flex>
 </template>
@@ -66,12 +67,12 @@ onMounted(() => {
 }
 
 .bar {
-	width: 40px;
+	width: 32px;
 	height: 4px;
 
 	cursor: pointer;
 	border-radius: 50px;
-	background: var(--border);
+	background: var(--gray-20);
 
 	transition: all 0.2s var(--bezier);
 

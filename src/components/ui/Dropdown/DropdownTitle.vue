@@ -6,7 +6,7 @@
 
 <style module>
 .wrapper {
-	padding: 6px 8px 4px 8px;
+	padding: 6px 12px 4px 12px;
 
 	transform-style: preserve-3d;
 	-webkit-transform-style: preserve-3d;

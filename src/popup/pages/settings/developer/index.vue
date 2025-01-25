@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Developer",
 		"isAuthRequired": true
 	}
 }
@@ -9,52 +10,36 @@
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import PageHeader from "@/components/ui/Settings/PageHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 </script>
 
 <template>
-	<Flex direction="column" gap="12" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
-		</Flex>
+	<Flex direction="column" gap="20" :class="$style.wrapper">
+		<Breadcrumbs />
 
-		<Flex direction="column" gap="8">
-			<RouterLink to="/popup/settings/developer/networks">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Nodes </Text>
-						<Text size="13" weight="500" color="tertiary"> Add, edit, remove nodes </Text>
-					</Flex>
-
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-				</Flex>
-			</RouterLink>
-
-			<RouterLink to="/popup/settings/developer/advanced">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Advanced </Text>
-						<Text size="13" weight="500" color="tertiary"> Access to advanced features </Text>
-					</Flex>
-
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-				</Flex>
-			</RouterLink>
-
-			<RouterLink to="/popup/settings/developer/state">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> State </Text>
-						<Text size="13" weight="500" color="tertiary"> Notes, authwits, contracts, contacts </Text>
-					</Flex>
-
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-				</Flex>
-			</RouterLink>
-		</Flex>
+		<ItemsContainer>
+			<SettingItem
+				to="/popup/settings/developer/networks"
+				title="Nodes"
+				description="Add, edit or remove nodes"
+				icon="globe"
+			/>
+			<SettingItem
+				to="/popup/settings/developer/state"
+				title="State"
+				description="Explore notes, authwits or contracts"
+				icon="zap"
+			/>
+			<SettingItem
+				to="/popup/settings/developer/advanced"
+				title="Advanced"
+				description="Access to advanced features"
+				icon="zap"
+			/>
+		</ItemsContainer>
 
 		<Navigation />
 	</Flex>

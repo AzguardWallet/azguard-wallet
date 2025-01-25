@@ -7,6 +7,9 @@
 </route>
 
 <script setup>
+/** UI */
+import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
+
 /** Utils */
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { managers, initTokenService, initTransactionService } from "@/utils/core"
@@ -84,7 +87,6 @@ const handleUnlockWallet = async () => {
 		// } else {
 		// 	router.push("/popup/general")
 		// }
-
 	} catch (err) {
 		console.log(err)
 	}
@@ -132,6 +134,12 @@ watch(
 			</Flex>
 
 			<Flex align="center" direction="column" gap="16">
+				<Flex @click="popupStore.open('select_profile')" align="center" gap="6" :class="$style.profile_badge">
+					<Icon name="user" size="14" color="tertiary" />
+					<Text size="13" weight="600" color="primary">{{ appStore.profile.name }}</Text>
+					<Icon name="chevron" size="12" color="tertiary" :class="$style.chevron_icon" />
+				</Flex>
+
 				<Text size="24" weight="600" color="primary" style="line-height: 16px"> Password required </Text>
 				<Text size="14" weight="500" color="tertiary" align="center" height="140">
 					Enter your profile password to continue
@@ -159,7 +167,7 @@ watch(
 
 					<template #suffix>
 						<Icon
-							@click="isPasswordType = !isPasswordType"
+							@click.stop="isPasswordType = !isPasswordType"
 							:name="isPasswordType ? 'password' : 'text'"
 							size="16"
 							color="secondary"
@@ -183,14 +191,11 @@ watch(
 			</Flex>
 		</Flex>
 
-		<Flex align="center" direction="column" gap="12">
+		<Flex wide justify="center">
 			<Button @click="popupStore.open('forgot_password')" type="secondary" size="mini">
-				<Icon name="info" size="16" color="primary" /> Forgot Password
+				<Icon name="info" size="16" color="tertiary" />
+				<Text color="secondary">Forgot Password</Text>
 			</Button>
-
-			<Text size="12" weight="500" color="support" height="140" align="center">
-				The session has ended and the wallet has been locked. See "Forgot Password" for options.
-			</Text>
 		</Flex>
 	</Flex>
 </template>
@@ -228,6 +233,28 @@ watch(
 	&:focus {
 		border-color: var(--blue);
 	}
+}
+
+.profile_badge {
+	border-radius: 50px;
+	background: var(--gray-5);
+	cursor: pointer;
+
+	padding: 6px;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--gray-8);
+	}
+
+	&:active {
+		background: var(--gray-10);
+	}
+}
+
+.chevron_icon {
+	transform: rotate(-90deg);
 }
 
 .lock_badge {

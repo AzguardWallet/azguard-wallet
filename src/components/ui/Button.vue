@@ -78,7 +78,7 @@ const getStyles = () => {
 		:target="target"
 		:class="[...getStyles(), loading && $style.loading]"
 	>
-		<Spinner v-if="loading" :color="type === 'primary' ? '--txt-inverse' : '--txt-primary'" />
+		<Spinner v-if="loading" color="primary" />
 		<Icon
 			v-if="leftIcon"
 			:name="leftIcon"
@@ -100,6 +100,8 @@ const getStyles = () => {
 <style module>
 .wrapper {
 	position: relative;
+
+	overflow: hidden;
 
 	display: flex;
 	align-items: center;
@@ -223,7 +225,6 @@ const getStyles = () => {
 
 .wrapper.primary {
 	background: var(--btn-primary-bg);
-	box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 20%);
 	fill: var(--txt-white);
 }
 

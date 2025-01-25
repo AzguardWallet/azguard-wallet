@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Account State",
 		"isAuthRequired": true
 	}
 }
@@ -9,60 +10,36 @@
 <script setup>
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import PageHeader from "@/components/ui/Settings/PageHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 </script>
 
 <template>
-	<Flex direction="column" gap="12" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<RouterLink to="/popup/settings/developer">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> State </Text>
-		</Flex>
+	<Flex direction="column" gap="20" :class="$style.wrapper">
+		<Breadcrumbs />
 
-		<Flex direction="column" gap="8">
-			<RouterLink to="/popup/settings/developer/state/notes">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Notes </Text>
-						<Text size="13" weight="500" color="tertiary"> View all notes </Text>
-					</Flex>
-
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-				</Flex>
-			</RouterLink>
-			<Flex align="center" justify="between" :class="[$style.item, $style.disabled]">
-				<Flex direction="column" gap="6">
-					<Text size="14" weight="600" color="primary"> Authwits </Text>
-					<Text size="13" weight="500" color="tertiary"> View all authwits </Text>
-				</Flex>
-
-				<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-			</Flex>
-			<RouterLink to="/popup/settings/developer/state/contracts">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Contracts </Text>
-						<Text size="13" weight="500" color="tertiary"> View all contracts </Text>
-					</Flex>
-
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-				</Flex>
-			</RouterLink>
-			<Flex align="center" justify="between" :class="[$style.item, $style.disabled]">
-				<Flex direction="column" gap="6">
-					<Text size="14" weight="600" color="primary"> Contacts </Text>
-					<Text size="13" weight="500" color="tertiary"> View all contacts </Text>
-				</Flex>
-
-				<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-			</Flex>
-		</Flex>
+		<ItemsContainer>
+			<SettingItem
+				to="/popup/settings/developer/state/notes"
+				title="Notes"
+				description="View all notes"
+				chevron
+			/>
+			<SettingItem
+				to="/popup/settings/developer/state/authwits"
+				title="Authwits"
+				description="View all authwits"
+				chevron
+			/>
+			<SettingItem
+				to="/popup/settings/developer/state/contracts"
+				title="Contracts"
+				description="View all contracts"
+				chevron
+			/>
+		</ItemsContainer>
 
 		<Navigation />
 	</Flex>

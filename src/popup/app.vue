@@ -57,6 +57,7 @@ const initNetworks = async () => {
 	appStore.networks = (await managers.network.getOrInitNetworks()).sort((a, b) =>
 		a.chainId === b.chainId ? a.name.localeCompare(b.name) : a.chainId - b.chainId,
 	)
+
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
 	if ("azguard:ui:activeNetwork" in activeNetworkResult) {
 		const localActiveNetworkId = activeNetworkResult["azguard:ui:activeNetwork"]
@@ -70,6 +71,13 @@ const initNetworks = async () => {
 const initAccount = async () => {
 	managers.account = new AccountServiceClient(appStore.profile, appStore.network)
 	appStore.accounts = await managers.account.getAccounts(true)
+
+	/** temp */
+	if (!appStore.accounts.length) {
+		await managers.account.createAccount(AccountType.Azguard_v0, "Account")
+		appStore.accounts = await managers.account.getAccounts(true)
+	}
+
 	await appStore.setupActiveAccount()
 }
 
@@ -155,6 +163,8 @@ const loadProfile = async () => {
 		}
 	}
 
+	appStore.profiles = await managers.profile.getProfiles()
+
 	const activeProfile = await managers.profile.getActiveProfile()
 	if (activeProfile) {
 		appStore.profile = activeProfile
@@ -187,9 +197,8 @@ const loadProfile = async () => {
 	}
 
 	if (!appStore.profile) {
-		const profiles = await managers.profile.getProfiles()
-		if (profiles.length) {
-			appStore.profile = profiles[0]
+		if (appStore.profiles.length) {
+			appStore.profile = appStore.profiles[0]
 
 			appStore.isSessionChecked = true
 

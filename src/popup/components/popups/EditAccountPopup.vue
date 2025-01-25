@@ -83,15 +83,13 @@ const onKeydown = e => {
 				<Text size="14" weight="600" color="primary"> Edit account </Text>
 
 				<Input
-					label="New name"
+					label="Name"
 					placeholder="My Vault"
 					v-model="nameTerm"
 					autofocus
 					@input="isStartedEditing = true"
 				>
 				</Input>
-
-				<Input v-model="addressTerm" label="Address" placeholder="Address" disabled />
 
 				<Flex direction="column" gap="12">
 					<Button
@@ -102,7 +100,7 @@ const onKeydown = e => {
 						:disabled="!isAvailableToUpdateAccount"
 						:loading="isAccountUpdateInProgress"
 					>
-						<Text color="inverse">Update</Text>
+						Update
 					</Button>
 					<Button @click="handleFillFieldsWithDefaultValues" wide type="secondary" size="medium">
 						Reset changes

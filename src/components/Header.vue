@@ -27,7 +27,7 @@ const handleOpenPopup = target => {
 			justify="center"
 			:class="[$style.button, !appStore.isLogined && $style.disabled]"
 		>
-			<Icon name="dots" size="18" color="primary" />
+			<Icon name="user" size="14" color="primary" />
 		</Flex>
 
 		<Flex align="center" gap="8">
@@ -41,7 +41,7 @@ const handleOpenPopup = target => {
 				<Icon name="vault" size="18" color="primary" />
 
 				<Text size="13" weight="600" color="primary" :class="$style.account_name">
-					{{ appStore.account.name }}
+					{{ appStore.account?.name }}
 				</Text>
 
 				<Text
@@ -92,6 +92,9 @@ const handleOpenPopup = target => {
 
 .button {
 	position: relative;
+
+	min-width: 28px;
+	min-height: 28px;
 
 	cursor: pointer;
 	border-radius: 50%;

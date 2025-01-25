@@ -17,6 +17,8 @@ export const useAppStore = defineStore("app", () => {
 	const displayOption = ref("total_account_value")
 
 	const profile = ref()
+	const profiles = ref([])
+
 	const isRegistered = computed(() => !!profile.value)
 
 	const account = ref<Account>()
@@ -35,6 +37,7 @@ export const useAppStore = defineStore("app", () => {
 				return
 			}
 		}
+
 		account.value = accounts.value[0]
 		await chrome.storage.local.set({
 			"azguard:ui:activeAccount": account.value?.address,
@@ -141,7 +144,7 @@ export const useAppStore = defineStore("app", () => {
 	const transactions = ref([])
 	const syncTransactions = async () => {
 		transactions.value = (await managers.transaction.getTransactions(account.value))
-			.filter(t => t.account === account.value.address)
+			.filter(t => t.account === account.value?.address)
 			.sort((a, b) => b.updatedAt - a.updatedAt)
 	}
 
@@ -158,6 +161,7 @@ export const useAppStore = defineStore("app", () => {
 		isAwaitingTransaction,
 		displayOption,
 		profile,
+		profiles,
 		isRegistered,
 		account,
 		isLogined,

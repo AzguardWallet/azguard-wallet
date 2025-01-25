@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Security",
 		"isAuthRequired": true
 	}
 }
@@ -9,41 +10,34 @@
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
+import SettingField from "@/components/ui/Settings/SettingField.vue"
 </script>
 
 <template>
-	<Flex direction="column" gap="12" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Security </Text>
-		</Flex>
+	<Flex direction="column" gap="20" :class="$style.wrapper">
+		<Breadcrumbs />
 
-		<Flex direction="column" gap="8">
-			<RouterLink to="/popup/settings/security/wallet">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Wallet </Text>
-						<Text size="13" weight="500" color="tertiary"> Edit or reset your wallet </Text>
-					</Flex>
+		<ItemsContainer>
+			<SettingItem
+				title="Wallet"
+				description="Edit or reset your wallet"
+				icon="wallet"
+				to="/popup/settings/security/wallet"
+			/>
+			<SettingItem
+				title="Backup"
+				description="Get the seed phrase or secret key"
+				icon="key-square"
+				to="/popup/settings/security/export"
+			/>
+		</ItemsContainer>
 
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-				</Flex>
-			</RouterLink>
-
-			<RouterLink to="/popup/settings/security/accounts">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Manage accounts </Text>
-						<Text size="13" weight="500" color="tertiary"> Edit account visibility or metadata </Text>
-					</Flex>
-
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-				</Flex>
-			</RouterLink>
-		</Flex>
+		<ItemsContainer>
+			<SettingField label="Session Time" value="10 min" icon="edit" />
+		</ItemsContainer>
 
 		<Navigation />
 	</Flex>
