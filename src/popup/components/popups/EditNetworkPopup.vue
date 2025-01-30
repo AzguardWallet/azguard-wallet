@@ -94,6 +94,15 @@ const onKeydown = e => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
+				<ItemsContainer>
+					<SettingItem
+						:title="networkToEdit.name"
+						description="Selected node for editing"
+						icon="globe-edit"
+						raw
+					/>
+				</ItemsContainer>
+
 				<Input
 					label="New name"
 					placeholder="My node"

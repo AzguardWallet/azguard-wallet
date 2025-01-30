@@ -78,8 +78,8 @@ const handleDelete = target => {
 					v-for="network in appStore.networks"
 					@click="handleSelectNetwork(network)"
 					:title="network.name"
-					:icon="appStore.network?.id === network.id ? 'check' : 'n'"
-					iconFillColor="blue"
+					:icon="appStore.network?.id === network.id ? 'check' : 'globe'"
+					:iconFillColor="appStore.network?.id === network.id ? 'blue' : 'tertiary'"
 					iconBgColor="transparent"
 				>
 					<template #right>

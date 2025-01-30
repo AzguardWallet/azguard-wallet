@@ -2,6 +2,7 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
@@ -94,9 +95,13 @@ const onKeydown = e => {
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_network">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> New node </Text>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">New node</Text>
+				</template>
+			</PopupHeader>
 
+			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Input label="Name" placeholder="My node" v-model="nameTerm" autofocus>
 					<template #right>
 						<Transition name="fade">
