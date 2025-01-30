@@ -71,8 +71,8 @@ const handleEditCurrentAccount = () => {
 			</ItemsContainer>
 
 			<ItemsContainer wide>
-				<SettingItem to="https://google.com" title="View on Explorer" icon="zap" external />
-				<SettingItem to="/popup/settings/developer/state" title="Account state" icon="zap" />
+				<SettingItem to="https://google.com" title="View on Explorer" icon="search" external disabled />
+				<SettingItem to="/popup/settings/developer/state" title="Account State" icon="code-asterisk" />
 			</ItemsContainer>
 		</Flex>
 
