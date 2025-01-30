@@ -86,17 +86,6 @@ const handleDelete = target => {
 						<NetworkBadge :chainId="network.chainId" />
 
 						<Flex align="center" gap="8">
-							<Tooltip side="left">
-								<Icon name="info" size="14" color="tertiary" />
-
-								<template #content>
-									<Flex direction="column" gap="6" align="center">
-										<Text> <Text color="secondary">ID:</Text> {{ network.chainId }} </Text>
-										<Text> <Text color="secondary">URL:</Text> {{ network.rpcUrl }} </Text>
-									</Flex>
-								</template>
-							</Tooltip>
-
 							<Icon
 								@click.stop="handleEdit(network)"
 								name="edit"
