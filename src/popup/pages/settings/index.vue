@@ -40,16 +40,14 @@ const handleCopyAddress = () => {
 			<ItemsContainer>
 				<SettingItem
 					to="/popup/settings/profile"
-					title="Profile Settings"
-					:description="appStore.profile.name"
+					:title="appStore.profile.name"
 					icon="user"
 					iconBgColor="var(--blue)"
 					chevron
 				/>
 				<SettingItem
 					to="/popup/settings/account"
-					title="Account Settings"
-					:description="appStore.account.name"
+					:title="appStore.account.name"
 					icon="vault"
 					iconBgColor="var(--blue)"
 					chevron
