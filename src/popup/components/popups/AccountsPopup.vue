@@ -115,7 +115,6 @@ const handleManageAccounts = () => {
 						@click="showAllOtherAccounts = !showAllOtherAccounts"
 						type="secondary"
 						size="small"
-						square
 					>
 						{{ showAllOtherAccounts ? "Hide" : "Show" }} all accounts
 					</Button>

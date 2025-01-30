@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
 				</template>
 			</Banner>
 
-			<Button @click="handleStart" type="secondary" size="medium" right-icon="arrow-right-circle" square wide>
+			<Button @click="handleStart" type="secondary" size="medium" right-icon="arrow-right-circle" wide>
 				Agree & Continue
 			</Button>
 		</template>
@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
 			</Input>
 
 			<Flex direction="column" align="center" gap="12">
-				<Button @click="handleClose" type="secondary" size="medium" square wide>
+				<Button @click="handleClose" type="secondary" size="medium" wide>
 					Close
 					<div v-if="!isAutoCloseDisabled" :class="$style.progress_bar" />
 				</Button>

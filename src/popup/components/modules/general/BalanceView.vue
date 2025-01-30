@@ -162,7 +162,7 @@ const handleDeleteToken = () => {
 				</Tooltip>
 
 				<Flex v-else align="center" justify="between" wide>
-					<Button @click="router.go(-1)" type="secondary" size="micro" square>
+					<Button @click="router.go(-1)" type="secondary" size="micro">
 						<Icon name="arrow-right" size="12" color="secondary" style="transform: rotate(180deg)" />
 					</Button>
 
@@ -184,7 +184,7 @@ const handleDeleteToken = () => {
 					</Tooltip>
 
 					<Dropdown>
-						<Button type="secondary" size="micro" square>
+						<Button type="secondary" size="micro">
 							<Icon name="dots" size="12" color="primary" />
 						</Button>
 

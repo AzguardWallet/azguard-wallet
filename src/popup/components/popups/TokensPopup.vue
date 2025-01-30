@@ -91,7 +91,7 @@ const handleDeleteToken = target => {
 						</Flex>
 					</Flex>
 
-					<Button v-else type="secondary" size="small" disabled square> There is no tokens </Button>
+					<Button v-else type="secondary" size="small" disabled> There is no tokens </Button>
 				</Flex>
 
 				<Button

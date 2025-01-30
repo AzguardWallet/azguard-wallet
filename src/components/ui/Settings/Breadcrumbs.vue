@@ -15,27 +15,13 @@ const props = defineProps({
 
 <template>
 	<Flex wide align="center" justify="between" :class="$style.wrapper">
-		<Button @click="router.go(-1)" type="secondary" size="micro" square>
+		<Button @click="router.go(-1)" type="secondary" size="micro">
 			<Icon name="arrow-right" size="12" color="secondary" style="transform: rotate(180deg)" />
 		</Button>
 
 		<Text v-if="!hideTitle" size="13" weight="600" color="secondary" :class="$style.title">
 			{{ route.meta.title }}
 		</Text>
-
-		<!-- <Dropdown position="start">
-			<Button type="secondary" size="micro" square>
-				<Icon name="chevron" size="12" color="secondary" />
-			</Button>
-
-			<template #popup>
-				<DropdownTitle>Breadcrumbs</DropdownTitle>
-
-				<DropdownItem>Settings</DropdownItem>
-				<DropdownItem>Security</DropdownItem>
-				<DropdownItem>Backup</DropdownItem>
-			</template>
-		</Dropdown> -->
 	</Flex>
 </template>
 

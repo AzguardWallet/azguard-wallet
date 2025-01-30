@@ -22,7 +22,7 @@ const popupStore = usePopupStore()
 
 			<Flex align="center" gap="6">
 				<Dropdown>
-					<Button type="secondary" size="micro" square>
+					<Button type="secondary" size="micro">
 						<Icon name="dots" size="12" color="secondary" />
 					</Button>
 

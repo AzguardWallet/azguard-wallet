@@ -29,9 +29,6 @@ const props = defineProps({
 		type: String,
 		required: false,
 	},
-	square: {
-		type: Boolean,
-	},
 	target: {
 		type: String,
 		required: false,
@@ -66,7 +63,6 @@ const getStyles = () => {
 		hasCorrectSize && style[props.size],
 		props.disabled && style.disabled,
 		props.border && style.border,
-		props.square && style.square,
 	]
 }
 </script>
@@ -170,7 +166,7 @@ const getStyles = () => {
 
 	font-size: 13px;
 
-	border-radius: 50px;
+	border-radius: 10px;
 
 	padding: 0 12px;
 }
@@ -179,7 +175,7 @@ const getStyles = () => {
 	height: 32px;
 	gap: 6px;
 
-	border-radius: 50px;
+	border-radius: 10px;
 
 	padding: 0 12px;
 }
@@ -189,7 +185,7 @@ const getStyles = () => {
 
 	gap: 6px;
 
-	border-radius: 50px;
+	border-radius: 10px;
 
 	font-size: 12px;
 
@@ -201,7 +197,7 @@ const getStyles = () => {
 
 	gap: 6px;
 
-	border-radius: 50px;
+	border-radius: 6px;
 
 	font-size: 12px;
 
@@ -277,14 +273,6 @@ const getStyles = () => {
 
 .wrapper.border {
 	border: 1px solid var(--border);
-}
-
-.wrapper.square {
-	border-radius: 10px;
-}
-
-.wrapper.micro.square {
-	border-radius: 6px;
 }
 
 .left_icon {
