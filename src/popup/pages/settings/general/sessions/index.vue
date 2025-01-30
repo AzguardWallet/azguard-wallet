@@ -91,7 +91,7 @@ const interactionServiceClient = new InteractionServiceClient(
 				<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
 					<Flex
 						v-for="ds in dappSessions"
-						@click="router.push(`/popup/settings/dappSessions/session/${ds.id}`)"
+						@click="router.push(`/popup/settings/general/sessions/session/${ds.id}`)"
 						align="center"
 						justify="between"
 						:class="$style.session"

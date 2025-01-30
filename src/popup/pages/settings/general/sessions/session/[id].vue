@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Session",
 		"isAuthRequired": true
 	}
 }
@@ -13,6 +14,7 @@ import { onMounted } from "vue"
 
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
@@ -41,11 +43,11 @@ const events = ref([])
 
 const fetchSession = async () => {
 	const id = route.params.id
-	
+
 	session.value = await interactionServiceClient.getDappSession(id)
-	
+
 	if (!session.value) {
-		router.push('/popup/settings/dappSessions')
+		router.push("/popup/settings/general/sessions")
 		return
 	}
 
@@ -58,7 +60,7 @@ async function fetchAccounts() {
 
 	for (const n of Object.values(session.value.namespaces)) {
 		for (const acc of n.accounts) {
-			const [ _, chainId, address ] = acc.split(":")
+			const [_, chainId, address] = acc.split(":")
 			if (!accMap[chainId]) {
 				accMap[chainId] = []
 			}
@@ -66,7 +68,7 @@ async function fetchAccounts() {
 			accMap[chainId].push(address)
 		}
 	}
-	
+
 	for (const chainId of Object.keys(accMap)) {
 		const networks = await networkServiceClient.getNetworks(Number(chainId))
 		if (networks.length) {
@@ -79,8 +81,8 @@ async function fetchAccounts() {
 					accounts.value.push(account)
 				}
 			}
-		}		
-	}	
+		}
+	}
 }
 
 async function fetchSessionParams() {
@@ -102,17 +104,23 @@ const onImageError = () => {
 const handleDropSession = () => {
 	interactionServiceClient.dropDappSession(session.value.id, true)
 
-	router.push('/popup/settings/dappSessions')
+	router.push("/popup/settings/general/sessions")
 }
 
-const handleCopyAddress = (target) => {
+const handleCopyAddress = target => {
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Address is copied", icon: "copy" })
 }
 
-const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, handleDropSession, undefined)
+const interactionServiceClient = new InteractionServiceClient(
+	undefined,
+	undefined,
+	undefined,
+	handleDropSession,
+	undefined,
+)
 
-onMounted( async () => {
+onMounted(async () => {
 	await fetchSession()
 	await fetchAccounts()
 	await fetchSessionParams()
@@ -122,38 +130,7 @@ onMounted( async () => {
 <template>
 	<Flex direction="column" justify="between" :class="$style.wrapper">
 		<Flex direction="column" gap="20">
-			<Flex align="center" gap="8">
-				<RouterLink to="/popup/settings">
-					<Text
-						size="13"
-						weight="600"
-						color="tertiary"
-						style="line-height: 16px"
-					>
-						Settings
-					</Text>
-				</RouterLink>
-				<Text color="support">•</Text>
-				<RouterLink to="/popup/settings/dappSessions">
-					<Text
-						size="13"
-						weight="600"
-						color="tertiary"
-						style="line-height: 16px"
-					>
-						Dapp Sessions
-					</Text>
-				</RouterLink>
-				<Text color="support">•</Text>
-				<Text
-					size="13"
-					weight="600"
-					color="tertiary"
-					style="line-height: 16px"
-				>
-					{{ session?.dappMetadata.name }}
-				</Text>
-			</Flex>
+			<Breadcrumbs />
 
 			<Flex direction="column" justify="between" :class="$style.session">
 				<Flex justify="between">
@@ -166,12 +143,7 @@ onMounted( async () => {
 							height="48"
 						/>
 
-						<Icon
-							v-else
-							name="dapp"
-							size="48"
-							color="blue"
-						/>
+						<Icon v-else name="dapp" size="48" color="blue" />
 					</Flex>
 
 					<Button @click="handleDropSession" type="secondary" size="mini">Disconnect</Button>
@@ -211,7 +183,13 @@ onMounted( async () => {
 								</Tooltip>
 							</Flex>
 
-							<Text @click="handleCopyAddress(acc.address)" size="13" weight="600" color="tertiary" class="copyable">
+							<Text
+								@click="handleCopyAddress(acc.address)"
+								size="13"
+								weight="600"
+								color="tertiary"
+								class="copyable"
+							>
 								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
 							</Text>
 						</Flex>
@@ -222,19 +200,21 @@ onMounted( async () => {
 			<Flex direction="column" align="start" justify="start" gap="8">
 				<Text size="15" weight="600" color="primary">Session allowances:</Text>
 
-				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
+				<Flex align="center" gap="4" :style="{ paddingLeft: '4px' }">
 					<Text size="13" color="secondary">Networks:</Text>
-					<Text size="13" color="secondary"> {{ chains.map(ch => getNetworkType(Number(ch.split(':').pop()))).join(', ') }} </Text>
-				</Flex>
-				
-				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
-					<Text size="13" color="secondary">Methods:</Text>
-					<Text size="13" color="secondary"> {{ methods.join(', ') }} </Text>
+					<Text size="13" color="secondary">
+						{{ chains.map(ch => getNetworkType(Number(ch.split(":").pop()))).join(", ") }}
+					</Text>
 				</Flex>
 
-				<Flex align="center" gap="4" :style="{paddingLeft: '4px'}">
+				<Flex align="center" gap="4" :style="{ paddingLeft: '4px' }">
+					<Text size="13" color="secondary">Methods:</Text>
+					<Text size="13" color="secondary"> {{ methods.join(", ") }} </Text>
+				</Flex>
+
+				<Flex align="center" gap="4" :style="{ paddingLeft: '4px' }">
 					<Text size="13" color="secondary">Events:</Text>
-					<Text size="13" color="secondary"> {{ events.join(', ') }} </Text>
+					<Text size="13" color="secondary"> {{ events.join(", ") }} </Text>
 				</Flex>
 			</Flex>
 		</Flex>
