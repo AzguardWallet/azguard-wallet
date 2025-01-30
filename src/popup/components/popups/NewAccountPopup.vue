@@ -2,6 +2,7 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 
 /** Utils */
 import { AccountType } from "@/wallet/services/account/client"
@@ -76,9 +77,13 @@ const onKeydown = e => {
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_account">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> New account </Text>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">New account</Text>
+				</template>
+			</PopupHeader>
 
+			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Input ref="inputEl" v-model="name" label="Account name" placeholder="My Vault">
 					<template #right>
 						<Transition name="fade">
@@ -90,19 +95,21 @@ const onKeydown = e => {
 					</template>
 				</Input>
 
-				<Button
-					@click="handleCreateAccount"
-					wide
-					type="primary"
-					size="medium"
-					:disabled="!isAvailableToCreateAccount"
-				>
-					<Text color="inverse">Create</Text>
-				</Button>
+				<Flex direction="column" gap="12">
+					<Button
+						@click="handleCreateAccount"
+						wide
+						type="primary"
+						size="medium"
+						:disabled="!isAvailableToCreateAccount"
+					>
+						Create
+					</Button>
 
-				<Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
-					New accounts do not require the creation of a new seed phrase
-				</Text>
+					<Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
+						New accounts do not require the creation of a new seed phrase
+					</Text>
+				</Flex>
 			</Flex>
 		</PopupCard>
 	</Popup>

@@ -101,7 +101,7 @@ const onKeydown = e => {
 				</template>
 			</PopupHeader>
 
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
+			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Input label="Name" placeholder="My node" v-model="nameTerm" autofocus>
 					<template #right>
 						<Transition name="fade">

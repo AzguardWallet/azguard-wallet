@@ -93,7 +93,7 @@ const onKeydown = e => {
 				</template>
 			</PopupHeader>
 
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
+			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<ItemsContainer>
 					<SettingItem
 						:title="networkToEdit.name"
