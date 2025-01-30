@@ -56,7 +56,10 @@ const handleOpen = target => {
 
 			<ItemsContainer wide>
 				<SettingItem to="/popup/settings/security/export" title="Backup profile" icon="key-square" chevron />
-				<SettingItem title="Change password" icon="password" />
+				<SettingItem title="Change password" icon="profile-password" disabled />
+			</ItemsContainer>
+
+			<ItemsContainer wide>
 				<SettingItem
 					@click="popupStore.open('reset')"
 					title="Delete profile"

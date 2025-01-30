@@ -28,10 +28,11 @@ const popupStore = usePopupStore()
 		<ItemsContainer description="Your wallet can't be restored if you didn't save a seed phrase or secret key ">
 			<SettingItem
 				@click="popupStore.open('reset')"
-				title="Reset Wallet"
+				title="Delete Wallet"
 				icon="trash"
 				iconBgColor="var(--red)"
 				chevron
+				disabled
 			/>
 		</ItemsContainer>
 

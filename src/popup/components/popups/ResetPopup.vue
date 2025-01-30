@@ -96,23 +96,23 @@ watch(
 				<Flex align="center" direction="column" gap="12">
 					<Flex align="center" gap="6">
 						<Icon name="trash" size="18" color="red" />
-						<Text size="16" weight="600" color="primary"> Reset Profile </Text>
+						<Text size="16" weight="600" color="primary"> Delete Profile </Text>
 					</Flex>
 
 					<Text size="14" weight="500" color="body" height="140" align="center" style="padding: 0 12px">
-						Your profile will be permanently removed and you can't undo this action
+						This action cannot be undone if you have not saved your profile credentials
 					</Text>
 				</Flex>
 
-				<ItemsContainer title="Profile to reset">
-					<SettingItem :title="appStore.profile.name" :description="appStore.profile.id" icon="user" raw />
+				<ItemsContainer title="Profile to delete">
+					<SettingItem :title="appStore.profile.name" icon="user" raw />
 				</ItemsContainer>
 
 				<Input
 					ref="inputEl"
 					v-model="profileNameTerm"
-					label="Type your profile name"
-					:placeholder="appStore.profile.name"
+					label="Profile name"
+					placeholder="Name of the profile you want to delete"
 				/>
 
 				<Flex direction="column" gap="16">
@@ -138,20 +138,12 @@ watch(
 				</Flex>
 
 				<Flex wide direction="column" align="center" gap="12">
-					<Button v-if="appStore.isLogined" type="secondary" size="medium" wide>
-						<Text color="tertiary" wrap="wrap">
-							<Text color="secondary">{{ appStore.accounts.length }} accounts</Text>
-							with a total balance
-							<Text color="secondary">$0.00</Text>
-						</Text>
-					</Button>
-
 					<Button @click="handleReset" type="red" size="medium" wide :disabled="!isReadyToReset">
 						Reset
 					</Button>
 
 					<Text size="12" weight="500" color="support" height="140" align="center" style="max-width: 300px">
-						You will be able to restore your profile later if you have saved the seed phrase
+						You will be able to recover your profile later if you have saved the seed phrase or secret key
 					</Text>
 				</Flex>
 			</Flex>
