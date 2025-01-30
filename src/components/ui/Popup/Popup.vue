@@ -19,26 +19,18 @@ watch(
 		if (props.show) {
 			const _ = managers.profile?.refreshSession()
 		}
-	}
+	},
 )
 </script>
 
 <template>
-	<Transition name="opacity">
-		<div
-			v-if="show"
-			:class="$style.dark_bg"
-			:style="{ zIndex: (displaceIdx + 1) * 100 * 4 }"
-		/>
+	<Transition name="slideopacity">
+		<div v-if="show" :class="$style.dark_bg" :style="{ zIndex: (displaceIdx + 1) * 100 * 4 }" />
 	</Transition>
 	<Transition name="slide" appear>
 		<template v-if="show">
 			<teleport to="#popup">
-				<Flex
-					direction="column"
-					:class="$style.wrapper"
-					:style="{ zIndex: (displaceIdx + 1) * 100 * 5 }"
-				>
+				<Flex direction="column" :class="$style.wrapper" :style="{ zIndex: (displaceIdx + 1) * 100 * 5 }">
 					<div @click="emit('onClose')" :class="$style.close_area" />
 
 					<slot />

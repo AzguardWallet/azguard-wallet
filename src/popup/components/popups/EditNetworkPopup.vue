@@ -108,24 +108,26 @@ const onKeydown = e => {
 				<Input label="New RPC Link" placeholder="http://localhost:1337" v-model="urlTerm" />
 
 				<Flex direction="column" gap="12">
-					<Button
-						@click="handleUpdateNetwork"
-						wide
-						type="primary"
-						size="medium"
-						:disabled="!isAvailableToUpdateNetwork"
-						:loading="isNetworkUpdateInProgress"
-					>
-						<Text color="inverse">Update</Text>
-					</Button>
-					<Button @click="handleFillFieldsWithDefaultValues" wide type="secondary" size="medium">
-						Reset changes
-					</Button>
-				</Flex>
+					<Flex direction="column" gap="12">
+						<Button
+							@click="handleUpdateNetwork"
+							wide
+							type="primary"
+							size="medium"
+							:disabled="!isAvailableToUpdateNetwork"
+							:loading="isNetworkUpdateInProgress"
+						>
+							Update
+						</Button>
+						<Button @click="handleFillFieldsWithDefaultValues" wide type="secondary" size="medium">
+							Reset changes
+						</Button>
+					</Flex>
 
-				<Text size="12" weight="500" color="tertiary" height="140" align="center">
-					We will check the availability of the specified RPC before adding it
-				</Text>
+					<Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
+						We will check the availability of the specified RPC before adding it
+					</Text>
+				</Flex>
 			</Flex>
 		</PopupCard>
 	</Popup>

@@ -3,6 +3,8 @@
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Services */
 import { managers } from "@/utils/core.js"
@@ -34,7 +36,7 @@ const handleSelectNetwork = target => {
 }
 
 const handleManageNetworks = () => {
-	router.push("/popup/settings/developer/networks")
+	router.push("/popup/settings/general/networks")
 	emit("onClose")
 }
 </script>
@@ -45,7 +47,7 @@ const handleManageNetworks = () => {
 			<Flex wide direction="column" gap="16" :class="$style.wrapper">
 				<Flex direction="column" gap="16">
 					<Flex align="center" justify="between">
-						<Text size="14" weight="600" color="primary"> Select node </Text>
+						<Text size="14" weight="600" color="primary"> Switch node </Text>
 
 						<Flex
 							@click="handleManageNetworks"
@@ -53,44 +55,36 @@ const handleManageNetworks = () => {
 							gap="4"
 							:class="['clickable', $style.txt_button]"
 						>
-							<Text size="13" weight="600" color="tertiary"> Manage node </Text>
+							<Text size="13" weight="600" color="tertiary"> Manage nodes </Text>
 							<Icon name="arrow-narrow-up-right" size="12" color="tertiary" />
 						</Flex>
 					</Flex>
-					<Flex direction="column" gap="6">
-						<Flex
+
+					<ItemsContainer>
+						<SettingItem
 							v-for="network in appStore.networks"
 							@click="handleSelectNetwork(network)"
-							align="center"
-							justify="between"
-							:class="$style.network"
+							:title="network.name"
+							:icon="appStore.network.id === network.id ? 'check' : 'n'"
+							iconFillColor="blue"
+							iconBgColor="transparent"
 						>
-							<Flex align="center" gap="10">
-								<Icon
-									:name="appStore.network.id === network.id ? 'check-circle' : 'circle'"
-									size="16"
-									:color="appStore.network.id === network.id ? 'green' : 'tertiary'"
-								/>
-
-								<Text size="14" weight="600" color="primary">
-									{{ network.name }}
-								</Text>
-
+							<template #right>
 								<NetworkBadge :chainId="network.chainId" />
-							</Flex>
 
-							<Tooltip position="end">
-								<Icon name="info" size="14" color="tertiary" />
+								<Tooltip side="left">
+									<Icon name="info" size="14" color="tertiary" />
 
-								<template #content>
-									<Flex direction="column" gap="6" align="center">
-										<Text> <Text color="secondary">Chain ID:</Text> {{ network.chainId }} </Text>
-										<Text> <Text color="secondary">RPC Link:</Text> {{ network.rpcUrl }} </Text>
-									</Flex>
-								</template>
-							</Tooltip>
-						</Flex>
-					</Flex>
+									<template #content>
+										<Flex direction="column" gap="6" align="center">
+											<Text> <Text color="secondary">ID:</Text> {{ network.chainId }} </Text>
+											<Text> <Text color="secondary">URL:</Text> {{ network.rpcUrl }} </Text>
+										</Flex>
+									</template>
+								</Tooltip>
+							</template>
+						</SettingItem>
+					</ItemsContainer>
 				</Flex>
 
 				<Flex direction="column" gap="12">
@@ -102,12 +96,8 @@ const handleManageNetworks = () => {
 						leftIcon="plus-circle"
 						leftIconColor="primary"
 					>
-						Add node
+						New node
 					</Button>
-
-					<Text size="12" weight="500" color="tertiary" height="140" align="center">
-						To add a new node, come up with a unique name and provide an RPC link
-					</Text>
 				</Flex>
 			</Flex>
 		</PopupCard>
@@ -119,35 +109,6 @@ const handleManageNetworks = () => {
 	flex: 1;
 
 	padding: 0 20px 24px 20px;
-}
-
-.network {
-	border-radius: 12px;
-	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
-
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--gray-3);
-		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-5);
-
-		& .icons {
-			opacity: 1;
-		}
-	}
-
-	&:active {
-		background: var(--gray-5);
-	}
-}
-
-.icons {
-	opacity: 0;
-
-	transition: all 0.2s var(--bezier);
 }
 
 .txt_button {

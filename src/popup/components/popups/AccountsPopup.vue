@@ -58,7 +58,7 @@ const handleManageAccounts = () => {
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Flex align="center" justify="between">
-					<Text size="14" weight="600" color="primary"> Accounts </Text>
+					<Text size="14" weight="600" color="primary"> Switch account </Text>
 
 					<Flex
 						@click="handleManageAccounts"

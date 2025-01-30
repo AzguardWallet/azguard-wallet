@@ -237,14 +237,28 @@ body {
 	user-select: none;
 }
 
-.slide-enter-active,
-.slide-leave-active {
+.slide-enter-active {
 	transition: all 0.3s var(--bezier);
+}
+.slide-leave-active {
+	transition: all 0.15s var(--bezier);
 }
 
 .slide-enter-from,
 .slide-leave-to {
 	transform: translateY(40px);
+	opacity: 0;
+}
+
+.slideopacity-enter-active {
+	transition: all 0.3s ease;
+}
+.slideopacity-leave-active {
+	transition: all 0.15s ease;
+}
+
+.slideopacity-enter-from,
+.slideopacity-leave-to {
 	opacity: 0;
 }
 

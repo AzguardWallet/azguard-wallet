@@ -22,6 +22,7 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 		<ItemsContainer title="Wallet">
 			<SettingItem to="/popup/settings/general/accounts" title="Accounts" icon="vault" iconBgColor="green" />
+			<SettingItem to="/popup/settings/general/networks" title="Nodes" icon="globe" iconBgColor="blue" />
 			<SettingItem to="/popup/settings/general/sessions" title="Sessions" icon="plug-circle" iconBgColor="sand" />
 		</ItemsContainer>
 

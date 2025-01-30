@@ -22,12 +22,6 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 		<ItemsContainer>
 			<SettingItem
-				to="/popup/settings/developer/networks"
-				title="Nodes"
-				description="Add, edit or remove nodes"
-				icon="globe"
-			/>
-			<SettingItem
 				to="/popup/settings/developer/advanced"
 				title="Advanced"
 				description="Access to advanced features"
