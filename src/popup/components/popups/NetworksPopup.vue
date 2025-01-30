@@ -63,17 +63,6 @@ const handleManageNetworks = () => {
 					>
 						<template #right>
 							<NetworkBadge :chainId="network.chainId" />
-
-							<Tooltip side="left">
-								<Icon name="info" size="14" color="tertiary" />
-
-								<template #content>
-									<Flex direction="column" gap="6" align="center">
-										<Text> <Text color="secondary">ID:</Text> {{ network.chainId }} </Text>
-										<Text> <Text color="secondary">URL:</Text> {{ network.rpcUrl }} </Text>
-									</Flex>
-								</template>
-							</Tooltip>
 						</template>
 					</SettingItem>
 				</ItemsContainer>
