@@ -2,6 +2,9 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -34,6 +37,8 @@ const urlTerm = ref("")
 const handleFillFieldsWithDefaultValues = () => {
 	nameTerm.value = networkToEdit.value.name
 	urlTerm.value = networkToEdit.value.rpcUrl
+
+	isStartedEditing.value = false
 }
 
 const isAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value) && isStartedEditing.value)
@@ -75,19 +80,20 @@ watch(
 )
 
 const onKeydown = e => {
-	if (e.key === "Enter") handleCreateNetwork()
+	if (e.key === "Enter") handleUpdateNetwork()
 }
 </script>
 
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_network">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Flex direction="column" gap="8">
-					<Text size="14" weight="600" color="primary"> Edit node </Text>
-					<Text size="13" weight="600" color="tertiary"> Chain ID: {{ networkToEdit.chainId }} </Text>
-				</Flex>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">Edit node</Text>
+				</template>
+			</PopupHeader>
 
+			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Input
 					label="New name"
 					placeholder="My node"
