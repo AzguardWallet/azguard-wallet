@@ -62,6 +62,12 @@ const props = defineProps({
 		}
 	}
 
+	&.sand {
+		& svg {
+			background: var(--sand);
+		}
+	}
+
 	& svg {
 		z-index: 1;
 

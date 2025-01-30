@@ -27,6 +27,12 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 				icon="vault"
 				iconBgColor="var(--green)"
 			/>
+			<SettingItem
+				to="/popup/settings/general/sessions"
+				title="Sessions"
+				icon="plug-circle"
+				iconBgColor="var(--sand)"
+			/>
 		</ItemsContainer>
 
 		<ItemsContainer title="Interface">
