@@ -46,8 +46,10 @@ const handleEdit = target => {
 const handleDelete = target => {
 	if (appStore.networks.length === 1) return
 
+	cacheStore.confirm.confirm_text = "Yes, delete node"
+	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.description =
-		"By confirming this action, the selected network will be permanently deleted from the list"
+		"By confirming this action, the selected node will be permanently deleted from your wallet"
 	cacheStore.confirm.callback = async () => {
 		await appStore.removeNetwork(target)
 

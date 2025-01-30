@@ -25,55 +25,27 @@ const handleConfirm = () => {
 </script>
 
 <template>
-	<Popup
-		:show
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.confirm"
-	>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.confirm">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
 					<Flex direction="column" align="center" gap="12">
 						<Icon name="warning" size="18" color="orange" />
 						<Text size="16" weight="600" color="primary">
-							{{
-								cacheStore.confirm.title
-									? cacheStore.confirm.title
-									: "Are you sure?"
-							}}
+							{{ cacheStore.confirm.title ? cacheStore.confirm.title : "Are you sure?" }}
 						</Text>
 					</Flex>
 
-					<Text
-						size="14"
-						weight="500"
-						color="body"
-						height="140"
-						align="center"
-					>
+					<Text size="14" weight="500" color="body" height="140" align="center">
 						{{ cacheStore.confirm.description }}
 					</Text>
 				</Flex>
 
-				<Flex gap="16">
-					<Button
-						@click="emit('onClose')"
-						wide
-						type="secondary"
-						size="medium"
-					>
-						Cancel
-					</Button>
+				<Flex gap="12">
+					<Button @click="emit('onClose')" wide type="secondary" size="medium"> Cancel </Button>
 
-					<Button
-						@click="handleConfirm"
-						wide
-						type="primary"
-						size="medium"
-					>
-						<Text color="inverse">{{
-							cacheStore.confirm.confirm_text || "Confirm"
-						}}</Text>
+					<Button @click="handleConfirm" wide :type="cacheStore.confirm.confirm_color" size="medium">
+						{{ cacheStore.confirm.confirm_text || "Confirm" }}
 					</Button>
 				</Flex>
 			</Flex>
