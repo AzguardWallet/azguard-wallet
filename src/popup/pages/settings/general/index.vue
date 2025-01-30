@@ -21,27 +21,12 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 		<Breadcrumbs />
 
 		<ItemsContainer title="Wallet">
-			<SettingItem
-				to="/popup/settings/general/accounts"
-				title="Accounts"
-				icon="vault"
-				iconBgColor="var(--green)"
-			/>
-			<SettingItem
-				to="/popup/settings/general/sessions"
-				title="Sessions"
-				icon="plug-circle"
-				iconBgColor="var(--sand)"
-			/>
+			<SettingItem to="/popup/settings/general/accounts" title="Accounts" icon="vault" iconBgColor="green" />
+			<SettingItem to="/popup/settings/general/sessions" title="Sessions" icon="plug-circle" iconBgColor="sand" />
 		</ItemsContainer>
 
 		<ItemsContainer title="Interface">
-			<SettingItem
-				to="/popup/settings/general/appearance"
-				title="Appearance"
-				icon="sun"
-				iconBgColor="var(--purple)"
-			/>
+			<SettingItem to="/popup/settings/general/appearance" title="Appearance" icon="sun" iconBgColor="purple" />
 		</ItemsContainer>
 
 		<Navigation />

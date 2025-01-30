@@ -151,14 +151,14 @@ watch(
 						@click="selectedRecoveryOption = 'seed'"
 						title="Seed Phrase"
 						icon="text"
-						iconBgColor="var(--blue)"
+						iconBgColor="blue"
 						chevron
 					/>
 					<SettingItem
 						@click="selectedRecoveryOption = 'private_key'"
 						title="Plain Secret Key"
 						icon="key"
-						iconBgColor="var(--blue)"
+						iconBgColor="blue"
 						chevron
 					/>
 					<!-- <SettingItem

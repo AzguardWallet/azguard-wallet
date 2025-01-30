@@ -41,14 +41,14 @@ const props = defineProps({
 						@click="popupStore.open('import')"
 						title="Profile Recovery"
 						icon="restart"
-						iconBgColor="var(--blue)"
+						iconBgColor="blue"
 						chevron
 					/>
 					<SettingItem
 						@click="popupStore.open('reset')"
 						title="Reset Profile"
 						icon="trash"
-						iconBgColor="var(--red)"
+						iconBgColor="red"
 						chevron
 					/>
 					<SettingItem

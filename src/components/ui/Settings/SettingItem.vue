@@ -3,8 +3,10 @@ const props = defineProps({
 	title: String,
 	description: String,
 	icon: String,
-	iconBgColor: String,
-	iconFillColor: String,
+	iconBgColor: {
+		type: String,
+		default: "gray-20",
+	},
 	to: String,
 	chevron: {
 		type: Boolean,
@@ -45,9 +47,8 @@ const slots = defineSlots()
 					v-if="icon && !loading"
 					:name="icon"
 					size="16"
-					:color="iconFillColor || 'white'"
-					:style="{ background: iconBgColor || 'var(--gray-20)' }"
-					:class="$style.icon"
+					color="white"
+					:class="[$style.icon, $style[iconBgColor]]"
 				/>
 				<Spinner v-else-if="icon && loading" size="16" color="--txt-primary" />
 
@@ -132,8 +133,25 @@ const slots = defineSlots()
 .icon {
 	box-sizing: content-box;
 	border-radius: 8px;
+	background: var(--gray-20);
 
 	padding: 5px;
+
+	&.blue {
+		background: var(--blue);
+	}
+
+	&.red {
+		background: var(--red);
+	}
+
+	&.sand {
+		background: var(--sand);
+	}
+
+	&.green {
+		background: var(--green);
+	}
 }
 
 .chevron_icon {

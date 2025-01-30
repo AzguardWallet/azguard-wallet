@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
 				title="Protected"
 				description="Password is required to use"
 				icon="lock"
-				iconBgColor="var(--green)"
+				iconBgColor="green"
 				chevron
 			/>
 			<SettingItem
@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
 				title="Plain"
 				description="Password is required to receive"
 				icon="eye"
-				iconBgColor="var(--red)"
+				iconBgColor="red"
 				chevron
 			/>
 		</ItemsContainer>

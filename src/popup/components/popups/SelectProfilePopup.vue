@@ -41,7 +41,7 @@ const handleSelectProfile = profile => {
 							:title="profile.name"
 							:description="profile.id"
 							icon="user"
-							iconBgColor="var(--blue)"
+							iconBgColor="blue"
 						/>
 					</ItemsContainer>
 				</Flex>

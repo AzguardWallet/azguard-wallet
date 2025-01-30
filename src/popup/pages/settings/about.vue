@@ -52,7 +52,7 @@ const handleOpen = target => {
 					to="https://azguardwallet.io"
 					title="Azguard Website"
 					icon="globe"
-					iconBgColor="var(--blue)"
+					iconBgColor="blue"
 					external
 				/>
 			</ItemsContainer>

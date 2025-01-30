@@ -52,7 +52,7 @@ const handleLockWallet = () => {
 							to="/popup/settings/profile"
 							:title="appStore.profile.name"
 							icon="user"
-							iconBgColor="var(--blue)"
+							iconBgColor="blue"
 							chevron
 						/>
 						<SettingItem title="Switch profile" icon="hand-click" chevron disabled />

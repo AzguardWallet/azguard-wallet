@@ -60,12 +60,7 @@ const handleOpen = target => {
 			</ItemsContainer>
 
 			<ItemsContainer wide>
-				<SettingItem
-					@click="popupStore.open('reset')"
-					title="Delete profile"
-					icon="trash"
-					iconBgColor="var(--red)"
-				/>
+				<SettingItem @click="popupStore.open('reset')" title="Delete profile" icon="trash" iconBgColor="red" />
 			</ItemsContainer>
 		</Flex>
 

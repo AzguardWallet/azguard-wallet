@@ -42,18 +42,8 @@ const appStore = useAppStore()
 		</ItemsContainer>
 
 		<ItemsContainer title="Select credentials type">
-			<SettingItem
-				title="Seed Phrase"
-				icon="text"
-				iconBgColor="var(--blue)"
-				to="/popup/settings/security/export/seed"
-			/>
-			<SettingItem
-				title="Secret Key"
-				icon="key"
-				iconBgColor="var(--blue)"
-				to="/popup/settings/security/export/key"
-			/>
+			<SettingItem title="Seed Phrase" icon="text" iconBgColor="blue" to="/popup/settings/security/export/seed" />
+			<SettingItem title="Secret Key" icon="key" iconBgColor="blue" to="/popup/settings/security/export/key" />
 		</ItemsContainer>
 
 		<ItemsContainer

@@ -30,7 +30,7 @@ const popupStore = usePopupStore()
 				@click="popupStore.open('reset')"
 				title="Delete Wallet"
 				icon="trash"
-				iconBgColor="var(--red)"
+				iconBgColor="red"
 				chevron
 				disabled
 			/>

@@ -42,38 +42,32 @@ const handleCopyAddress = () => {
 					to="/popup/settings/profile"
 					:title="appStore.profile.name"
 					icon="user"
-					iconBgColor="var(--blue)"
+					iconBgColor="blue"
 					chevron
 				/>
 				<SettingItem
 					to="/popup/settings/account"
 					:title="appStore.account.name"
 					icon="vault"
-					iconBgColor="var(--blue)"
+					iconBgColor="blue"
 					chevron
 				/>
 			</ItemsContainer>
 
 			<ItemsContainer>
-				<SettingItem
-					to="/popup/settings/general"
-					title="General"
-					icon="settings"
-					iconBgColor="var(--green)"
-					chevron
-				/>
+				<SettingItem to="/popup/settings/general" title="General" icon="settings" iconBgColor="green" chevron />
 				<SettingItem
 					to="/popup/settings/security"
 					title="Security"
 					icon="key-circle"
-					iconBgColor="var(--red)"
+					iconBgColor="red"
 					chevron
 				/>
 				<SettingItem
 					to="/popup/settings/developer"
 					title="Developer"
 					icon="terminal-square"
-					iconBgColor="var(--sand)"
+					iconBgColor="sand"
 					chevron
 				/>
 			</ItemsContainer>
