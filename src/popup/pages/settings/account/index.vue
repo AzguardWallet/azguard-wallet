@@ -9,7 +9,7 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../components/Navigation.vue"
+import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
@@ -72,7 +72,7 @@ const handleEditCurrentAccount = () => {
 
 			<ItemsContainer wide>
 				<SettingItem to="https://google.com" title="View on Explorer" icon="search" external disabled />
-				<SettingItem to="/popup/settings/developer/state" title="Account State" icon="code-asterisk" />
+				<SettingItem to="/popup/settings/account/state" title="Account State" icon="code-asterisk" />
 			</ItemsContainer>
 		</Flex>
 

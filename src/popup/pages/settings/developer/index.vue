@@ -28,12 +28,6 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 				icon="globe"
 			/>
 			<SettingItem
-				to="/popup/settings/developer/state"
-				title="State"
-				description="Explore notes, authwits or contracts"
-				icon="zap"
-			/>
-			<SettingItem
 				to="/popup/settings/developer/advanced"
 				title="Advanced"
 				description="Access to advanced features"

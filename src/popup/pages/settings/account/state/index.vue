@@ -21,20 +21,15 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 		<Breadcrumbs />
 
 		<ItemsContainer>
+			<SettingItem to="/popup/settings/account/state/notes" title="Notes" description="View all notes" chevron />
 			<SettingItem
-				to="/popup/settings/developer/state/notes"
-				title="Notes"
-				description="View all notes"
-				chevron
-			/>
-			<SettingItem
-				to="/popup/settings/developer/state/authwits"
+				to="/popup/settings/account/state/authwits"
 				title="Authwits"
 				description="View all authwits"
 				chevron
 			/>
 			<SettingItem
-				to="/popup/settings/developer/state/contracts"
+				to="/popup/settings/account/state/contracts"
 				title="Contracts"
 				description="View all contracts"
 				chevron

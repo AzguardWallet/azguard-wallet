@@ -9,7 +9,7 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../components/Navigation.vue"
+import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
