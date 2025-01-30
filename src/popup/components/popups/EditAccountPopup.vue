@@ -2,6 +2,9 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -79,8 +82,21 @@ const onKeydown = e => {
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_account">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> Edit account name </Text>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">Edit account</Text>
+				</template>
+			</PopupHeader>
+
+			<Flex wide direction="column" gap="24" :class="$style.wrapper">
+				<ItemsContainer>
+					<SettingItem
+						:title="accountToEdit.name"
+						description="Selected account for editing"
+						icon="vault"
+						raw
+					/>
+				</ItemsContainer>
 
 				<Input
 					label="Name"
@@ -100,7 +116,7 @@ const onKeydown = e => {
 						:disabled="!isAvailableToUpdateAccount"
 						:loading="isAccountUpdateInProgress"
 					>
-						Update account name
+						Update account
 					</Button>
 					<Button @click="handleFillFieldsWithDefaultValues" wide type="secondary" size="medium">
 						Reset changes
