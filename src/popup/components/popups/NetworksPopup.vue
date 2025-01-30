@@ -52,33 +52,31 @@ const handleManageNetworks = () => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="16" :class="$style.wrapper">
-				<Flex direction="column" gap="16">
-					<ItemsContainer>
-						<SettingItem
-							v-for="network in appStore.networks"
-							@click="handleSelectNetwork(network)"
-							:title="network.name"
-							:icon="appStore.network.id === network.id ? 'check' : 'n'"
-							iconFillColor="blue"
-							iconBgColor="transparent"
-						>
-							<template #right>
-								<NetworkBadge :chainId="network.chainId" />
+				<ItemsContainer>
+					<SettingItem
+						v-for="network in appStore.networks"
+						@click="handleSelectNetwork(network)"
+						:title="network.name"
+						:icon="appStore.network.id === network.id ? 'check' : 'n'"
+						iconFillColor="blue"
+						iconBgColor="transparent"
+					>
+						<template #right>
+							<NetworkBadge :chainId="network.chainId" />
 
-								<Tooltip side="left">
-									<Icon name="info" size="14" color="tertiary" />
+							<Tooltip side="left">
+								<Icon name="info" size="14" color="tertiary" />
 
-									<template #content>
-										<Flex direction="column" gap="6" align="center">
-											<Text> <Text color="secondary">ID:</Text> {{ network.chainId }} </Text>
-											<Text> <Text color="secondary">URL:</Text> {{ network.rpcUrl }} </Text>
-										</Flex>
-									</template>
-								</Tooltip>
-							</template>
-						</SettingItem>
-					</ItemsContainer>
-				</Flex>
+								<template #content>
+									<Flex direction="column" gap="6" align="center">
+										<Text> <Text color="secondary">ID:</Text> {{ network.chainId }} </Text>
+										<Text> <Text color="secondary">URL:</Text> {{ network.rpcUrl }} </Text>
+									</Flex>
+								</template>
+							</Tooltip>
+						</template>
+					</SettingItem>
+				</ItemsContainer>
 
 				<Divider>
 					<Text size="12" weight="500" color="tertiary"> or </Text>

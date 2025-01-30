@@ -1,7 +1,7 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Nodes",
+		"title": "Manage nodes",
 		"isAuthRequired": true
 	}
 }
@@ -67,41 +67,34 @@ const handleDelete = target => {
 		<Breadcrumbs />
 
 		<Flex direction="column" gap="16">
-			<Flex v-if="appStore.network" direction="column" gap="6">
-				<Flex
+			<Text size="13" weight="600" color="primary">
+				Nodes &nbsp;<Text color="tertiary">{{ appStore.networks.length }} </Text>
+			</Text>
+
+			<ItemsContainer>
+				<SettingItem
 					v-for="network in appStore.networks"
 					@click="handleSelectNetwork(network)"
-					align="center"
-					justify="between"
-					:class="$style.network"
+					:title="network.name"
+					:icon="appStore.network?.id === network.id ? 'check' : 'n'"
+					iconFillColor="blue"
+					iconBgColor="transparent"
 				>
-					<Flex align="center" gap="10">
-						<Icon
-							:name="appStore.network.id == network.id ? 'check-circle' : 'globe'"
-							size="16"
-							:color="appStore.network.id === network.id ? 'green' : 'tertiary'"
-						/>
-
-						<Text size="14" weight="600" color="primary">
-							{{ network.name }}
-						</Text>
-
+					<template #right>
 						<NetworkBadge :chainId="network.chainId" />
-					</Flex>
-
-					<Flex align="center" gap="14" :class="$style.icons">
-						<Tooltip position="end">
-							<Icon name="info" size="16" color="tertiary" />
-
-							<template #content>
-								<Flex direction="column" gap="6" align="center">
-									<Text> <Text color="secondary">Chain ID:</Text> {{ network.chainId }} </Text>
-									<Text> <Text color="secondary">RPC Link:</Text> {{ network.rpcUrl }} </Text>
-								</Flex>
-							</template>
-						</Tooltip>
 
 						<Flex align="center" gap="8">
+							<Tooltip side="left">
+								<Icon name="info" size="14" color="tertiary" />
+
+								<template #content>
+									<Flex direction="column" gap="6" align="center">
+										<Text> <Text color="secondary">ID:</Text> {{ network.chainId }} </Text>
+										<Text> <Text color="secondary">URL:</Text> {{ network.rpcUrl }} </Text>
+									</Flex>
+								</template>
+							</Tooltip>
+
 							<Icon
 								@click.stop="handleEdit(network)"
 								name="edit"
@@ -113,14 +106,14 @@ const handleDelete = target => {
 								v-if="appStore.networks.length > 1"
 								@click.stop="handleDelete(network)"
 								name="close-circle"
-								size="16"
+								size="14"
 								color="tertiary"
 								:class="$style.icon_btn"
 							/>
 						</Flex>
-					</Flex>
-				</Flex>
-			</Flex>
+					</template>
+				</SettingItem>
+			</ItemsContainer>
 
 			<Button
 				@click="popupStore.open('new_network')"
@@ -152,35 +145,6 @@ const handleDelete = target => {
 	border-top-right-radius: 24px;
 
 	padding: 20px 24px 80px 24px;
-}
-
-.network {
-	border-radius: 12px;
-	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
-
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--gray-3);
-		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-10);
-
-		& .icons {
-			opacity: 1;
-		}
-	}
-
-	&:active {
-		background: var(--gray-5);
-	}
-}
-
-.icons {
-	opacity: 0;
-
-	transition: all 0.2s var(--bezier);
 }
 
 .icon_btn {

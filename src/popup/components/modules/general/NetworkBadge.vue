@@ -17,18 +17,16 @@ const chain = computed(() => {
 
 	return chainType
 })
-
 </script>
 
 <template>
-	<Flex align="center" gap="6" :class="$style.wrapper" :style="{ background: `var(--${getNetworkColor(chainId)})`}">
-		<!-- <Text size="11" weight="700"> {{ chain === 'Custom' ? `${chain} | ${chainId}` : chain }} </Text> -->
+	<Flex align="center" gap="6" :class="$style.wrapper" :style="{ background: `var(--${getNetworkColor(chainId)})` }">
 		<Flex v-if="chain === 'Custom'" align="center" gap="2">
-			<Text size="11" weight="700"> {{  chain }} </Text>
+			<Text size="11" weight="700"> {{ chain }} </Text>
 			<div :class="$style.divider" />
 			<Text size="10" weight="600"> {{ chainId }} </Text>
 		</Flex>
-		 
+
 		<Text v-else size="11" weight="700"> {{ chain }} </Text>
 	</Flex>
 </template>

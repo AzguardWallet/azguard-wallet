@@ -124,20 +124,22 @@ const onKeydown = e => {
 					</template>
 				</Input>
 
-				<Button
-					@click="handleCreateNetwork"
-					wide
-					type="primary"
-					size="medium"
-					:disabled="!isAvailableToCreateNetwork"
-					:loading="isCreating"
-				>
-					<Text color="inverse">Create</Text>
-				</Button>
+				<Flex direction="column" gap="12">
+					<Button
+						@click="handleCreateNetwork"
+						wide
+						type="primary"
+						size="medium"
+						:disabled="!isAvailableToCreateNetwork"
+						:loading="isCreating"
+					>
+						Create
+					</Button>
 
-				<Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
-					We will check the availability of the specified RPC before adding it
-				</Text>
+					<Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
+						We will check the availability of the specified RPC before adding it
+					</Text>
+				</Flex>
 			</Flex>
 		</PopupCard>
 	</Popup>

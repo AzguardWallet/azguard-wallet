@@ -1,7 +1,7 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Accounts",
+		"title": "Manage accounts",
 		"isAuthRequired": true
 	}
 }
