@@ -12,13 +12,25 @@ const props = defineProps({
 		type: String,
 		required: false,
 	},
+	disabled: {
+		type: Boolean,
+		required: false,
+	},
 })
+
+const slots = defineSlots()
 </script>
 
 <template>
-	<Flex align="center" justify="between" gap="16" :class="$style.wrapper">
+	<Flex align="center" justify="between" gap="16" :class="[$style.wrapper, disabled && $style.disabled]">
 		<Text size="12" weight="600" color="secondary">{{ label }}</Text>
-		<Text size="13" weight="600" color="primary" :class="$style.value">{{ value }}</Text>
+
+		<Flex align="center" gap="8">
+			<Text v-if="!slots.value" size="13" weight="600" color="primary" :class="$style.value">{{ value }}</Text>
+			<slot name="value" />
+
+			<Icon v-if="icon" :name="icon" size="14" color="tertiary" />
+		</Flex>
 	</Flex>
 </template>
 

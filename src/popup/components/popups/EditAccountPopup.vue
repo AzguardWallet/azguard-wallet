@@ -80,7 +80,7 @@ const onKeydown = e => {
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_account">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> Edit account </Text>
+				<Text size="14" weight="600" color="primary"> Edit account name </Text>
 
 				<Input
 					label="Name"
@@ -100,7 +100,7 @@ const onKeydown = e => {
 						:disabled="!isAvailableToUpdateAccount"
 						:loading="isAccountUpdateInProgress"
 					>
-						Update
+						Update account name
 					</Button>
 					<Button @click="handleFillFieldsWithDefaultValues" wide type="secondary" size="medium">
 						Reset changes

@@ -52,7 +52,7 @@ const slots = defineSlots()
 				/>
 				<Spinner v-else-if="icon && loading" size="16" color="--txt-primary" />
 
-				<Flex direction="column" gap="6" wide>
+				<Flex direction="column" gap="4" wide>
 					<Text size="14" weight="600" color="primary" :class="$style.title"> {{ title }} </Text>
 					<Text v-if="description" size="12" weight="500" color="tertiary" :class="$style.description">
 						{{ description }}
@@ -162,6 +162,8 @@ const slots = defineSlots()
 	min-width: 100%;
 	width: 0;
 
+	line-height: 16px !important;
+
 	text-overflow: ellipsis;
 	overflow: hidden;
 	white-space: nowrap;
@@ -170,6 +172,8 @@ const slots = defineSlots()
 .description {
 	min-width: 100%;
 	width: 0;
+
+	line-height: 14px !important;
 
 	text-overflow: ellipsis;
 	overflow: hidden;
