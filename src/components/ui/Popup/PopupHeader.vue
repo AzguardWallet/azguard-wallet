@@ -13,7 +13,7 @@ const props = defineProps({
 		<Flex align="center" justify="between">
 			<slot name="title" />
 
-			<Flex align="center" gap="8">
+			<Flex align="center" gap="16">
 				<slot name="right" />
 
 				<Icon

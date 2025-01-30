@@ -130,7 +130,7 @@ const handleDelete = target => {
 				leftIcon="plus-circle"
 				leftIconColor="primary"
 			>
-				<Text size="13">Add node</Text>
+				<Text size="13">New node</Text>
 			</Button>
 		</Flex>
 

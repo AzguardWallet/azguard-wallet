@@ -3,6 +3,7 @@
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
@@ -44,22 +45,14 @@ const handleManageNetworks = () => {
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.networks">
 		<PopupCard :displaceIdx>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">Switch node</Text>
+				</template>
+			</PopupHeader>
+
 			<Flex wide direction="column" gap="16" :class="$style.wrapper">
 				<Flex direction="column" gap="16">
-					<Flex align="center" justify="between">
-						<Text size="14" weight="600" color="primary"> Switch node </Text>
-
-						<Flex
-							@click="handleManageNetworks"
-							align="center"
-							gap="4"
-							:class="['clickable', $style.txt_button]"
-						>
-							<Text size="13" weight="600" color="tertiary"> Manage nodes </Text>
-							<Icon name="arrow-narrow-up-right" size="12" color="tertiary" />
-						</Flex>
-					</Flex>
-
 					<ItemsContainer>
 						<SettingItem
 							v-for="network in appStore.networks"
@@ -87,18 +80,13 @@ const handleManageNetworks = () => {
 					</ItemsContainer>
 				</Flex>
 
-				<Flex direction="column" gap="12">
-					<Button
-						@click="popupStore.open('new_network')"
-						wide
-						type="secondary"
-						size="medium"
-						leftIcon="plus-circle"
-						leftIconColor="primary"
-					>
-						New node
-					</Button>
-				</Flex>
+				<Divider>
+					<Text size="12" weight="500" color="tertiary"> or </Text>
+				</Divider>
+
+				<ItemsContainer>
+					<SettingItem @click="handleManageNetworks" title="Manage nodes" chevron />
+				</ItemsContainer>
 			</Flex>
 		</PopupCard>
 	</Popup>
@@ -109,20 +97,5 @@ const handleManageNetworks = () => {
 	flex: 1;
 
 	padding: 0 20px 24px 20px;
-}
-
-.txt_button {
-	& span,
-	& svg {
-		transition: all 0.2s var(--bezier);
-	}
-
-	&:hover {
-		& span,
-		& svg {
-			color: var(--txt-secondary);
-			fill: var(--txt-secondary);
-		}
-	}
 }
 </style>
