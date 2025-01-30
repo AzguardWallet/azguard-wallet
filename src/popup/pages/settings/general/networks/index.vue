@@ -78,7 +78,7 @@ const handleDelete = target => {
 					v-for="network in appStore.networks"
 					@click="handleSelectNetwork(network)"
 					:title="network.name"
-					:icon="appStore.network?.id === network.id ? 'check' : 'globe'"
+					:icon="appStore.network?.id === network.id ? 'check-circle' : 'globe'"
 					:iconFillColor="appStore.network?.id === network.id ? 'blue' : 'tertiary'"
 					iconBgColor="transparent"
 				>
@@ -86,21 +86,30 @@ const handleDelete = target => {
 						<NetworkBadge :chainId="network.chainId" />
 
 						<Flex align="center" gap="8">
-							<Icon
-								@click.stop="handleEdit(network)"
-								name="edit"
-								size="14"
-								color="tertiary"
-								:class="$style.icon_btn"
-							/>
-							<Icon
-								v-if="appStore.networks.length > 1"
-								@click.stop="handleDelete(network)"
-								name="close-circle"
-								size="14"
-								color="tertiary"
-								:class="$style.icon_btn"
-							/>
+							<Tooltip position="end" delay="350">
+								<Icon
+									@click.stop="handleEdit(network)"
+									name="edit"
+									size="14"
+									color="tertiary"
+									:class="$style.icon_btn"
+								/>
+
+								<template #content> Edit node </template>
+							</Tooltip>
+
+							<Tooltip position="end" delay="350">
+								<Icon
+									v-if="appStore.networks.length > 1"
+									@click.stop="handleDelete(network)"
+									name="close-circle"
+									size="14"
+									color="tertiary"
+									:class="$style.icon_btn"
+								/>
+
+								<template #content> Delete node </template>
+							</Tooltip>
 						</Flex>
 					</template>
 				</SettingItem>
