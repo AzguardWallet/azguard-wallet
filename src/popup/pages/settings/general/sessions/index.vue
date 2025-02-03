@@ -16,7 +16,7 @@ import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
-import { InteractionServiceClient } from "@/wallet/services/interaction/client"
+import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -46,7 +46,7 @@ const handleOpenConnectByURIPopup = () => {
 }
 
 const handleDropSession = session => {
-	interactionServiceClient.dropDappSession(session.id)
+	dappSessionServiceClient.deleteDappSession(session.id)
 }
 
 const handleDropAllSessions = () => {
@@ -55,13 +55,7 @@ const handleDropAllSessions = () => {
 	}
 }
 
-const interactionServiceClient = new InteractionServiceClient(
-	undefined,
-	undefined,
-	undefined,
-	handleDropSession,
-	undefined,
-)
+const dappSessionServiceClient = new DappSessionServiceClient()
 </script>
 
 <template>

@@ -92,7 +92,7 @@ export class NetworkServiceClient extends ServiceClient {
     }
 
     /**
-     * Returns a network with the specified id, or undefined if it doesn't exist.
+     * Returns a network with the specified id.
      * @param id Network id.
      * @throws "Profile locked" if profile is locked.
      * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
@@ -114,7 +114,7 @@ export class NetworkServiceClient extends ServiceClient {
     }
     
     /**
-     * Changes network display name and RPC URL and returns the updated network, or undefined if it doesn't exist.
+     * Changes network display name and RPC URL and returns the updated network.
      * @param id Network id.
      * @param name New display name.
      * @param rpcUrl New RPC URL.

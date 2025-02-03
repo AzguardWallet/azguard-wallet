@@ -13,7 +13,7 @@ import { DateTime } from "luxon"
 import { onMounted } from "vue"
 
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
+import Navigation from "../../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
@@ -21,7 +21,7 @@ import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 import { getNetworkType } from "@/components/ui/utils.js"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
-import { InteractionServiceClient } from "@/wallet/services/interaction/client"
+import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -44,33 +44,30 @@ const events = ref([])
 const fetchSession = async () => {
 	const id = route.params.id
 
-	session.value = await interactionServiceClient.getDappSession(id)
+	session.value = await dappSessionServiceClient.getDappSession(id)
 
 	if (!session.value) {
 		router.push("/popup/settings/general/sessions")
 		return
 	}
 
-	session.value.imageLoaded = !!session.value.dappMetadata.icon
+	session.value.imageLoaded = !!session.value.dappMetadata.logo
 }
 
 async function fetchAccounts() {
 	const networkServiceClient = new NetworkServiceClient()
 	const accMap = new Map()
 
-	for (const n of Object.values(session.value.namespaces)) {
-		for (const acc of n.accounts) {
-			const [_, chainId, address] = acc.split(":")
-			if (!accMap[chainId]) {
-				accMap[chainId] = []
-			}
-
-			accMap[chainId].push(address)
+	for (const account of session.value.accounts) {
+		const [_, chainId, address] = account.split(":")
+		if (!accMap[chainId]) {
+			accMap[chainId] = []
 		}
+		accMap[chainId].push(address)
 	}
 
 	for (const chainId of Object.keys(accMap)) {
-		const networks = await networkServiceClient.getNetworks(Number(chainId))
+		const networks = await networkServiceClient.getNetworks(+chainId)
 		if (networks.length) {
 			const network = networks[0]
 			const accountServiceClient = new AccountServiceClient(appStore.profile, network)
@@ -86,10 +83,10 @@ async function fetchAccounts() {
 }
 
 async function fetchSessionParams() {
-	for (const n of Object.values(session.value.namespaces)) {
-		chains.value = [...chains.value, ...n.chains]
-		methods.value = [...methods.value, ...n.methods]
-		events.value = [...events.value, ...n.events]
+	for (const p of session.value.permissions) {
+		chains.value = [...chains.value, ...(p.chains ?? [])]
+		methods.value = [...methods.value, ...(p.methods ?? [])]
+		events.value = [...events.value, ...(p.events ?? [])]
 	}
 
 	chains.value = [...new Set(chains.value)]
@@ -102,8 +99,7 @@ const onImageError = () => {
 }
 
 const handleDropSession = () => {
-	interactionServiceClient.dropDappSession(session.value.id, true)
-
+	dappSessionServiceClient.deleteDappSession(session.value.id)
 	router.push("/popup/settings/general/sessions")
 }
 
@@ -112,13 +108,7 @@ const handleCopyAddress = target => {
 	openToast({ label: "Address is copied", icon: "copy" })
 }
 
-const interactionServiceClient = new InteractionServiceClient(
-	undefined,
-	undefined,
-	undefined,
-	handleDropSession,
-	undefined,
-)
+const dappSessionServiceClient = new DappSessionServiceClient()
 
 onMounted(async () => {
 	await fetchSession()
@@ -137,7 +127,7 @@ onMounted(async () => {
 					<Flex align="start" justify="start">
 						<img
 							v-if="session?.imageLoaded"
-							:src="session?.dappMetadata.icon"
+							:src="session?.dappMetadata.logo"
 							@error="onImageError()"
 							width="48"
 							height="48"
@@ -152,7 +142,7 @@ onMounted(async () => {
 				<Flex justify="between" align="end">
 					<Flex direction="column" gap="6">
 						<Text size="13" weight="600" color="primary">
-							{{ session?.dappMetadata.name }}
+							{{ session?.dappMetadata.name ?? "Unknown dapp" }}
 						</Text>
 						<Text size="12" weight="600" color="tertiary" selectable>
 							{{ session?.dappMetadata.url }}

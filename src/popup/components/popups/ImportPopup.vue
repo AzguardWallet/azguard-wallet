@@ -86,7 +86,7 @@ const handleImportSeed = async () => {
 		)
 		appStore.profiles.push(profile)
 	} catch (error) {
-		console.log(error)
+		console.error(error)
 	} finally {
 		popupStore.closeAll()
 	}
@@ -99,7 +99,7 @@ const handleImportPrivateKey = async () => {
 		const profile = await managers.profile.importPlain(profileName.value.trim(), privateKey.value, password.value)
 		appStore.profiles.push(profile)
 	} catch (error) {
-		console.log(error)
+		console.error(error)
 	} finally {
 		popupStore.closeAll()
 	}

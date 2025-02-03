@@ -1,19 +1,4 @@
-import {
-	EventMessage,
-	RequestMessage,
-	ResponseMessage,
-} from "@/wallet/base/messages"
-import { Service } from "@/wallet/base/service"
-import {
-	FaucetServiceMethod,
-    FAUCET_SERVICE_NAME,
-    MintRequest,
-    MintResponse,
-} from "./client"
-import { ExecutionService } from "../execution"
-import { TokenService } from "../token"
 import { createPXEClient, getContractClassFromArtifact } from "@aztec/aztec.js"
-
 import { bufferAsFields } from "@aztec/foundation/abi"
 import {
     AztecAddress,
@@ -22,11 +7,32 @@ import {
     MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS,
     PublicKeys,
 } from "@aztec/circuits.js"
-import { NetworkService } from "../network"
-import { AccountService } from "../account"
-import { ProfileService } from "../profile"
-import { AddCapsuleAction, AddContractAction, CallAction } from "../execution/client"
-import { TokenContract } from "@aztec/noir-contracts.js";
+import { TokenContract } from "@aztec/noir-contracts.js/Token";
+import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages"
+import { Service } from "@/wallet/base/service"
+import { TokenService } from "@/wallet/services/token"
+import { TransactionService } from "@/wallet/services/transaction"
+import { NetworkService } from "@/wallet/services/network"
+import { AccountService } from "@/wallet/services/account"
+import { ProfileService } from "@/wallet/services/profile"
+import { ExecutionService } from "@/wallet/services/execution"
+import {
+    IOperation,
+    RegisterContractOperation,
+    SendTransactionOperation,
+    IAction,
+    AddCapsuleAction,
+    CallAction,
+    OperationStatus,
+    OkOperationResult,
+    FailedOperationResult,
+} from "@/wallet/services/execution/client"
+import {
+	FaucetServiceMethod,
+    FAUCET_SERVICE_NAME,
+    MintRequest,
+    MintResponse,
+} from "./client"
 
 export class FaucetService extends Service {
 	constructor(
@@ -34,6 +40,7 @@ export class FaucetService extends Service {
         private readonly networkService: NetworkService,
         private readonly accountService: AccountService,
         private readonly executionService: ExecutionService,
+        private readonly transactionService: TransactionService,
         private readonly tokenService: TokenService,
         emit: (event: EventMessage) => void
     ) {
@@ -91,8 +98,12 @@ export class FaucetService extends Service {
             throw new Error("unknown account")
         }
         const pxe = createPXEClient(network.rpcUrl);
-            
-        const actions = [];
+        
+        const deployActions: IAction[] = [];
+        const deployOps: IOperation[] = [
+            new SendTransactionOperation(networkId, accountAddress, deployActions)
+        ];
+        
         const artifact = TokenContract.artifact;
         const contractClass = getContractClassFromArtifact(artifact);
         const instance = getContractInstanceFromDeployParams(
@@ -113,83 +124,103 @@ export class FaucetService extends Service {
             console.debug("register faucet token class id");
             const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
             const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
-            actions.push(new AddCapsuleAction(
-                encodedBytecode.map(x => x.toString()),
-            ));
-            actions.push(new CallAction(
-                AztecAddress.fromBigInt(3n).toString(), // ContractClassRegisterer
-                "register",
-                [
-                    artifactHash.toString(),
-                    privateFunctionsRoot.toString(),
-                    publicBytecodeCommitment.toString(),
-                ],
-            ));
+            deployActions.push(
+                new AddCapsuleAction(
+                    encodedBytecode.map(x => x.toString()),
+                ),
+                new CallAction(
+                    AztecAddress.fromBigInt(3n).toString(), // ContractClassRegisterer
+                    "register",
+                    [
+                        artifactHash.toString(),
+                        privateFunctionsRoot.toString(),
+                        publicBytecodeCommitment.toString(),
+                    ],
+                )
+            );
         }
 
         if (!await pxe.isContractPubliclyDeployed(instance.address)) {
             console.debug("deploy faucet token");
             const {salt, contractClassId, initializationHash, publicKeys} = instance;
-            actions.push(new CallAction(
-                AztecAddress.fromBigInt(2n).toString(), // ContractInstanceDeployer
-                "deploy",
-                [
-                    salt,
-                    contractClassId,
-                    initializationHash,
-                    publicKeys,
-                    true,
-                ],
-            ));
+            deployActions.push(
+                new CallAction(
+                    AztecAddress.fromBigInt(2n).toString(), // ContractInstanceDeployer
+                    "deploy",
+                    [
+                        salt,
+                        contractClassId,
+                        initializationHash,
+                        publicKeys,
+                        true,
+                    ],
+                )
+            );
         }
 
         if (!await pxe.isContractInitialized(instance.address)) {
             console.debug("initialize faucet token");
-            actions.push(new AddContractAction(
-                instance.address.toString(),
-                instance,
-                artifact,
-            ));
-            actions.push(new CallAction(
-                instance.address.toString(),
-                "constructor",
-                [
-                    accountAddress,
-                    name,
-                    symbol,
-                    decimals,
-                ],
-            ));
+            deployOps.unshift(
+                new RegisterContractOperation(
+                    networkId,
+                    instance.address.toString(),
+                    instance,
+                    artifact,
+                )
+            );
+            deployActions.push(
+                new CallAction(
+                    instance.address.toString(),
+                    "constructor",
+                    [
+                        accountAddress,
+                        name,
+                        symbol,
+                        decimals,
+                    ],
+                )
+            );
         }
         
-        if (actions.length) {
-            const initTx = await this.executionService.executeAndWait(
-                networkId,
-                accountAddress,
-                "Faucet",
-                actions,
-            );
-            console.debug("faucet init tx:", initTx);
+        if (deployActions.length) {
+            const deployResults = await this.executionService.executeOperations(deployOps, "Faucet");
+            if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
+                throw new Error(`Token deployment failed: ${
+                    (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)?.error
+                }`);
+            }
+            const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
+            console.debug("faucet deploy tx:", deployTx);
+            await this.transactionService.waitForTx(deployTx);
+            console.debug("faucet deploy tx mined");
         }
 
-        const mintTx = await this.executionService.executeAndWait(
-            networkId,
-            accountAddress,
-            "Faucet",
+        const [mintResult] = await this.executionService.executeOperations(
             [
-                new CallAction(
-                    instance.address.toString(),
-                    "mint_to_private",
-                    [accountAddress, accountAddress, amount],
-                ),
-                new CallAction(
-                    instance.address.toString(),
-                    "mint_to_public",
-                    [accountAddress, amount],
-                ),
-            ]
+                new SendTransactionOperation(networkId, accountAddress, [
+                    new CallAction(
+                        instance.address.toString(),
+                        "mint_to_private",
+                        [accountAddress, accountAddress, amount],
+                    ),
+                    new CallAction(
+                        instance.address.toString(),
+                        "mint_to_public",
+                        [accountAddress, amount],
+                    ),
+                ]),
+            ],
+            "Faucet"
         );
+        if (mintResult.status !== OperationStatus.Ok) {
+            throw new Error(`Token mint failed: ${
+                (mintResult as FailedOperationResult)?.error
+            }`);
+        }
+        const mintTx = (mintResult as OkOperationResult<string>).result;
         console.debug("faucet mint tx:", mintTx);
+        await this.transactionService.waitForTx(mintTx);
+        console.debug("faucet mint tx mined");
 
         const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
         if (!tokens.some(x => x.contract === instance.address.toString())) {

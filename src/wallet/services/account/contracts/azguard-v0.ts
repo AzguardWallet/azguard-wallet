@@ -73,14 +73,11 @@ export class AzguardV0 implements IAccountContract {
         return Promise.resolve(new AuthWitness(messageHash, [...signature]));
     }
 
-    public buildTxExecutionRequest(pxe: PXE, calls: AzguardFunctionCall[], args: PackedValues[], nonce: Fr): Promise<TxExecutionRequest> {
-        //return this._buildTxExecutionRequest(pxe, calls, args, nonce);
-        return this._buildTxExecutionRequestWithSetup(pxe, [], calls, args, nonce);
-    }
-
-    public buildTxSimulationRequest(pxe: PXE, call: AzguardFunctionCall, args: PackedValues): Promise<TxExecutionRequest> {
-        //return this._buildTxExecutionRequest(pxe, [call], [args], Fr.zero());
-        return this._buildTxExecutionRequestWithSetup(pxe, [], [call], [args], Fr.zero());
+    public buildTxExecutionRequest(pxe: PXE, setup: AzguardFunctionCall[], calls: AzguardFunctionCall[], args: PackedValues[], nonce: Fr): Promise<TxExecutionRequest> {
+        // if (!setup.length) {
+        //     return this._buildTxExecutionRequest(pxe, calls, args, nonce);
+        // }
+        return this._buildTxExecutionRequestWithSetup(pxe, setup, calls, args, nonce);
     }
 
     private async _buildTxExecutionRequest(pxe: PXE, calls: AzguardFunctionCall[], args: PackedValues[], nonce: Fr): Promise<TxExecutionRequest> {

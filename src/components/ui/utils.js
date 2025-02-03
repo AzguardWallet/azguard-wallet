@@ -20,6 +20,6 @@ export function getNetworkType(chainId) {
 		case 41337:
 			return 'AzguardBox'
 		default:
-			return `Custom ${chainId}`
+			return `Aztec:${chainId}`
 	}
 }

@@ -21,14 +21,14 @@ export default {
 	side_panel: {
 		default_path: "src/popup/index.html",
 	},
-	// content_scripts: [
-	// 	{
-	// 		all_frames: true,
-	// 		js: ["src/content-script/index.ts"],
-	// 		matches: ["*://*/*"],
-	// 		run_at: "document_end",
-	// 	},
-	// ],
+	content_scripts: [
+		{
+			all_frames: true,
+			js: ["src/content-script/content.ts"],
+			matches: ["*://*/*"],
+			run_at: "document_start",
+		},
+	],
 	offline_enabled: true,
 	permissions: ["storage",/* "tabs",*/ "background", "sidePanel", "notifications"],
 	content_security_policy: {
