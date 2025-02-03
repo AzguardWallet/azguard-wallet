@@ -330,7 +330,7 @@ export class ExecutionService extends Service {
         }
 
         const contractClass = getContractClassFromArtifact(artifact);
-        if (contractClass.id !== instance.contractClassId) {
+        if (contractClass.id.toString() !== instance.contractClassId.toString()) {
             throw new Error("Contract artifact doesn't match instance class id");
         }
 
