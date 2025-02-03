@@ -26,7 +26,7 @@ export default {
 			all_frames: true,
 			js: ["src/content-script/content.ts"],
 			matches: ["*://*/*"],
-			run_at: "document_end",
+			run_at: "document_start",
 		},
 	],
 	offline_enabled: true,
