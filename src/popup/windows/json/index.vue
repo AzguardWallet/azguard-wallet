@@ -6,20 +6,27 @@ import { onMounted } from "vue"
 import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
+import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 
 const params = new URLSearchParams(window.location.search)
-const requestId = params.get('requestId')
-const request = ref()
-const data = computed(() => request.value?.payload?.params)
+const requestId = params.get("requestId")
+const payload = ref()
+const data = computed(() => payload.value?.params.operations)
 
-onMounted( async () => {
-	request.value = await managers.interaction.getInteractionRequest(requestId)
+onMounted(async () => {
+	payload.value = await new DappInteractionServiceClient().getInteractionPayload(requestId)
 })
 </script>
 
 <template>
-	<Flex v-if="data" align="start" direction="column" justify="start" gap="12" :class="[$style.wrapper, $style.json_viewer]">
+	<Flex
+		v-if="data"
+		align="start"
+		direction="column"
+		justify="start"
+		gap="12"
+		:class="[$style.wrapper, $style.json_viewer]"
+	>
 		<JsonViewer :data="data" fullscreen />
 	</Flex>
 </template>

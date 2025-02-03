@@ -58,7 +58,7 @@ export async function execute(
         fn.isStatic
     );
 
-    const txRequest = await account.buildTxExecutionRequest(pxe, [call], [packedArgs], Fr.random());
+    const txRequest = await account.buildTxExecutionRequest(pxe, [], [call], [packedArgs], Fr.random());
 
     const tx = await pxe.simulateTx(txRequest, true);
     const provenTx = await pxe.proveTx(txRequest, tx.privateExecutionResult);
@@ -92,7 +92,7 @@ export async function simulate(
         viewFn.isStatic
     );
 
-    const txRequest = await account.buildTxSimulationRequest(pxe, call, packedArgs);
+    const txRequest = await account.buildTxExecutionRequest(pxe, [], [call], [packedArgs], Fr.zero());
 
     const tx = await pxe.simulateTx(txRequest, true);
 

@@ -1,5 +1,5 @@
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { InteractionServiceClient } from "@/wallet/services/interaction/client"
+import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 import { WalletConnectServiceClient } from "@/wallet/services/wallet-connect/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
@@ -10,7 +10,7 @@ import { PxeServiceClient } from "@/wallet/services/pxe/client"
 
 const profileService = new ProfileServiceClient()
 const walletConnectService = new WalletConnectServiceClient()
-const interactionSevice = new InteractionServiceClient()
+const dappSessionSevice = new DappSessionServiceClient()
 const balanceService = new TokenBalanceServiceClient()
 const pxeClientService = new PxeServiceClient()
 
@@ -30,7 +30,7 @@ export const managers = {
 	profile: profileService,
 	network: null, // must be initialized after profile.onActiveProfileChanged
 	wallectConnect: walletConnectService,
-	interaction: interactionSevice,
+	dappSession: dappSessionSevice,
 	balance: balanceService,
 	execution: executionService,
 	faucet: faucetService,

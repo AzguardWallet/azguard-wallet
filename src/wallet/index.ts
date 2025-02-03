@@ -4,7 +4,6 @@ import { Service } from "./base/service";
 import { AccountService } from "./services/account";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
-import { InteractionService } from "./services/interaction";
 import { WalletConnectService } from "./services/wallet-connect";
 import { TokenService } from "./services/token";
 import { sleep } from "./utils";
@@ -13,6 +12,9 @@ import { TransactionService } from "./services/transaction";
 import { ExecutionService } from "./services/execution";
 import { FaucetService } from "./services/faucet";
 import { PxeService } from "./services/pxe";
+import { RpcService } from "./services/rpc";
+import { DappSessionService } from "./services/dapp-session";
+import { DappInteractionService } from "./services/dapp-interaction";
 
 export async function init() {
     console.debug("Init BarretenbergSync...");
@@ -77,11 +79,22 @@ const faucetService = new FaucetService(
     networkService,
     accountService,
     executionService,
+    transactionService,
     tokenService,
     broadcast,
 );
-const interactionService = new InteractionService(executionService, broadcast);
-const walletConnectService = new WalletConnectService(interactionService, broadcast);
+const dappSessionService = new DappSessionService(profileService, broadcast);
+const dappInteractionService = new DappInteractionService(dappSessionService, broadcast);
+const rpcService = new RpcService(
+    dappSessionService,
+    dappInteractionService,
+    broadcast,
+);
+const walletConnectService = new WalletConnectService(
+    dappSessionService,
+    dappInteractionService,
+    broadcast,
+);
 
 const services = new Map<string, Service>([
     [profileService.name, profileService],
@@ -92,7 +105,9 @@ const services = new Map<string, Service>([
     [transactionService.name, transactionService],
     [executionService.name, executionService],
     [faucetService.name, faucetService],
-    [interactionService.name, interactionService],
+    [dappSessionService.name, dappSessionService],
+    [dappInteractionService.name, dappInteractionService],
+    [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
     [pxeService.name, pxeService],
 ]);
@@ -123,6 +138,7 @@ function onDisconnect(port: chrome.runtime.Port) {
 }
 
 async function onMessage(message: IMessage, client: chrome.runtime.Port) {
+    if (typeof message.type !== 'number') return; // crutch for crx
     console.debug("onMessage...");
     if (message.type !== MessageType.Request) {
         console.error(`Message type ${message.type} is not allowed. Drop client.`);

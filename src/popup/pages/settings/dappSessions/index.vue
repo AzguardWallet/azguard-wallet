@@ -11,7 +11,7 @@
 import Navigation from "../../../components/Navigation.vue"
 
 /** Utils */
-import { InteractionServiceClient } from "@/wallet/services/interaction/client"
+import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -40,8 +40,8 @@ const handleOpenConnectByURIPopup = () => {
 	popupStore.open("connect_by_uri")
 }
 
-const handleDropSession = (session) => {
-	interactionServiceClient.dropDappSession(session.id)
+const handleDropSession = session => {
+	dappSessionServiceClient.deleteDappSession(session.id)
 }
 
 const handleDropAllSessions = () => {
@@ -50,7 +50,7 @@ const handleDropAllSessions = () => {
 	}
 }
 
-const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, handleDropSession, undefined)
+const dappSessionServiceClient = new DappSessionServiceClient()
 </script>
 
 <template>
