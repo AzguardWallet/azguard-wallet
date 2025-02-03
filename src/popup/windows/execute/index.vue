@@ -103,7 +103,9 @@ const init = async () => {
 						account,
 						accountAddress: account.address,
 					})
-					_accounts.push(account)
+					if (!_accounts.find(x => x.address === account.address)) {
+						_accounts.push(account)
+					}
 					break
 				}
 				default: {

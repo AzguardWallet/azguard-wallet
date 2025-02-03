@@ -163,7 +163,7 @@ export class PxeService extends Service {
             return (await pxe.getRegisteredAccounts()).map(x => x.address.toString());
         }
         catch (error) {
-            console.log("Failed to fetch registered accounts", error);
+            console.error("Failed to fetch registered accounts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -175,7 +175,7 @@ export class PxeService extends Service {
             return (await pxe.getContacts()).map(x => x.toString());
         }
         catch (error) {
-            console.log("Failed to fetch registered contacts", error);
+            console.error("Failed to fetch registered contacts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -187,7 +187,7 @@ export class PxeService extends Service {
             return (await pxe.getContracts()).map(x => x.toString());
         }
         catch (error) {
-            console.log("Failed to fetch registered contracts", error);
+            console.error("Failed to fetch registered contracts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -219,7 +219,7 @@ export class PxeService extends Service {
             ));
         }
         catch (error) {
-            console.log("Failed to fetch incoming notes", error);
+            console.error("Failed to fetch incoming notes", error);
             throw new Error("PXE request failed");
         }
     }
@@ -231,7 +231,7 @@ export class PxeService extends Service {
             return (await pxe.getPXEInfo()).pxeVersion;
         }
         catch (error) {
-            console.log("Failed to fetch PXE info", error);
+            console.error("Failed to fetch PXE info", error);
             throw new Error("PXE request failed");
         }
     }

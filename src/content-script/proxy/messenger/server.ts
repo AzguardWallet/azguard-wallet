@@ -60,7 +60,6 @@ export class MServer<TMessage> {
     }
 
     readonly #processMessageEvent = async ({data, source}: MessageEvent) => {
-        console.log(data);
         if (source !== window) {
             // ignore other sources
             return;
