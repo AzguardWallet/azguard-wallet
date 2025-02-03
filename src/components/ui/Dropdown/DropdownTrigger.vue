@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
 
 <style module>
 .wrapper {
-	height: 36px;
+	height: 38px;
 
 	box-shadow: inset 0 0 0 1px var(--border);
 	border-radius: 10px;

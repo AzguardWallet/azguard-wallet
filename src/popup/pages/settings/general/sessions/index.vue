@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Sessions",
 		"isAuthRequired": true
 	}
 }
@@ -8,7 +9,11 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../components/Navigation.vue"
+import Navigation from "../../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import PageHeader from "@/components/ui/Settings/PageHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
@@ -55,38 +60,32 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 
 <template>
 	<Flex direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="16">
-			<Flex align="center" gap="8">
-				<RouterLink to="/popup/settings">
-					<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-				</RouterLink>
-				<Text color="support">•</Text>
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Sessions </Text>
-			</Flex>
+		<Flex direction="column" gap="24">
+			<Breadcrumbs hide-title />
+
+			<PageHeader title="Sessions" icon="plug-circle" iconColor="sand" />
+
 			<Flex direction="column" gap="16">
-				<Flex align="center" justify="between">
-					<Text size="16" weight="600" color="primary">Sessions</Text>
+				<Tooltip v-if="dappSessions.length" position="end">
+					<Icon
+						@click="handleDropAllSessions"
+						name="log-out"
+						size="16"
+						color="tertiary"
+						:class="$style.disconnect_all"
+					>
+						Disconnect All
+					</Icon>
 
-					<Tooltip v-if="dappSessions.length" position="end">
-						<Icon
-							@click="handleDropAllSessions"
-							name="log-out"
-							size="16"
-							color="tertiary"
-							:class="$style.disconnect_all"
-							>Disconnect All</Icon
-						>
-
-						<template #content>
-							<Text size="12" color="secondary">Disconnect all dApps</Text>
-						</template>
-					</Tooltip>
-				</Flex>
+					<template #content>
+						<Text size="12" color="secondary">Disconnect all dApps</Text>
+					</template>
+				</Tooltip>
 
 				<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
 					<Flex
 						v-for="ds in dappSessions"
-						@click="router.push(`/popup/settings/dappSessions/session/${ds.id}`)"
+						@click="router.push(`/popup/settings/general/sessions/session/${ds.id}`)"
 						align="center"
 						justify="between"
 						:class="$style.session"
@@ -113,7 +112,7 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 				</Flex>
 
 				<Flex v-else direction="column" ap align="center" gap="12" :class="$style.empty_banner">
-					<Icon name="zap-circle" size="20" color="tertiary" />
+					<Icon name="plug-circle" size="20" color="tertiary" />
 
 					<Flex direction="column" align="center" gap="6">
 						<Text size="13" weight="600" color="secondary" align="center">

@@ -1,7 +1,7 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Azguard Wallet",
+		"title": "Profile Settings",
 		"isAuthRequired": true
 	}
 }
@@ -11,8 +11,16 @@
 /** Components */
 import Navigation from "../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
+import SettingField from "@/components/ui/Settings/SettingField.vue"
+
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
+const appStore = useAppStore()
+const popupStore = usePopupStore()
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -40,50 +48,21 @@ const handleOpen = target => {
 		<Flex direction="column" gap="24" align="center">
 			<Breadcrumbs />
 
-			<Flex wide align="start" direction="column" gap="8">
-				<Text size="13" weight="600" color="primary"> Azguard Wallet </Text>
-				<Text @click="handleCopyVersion" size="12" weight="500" color="support" class="copyable">
-					Version {{ version }} - Alpha Testing
-				</Text>
-			</Flex>
+			<PageHeader :title="appStore.profile.name" :description="appStore.profile.id" icon="user" />
 
 			<ItemsContainer wide>
-				<SettingItem
-					to="https://azguardwallet.io"
-					title="Azguard Website"
-					icon="globe"
-					iconBgColor="var(--blue)"
-					external
-				/>
-			</ItemsContainer>
-
-			<ItemsContainer title="Contact us" wide>
-				<SettingItem
-					to="https://azguardwallet.io/forms/feedback"
-					title="Feedback"
-					description="Suggest an idea"
-					icon="face"
-					external
-				/>
-				<SettingItem
-					to="https://azguardwallet.io/forms/report-issue"
-					title="Report Issue"
-					description="If you're facing a bug"
-					icon="bug"
-					external
-				/>
-				<SettingItem
-					to="https://azguardwallet.io/forms/report-scam"
-					title="Report Scam"
-					description="Tell us about the scammers"
-					icon="warning"
-					external
-				/>
+				<SettingField label="Name" :value="appStore.profile.name" icon="edit" />
 			</ItemsContainer>
 
 			<ItemsContainer wide>
-				<SettingItem @click="handleOpen('terms')" title="Terms of use" />
-				<SettingItem @click="handleOpen('privacy')" title="Privacy policy" />
+				<SettingItem to="/popup/settings/security/export" title="Backup profile" icon="key-square" chevron />
+				<SettingItem title="Change password" icon="password" />
+				<SettingItem
+					@click="popupStore.open('reset')"
+					title="Delete profile"
+					icon="trash"
+					iconBgColor="var(--red)"
+				/>
 			</ItemsContainer>
 		</Flex>
 

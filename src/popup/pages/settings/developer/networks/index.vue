@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Nodes",
 		"isAuthRequired": true
 	}
 }
@@ -9,6 +10,10 @@
 <script setup>
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import PageHeader from "@/components/ui/Settings/PageHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
@@ -58,22 +63,10 @@ const handleDelete = target => {
 </script>
 
 <template>
-	<Flex direction="column" gap="12" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<RouterLink to="/popup/settings/developer">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Developer </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Nodes </Text>
-		</Flex>
+	<Flex direction="column" gap="20" :class="$style.wrapper">
+		<Breadcrumbs />
 
 		<Flex direction="column" gap="16">
-			<Text size="16" weight="600" color="primary">Nodes</Text>
-
 			<Flex v-if="appStore.network" direction="column" gap="6">
 				<Flex
 					v-for="network in appStore.networks"

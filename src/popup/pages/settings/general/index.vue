@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "General",
 		"isAuthRequired": true
 	}
 }
@@ -9,30 +10,39 @@
 <script setup>
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import PageHeader from "@/components/ui/Settings/PageHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 </script>
 
 <template>
-	<Flex direction="column" gap="12" :class="$style.wrapper">
-		<Flex align="center" gap="8">
-			<RouterLink to="/popup/settings">
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-			</RouterLink>
-			<Text color="support">•</Text>
-			<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> General </Text>
-		</Flex>
+	<Flex direction="column" gap="20" :class="$style.wrapper">
+		<Breadcrumbs />
 
-		<Flex direction="column" gap="8">
-			<RouterLink to="/popup/settings/general/appearance">
-				<Flex align="center" justify="between" :class="$style.item">
-					<Flex direction="column" gap="6">
-						<Text size="14" weight="600" color="primary"> Appearance </Text>
-						<Text size="13" weight="500" color="tertiary"> Theme </Text>
-					</Flex>
+		<ItemsContainer title="Wallet">
+			<SettingItem
+				to="/popup/settings/general/accounts"
+				title="Accounts"
+				icon="vault"
+				iconBgColor="var(--green)"
+			/>
+			<SettingItem
+				to="/popup/settings/general/sessions"
+				title="Sessions"
+				icon="plug-circle"
+				iconBgColor="var(--sand)"
+			/>
+		</ItemsContainer>
 
-					<Icon name="chevron" size="16" color="tertiary" :class="$style.item_icon" />
-				</Flex>
-			</RouterLink>
-		</Flex>
+		<ItemsContainer title="Interface">
+			<SettingItem
+				to="/popup/settings/general/appearance"
+				title="Appearance"
+				icon="sun"
+				iconBgColor="var(--purple)"
+			/>
+		</ItemsContainer>
 
 		<Navigation />
 	</Flex>

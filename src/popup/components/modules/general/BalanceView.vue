@@ -142,31 +142,14 @@ const handleDeleteToken = () => {
 
 <template>
 	<Flex direction="column" align="center" gap="32" :class="$style.wrapper">
-		<Flex direction="column" align="center" gap="20">
-			<Tooltip v-if="!token">
-				<Flex @click="handleCopyAccountAddress" align="center" gap="6" :class="[$style.badge]">
-					<Text size="12" weight="600" color="secondary">
-						{{ appStore.account.address.slice(0, 6) }}
-						<Text color="dark">•••</Text>
-						{{ appStore.account.address.slice(-4) }}
-					</Text>
-					<Icon
-						:name="isCopied ? 'check-circle' : 'copy'"
-						size="12"
-						:color="isCopied ? 'green' : 'tertiary'"
-					/>
-				</Flex>
-
-				<template #content> Account address </template>
-			</Tooltip>
-
-			<Flex v-else align="center" gap="6">
-				<Tooltip>
-					<Flex @click="handleCopyContractAddress" align="center" gap="6" :class="[$style.badge]">
+		<Flex direction="column" align="center" gap="20" wide>
+			<Flex justify="center" wide :class="$style.header">
+				<Tooltip v-if="!token">
+					<Flex @click="handleCopyAccountAddress" align="center" gap="6" :class="[$style.badge]">
 						<Text size="12" weight="600" color="secondary">
-							{{ token.contract.slice(0, 6) }}
+							{{ appStore.account.address.slice(0, 6) }}
 							<Text color="dark">•••</Text>
-							{{ token.contract.slice(-4) }}
+							{{ appStore.account.address.slice(-4) }}
 						</Text>
 						<Icon
 							:name="isCopied ? 'check-circle' : 'copy'"
@@ -175,56 +158,79 @@ const handleDeleteToken = () => {
 						/>
 					</Flex>
 
-					<template #content> Token contact address </template>
+					<template #content> Account address </template>
 				</Tooltip>
 
-				<Dropdown>
-					<Flex align="center" gap="6" :class="[$style.badge]">
-						<Icon name="dots" size="12" color="primary" />
-					</Flex>
+				<Flex v-else align="center" justify="between" wide>
+					<Button @click="router.go(-1)" type="secondary" size="micro" square>
+						<Icon name="arrow-right" size="12" color="secondary" style="transform: rotate(180deg)" />
+					</Button>
 
-					<template #popup>
-						<DropdownItem disabled>
-							<Flex align="center" gap="8">
-								<Icon name="heart-add" size="14" color="primary" />
-								Add to Favorites
-							</Flex>
-						</DropdownItem>
-						<DropdownDivider />
-						<DropdownItem @click="popupStore.open('token_metadata')">
-							<Flex align="center" gap="8">
-								<Icon name="code-circle" size="14" color="primary" />
-								Show token metadata
-							</Flex>
-						</DropdownItem>
-						<DropdownItem @click="handleCopyContractAddress">
-							<Flex align="center" gap="8">
-								<Icon name="copy" size="14" color="primary" />
-								Copy contract address
-							</Flex>
-						</DropdownItem>
-						<DropdownDivider />
-						<DropdownItem @click="handleEditToken">
-							<Flex align="center" gap="8">
-								<Icon name="edit" size="14" color="primary" />
-								Edit token
-							</Flex>
-						</DropdownItem>
-						<DropdownItem @click="handleDeleteToken" :class="$style.hover_red">
-							<Flex align="center" gap="8">
-								<Icon name="trash" size="14" color="primary" />
-								<Text>Remove token</Text>
-							</Flex>
-						</DropdownItem>
-						<DropdownDivider />
-						<DropdownItem disabled>
-							<Flex align="center" gap="8">
-								<Icon name="arrow-narrow-up-right" size="14" color="tertiary" />
-								<Text size="12" weight="600" color="tertiary">Learn about tokens </Text>
-							</Flex>
-						</DropdownItem>
-					</template>
-				</Dropdown>
+					<Tooltip>
+						<Flex @click="handleCopyContractAddress" align="center" gap="6" :class="[$style.badge]">
+							<Text size="12" weight="600" color="secondary">
+								{{ token.contract.slice(0, 6) }}
+								<Text color="dark">•••</Text>
+								{{ token.contract.slice(-4) }}
+							</Text>
+							<Icon
+								:name="isCopied ? 'check-circle' : 'copy'"
+								size="12"
+								:color="isCopied ? 'green' : 'tertiary'"
+							/>
+						</Flex>
+
+						<template #content> Token contact address </template>
+					</Tooltip>
+
+					<Dropdown>
+						<Button type="secondary" size="micro" square>
+							<Icon name="dots" size="12" color="primary" />
+						</Button>
+
+						<template #popup>
+							<DropdownItem disabled>
+								<Flex align="center" gap="8">
+									<Icon name="heart-add" size="14" color="primary" />
+									Add to Favorites
+								</Flex>
+							</DropdownItem>
+							<DropdownDivider />
+							<DropdownItem @click="popupStore.open('token_metadata')">
+								<Flex align="center" gap="8">
+									<Icon name="code-circle" size="14" color="primary" />
+									Show token metadata
+								</Flex>
+							</DropdownItem>
+							<DropdownItem @click="handleCopyContractAddress">
+								<Flex align="center" gap="8">
+									<Icon name="copy" size="14" color="primary" />
+									Copy contract address
+								</Flex>
+							</DropdownItem>
+							<DropdownDivider />
+							<DropdownItem @click="handleEditToken">
+								<Flex align="center" gap="8">
+									<Icon name="edit" size="14" color="primary" />
+									Edit token
+								</Flex>
+							</DropdownItem>
+							<DropdownItem @click="handleDeleteToken" :class="$style.hover_red">
+								<Flex align="center" gap="8">
+									<Icon name="trash" size="14" color="primary" />
+									<Text>Remove token</Text>
+								</Flex>
+							</DropdownItem>
+							<DropdownDivider />
+							<DropdownItem disabled>
+								<Flex align="center" gap="8">
+									<Icon name="arrow-narrow-up-right" size="14" color="tertiary" />
+									<Text size="12" weight="600" color="tertiary">Learn about tokens </Text>
+								</Flex>
+							</DropdownItem>
+						</template>
+					</Dropdown>
+				</Flex>
 			</Flex>
 
 			<Flex direction="column" gap="12" align="center">
@@ -295,6 +301,20 @@ const handleDeleteToken = () => {
 
 	margin: 0 24px;
 	padding: 20px 0 16px 0;
+}
+
+.header {
+	position: relative;
+}
+
+.test {
+	/* min-height: 20px;
+
+	position: absolute;
+
+	left: 50%;
+
+	transform: translateX(-50%); */
 }
 
 .balance {

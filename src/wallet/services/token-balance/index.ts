@@ -161,7 +161,8 @@ export class TokenBalanceService extends Service {
 			this.getTokenInfo(_token),
 			tb.account,
 			tb.publicBalance,
-			tb.privateBalance
+			tb.privateBalance,
+			tb.updatedAt,
 		)
 	}
 
@@ -363,17 +364,18 @@ export class TokenBalanceService extends Service {
 				)
 				tb.privateBalance = privateBalance
 				tb.publicBalance = publicBalance
-				tb.updatedAt = Date.now()
-				await this.balances.set(`${tb.id}`, tb)
-				this.emit(
-					new TokenBalanceServiceEventMessage(
-						TokenBalanceServiceEvent.TokenBalanceUpdated,
-						this.getTokenBalanceInfo(tb)
-					)
-				)
 			} else {
 				console.debug(`Balance #${tb.id} unchanged`)
 			}
+			
+			tb.updatedAt = Date.now()
+			await this.balances.set(`${tb.id}`, tb)
+			this.emit(
+				new TokenBalanceServiceEventMessage(
+					TokenBalanceServiceEvent.TokenBalanceUpdated,
+					this.getTokenBalanceInfo(tb)
+				)
+			)
 
 			const stop = Date.now()
 			console.debug(`Balance #${tb.id} synced in ${stop - start}ms`)

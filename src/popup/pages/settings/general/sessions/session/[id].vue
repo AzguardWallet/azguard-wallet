@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "Session",
 		"isAuthRequired": true
 	}
 }
@@ -12,7 +13,8 @@ import { DateTime } from "luxon"
 import { onMounted } from "vue"
 
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
+import Navigation from "../../../../../components/Navigation.vue"
+import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
@@ -45,7 +47,7 @@ const fetchSession = async () => {
 	session.value = await dappSessionServiceClient.getDappSession(id)
 
 	if (!session.value) {
-		router.push("/popup/settings/dappSessions")
+		router.push("/popup/settings/general/sessions")
 		return
 	}
 
@@ -98,7 +100,7 @@ const onImageError = () => {
 
 const handleDropSession = () => {
 	dappSessionServiceClient.deleteDappSession(session.value.id)
-	router.push("/popup/settings/dappSessions")
+	router.push("/popup/settings/general/sessions")
 }
 
 const handleCopyAddress = target => {
@@ -118,19 +120,7 @@ onMounted(async () => {
 <template>
 	<Flex direction="column" justify="between" :class="$style.wrapper">
 		<Flex direction="column" gap="20">
-			<Flex align="center" gap="8">
-				<RouterLink to="/popup/settings">
-					<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Settings </Text>
-				</RouterLink>
-				<Text color="support">•</Text>
-				<RouterLink to="/popup/settings/dappSessions">
-					<Text size="13" weight="600" color="tertiary" style="line-height: 16px"> Dapp Sessions </Text>
-				</RouterLink>
-				<Text color="support">•</Text>
-				<Text size="13" weight="600" color="tertiary" style="line-height: 16px">
-					{{ session?.dappMetadata.name ?? "Unknown dapp" }}
-				</Text>
-			</Flex>
+			<Breadcrumbs />
 
 			<Flex direction="column" justify="between" :class="$style.session">
 				<Flex justify="between">

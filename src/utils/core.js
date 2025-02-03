@@ -40,7 +40,11 @@ export const managers = {
 }
 
 export const initTokenService = ({ profile, network, account }) => {
-	managers.token = new TokenServiceClient(profile, network, account)
+	try {
+		managers.token = new TokenServiceClient(profile, network, account)
+	} catch (error) {
+		console.log(error)
+	}
 }
 
 export const initTransactionService = onTransactionAdded => {

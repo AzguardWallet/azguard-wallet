@@ -1,4 +1,7 @@
 <script setup>
+/** Components */
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
+
 /** Utils */
 import { comma, purgeNumber } from "@/utils/amount.js"
 
@@ -22,24 +25,14 @@ const totalBalance = computed(() => {
 </script>
 
 <template>
-	<RouterLink :to="`/popup/tokens/${token.id}`">
-		<Flex align="center" justify="between" gap="24" :class="$style.wrapper">
-			<Flex align="center" gap="12" :class="$style.left">
-				<Flex align="center" justify="center" :class="$style.token_icon">
-					<Spinner v-if="appStore.tokenAwaitingBalanceIdx === token.id" size="16" color="--txt-primary" />
-					<Icon v-else name="banknote" size="20" color="primary" />
-				</Flex>
-
-				<Flex direction="column" gap="6" :class="$style.text">
-					<Text size="13" weight="600" color="primary" noWrap :class="$style.label">
-						{{ token.symbol }}
-					</Text>
-					<Text size="12" weight="500" color="tertiary" noWrap :class="$style.label">
-						{{ token.name }}
-					</Text>
-				</Flex>
-			</Flex>
-
+	<SettingItem
+		:to="`/popup/tokens/${token.id}`"
+		:title="token.symbol"
+		:description="token.name"
+		:loading="appStore.tokenAwaitingBalanceIdx === token.id"
+		icon="banknote"
+	>
+		<template #right>
 			<Flex direction="column" align="end" gap="6" :class="$style.right">
 				<Text size="13" weight="600" color="tertiary" noWrap :class="$style.balance_text">
 					<Text color="primary">{{ balance ? comma(totalBalance, ",", 8) : 0 }}</Text>
@@ -55,8 +48,8 @@ const totalBalance = computed(() => {
 					<template #content> No quotes available at the moment </template>
 				</Tooltip>
 			</Flex>
-		</Flex>
-	</RouterLink>
+		</template>
+	</SettingItem>
 </template>
 
 <style module>

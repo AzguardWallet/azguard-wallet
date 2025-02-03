@@ -29,6 +29,17 @@ const handleRepeatedPasswordInput = () => {
 }
 
 const isCreatingProfile = ref(false)
+const isAllowedToContinue = computed(() => {
+	if (!walletPassword.value.length || walletPassword.value.length < 8) {
+		return false
+	}
+
+	if (!repeatedPassword.value || walletPassword.value !== repeatedPassword.value) {
+		return false
+	}
+
+	return true
+})
 const handleCreateProfile = async () => {
 	if (!isAllowedToContinue.value) return
 
@@ -75,18 +86,6 @@ onMounted(() => {
 
 onUnmounted(() => {
 	document.removeEventListener("keydown", onKeydown)
-})
-
-const isAllowedToContinue = computed(() => {
-	if (!walletPassword.value.length || walletPassword.value.length < 8) {
-		return false
-	}
-
-	if (!repeatedPassword.value || walletPassword.value !== repeatedPassword.value) {
-		return false
-	}
-
-	return true
 })
 </script>
 

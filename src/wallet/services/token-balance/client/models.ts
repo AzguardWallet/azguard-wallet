@@ -7,5 +7,6 @@ export class TokenBalanceInfo {
         public readonly account: string,
         public publicBalance: string | undefined,
         public privateBalance: string | undefined,
+        public updatedAt: number,
     ) {}
 }

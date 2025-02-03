@@ -2,6 +2,8 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
@@ -20,102 +22,55 @@ const props = defineProps({
 </script>
 
 <template>
-	<Popup
-		:show
-		@onClose="emit('onClose')"
-		:displaceIdx="popupStore.popups.forgot_password"
-	>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.forgot_password">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
 					<Flex align="center" gap="6">
 						<Icon name="help" size="18" color="primary" />
-						<Text size="16" weight="600" color="primary">
-							Forgot Password
-						</Text>
+						<Text size="16" weight="600" color="primary"> Forgot Password </Text>
 					</Flex>
 
-					<Text
-						size="14"
-						weight="500"
-						color="body"
-						height="140"
-						align="center"
-						style="padding: 0 12px"
-					>
-						Choose from the following options to restore or reset
-						your wallet
+					<Text size="14" weight="500" color="body" height="140" align="center" style="padding: 0 12px">
+						Choose from the following options to restore or reset your profile
 					</Text>
 				</Flex>
 
-				<Flex direction="column" gap="12">
-					<Text size="13" weight="600" color="secondary">
-						Possible solutions
-					</Text>
-
-					<Tooltip wide delay="500">
-						<Button
-							wide
-							square
-							type="secondary"
-							size="medium"
-							leftIcon="text"
-							leftIconColor="primary"
-							disabled
-						>
-							Recovery with a seed phrase
-						</Button>
-
-						<template #content>
-							Your wallet does not have a saved seed phrase
-						</template>
-					</Tooltip>
-					<Button
+				<ItemsContainer title="Possible Solutions">
+					<SettingItem
+						@click="popupStore.open('import')"
+						title="Profile Recovery"
+						icon="restart"
+						iconBgColor="var(--blue)"
+						chevron
+					/>
+					<SettingItem
 						@click="popupStore.open('reset')"
-						square
-						type="secondary"
-						size="medium"
-						leftIcon="trash"
-						leftIconColor="primary"
-					>
-						Reset Wallet
-					</Button>
-					<Tooltip wide delay="500">
-						<Button
-							wide
-							square
-							type="secondary"
-							size="medium"
-							leftIcon="switch"
-							leftIconColor="primary"
-							disabled
-						>
-							Switch to other profile
-						</Button>
+						title="Reset Profile"
+						icon="trash"
+						iconBgColor="var(--red)"
+						chevron
+					/>
+					<SettingItem
+						@click="popupStore.open('select_profile')"
+						title="Switch to other profile"
+						icon="user"
+						chevron
+						:disabled="appStore.profiles.length === 1"
+					/>
+				</ItemsContainer>
 
-						<template #content>
-							You have only one profile
-						</template>
-					</Tooltip>
-				</Flex>
-
-				<Text
-					size="12"
-					weight="500"
-					color="tertiary"
-					height="160"
-					align="center"
-					style="padding: 0 20px"
+				<ItemsContainer
+					description="Requests to reset or recover your password will be ignored, use the recovery methods listed above"
 				>
-					If you enter your password correctly, but still can't get
-					into your wallet -
-					<a
-						href="https://azguardwallet.io/forms/report-issue"
-						target="_blank"
-					>
-						contact us
-					</a>
-				</Text>
+					<SettingItem
+						@click="popupStore.open('import')"
+						title="Report issue with authorization"
+						to="https://google.com"
+						icon="help"
+						external
+					/>
+				</ItemsContainer>
 			</Flex>
 		</PopupCard>
 	</Popup>
