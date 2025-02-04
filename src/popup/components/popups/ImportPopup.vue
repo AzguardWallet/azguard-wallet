@@ -161,13 +161,6 @@ watch(
 						iconBgColor="blue"
 						chevron
 					/>
-					<!-- <SettingItem
-						@click="selectedRecoveryOption = 'public_key'"
-						title="Public Key"
-						description="Locked due to password requirement"
-						icon="key"
-						disabled
-					/> -->
 				</ItemsContainer>
 
 				<template v-else>
@@ -176,30 +169,33 @@ watch(
 							v-if="selectedRecoveryOption === 'private_key'"
 							v-model="privateKey"
 							type="password"
-							label="Plain Secret Key"
-							placeholder="Enter secret key"
+							label="Plain Key"
+							placeholder="Enter plain key"
 						>
 						</Input>
 
-						<Flex v-if="selectedRecoveryOption === 'seed'" direction="column" gap="8">
-							<Input
-								v-model="seedPhrase"
-								type="password"
-								label="Seed Phrase"
-								placeholder="Enter seed phrase "
-							>
-								<template v-if="seedPhrase?.split(' ').length === 24" #right>
-									<Flex align="center" gap="4">
-										<Icon name="check-circle" size="12" color="green" />
-										<Text size="12" weight="600" color="primary">Correct</Text>
-									</Flex>
-								</template>
-							</Input>
+						<Input
+							v-if="selectedRecoveryOption === 'seed'"
+							v-model="seedPhrase"
+							type="password"
+							label="Seed Phrase"
+							placeholder="Enter seed phrase "
+						>
+							<template #labelSuffix>
+								<Tooltip position="start">
+									<Icon name="info" size="12" color="tertiary" hoverColor="primary" />
 
-							<Text size="12" weight="500" color="tertiary" height="150">
-								Words should be separated by spaces
-							</Text>
-						</Flex>
+									<template #content> Words should be separated by spaces </template>
+								</Tooltip>
+							</template>
+
+							<template v-if="seedPhrase?.split(' ').length === 24" #right>
+								<Flex align="center" gap="4">
+									<Icon name="check-circle" size="12" color="green" />
+									<Text size="12" weight="600" color="primary">Correct</Text>
+								</Flex>
+							</template>
+						</Input>
 
 						<Input
 							v-model="profileName"

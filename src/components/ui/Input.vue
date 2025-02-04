@@ -126,7 +126,10 @@ const handleClear = () => {
 <template>
 	<Flex direction="column" gap="8">
 		<Flex v-if="label" align="center" justify="between">
-			<Text size="13" weight="600" color="secondary">{{ label }}</Text>
+			<Flex align="center" gap="4">
+				<Text size="13" weight="600" color="secondary">{{ label }}</Text>
+				<slot name="labelSuffix" />
+			</Flex>
 
 			<slot name="right" />
 		</Flex>
