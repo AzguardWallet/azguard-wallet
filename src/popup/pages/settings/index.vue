@@ -37,7 +37,7 @@ const handleCopyAddress = () => {
 		<Breadcrumbs hide-navigation />
 
 		<Flex direction="column" gap="24">
-			<ItemsContainer>
+			<ItemsContainer title="Wallet">
 				<SettingItem
 					to="/popup/settings/profile"
 					:title="appStore.profile.name"
