@@ -69,7 +69,7 @@ const handleLockWallet = () => {
 				</Flex>
 
 				<ItemsContainer title="Other">
-					<SettingItem title="Contacts" icon="user" iconBgColor="var(--green)" chevron disabled />
+					<SettingItem title="Contacts" icon="contacts" iconBgColor="var(--green)" chevron disabled />
 					<SettingItem
 						@click="handleNavigation('/popup/settings')"
 						title="Settings"
