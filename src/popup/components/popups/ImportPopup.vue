@@ -259,7 +259,7 @@ watch(
 							rightIcon="arrow-right-circle"
 							wide
 						>
-							Use private key to recover
+							Use plain key to recover
 						</Button>
 
 						<Button v-if="selectedRecoveryOption" @click="handleBack" type="secondary" size="medium" wide>
