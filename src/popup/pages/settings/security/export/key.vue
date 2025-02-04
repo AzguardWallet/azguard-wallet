@@ -135,14 +135,18 @@ onBeforeUnmount(() => {
 				(selectedKey === 'private' && 'red') ||
 				(selectedKey === 'public' && 'green')
 			"
-			title="Secret Key"
+			:title="
+				(!selectedKey && 'Secret Key') ||
+				(selectedKey === 'private' && 'Plain Key') ||
+				(selectedKey === 'public' && 'Encrypted Key')
+			"
 			description="Secret key can be used to restore your profile, either with or without a password"
 		/>
 
 		<ItemsContainer v-if="!selectedKey" title="Select type of the key">
 			<SettingItem
 				@click="handleSelectKey('public')"
-				title="Protected"
+				title="Encrypted"
 				description="Password is required to use"
 				icon="lock"
 				iconBgColor="green"
@@ -166,8 +170,8 @@ onBeforeUnmount(() => {
 					<template #description>
 						<Flex direction="column" gap="8">
 							<Text height="140">
-								Plain secret key is direct and full access to your entire profile, once you lose it you
-								will not be able to regain access to your profile.
+								Plain key is direct and full access to your entire profile, once you lose it you will
+								not be able to regain access to your profile.
 							</Text>
 							<Text height="140"> Ensure that plain key is securely stored. </Text>
 							<Text height="140"> By continuing you agree to all risks and responsibilities. </Text>
@@ -215,12 +219,7 @@ onBeforeUnmount(() => {
 			</template>
 			<template v-else>
 				<Flex direction="column" gap="8">
-					<Input
-						v-model="privateKey"
-						:type="privateKeyFieldType"
-						label="Plain Secret Key"
-						placeholder="Secret Key"
-					>
+					<Input v-model="privateKey" :type="privateKeyFieldType" label="Plain Key" placeholder="Plain Key">
 						<template v-if="isUnlocked" #suffix>
 							<Icon
 								@click.stop="togglePrivateKeyFieldType"
@@ -280,12 +279,7 @@ onBeforeUnmount(() => {
 		<!-- Public Key -->
 		<template v-if="selectedKey === 'public'">
 			<Flex direction="column" gap="8">
-				<Input
-					v-model="publicKey"
-					:type="publicKeyFieldType"
-					label="Protected Secret Key"
-					placeholder="Protected Secret Key"
-				>
+				<Input v-model="publicKey" :type="publicKeyFieldType" label="Encrypted Key" placeholder="Encrypted Key">
 					<template #suffix>
 						<Icon
 							@click.stop="togglePublicKeyFieldType"

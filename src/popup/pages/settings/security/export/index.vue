@@ -25,7 +25,7 @@ const appStore = useAppStore()
 
 		<Flex direction="column" align="center" gap="16" :class="$style.page_header">
 			<Flex :class="$style.page_icon">
-				<Icon name="key-square" size="24" color="primary" />
+				<Icon name="download" size="24" color="primary" />
 				<div />
 			</Flex>
 
@@ -41,7 +41,7 @@ const appStore = useAppStore()
 			<SettingItem :title="appStore.profile.name" icon="user" raw />
 		</ItemsContainer>
 
-		<ItemsContainer title="Select credentials type">
+		<ItemsContainer title="Choose backup format">
 			<SettingItem title="Seed Phrase" icon="text" iconBgColor="blue" to="/popup/settings/security/export/seed" />
 			<SettingItem title="Secret Key" icon="key" iconBgColor="blue" to="/popup/settings/security/export/key" />
 		</ItemsContainer>

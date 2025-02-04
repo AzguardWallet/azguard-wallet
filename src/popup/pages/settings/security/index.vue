@@ -30,7 +30,7 @@ import SettingField from "@/components/ui/Settings/SettingField.vue"
 			<SettingItem
 				title="Backup"
 				description="Get the seed phrase or secret key"
-				icon="key-square"
+				icon="download"
 				to="/popup/settings/security/export"
 			/>
 		</ItemsContainer>
