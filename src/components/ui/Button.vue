@@ -216,12 +216,13 @@ const getStyles = () => {
 }
 
 .wrapper.red {
-	background: var(--red);
+	background: var(--btn-red-bg);
 }
 
 .wrapper.primary {
 	background: var(--btn-primary-bg);
 	fill: var(--txt-white);
+	color: var(--txt-white);
 }
 
 .wrapper.secondary {
