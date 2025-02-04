@@ -35,8 +35,10 @@ watch(
 		if (!props.show) {
 			confirmationTerm.value = null
 		} else {
-			await nextTick()
-			confirmationInputEl.value.inputEl.focus()
+			if (cacheStore.confirm.confirmation_text) {
+				await nextTick()
+				confirmationInputEl.value.inputEl.focus()
+			}
 		}
 	},
 )
