@@ -156,7 +156,7 @@ watch(
 					/>
 					<SettingItem
 						@click="selectedRecoveryOption = 'private_key'"
-						title="Plain Secret Key"
+						title="Plain Key"
 						icon="key"
 						iconBgColor="blue"
 						chevron
