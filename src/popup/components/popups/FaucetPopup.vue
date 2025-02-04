@@ -231,7 +231,7 @@ const onKeydown = e => {
 						:disabled="!isAllowedToMint"
 						:loading="isMinting"
 					>
-						<Text color="inverse">{{ isMinting ? "Minting" : "Mint" }}</Text>
+						{{ isMinting ? "Minting" : "Mint" }}
 					</Button>
 
 					<Tooltip v-if="isErrorOccurred" side="top">

@@ -188,9 +188,7 @@ const handleCopyContractAddress = () => {
 							:disabled="!isAvailableToUpdateToken || isUpdatingTokenInterface"
 							:loading="isUpdatingTokenInterface"
 						>
-							<Text color="inverse">
-								{{ isUpdatingTokenInterface ? "Updating" : "Update token" }}
-							</Text>
+							{{ isUpdatingTokenInterface ? "Updating" : "Update token" }}
 						</Button>
 					</Flex>
 				</template>

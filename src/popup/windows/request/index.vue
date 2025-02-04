@@ -24,7 +24,7 @@ const cacheStore = useCacheStore()
 const route = useRoute()
 const router = useRouter()
 const params = new URLSearchParams(window.location.search)
-const requestId = params.get('requestId')
+const requestId = params.get("requestId")
 
 const isLoading = ref(false)
 const isActionCalled = ref(false)
@@ -83,7 +83,7 @@ const init = async () => {
 			return
 		}
 
-		const chainId = payload.value.chainId?.split(':')?.pop()
+		const chainId = payload.value.chainId?.split(":")?.pop()
 		networks.value = await networkServiceClient.getNetworks(Number(chainId))
 		if (!networks.value.length) {
 			fillError(`Not supported network ${payload.value.chainId}.`)
@@ -92,7 +92,9 @@ const init = async () => {
 		cacheStore.selectedNetwork = networks.value[0]
 		cacheStore.proposedNetworks = networks.value
 
-		const accounts = Object.values(dappSession.value?.namespaces).flatMap(v => v.accounts).map(acc => acc.split(":").pop())
+		const accounts = Object.values(dappSession.value?.namespaces)
+			.flatMap(v => v.accounts)
+			.map(acc => acc.split(":").pop())
 		const address = accounts.find(acc => acc === payload.value.accountAddress)
 		await fetchAccount(address)
 		if (!account.value) {
@@ -113,14 +115,11 @@ const handleConfirm = async () => {
 	isActionCalled.value = true
 
 	try {
-		interactionServiceClient.approveInteractionRequest(
-			interactionRequest.value?.id,
-			{
-				networkId: selectedNetwork.value?.id,
-				accountAddress: account.value?.address,
-				dappName: dappMetadata.value?.name,
-			}
-		)
+		interactionServiceClient.approveInteractionRequest(interactionRequest.value?.id, {
+			networkId: selectedNetwork.value?.id,
+			accountAddress: account.value?.address,
+			dappName: dappMetadata.value?.name,
+		})
 
 		closeWindow()
 	} catch (error) {
@@ -139,20 +138,33 @@ const handleReject = async () => {
 	closeWindow()
 }
 
-const handleRequestExpiredEvent = (payload) => {
+const handleRequestExpiredEvent = payload => {
 	if (interactionRequest.value?.payload?.id === payload.id) {
 		isRequestExpired.value = true
 	}
 }
 const closeWindow = () => {
-	chrome.windows.getCurrent((currentWindow) => {
+	chrome.windows.getCurrent(currentWindow => {
 		chrome.windows.remove(currentWindow.id, () => {})
 	})
 }
 
-const profileServiceClient = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, handleReject)
+const profileServiceClient = new ProfileServiceClient(
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	handleReject,
+)
 const networkServiceClient = new NetworkServiceClient()
-const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, undefined, handleRequestExpiredEvent)
+const interactionServiceClient = new InteractionServiceClient(
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	handleRequestExpiredEvent,
+)
 
 onBeforeMount(async () => {
 	// TODO: remove after service initialization refactoring
@@ -161,77 +173,65 @@ onBeforeMount(async () => {
 			appStore.pageAwaitingAuth = `/windows/request?requestId=${requestId}`
 			router.push({
 				path: "/popup/auth",
-			});
-		}, 500);
+			})
+		}, 500)
 	}
 })
 
-onMounted( async () => {
+onMounted(async () => {
 	await init()
 
 	// TODO: remove after service initialization refactoring
 	if (appStore.isLogined) {
 		setTimeout(() => {
 			appStore.pageAwaitingAuth = ""
-		}, 500);
+		}, 500)
 	}
 
 	window.addEventListener("beforeunload", handleReject)
 })
 
 onUnmounted(() => {
-	window.removeEventListener("beforeunload", handleReject);
+	window.removeEventListener("beforeunload", handleReject)
 })
 </script>
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" justify="between" :class="$style.wrapper">
 		<Flex direction="column" gap="14">
-			<Flex align="center" justify="center" gap="8" :style="{paddingTop: '8px'}">
+			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
 				<Text size="16" weight="600" color="primary">Confirm operation</Text>
 			</Flex>
 
 			<Flex align="center" justify="center" gap="20">
-				<Flex
-					direction="column"
-					align="center"
-					justify="center"
-					gap="6"
-					:class="$style.avatar"
-				>
+				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
 					<img v-if="dappMetadata?.icon" width="48" height="48" :src="dappMetadata?.icon" />
 
-					<Icon
-						v-else
-						name="dapp"
-						size="48"
-						color="blue"
-					/>
+					<Icon v-else name="dapp" size="48" color="blue" />
 
 					<Text size="13" weight="600" color="primary"> {{ dappMetadata?.name }} </Text>
 				</Flex>
 
-				<Flex align="center" gap="12" :class="[$style.status_icon, isLoading && $style.processing]" :style="{paddingBottom: '13px'}">
+				<Flex
+					align="center"
+					gap="12"
+					:class="[$style.status_icon, isLoading && $style.processing]"
+					:style="{ paddingBottom: '13px' }"
+				>
 					<Icon name="left-connect" size="24" color="tertiary" />
 					<Icon name="right-connect" size="24" color="tertiary" />
 				</Flex>
 
-				<Flex
-					direction="column"
-					align="center"
-					justify="center"
-					gap="6"
-					:class="$style.avatar"
-				>
+				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
 					<img width="48" height="48" src="@/assets/logo.png" />
 
 					<Text size="13" weight="600" color="primary">Azguard Wallet</Text>
 				</Flex>
 			</Flex>
 
-			<Flex direction="column" align="center" justify="center" gap="4" :style="{marginTop: '-4px'}">
-					<Text size="13" weight="600" color="primary"> {{ dappMetadata?.url }} </Text>
-					<Text size="13" color="secondary">requests operation to you</Text>
+			<Flex direction="column" align="center" justify="center" gap="4" :style="{ marginTop: '-4px' }">
+				<Text size="13" weight="600" color="primary"> {{ dappMetadata?.url }} </Text>
+				<Text size="13" color="secondary">requests operation to you</Text>
 			</Flex>
 
 			<Flex direction="column" align="start" justify="start" gap="8" :class="$style.section">
@@ -242,7 +242,7 @@ onUnmounted(() => {
 				<Flex gap="10" :class="$style.account">
 					<Flex align="center">
 						<Icon name="check-circle" size="16" color="green" />
-					</Flex>				
+					</Flex>
 
 					<Flex direction="column" gap="4">
 						<Text size="14" weight="600" color="primary">
@@ -255,16 +255,29 @@ onUnmounted(() => {
 				</Flex>
 			</Flex>
 
-			<Flex v-if="networks.length" direction="column" align="start" justify="start" gap="8" :class="$style.section">
+			<Flex
+				v-if="networks.length"
+				direction="column"
+				align="start"
+				justify="start"
+				gap="8"
+				:class="$style.section"
+			>
 				<Flex align="end" justify="start" gap="4">
 					<Text size="14" weight="600" color="primary">Select node</Text>
 					<Text size="13" color="secondary">to execute the operation</Text>
 				</Flex>
-				<Flex direction="column" align="start" justify="start" gap="6" :class="[$style.networks, (isLoading || processingError.show) && $style.disabled]">
+				<Flex
+					direction="column"
+					align="start"
+					justify="start"
+					gap="6"
+					:class="[$style.networks, (isLoading || processingError.show) && $style.disabled]"
+				>
 					<Flex @click="handleNetworkSelect()" gap="10" :class="$style.network">
 						<Flex align="center">
 							<Icon name="check-circle" size="16" color="green" />
-						</Flex>				
+						</Flex>
 
 						<Flex direction="column" gap="4">
 							<Flex align="center" gap="10">
@@ -299,7 +312,7 @@ onUnmounted(() => {
 			<Tooltip v-if="processingError.show" side="top" position="start" :disabled="!processingError.tooltip">
 				<Flex align="center" wide>
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
-					<Text size="12" weight="600" color="secondary" :style="{paddingLeft: '4px'}">
+					<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
 						{{ processingError.title }}
 					</Text>
 				</Flex>
@@ -312,13 +325,7 @@ onUnmounted(() => {
 			</Tooltip>
 
 			<Flex align="center" justify="between" gap="12">
-				<Button
-					@click="handleReject"
-					wide
-					type="secondary"
-					size="medium"
-					:disabled="isLoading"
-				>
+				<Button @click="handleReject" wide type="secondary" size="medium" :disabled="isLoading">
 					<Text size="13">Reject</Text>
 				</Button>
 
@@ -330,27 +337,17 @@ onUnmounted(() => {
 					:loading="isLoading"
 					:disabled="processingError.show"
 				>
-					<Text size="13" color="inverse">Confirm</Text>
+					<Text size="13">Confirm</Text>
 				</Button>
 			</Flex>
 		</Flex>
 
-		<Flex
-			v-if="isRequestExpired"
-			align="center"
-			justify="center"
-			:class="$style.request_expired_overlay"
-		>
+		<Flex v-if="isRequestExpired" align="center" justify="center" :class="$style.request_expired_overlay">
 			<Flex direction="column" align="center" gap="16" :class="$style.request_expired_content">
 				<Text size="13" weight="600" color="primary">This operation request is expired</Text>
 
-				<Button
-					@click="closeWindow"
-					type="primary"
-					size="small"
-					:style="{width: '50%'}"
-				>
-					<Text size="13" color="inverse">OK</Text>
+				<Button @click="closeWindow" type="primary" size="small" :style="{ width: '50%' }">
+					<Text size="13">OK</Text>
 				</Button>
 			</Flex>
 		</Flex>
@@ -385,7 +382,7 @@ onUnmounted(() => {
 	background: var(--card-bg);
 
 	text-align: center;
-  	white-space: nowrap;
+	white-space: nowrap;
 
 	& img {
 		border-radius: 50%;

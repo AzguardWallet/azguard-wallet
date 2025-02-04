@@ -278,10 +278,9 @@ watch(
 						type="primary"
 						size="medium"
 						rightIcon="arrow-right-circle"
-						rightIconColor="inverse"
 						:disabled="!isAllowedToSend"
 					>
-						<Text color="inverse">Send</Text>
+						Send
 					</Button>
 				</Flex>
 			</Flex>

@@ -19,7 +19,7 @@ const appStore = useAppStore()
 const router = useRouter()
 
 const params = new URLSearchParams(window.location.search)
-const requestId = params.get('requestId')
+const requestId = params.get("requestId")
 
 const isLoading = ref(false)
 const isActionCalled = ref(false)
@@ -41,23 +41,21 @@ const accounts = ref([])
 async function fetchAccounts() {
 	if (accounts.value.length) return
 
-	const uniqueNetworks = Array.from(
-		new Map(networks.value.map((n) => [n.chainId, n])).values()
-	)
+	const uniqueNetworks = Array.from(new Map(networks.value.map(n => [n.chainId, n])).values())
 
 	const results = await Promise.all(
-		uniqueNetworks.map(async (network) => {
+		uniqueNetworks.map(async network => {
 			const accountClient = new AccountServiceClient(profile.value, network)
 			const accounts = await accountClient.getAccounts(true)
 			return [...accounts]
-		})
+		}),
 	)
-	
+
 	accounts.value = results.flat()
 
 	if (requiredChains.value.length) {
 		const chainsOrder = requiredChains.value.map(ch => ch.split(":").pop())
-		
+
 		const chainIdPriority = chainsOrder.reduce((acc, chainId, index) => {
 			acc[chainId] = index
 			return acc
@@ -78,7 +76,7 @@ async function fetchAccounts() {
 			return a.index - b.index
 		})
 	}
-	
+
 	if (appStore.account) {
 		selectedAccounts.value.push({ ...appStore.account })
 	}
@@ -124,10 +122,14 @@ const validateProposal = async () => {
 				chains: [...new Set(accounts.value.map(acc => CAIP.chain(acc.chainId)))],
 				methods: AZTEC_METHODS,
 				events: AZTEC_EVENTS,
-			}
+			},
 		}
 
-		validationResult.value = await interactionServiceClient.buildApprovedNamespaces(supportedNamespaces, requiredNamespaces, optionalNamespaces)
+		validationResult.value = await interactionServiceClient.buildApprovedNamespaces(
+			supportedNamespaces,
+			requiredNamespaces,
+			optionalNamespaces,
+		)
 
 		let values = Object.values(validationResult.value)
 		chains.value = values.flatMap(v => v.chains)
@@ -135,27 +137,31 @@ const validateProposal = async () => {
 			methods.value = values.flatMap(v => v.methods)
 			events.value = values.flatMap(v => v.events)
 		} else {
-			values = [
-				...Object.values(requiredNamespaces),
-			].reduce((acc, curr) => {
-				acc.chains = Array.from(new Set([...acc.chains, ...curr.chains]))
-				acc.methods = Array.from(new Set([...acc.methods, ...curr.methods]))
-				acc.events = Array.from(new Set([...acc.events, ...curr.events]))
+			values = [...Object.values(requiredNamespaces)].reduce(
+				(acc, curr) => {
+					acc.chains = Array.from(new Set([...acc.chains, ...curr.chains]))
+					acc.methods = Array.from(new Set([...acc.methods, ...curr.methods]))
+					acc.events = Array.from(new Set([...acc.events, ...curr.events]))
 
-				return acc
-			}, {
-				chains: [],
-				methods: [],
-				events: [],
-			})
+					return acc
+				},
+				{
+					chains: [],
+					methods: [],
+					events: [],
+				},
+			)
 
 			chains.value = values.chains
 			methods.value = values.methods
 			events.value = values.events
-			
-			fillError("Proposal validation error.", "No match between networks required by app and networks supported by wallet.")
+
+			fillError(
+				"Proposal validation error.",
+				"No match between networks required by app and networks supported by wallet.",
+			)
 		}
-	} catch(error) {
+	} catch (error) {
 		fillError("Unexpected proposal validation error.", error)
 	}
 }
@@ -163,17 +169,15 @@ const validateProposal = async () => {
 const init = async () => {
 	try {
 		interactionRequest.value = await interactionServiceClient.getInteractionRequest(requestId)
-		requiredChains.value =
-			Object.values(interactionRequest.value.payload.requiredNamespaces)
-			.flatMap(n => n.chains)
-		
+		requiredChains.value = Object.values(interactionRequest.value.payload.requiredNamespaces).flatMap(n => n.chains)
+
 		dapp.value = interactionRequest.value.payload.dappMetadata
 	} catch (error) {
 		fillError("Proposal pre-processing error.", error)
 	}
 }
 
-const handleAccountSelect = (account) => {
+const handleAccountSelect = account => {
 	if (processingError.value.show && processingError.value.type === "warning") {
 		fillError()
 	}
@@ -187,14 +191,12 @@ const handleAccountSelect = (account) => {
 
 function checkSelectedAccounts() {
 	const requiredNetwroks = requiredChains.value.map(ch => Number(ch.split(":").pop()))
-	const selectedAccountsNetworks = Array.from(
-		new Set(selectedAccounts.value.map(acc => acc.chainId))
-	)
+	const selectedAccountsNetworks = Array.from(new Set(selectedAccounts.value.map(acc => acc.chainId)))
 
 	return requiredNetwroks.every(ch => selectedAccountsNetworks.includes(ch))
 }
 
-const handleProposalExpiredEvent = (request) => {
+const handleProposalExpiredEvent = request => {
 	if (interactionRequest.value?.id === request.id) {
 		isProposalExpired.value = true
 	}
@@ -204,8 +206,10 @@ const handleApprove = async () => {
 	if (!checkSelectedAccounts()) {
 		fillError(
 			"Pre-processing error.",
-			`You must select at least one account for each required network: ${requiredChains.value.map(ch => getNetworkType(Number(ch.split(":").pop()))).join(", ")}`,
-			"warning"
+			`You must select at least one account for each required network: ${requiredChains.value
+				.map(ch => getNetworkType(Number(ch.split(":").pop())))
+				.join(", ")}`,
+			"warning",
 		)
 
 		return
@@ -224,7 +228,10 @@ const handleApprove = async () => {
 			},
 		}
 
-		interactionServiceClient.approveInteractionRequest(interactionRequest.value?.id, { namespaces, profileId: profile.value?.id })
+		interactionServiceClient.approveInteractionRequest(interactionRequest.value?.id, {
+			namespaces,
+			profileId: profile.value?.id,
+		})
 
 		closeWindow()
 	} catch (error) {
@@ -242,13 +249,26 @@ const handleReject = async () => {
 }
 
 const closeWindow = () => {
-	chrome.windows.getCurrent((window) => {
+	chrome.windows.getCurrent(window => {
 		chrome.windows.remove(window.id)
 	})
 }
 
-const profileServiceClient = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, handleReject)
-const interactionServiceClient = new InteractionServiceClient(undefined, undefined, undefined, undefined, handleProposalExpiredEvent)
+const profileServiceClient = new ProfileServiceClient(
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	handleReject,
+)
+const interactionServiceClient = new InteractionServiceClient(
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	handleProposalExpiredEvent,
+)
 
 watch(
 	() => [appStore.networks, appStore.profile],
@@ -270,81 +290,73 @@ watch(
 		if (appStore.account && !selectedAccounts.value.length) {
 			selectedAccounts.value.push(appStore.account)
 		}
-	}
+	},
 )
 
 onBeforeMount(async () => {
 	if (!appStore.isLogined) {
 		setTimeout(() => {
-			appStore.pageAwaitingAuth = encodeURIComponent(`${window.location.pathname}${window.location.hash}?${(new URLSearchParams(window.location.search)).toString()}`)
+			appStore.pageAwaitingAuth = encodeURIComponent(
+				`${window.location.pathname}${window.location.hash}?${new URLSearchParams(
+					window.location.search,
+				).toString()}`,
+			)
 			router.push({
 				path: "/popup/auth",
-			});
-		}, 500);
+			})
+		}, 500)
 	}
 })
 
-onMounted( async () => {
+onMounted(async () => {
 	await init()
-	
+
 	if (appStore.networks?.length && appStore.profile?.id) {
 		await fetchAccounts()
 		await validateProposal()
 	}
 
-	window.addEventListener('beforeunload', handleReject);
+	window.addEventListener("beforeunload", handleReject)
 })
 
 onUnmounted(() => {
-	window.removeEventListener('beforeunload', handleReject);
+	window.removeEventListener("beforeunload", handleReject)
 })
 </script>
 
 <template>
 	<Flex direction="column" justify="between" :class="$style.wrapper">
 		<Flex direction="column" gap="14">
-			<Flex align="center" justify="center" gap="8" :style="{paddingTop: '8px'}">
+			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
 				<Text size="16" weight="600" color="primary">Connection proposal</Text>
 			</Flex>
 			<Flex align="center" justify="center" gap="20">
-				<Flex
-					direction="column"
-					align="center"
-					justify="center"
-					gap="6"
-					:class="$style.avatar"
-				>
+				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
 					<img v-if="dapp?.icon" width="48" height="48" :src="dapp?.icon" />
 
-					<Icon
-						v-else
-						name="dapp"
-						size="48"
-						color="blue"
-					/>
+					<Icon v-else name="dapp" size="48" color="blue" />
 
 					<Text size="13" weight="600" color="primary"> {{ dapp?.name }} </Text>
 				</Flex>
 
-				<Flex align="center" gap="12" :class="isLoading && $style.status_icon" :style="{paddingBottom: '13px'}">
+				<Flex
+					align="center"
+					gap="12"
+					:class="isLoading && $style.status_icon"
+					:style="{ paddingBottom: '13px' }"
+				>
 					<Icon name="left-connect" size="24" color="tertiary" />
 					<Icon name="right-connect" size="24" color="tertiary" />
 				</Flex>
 
-				<Flex
-					direction="column"
-					align="center"
-					justify="center"
-					gap="6"
-					:class="$style.avatar"
-				>
+				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
 					<img width="48" height="48" src="@/assets/logo.png" />
 
 					<Text size="13" weight="600" color="primary">Azguard Wallet</Text>
 				</Flex>
 			</Flex>
 
-			<Flex direction="column" align="center" justify="center" gap="8" :style="{marginTop: '-4px'}">
+			<Flex direction="column" align="center" justify="center" gap="8" :style="{ marginTop: '-4px' }">
 				<Flex direction="column" align="center" justify="center" gap="4">
 					<Text size="13" weight="600" color="primary"> {{ dapp?.url }} </Text>
 					<Text size="13" color="primary">would like to connect to your wallet</Text>
@@ -360,31 +372,54 @@ onUnmounted(() => {
 
 				<Flex align="center" gap="4">
 					<Text size="13" color="secondary">Networks:</Text>
-					<Text size="13" color="secondary"> {{ chains?.map(ch => getNetworkType(Number(ch.split(":").pop()))).join(', ') }} </Text>
+					<Text size="13" color="secondary">
+						{{ chains?.map(ch => getNetworkType(Number(ch.split(":").pop()))).join(", ") }}
+					</Text>
 				</Flex>
-				
+
 				<Flex align="center" gap="4">
 					<Text size="13" color="secondary">Methods:</Text>
-					<Text size="13" color="secondary"> {{ methods?.join(', ') }} </Text>
+					<Text size="13" color="secondary"> {{ methods?.join(", ") }} </Text>
 				</Flex>
 
 				<Flex align="center" gap="4">
 					<Text size="13" color="secondary">Events:</Text>
-					<Text size="13" color="secondary"> {{ events?.join(', ') }} </Text>
+					<Text size="13" color="secondary"> {{ events?.join(", ") }} </Text>
 				</Flex>
 			</Flex>
 
-			<Flex v-if="accounts.length" direction="column" align="start" justify="start" gap="12" :class="$style.accounts_section">
+			<Flex
+				v-if="accounts.length"
+				direction="column"
+				align="start"
+				justify="start"
+				gap="12"
+				:class="$style.accounts_section"
+			>
 				<Flex direction="column" align="start" justify="start" gap="4">
 					<Text size="15" weight="600" color="primary">Select accounts</Text>
 					<Text size="13" color="secondary">to be connected to the dApp</Text>
 				</Flex>
 				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-					<Flex v-for="acc in accounts" @click="handleAccountSelect(acc)" gap="10" :class="[$style.account, (isLoading || (processingError.show && processingError.type === 'error')) && $style.disabled]">
+					<Flex
+						v-for="acc in accounts"
+						@click="handleAccountSelect(acc)"
+						gap="10"
+						:class="[
+							$style.account,
+							(isLoading || (processingError.show && processingError.type === 'error')) &&
+								$style.disabled,
+						]"
+					>
 						<Flex align="center">
-							<Icon v-if="selectedAccounts?.find(a => a.address === acc.address)" name="check-circle" size="16" color="green" />
+							<Icon
+								v-if="selectedAccounts?.find(a => a.address === acc.address)"
+								name="check-circle"
+								size="16"
+								color="green"
+							/>
 							<Icon v-else name="circle" size="16" color="secondary" />
-						</Flex>				
+						</Flex>
 
 						<Flex direction="column" gap="4" wide>
 							<Flex align="center" justify="between" gap="12">
@@ -407,7 +442,7 @@ onUnmounted(() => {
 			<Tooltip v-if="processingError.show" side="top" position="start" wide :disabled="!processingError.tooltip">
 				<Flex align="center" wide>
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
-					<Text size="12" weight="600" color="secondary" :style="{paddingLeft: '4px'}">
+					<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
 						{{ processingError.title }}
 					</Text>
 				</Flex>
@@ -420,13 +455,7 @@ onUnmounted(() => {
 			</Tooltip>
 
 			<Flex align="center" justify="between" gap="12">
-				<Button
-					@click="handleReject"
-					wide
-					type="secondary"
-					size="medium"
-					:disabled="isLoading"
-				>
+				<Button @click="handleReject" wide type="secondary" size="medium" :disabled="isLoading">
 					<Text size="13">Reject</Text>
 				</Button>
 
@@ -438,27 +467,17 @@ onUnmounted(() => {
 					:loading="isLoading"
 					:disabled="!selectedAccounts.length || processingError.show"
 				>
-					<Text size="13" color="inverse">Approve</Text>
+					<Text size="13">Approve</Text>
 				</Button>
 			</Flex>
 		</Flex>
 
-		<Flex
-			v-if="isProposalExpired"
-			align="center"
-			justify="center"
-			:class="$style.proposal_expired_overlay"
-		>
+		<Flex v-if="isProposalExpired" align="center" justify="center" :class="$style.proposal_expired_overlay">
 			<Flex direction="column" align="center" gap="16" :class="$style.proposal_expired_content">
 				<Text size="13" weight="600" color="primary">This connection proposal is expired</Text>
 
-				<Button
-					@click="closeWindow"
-					type="primary"
-					size="small"
-					:style="{width: '50%'}"
-				>
-					<Text size="13" color="inverse">OK</Text>
+				<Button @click="closeWindow" type="primary" size="small" :style="{ width: '50%' }">
+					<Text size="13">OK</Text>
 				</Button>
 			</Flex>
 		</Flex>
@@ -466,7 +485,6 @@ onUnmounted(() => {
 </template>
 
 <style module>
-
 .wrapper {
 	flex: 1;
 
@@ -489,7 +507,7 @@ onUnmounted(() => {
 	background: var(--card-bg);
 
 	text-align: center;
-  	white-space: nowrap;
+	white-space: nowrap;
 
 	& img {
 		border-radius: 50%;

@@ -48,8 +48,8 @@ const handleOpen = target => {
 			<Flex wide direction="column" gap="8">
 				<Button @click="appStore.showRegisterPopup = true" size="medium" type="primary" wide>
 					<Flex align="center" gap="6">
-						<Text size="13" color="inverse">Create Profile</Text>
-						<Icon name="arrow-circle-broken-right" size="16" color="inverse" />
+						<Text size="13">Create Profile</Text>
+						<Icon name="arrow-circle-broken-right" size="16" />
 					</Flex>
 				</Button>
 				<Button size="medium" type="secondary" wide disabled> Import Profile </Button>

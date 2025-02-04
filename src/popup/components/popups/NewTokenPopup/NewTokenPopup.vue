@@ -208,13 +208,11 @@ watch(
 						:loading="isLoadingParseResult || isAddingNewToken"
 						:disabled="!isAvailableToCreateToken"
 					>
-						<Text color="inverse">
-							{{
-								(isLoadingParseResult && "Awaiting token interface") ||
-								(isAddingNewToken && "Adding new token") ||
-								"Import new token"
-							}}
-						</Text>
+						{{
+							(isLoadingParseResult && "Awaiting token interface") ||
+							(isAddingNewToken && "Adding new token") ||
+							"Import new token"
+						}}
 					</Button>
 					<Button
 						v-else
@@ -225,7 +223,7 @@ watch(
 						:loading="isSavingToken"
 						:disabled="!isAvailableToCreateToken"
 					>
-						<Text color="inverse">{{ isSavingToken ? "Saving" : "Save new token" }}</Text>
+						{{ isSavingToken ? "Saving" : "Save new token" }}
 					</Button>
 					<Button
 						v-if="!isCompleted"

@@ -134,7 +134,7 @@ onUnmounted(() => {
 						:disabled="!isAllowedToContinue"
 						:loading="isCreatingProfile"
 					>
-						<Text color="inverse">Create</Text>
+						Create
 					</Button>
 					<Button @click="handleCancel" type="secondary" size="medium" wide :disabled="isCreatingProfile">
 						Cancel
