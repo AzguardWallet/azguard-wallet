@@ -13,6 +13,8 @@ import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
+
+const router = useRouter()
 </script>
 
 <template>
@@ -33,7 +35,7 @@ const popupStore = usePopupStore()
 								Import token
 							</Flex>
 						</DropdownItem>
-						<DropdownItem @click="popupStore.open('tokens')">
+						<DropdownItem @click="router.push('/popup/settings/general/tokens')">
 							<Flex align="center" gap="8">
 								<Icon name="arrow-narrow-up-right-circle" size="14" color="primary" />
 								Manage tokens
