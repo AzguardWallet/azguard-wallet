@@ -2,6 +2,9 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 import CandidatesForm from "./NewTokenPopup/CandidatesForm.vue"
 
 /** Utils */
@@ -136,9 +139,13 @@ const handleCopyContractAddress = () => {
 <template>
 	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_token">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> Edit token </Text>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">Edit token</Text>
+				</template>
+			</PopupHeader>
 
+			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Button v-if="isAwaitingTokenInterface" type="secondary" size="medium" disabled loading>
 					Loading token interface
 				</Button>
@@ -158,10 +165,31 @@ const handleCopyContractAddress = () => {
 				</template>
 
 				<template v-else>
-					<Text @click="handleCopyContractAddress" size="12" weight="600" color="tertiary" class="copyable">
-						{{ rawToken.contract.slice(0, 6) }} <Text color="dark">•••</Text>
-						{{ rawToken.contract.slice(-4) }}
-					</Text>
+					<ItemsContainer>
+						<SettingItem
+							:title="rawToken.contract"
+							description="Selected token for editing"
+							icon="vault"
+							raw
+						>
+							<template #right>
+								<Flex align="center" gap="8">
+									<Tooltip position="end" delay="350">
+										<Icon
+											@click.stop="handleCopyContractAddress"
+											name="copy"
+											size="14"
+											color="tertiary"
+											hoverColor="primary"
+											:class="$style.icon_btn"
+										/>
+
+										<template #content>Copy contract address</template>
+									</Tooltip>
+								</Flex>
+							</template>
+						</SettingItem>
+					</ItemsContainer>
 
 					<CandidatesForm
 						:selectedFields
@@ -256,6 +284,21 @@ const handleCopyContractAddress = () => {
 	&.disabled {
 		opacity: 0.5;
 		pointer-events: none;
+	}
+}
+
+.icon_btn {
+	cursor: pointer;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		fill: var(--txt-primary);
+	}
+
+	&.disabled {
+		pointer-events: none;
+		opacity: 0.3;
 	}
 }
 </style>

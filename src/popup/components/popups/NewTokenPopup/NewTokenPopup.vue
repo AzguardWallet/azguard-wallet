@@ -2,6 +2,7 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 import CandidatesForm from "./CandidatesForm.vue"
 
 /** Utils */
@@ -166,9 +167,13 @@ watch(
 <template>
 	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_token">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Text size="14" weight="600" color="primary"> New token </Text>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">New token</Text>
+				</template>
+			</PopupHeader>
 
+			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Input
 					v-model="contractAddressTerm"
 					@click="error = null"
