@@ -34,7 +34,7 @@ const handleCopyAddress = () => {
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+		<Breadcrumbs hide-navigation />
 
 		<Flex direction="column" gap="24">
 			<ItemsContainer>
