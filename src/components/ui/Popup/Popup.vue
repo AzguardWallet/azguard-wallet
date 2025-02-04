@@ -1,4 +1,7 @@
 <script setup>
+/** Vendor */
+import * as focusTrap from "focus-trap"
+
 /** Utils */
 import { managers } from "@/utils/core.js"
 
@@ -13,11 +16,22 @@ const props = defineProps({
 })
 const emit = defineEmits(["onClose"])
 
+let trap
+const popupEl = useTemplateRef("popupEl")
+
 watch(
 	() => props.show,
-	() => {
+	async () => {
 		if (props.show) {
 			const _ = managers.profile?.refreshSession()
+
+			await nextTick()
+			trap = focusTrap.createFocusTrap(popupEl.value.wrapper, {
+				initialFocus: false,
+			})
+			trap.activate()
+		} else {
+			trap.deactivate()
 		}
 	},
 )
@@ -30,7 +44,12 @@ watch(
 	<Transition name="slide" appear>
 		<template v-if="show">
 			<teleport to="#popup">
-				<Flex direction="column" :class="$style.wrapper" :style="{ zIndex: (displaceIdx + 1) * 100 * 5 }">
+				<Flex
+					ref="popupEl"
+					direction="column"
+					:class="$style.wrapper"
+					:style="{ zIndex: (displaceIdx + 1) * 100 * 5 }"
+				>
 					<div @click="emit('onClose')" :class="$style.close_area" />
 
 					<slot />

@@ -51,13 +51,6 @@ const props = defineProps({
 						iconBgColor="red"
 						chevron
 					/>
-					<SettingItem
-						@click="popupStore.open('select_profile')"
-						title="Switch to other profile"
-						icon="user"
-						chevron
-						:disabled="appStore.profiles.length === 1"
-					/>
 				</ItemsContainer>
 
 				<ItemsContainer

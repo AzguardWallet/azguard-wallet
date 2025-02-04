@@ -44,6 +44,7 @@ const slots = defineSlots()
 		:href="external ? to : null"
 		:target="external ? '_blank' : null"
 		:class="[$style.wrapper, raw && $style.raw, icon && $style.withIcon, disabled && $style.disabled]"
+		:tabindex="disabled ? -1 : 0"
 	>
 		<Flex align="center" justify="between" gap="16">
 			<Flex align="center" gap="12" wide>
@@ -99,6 +100,11 @@ const slots = defineSlots()
 
 	&:active {
 		background: var(--gray-10);
+	}
+
+	&:focus-visible {
+		background: var(--gray-8);
+		outline: none;
 	}
 
 	&:last-child {

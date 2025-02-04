@@ -72,6 +72,7 @@ const getStyles = () => {
 		:is="link ? RouterLink : 'button'"
 		v-bind="{ to: link ? link : null }"
 		:target="target"
+		:tabindex="disabled ? -1 : 0"
 		:class="[...getStyles(), loading && $style.loading]"
 	>
 		<Spinner v-if="loading" color="primary" />
