@@ -54,7 +54,10 @@ const slots = defineSlots()
 					:color="iconFillColor"
 					:class="[$style.icon, $style[iconBgColor]]"
 				/>
-				<Spinner v-else-if="icon && loading" size="16" color="--txt-primary" />
+
+				<div v-else-if="icon && loading" :class="$style.icon">
+					<Spinner size="16" color="--txt-primary" />
+				</div>
 
 				<Flex direction="column" gap="4" wide>
 					<Text size="14" weight="600" color="primary" :class="$style.title"> {{ title }} </Text>
