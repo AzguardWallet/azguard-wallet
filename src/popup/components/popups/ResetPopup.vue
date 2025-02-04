@@ -31,27 +31,27 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const inputEl = useTemplateRef("inputEl")
-
-const profileNameTerm = ref("")
 const checks = reactive({
 	permament: false,
 	undone: false,
 	sure: false,
 })
 
-const isReadyToReset = computed(
-	() => profileNameTerm.value === appStore.profile.name && checks.permament && checks.undone && checks.sure,
-)
+const isReadyToReset = computed(() => checks.permament && checks.undone && checks.sure)
 const handleReset = () => {
 	if (!isReadyToReset.value) return
 
-	cacheStore.confirm.confirm_text = "Yes, reset"
+	cacheStore.confirm.confirm_text = "Yes, delete profile"
+	cacheStore.confirm.confirm_color = "red"
+	cacheStore.confirm.title = "Delete your profile permanently?"
 	cacheStore.confirm.description =
-		"This is the last warning before a deletion. If you have not saved the seed phrase, it will not be possible to regain access to the wallet."
+		"This action cannot be undone. This will permanently delete your profile. Type the name of the profile to confirm."
+	cacheStore.confirm.confirmation_text = appStore.profile.name
 	cacheStore.confirm.callback = () => {
 		managers.profile.deleteProfile(appStore.profile.id)
 		popupStore.closeAll()
+
+		cacheStore.confirm = {}
 
 		appStore.profiles = appStore.profiles.filter(p => p.id !== appStore.profile.id)
 		appStore.profile = appStore.profiles[0]
@@ -76,14 +76,12 @@ watch(
 	() => props.show,
 	async () => {
 		if (!props.show) {
-			profileNameTerm.value = ""
 			for (const key in checks) {
 				const element = checks[key]
 				if (element) checks[key] = false
 			}
 		} else {
 			await nextTick()
-			inputEl.value.inputEl.focus()
 		}
 	},
 )
@@ -107,13 +105,6 @@ watch(
 				<ItemsContainer title="Profile to delete">
 					<SettingItem :title="appStore.profile.name" icon="user" raw />
 				</ItemsContainer>
-
-				<Input
-					ref="inputEl"
-					v-model="profileNameTerm"
-					label="Profile name"
-					placeholder="Name of the profile you want to delete"
-				/>
 
 				<Flex direction="column" gap="16">
 					<Text size="13" weight="600" color="body"> Before you continue </Text>
