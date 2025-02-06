@@ -1,30 +1,14 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { EXECUTION_SERVICE_NAME, IAction, TransferType } from ".";
+import {
+    EXECUTION_SERVICE_NAME,
+    TransferType,
+    IOperation,
+    IOperationResult,
+} from ".";
 
 export enum ExecutionServiceMethod {
-    ExecuteBatch,
     ExecuteTransfer,
-}
-
-export class ExecuteBatchRequest extends RequestMessage {
-    constructor(
-        public readonly network: string,
-        public readonly account: string,
-        public readonly dappName: string,
-        public readonly actions: IAction[],
-    ) {
-        super(EXECUTION_SERVICE_NAME, ExecutionServiceMethod.ExecuteBatch);
-    }
-}
-
-export class ExecuteBatchResponse extends ResponseMessage {
-    constructor(
-        request: ExecuteBatchRequest,
-        result?: string,
-        error?: string,
-    ) {
-        super(EXECUTION_SERVICE_NAME, request.id, result, error);
-    }
+    ExecuteOperations,
 }
 
 export class ExecuteTransferRequest extends RequestMessage {
@@ -47,6 +31,25 @@ export class ExecuteTransferResponse extends ResponseMessage {
     constructor(
         request: ExecuteTransferRequest,
         result?: string,
+        error?: string,
+    ) {
+        super(EXECUTION_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class ExecuteOperationsRequest extends RequestMessage {
+    constructor(
+        public readonly operations: IOperation[],
+        public readonly origin: string,
+    ) {
+        super(EXECUTION_SERVICE_NAME, ExecutionServiceMethod.ExecuteOperations);
+    }
+}
+
+export class ExecuteOperationsResponse extends ResponseMessage {
+    constructor(
+        request: ExecuteOperationsRequest,
+        result?: IOperationResult[],
         error?: string,
     ) {
         super(EXECUTION_SERVICE_NAME, request.id, result, error);

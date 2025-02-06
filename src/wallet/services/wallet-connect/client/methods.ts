@@ -17,9 +17,8 @@ export class ConnectByURIRequest extends RequestMessage {
 export class ConnectByURIResponse extends ResponseMessage {
     constructor(
         request: ConnectByURIRequest,
-        result?: boolean,
         error?: string,
     ) {
-        super(WALLET_CONNECT_SERVICE_NAME, request.id, result, error);
+        super(WALLET_CONNECT_SERVICE_NAME, request.id, undefined, error);
     }
 }

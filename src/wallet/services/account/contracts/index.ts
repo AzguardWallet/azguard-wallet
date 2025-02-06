@@ -9,15 +9,10 @@ export interface IAccountContract {
     
     buildTxExecutionRequest(
         pxe: PXE,
+        setup: AzguardFunctionCall[],
         calls: AzguardFunctionCall[],
         args: PackedValues[],
         nonce: Fr,
-    ): Promise<TxExecutionRequest>;
-    
-    buildTxSimulationRequest(
-        pxe: PXE,
-        call: AzguardFunctionCall,
-        args: PackedValues,
     ): Promise<TxExecutionRequest>;
 }
 

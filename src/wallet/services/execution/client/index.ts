@@ -1,8 +1,8 @@
 import { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
 import { TransferType } from "@/wallet/services/transaction/client";
-import { ExecuteBatchRequest, ExecuteTransferRequest } from "./methods";
-import { IAction } from "./models";
+import { ExecuteOperationsRequest, ExecuteTransferRequest } from "./methods";
+import { IOperation, IOperationResult } from "./models";
 
 export { TransferType } from "../../transaction/client";
 export * from './methods';
@@ -38,21 +38,6 @@ export class ExecutionServiceClient extends ServiceClient {
      * Executes batch request and returns transaction hash.
      * @param network Network id.
      * @param account Sender account address.
-     * @throws If transaction is invalid or failed.
-     */
-    public executeBatch(
-        network: string,
-        account: string,
-        dappName: string,
-        actions: IAction[],
-    ): Promise<string> {
-        return this.request(new ExecuteBatchRequest(network, account, dappName, actions));
-    }
-
-    /**
-     * Executes batch request and returns transaction hash.
-     * @param network Network id.
-     * @param account Sender account address.
      * @param token Token id.
      * @param transferType Transfer type.
      * @param recipient Recipient address.
@@ -75,5 +60,9 @@ export class ExecutionServiceClient extends ServiceClient {
             recipient,
             amount,
         ));
+    }
+
+    public executeOperations(operations: IOperation[], origin: string): Promise<IOperationResult[]> {
+        return this.request(new ExecuteOperationsRequest(operations, origin));
     }
 }

@@ -8,7 +8,7 @@ import PopupManager from "./components/popups/PopupManager.vue"
 import { managers, initTokenService, initTransactionService } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
-import { InteractionServiceClient } from "@/wallet/services/interaction/client"
+import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
 
 /** Composables */
@@ -83,11 +83,12 @@ const initAccount = async () => {
 
 // Update appStore
 const uploadDappSessions = async () => {
-	appStore.dappSessions = await managers.interaction.getDappSessions(appStore.profile.id)
+	appStore.dappSessions = await managers.dappSession.getDappSessions()
 }
-const interactionServiceClient = new InteractionServiceClient(
+const dappSessionServiceClient = new DappSessionServiceClient(
 	undefined,
 	undefined,
+	uploadDappSessions,
 	uploadDappSessions,
 	uploadDappSessions,
 )
@@ -262,7 +263,7 @@ watch(
 			const _ = managers.profile?.refreshSession()
 		}
 
-		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name.includes("windows-")
+		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name?.includes("windows-")
 	},
 )
 </script>

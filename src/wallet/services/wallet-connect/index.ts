@@ -1,111 +1,95 @@
-import { sleep } from "../../utils/sleep";
+import { WalletKit, WalletKitTypes } from '@reown/walletkit';
 import { Core } from '@walletconnect/core';
-import { WalletKit } from '@reown/walletkit';
-import { buildApprovedNamespaces, getSdkError } from "@walletconnect/utils";
-import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import type { InteractionService } from "@/wallet/services/interaction";
-import type { DappSession, Namespaces } from "@/wallet/services/interaction/client";
+import { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import { getSdkError } from "@walletconnect/utils";
+
 import { Service } from "@/wallet/base/service";
+import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { DappSessionService } from "@/wallet/services/dapp-session";
+import { DappMetadata, DappPermissions, DappSession } from "@/wallet/services/dapp-session/client";
+import { DappInteractionService } from '@/wallet/services/dapp-interaction';
+import { ConnectionParams, DappSessionInfo, ExecutionParams } from "@/wallet/services/dapp-interaction/types";
+import { AzguardWalletInfo, RpcMethod } from '@/wallet/services/rpc/types';
+import { parseExecutionParams, parseConnectionParams } from '@/wallet/services/rpc/utils';
+import { sleep } from "@/wallet/utils/sleep";
 import {
-    type ConnectByURIRequest,
-    ConnectByURIResponse,
     WALLET_CONNECT_SERVICE_NAME,
+    ConnectByURIRequest,
+    ConnectByURIResponse,
     WalletConnectServiceMethod,
 } from "./client";
 
-type LogLevel = "trace" | "debug" | "info" | "error" | "silent";
-
-const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783";
-const WALLET_CONNECT_METADATA = {
-    name: "Azguard Wallet",
-    description: "Azguard Wallet Description",
-    url: "https://azguardwallet.io",
-    icons: [],
-}
-const WALLET_CONNECT_LOG_LEVEL = "silent";
 
 export class WalletConnectService extends Service {
-    private walletKit: InstanceType<typeof WalletKit> | null = null;
+    private walletKit?: InstanceType<typeof WalletKit>;
 
-    constructor(
-        private readonly interaction: InteractionService,
+    public constructor(
+        private readonly dappSessions: DappSessionService,
+        private readonly dappInteractions: DappInteractionService,
         emit: (event: EventMessage) => void
     ) {
         super(WALLET_CONNECT_SERVICE_NAME, emit);
         this.init();
     }
 
-    public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
-        switch(request.method) {
-            case WalletConnectServiceMethod.ConnectByURI: {
-                const _request = request as ConnectByURIRequest;
-                try {
-                    await this.connectByURI(_request.uri);
-                    
-                    return new ConnectByURIResponse(_request, true);
-                }
-
-                catch (error: unknown) {
-                    if (error instanceof Error) {
-                        return new ConnectByURIResponse(_request, false, error.message);
-                    }
-
-                    return new ConnectByURIResponse(_request, false, 'Unknown error occurred');
-                }
-            }
-
-            default: {
-                console.error(`Invalid request method ${request.method}.`);
-
-                return undefined;
-            }                
-        }
-    }
-
-    public async init(): Promise<void> {
+    private async init() {
         while (true) {
             try {
+                const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783";
+                const WALLET_CONNECT_METADATA = {
+                    name: AzguardWalletInfo.name,
+                    description: AzguardWalletInfo.description,
+                    url: AzguardWalletInfo.url,
+                    icons: [
+                        AzguardWalletInfo.logo,
+                    ],
+                }
+                const WALLET_CONNECT_LOG_LEVEL = "silent"; // silent | error | warn | info | debug | trace
+
                 const core = new Core({
                     projectId: WALLET_CONNECT_PROJECT_ID,
                     logger: WALLET_CONNECT_LOG_LEVEL,
                 });
-
                 this.configureLoggers(core, WALLET_CONNECT_LOG_LEVEL);
         
                 this.walletKit = await WalletKit.init({
                     core,
                     metadata: WALLET_CONNECT_METADATA,
                 });
-        
-                this.setupWalletKitEvents();
+                this.walletKit.on('session_proposal', this.onSessionProposal);
+                this.walletKit.on('proposal_expire', this.onProposalExpire);
+                this.walletKit.on('session_request', this.onSessionRequest);
+                this.walletKit.on('session_request_expire', this.onSessionRequestExpire);
+                this.walletKit.on('session_delete', this.onSessionDelete);
+                this.walletKit.on('session_authenticate', this.onSessionAuthenticate);
+
+                this.dappSessions.onDappSessionUpdated.push(this.onDappSessionUpdated);
+                this.dappSessions.onDappSessionDeleted.push(this.onDappSessionDeleted);
+
+                for (const topic of Object.keys(this.walletKit.getActiveSessions())) {
+                    if (!await this.dappSessions.tryGetDappSession(topic)) {
+                        this.disconnectSession(topic);
+                    }
+                }
 
                 console.debug("Wallet connect service initialized");
-
-                this.interaction.onDappSessionDroped.push(this.dropDappSession);
-
                 break;
             } catch (error) {
-                console.error("Failed to initialize wallet connect service. Retry...");
+                console.error("Failed to initialize wallet connect service. Retry...", error);
                 await sleep(1000);
             }
         }
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private createLogger(level: LogLevel): any {
+    private configureLoggers = (core: InstanceType<typeof Core>, level: string) => {
         const noop = () => {};
-        return {
-            error: level !== 'silent' ? console.error : noop,
-            warn: level !== 'silent' ? console.warn : noop,
-            debug: ['trace', 'debug', 'info'].includes(level) ? console.debug : noop,
-            info: ['trace', 'debug', 'info'].includes(level) ? console.info : noop,
-            trace: level === 'trace' ? console.trace : noop,
+        const loggerConfig = {
+            error: level !== "silent" ? console.error : noop,
+            warn: ["warn", "info", "debug", "trace"].includes(level) ? console.warn : noop,
+            info: ["info", "debug", "trace"].includes(level) ? console.info : noop,
+            debug: ["debug", "trace"].includes(level) ? console.debug : noop,
+            trace: level === "trace" ? console.trace : noop,
         };
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private configureLoggers = (core: any, level: LogLevel) => {
-        const loggerConfig = this.createLogger(level);
         const paths = [
             "logger",
             "history.logger",
@@ -117,228 +101,153 @@ export class WalletConnectService extends Service {
             "pairing.logger",
             "pairing.pairings.logger",
         ]
-    
         // biome-ignore lint/complexity/noForEach: <explanation>
         paths.forEach(path => {
             const keys = path.split('.');
-            const target = keys.reduce((obj, key) => obj[key], core);
+            const target = keys.reduce((obj, key) => obj[key], core as any);
             Object.assign(target, loggerConfig);
         });
     }
-    
 
-    private setupWalletKitEvents(): void {
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.");
-        }
-
-        // type Event = "session_proposal" | "session_request" | "session_delete" | "proposal_expire" | "session_request_expire" | "session_authenticate";
-        this.walletKit.on('session_proposal', async (payload) => this.handleSessionProposal(payload));
-        this.walletKit.on('proposal_expire', async (payload) => this.handleProposalExpire(payload));
-        this.walletKit.on('session_delete', async (payload) => this.handleSessionDelete(payload));
-        this.walletKit.on('session_request', async (payload) => this.handleSessionRequest(payload));
-        this.walletKit.on('session_request_expire', async (payload) => this.handleSessionRequestExpire(payload));
-        this.walletKit.on('session_authenticate', async (payload) => this.handleSessionAuthenticate(payload));
-
-        console.debug("WalletKit event handlers set up.");
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async connectByURI(uri: string): Promise<any> {
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.");
-        }
-
-        try {
-            await this.walletKit.pair({ uri });
-
-            return true;
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                throw new Error(error.message);
-            }
-
-            throw new Error("Unknown error occurred");
-        }
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async handleSessionProposal(payload: any): Promise<any> {
-        console.debug('Session proposal received', payload);
-
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.");
-        }
-
-        try {
-            const { icons, ...metadata } = payload.params.proposer.metadata;
-            const dappMetadata = {
-                ...metadata,
-                icon: icons.length > 0 ? icons[0] : "",
-            };
-            const dappSessionPayload = {
-                requiredNamespaces: payload.params.requiredNamespaces,
-                dappMetadata: dappMetadata,
-                optionalNamespaces: payload.params.requiredNamespaces,
-            };
-            const { namespaces, profileId } = await this.interaction.dappSessionProposal(dappSessionPayload);
-            try {
-                if (namespaces && profileId) {
-                    this.approveSession(payload, namespaces, profileId);
-                }                
-            } catch (err) {
-                console.error(err);
-            }
-        } catch (err) {
-            this.rejectSession(payload);
-        }
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async approveSession(payload: any, namespaces: Namespaces, profileId: string): Promise<void> {
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.");
-        }
-        
-        const approvedNamespaces = buildApprovedNamespaces({
-            proposal: payload.params,
-            supportedNamespaces: namespaces as Record<string, { chains: string[]; methods: string[]; events: string[]; accounts: string[]; }>,
-        });
-
-        try {
-            const session = await this.walletKit.approveSession({
-                id: payload.id,
-                namespaces: approvedNamespaces,
-            });
-    
-            if (!session) return undefined;
-            
-            const { icons, ...metadata } = session.peer.metadata;
-            const dappMetadata = {
-                ...metadata,
-                icon: icons.length > 0 ? icons[0] : "",
-            }
-            
-            await this.interaction.addDappSession(
-                dappMetadata, approvedNamespaces, session.expiry, profileId, session.topic, true
-            );
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                throw new Error(error.message);
-            }
-
-            throw new Error("Unknown error occurred");
-        }
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async rejectSession(payload: any): Promise<boolean> {
-        await this.walletKit?.rejectSession({
-            id: payload.id,
-            reason: getSdkError("USER_REJECTED"),
-        });
-
-        return true;
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async handleProposalExpire(payload: any): Promise<any> {
-        console.debug('Session proposal expire received', payload);
-
-        this.interaction.requestExpired(payload);
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async handleSessionRequest(payload: any): Promise<any> {
-        console.debug('Session request received', payload);
-
-        if (!this.walletKit) {
-            throw new Error("WalletKit is not initialized.");
-        }
-
-        try {
-            const dappSessionRequestPayload = {
-                sessionId: payload.topic,
-                accountAddress: payload.params?.request?.account,
-                chainId: payload.params.chainId,
-                actions: payload.params?.request?.params,
-            }
-            const { networkId, accountAddress, dappName } = await this.interaction.dappSessionRequest(dappSessionRequestPayload)
-            if (networkId && accountAddress && dappName ) {
+    public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
+        switch(request.method) {
+            case WalletConnectServiceMethod.ConnectByURI: {
+                const _request = request as ConnectByURIRequest;
                 try {
-                    const txHash = await this.interaction.executeDappSessionRequest(networkId, accountAddress, dappName, payload.params?.request?.params);
-
-                    if (txHash) {
-                        const response = {
-                            id: payload.id,
-                            result: txHash,
-                            jsonrpc: '2.0',
-                        };
-                        
-                        this.walletKit.respondSessionRequest({ topic: payload.topic, response });
-                    }
-                } catch (err) {
-                    console.error(err);
-                    this.rejectSessionRequest(payload);
+                    await this.connectByURI(_request.uri);
+                    return new ConnectByURIResponse(_request);
                 }
-            } else {
-                this.rejectSessionRequest(payload);
+                catch (error: unknown) {
+                    return new ConnectByURIResponse(_request, (error as Error)?.message ?? error as string ?? "Unknown error");
+                }
             }
-        } catch (err) {
-            this.rejectSessionRequest(payload);
+            default: {
+                console.error(`Invalid request method ${request.method}.`);
+                return undefined;
+            }                
         }
     }
-    
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    private async rejectSessionRequest(payload: any): Promise<boolean> {
-        const response = {
-            id: payload.id,
-            jsonrpc: '2.0',
-            error: {
-                code: 5000,
-                message: 'User rejected.',
-            },
-        };
 
-        await this.walletKit?.respondSessionRequest({ topic: payload.topic, response });
-
-        return true;
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async handleSessionRequestExpire(payload: any): Promise<any> {
-        console.debug('Session request expire received', payload);
-        
-        this.interaction.requestExpired(payload);
-    }
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async handleSessionDelete(payload: any): Promise<any> {
-        console.debug('Session delete received', payload);
-
-        this.interaction.dropDappSession(payload.topic, true);
-    }
-    
-    public readonly dropDappSession = async (dappSession: DappSession) => {
+    private async connectByURI(uri: string) {
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.");
         }
+        await this.walletKit.pair({ uri });
+    }
 
+    private readonly onSessionProposal = async (payload: WalletKitTypes.SessionProposal) => {
+        console.debug('WC: session proposal received', payload);
+        // approve proposal
+        let dappSession: DappSessionInfo;
         try {
-            const sessions = this.walletKit.getActiveSessions();
-            if (Object.keys(sessions).includes(dappSession.id)) {
-                this.walletKit.disconnectSession({
-                    topic: dappSession.id,
-                    reason: getSdkError('USER_DISCONNECTED')
-                });
-            }
-        } catch (err) {
-
+            const dappMetadata: DappMetadata = {
+                name: payload.params.proposer.metadata.name,
+                description: payload.params.proposer.metadata.description,
+                logo: payload.params.proposer.metadata.icons[0],
+                url: payload.params.proposer.metadata.url,
+            };
+            const requiredPermissions: DappPermissions[] = Object.entries(payload.params.requiredNamespaces).map(
+                ([k, v]) => ({...v, chains: v.chains?.length ? v.chains : [k]}),
+            );
+            const optionalPermissions: DappPermissions[] = Object.entries(payload.params.optionalNamespaces).map(
+                ([k, v]) => ({...v, chains: v.chains?.length ? v.chains : [k]}),
+            );
+            const params: ConnectionParams = parseConnectionParams({
+                dappMetadata,
+                requiredPermissions,
+                optionalPermissions,
+            });
+            dappSession = await this.dappInteractions.connect(params, payload.params.id.toString());
+        }
+        catch (error) {
+            console.debug("WC: session proposal rejected", error);
+            this.rejectSession(payload.id);
+            return;
+        }
+        // instantiate wc session
+        let wcSession: SessionTypes.Struct;
+        try {
+            wcSession = await this.walletKit!.approveSession({
+                id: payload.id,
+                namespaces: this.buildSessionNamespaces(
+                    payload.params.requiredNamespaces,
+                    payload.params.optionalNamespaces,
+                    dappSession.permissions,
+                    dappSession.accounts,
+                ),
+            });
+        }
+        catch (error) {
+            console.debug("WC: session approval failed", error);
+            this.dappSessions.deleteDappSession(dappSession.id);
+            this.rejectSession(payload.id);
+            return;
+        }
+        // upgrade dapp session
+        try {
+            await this.dappSessions.upgradeDappSession(dappSession.id, wcSession.topic, wcSession.expiry * 1000);
+        }
+        catch (error) {
+            console.debug("WC: session upgrade failed", error);
+            this.dappSessions.deleteDappSession(dappSession.id);
+            this.disconnectSession(wcSession.topic);
+            return;
         }
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    public async handleSessionAuthenticate(payload: any): Promise<any> {
+    private readonly onProposalExpire = async (payload: WalletKitTypes.ProposalExpire) => {
+        console.debug('WC: proposal expire received', payload);
+        this.dappInteractions.cancelInteraction(payload.id.toString());
+    }
+
+    private readonly onSessionRequest = async (payload: WalletKitTypes.SessionRequest) => {
+        console.debug('WC: session request received', payload);
+        try {
+            switch (payload.params.request.method) {
+                case RpcMethod.get_wallet_info: {
+                    await this.respondRequest(payload, AzguardWalletInfo);
+                    break;
+                }
+                case RpcMethod.get_session: {
+                    throw new Error("Use WallecConnect's 'getSession()' method instead");
+                }
+                case RpcMethod.close_session: {
+                    throw new Error("Use WallecConnect's 'disconnect()' method instead");
+                }
+                case RpcMethod.connect: {
+                    throw new Error("Use WallecConnect's 'connect()' method instead");
+                }
+                case RpcMethod.execute: {
+                    const params: ExecutionParams = parseExecutionParams({
+                        ...payload.params.request.params,
+                        sessionId: payload.topic,
+                    });
+                    const results = await this.dappInteractions.execute(params, payload.id.toString());
+                    await this.respondRequest(payload, results);
+                    break;
+                }
+                default: {
+                    throw new Error(`'${payload.params.request.method}' cannot be invoked directly, but as a part of a batch`);
+                }
+            }
+        }
+        catch (error) {
+            console.debug("WC: session request failed", error);
+            this.rejectRequest(payload, (error as Error)?.message ?? error as string ?? "Unknown error");
+        }
+    }
+
+    private readonly onSessionRequestExpire = async (payload: WalletKitTypes.SessionRequestExpire) => {
+        console.debug('WC: session request expire received', payload);
+        this.dappInteractions.cancelInteraction(payload.id.toString());
+    }
+
+    private readonly onSessionDelete = async (payload: WalletKitTypes.SessionDelete) => {
+        console.debug('WC: session delete received', payload);
+        this.dappSessions.deleteDappSession(payload.topic)
+    }
+
+    private readonly onSessionAuthenticate = async (payload: WalletKitTypes.SessionAuthenticate) => {
         console.debug('Session authenticate received', payload);
 
         // const accounts = await this.accounts.getAccounts("9181ab0c", 31337)
@@ -391,5 +300,158 @@ export class WalletConnectService extends Service {
         //     id: payload.id,
         //     auths: [auth],
         // });
+    }
+    
+    private readonly onDappSessionUpdated = async (dappSession: DappSession) => {
+        if (!this.walletKit) {
+            console.warn("WC session wasn't updated");
+            return;
+        }
+        try {
+            const sessions = this.walletKit.getActiveSessions();
+            if (dappSession.id in sessions) {
+                this.walletKit.updateSession({
+                    topic: dappSession.id,
+                    namespaces: this.buildSessionNamespaces(
+                        sessions[dappSession.id].requiredNamespaces,
+                        sessions[dappSession.id].optionalNamespaces,
+                        dappSession.permissions,
+                        dappSession.accounts,
+                    ),
+                });
+            }
+        }
+        catch (error) {
+            console.error("Failed to update WC session", error);
+        }
+    }
+    
+    private readonly onDappSessionDeleted = async (dappSession: DappSession) => {
+        if (!this.walletKit) {
+            console.warn("WC session wasn't disconnected");
+            return;
+        }
+        try {
+            const sessions = this.walletKit.getActiveSessions();
+            if (dappSession.id in sessions) {
+                this.walletKit.disconnectSession({
+                    topic: dappSession.id,
+                    reason: getSdkError('USER_DISCONNECTED')
+                });
+            }
+        }
+        catch (error) {
+            console.error("Failed to disconnect WC session", error);
+        }
+    }
+
+    private async rejectSession(proposalId: number) {
+        try {
+            await this.walletKit!.rejectSession({
+                id: proposalId,
+                reason: getSdkError("USER_REJECTED"),
+            });
+        }
+        catch {}
+    }
+
+    private async disconnectSession(sessionTopic: string) {
+        try {
+            await this.walletKit!.disconnectSession({
+                topic: sessionTopic,
+                reason: getSdkError('USER_DISCONNECTED')
+            });
+        }
+        catch {}
+    }
+    
+    private async rejectRequest(request: WalletKitTypes.SessionRequest, reason: string) {
+        try {
+            await this.walletKit!.respondSessionRequest({
+                topic: request.topic,
+                response: {
+                    id: request.id,
+                    error: {
+                        code: 5000,
+                        message: reason,
+                    },
+                    jsonrpc: "2.0",
+                }
+            });
+        }
+        catch {}
+    }
+    
+    private async respondRequest(request: WalletKitTypes.SessionRequest, result: unknown) {
+        await this.walletKit!.respondSessionRequest({
+            topic: request.topic,
+            response: {
+                id: request.id,
+                result,
+                jsonrpc: "2.0",
+            },
+        });
+    }
+
+    private buildSessionNamespaces(
+        required: ProposalTypes.RequiredNamespaces,
+        optional: ProposalTypes.OptionalNamespaces,
+        permissions: DappPermissions[],
+        accounts: string[],
+    ): SessionTypes.Namespaces {
+        const namespaces: SessionTypes.Namespaces = {};
+        for (const [k, v] of Object.entries(required)) {
+            namespaces[k] = {
+                ...v,
+                accounts: (v.chains ?? [k]).flatMap(c => accounts.filter(a => a.startsWith(c))),
+            };
+        }
+        for (const [k, v] of Object.entries(optional)) {
+            const methods = v.methods.filter(m => (v.chains ?? [k]).every(c => permissions.find(p => p.chains?.includes(c) && p.methods?.includes(m))));
+            const events = v.events.filter(e => (v.chains ?? [k]).every(c => permissions.find(p => p.chains?.includes(c) && p.events?.includes(e))));
+            if (methods.length || events.length) {
+                if (k in namespaces) {
+                    for (const method of methods) {
+                        if (!namespaces[k].methods.includes(method)) {
+                            namespaces[k].methods.push(method);
+                        }
+                    }
+                    for (const event of events) {
+                        if (!namespaces[k].events.includes(event)) {
+                            namespaces[k].events.push(event);
+                        }
+                    }
+                }
+                else {
+                    namespaces[k] = {
+                        chains: v.chains,
+                        methods,
+                        events,
+                        accounts: (v.chains ?? [k]).flatMap(c => accounts.filter(a => a.startsWith(c))),
+                    }
+                }
+            }
+        }
+        // explicitly allow root methods
+        for (const namespace of Object.values(namespaces)) {
+            if (namespace.methods.length) {
+                if (!namespace.methods.includes(RpcMethod.get_wallet_info)) {
+                    namespace.methods.push(RpcMethod.get_wallet_info);
+                }
+                if (!namespace.methods.includes(RpcMethod.get_session)) {
+                    namespace.methods.push(RpcMethod.get_session);
+                }
+                if (!namespace.methods.includes(RpcMethod.close_session)) {
+                    namespace.methods.push(RpcMethod.close_session);
+                }
+                if (!namespace.methods.includes(RpcMethod.connect)) {
+                    namespace.methods.push(RpcMethod.connect);
+                }
+                if (!namespace.methods.includes(RpcMethod.execute)) {
+                    namespace.methods.push(RpcMethod.execute);
+                }
+            }
+        }
+        return namespaces;
     }
 }
