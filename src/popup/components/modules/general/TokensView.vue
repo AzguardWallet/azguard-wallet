@@ -37,21 +37,21 @@ const router = useRouter()
 						</DropdownItem>
 						<DropdownItem @click="router.push('/popup/settings/general/tokens')">
 							<Flex align="center" gap="8">
-								<Icon name="arrow-narrow-up-right-circle" size="14" color="primary" />
+								<Icon name="settings" size="14" color="primary" />
 								Manage tokens
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
 						<DropdownItem disabled>
 							<Flex align="center" gap="8">
-								<Icon name="settings" size="14" color="primary" />
+								<Icon name="display" size="14" color="primary" />
 								Display settings
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
 						<DropdownItem disabled>
 							<Flex align="center" gap="8">
-								<Icon name="refresh-circle" size="14" color="primary" />
+								<Icon name="refresh" size="14" color="primary" />
 								Refresh balances
 							</Flex>
 						</DropdownItem>

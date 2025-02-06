@@ -52,18 +52,24 @@ const slots = defineSlots()
 	>
 		<Flex wide align="center" justify="between" gap="16">
 			<Flex align="center" gap="12" wide>
-				<Icon
-					v-if="icon && !loading"
-					:name="icon"
-					size="16"
-					:color="iconFillColor"
-					:class="[$style.icon, $style[iconBgColor]]"
-				/>
+				<!-- Icon by prop or slot -->
+				<template v-if="!slots.icon">
+					<Icon
+						v-if="icon && !loading"
+						:name="icon"
+						size="16"
+						:color="iconFillColor"
+						:class="[$style.icon, $style[iconBgColor]]"
+					/>
+					<div v-else-if="icon && loading" :class="$style.icon">
+						<Spinner size="16" color="--txt-primary" />
+					</div>
+				</template>
+				<template v-else>
+					<slot name="icon" />
+				</template>
 
-				<div v-else-if="icon && loading" :class="$style.icon">
-					<Spinner size="16" color="--txt-primary" />
-				</div>
-
+				<!-- Labels: Title & Description -->
 				<Flex direction="column" gap="4" wide>
 					<Text size="14" weight="600" color="primary" :class="$style.title"> {{ title }} </Text>
 					<Text v-if="description" size="12" weight="500" color="tertiary" :class="$style.description">

@@ -4,6 +4,7 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { comma, purgeNumber } from "@/utils/amount.js"
+import { managers } from "@/utils/core.js"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -22,6 +23,12 @@ const totalBalance = computed(() => {
 		10 ** balance.value.token.decimals
 	)
 })
+
+const isHovered = ref(false)
+
+const handleRefreshBalance = () => {
+	console.log(managers)
+}
 </script>
 
 <template>
@@ -32,9 +39,21 @@ const totalBalance = computed(() => {
 		:description="token.name"
 		:loading="appStore.tokenAwaitingBalanceIdx === token.id"
 		icon="banknote"
+		@pointerenter="isHovered = true"
+		@pointerleave="isHovered = false"
 	>
+		<template #icon>
+			<Icon
+				@click.stop="handleRefreshBalance"
+				:name="!isHovered ? 'banknote' : 'refresh'"
+				size="16"
+				color="white"
+				:class="$style.icon"
+			/>
+		</template>
+
 		<template #right>
-			<Flex direction="column" align="end" gap="6" :class="$style.right">
+			<Flex direction="column" align="end" gap="6">
 				<Text size="13" weight="600" color="tertiary" noWrap :class="$style.balance_text">
 					<Text color="primary">{{ balance ? comma(totalBalance, ",", 8) : 0 }}</Text>
 					<Text :class="$style.symbol_wrapper">&nbsp;{{ token.symbol }}</Text>
@@ -71,40 +90,24 @@ const totalBalance = computed(() => {
 	}
 }
 
-.left {
-	flex: 3;
-
-	min-width: 0;
-	width: 100%;
-
-	overflow: hidden;
-}
-
-.right {
-}
-
 .balance_text {
 	display: flex;
 
 	text-align: end;
 }
 
-.text {
-	overflow: hidden;
-}
-
-.label {
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.token_icon {
-	min-width: 32px;
-	min-height: 32px;
-
+.icon {
+	box-sizing: content-box;
 	border-radius: 8px;
-	background: var(--gray-5);
-	box-sizing: border-box;
+	background: var(--gray-15);
+
+	padding: 5px;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--gray-20);
+	}
 }
 
 .symbol_wrapper {
