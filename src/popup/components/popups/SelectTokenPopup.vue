@@ -2,6 +2,9 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -17,6 +20,8 @@ const props = defineProps({
 	displaceIdx: Number,
 })
 
+const router = useRouter()
+
 const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.select_token
 })
@@ -25,46 +30,45 @@ const handleSelectToken = id => {
 	cacheStore.activeTokenIdx = id
 	emit("onClose")
 }
+
+const handleManageTokens = () => {
+	router.push("/popup/settings/general/tokens")
+	popupStore.closeAll()
+}
 </script>
 
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_token">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="16" :class="$style.wrapper">
-				<Flex direction="column" gap="12">
-					<Text size="14" weight="600" color="primary"> Select token </Text>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">Select token</Text>
+				</template>
+			</PopupHeader>
 
-					<Flex direction="column" gap="8">
-						<Flex
-							v-for="token in appStore.tokens"
-							@click="handleSelectToken(token.id)"
-							align="center"
-							justify="between"
-							:class="$style.token"
-						>
-							<Flex align="center" gap="8">
-								<Icon
-									v-if="token.id === cacheStore.activeTokenIdx"
-									name="check-circle"
-									size="16"
-									color="green"
-								/>
-								<Icon v-else name="banknote" size="16" color="primary" />
+			<Flex wide direction="column" gap="24" :class="$style.wrapper">
+				<ItemsContainer>
+					<SettingItem
+						v-for="token in appStore.tokens"
+						@click="handleSelectToken(token.id)"
+						:title="token.symbol"
+						:icon="token.id === cacheStore.activeTokenIdx ? 'check-circle' : 'circle'"
+						:iconFillColor="token.id === cacheStore.activeTokenIdx ? 'blue' : 'tertiary'"
+						iconBgColor="transparent"
+					/>
+				</ItemsContainer>
 
-								<Text size="14" weight="600" color="primary">
-									{{ token.symbol }}
-								</Text>
-								<Text size="14" weight="600" color="tertiary">
-									{{ token.name }}
-								</Text>
-							</Flex>
-						</Flex>
-					</Flex>
-				</Flex>
-
-				<Flex direction="column" gap="12">
-					<Button @click="popupStore.open('tokens')" type="secondary" size="medium"> Manage tokens </Button>
-				</Flex>
+				<ItemsContainer>
+					<SettingItem
+						@click="handleManageTokens"
+						size="small"
+						title="Manage tokens"
+						icon="settings"
+						iconFillColor="secondary"
+						iconBgColor="transparent"
+						chevron
+					/>
+				</ItemsContainer>
 			</Flex>
 		</PopupCard>
 	</Popup>

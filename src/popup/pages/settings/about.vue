@@ -60,6 +60,7 @@ const handleOpen = target => {
 			<ItemsContainer title="Contact us" wide>
 				<SettingItem
 					to="https://azguardwallet.io/forms/feedback"
+					size="large"
 					title="Feedback"
 					description="Suggest an idea"
 					icon="face"
@@ -67,6 +68,7 @@ const handleOpen = target => {
 				/>
 				<SettingItem
 					to="https://azguardwallet.io/forms/report-issue"
+					size="large"
 					title="Report Issue"
 					description="If you're facing a bug"
 					icon="bug"
@@ -74,6 +76,7 @@ const handleOpen = target => {
 				/>
 				<SettingItem
 					to="https://azguardwallet.io/forms/report-scam"
+					size="large"
 					title="Report Scam"
 					description="Tell us about the scammers"
 					icon="warning"
@@ -82,8 +85,8 @@ const handleOpen = target => {
 			</ItemsContainer>
 
 			<ItemsContainer wide>
-				<SettingItem @click="handleOpen('terms')" title="Terms of use" />
-				<SettingItem @click="handleOpen('privacy')" title="Privacy policy" />
+				<SettingItem @click="handleOpen('terms')" size="small" title="Terms of use" chevron />
+				<SettingItem @click="handleOpen('privacy')" size="small" title="Privacy policy" chevron />
 			</ItemsContainer>
 		</Flex>
 

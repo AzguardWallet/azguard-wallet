@@ -71,9 +71,10 @@ const handleCopyAddress = target => {
 					<SettingItem
 						v-for="account in accounts"
 						@click="handleSelectAccount(account)"
+						size="large"
 						:title="account.name"
 						:description="`${account.address.slice(0, 6)}...${account.address.slice(-4)}`"
-						:icon="account?.address === appStore.account?.address ? 'check-circle' : 'vault'"
+						:icon="account?.address === appStore.account?.address ? 'check-circle' : 'circle'"
 						:iconFillColor="account?.address === appStore.account?.address ? 'blue' : 'tertiary'"
 						iconBgColor="transparent"
 					>

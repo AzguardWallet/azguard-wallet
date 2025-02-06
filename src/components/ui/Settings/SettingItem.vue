@@ -1,5 +1,9 @@
 <script setup>
 const props = defineProps({
+	size: {
+		type: String,
+		default: "medium",
+	},
 	title: String,
 	description: String,
 	icon: String,
@@ -43,10 +47,10 @@ const slots = defineSlots()
 		:to="!disabled && to && !external ? to : null"
 		:href="external ? to : null"
 		:target="external ? '_blank' : null"
-		:class="[$style.wrapper, raw && $style.raw, icon && $style.withIcon, disabled && $style.disabled]"
+		:class="[$style.wrapper, $style[size], raw && $style.raw, icon && $style.withIcon, disabled && $style.disabled]"
 		:tabindex="disabled ? -1 : 0"
 	>
-		<Flex align="center" justify="between" gap="16">
+		<Flex wide align="center" justify="between" gap="16">
 			<Flex align="center" gap="12" wide>
 				<Icon
 					v-if="icon && !loading"
@@ -87,10 +91,13 @@ const slots = defineSlots()
 .wrapper {
 	position: relative;
 
+	display: flex;
+	align-items: center;
+
 	cursor: pointer;
 	background: var(--gray-5);
 
-	padding: 12px;
+	padding: 0 12px;
 
 	transition: all 0.2s var(--bezier);
 
@@ -135,6 +142,18 @@ const slots = defineSlots()
 
 	&.withIcon::after {
 		left: 50px;
+	}
+
+	&.large {
+		height: 54px;
+	}
+
+	&.medium {
+		height: 50px;
+	}
+
+	&.small {
+		height: 40px;
 	}
 
 	&.raw {

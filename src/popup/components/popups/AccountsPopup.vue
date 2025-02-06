@@ -2,6 +2,9 @@
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -48,7 +51,7 @@ const handleCopyAddress = target => {
 }
 
 const handleManageAccounts = () => {
-	router.push("/popup/settings/security/accounts")
+	router.push("/popup/settings/general/accounts")
 	emit("onClose")
 }
 </script>
@@ -56,79 +59,63 @@ const handleManageAccounts = () => {
 <template>
 	<Popup @onClose="emit('onClose')" :displaceIdx="popupStore.popups.accounts">
 		<PopupCard :displaceIdx>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">Switch account</Text>
+				</template>
+			</PopupHeader>
+
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<Flex align="center" justify="between">
-					<Text size="14" weight="600" color="primary"> Switch account </Text>
-
-					<Flex
-						@click="handleManageAccounts"
-						align="center"
-						gap="4"
-						:class="['clickable', $style.txt_button]"
-					>
-						<Text size="13" weight="600" color="tertiary"> Manage accounts </Text>
-						<Icon name="arrow-narrow-up-right" size="12" color="tertiary" />
-					</Flex>
-				</Flex>
-
-				<Flex direction="column" gap="8">
-					<Flex
-						v-for="acc in accounts.slice(0, showAllOtherAccounts ? appStore.accounts.length : 3)"
+				<ItemsContainer>
+					<SettingItem
+						v-for="acc in accounts"
 						@click="handleSelectAccount(acc)"
-						align="center"
-						justify="between"
-						:class="$style.account"
+						size="large"
+						:title="acc.name"
+						:description="`${acc.address.slice(0, 6)}...${acc.address.slice(-4)}`"
+						:icon="account.address === acc.address ? 'check-circle' : 'circle'"
+						:iconFillColor="account.address === acc.address ? 'blue' : 'tertiary'"
+						iconBgColor="transparent"
 					>
-						<Flex gap="10">
-							<Icon
-								:name="account.address === acc.address ? 'check-circle' : 'circle'"
-								size="16"
-								:color="account.address === acc.address ? 'green' : 'tertiary'"
-							/>
+						<template #right>
+							<Flex align="center" gap="8">
+								<Tooltip position="end" delay="350">
+									<Icon
+										@click.stop="handleCopyAddress(acc.address)"
+										name="copy"
+										size="14"
+										color="tertiary"
+										hoverColor="primary"
+										:class="$style.icon_btn"
+									/>
 
-							<Flex direction="column" gap="8">
-								<Text size="14" weight="600" color="primary" :class="$style.account_name">
-									{{ acc.name }}
-								</Text>
-
-								<Text size="13" weight="600" color="tertiary">
-									{{ acc.address.slice(0, 6) }}
-									<Text color="dark">•••</Text>
-									{{ acc.address.slice(-4) }}
-								</Text>
+									<template #content>Copy account address</template>
+								</Tooltip>
 							</Flex>
-						</Flex>
+						</template>
+					</SettingItem>
+				</ItemsContainer>
 
-						<Flex align="center" gap="8" :class="$style.icons">
-							<Icon
-								@click.stop="handleCopyAddress(acc.address)"
-								:name="isCopied ? 'check-circle' : 'copy'"
-								size="14"
-								:color="isCopied ? 'green' : 'tertiary'"
-								:class="$style.icon_btn"
-							/>
-						</Flex>
-					</Flex>
-
-					<Button
-						v-if="accounts.length > 3"
-						@click="showAllOtherAccounts = !showAllOtherAccounts"
-						type="secondary"
+				<ItemsContainer>
+					<SettingItem
+						@click="handleManageAccounts"
+						title="Manage accounts"
 						size="small"
-					>
-						{{ showAllOtherAccounts ? "Hide" : "Show" }} all accounts
-					</Button>
-				</Flex>
-
-				<Button
-					@click="popupStore.open('new_account')"
-					type="secondary"
-					size="medium"
-					leftIcon="plus-circle"
-					leftIconColor="primary"
-				>
-					New account
-				</Button>
+						icon="settings"
+						iconFillColor="secondary"
+						iconBgColor="transparent"
+						chevron
+					/>
+					<SettingItem
+						@click="popupStore.open('new_account')"
+						title="New account"
+						size="small"
+						icon="plus-circle"
+						iconFillColor="secondary"
+						iconBgColor="transparent"
+						chevron
+					/>
+				</ItemsContainer>
 			</Flex>
 		</PopupCard>
 	</Popup>

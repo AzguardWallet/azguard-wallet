@@ -54,6 +54,7 @@ const appStore = useAppStore()
 				icon="help"
 				to="/popup/settings/security/export/faq"
 				external
+				disabled
 			/>
 		</ItemsContainer>
 

@@ -91,6 +91,7 @@ const onKeydown = e => {
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<ItemsContainer>
 					<SettingItem
+						size="large"
 						:title="accountToEdit.name"
 						description="Selected account for editing"
 						icon="vault"

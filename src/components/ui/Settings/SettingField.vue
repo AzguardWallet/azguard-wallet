@@ -12,11 +12,15 @@ const props = defineProps({
 		type: String,
 		required: false,
 	},
+	disabled: {
+		type: Boolean,
+		required: false,
+	},
 })
 </script>
 
 <template>
-	<Flex align="center" justify="center" gap="16" :class="$style.wrapper">
+	<Flex align="center" justify="center" gap="16" :class="[$style.wrapper, disabled && $style.disabled]">
 		<Flex direction="column" gap="6" wide>
 			<Text size="12" weight="600" color="primary">{{ label }}</Text>
 			<Text size="13" weight="600" color="blue" :class="$style.value">{{ value }}</Text>

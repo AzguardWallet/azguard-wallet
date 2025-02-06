@@ -146,6 +146,7 @@ onBeforeUnmount(() => {
 		<ItemsContainer v-if="!selectedKey" title="Select type of the key">
 			<SettingItem
 				@click="handleSelectKey('public')"
+				size="large"
 				title="Encrypted"
 				description="Password is required to use"
 				icon="lock"
@@ -154,6 +155,7 @@ onBeforeUnmount(() => {
 			/>
 			<SettingItem
 				@click="handleSelectKey('private')"
+				size="large"
 				title="Plain"
 				description="Password is required to receive"
 				icon="eye"

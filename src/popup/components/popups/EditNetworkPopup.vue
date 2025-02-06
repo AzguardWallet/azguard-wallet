@@ -96,6 +96,7 @@ const onKeydown = e => {
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<ItemsContainer>
 					<SettingItem
+						size="large"
 						:title="networkToEdit.name"
 						description="Selected node for editing"
 						icon="globe-edit"

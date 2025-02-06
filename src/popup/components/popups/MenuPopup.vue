@@ -45,28 +45,24 @@ const handleLockWallet = () => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<Flex direction="column" gap="16">
-					<ItemsContainer>
-						<SettingItem
-							@click="emit('onClose')"
-							to="/popup/settings/profile"
-							:title="appStore.profile.name"
-							icon="user"
-							iconBgColor="blue"
-							chevron
-						/>
-						<SettingItem title="Switch profile" icon="hand-click" chevron disabled />
-					</ItemsContainer>
-					<Button
-						@click="handleLockWallet"
-						type="secondary"
-						size="medium"
-						leftIcon="lock"
-						leftIconColor="secondary"
-					>
-						Lock Wallet
-					</Button>
-				</Flex>
+				<ItemsContainer>
+					<SettingItem
+						@click="emit('onClose')"
+						to="/popup/settings/profile"
+						:title="appStore.profile.name"
+						icon="user"
+						iconBgColor="blue"
+						chevron
+					/>
+					<SettingItem
+						@click="popupStore.open('select_profile')"
+						size="small"
+						title="Switch profile"
+						icon="switch"
+						iconBgColor="transparent"
+						:disabled="appStore.profiles.length === 1"
+					/>
+				</ItemsContainer>
 
 				<ItemsContainer title="Other">
 					<SettingItem title="Contacts" icon="contacts" iconBgColor="var(--green)" chevron disabled />
@@ -77,6 +73,16 @@ const handleLockWallet = () => {
 						chevron
 					/>
 				</ItemsContainer>
+
+				<Button
+					@click="handleLockWallet"
+					type="secondary"
+					size="medium"
+					leftIcon="lock"
+					leftIconColor="secondary"
+				>
+					Lock Wallet
+				</Button>
 			</Flex>
 		</PopupCard>
 	</Popup>

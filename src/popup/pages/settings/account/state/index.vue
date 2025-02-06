@@ -23,12 +23,14 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 		<ItemsContainer>
 			<SettingItem to="/popup/settings/account/state/notes" title="Notes" description="View all notes" chevron />
 			<SettingItem
+				size="large"
 				to="/popup/settings/account/state/authwits"
 				title="Authwits"
 				description="View all authwits"
 				chevron
 			/>
 			<SettingItem
+				size="large"
 				to="/popup/settings/account/state/contracts"
 				title="Contracts"
 				description="View all contracts"

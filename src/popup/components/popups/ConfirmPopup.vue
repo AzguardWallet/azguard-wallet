@@ -34,6 +34,8 @@ watch(
 	async () => {
 		if (!props.show) {
 			confirmationTerm.value = null
+
+			cacheStore.confirm = {}
 		} else {
 			if (cacheStore.confirm.confirmation_text) {
 				await nextTick()

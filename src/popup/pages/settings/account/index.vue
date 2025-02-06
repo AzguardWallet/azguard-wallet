@@ -79,6 +79,7 @@ const handleEditCurrentAccount = () => {
 			<ItemsContainer wide>
 				<SettingItem
 					to="/popup/settings/account/state"
+					size="large"
 					title="Account State"
 					description="Notes, authwits and contracts"
 					icon="code-asterisk"
@@ -88,6 +89,7 @@ const handleEditCurrentAccount = () => {
 			<ItemsContainer wide>
 				<SettingItem
 					to="https://google.com"
+					size="large"
 					title="View on Explorer"
 					description="Currently unavailable"
 					icon="search"

@@ -51,13 +51,13 @@ const handleManageNetworks = () => {
 				</template>
 			</PopupHeader>
 
-			<Flex wide direction="column" gap="16" :class="$style.wrapper">
+			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<ItemsContainer>
 					<SettingItem
 						v-for="network in appStore.networks"
 						@click="handleSelectNetwork(network)"
 						:title="network.name"
-						:icon="appStore.network.id === network.id ? 'check-circle' : 'globe'"
+						:icon="appStore.network.id === network.id ? 'check-circle' : 'circle'"
 						:iconFillColor="appStore.network.id === network.id ? 'blue' : 'tertiary'"
 						iconBgColor="transparent"
 					>
@@ -67,12 +67,16 @@ const handleManageNetworks = () => {
 					</SettingItem>
 				</ItemsContainer>
 
-				<Divider>
-					<Text size="12" weight="500" color="tertiary"> or </Text>
-				</Divider>
-
 				<ItemsContainer>
-					<SettingItem @click="handleManageNetworks" title="Manage nodes" chevron />
+					<SettingItem
+						@click="handleManageNetworks"
+						title="Manage nodes"
+						size="small"
+						icon="settings"
+						iconFillColor="secondary"
+						iconBgColor="transparent"
+						chevron
+					/>
 				</ItemsContainer>
 			</Flex>
 		</PopupCard>

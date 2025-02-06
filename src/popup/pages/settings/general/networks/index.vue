@@ -48,6 +48,7 @@ const handleDelete = target => {
 
 	cacheStore.confirm.confirm_text = "Yes, delete node"
 	cacheStore.confirm.confirm_color = "red"
+	cacheStore.confirm.title = "Delete this node?"
 	cacheStore.confirm.description =
 		"By confirming this action, the selected node will be permanently deleted from your wallet"
 	cacheStore.confirm.callback = async () => {
@@ -78,7 +79,7 @@ const handleDelete = target => {
 					v-for="network in appStore.networks"
 					@click="handleSelectNetwork(network)"
 					:title="network.name"
-					:icon="appStore.network?.id === network.id ? 'check-circle' : 'globe'"
+					:icon="appStore.network?.id === network.id ? 'check-circle' : 'circle'"
 					:iconFillColor="appStore.network?.id === network.id ? 'blue' : 'tertiary'"
 					iconBgColor="transparent"
 				>

@@ -22,12 +22,14 @@ import SettingField from "@/components/ui/Settings/SettingField.vue"
 
 		<ItemsContainer>
 			<SettingItem
+				size="large"
 				title="Wallet"
 				description="Edit or reset your wallet"
 				icon="wallet"
 				to="/popup/settings/security/wallet"
 			/>
 			<SettingItem
+				size="large"
 				title="Backup"
 				description="Get the seed phrase or secret key"
 				icon="download"
@@ -36,7 +38,7 @@ import SettingField from "@/components/ui/Settings/SettingField.vue"
 		</ItemsContainer>
 
 		<ItemsContainer>
-			<SettingField label="Session Time" value="10 min" icon="edit" />
+			<SettingField label="Session Time" value="10 min" icon="edit" disabled />
 		</ItemsContainer>
 
 		<Navigation />

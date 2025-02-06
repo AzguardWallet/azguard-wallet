@@ -72,6 +72,7 @@ const handleDelete = target => {
 			<ItemsContainer>
 				<SettingItem
 					v-for="token in appStore.tokens"
+					size="large"
 					:title="token.symbol"
 					:description="token.name"
 					icon="banknote"

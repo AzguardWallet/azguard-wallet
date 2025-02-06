@@ -5,6 +5,7 @@ import BN from "bignumber.js"
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 
 /** Utils */
 import { comma, purgeNumber, normalizeAmount } from "@/utils/amount.js"
@@ -152,15 +153,17 @@ const onKeydown = e => {
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.faucet">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Flex direction="column" gap="12">
-					<Text size="14" weight="600" color="primary"> Faucet </Text>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">Faucet</Text>
+				</template>
+			</PopupHeader>
 
-					<Banner direction="vertical">
-						<template #title> The Faucet functionality is here temporarily </template>
-						<template #description> It will be moved elsewhere in the future </template>
-					</Banner>
-				</Flex>
+			<Flex wide direction="column" gap="20" :class="$style.wrapper">
+				<Banner direction="vertical">
+					<template #title> The Faucet functionality is here temporarily </template>
+					<template #description> It will be moved elsewhere in the future </template>
+				</Banner>
 
 				<Input
 					label="Token Name"
@@ -227,7 +230,7 @@ const onKeydown = e => {
 					<Button
 						@click="handleMint"
 						wide
-						type="primary"
+						:type="isMinting ? 'secondary' : 'primary'"
 						size="medium"
 						:disabled="!isAllowedToMint"
 						:loading="isMinting"

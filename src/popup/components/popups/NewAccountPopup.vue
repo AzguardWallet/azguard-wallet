@@ -84,7 +84,7 @@ const onKeydown = e => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<Input ref="inputEl" v-model="name" label="Account name" placeholder="My Vault">
+				<Input ref="inputEl" v-model="name" label="Account name" placeholder="My Account">
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">

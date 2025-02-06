@@ -167,9 +167,10 @@ const handleCopyContractAddress = () => {
 				<template v-else>
 					<ItemsContainer>
 						<SettingItem
-							:title="rawToken.contract"
+							size="large"
+							:title="`${rawToken.contract.slice(0, 6)}...${rawToken.contract.slice(-4)}`"
 							description="Selected token for editing"
-							icon="vault"
+							icon="banknote"
 							raw
 						>
 							<template #right>

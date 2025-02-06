@@ -27,6 +27,7 @@ const totalBalance = computed(() => {
 <template>
 	<SettingItem
 		:to="`/popup/tokens/${token.id}`"
+		size="large"
 		:title="token.symbol"
 		:description="token.name"
 		:loading="appStore.tokenAwaitingBalanceIdx === token.id"
