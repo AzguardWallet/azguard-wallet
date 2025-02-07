@@ -118,25 +118,9 @@ const getStyles = () => {
 	transition: all 0.2s ease;
 }
 
-@keyframes loading {
-	0% {
-		opacity: 0.8;
-	}
-
-	50% {
-		opacity: 0.3;
-	}
-
-	100% {
-		opacity: 0.8;
-	}
-}
-
 .wrapper.loading {
 	opacity: 0.8;
 	pointer-events: none;
-
-	animation: loading 2s infinite linear;
 }
 
 .wrapper.wide {
