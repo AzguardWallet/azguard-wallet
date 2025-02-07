@@ -82,9 +82,9 @@ export const useAppStore = defineStore("app", () => {
 		tokens.value = rawTokens?.length ? rawTokens.filter(t => t.chainId == network.value.chainId) : []
 	}
 
-	const tokenAwaitingBalanceIdx = ref()
 	const isBalancesSynced = ref(false)
 	const balances = ref([])
+	const tokensAwaitingBalanceRefresh = ref([])
 	const accountTotalBalance = computed(() => {
 		if (!balances.value.length) return 0
 
@@ -108,8 +108,11 @@ export const useAppStore = defineStore("app", () => {
 	}
 	const initBalanceListeners = () => {
 		managers.balance.onTokenBalanceUpdated = newBalance => {
-			if (newBalance.token.id === tokenAwaitingBalanceIdx.value) {
-				tokenAwaitingBalanceIdx.value = null
+			if (tokensAwaitingBalanceRefresh.value.includes(newBalance.token.id)) {
+				tokensAwaitingBalanceRefresh.value.splice(
+					tokensAwaitingBalanceRefresh.value.findIndex(tId => tId === newBalance.token.id),
+					1,
+				)
 			}
 
 			console.log(newBalance)
@@ -174,7 +177,7 @@ export const useAppStore = defineStore("app", () => {
 		updateAccount,
 		tokens,
 		syncLocalTokens,
-		tokenAwaitingBalanceIdx,
+		tokensAwaitingBalanceRefresh,
 		isBalancesSynced,
 		balances,
 		accountTotalBalance,

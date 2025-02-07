@@ -1,10 +1,13 @@
 <script setup>
+/** Vendor */
+import { DateTime } from "luxon"
+
 /** Components */
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
-import { comma, purgeNumber } from "@/utils/amount.js"
 import { managers } from "@/utils/core.js"
+import { comma, purgeNumber } from "@/utils/amount.js"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -26,8 +29,9 @@ const totalBalance = computed(() => {
 
 const isHovered = ref(false)
 
-const handleRefreshBalance = () => {
-	console.log(managers)
+const handleRefreshBalance = async () => {
+	appStore.tokensAwaitingBalanceRefresh.push(props.token.id)
+	managers.balance.refreshTokenBalance(props.token.id)
 }
 </script>
 
@@ -37,19 +41,31 @@ const handleRefreshBalance = () => {
 		size="large"
 		:title="token.symbol"
 		:description="token.name"
-		:loading="appStore.tokenAwaitingBalanceIdx === token.id"
 		icon="banknote"
 		@pointerenter="isHovered = true"
 		@pointerleave="isHovered = false"
 	>
 		<template #icon>
-			<Icon
-				@click.stop="handleRefreshBalance"
-				:name="!isHovered ? 'banknote' : 'refresh'"
-				size="16"
-				color="white"
-				:class="$style.icon"
-			/>
+			<Tooltip position="start">
+				<Icon
+					v-if="!appStore.tokensAwaitingBalanceRefresh.includes(token.id)"
+					@click.stop="handleRefreshBalance"
+					:name="!isHovered ? 'banknote' : 'refresh'"
+					size="16"
+					color="white"
+					:class="$style.icon"
+				/>
+				<div v-else :class="$style.icon">
+					<Spinner size="16" color="--txt-primary" />
+				</div>
+
+				<template #content>
+					<Text color="secondary">Latest balance refresh - </Text>
+					<Text>
+						{{ DateTime.fromSeconds(balance.updatedAt / 1_000).toRelative({ locale: "en" }) }}
+					</Text>
+				</template>
+			</Tooltip>
 		</template>
 
 		<template #right>

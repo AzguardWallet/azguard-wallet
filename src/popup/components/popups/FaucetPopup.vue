@@ -111,7 +111,7 @@ const handleMint = async () => {
 
 		const tokenAwaitingBalanceIdx = appStore.tokens.findLast(t => t.symbol === tokenSymbolTerm.value)?.id
 		if (tokenAwaitingBalanceIdx) {
-			appStore.tokenAwaitingBalanceIdx = tokenAwaitingBalanceIdx
+			appStore.tokensAwaitingBalanceRefresh.push(tokenAwaitingBalanceIdx)
 		}
 
 		emit("onClose")
@@ -194,6 +194,7 @@ const onKeydown = e => {
 					<template #suffix>
 						<Text size="13" weight="600" color="tertiary">{{ tokenSymbolTerm }}</Text>
 					</template>
+
 					<template v-if="amountTerm" #right>
 						<Tooltip position="end" side="top">
 							<Icon name="info" size="12" color="tertiary" hoverColor="primary" />

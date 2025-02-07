@@ -1,4 +1,7 @@
 <script setup>
+/** Vendor */
+import { DateTime } from "luxon"
+
 /** Components */
 import ActionButtonsView from "./ActionButtonsView.vue"
 import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
@@ -106,6 +109,7 @@ const handleCopyAccountAddress = () => {
 		isCopied.value = false
 	}, 2500)
 }
+
 const handleCopyContractAddress = () => {
 	isCopied.value = true
 	window.navigator.clipboard.writeText(props.token.contract)
@@ -114,10 +118,12 @@ const handleCopyContractAddress = () => {
 		isCopied.value = false
 	}, 2500)
 }
-const handleCopyLatestTransactionHash = () => {
-	window.navigator.clipboard.writeText()
-	openToast({ label: "Transaction hash is copied", icon: "copy" })
+
+const handleRefreshBalance = () => {
+	appStore.tokensAwaitingBalanceRefresh.push(props.token.id)
+	managers.balance.refreshTokenBalance(props.token.id)
 }
+const isRefreshingBalance = computed(() => appStore.tokensAwaitingBalanceRefresh.includes(props.token.id))
 
 const handleEditToken = () => {
 	cacheStore.tokenToEditIdx = props.token.id
@@ -166,7 +172,7 @@ const handleDeleteToken = () => {
 						<Icon name="arrow-right" size="12" color="secondary" style="transform: rotate(180deg)" />
 					</Button>
 
-					<Tooltip>
+					<Tooltip :class="$style.token_address_badge">
 						<Flex @click="handleCopyContractAddress" align="center" gap="6" :class="[$style.badge]">
 							<Text size="12" weight="600" color="secondary">
 								{{ token.contract.slice(0, 6) }}
@@ -174,7 +180,7 @@ const handleDeleteToken = () => {
 								{{ token.contract.slice(-4) }}
 							</Text>
 							<Icon
-								:name="isCopied ? 'check-circle' : 'copy'"
+								:name="isCopied ? 'check' : 'copy'"
 								size="12"
 								:color="isCopied ? 'green' : 'tertiary'"
 							/>
@@ -183,53 +189,77 @@ const handleDeleteToken = () => {
 						<template #content> Token contact address </template>
 					</Tooltip>
 
-					<Dropdown>
-						<Button type="secondary" size="micro">
-							<Icon name="dots" size="12" color="primary" />
-						</Button>
+					<Flex align="center" gap="4">
+						<Tooltip position="end">
+							<Button
+								@click="handleRefreshBalance"
+								type="secondary"
+								size="micro"
+								:disabled="isRefreshingBalance"
+							>
+								<Icon name="refresh" size="12" color="secondary" />
+							</Button>
 
-						<template #popup>
-							<DropdownItem disabled>
-								<Flex align="center" gap="8">
-									<Icon name="heart-add" size="14" color="primary" />
-									Add to Favorites
-								</Flex>
-							</DropdownItem>
-							<DropdownDivider />
-							<DropdownItem @click="popupStore.open('token_metadata')">
-								<Flex align="center" gap="8">
-									<Icon name="code-circle" size="14" color="primary" />
-									Show token metadata
-								</Flex>
-							</DropdownItem>
-							<DropdownItem @click="handleCopyContractAddress">
-								<Flex align="center" gap="8">
-									<Icon name="copy" size="14" color="primary" />
-									Copy contract address
-								</Flex>
-							</DropdownItem>
-							<DropdownDivider />
-							<DropdownItem @click="handleEditToken">
-								<Flex align="center" gap="8">
-									<Icon name="edit" size="14" color="primary" />
-									Edit token
-								</Flex>
-							</DropdownItem>
-							<DropdownItem @click="handleDeleteToken" :class="$style.hover_red">
-								<Flex align="center" gap="8">
-									<Icon name="trash" size="14" color="primary" />
-									<Text>Remove token</Text>
-								</Flex>
-							</DropdownItem>
-							<DropdownDivider />
-							<DropdownItem disabled>
-								<Flex align="center" gap="8">
-									<Icon name="arrow-narrow-up-right" size="14" color="tertiary" />
-									<Text size="12" weight="600" color="tertiary">Learn about tokens </Text>
-								</Flex>
-							</DropdownItem>
-						</template>
-					</Dropdown>
+							<template #content>
+								<Text color="secondary">Latest balance refresh - </Text>
+								<Text>
+									{{
+										DateTime.fromSeconds(tokenBalance.updatedAt / 1_000).toRelative({
+											locale: "en",
+										})
+									}}
+								</Text>
+							</template>
+						</Tooltip>
+
+						<Dropdown>
+							<Button type="secondary" size="micro">
+								<Icon name="dots" size="12" color="primary" />
+							</Button>
+
+							<template #popup>
+								<DropdownItem disabled>
+									<Flex align="center" gap="8">
+										<Icon name="heart-add" size="14" color="primary" />
+										Add to Favorites
+									</Flex>
+								</DropdownItem>
+								<DropdownDivider />
+								<DropdownItem @click="handleCopyContractAddress">
+									<Flex align="center" gap="8">
+										<Icon name="copy" size="14" color="primary" />
+										Copy address
+									</Flex>
+								</DropdownItem>
+								<DropdownItem @click="popupStore.open('token_metadata')">
+									<Flex align="center" gap="8">
+										<Icon name="code-circle" size="14" color="primary" />
+										Show metadata
+									</Flex>
+								</DropdownItem>
+								<DropdownDivider />
+								<DropdownItem @click="handleEditToken">
+									<Flex align="center" gap="8">
+										<Icon name="edit" size="14" color="primary" />
+										Edit token
+									</Flex>
+								</DropdownItem>
+								<DropdownItem @click="handleDeleteToken" :class="$style.hover_red">
+									<Flex align="center" gap="8">
+										<Icon name="trash" size="14" color="primary" />
+										<Text>Remove token</Text>
+									</Flex>
+								</DropdownItem>
+								<DropdownDivider />
+								<DropdownItem disabled>
+									<Flex align="center" gap="8">
+										<Icon name="arrow-narrow-up-right" size="14" color="tertiary" />
+										<Text size="12" weight="600" color="tertiary">Learn about tokens </Text>
+									</Flex>
+								</DropdownItem>
+							</template>
+						</Dropdown>
+					</Flex>
 				</Flex>
 			</Flex>
 
@@ -276,7 +306,7 @@ const handleDeleteToken = () => {
 								color="primary"
 								tabular
 								:style="{ fontSize: `${dynamicFontSize}rem` }"
-								:class="$style.amount_wrapper"
+								:class="[$style.amount_wrapper, isRefreshingBalance && $style.refreshing]"
 							>
 								{{ comma(totalTokenBalance, ",", 8) }}
 								<Text color="tertiary">{{ token?.symbol || tokenToDisplay.symbol }}</Text>
@@ -305,24 +335,52 @@ const handleDeleteToken = () => {
 
 .header {
 	position: relative;
+
+	min-height: 20px;
 }
 
-.test {
-	/* min-height: 20px;
-
+.token_address_badge {
 	position: absolute;
-
 	left: 50%;
-
-	transform: translateX(-50%); */
+	transform: translateX(-50%);
 }
 
 .balance {
 	cursor: pointer;
 }
 
+@keyframes blink {
+	0% {
+		opacity: 1;
+	}
+
+	20% {
+		opacity: 0.2;
+	}
+
+	50% {
+		opacity: 0.5;
+	}
+
+	80% {
+		opacity: 0.2;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
 .amount_wrapper {
 	white-space: nowrap;
+
+	opacity: 1;
+
+	transition: all 0.2s ease;
+
+	&.refreshing {
+		animation: blink 2s linear infinite;
+	}
 }
 
 .wallet_name {

@@ -2,6 +2,9 @@
 /** Components */
 import TokenCard from "./TokenCard.vue"
 import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
+
+/** Utils */
+import { managers } from "@/utils/core.js"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 
 /** Composables */
@@ -15,6 +18,14 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 
 const router = useRouter()
+
+const handleRefreshBalances = () => {
+	for (const token of appStore.tokens) {
+		if (appStore.tokensAwaitingBalanceRefresh.includes(token.id)) continue
+		appStore.tokensAwaitingBalanceRefresh.push(token.id)
+		managers.balance.refreshTokenBalance(token.id)
+	}
+}
 </script>
 
 <template>
@@ -49,7 +60,7 @@ const router = useRouter()
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
-						<DropdownItem disabled>
+						<DropdownItem @click="handleRefreshBalances">
 							<Flex align="center" gap="8">
 								<Icon name="refresh" size="14" color="primary" />
 								Refresh balances

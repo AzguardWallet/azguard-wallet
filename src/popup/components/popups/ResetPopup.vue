@@ -57,12 +57,12 @@ const handleReset = () => {
 		appStore.profile = appStore.profiles[0]
 		appStore.accounts = []
 		appStore.balances = []
+		appStore.tokensAwaitingBalanceRefresh = []
 		appStore.tokens = []
 		appStore.transactions = []
 
 		appStore.isLogined = false
 		appStore.isSessionChecked = false
-		appStore.tokenAwaitingBalanceIdx = false
 
 		// router.push("/popup/register")
 
