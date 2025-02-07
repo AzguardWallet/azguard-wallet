@@ -21,7 +21,7 @@ const model = defineModel()
 const inputEl = useTemplateRef("inputEl")
 
 onMounted(() => {
-	inputEl.value.focus()
+	if (props.tokenBalanceByType) inputEl.value.focus()
 })
 
 const handleAmountInput = e => {
@@ -40,7 +40,7 @@ const handleAmountInput = e => {
 
 const isFocused = ref(false)
 const handleAmountFocus = () => {
-	isFocused.value = true
+	if (props.tokenBalanceByType) isFocused.value = true
 }
 const handleAmountBlur = () => {
 	isFocused.value = false
@@ -52,6 +52,10 @@ const handleAmountBlur = () => {
 }
 
 const amountInUSD = computed(() => Number.parseFloat(purgeNumber(model.value || 0)) * 3.4)
+
+const handleFocus = () => {
+	if (props.tokenBalanceByType) inputEl.value.focus()
+}
 
 const handleMax = () => {
 	if (!props.tokenBalanceByType) return
@@ -69,7 +73,7 @@ const handleHalf = () => {
 </script>
 
 <template>
-	<Flex @click="inputEl.focus()" gap="16" direction="column" :class="[$style.wrapper, isFocused && $style.focused]">
+	<Flex @click="handleFocus" gap="16" direction="column" :class="[$style.wrapper, isFocused && $style.focused]">
 		<Flex direction="column" gap="8">
 			<input
 				ref="inputEl"
@@ -77,6 +81,7 @@ const handleHalf = () => {
 				@input="handleAmountInput"
 				@focus="handleAmountFocus"
 				@blur="handleAmountBlur"
+				:disabled="!tokenBalanceByType"
 				placeholder="0.00"
 				:class="$style.input_field"
 			/>
