@@ -54,14 +54,14 @@ const handleLockWallet = () => {
 						iconBgColor="blue"
 						chevron
 					/>
-					<SettingItem
+					<!-- <SettingItem
 						@click="popupStore.open('select_profile')"
 						size="small"
 						title="Switch profile"
 						icon="switch"
 						iconBgColor="transparent"
 						:disabled="appStore.profiles.length === 1"
-					/>
+					/> -->
 				</ItemsContainer>
 
 				<ItemsContainer title="Other">
