@@ -16,23 +16,16 @@ export class ProxyServer {
     #messenger: MServer<IProxyMessage> = null!;
     readonly #sessionClients: Map<string, string[]> = new Map();
     
-    private constructor() {}
-    
-    public static async create() {
-        return await new ProxyServer().#init();
-    }
-
-    async #init() {
+    public constructor() {
         this.#service = new RpcServiceClient(
             this.#onServiceConnected,
             this.#onServiceDisconnected,
             this.#onServiceGenericEvent,
         );
-        this.#messenger = await MServer.create<IProxyMessage>(
+        this.#messenger = new MServer<IProxyMessage>(
             CHANNEL,
             this.#onInpageMessage,
         );
-        return this;
     }
 
     readonly #onServiceConnected = () => {

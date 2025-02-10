@@ -15,7 +15,9 @@ export class ProxyClient {
     readonly #eventHandlers: Map<string, ((payload: any) => void)[]> = new Map();
     readonly #lock: Lock = new Lock();
 
-    private constructor() {}
+    public constructor() {
+        this.#messenger = new MClient<IProxyMessage>(CHANNEL, this.#onMessage);
+    }
     
     public on(event: string, handler: (payload: any) => void) {
         let handlers = this.#eventHandlers.get(event);
@@ -60,15 +62,6 @@ export class ProxyClient {
         finally {
             this.#lock.leave();
         }
-    }
-
-    public static async create() {
-        return await new ProxyClient().#init();
-    }
-
-    async #init() {
-        this.#messenger = await MClient.create<IProxyMessage>(CHANNEL, this.#onMessage);
-        return this;
     }
 
     readonly #onMessage = (message: IProxyMessage) => {

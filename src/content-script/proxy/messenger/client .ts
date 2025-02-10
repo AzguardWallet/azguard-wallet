@@ -13,7 +13,7 @@ import {
 export class MClient<TMessage> {
     #channel: string;
     #identity: string;
-    #pair: CryptoKeyPair;
+    #pair?: CryptoKeyPair;
     #onMessage: (message: TMessage) => void;
     
     #lock: Lock;
@@ -22,16 +22,9 @@ export class MClient<TMessage> {
     #handshakeReject: (error: string) => void = null!;
     #key?: CryptoKey | null;
 
-    private constructor(
-        channel: string,
-        identity: string,
-        pair: CryptoKeyPair,
-        pubkey: string,
-        onMessage: (message: TMessage) => void,
-    ) {
+    public constructor(channel: string, onMessage: (message: TMessage) => void) {
         this.#channel = channel;
-        this.#identity = identity;
-        this.#pair = pair;
+        this.#identity = getRandomHex(8);
         this.#onMessage = onMessage;
 
         this.#lock = new Lock();
@@ -40,24 +33,28 @@ export class MClient<TMessage> {
             this.#handshakeReject = reject;
         });
         this.#key = undefined;
-
-        window.addEventListener("message", this.#processMessageEvent);
-        window.postMessage(
-            {
-                channel: this.#channel,
-                from: this.#identity,
-                type: M_HANDSHAKE,
-                payload: pubkey,
-            },
-            window.origin,
-        );
+        this.#initKeys();
     }
 
-    public static async create<TMessage>(channel: string, onMessage: (message: TMessage) => void) {
-        const identity = getRandomHex(8);
-        const pair = await generateKeyPair();
-        const pubkey = await exportPublicKey(pair.publicKey);
-        return new MClient<TMessage>(channel, identity, pair, pubkey, onMessage);
+    async #initKeys() {
+        try {
+            this.#pair = await generateKeyPair();
+            const pubkey = await exportPublicKey(this.#pair.publicKey);
+            
+            window.addEventListener("message", this.#processMessageEvent);
+            window.postMessage(
+                {
+                    channel: this.#channel,
+                    from: this.#identity,
+                    type: M_HANDSHAKE,
+                    payload: pubkey,
+                },
+                window.origin,
+            );
+        }
+        catch (error) {
+            console.error("Initialization failed", error);
+        }
     }
 
     public async send(message: any) {
@@ -133,7 +130,7 @@ export class MClient<TMessage> {
             }
             try {
                 const publicKey = await importPublicKey(payload);
-                this.#key = await deriveEncryptionKey(this.#pair.privateKey, publicKey);
+                this.#key = await deriveEncryptionKey(this.#pair!.privateKey, publicKey);
                 this.#handshakeResolve();
             }
             catch {

@@ -12,30 +12,28 @@ import {
 
 export class MServer<TMessage> {
     #channel: string;
-    #pair: CryptoKeyPair;
     #onMessage: (client: string, message: TMessage) => void;
+    #init: Promise<void>;
+    #pair?: CryptoKeyPair;
     
-    #lock: Lock;
-    #clients: Map<string, CryptoKey>;
+    #clients: Map<string, CryptoKey> = new Map();
+    #lock: Lock = new Lock();
 
-    private constructor(
-        channel: string,
-        pair: CryptoKeyPair,
-        onMessage: (client: string, message: TMessage) => void,
-    ) {
+    public constructor(channel: string, onMessage: (client: string, message: TMessage) => void) {
         this.#channel = channel;
-        this.#pair = pair;
         this.#onMessage = onMessage;
-
-        this.#lock = new Lock();
-        this.#clients = new Map();
-
         window.addEventListener("message", this.#processMessageEvent);
+        this.#init = this.#initKeys();
     }
 
-    public static async create<TMessage>(channel: string, onMessage: (client: string, message: TMessage) => void) {
-        const pair = await generateKeyPair();
-        return new MServer<TMessage>(channel, pair, onMessage);
+    async #initKeys() {
+        try {
+            this.#pair = await generateKeyPair();
+        }
+        catch (error) {
+            console.error("Initialization failed", error);
+            throw new Error("Initialization failed");
+        }
     }
 
     public async send(client: string, message: any) {
@@ -102,9 +100,10 @@ export class MServer<TMessage> {
                 return;
             }
             try {
-                const ownPublicKey = await exportPublicKey(this.#pair.publicKey);
+                await this.#init;
+                const ownPublicKey = await exportPublicKey(this.#pair!.publicKey);
                 const publicKey = await importPublicKey(payload);
-                const key = await deriveEncryptionKey(this.#pair.privateKey, publicKey);
+                const key = await deriveEncryptionKey(this.#pair!.privateKey, publicKey);
                 this.#clients.set(client, key);
                 
                 window.postMessage(

@@ -2,7 +2,7 @@
 import inpageScript from "./inpage?script&module";
 import { ProxyServer } from "./proxy/server";
 
-const _ = await ProxyServer.create();
+const _ = new ProxyServer();
 
 const script = document.createElement("script");
 script.setAttribute("id", "azguard-inpage-script");
