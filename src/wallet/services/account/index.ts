@@ -255,7 +255,7 @@ export class AccountService extends Service {
 		let address
 		switch (type) {
 			case AccountType.Azguard_v0:
-				address = new AzguardV0(secret).address.toString()
+				address = (await AzguardV0.new(secret)).address.toString()
 				break
 			default:
 				throw new Error("unsupported account type")
@@ -312,33 +312,6 @@ export class AccountService extends Service {
 		return undefined
 	}
 
-	public async signPayload(
-		profileId: string,
-		chainId: number,
-		address: string,
-		payload: string
-	): Promise<string> {
-		const account = await this.storage.get(address)
-		if (account?.profileId !== profileId || account.chainId !== chainId) {
-			throw new Error("account doesn't exist")
-		}
-		switch (account.type) {
-			case AccountType.Azguard_v0: {
-				const secret = await this._deriveAccountSecret(
-					profileId,
-					chainId,
-					account.type,
-					account.index
-				)
-				return new AzguardV0(secret).signPayload(
-					Buffer.from(payload, "hex")
-				)
-			}
-			default:
-				throw new Error("unsupported account type")
-		}
-	}
-
 	public async getAccountContract(
 		profileId: string,
 		chainId: number,
@@ -358,7 +331,7 @@ export class AccountService extends Service {
 					account.type,
 					account.index
 				)
-				accountContract = new AzguardV0(secret)
+				accountContract = await AzguardV0.new(secret)
 				break
 			}
 			default:

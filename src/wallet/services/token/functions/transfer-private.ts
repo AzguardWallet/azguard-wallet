@@ -80,7 +80,14 @@ export class DefaultTransferPrivateFn extends TransferPrivateFn {
 				},
 				{
 					name: "amount",
-					type: { kind: "field" },
+					type: {
+						fields: [
+							{ name: "lo", type: { kind: "field" } },
+							{ name: "hi", type: { kind: "field" } },
+						],
+						kind: "struct",
+						path: "std::uint128::U128",
+					},
 					visibility: "private",
 				},
 			],
@@ -212,7 +219,7 @@ export class DefaultTransferPrivateFn extends TransferPrivateFn {
 				(fn.parameters[0].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
 				fn.parameters[1].name === "amount" &&
-				fn.parameters[1].type.kind === "field" &&
+				(fn.parameters[1].type as StructType)?.path === "std::uint128::U128" &&
 				fn.returnTypes.length === 0
 			) {
 				res.push(new DefaultTransferPrivateFn(fn.name));
@@ -259,7 +266,14 @@ export class DefaultFromTransferPrivateFn extends TransferPrivateFn {
 				},
 				{
 					name: "amount",
-					type: { kind: "field" },
+					type: {
+						fields: [
+							{ name: "lo", type: { kind: "field" } },
+							{ name: "hi", type: { kind: "field" } },
+						],
+						kind: "struct",
+						path: "std::uint128::U128",
+					},
 					visibility: "private",
 				},
 				{
@@ -399,7 +413,7 @@ export class DefaultFromTransferPrivateFn extends TransferPrivateFn {
 				(fn.parameters[1].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
 				fn.parameters[2].name === "amount" &&
-				fn.parameters[2].type.kind === "field" &&
+				(fn.parameters[2].type as StructType)?.path === "std::uint128::U128" &&
 				fn.parameters[3].name === "nonce" &&
 				fn.parameters[3].type.kind === "field" &&
 				fn.returnTypes.length === 0

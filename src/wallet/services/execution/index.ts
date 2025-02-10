@@ -5,7 +5,7 @@ import {
     createPXEClient, 
     ExtendedNote,
     Fr,
-    PackedValues,
+    HashedValues,
     PXE,
     FunctionCall,
     ContractInstanceWithAddress,
@@ -212,10 +212,11 @@ export class ExecutionService extends Service {
             default:
                 throw new Error("Invalid transfer type");
         }
-        const packedArgs = fn.packArgs(args);
+        const packedArgs = await fn.packArgs(args);
+        const selector = await fn.getSelector();
         const call = new AzguardFunctionCall(
             AztecAddress.fromString(token.contract),
-            fn.selector,
+            selector,
             packedArgs.hash,
             fn.type === FunctionType.PUBLIC,
             fn.isStatic,
@@ -312,29 +313,29 @@ export class ExecutionService extends Service {
     async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
         const pxe = createPXEClient(network.rpcUrl);
-        await pxe.registerContact(AztecAddress.fromString(op.address));
+        await pxe.registerSender(AztecAddress.fromString(op.address));
     }
 
     async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
         const pxe = createPXEClient(network.rpcUrl);
 
-        const instance = op.instance as ContractInstanceWithAddress ?? await pxe.getContractInstance(AztecAddress.fromString(op.address));
+        const instance = op.instance as ContractInstanceWithAddress ?? (await pxe.getContractMetadata(AztecAddress.fromString(op.address))).contractInstance;
         if (!instance) {
             throw new Error("Contract instance not found");
         }
 
-        const artifact = op.artifact as ContractArtifact ?? await pxe.getContractArtifact(instance.contractClassId);
+        const artifact = op.artifact as ContractArtifact ?? (await pxe.getContractClassMetadata(instance.contractClassId, true)).artifact;
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
 
-        const contractClass = getContractClassFromArtifact(artifact);
+        const contractClass = await getContractClassFromArtifact(artifact);
         if (contractClass.id.toString() !== instance.contractClassId.toString()) {
             throw new Error("Contract artifact doesn't match instance class id");
         }
 
-        const contractAddress = computeContractAddressFromInstance(instance);
+        const contractAddress = await computeContractAddressFromInstance(instance);
         if (contractAddress.toString() !== op.address) {
             throw new Error("Contract address doesn't match instance address");
         }
@@ -430,7 +431,7 @@ export class ExecutionService extends Service {
             }
         }
 
-        const args: PackedValues[] = [];
+        const args: HashedValues[] = [];
         const calls: AzguardFunctionCall[] = [];
         const setup: AzguardFunctionCall[] = [];
         const txCalls: TxCall[] = [];
@@ -477,7 +478,7 @@ export class ExecutionService extends Service {
         pxe: PXE,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
-        args: PackedValues[],
+        args: HashedValues[],
         calls: AzguardFunctionCall[],
         txCalls: TxCall[],
     ) {
@@ -495,8 +496,8 @@ export class ExecutionService extends Service {
                     console.debug("Adding private authwit...");
                     
                     const messageHash = _action.content.kind === AuthwitContentKind.Call
-                        ? this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
-                        : this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
+                        ? await this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
+                        : await this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
 
                     const authwit = await account.buildAuthWitness(messageHash);
                     await pxe.addAuthWitness(authwit);
@@ -522,15 +523,15 @@ export class ExecutionService extends Service {
                     console.debug("Adding public authwit...");
                     
                     const messageHash = _action.content.kind === AuthwitContentKind.Call
-                        ? this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
-                        : this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
+                        ? await this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
+                        : await this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
 
                     const fn = getSetAuthorizedFn();
-                    const packedArgs = PackedValues.fromValues(encodeArguments(fn, [messageHash, true]));
+                    const packedArgs = await HashedValues.fromValues(encodeArguments(fn, [messageHash, true]));
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
                         getAuthRegistryAddress(),
-                        getSetAuthorizedSelector(),
+                        await getSetAuthorizedSelector(),
                         packedArgs.hash,
                         fn.functionType === FunctionType.PUBLIC,
                         fn.isStatic,
@@ -571,8 +572,8 @@ export class ExecutionService extends Service {
                     if (!fn) {
                         throw new Error("Method not found");
                     }
-                    const fnSelector = FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
-                    const packedArgs = PackedValues.fromValues(encodeArguments(fn, _action.args));
+                    const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
+                    const packedArgs = await HashedValues.fromValues(encodeArguments(fn, _action.args));
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
                         AztecAddress.fromString(_action.contract),
@@ -591,7 +592,7 @@ export class ExecutionService extends Service {
                 }
                 case ActionKind.CallExt: {
                     const _action = (action as CallExtAction)!;
-                    const packedArgs = PackedValues.fromValues(_action.args);
+                    const packedArgs = await HashedValues.fromValues(_action.args);
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
                         AztecAddress.fromString(_action.to),
@@ -612,7 +613,7 @@ export class ExecutionService extends Service {
         }
     }
 
-    getCallMessageHash(
+    async getCallMessageHash(
         content: {
             caller: string,
             contract: string,
@@ -622,7 +623,7 @@ export class ExecutionService extends Service {
         network: Network,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
-    ) {
+    ): Promise<Fr> {
         const instance = instances.get(content.contract);
         if (!instance) {
             throw new Error("Contract not found");
@@ -635,13 +636,13 @@ export class ExecutionService extends Service {
         if (!fn) {
             throw new Error("Method not found");
         }
-        return computeAuthWitMessageHash(
+        return await computeAuthWitMessageHash(
             {
                 caller: AztecAddress.fromString(content.caller),
                 action: new FunctionCall(
                     fn.name,
                     AztecAddress.fromString(content.contract),
-                    FunctionSelector.fromNameAndParameters(fn.name, fn.parameters),
+                    await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters),
                     fn.functionType,
                     fn.isStatic,
                     encodeArguments(fn, content.args),
@@ -655,17 +656,17 @@ export class ExecutionService extends Service {
         );
     }
 
-    getIntentMessageHash(
+    async getIntentMessageHash(
         content: {
             consumer: string,
             intent: string[],
         },
         network: Network,
-    ) {
-        return computeAuthWitMessageHash(
+    ): Promise<Fr> {
+        return await computeAuthWitMessageHash(
             {
                 consumer: AztecAddress.fromString(content.consumer),
-                innerHash: computeInnerAuthWitHash(content.intent.map(x => Fr.fromString(x))),
+                innerHash: await computeInnerAuthWitHash(content.intent.map(x => Fr.fromString(x))),
             },
             {
                 chainId: new Fr(network.chainId),
@@ -714,11 +715,11 @@ export class ExecutionService extends Service {
     }
 
     private async getInstance(pxe: PXE, contract: string): Promise<[string, ContractInstanceWithAddress]> {
-        const instance = await pxe.getContractInstance(AztecAddress.fromString(contract));
-        if (!instance) {
+        const metadata = await pxe.getContractMetadata(AztecAddress.fromString(contract))
+        if (!metadata.contractInstance) {
             throw new Error("Contract instance not found");
         }
-        return [contract, instance];
+        return [contract, metadata.contractInstance];
     }
 
     private async getArtifacts(pxe: PXE, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
@@ -745,10 +746,10 @@ export class ExecutionService extends Service {
         pxe: PXE,
         classId: string,
     ): Promise<[string, ContractArtifact]> {
-        const artifact = await pxe.getContractArtifact(Fr.fromString(classId));
-        if (!artifact) {
+        const metadata = await pxe.getContractClassMetadata(Fr.fromString(classId), true)
+        if (!metadata.artifact) {
             throw new Error("Contract artifact not found");
         }
-        return [classId, artifact];
+        return [classId, metadata.artifact];
     }
 }

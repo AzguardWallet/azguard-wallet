@@ -54,7 +54,7 @@ export class FaucetServiceClient extends ServiceClient {
             name,
             symbol,
             decimals,
-            amount.toString(16),
+            amount.toString(),
         ));
     }
 }

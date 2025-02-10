@@ -65,7 +65,16 @@ export class DefaultBalanceOfPublicFn extends BalanceOfPublicFn {
 					visibility: "private",
 				},
 			],
-			returnTypes: [{ kind: "field" }],
+			returnTypes: [
+				{
+					fields: [
+						{ name: "lo", type: { kind: "field" } },
+						{ name: "hi", type: { kind: "field" } },
+					],
+					kind: "struct",
+					path: "std::uint128::U128",
+				},
+			],
 			errorTypes: {
 				"13699457482007836410": {
 					error_kind: "string",
@@ -115,7 +124,7 @@ export class DefaultBalanceOfPublicFn extends BalanceOfPublicFn {
 				(fn.parameters[0].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
 				fn.returnTypes.length === 1 &&
-				fn.returnTypes[0].kind === "field"
+				(fn.returnTypes[0] as StructType)?.path === "std::uint128::U128"
 			) {
 				res.push(new DefaultBalanceOfPublicFn(fn.name));
 			}

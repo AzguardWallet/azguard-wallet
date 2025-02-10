@@ -172,10 +172,10 @@ export class PxeService extends Service {
         const network = await this.networks.getNetwork(networkId);
         try {
             const pxe = createPXEClient(network.rpcUrl);
-            return (await pxe.getContacts()).map(x => x.toString());
+            return (await pxe.getSenders()).map(x => x.toString());
         }
         catch (error) {
-            console.error("Failed to fetch registered contacts", error);
+            console.error("Failed to fetch registered senders", error);
             throw new Error("PXE request failed");
         }
     }
@@ -202,7 +202,7 @@ export class PxeService extends Service {
         const network = await this.networks.getNetwork(networkId);
         try {
             const pxe = createPXEClient(network.rpcUrl);
-            const notes = await pxe.getIncomingNotes({
+            const notes = await pxe.getNotes({
                 owner: owner ? AztecAddress.fromString(owner) : undefined,
                 status: status === NoteStatus.All ? _NoteStatus.ACTIVE_OR_NULLIFIED : undefined,
                 contractAddress: contract ? AztecAddress.fromString(contract) : undefined,

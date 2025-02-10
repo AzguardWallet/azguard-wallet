@@ -105,8 +105,8 @@ export class FaucetService extends Service {
         ];
         
         const artifact = TokenContract.artifact;
-        const contractClass = getContractClassFromArtifact(artifact);
-        const instance = getContractInstanceFromDeployParams(
+        const contractClass = await getContractClassFromArtifact(artifact);
+        const instance = await getContractInstanceFromDeployParams(
             artifact,
             {
                 constructorArgs: [
@@ -120,7 +120,8 @@ export class FaucetService extends Service {
             },
         );
 
-        if (!await pxe.isContractClassPubliclyRegistered(contractClass.id)) {
+        const classMetadata = await pxe.getContractClassMetadata(contractClass.id);
+        if (!classMetadata.isContractClassPubliclyRegistered) {
             console.debug("register faucet token class id");
             const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
             const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
@@ -135,12 +136,14 @@ export class FaucetService extends Service {
                         artifactHash.toString(),
                         privateFunctionsRoot.toString(),
                         publicBytecodeCommitment.toString(),
+                        true,
                     ],
                 )
             );
         }
 
-        if (!await pxe.isContractPubliclyDeployed(instance.address)) {
+        const contractMetadata = await pxe.getContractMetadata(instance.address);
+        if (!contractMetadata.isContractPubliclyDeployed) {
             console.debug("deploy faucet token");
             const {salt, contractClassId, initializationHash, publicKeys} = instance;
             deployActions.push(
@@ -158,7 +161,7 @@ export class FaucetService extends Service {
             );
         }
 
-        if (!await pxe.isContractInitialized(instance.address)) {
+        if (!contractMetadata.isContractInitialized) {
             console.debug("initialize faucet token");
             deployOps.unshift(
                 new RegisterContractOperation(

@@ -333,17 +333,19 @@ export class TokenService extends Service {
 
 		const pxe = createPXEClient(network.rpcUrl)
 
-		const instance = await pxe.getContractInstance(
-			AztecAddress.fromString(token.contract)
-		)
-		if (!instance) {
-			throw new Error("contract not found")
+		const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(token.contract));
+		if (!contractMetadata.contractInstance) {
+			throw new Error("contract instance not found")
 		}
 
-		const artifact = await pxe.getContractArtifact(instance.contractClassId)
-		if (!artifact) {
+		const classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.contractClassId, true);
+		if (!classMetadata.isContractClassPubliclyRegistered) {
 			throw new Error("contract class not registered")
 		}
+		if (!classMetadata.artifact) {
+			throw new Error("contract artifact not found")
+		}
+		const artifact = classMetadata.artifact;
 
 		const getNameFnCandidates = GetNameFn.getCandidates(artifact)
 		const getNameFn = token.getNameFn
@@ -413,17 +415,19 @@ export class TokenService extends Service {
 
 		const pxe = createPXEClient(network.rpcUrl)
 
-		const instance = await pxe.getContractInstance(
-			AztecAddress.fromString(contract)
-		)
-		if (!instance) {
-			throw new Error("contract not found")
+		const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(contract));
+		if (!contractMetadata.contractInstance) {
+			throw new Error("contract instance not found")
 		}
 
-		const artifact = await pxe.getContractArtifact(instance.contractClassId)
-		if (!artifact) {
+		const classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.contractClassId, true);
+		if (!classMetadata.isContractClassPubliclyRegistered) {
 			throw new Error("contract class not registered")
 		}
+		if (!classMetadata.artifact) {
+			throw new Error("contract artifact not found")
+		}
+		const artifact = classMetadata.artifact;
 
 		const getNameFnCandidates = GetNameFn.getCandidates(artifact)
 		const getNameFn = GetNameFn.getDefault(getNameFnCandidates)

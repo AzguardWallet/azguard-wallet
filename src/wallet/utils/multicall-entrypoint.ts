@@ -94,7 +94,7 @@ export const getMulticallEntrypointFn = () => ({
     errorTypes: {},
 } as FunctionAbi)
 
-export const getMulticallEntrypointSelector = () => {
+export const getMulticallEntrypointSelector = async () => {
 	const fn = getMulticallEntrypointFn()
-	return FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)
+	return await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)
 }

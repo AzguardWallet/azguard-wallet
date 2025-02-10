@@ -65,7 +65,16 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
 					visibility: "private",
 				},
 			],
-			returnTypes: [{ kind: "field" }],
+			returnTypes: [
+				{
+					fields: [
+						{ name: "lo", type: { kind: "field" } },
+						{ name: "hi", type: { kind: "field" } },
+					],
+					kind: "struct",
+					path: "std::uint128::U128",
+				},
+			],
 			errorTypes: {
 				"16761564377371454734": {
 					error_kind: "string",
@@ -87,9 +96,17 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
 					error_kind: "string",
 					string: "push out of bounds",
 				},
+				"6485997221020871071": {
+					error_kind: "string",
+					string: "call to assert_max_bit_size",
+				},
 				"7233212735005103307": {
 					error_kind: "string",
 					string: "attempt to multiply with overflow",
+				},
+				"12099279057757775880": {
+					error_kind: "string",
+					string: "DST_LEN too large for offset",
 				},
 			},
 		};
@@ -111,7 +128,7 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
 				(fn.parameters[0].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
 				fn.returnTypes.length === 1 &&
-				fn.returnTypes[0].kind === "field"
+				(fn.returnTypes[0] as StructType)?.path === "std::uint128::U128"
 			) {
 				res.push(new DefaultBalanceOfPrivateFn(fn.name));
 			}

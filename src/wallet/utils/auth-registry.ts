@@ -42,9 +42,9 @@ export const getSetAuthorizedFn = () => ({
 	},
 } as FunctionAbi)
 
-export const getSetAuthorizedSelector = () => {
+export const getSetAuthorizedSelector = async () => {
 	const fn = getSetAuthorizedFn()
-	return FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)
+	return await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)
 }
 
 export const isPublicAuthwitConsumable = async (pxe: PXE, owner: string, message_hash: string) => {

@@ -1,4 +1,4 @@
-import { AztecAddress, Fr, FunctionSelector, PackedValues,PXE } from "@aztec/aztec.js";
+import { AztecAddress, Fr, FunctionSelector, HashedValues,PXE } from "@aztec/aztec.js";
 import { NestedProcessReturnValues, TxReceipt, TxStatus } from "@aztec/circuit-types";
 import { encodeArguments, FunctionAbi, FunctionType } from "@aztec/foundation/abi";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
@@ -13,7 +13,6 @@ export class FnImpl {
 
 export abstract class Fn extends FnImpl {
     public readonly isStatic: boolean;
-    public readonly selector: FunctionSelector;
     public readonly type: FunctionType;
 
     constructor(name: string, impl: number) {
@@ -21,7 +20,6 @@ export abstract class Fn extends FnImpl {
 
         const abi = this.abi();
         this.isStatic = abi.isStatic;
-        this.selector = FunctionSelector.fromNameAndParameters(abi.name, abi.parameters);
         this.type = abi.functionType;
     }
 
@@ -29,8 +27,13 @@ export abstract class Fn extends FnImpl {
     
     public abstract buildArgs(...args: any[]): any[];
 
-    public packArgs(args: any[]): PackedValues {
-        return PackedValues.fromValues(encodeArguments(this.abi(), args));
+    public async getSelector(): Promise<FunctionSelector> {
+        const abi = this.abi();
+        return await FunctionSelector.fromNameAndParameters(abi.name, abi.parameters);
+    }
+
+    public async packArgs(args: any[]): Promise<HashedValues> {
+        return await HashedValues.fromValues(encodeArguments(this.abi(), args));
     }
 
     public getImpl(): FnImpl {
@@ -49,10 +52,10 @@ export async function execute(
     fn: Fn,
     args: any[],
 ): Promise<string> {
-    const packedArgs = fn.packArgs(args);
+    const packedArgs = await fn.packArgs(args);
     const call = new AzguardFunctionCall(
         AztecAddress.fromString(contract),
-        fn.selector,
+        await fn.getSelector(),
         packedArgs.hash,
         fn.type === FunctionType.PUBLIC,
         fn.isStatic
@@ -83,10 +86,10 @@ export async function simulate(
         return await pxe.simulateUnconstrained(viewFn.name, args, AztecAddress.fromString(contract));
     }
 
-    const packedArgs = viewFn.packArgs(args);
+    const packedArgs = await viewFn.packArgs(args);
     const call = new AzguardFunctionCall(
         AztecAddress.fromString(contract),
-        viewFn.selector,
+        await viewFn.getSelector(),
         packedArgs.hash,
         viewFn.type === FunctionType.PUBLIC,
         viewFn.isStatic
