@@ -23,6 +23,7 @@ import {
     AuthwitContent,
     CallAuthwitContent,
     IntentAuthwitContent,
+    MessageHashAuthwitContent,
 } from "@/wallet/services/dapp-interaction/types";
 import { RpcEvent/*, RpcMethod*/ } from "./types";
 
@@ -270,6 +271,9 @@ function parseAuthwitContent(data: any): AuthwitContent {
         case AuthwitContentKind.Intent: {
             return parseIntentAuthwitContent(data);
         }
+        case AuthwitContentKind.MessageHash: {
+            return parseMessageHashAuthwitContent(data);
+        }
         default: {
             throw new Error("Invalid authwit content");
         }
@@ -291,6 +295,13 @@ function parseIntentAuthwitContent(data: any): IntentAuthwitContent {
         kind: AuthwitContentKind.Intent,
         consumer: parseStringProp(data, "consumer"),
         intent: parseArrayProp(data, "intent", parseString),
+    }
+}
+
+function parseMessageHashAuthwitContent(data: any): MessageHashAuthwitContent {
+    return {
+        kind: AuthwitContentKind.MessageHash,
+        messageHash: parseStringProp(data, "messageHash"),
     }
 }
 

@@ -114,7 +114,8 @@ export type CallExtAction = {
 
 export type AuthwitContent =
     CallAuthwitContent |
-    IntentAuthwitContent;
+    IntentAuthwitContent |
+    MessageHashAuthwitContent;
 
 export type CallAuthwitContent = {
     kind: AuthwitContentKind.Call,
@@ -128,6 +129,11 @@ export type IntentAuthwitContent = {
     kind: AuthwitContentKind.Intent,
     consumer: string,
     intent: string[],
+}
+
+export type MessageHashAuthwitContent = {
+    kind: AuthwitContentKind.MessageHash,
+    messageHash: string,
 }
 
 export type OperationResult = 

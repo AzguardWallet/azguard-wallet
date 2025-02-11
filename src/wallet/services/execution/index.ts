@@ -69,6 +69,7 @@ import {
     AuthwitContentKind,
     CallAuthwitContent,
     IntentAuthwitContent,
+    MessageHashAuthwitContent,
     ActionKind,
     IAction,
     AddCapsuleAction,
@@ -495,9 +496,11 @@ export class ExecutionService extends Service {
                     const _action = action as AddPrivateAuthwitAction;
                     console.debug("Adding private authwit...");
                     
-                    const messageHash = _action.content.kind === AuthwitContentKind.Call
-                        ? await this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
-                        : await this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
+                    const messageHash = _action.content.kind === AuthwitContentKind.MessageHash
+                        ? Fr.fromString((_action.content as MessageHashAuthwitContent).messageHash)
+                        : _action.content.kind === AuthwitContentKind.Call
+                            ? await this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
+                            : await this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
 
                     const authwit = await account.buildAuthWitness(messageHash);
                     await pxe.addAuthWitness(authwit);
@@ -508,11 +511,14 @@ export class ExecutionService extends Service {
                             account.address.toString(), messageHash.toString(), authwit.caller, authwit.contract, authwit.method, authwit.args, false
                         );
                     }
-                    else {
+                    else if (_action.content.kind === AuthwitContentKind.Intent) {
                         const authwit = _action.content as IntentAuthwitContent;
                         await this.pxeService.addIntentAuthwit(
                             account.address.toString(), messageHash.toString(), authwit.consumer, authwit.intent, false
                         );
+                    }
+                    else {
+                        await this.pxeService.addAuthwit(account.address.toString(), messageHash.toString(), true);
                     }
 
                     console.debug("Private authwit added.");
@@ -522,9 +528,11 @@ export class ExecutionService extends Service {
                     const _action = action as AddPublicAuthwitAction;
                     console.debug("Adding public authwit...");
                     
-                    const messageHash = _action.content.kind === AuthwitContentKind.Call
-                        ? await this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
-                        : await this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
+                    const messageHash = _action.content.kind === AuthwitContentKind.MessageHash
+                        ? Fr.fromString((_action.content as MessageHashAuthwitContent).messageHash)
+                        : _action.content.kind === AuthwitContentKind.Call
+                            ? await this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
+                            : await this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
 
                     const fn = getSetAuthorizedFn();
                     const packedArgs = await HashedValues.fromValues(encodeArguments(fn, [messageHash, true]));
@@ -548,11 +556,14 @@ export class ExecutionService extends Service {
                             account.address.toString(), messageHash.toString(), authwit.caller, authwit.contract, authwit.method, authwit.args, true
                         );
                     }
-                    else {
+                    else if (_action.content.kind === AuthwitContentKind.Intent) {
                         const authwit = _action.content as IntentAuthwitContent;
                         await this.pxeService.addIntentAuthwit(
                             account.address.toString(), messageHash.toString(), authwit.consumer, authwit.intent, true
                         );
+                    }
+                    else {
+                        await this.pxeService.addAuthwit(account.address.toString(), messageHash.toString(), true);
                     }
 
                     console.debug("Public authwit added.");

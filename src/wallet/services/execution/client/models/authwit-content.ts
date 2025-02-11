@@ -1,6 +1,7 @@
 export enum AuthwitContentKind {
     Call = "call",
     Intent = "intent",
+    MessageHash = "message_hash",
 }
 
 export interface IAuthwitContent {
@@ -22,5 +23,12 @@ export class IntentAuthwitContent implements IAuthwitContent {
     public constructor(
         public readonly consumer: string,
         public readonly intent: string[],
+    ) {}
+}
+
+export class MessageHashAuthwitContent implements IAuthwitContent {
+    public readonly kind = AuthwitContentKind.MessageHash;
+    public constructor(
+        public readonly messageHash: string,
     ) {}
 }
