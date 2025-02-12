@@ -118,6 +118,9 @@ watch(
 	},
 )
 onBeforeUnmount(() => {
+	privateKey.value = null
+	publicKey.value = null
+
 	document.removeEventListener("keydown", onKeydown)
 
 	clearTimeout(closeTimeout.value)
@@ -232,7 +235,7 @@ onBeforeUnmount(() => {
 							/>
 
 							<Icon
-								@click.stop="handleCopy"
+								@click.stop="handleCopy('private')"
 								:name="isCopied ? 'check' : 'copy'"
 								size="12"
 								:color="isCopied ? 'green' : 'secondary'"

@@ -95,6 +95,8 @@ watch(
 	},
 )
 onBeforeUnmount(() => {
+	phrase.value = null
+
 	document.removeEventListener("keydown", onKeydown)
 
 	clearTimeout(closeTimeout.value)
