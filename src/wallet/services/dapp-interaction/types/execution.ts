@@ -81,6 +81,8 @@ export type Action =
 
 export type AddCapsuleAction = {
     kind: ActionKind.AddCapsule,
+    contract: string,
+    storageSlot: string,
     capsule: string[],
 }
 

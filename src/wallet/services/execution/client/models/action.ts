@@ -17,6 +17,8 @@ export interface IAction {
 export class AddCapsuleAction implements IAction {
     public readonly kind = ActionKind.AddCapsule;
     public constructor(
+        public readonly contract: string,
+        public readonly storageSlot: string,
         public readonly capsule: string[],
     ) {}
 }

@@ -223,6 +223,8 @@ function parseAction(data: any): Action {
 function parseAddCapsuleAction(data: any): AddCapsuleAction {
     return {
         kind: ActionKind.AddCapsule,
+        contract: parseStringProp(data, "contract"),
+        storageSlot: parseStringProp(data, "storageSlot"),
         capsule: parseArrayProp(data, "capsule", parseString),
     }
 }
