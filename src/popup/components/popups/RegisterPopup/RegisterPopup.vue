@@ -52,11 +52,9 @@ const handleCreateProfile = async () => {
 
 	managers.account = new AccountServiceClient(profile, appStore.network)
 
-	const account = await managers.account.createAccount(AccountType.Azguard_v0, "Account")
-
 	appStore.profile = profile
-	appStore.account = account
 	appStore.accounts = await managers.account.getAccounts(true)
+
 	isCreatingProfile.value = false
 
 	initTokenService({
@@ -66,7 +64,7 @@ const handleCreateProfile = async () => {
 	})
 
 	await chrome.storage.local.set({
-		"azguard:ui:activeAccount": account.address,
+		"azguard:ui:activeAccount": appStore.account.address,
 	})
 
 	router.push("/popup/general")

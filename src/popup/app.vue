@@ -149,6 +149,7 @@ const loadProfile = async () => {
 	managers.profile.onActiveProfileChanged = async profile => {
 		if (profile) {
 			appStore.profile = profile
+
 			await initNetworks()
 			await initAccount()
 			await uploadDappSessions()
