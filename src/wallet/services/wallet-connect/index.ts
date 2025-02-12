@@ -406,7 +406,12 @@ export class WalletConnectService extends Service {
                 accounts: (v.chains ?? [k]).flatMap(c => accounts.filter(a => a.startsWith(c))),
             };
         }
-        for (const [k, v] of Object.entries(optional)) {
+        const flatOptional = Object.entries(optional).flatMap(
+            ([k, v]) => (v.chains ?? [k]).map(
+                c => [c, v] as [string, ProposalTypes.BaseRequiredNamespace]
+            )
+        );
+        for (const [k, v] of flatOptional) {
             const methods = v.methods.filter(m => (v.chains ?? [k]).every(c => permissions.find(p => p.chains?.includes(c) && p.methods?.includes(m))));
             const events = v.events.filter(e => (v.chains ?? [k]).every(c => permissions.find(p => p.chains?.includes(c) && p.events?.includes(e))));
             if (methods.length || events.length) {
@@ -424,7 +429,6 @@ export class WalletConnectService extends Service {
                 }
                 else {
                     namespaces[k] = {
-                        chains: v.chains,
                         methods,
                         events,
                         accounts: (v.chains ?? [k]).flatMap(c => accounts.filter(a => a.startsWith(c))),
