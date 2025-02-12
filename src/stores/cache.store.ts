@@ -15,6 +15,8 @@ export const useCacheStore = defineStore("cache", () => {
 	const proposedNetworks = ref([])
 	const selectedNetwork = ref()
 
+	const importType = ref("")
+
 	return {
 		confirm,
 		networkToEditIdx,
@@ -26,5 +28,6 @@ export const useCacheStore = defineStore("cache", () => {
 		proposedNetworks,
 		selectedNetwork,
 		preselectedBalanceType,
+		importType,
 	}
 })

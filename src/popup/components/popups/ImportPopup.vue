@@ -11,23 +11,30 @@ import { managers } from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.import
 })
 
+const router = useRouter()
+
 const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
 })
 
-const selectedRecoveryOption = ref()
+const type = computed(() => cacheStore.importType)
 
-const privateKey = ref()
+const selectedImportOption = ref()
+
 const seedPhrase = ref()
+const privateKey = ref()
+const publicKey = ref()
 
 const profileName = ref("My Profile")
 
@@ -35,12 +42,15 @@ const password = ref()
 const repeatedPassword = ref()
 const isPasswordType = ref(true)
 
+const isWrongPassword = ref(false)
+
 const handleProfileNameInput = () => {
 	if (profileName.value.length > 64) {
 		profileName.value = profileName.value.slice(0, 64)
 	}
 }
 const handlePasswordInput = () => {
+	if (isWrongPassword.value) isWrongPassword.value = false
 	if (password.value.length > 64) {
 		password.value = password.value.slice(0, 64)
 	}
@@ -60,23 +70,30 @@ const isAllowedToContinue = computed(() => {
 		return false
 	}
 
-	if (!repeatedPassword.value || password.value !== repeatedPassword.value) {
+	if (
+		selectedImportOption.value !== "public_key" &&
+		(!repeatedPassword.value || password.value !== repeatedPassword.value)
+	) {
 		return false
 	}
 
 	return true
 })
-const isAllowedToRecoverBySeedPhrase = computed(() => {
+const isAllowedToImportBySeedPhrase = computed(() => {
 	if (!isAllowedToContinue.value) return
 	return seedPhrase.value?.split(" ").length === 24 && password.value?.length >= 8
 })
-const isAllowedToRecoverByPrivateKey = computed(() => {
+const isAllowedToImportByPrivateKey = computed(() => {
 	if (!isAllowedToContinue.value) return
 	return !!privateKey.value
 })
+const isAllowedToImportByPublicKey = computed(() => {
+	if (!isAllowedToContinue.value) return
+	return !!publicKey.value
+})
 
 const handleImportSeed = async () => {
-	if (!isAllowedToRecoverBySeedPhrase.value) return
+	if (!isAllowedToImportBySeedPhrase.value) return
 
 	try {
 		const profile = await managers.profile.importMnemonic(
@@ -85,6 +102,8 @@ const handleImportSeed = async () => {
 			password.value,
 		)
 		appStore.profiles.push(profile)
+
+		router.push("/popup/general")
 	} catch (error) {
 		console.error(error)
 	} finally {
@@ -93,23 +112,45 @@ const handleImportSeed = async () => {
 }
 
 const handleImportPrivateKey = async () => {
-	if (!isAllowedToRecoverByPrivateKey.value) return
+	if (!isAllowedToImportByPrivateKey.value) return
 
 	try {
 		const profile = await managers.profile.importPlain(profileName.value.trim(), privateKey.value, password.value)
 		appStore.profiles.push(profile)
+		popupStore.closeAll()
+
+		router.push("/popup/general")
 	} catch (error) {
 		console.error(error)
-	} finally {
+	}
+}
+
+const handleImportPublicKey = async () => {
+	if (!isAllowedToImportByPublicKey.value) return
+
+	try {
+		const profile = await managers.profile.importEncrypted(
+			profileName.value.trim(),
+			publicKey.value,
+			password.value,
+		)
+		appStore.profiles.push(profile)
 		popupStore.closeAll()
+
+		router.push("/popup/general")
+	} catch (error) {
+		if (error === "Invalid password") {
+			isWrongPassword.value = true
+		}
 	}
 }
 
 const handleBack = () => {
-	selectedRecoveryOption.value = null
+	selectedImportOption.value = null
 
 	profileName.value = "My Profile"
 	privateKey.value = null
+	publicKey.value = null
 	seedPhrase.value = null
 	password.value = null
 	repeatedPassword.value = null
@@ -119,10 +160,11 @@ watch(
 	() => props.show,
 	() => {
 		if (!props.show) {
-			selectedRecoveryOption.value = null
+			selectedImportOption.value = null
 
 			profileName.value = "My Profile"
 			privateKey.value = null
+			publicKey.value = null
 			seedPhrase.value = null
 			password.value = null
 			repeatedPassword.value = null
@@ -137,26 +179,40 @@ watch(
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
 					<Flex align="center" gap="6">
-						<Icon name="restart" size="18" color="blue" />
-						<Text size="16" weight="600" color="primary"> Profile Recovery </Text>
+						<Icon :name="type === 'recovery' ? 'restart' : 'plus-circle'" size="18" color="blue" />
+						<Text size="16" weight="600" color="primary">
+							{{ type === "recovery" ? "Recovery Profile" : "Import Profile" }}
+						</Text>
 					</Flex>
 
 					<Text size="14" weight="500" color="body" height="140" align="center" style="padding: 0 12px">
-						Choose from the following options to recovery your profile
+						Choose from the following options to {{ type === "recovery" ? "recovery" : "import" }} your
+						profile
 					</Text>
 				</Flex>
 
-				<ItemsContainer v-if="!selectedRecoveryOption" title="Recovery with" description="">
+				<ItemsContainer
+					v-if="!selectedImportOption"
+					:title="`${type === 'recovery' ? 'Recovery' : 'Import'} with`"
+					description=""
+				>
 					<SettingItem
-						@click="selectedRecoveryOption = 'seed'"
+						@click="selectedImportOption = 'seed'"
 						title="Seed Phrase"
 						icon="text"
 						iconBgColor="blue"
 						chevron
 					/>
 					<SettingItem
-						@click="selectedRecoveryOption = 'private_key'"
+						@click="selectedImportOption = 'private_key'"
 						title="Plain Key"
+						icon="key"
+						iconBgColor="blue"
+						chevron
+					/>
+					<SettingItem
+						@click="selectedImportOption = 'public_key'"
+						title="Encrypted Key"
 						icon="key"
 						iconBgColor="blue"
 						chevron
@@ -166,16 +222,24 @@ watch(
 				<template v-else>
 					<Flex direction="column" gap="24">
 						<Input
-							v-if="selectedRecoveryOption === 'private_key'"
+							v-if="selectedImportOption === 'private_key'"
 							v-model="privateKey"
 							type="password"
 							label="Plain Key"
 							placeholder="Enter plain key"
 						>
 						</Input>
+						<Input
+							v-if="selectedImportOption === 'public_key'"
+							v-model="publicKey"
+							type="password"
+							label="Encrypted Key"
+							placeholder="Enter encrypted key"
+						>
+						</Input>
 
 						<Input
-							v-if="selectedRecoveryOption === 'seed'"
+							v-if="selectedImportOption === 'seed'"
 							v-model="seedPhrase"
 							type="password"
 							label="Seed Phrase"
@@ -205,7 +269,7 @@ watch(
 							placeholder="Profile name"
 						/>
 
-						<Flex direction="column" gap="8">
+						<Flex v-if="['private_key', 'seed'].includes(selectedImportOption)" direction="column" gap="8">
 							<Input
 								v-model="password"
 								:type="isPasswordType ? 'password' : 'text'"
@@ -236,33 +300,73 @@ watch(
 								Create a new password that will be used to log in to your profile in the future
 							</Text>
 						</Flex>
+
+						<Input
+							v-else
+							v-model="password"
+							:type="isPasswordType ? 'password' : 'text'"
+							@input="handlePasswordInput"
+							type="password"
+							label="Password"
+							placeholder="Enter profile password"
+						>
+							<template #suffix>
+								<Icon
+									@click.stop="isPasswordType = !isPasswordType"
+									:name="isPasswordType ? 'password' : 'text'"
+									size="16"
+									color="secondary"
+									class="clickable"
+								/>
+							</template>
+
+							<template #right>
+								<Transition name="fade">
+									<Flex v-if="isWrongPassword" align="center" gap="4">
+										<Icon name="warning" size="12" color="red" />
+										<Text size="12" weight="600" color="primary">Wrong password</Text>
+									</Flex>
+								</Transition>
+							</template>
+						</Input>
 					</Flex>
 
 					<Flex direction="column" gap="8">
 						<Button
-							v-if="selectedRecoveryOption === 'seed'"
+							v-if="selectedImportOption === 'seed'"
 							@click="handleImportSeed"
-							:disabled="!isAllowedToRecoverBySeedPhrase"
+							:disabled="!isAllowedToImportBySeedPhrase"
 							type="primary"
 							size="medium"
 							rightIcon="arrow-right-circle"
 							wide
 						>
-							Use seed phrase to recover
+							Use Seed Phrase
 						</Button>
 						<Button
-							v-if="selectedRecoveryOption === 'private_key'"
+							v-if="selectedImportOption === 'private_key'"
 							@click="handleImportPrivateKey"
-							:disabled="!isAllowedToRecoverByPrivateKey"
+							:disabled="!isAllowedToImportByPrivateKey"
 							type="primary"
 							size="medium"
 							rightIcon="arrow-right-circle"
 							wide
 						>
-							Use plain key to recover
+							Use Plain Key
+						</Button>
+						<Button
+							v-if="selectedImportOption === 'public_key'"
+							@click="handleImportPublicKey"
+							:disabled="!isAllowedToImportByPublicKey"
+							type="primary"
+							size="medium"
+							rightIcon="arrow-right-circle"
+							wide
+						>
+							Use Encrypted Key
 						</Button>
 
-						<Button v-if="selectedRecoveryOption" @click="handleBack" type="secondary" size="medium" wide>
+						<Button v-if="selectedImportOption" @click="handleBack" type="secondary" size="medium" wide>
 							Back
 						</Button>
 					</Flex>

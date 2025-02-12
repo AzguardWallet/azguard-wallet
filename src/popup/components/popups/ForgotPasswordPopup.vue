@@ -7,8 +7,10 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
@@ -19,6 +21,11 @@ const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
 })
+
+const handleImport = () => {
+	cacheStore.importType = "recovery"
+	popupStore.open("import")
+}
 </script>
 
 <template>
@@ -38,7 +45,7 @@ const props = defineProps({
 
 				<ItemsContainer title="Possible Solutions">
 					<SettingItem
-						@click="popupStore.open('import')"
+						@click="handleImport"
 						title="Profile Recovery"
 						icon="restart"
 						iconBgColor="blue"
@@ -57,9 +64,8 @@ const props = defineProps({
 					description="Requests to reset or recover your password will be ignored, use the recovery methods listed above"
 				>
 					<SettingItem
-						@click="popupStore.open('import')"
 						title="Report issue with authorization"
-						to="https://google.com"
+						to="https://azguardwallet.io/forms/report-issue"
 						icon="help"
 						external
 					/>

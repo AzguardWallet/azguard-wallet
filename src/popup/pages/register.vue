@@ -10,6 +10,12 @@
 /** Components */
 import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
 
+/** Store */
+import { useCacheStore } from "@/stores/cache.store"
+import { usePopupStore } from "@/stores/popup.store"
+const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
+
 /** Composabled */
 import { useSettings } from "@/composables/settings.js"
 const { settings, updateSettings } = useSettings()
@@ -27,6 +33,11 @@ const handleOpen = target => {
 		width: 360,
 		height: 600,
 	})
+}
+
+const handleImport = () => {
+	cacheStore.importType = "default"
+	popupStore.open("import")
 }
 </script>
 
@@ -52,7 +63,7 @@ const handleOpen = target => {
 						<Icon name="arrow-circle-broken-right" size="16" />
 					</Flex>
 				</Button>
-				<Button size="medium" type="secondary" wide disabled> Import Profile </Button>
+				<Button @click="popupStore.open('import')" size="medium" type="secondary" wide> Import Profile </Button>
 			</Flex>
 
 			<Text size="11" weight="500" color="tertiary" height="140" align="center">
