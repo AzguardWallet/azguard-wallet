@@ -48,10 +48,10 @@ const handleOpen = target => {
 		<Flex direction="column" gap="24" align="center">
 			<Breadcrumbs />
 
-			<PageHeader :title="appStore.profile.name" :description="appStore.profile.id" icon="user" />
+			<PageHeader :title="appStore.profile?.name" :description="appStore.profile?.id" icon="user" />
 
 			<ItemsContainer wide>
-				<SettingField label="Name" :value="appStore.profile.name" icon="edit" />
+				<SettingField label="Name" :value="appStore.profile?.name" icon="edit" />
 			</ItemsContainer>
 
 			<ItemsContainer wide>

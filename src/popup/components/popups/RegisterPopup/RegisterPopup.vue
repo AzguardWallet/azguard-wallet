@@ -68,6 +68,8 @@ const handleCreateProfile = async () => {
 	})
 
 	router.push("/popup/general")
+
+	appStore.showRegisterPopup = false
 }
 
 const handleCancel = () => {
