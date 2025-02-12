@@ -3,6 +3,9 @@
 import { DateTime } from "luxon"
 import BN from "bignumber.js"
 
+/** Utils */
+import { comma } from "@/utils/amount.js"
+
 const props = defineProps({
 	tx: {
 		type: Object,
@@ -40,7 +43,7 @@ const token = computed(() => transfer.value?.token)
 
 		<Flex v-if="transfer" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
-				{{ amount }}
+				{{ comma(amount) }}
 				<Text color="tertiary">{{ token.symbol }}</Text>
 			</Text>
 		</Flex>
