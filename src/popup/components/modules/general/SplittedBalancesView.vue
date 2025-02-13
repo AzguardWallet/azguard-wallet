@@ -37,7 +37,7 @@ const handleOpenSendPopup = target => {
 </script>
 
 <template>
-	<Flex v-if="tokenBalance" direction="column" gap="12" :class="$style.wrapper">
+	<Flex direction="column" gap="12" :class="$style.wrapper">
 		<Text size="13" weight="600" color="secondary">Balances</Text>
 
 		<Flex direction="column" gap="4">
