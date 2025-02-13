@@ -333,7 +333,8 @@ export class NetworkService extends Service {
 			const pxe = createPXEClient(rpcUrl);
 			const nodeInfo = await pxe.getNodeInfo();
 			return [nodeInfo.l1ChainId, nodeInfo.protocolVersion];
-		} catch {
+		} catch (error) {
+			console.error(error);
 			throw new Error("Failed to fetch node info");
 		}
 	}
