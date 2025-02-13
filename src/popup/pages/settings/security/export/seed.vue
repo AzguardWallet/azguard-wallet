@@ -56,7 +56,7 @@ const handleUnlock = async () => {
 
 		closeTimeout.value = setTimeout(() => {
 			handleClose()
-		}, 60_000 * 2)
+		}, 60_000 * 5)
 	} catch (error) {
 		isWrongPassword.value = true
 	}
