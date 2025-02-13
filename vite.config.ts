@@ -24,7 +24,7 @@ export default defineConfig({
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
 			// "fs/promises": "node-stdlib-browser/mock/empty",
 			"@aztec/bb.js": fileURLToPath(
-				new URL("./libs/@aztec/bb.js@0.75.0/dest/browser/index.js", import.meta.url)
+				new URL("./libs/@aztec/bb.js@0.76.2/dest/browser/index.js", import.meta.url)
 			),
 			comlink: "comlink",
 			debug: "debug",

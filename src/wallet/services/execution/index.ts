@@ -488,7 +488,11 @@ export class ExecutionService extends Service {
                 case ActionKind.AddCapsule: {
                     const _action = action as AddCapsuleAction;
                     console.debug("Adding capsule...");
-                    await pxe.addCapsule(_action.capsule.map(Fr.fromString));
+                    await pxe.addCapsule(
+                        AztecAddress.fromString(_action.contract),
+                        Fr.fromString(_action.storageSlot),
+                        _action.capsule.map(Fr.fromString)
+                    );
                     console.debug("Capsule added.");
                     break;
                 }

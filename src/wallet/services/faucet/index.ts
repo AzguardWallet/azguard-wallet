@@ -5,6 +5,8 @@ import {
     Fr,
     getContractInstanceFromDeployParams,
     MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS,
+    REGISTERER_CONTRACT_ADDRESS,
+    REGISTERER_CONTRACT_BYTECODE_CAPSULE_SLOT,
     PublicKeys,
 } from "@aztec/circuits.js"
 import { TokenContract } from "@aztec/noir-contracts.js/Token";
@@ -127,10 +129,12 @@ export class FaucetService extends Service {
             const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
             deployActions.push(
                 new AddCapsuleAction(
+                    AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(),
+                    new Fr(REGISTERER_CONTRACT_BYTECODE_CAPSULE_SLOT).toString(),
                     encodedBytecode.map(x => x.toString()),
                 ),
                 new CallAction(
-                    AztecAddress.fromBigInt(3n).toString(), // ContractClassRegisterer
+                    AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(),
                     "register",
                     [
                         artifactHash.toString(),
