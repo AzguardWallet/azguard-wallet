@@ -154,6 +154,7 @@ const handleBack = () => {
 	seedPhrase.value = null
 	password.value = null
 	repeatedPassword.value = null
+	isPasswordType.value = true
 }
 
 watch(
@@ -168,6 +169,7 @@ watch(
 			seedPhrase.value = null
 			password.value = null
 			repeatedPassword.value = null
+			isPasswordType.value = true
 		}
 	},
 )
