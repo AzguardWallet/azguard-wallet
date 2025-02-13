@@ -57,8 +57,10 @@ const handleUnlockWallet = async () => {
 				await sleep(100) // wait for services initialization
 			}
 		} catch (error) {
-			// TODO: not all errors are about wrong password
-			isWrongPassword.value = true
+			if (error === "Invalid profile password") {
+				isWrongPassword.value = true
+			}
+
 			return
 		} finally {
 			isAwaitingResponse.value = false
@@ -82,11 +84,6 @@ const handleUnlockWallet = async () => {
 		appStore.initBalanceListeners()
 
 		router.push(appStore.pageAwaitingAuth || "/popup/general")
-		// if (appStore.pageAwaitingAuth) {
-		// 	router.push(appStore.pageAwaitingAuth)
-		// } else {
-		// 	router.push("/popup/general")
-		// }
 	} catch (err) {
 		console.error(err)
 	}
@@ -110,11 +107,6 @@ watch(
 	async () => {
 		if (appStore.isLogined) {
 			router.push(appStore.pageAwaitingAuth || "/popup/general")
-			// if (appStore.pageAwaitingAuth) {
-			// 	router.push(appStore.pageAwaitingAuth)
-			// } else {
-			// 	router.push("/popup/general")
-			// }
 		}
 	},
 )
@@ -139,16 +131,16 @@ const handleSelectProfile = () => {
 			</Flex>
 
 			<Flex align="center" direction="column" gap="16">
-				<Flex @click="handleSelectProfile" align="center" gap="6" :class="$style.profile_badge">
+				<Flex align="center" gap="6" :class="$style.profile_badge">
 					<Icon name="user" size="14" color="tertiary" />
 					<Text size="13" weight="600" color="primary">{{ appStore.profile.name }}</Text>
-					<Icon
+					<!-- <Icon
 						v-if="appStore.profiles.length > 1"
 						name="chevron"
 						size="12"
 						color="tertiary"
 						:class="$style.chevron_icon"
-					/>
+					/> -->
 				</Flex>
 
 				<Text size="24" weight="600" color="primary" style="line-height: 16px"> Password required </Text>

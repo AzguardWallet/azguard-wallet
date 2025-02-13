@@ -45,18 +45,19 @@ const handleImport = () => {
 
 				<ItemsContainer title="Possible Solutions">
 					<SettingItem
-						@click="handleImport"
-						title="Profile Recovery"
-						icon="restart"
-						iconBgColor="blue"
-						chevron
-					/>
-					<SettingItem
 						@click="popupStore.open('reset')"
 						title="Reset Profile"
 						icon="trash"
 						iconBgColor="red"
 						chevron
+					/>
+					<SettingItem
+						title="Profile Recovery"
+						description="Currently Unavailable"
+						icon="restart"
+						iconBgColor="blue"
+						chevron
+						disabled
 					/>
 				</ItemsContainer>
 

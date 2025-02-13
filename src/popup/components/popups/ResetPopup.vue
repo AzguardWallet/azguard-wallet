@@ -64,7 +64,9 @@ const handleReset = () => {
 		appStore.isLogined = false
 		appStore.isSessionChecked = false
 
-		// router.push("/popup/register")
+		if (!appStore.profiles.length) {
+			router.push("/popup/register")
+		}
 
 		openToast({ label: "Profile deleted", icon: "check-circle" })
 	}
