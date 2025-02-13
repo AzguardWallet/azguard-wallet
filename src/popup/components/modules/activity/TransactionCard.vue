@@ -57,13 +57,19 @@ const title = computed(() => {
 
 		<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
-				{{ comma(transferAmount) }}
-				<Text color="tertiary">{{ token?.symbol }}</Text>
+				<template v-if="transferAmount > 0.01">
+					{{ comma(transferAmount) }}
+				</template>
+				<template v-else> <Text color="tertiary"><</Text> 0.01 </template>
+				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
 			</Text>
 		</Flex>
 		<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
-				{{ comma(mintAmount) }}
+				<template v-if="mintAmount > 0.01">
+					{{ comma(mintAmount) }}
+				</template>
+				<template v-else> <Text color="tertiary"><</Text> 0.01 </template>
 			</Text>
 		</Flex>
 	</Flex>

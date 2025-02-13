@@ -84,6 +84,7 @@ const isAllowedToMint = computed(() => {
 	if (tokenSymbolTerm.value.length > 32) return
 	if (!amountTerm.value || new BN(amountTerm.value) <= 0) return
 	if (new BN(amountTerm.value) > 100_000) return
+	if (new BN(amountTerm.value) < 0.0000001) return
 
 	return true
 })
@@ -200,27 +201,38 @@ const onKeydown = e => {
 							<Icon name="info" size="12" color="tertiary" hoverColor="primary" />
 
 							<template #content>
-								<Flex direction="column" gap="12">
+								<Flex direction="column" gap="16">
+									<Flex direction="column" gap="8">
+										<Flex align="center" justify="between">
+											<Text color="secondary">Min:</Text>
+											<Text color="primary">0.0000001</Text>
+										</Flex>
+										<Flex align="center" justify="between">
+											<Text color="secondary">Max:</Text>
+											<Text color="primary">100,000</Text>
+										</Flex>
+									</Flex>
+
 									<Flex direction="column" gap="8">
 										<Flex align="center" justify="between">
 											<Text color="secondary">Private balance:</Text>
-											<Text color="primary">{{ comma(new BN(amountTerm).dividedBy(2)) }}</Text>
+											<Text color="primary">
+												&nbsp;{{ new BN(amountTerm).dividedBy(2).toFormat() }}
+											</Text>
 										</Flex>
 
 										<Flex align="center" justify="between">
 											<Text color="secondary">Public balance:</Text>
-											<Text color="primary">{{ comma(new BN(amountTerm).dividedBy(2)) }}</Text>
+											<Text color="primary">
+												&nbsp;{{ new BN(amountTerm).dividedBy(2).toFormat() }}
+											</Text>
 										</Flex>
 
 										<Flex align="center" justify="between">
-											<Text color="secondary">Total amount to mint:</Text>
-											<Text color="primary">
-												{{ comma(new BN(amountTerm)) }}
-											</Text>
+											<Text color="secondary">Total amount:</Text>
+											<Text color="primary"> &nbsp;{{ new BN(amountTerm).toFormat() }} </Text>
 										</Flex>
 									</Flex>
-
-									<Text mono color="tertiary">Total Amount = Private + Public Balance</Text>
 								</Flex>
 							</template>
 						</Tooltip>
