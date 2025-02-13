@@ -139,7 +139,8 @@ export class AzguardV0 implements IAccountContract {
         batchAuthwits.push(authwit);
 
         const nodeInfo = await pxe.getNodeInfo();
-        const gasSettings = GasSettings.default({maxFeesPerGas: new GasFees(Fr.MAX_FIELD_VALUE, Fr.MAX_FIELD_VALUE)});
+        const baseFees = await pxe.getCurrentBaseFees();
+        const gasSettings = GasSettings.default({maxFeesPerGas: baseFees});
         const txContext = new TxContext(nodeInfo.l1ChainId, nodeInfo.protocolVersion, gasSettings);
 
         const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits);
@@ -233,7 +234,8 @@ export class AzguardV0 implements IAccountContract {
         batchAuthwits.push(authwit);
 
         const nodeInfo = await pxe.getNodeInfo();
-        const gasSettings = GasSettings.default({maxFeesPerGas: new GasFees(Fr.MAX_FIELD_VALUE, Fr.MAX_FIELD_VALUE)});
+        const baseFees = await pxe.getCurrentBaseFees();
+        const gasSettings = GasSettings.default({maxFeesPerGas: baseFees});
         const txContext = new TxContext(nodeInfo.l1ChainId, nodeInfo.protocolVersion, gasSettings);
 
         const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits);
