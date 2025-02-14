@@ -29,8 +29,7 @@ export default {
 			run_at: "document_start",
 		},
 	],
-	offline_enabled: true,
-	permissions: ["storage",/* "tabs",*/ "background", "sidePanel", "notifications"],
+	permissions: ["storage",/* "tabs",*/ "background", "sidePanel"/*, "notifications"*/],
 	content_security_policy: {
 		extension_pages: "script-src 'self' 'wasm-unsafe-eval'",
 	},
