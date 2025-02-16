@@ -64,7 +64,7 @@ export abstract class ServiceClient {
         this.port = undefined;
         this.requests.forEach(([_, reject]) => reject('disconnected'));
         this.requests.clear();
-        console.error("Disconnected.");
+        console.debug("Disconnected.");
         if (this.onDisconnected) {
             try {this.onDisconnected();} catch {}
         }

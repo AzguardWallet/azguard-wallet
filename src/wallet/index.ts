@@ -27,7 +27,7 @@ export function start() {
     console.debug("Start wallet...");
     chrome.runtime.onConnect.addListener(onConnect);
     isRunning = true;
-    //worker = runWorker();
+    worker = runWorker();
     console.debug("Wallet started.");
 }
 
@@ -163,17 +163,17 @@ async function onMessage(message: IMessage, client: chrome.runtime.Port) {
     send(client, response);
 }
 
-// async function runWorker() {
-//     while (isRunning) {
-//         try {
-//             console.debug("I'm working...");
-//         }
-//         catch (error) {
-//             console.error("Wallet worker crashed", error);
-//         }
-//         await sleep(10000);
-//     }
-// }
+async function runWorker() {
+    while (isRunning) {
+        try {
+            await chrome.storage.session.set({"azguard:core:liveness": Date.now()});
+        }
+        catch (error) {
+            console.error("Wallet worker failed", error);
+        }
+        await sleep(10000);
+    }
+}
 
 function broadcast(event: EventMessage) {
     try {

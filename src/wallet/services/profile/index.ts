@@ -79,7 +79,7 @@ export class ProfileService extends Service {
         super(PROFILE_SERVICE_NAME, emit);
         this.profiles = new EntityStorage('azguard:core:profiles', StorageType.Local);
         this.session = new SimpleStorage('azguard:core:profiles', StorageType.Session);
-        this.initPromise = this._initSession();
+        this.initPromise = this.initSession();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -538,8 +538,10 @@ export class ProfileService extends Service {
         return await getMnemonic(secret);
     }
 
-    private async _initSession() {
+    private async initSession() {
         try {
+            await this.lock.enter();
+            
             const session = await this.session.get('active_profile');
             if (session) {
                 if (session.since + sessionTtl > Date.now()) {
@@ -551,6 +553,13 @@ export class ProfileService extends Service {
                         if (guard && array_equals(guard, encryptionGuard)) {
                             console.debug('session restored');
                             this.activeSession = {profile, session, key};
+                            this.emit(new ProfileServiceEventMessage(
+                                ProfileServiceEvent.ActiveProfileChanged,
+                                new Profile(session.profile, profile.name)),
+                            );
+                            for (const emit of this.onActiveProfileChanged) {
+                                try {emit(session.profile)} catch {}
+                            }
                         }
                         else {
                             console.debug('session contains wrong credentials');
@@ -570,6 +579,9 @@ export class ProfileService extends Service {
         }
         catch (error) {
             console.error("Failed to initialize profile session", error);
+        }
+        finally {
+            this.lock.leave();
         }
     }
     

@@ -6,5 +6,18 @@
 	"trailingComma": "all",
 	"arrowParens": "avoid",
 	"printWidth": 120,
-	"endOfLine": "lf"
+	"endOfLine": "lf",
+	"overrides": [
+		{
+			"files": [
+				"src/background/*",
+				"src/content-script/*",
+				"src/wallet/*"
+			],
+			"options": {
+				"useTabs": false,
+				"semi": true
+			}
+		}
+	]
 }

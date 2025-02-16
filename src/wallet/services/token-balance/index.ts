@@ -60,6 +60,14 @@ export class TokenBalanceService extends Service {
 			"azguard:core:token-balances",
 			StorageType.Local
 		)
+
+		this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged)
+		this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged)
+		this.accountService.onAccountAdded.push(this.onAccountAdded)
+		this.tokenService.onTokenAdded.push(this.onTokenAdded)
+		this.tokenService.onTokenUpdated.push(this.onTokenUpdated)
+		this.tokenService.onTokenDeleted.push(this.onTokenDeleted)
+
 		this.worker = this.startWorker()
 	}
 
@@ -259,13 +267,6 @@ export class TokenBalanceService extends Service {
 						this.tokens.set(token.id, token)
 					}
 				}
-
-				this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged)
-				this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged)
-				this.accountService.onAccountAdded.push(this.onAccountAdded)
-				this.tokenService.onTokenAdded.push(this.onTokenAdded)
-				this.tokenService.onTokenUpdated.push(this.onTokenUpdated)
-				this.tokenService.onTokenDeleted.push(this.onTokenDeleted)
 
 				console.debug("Token balance service initialized")
 				break

@@ -44,6 +44,11 @@ export class TransactionService extends Service {
     ) {
         super(TRANSACTION_SERVICE_NAME, emit);
         this.txs = new EntityStorage("azguard:core:txs", StorageType.Local);
+
+        this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged);
+        this.accountService.onAccountDeleted.push(this.onAccountDeleted);
+        this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged);
+
         this.worker = this.runWorker();
     }
 
@@ -164,10 +169,6 @@ export class TransactionService extends Service {
                         this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
                     }
 				}
-
-				this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged)
-                this.accountService.onAccountDeleted.push(this.onAccountDeleted);
-                this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged);
 
                 for (const tx of (await this.txs.getValues()).filter(x => x.status === TxStatus.Pending)) {
                     this.pending.set(tx.hash, tx);
