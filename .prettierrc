@@ -10,9 +10,9 @@
 	"overrides": [
 		{
 			"files": [
-				"src/background/*",
-				"src/content-script/*",
-				"src/wallet/*"
+				"src/background/**/*",
+				"src/content-script/**/*",
+				"src/wallet/**/*"
 			],
 			"options": {
 				"useTabs": false,
