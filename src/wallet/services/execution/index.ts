@@ -71,7 +71,7 @@ import {
     OkOperationResult,
     AuthwitContentKind,
     CallAuthwitContent,
-    CallExtAuthwitContent,
+    EncodedCallAuthwitContent,
     IntentAuthwitContent,
     MessageHashAuthwitContent,
     ActionKind,
@@ -80,7 +80,7 @@ import {
     AddPrivateAuthwitAction,
     AddPublicAuthwitAction,
     CallAction,
-    CallExtAction,
+    EncodedCallAction,
 } from "./client";
 
 export class ExecutionService extends Service {
@@ -522,9 +522,9 @@ export class ExecutionService extends Service {
                             );
                             break;
                         }
-                        case AuthwitContentKind.CallExt: {
-                            const _content = _action.content as CallExtAuthwitContent;
-                            messageHash = await this.getCallExtMessageHash(_content, network);
+                        case AuthwitContentKind.EncodedCall: {
+                            const _content = _action.content as EncodedCallAuthwitContent;
+                            messageHash = await this.getEncodedCallMessageHash(_content, network);
                             await this.pxeService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
                             );
@@ -574,9 +574,9 @@ export class ExecutionService extends Service {
                             );
                             break;
                         }
-                        case AuthwitContentKind.CallExt: {
-                            const _content = _action.content as CallExtAuthwitContent;
-                            messageHash = await this.getCallExtMessageHash(_content, network);
+                        case AuthwitContentKind.EncodedCall: {
+                            const _content = _action.content as EncodedCallAuthwitContent;
+                            messageHash = await this.getEncodedCallMessageHash(_content, network);
                             await this.pxeService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, true,
                             );
@@ -654,8 +654,8 @@ export class ExecutionService extends Service {
                     console.debug("Call enqueued.");
                     break;
                 }
-                case ActionKind.CallExt: {
-                    const _action = (action as CallExtAction)!;
+                case ActionKind.EncodedCall: {
+                    const _action = (action as EncodedCallAction)!;
                     const packedArgs = await HashedValues.fromValues(_action.args.map(x => Fr.fromString(x)));
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
@@ -670,7 +670,7 @@ export class ExecutionService extends Service {
                         _action.selector,
                         _action.args,
                     ));
-                    console.debug("CallExt enqueued.");
+                    console.debug("EncodedCall enqueued.");
                     break;
                 }
             }
@@ -720,7 +720,7 @@ export class ExecutionService extends Service {
         );
     }
 
-    async getCallExtMessageHash(
+    async getEncodedCallMessageHash(
         content: {
             caller: string,
             to: string,
@@ -791,8 +791,8 @@ export class ExecutionService extends Service {
             )
             .concat(
                 actions
-                    .filter(x => x.kind === ActionKind.CallExt)
-                    .map(x => (x as CallExtAction).to)
+                    .filter(x => x.kind === ActionKind.EncodedCall)
+                    .map(x => (x as EncodedCallAction).to)
             )
         )];
     }

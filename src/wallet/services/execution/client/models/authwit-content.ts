@@ -1,6 +1,6 @@
 export enum AuthwitContentKind {
     Call = "call",
-    CallExt = "call_ext",
+    EncodedCall = "encoded_call",
     Intent = "intent",
     MessageHash = "message_hash",
 }
@@ -19,8 +19,8 @@ export class CallAuthwitContent implements IAuthwitContent {
     ) {}
 }
 
-export class CallExtAuthwitContent implements IAuthwitContent {
-    public readonly kind = AuthwitContentKind.CallExt;
+export class EncodedCallAuthwitContent implements IAuthwitContent {
+    public readonly kind = AuthwitContentKind.EncodedCall;
     public constructor(
         public readonly caller: string,
         public readonly to: string,

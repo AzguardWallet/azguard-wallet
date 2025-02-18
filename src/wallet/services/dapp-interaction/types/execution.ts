@@ -77,7 +77,7 @@ export type Action =
     AddPrivateAuthwitAction |
     AddPublicAuthwitAction |
     CallAction |
-    CallExtAction;
+    EncodedCallAction;
 
 export type AddCapsuleAction = {
     kind: ActionKind.AddCapsule,
@@ -104,8 +104,8 @@ export type CallAction = {
     args: any[],
 }
 
-export type CallExtAction = {
-    kind: ActionKind.CallExt,
+export type EncodedCallAction = {
+    kind: ActionKind.EncodedCall,
     to: string,
     name: string,
     selector: string,
@@ -117,7 +117,7 @@ export type CallExtAction = {
 
 export type AuthwitContent =
     CallAuthwitContent |
-    CallExtAuthwitContent |
+    EncodedCallAuthwitContent |
     IntentAuthwitContent |
     MessageHashAuthwitContent;
 
@@ -129,8 +129,8 @@ export type CallAuthwitContent = {
     args: any[],
 }
 
-export type CallExtAuthwitContent = {
-    kind: AuthwitContentKind.CallExt,
+export type EncodedCallAuthwitContent = {
+    kind: AuthwitContentKind.EncodedCall,
     caller: string,
     to: string,
     name: string,

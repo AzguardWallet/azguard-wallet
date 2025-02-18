@@ -5,7 +5,7 @@ export enum ActionKind {
     AddPrivateAuthwit = "add_private_authwit",
     AddPublicAuthwit = "add_public_authwit",
     Call = "call",
-    CallExt = "call_ext",
+    EncodedCall = "encoded_call",
 }
 
 export interface IAction {
@@ -45,8 +45,8 @@ export class CallAction implements IAction {
     ) {}
 }
 
-export class CallExtAction implements IAction {
-    public readonly kind = ActionKind.CallExt;
+export class EncodedCallAction implements IAction {
+    public readonly kind = ActionKind.EncodedCall;
     public constructor(
         public readonly to: string,
         public readonly name: string,

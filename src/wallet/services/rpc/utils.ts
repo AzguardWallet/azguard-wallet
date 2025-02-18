@@ -19,10 +19,10 @@ import {
     AddPrivateAuthwitAction,
     AddPublicAuthwitAction,
     CallAction,
-    CallExtAction,
+    EncodedCallAction,
     AuthwitContent,
     CallAuthwitContent,
-    CallExtAuthwitContent,
+    EncodedCallAuthwitContent,
     IntentAuthwitContent,
     MessageHashAuthwitContent,
 } from "@/wallet/services/dapp-interaction/types";
@@ -88,7 +88,7 @@ export function parseMethod(data: any): string {
         case ActionKind.AddPrivateAuthwit:
         case ActionKind.AddPublicAuthwit:
         case ActionKind.Call:
-        case ActionKind.CallExt:
+        case ActionKind.EncodedCall:
             return data;
         default:
             throw new Error("Invalid method");
@@ -210,8 +210,8 @@ function parseAction(data: any): Action {
         case ActionKind.Call: {
             return parseCallAction(data);
         }
-        case ActionKind.CallExt: {
-            return parseCallExtAction(data);
+        case ActionKind.EncodedCall: {
+            return parseEncodedCallAction(data);
         }
         default: {
             throw new Error("Invalid action");
@@ -252,9 +252,9 @@ function parseCallAction(data: any): CallAction {
     };
 }
 
-function parseCallExtAction(data: any): CallExtAction {
+function parseEncodedCallAction(data: any): EncodedCallAction {
     return {
-        kind: ActionKind.CallExt,
+        kind: ActionKind.EncodedCall,
         to: parseStringProp(data, "to"),
         name: parseStringProp(data, "name"),
         selector: parseStringProp(data, "selector"),
@@ -270,8 +270,8 @@ function parseAuthwitContent(data: any): AuthwitContent {
         case AuthwitContentKind.Call: {
             return parseCallAuthwitContent(data);
         }
-        case AuthwitContentKind.CallExt: {
-            return parseCallExtAuthwitContent(data);
+        case AuthwitContentKind.EncodedCall: {
+            return parseEncodedCallAuthwitContent(data);
         }
         case AuthwitContentKind.Intent: {
             return parseIntentAuthwitContent(data);
@@ -295,9 +295,9 @@ function parseCallAuthwitContent(data: any): CallAuthwitContent {
     };
 }
 
-function parseCallExtAuthwitContent(data: any): CallExtAuthwitContent {
+function parseEncodedCallAuthwitContent(data: any): EncodedCallAuthwitContent {
     return {
-        kind: AuthwitContentKind.CallExt,
+        kind: AuthwitContentKind.EncodedCall,
         caller: parseStringProp(data, "caller"),
         to: parseStringProp(data, "to"),
         name: parseStringProp(data, "name"),
