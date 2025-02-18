@@ -11,14 +11,18 @@ import {
     ContractInstanceWithAddress,
     TxExecutionRequest,
     getContractClassFromArtifact,
+    AuthWitness,
 } from "@aztec/aztec.js";
-import { computeContractAddressFromInstance } from "@aztec/circuits.js";
+import { computeContractAddressFromInstance, ContractInstanceWithAddressSchema } from "@aztec/circuits.js";
 import {
+    AbiTypeSchema,
     ContractArtifact,
+    ContractArtifactSchema,
     encodeArguments,
     FunctionSelector,
     FunctionType,
 } from "@aztec/foundation/abi";
+import { z } from "zod";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import { NetworkService } from "@/wallet/services/network";
@@ -45,7 +49,6 @@ import {
 } from "@/wallet/services/transaction/client";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import { Fn } from "@/wallet/utils/fn";
-import { wrapBigInts } from "@/wallet/utils/serialization";
 import {
     EXECUTION_SERVICE_NAME,
     ExecutionServiceMethod,
@@ -68,6 +71,7 @@ import {
     OkOperationResult,
     AuthwitContentKind,
     CallAuthwitContent,
+    CallExtAuthwitContent,
     IntentAuthwitContent,
     MessageHashAuthwitContent,
     ActionKind,
@@ -272,12 +276,12 @@ export class ExecutionService extends Service {
                         result = await this.executeAddNote(operation as AddNoteOperation);
                         break;
                     }
-                    case OperationKind.RegisterSender: {
-                        result = await this.executeRegisterSender(operation as RegisterSenderOperation);
-                        break;
-                    }
                     case OperationKind.RegisterContract: {
                         result = await this.executeRegisterContract(operation as RegisterContractOperation);
+                        break;
+                    }
+                    case OperationKind.RegisterSender: {
+                        result = await this.executeRegisterSender(operation as RegisterSenderOperation);
                         break;
                     }
                     case OperationKind.SendTransaction: {
@@ -308,25 +312,21 @@ export class ExecutionService extends Service {
     async executeAddNote(op: AddNoteOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
         const pxe = createPXEClient(network.rpcUrl);
-        await pxe.addNote(ExtendedNote.fromString(op.note), AztecAddress.fromString(op.accountAddress));
-    }
-
-    async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
-        const network = await this.networkService.getNetwork(op.networkId);
-        const pxe = createPXEClient(network.rpcUrl);
-        await pxe.registerSender(AztecAddress.fromString(op.address));
+        await pxe.addNote(ExtendedNote.schema.parse(op.note), AztecAddress.fromString(op.accountAddress));
     }
 
     async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
         const pxe = createPXEClient(network.rpcUrl);
 
-        const instance = op.instance as ContractInstanceWithAddress ?? (await pxe.getContractMetadata(AztecAddress.fromString(op.address))).contractInstance;
+        const providedInstance = op.instance ? ContractInstanceWithAddressSchema.parse(op.instance) : undefined;
+        const instance = providedInstance ?? (await pxe.getContractMetadata(AztecAddress.fromString(op.address))).contractInstance;
         if (!instance) {
             throw new Error("Contract instance not found");
         }
 
-        const artifact = op.artifact as ContractArtifact ?? (await pxe.getContractClassMetadata(instance.contractClassId, true)).artifact;
+        const providedArtifact = op.artifact ? ContractArtifactSchema.parse(op.artifact) : undefined;
+        const artifact = providedArtifact ?? (await pxe.getContractClassMetadata(instance.contractClassId, true)).artifact;
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
@@ -342,6 +342,12 @@ export class ExecutionService extends Service {
         }
 
         await pxe.registerContract({instance, artifact});
+    }
+
+    async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        const pxe = createPXEClient(network.rpcUrl);
+        await pxe.registerSender(AztecAddress.fromString(op.address));
     }
 
     async executeSendTransaction(op: SendTransactionOperation, origin: string): Promise<string> {
@@ -365,8 +371,16 @@ export class ExecutionService extends Service {
     }
 
     async executeSimulateTransaction(op: SimulateTransactionOperation): Promise<unknown> {
-        const [txRequest, pxe] = await this.processTx(op);
-        const simulatedTx = await pxe.simulateTx(txRequest, op.simulatePublic ?? false);
+        const [txRequest, pxe, account] = await this.processTx(op);
+        const simulatedTx = await pxe.simulateTx(
+            txRequest,
+            op.simulatePublic ?? false,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            [account.address],
+        );
         return {
             gasUsed: simulatedTx.gasUsed,
             privateReturn: simulatedTx.getPrivateReturnValues(),
@@ -392,15 +406,13 @@ export class ExecutionService extends Service {
             await pxe.registerContract({instance, artifact});
         }
 
-        const result = await pxe.simulateUnconstrained(
+        return await pxe.simulateUnconstrained(
             op.method,
             op.args,
             AztecAddress.fromString(op.contract),
             undefined,
             [account.address],
         );
-
-        return wrapBigInts(result);
     }
     
     async processTx(op: {
@@ -499,31 +511,51 @@ export class ExecutionService extends Service {
                 case ActionKind.AddPrivateAuthwit: {
                     const _action = action as AddPrivateAuthwitAction;
                     console.debug("Adding private authwit...");
-                    
-                    const messageHash = _action.content.kind === AuthwitContentKind.MessageHash
-                        ? Fr.fromString((_action.content as MessageHashAuthwitContent).messageHash)
-                        : _action.content.kind === AuthwitContentKind.Call
-                            ? await this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
-                            : await this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
 
-                    const authwit = await account.buildAuthWitness(messageHash);
+                    let messageHash: Fr;
+                    switch (_action.content.kind) {
+                        case AuthwitContentKind.Call: {
+                            const _content = _action.content as CallAuthwitContent;
+                            messageHash = await this.getCallMessageHash(_content, network, instances, artifacts);
+                            await this.pxeService.addCallAuthwit(
+                                account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, false,
+                            );
+                            break;
+                        }
+                        case AuthwitContentKind.CallExt: {
+                            const _content = _action.content as CallExtAuthwitContent;
+                            messageHash = await this.getCallExtMessageHash(_content, network);
+                            await this.pxeService.addCallAuthwit(
+                                account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
+                            );
+                            break;
+                        }
+                        case AuthwitContentKind.Intent: {
+                            const _content = _action.content as IntentAuthwitContent;
+                            messageHash = await this.getIntentMessageHash(_content, network);
+                            await this.pxeService.addIntentAuthwit(
+                                account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, false,
+                            );
+                            break;
+                        }
+                        case AuthwitContentKind.MessageHash: {
+                            const _content = _action.content as MessageHashAuthwitContent;
+                            messageHash = Fr.fromString(_content.messageHash);
+                            await this.pxeService.addAuthwit(
+                                account.address.toString(), messageHash.toString(), false,
+                            );
+                            break;
+                        }
+                        default: {
+                            throw new Error("Invalid authwit content kind");
+                        }
+                    }
+
+                    const authwit = _action.authwit
+                        ? new AuthWitness(messageHash, _action.authwit.map(x => Fr.fromString(x)))
+                        : await account.buildAuthWitness(messageHash);
+                        
                     await pxe.addAuthWitness(authwit);
-
-                    if (_action.content.kind === AuthwitContentKind.Call) {
-                        const authwit = _action.content as CallAuthwitContent;
-                        await this.pxeService.addCallAuthwit(
-                            account.address.toString(), messageHash.toString(), authwit.caller, authwit.contract, authwit.method, authwit.args, false
-                        );
-                    }
-                    else if (_action.content.kind === AuthwitContentKind.Intent) {
-                        const authwit = _action.content as IntentAuthwitContent;
-                        await this.pxeService.addIntentAuthwit(
-                            account.address.toString(), messageHash.toString(), authwit.consumer, authwit.intent, false
-                        );
-                    }
-                    else {
-                        await this.pxeService.addAuthwit(account.address.toString(), messageHash.toString(), true);
-                    }
 
                     console.debug("Private authwit added.");
                     break;
@@ -532,11 +564,44 @@ export class ExecutionService extends Service {
                     const _action = action as AddPublicAuthwitAction;
                     console.debug("Adding public authwit...");
                     
-                    const messageHash = _action.content.kind === AuthwitContentKind.MessageHash
-                        ? Fr.fromString((_action.content as MessageHashAuthwitContent).messageHash)
-                        : _action.content.kind === AuthwitContentKind.Call
-                            ? await this.getCallMessageHash(_action.content as CallAuthwitContent, network, instances, artifacts)
-                            : await this.getIntentMessageHash(_action.content as IntentAuthwitContent, network);
+                    let messageHash: Fr;
+                    switch (_action.content.kind) {
+                        case AuthwitContentKind.Call: {
+                            const _content = _action.content as CallAuthwitContent;
+                            messageHash = await this.getCallMessageHash(_content, network, instances, artifacts);
+                            await this.pxeService.addCallAuthwit(
+                                account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, true,
+                            );
+                            break;
+                        }
+                        case AuthwitContentKind.CallExt: {
+                            const _content = _action.content as CallExtAuthwitContent;
+                            messageHash = await this.getCallExtMessageHash(_content, network);
+                            await this.pxeService.addCallAuthwit(
+                                account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, true,
+                            );
+                            break;
+                        }
+                        case AuthwitContentKind.Intent: {
+                            const _content = _action.content as IntentAuthwitContent;
+                            messageHash = await this.getIntentMessageHash(_content, network);
+                            await this.pxeService.addIntentAuthwit(
+                                account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, true,
+                            );
+                            break;
+                        }
+                        case AuthwitContentKind.MessageHash: {
+                            const _content = _action.content as MessageHashAuthwitContent;
+                            messageHash = Fr.fromString(_content.messageHash);
+                            await this.pxeService.addAuthwit(
+                                account.address.toString(), messageHash.toString(), true,
+                            );
+                            break;
+                        }
+                        default: {
+                            throw new Error("Invalid authwit content kind");
+                        }
+                    }
 
                     const fn = getSetAuthorizedFn();
                     const packedArgs = await HashedValues.fromValues(encodeArguments(fn, [messageHash, true]));
@@ -553,22 +618,6 @@ export class ExecutionService extends Service {
                         fn.name,
                         [messageHash, true],
                     ));
-                    
-                    if (_action.content.kind === AuthwitContentKind.Call) {
-                        const authwit = _action.content as CallAuthwitContent;
-                        await this.pxeService.addCallAuthwit(
-                            account.address.toString(), messageHash.toString(), authwit.caller, authwit.contract, authwit.method, authwit.args, true
-                        );
-                    }
-                    else if (_action.content.kind === AuthwitContentKind.Intent) {
-                        const authwit = _action.content as IntentAuthwitContent;
-                        await this.pxeService.addIntentAuthwit(
-                            account.address.toString(), messageHash.toString(), authwit.consumer, authwit.intent, true
-                        );
-                    }
-                    else {
-                        await this.pxeService.addAuthwit(account.address.toString(), messageHash.toString(), true);
-                    }
 
                     console.debug("Public authwit added.");
                     break;
@@ -607,7 +656,7 @@ export class ExecutionService extends Service {
                 }
                 case ActionKind.CallExt: {
                     const _action = (action as CallExtAction)!;
-                    const packedArgs = await HashedValues.fromValues(_action.args);
+                    const packedArgs = await HashedValues.fromValues(_action.args.map(x => Fr.fromString(x)));
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
                         AztecAddress.fromString(_action.to),
@@ -618,7 +667,7 @@ export class ExecutionService extends Service {
                     ));
                     txCalls.push(new TxCall(
                         _action.to,
-                        _action.name,
+                        _action.selector,
                         _action.args,
                     ));
                     console.debug("CallExt enqueued.");
@@ -662,6 +711,39 @@ export class ExecutionService extends Service {
                     fn.isStatic,
                     encodeArguments(fn, content.args),
                     fn.returnTypes,
+                ),
+            },
+            {
+                chainId: new Fr(network.chainId),
+                version: new Fr(network.protocolVersion),
+            },
+        );
+    }
+
+    async getCallExtMessageHash(
+        content: {
+            caller: string,
+            to: string,
+            name: string,
+            selector: string,
+            type: string,
+            isStatic: boolean,
+            args: string[],
+            returnTypes: unknown[],
+        },
+        network: Network,
+    ): Promise<Fr> {
+        return await computeAuthWitMessageHash(
+            {
+                caller: AztecAddress.fromString(content.caller),
+                action: new FunctionCall(
+                    content.name,
+                    AztecAddress.fromString(content.to),
+                    FunctionSelector.fromString(content.selector),
+                    content.type as FunctionType,
+                    content.isStatic,
+                    content.args.map(x => Fr.fromString(x)),
+                    z.array(AbiTypeSchema).parse(content.returnTypes),
                 ),
             },
             {

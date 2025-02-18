@@ -32,7 +32,7 @@ export type Operation =
 export type AddNoteOperation = {
     kind: OperationKind.AddNote,
     account: CaipAccount,
-    note: string,
+    note: unknown,
 }
 
 export type RegisterContractOperation = {
@@ -69,7 +69,7 @@ export type SimulateUnconstrainedOperation = {
     account: CaipAccount,
     contract: string,
     method: string,
-    args: unknown[],
+    args: any[],
 }
 
 export type Action = 
@@ -89,6 +89,7 @@ export type AddCapsuleAction = {
 export type AddPrivateAuthwitAction = {
     kind: ActionKind.AddPrivateAuthwit,
     content: AuthwitContent,
+    authwit?: string[],
 }
 
 export type AddPublicAuthwitAction = {
@@ -100,7 +101,7 @@ export type CallAction = {
     kind: ActionKind.Call,
     contract: string,
     method: string,
-    args: unknown[],
+    args: any[],
 }
 
 export type CallExtAction = {
@@ -110,12 +111,13 @@ export type CallExtAction = {
     selector: string,
     type: string,
     isStatic: boolean,
-    args: unknown[],
+    args: string[],
     returnTypes: unknown[],
 }
 
 export type AuthwitContent =
     CallAuthwitContent |
+    CallExtAuthwitContent |
     IntentAuthwitContent |
     MessageHashAuthwitContent;
 
@@ -125,6 +127,18 @@ export type CallAuthwitContent = {
     contract: string,
     method: string,
     args: any[],
+}
+
+export type CallExtAuthwitContent = {
+    kind: AuthwitContentKind.CallExt,
+    caller: string,
+    to: string,
+    name: string,
+    selector: string,
+    type: string,
+    isStatic: boolean,
+    args: string[],
+    returnTypes: unknown[],
 }
 
 export type IntentAuthwitContent = {

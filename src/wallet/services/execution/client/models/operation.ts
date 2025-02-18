@@ -2,8 +2,8 @@ import { IAction } from ".";
 
 export enum OperationKind {
     AddNote = "add_note",
-    RegisterSender = "register_sender",
     RegisterContract = "register_contract",
+    RegisterSender = "register_sender",
     SendTransaction = "send_transaction",
     SimulateTransaction = "simulate_transaction",
     SimulateUnconstrained = "simulate_unconstrained",
@@ -18,15 +18,7 @@ export class AddNoteOperation implements IOperation {
     public constructor(
         public readonly networkId: string,
         public readonly accountAddress: string,
-        public readonly note: string,
-    ) {}
-}
-
-export class RegisterSenderOperation implements IOperation {
-    public readonly kind = OperationKind.RegisterSender;
-    public constructor(
-        public readonly networkId: string,
-        public readonly address: string,
+        public readonly note: unknown,
     ) {}
 }
 
@@ -37,6 +29,14 @@ export class RegisterContractOperation implements IOperation {
         public readonly address: string,
         public readonly instance?: unknown,
         public readonly artifact?: unknown,
+    ) {}
+}
+
+export class RegisterSenderOperation implements IOperation {
+    public readonly kind = OperationKind.RegisterSender;
+    public constructor(
+        public readonly networkId: string,
+        public readonly address: string,
     ) {}
 }
 

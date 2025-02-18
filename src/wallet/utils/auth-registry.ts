@@ -1,7 +1,8 @@
 import { AztecAddress, PXE } from "@aztec/aztec.js"
+import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/circuits.js"
 import { FunctionAbi, FunctionSelector } from "@aztec/foundation/abi"
 
-export const getAuthRegistryAddress = () => AztecAddress.fromBigInt(1n)
+export const getAuthRegistryAddress = () => AztecAddress.fromNumber(CANONICAL_AUTH_REGISTRY_ADDRESS)
 
 export const getSetAuthorizedFn = () => ({
 	name: "set_authorized",

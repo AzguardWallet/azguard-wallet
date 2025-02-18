@@ -4,6 +4,7 @@ import {
     AztecAddress,
     Fr,
     getContractInstanceFromDeployParams,
+    DEPLOYER_CONTRACT_ADDRESS,
     MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS,
     REGISTERER_CONTRACT_ADDRESS,
     REGISTERER_CONTRACT_BYTECODE_CAPSULE_SLOT,
@@ -29,6 +30,7 @@ import {
     OkOperationResult,
     FailedOperationResult,
 } from "@/wallet/services/execution/client"
+import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
 	FaucetServiceMethod,
     FAUCET_SERVICE_NAME,
@@ -137,9 +139,9 @@ export class FaucetService extends Service {
                     AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(),
                     "register",
                     [
-                        artifactHash.toString(),
-                        privateFunctionsRoot.toString(),
-                        publicBytecodeCommitment.toString(),
+                        artifactHash,
+                        privateFunctionsRoot,
+                        publicBytecodeCommitment,
                         true,
                     ],
                 )
@@ -152,7 +154,7 @@ export class FaucetService extends Service {
             const {salt, contractClassId, initializationHash, publicKeys} = instance;
             deployActions.push(
                 new CallAction(
-                    AztecAddress.fromBigInt(2n).toString(), // ContractInstanceDeployer
+                    AztecAddress.fromNumber(DEPLOYER_CONTRACT_ADDRESS).toString(), // ContractInstanceDeployer
                     "deploy",
                     [
                         salt,
@@ -171,8 +173,8 @@ export class FaucetService extends Service {
                 new RegisterContractOperation(
                     networkId,
                     instance.address.toString(),
-                    instance,
-                    artifact,
+                    jsonSanitize(instance),
+                    jsonSanitize(artifact),
                 )
             );
             deployActions.push(

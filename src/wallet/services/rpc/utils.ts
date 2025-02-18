@@ -22,10 +22,11 @@ import {
     CallExtAction,
     AuthwitContent,
     CallAuthwitContent,
+    CallExtAuthwitContent,
     IntentAuthwitContent,
     MessageHashAuthwitContent,
 } from "@/wallet/services/dapp-interaction/types";
-import { RpcEvent/*, RpcMethod*/ } from "./types";
+import { RpcEvent /*, RpcMethod*/ } from "./types";
 
 export function parseConnectionParams(data: any): ConnectionParams {
     if (!data) {
@@ -37,10 +38,8 @@ export function parseConnectionParams(data: any): ConnectionParams {
     return {
         dappMetadata: parseDappMetadata(data.dappMetadata),
         requiredPermissions: parseArrayProp(data, "requiredPermissions", parseDappPermissions),
-        optionalPermissions: "optionalPermissions" in data
-            ? parseArrayProp(data, "optionalPermissions", parseDappPermissions)
-            : undefined,
-    }
+        optionalPermissions: parseOptionalArrayProp(data, "optionalPermissions", parseDappPermissions),
+    };
 }
 
 export function parseDappMetadata(data: any): DappMetadata {
@@ -66,10 +65,10 @@ export function parseDappMetadata(data: any): DappMetadata {
 
 export function parseDappPermissions(data: any): DappPermissions {
     return {
-        chains: "chains" in data ? parseArrayProp(data, "chains", parseChain) : undefined,
-        methods: "methods" in data ? parseArrayProp(data, "methods", parseMethod) : undefined,
-        events: "events" in data ? parseArrayProp(data, "events", parseEvent) : undefined,
-    }
+        chains: parseOptionalArrayProp(data, "chains", parseChain),
+        methods: parseOptionalArrayProp(data, "methods", parseMethod),
+        events: parseOptionalArrayProp(data, "events", parseEvent),
+    };
 }
 
 export function parseMethod(data: any): string {
@@ -146,7 +145,7 @@ function parseAddNoteOperation(data: any): AddNoteOperation {
     return {
         kind: OperationKind.AddNote,
         account: parseAccountProp(data, "account"),
-        note: parseStringProp(data, "note"),
+        note: parseRequiredProp(data, "note"),
     };
 }
 
@@ -173,7 +172,7 @@ function parseSendTransactionOperation(data: any): SendTransactionOperation {
         kind: OperationKind.SendTransaction,
         account: parseAccountProp(data, "account"),
         actions: parseArrayProp(data, "actions", parseAction),
-        setup: "setup" in data ? parseArrayProp(data, "setup", parseAction) : undefined,
+        setup: parseOptionalArrayProp(data, "setup", parseAction),
     };
 }
 
@@ -182,8 +181,8 @@ function parseSimulateTransactionOperation(data: any): SimulateTransactionOperat
         kind: OperationKind.SimulateTransaction,
         account: parseAccountProp(data, "account"),
         actions: parseArrayProp(data, "actions", parseAction),
-        setup: "setup" in data ? parseArrayProp(data, "setup", parseAction) : undefined,
-        simulatePublic: "simulatePublic" in data ? parseBooleanProp(data, "simulatePublic") : undefined,
+        setup: parseOptionalArrayProp(data, "setup", parseAction),
+        simulatePublic: parseOptionalBooleanProp(data, "simulatePublic"),
     };
 }
 
@@ -226,21 +225,22 @@ function parseAddCapsuleAction(data: any): AddCapsuleAction {
         contract: parseStringProp(data, "contract"),
         storageSlot: parseStringProp(data, "storageSlot"),
         capsule: parseArrayProp(data, "capsule", parseString),
-    }
+    };
 }
 
 function parseAddPrivateAuthwitAction(data: any): AddPrivateAuthwitAction {
     return {
         kind: ActionKind.AddPrivateAuthwit,
-        content: parseAuthwitContent(data.content)
-    }
+        content: parseAuthwitContent(data.content),
+        authwit: parseOptionalArrayProp(data, "authwit", parseString),
+    };
 }
 
 function parseAddPublicAuthwitAction(data: any): AddPublicAuthwitAction {
     return {
         kind: ActionKind.AddPublicAuthwit,
-        content: parseAuthwitContent(data.content)
-    }
+        content: parseAuthwitContent(data.content),
+    };
 }
 
 function parseCallAction(data: any): CallAction {
@@ -249,7 +249,7 @@ function parseCallAction(data: any): CallAction {
         contract: parseStringProp(data, "contract"),
         method: parseStringProp(data, "method"),
         args: parseArrayProp(data, "args"),
-    }
+    };
 }
 
 function parseCallExtAction(data: any): CallExtAction {
@@ -260,15 +260,18 @@ function parseCallExtAction(data: any): CallExtAction {
         selector: parseStringProp(data, "selector"),
         type: parseStringProp(data, "type"),
         isStatic: parseBooleanProp(data, "isStatic"),
-        args: parseArrayProp(data, "args"),
+        args: parseArrayProp(data, "args", parseString),
         returnTypes: parseArrayProp(data, "returnTypes"),
-    }
+    };
 }
 
 function parseAuthwitContent(data: any): AuthwitContent {
     switch (data?.kind) {
         case AuthwitContentKind.Call: {
             return parseCallAuthwitContent(data);
+        }
+        case AuthwitContentKind.CallExt: {
+            return parseCallExtAuthwitContent(data);
         }
         case AuthwitContentKind.Intent: {
             return parseIntentAuthwitContent(data);
@@ -292,19 +295,44 @@ function parseCallAuthwitContent(data: any): CallAuthwitContent {
     };
 }
 
+function parseCallExtAuthwitContent(data: any): CallExtAuthwitContent {
+    return {
+        kind: AuthwitContentKind.CallExt,
+        caller: parseStringProp(data, "caller"),
+        to: parseStringProp(data, "to"),
+        name: parseStringProp(data, "name"),
+        selector: parseStringProp(data, "selector"),
+        type: parseStringProp(data, "type"),
+        isStatic: parseBooleanProp(data, "isStatic"),
+        args: parseArrayProp(data, "args", parseString),
+        returnTypes: parseArrayProp(data, "returnTypes"),
+    };
+}
+
 function parseIntentAuthwitContent(data: any): IntentAuthwitContent {
     return {
         kind: AuthwitContentKind.Intent,
         consumer: parseStringProp(data, "consumer"),
         intent: parseArrayProp(data, "intent", parseString),
-    }
+    };
 }
 
 function parseMessageHashAuthwitContent(data: any): MessageHashAuthwitContent {
     return {
         kind: AuthwitContentKind.MessageHash,
         messageHash: parseStringProp(data, "messageHash"),
+    };
+}
+
+function parseOptionalArrayProp<T>(data: any, prop: string, parseItem?: (item: any) => T): T[] | undefined {
+    const value = data[prop];
+    if (value === undefined) {
+        return undefined;
     }
+    if (!Array.isArray(value)) {
+        throw new Error(`Invalid ${prop}`);
+    }
+    return parseItem ? value.map(x => parseItem(x)) : value;
 }
 
 function parseArrayProp<T>(data: any, prop: string, parseItem?: (item: any) => T): T[] {
@@ -356,6 +384,14 @@ function parseChain(data: any): CaipChain {
     throw new Error("Invalid chain");
 }
 
+function parseOptionalBooleanProp(data: any, prop: string): boolean | undefined {
+    const value = data[prop];
+    if (value !== undefined && typeof value !== "boolean") {
+        throw new Error(`Invalid ${prop}`);
+    }
+    return value;
+}
+
 function parseBooleanProp(data: any, prop: string): boolean {
     const value = data[prop];
     if (typeof value !== "boolean") {
@@ -385,4 +421,12 @@ export function parseString(data: any, errorMessage?: string): string {
         throw new Error(errorMessage ?? "Invalid string value");
     }
     return data;
+}
+
+function parseRequiredProp(data: any, prop: string): unknown {
+    const value = data[prop];
+    if (value === undefined) {
+        throw new Error(`Invalid ${prop}`);
+    }
+    return value;
 }

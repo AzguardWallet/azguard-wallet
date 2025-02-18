@@ -46,7 +46,7 @@ export class MServer<TMessage> {
                     channel: this.#channel,
                     to: client,
                     type: M_MESSAGE,
-                    payload: await encrypt<any>(message, this.#clients.get(client)!),
+                    payload: await encrypt(message, this.#clients.get(client)!),
                 },
                 window.origin,
             );

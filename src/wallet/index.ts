@@ -15,6 +15,7 @@ import { PxeService } from "./services/pxe";
 import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
+import { jsonSanitize } from "./utils/serialization";
 
 export async function init() {
     console.debug("Init BarretenbergSync...");
@@ -191,7 +192,7 @@ function broadcast(event: EventMessage) {
 
 function send(port: chrome.runtime.Port, message: IMessage) {
     try {
-        port.postMessage(message);
+        port.postMessage(jsonSanitize(message));
         console.debug("Message sent.", message);
     }
     catch (error) {

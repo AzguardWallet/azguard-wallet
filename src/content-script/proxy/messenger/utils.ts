@@ -1,3 +1,5 @@
+import { jsonStringify } from "@/wallet/utils/serialization";
+
 export const M_HANDSHAKE = "azguard-handshake";
 export const M_MESSAGE = "azguard-message";
 
@@ -56,7 +58,7 @@ export async function deriveEncryptionKey(privateKey: CryptoKey, publicKey: Cryp
 
 export async function encrypt<T>(payload: T, key: CryptoKey): Promise<string> {
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const pt = new TextEncoder().encode(JSON.stringify(payload));
+    const pt = new TextEncoder().encode(jsonStringify(payload));
     const ct = new Uint8Array(
         await window.crypto.subtle.encrypt(
             { name: "AES-GCM", iv }, key, pt,

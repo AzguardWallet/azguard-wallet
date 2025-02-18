@@ -68,7 +68,7 @@ export class MClient<TMessage> {
                     channel: this.#channel,
                     from: this.#identity,
                     type: M_MESSAGE,
-                    payload: await encrypt<any>(message, this.#key!),
+                    payload: await encrypt(message, this.#key!),
                 },
                 window.origin,
             );

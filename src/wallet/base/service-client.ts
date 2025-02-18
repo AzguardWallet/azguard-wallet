@@ -1,4 +1,5 @@
 import { sleep } from "../utils";
+import { jsonSanitize } from "../utils/serialization";
 import { IMessage, MessageType, EventMessage, RequestMessage, ResponseMessage } from "./messages";
 
 export abstract class ServiceClient {
@@ -32,7 +33,7 @@ export abstract class ServiceClient {
             this.requests.set(request.id, [resolve, reject]);
         });
         console.debug(`Request #${request.id} created. Total: ${this.requests.size}.`);
-        this.port.postMessage(request);
+        this.port.postMessage(jsonSanitize(request));
         console.debug(`Request #${request.id} sent.`);
         return promise;
     }

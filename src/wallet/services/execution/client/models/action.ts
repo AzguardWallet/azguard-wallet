@@ -5,8 +5,6 @@ export enum ActionKind {
     AddPrivateAuthwit = "add_private_authwit",
     AddPublicAuthwit = "add_public_authwit",
     Call = "call",
-
-    // redundant
     CallExt = "call_ext",
 }
 
@@ -27,6 +25,7 @@ export class AddPrivateAuthwitAction implements IAction {
     public readonly kind = ActionKind.AddPrivateAuthwit;
     public constructor(
         public readonly content: IAuthwitContent,
+        public readonly authwit?: string[],
     ) {}
 }
 
@@ -46,7 +45,6 @@ export class CallAction implements IAction {
     ) {}
 }
 
-// redundant
 export class CallExtAction implements IAction {
     public readonly kind = ActionKind.CallExt;
     public constructor(
@@ -55,7 +53,7 @@ export class CallExtAction implements IAction {
         public readonly selector: string,
         public readonly type: string,
         public readonly isStatic: boolean,
-        public readonly args: any[],
+        public readonly args: string[],
         public readonly returnTypes: unknown[],
     ) {}
 }
