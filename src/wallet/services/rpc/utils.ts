@@ -9,6 +9,7 @@ import {
     ExecutionParams,
     Operation,
     AddNoteOperation,
+    GetCompleteAddressOperation,
     RegisterContractOperation,
     RegisterSenderOperation,
     SendTransactionOperation,
@@ -79,6 +80,7 @@ export function parseMethod(data: any): string {
         // case RpcMethod.connect:
         // case RpcMethod.execute:
         case OperationKind.AddNote:
+        case OperationKind.GetCompleteAddress:
         case OperationKind.RegisterSender:
         case OperationKind.RegisterContract:
         case OperationKind.SendTransaction:
@@ -120,6 +122,9 @@ function parseOperation(data: any): Operation {
         case OperationKind.AddNote: {
             return parseAddNoteOperation(data);
         }
+        case OperationKind.GetCompleteAddress: {
+            return parseGetCompleteAddressOperation(data);
+        }
         case OperationKind.RegisterContract: {
             return parseRegisterContractOperation(data);
         }
@@ -146,6 +151,13 @@ function parseAddNoteOperation(data: any): AddNoteOperation {
         kind: OperationKind.AddNote,
         account: parseAccountProp(data, "account"),
         note: parseRequiredProp(data, "note"),
+    };
+}
+
+function parseGetCompleteAddressOperation(data: any): GetCompleteAddressOperation {
+    return {
+        kind: OperationKind.GetCompleteAddress,
+        account: parseAccountProp(data, "account"),
     };
 }
 

@@ -13,7 +13,11 @@ import {
     getContractClassFromArtifact,
     AuthWitness,
 } from "@aztec/aztec.js";
-import { computeContractAddressFromInstance, ContractInstanceWithAddressSchema } from "@aztec/circuits.js";
+import {
+    CompleteAddress,
+    computeContractAddressFromInstance,
+    ContractInstanceWithAddressSchema,
+} from "@aztec/circuits.js";
 import {
     AbiTypeSchema,
     ContractArtifact,
@@ -59,6 +63,7 @@ import {
     OperationKind,
     IOperation,
     AddNoteOperation,
+    GetCompleteAddressOperation,
     RegisterSenderOperation,
     RegisterContractOperation,
     SendTransactionOperation,
@@ -276,6 +281,10 @@ export class ExecutionService extends Service {
                         result = await this.executeAddNote(operation as AddNoteOperation);
                         break;
                     }
+                    case OperationKind.GetCompleteAddress: {
+                        result = await this.executeGetCompleteAddress(operation as GetCompleteAddressOperation);
+                        break;
+                    }
                     case OperationKind.RegisterContract: {
                         result = await this.executeRegisterContract(operation as RegisterContractOperation);
                         break;
@@ -313,6 +322,16 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const pxe = createPXEClient(network.rpcUrl);
         await pxe.addNote(ExtendedNote.schema.parse(op.note), AztecAddress.fromString(op.accountAddress));
+    }
+
+    async executeGetCompleteAddress(op: GetCompleteAddressOperation): Promise<CompleteAddress> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(op.networkId);
+        const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
+        return await account.getCompleteAddress();
     }
 
     async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
@@ -678,12 +697,7 @@ export class ExecutionService extends Service {
     }
 
     async getCallMessageHash(
-        content: {
-            caller: string,
-            contract: string,
-            method: string,
-            args: any[],
-        },
+        content: CallAuthwitContent,
         network: Network,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
@@ -721,16 +735,7 @@ export class ExecutionService extends Service {
     }
 
     async getEncodedCallMessageHash(
-        content: {
-            caller: string,
-            to: string,
-            name: string,
-            selector: string,
-            type: string,
-            isStatic: boolean,
-            args: string[],
-            returnTypes: unknown[],
-        },
+        content: EncodedCallAuthwitContent,
         network: Network,
     ): Promise<Fr> {
         return await computeAuthWitMessageHash(
@@ -754,10 +759,7 @@ export class ExecutionService extends Service {
     }
 
     async getIntentMessageHash(
-        content: {
-            consumer: string,
-            intent: string[],
-        },
+        content: IntentAuthwitContent,
         network: Network,
     ): Promise<Fr> {
         return await computeAuthWitMessageHash(

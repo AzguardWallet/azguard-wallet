@@ -16,9 +16,9 @@ import {
     TxExecutionRequest
 } from '@aztec/aztec.js';
 import {
+    CompleteAddress,
     computePartialAddress,
     ContractInstanceWithAddress,
-    GasFees,
     GasSettings,
     GeneratorIndex,
     TxContext,
@@ -64,6 +64,10 @@ export class AzguardV0 implements IAccountContract {
             }
         );
         return new AzguardV0(secret, signingKey, signingPubKey, instance);
+    }
+
+    public async getCompleteAddress(): Promise<CompleteAddress> {
+        return await CompleteAddress.fromSecretKeyAndInstance(this.secret, this.instance);
     }
 
     public async buildAuthWitness(messageHash: Fr): Promise<AuthWitness> {

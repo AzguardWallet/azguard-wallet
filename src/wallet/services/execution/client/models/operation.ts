@@ -2,6 +2,7 @@ import { IAction } from ".";
 
 export enum OperationKind {
     AddNote = "add_note",
+    GetCompleteAddress = "get_complete_address",
     RegisterContract = "register_contract",
     RegisterSender = "register_sender",
     SendTransaction = "send_transaction",
@@ -19,6 +20,14 @@ export class AddNoteOperation implements IOperation {
         public readonly networkId: string,
         public readonly accountAddress: string,
         public readonly note: unknown,
+    ) {}
+}
+
+export class GetCompleteAddressOperation implements IOperation {
+    public readonly kind = OperationKind.GetCompleteAddress;
+    public constructor(
+        public readonly networkId: string,
+        public readonly accountAddress: string,
     ) {}
 }
 

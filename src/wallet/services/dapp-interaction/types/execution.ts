@@ -23,6 +23,7 @@ export type ExecutionParams = {
 
 export type Operation = 
     AddNoteOperation |
+    GetCompleteAddressOperation |
     RegisterContractOperation |
     RegisterSenderOperation |
     SendTransactionOperation | 
@@ -33,6 +34,11 @@ export type AddNoteOperation = {
     kind: OperationKind.AddNote,
     account: CaipAccount,
     note: unknown,
+}
+
+export type GetCompleteAddressOperation = {
+    kind: OperationKind.GetCompleteAddress,
+    account: CaipAccount,
 }
 
 export type RegisterContractOperation = {

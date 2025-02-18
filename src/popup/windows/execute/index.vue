@@ -83,6 +83,7 @@ const init = async () => {
 					break
 				}
 				case OperationKind.AddNote:
+				case OperationKind.GetCompleteAddress:
 				case OperationKind.SendTransaction:
 				case OperationKind.SimulateTransaction:
 				case OperationKind.SimulateUnconstrained: {
