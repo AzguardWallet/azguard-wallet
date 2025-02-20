@@ -9,6 +9,7 @@ export abstract class ServiceClient {
     private readonly requests: Map<number, [(result: any) => void, (error: string) => void]>;
     private port?: chrome.runtime.Port;
     private connection: Promise<void>;
+    private disposed: boolean = false;
     
     protected constructor(serviceName: string, onConnected?: () => void, onDisconnected?: () => void) {
         this.serviceName = serviceName;
@@ -22,8 +23,11 @@ export abstract class ServiceClient {
     protected abstract onEvent(message: EventMessage): void;
 
     protected async request<T>(request: RequestMessage): Promise<T> {
-        while (!this.port) {
+        while (!this.port && !this.disposed) {
             await this.connection;
+        }
+        if (this.disposed) {
+            throw new Error("client disposed");
         }
         if (this.requests.has(request.id)) {
             // this case is highly unlikely
@@ -33,13 +37,13 @@ export abstract class ServiceClient {
             this.requests.set(request.id, [resolve, reject]);
         });
         console.debug(`Request #${request.id} created. Total: ${this.requests.size}.`);
-        this.port.postMessage(jsonSanitize(request));
+        this.port!.postMessage(jsonSanitize(request));
         console.debug(`Request #${request.id} sent.`);
         return promise;
     }
     
     private async connect() {
-        while (true) {
+        while (!this.disposed) {
             try {
                 console.debug("Connecting...");
                 this.port = chrome.runtime.connect(undefined, { name: this.serviceName });
@@ -97,5 +101,19 @@ export abstract class ServiceClient {
                 console.error(`Unexpected message type ${message.type}.`);
                 break;
         }
+    }
+
+    public dispose() {
+        if (this.disposed) {
+            return;
+        }
+        console.debug("Dispose client");
+        this.disposed = true;
+        this.port?.onMessage.removeListener(this.onMessage);
+        this.port?.onDisconnect.removeListener(this.onDisconnect);
+        this.port?.disconnect();
+        this.requests.forEach(([_, reject]) => reject('disposed'));
+        this.requests.clear();
+        console.debug("Disposed.");
     }
 }
