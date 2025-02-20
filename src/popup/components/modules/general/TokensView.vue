@@ -71,9 +71,9 @@ const handleRefreshBalances = () => {
 			</Flex>
 		</Flex>
 
-		<template v-if="appStore.tokens.length">
+		<template v-if="appStore.tokens.length || appStore.dummyTokens.length">
 			<ItemsContainer>
-				<TokenCard v-for="token in appStore.tokens" :token />
+				<TokenCard v-for="token in [...appStore.tokens, ...appStore.dummyTokens]" :token />
 			</ItemsContainer>
 		</template>
 		<template v-else>

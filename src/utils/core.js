@@ -39,9 +39,19 @@ export const managers = {
 	pxe: pxeClientService,
 }
 
-export const initTokenService = ({ profile, network, account }) => {
+export const initTokenService = ({ profile, network, account, onTokenAdded, onTokenUpdated, onTokenDeleted }) => {
 	try {
-		managers.token = new TokenServiceClient(profile, network, account)
+		if (managers.token) managers.token.dispose()
+		managers.token = new TokenServiceClient(
+			profile,
+			network,
+			account,
+			null,
+			null,
+			onTokenAdded,
+			onTokenUpdated,
+			onTokenDeleted,
+		)
 	} catch (error) {
 		console.error(error)
 	}

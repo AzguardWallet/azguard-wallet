@@ -77,6 +77,12 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const tokens = ref([])
+	const dummyTokens = ref([])
+	const onTokenAdded = token => {
+		const dummyTokenIdx = dummyTokens.value.findLastIndex(t => t.id === -1)
+		if (dummyTokenIdx !== -1) dummyTokens.value.splice(dummyTokenIdx, 1)
+		tokens.value.push(token)
+	}
 	const syncLocalTokens = async () => {
 		const rawTokens = await managers.token?.getTokens()
 		tokens.value = rawTokens?.length ? rawTokens.filter(t => t.chainId == network.value.chainId) : []
@@ -176,6 +182,8 @@ export const useAppStore = defineStore("app", () => {
 		changeAccountVisibility,
 		updateAccount,
 		tokens,
+		dummyTokens,
+		onTokenAdded,
 		syncLocalTokens,
 		tokensAwaitingBalanceRefresh,
 		isBalancesSynced,

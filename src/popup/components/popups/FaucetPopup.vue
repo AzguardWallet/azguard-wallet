@@ -89,16 +89,13 @@ const isAllowedToMint = computed(() => {
 	return true
 })
 
-const isMinting = ref(false)
 const error = ref()
 const isErrorOccurred = computed(() => !!error.value)
 const handleMint = async () => {
 	if (!isAllowedToMint.value) return
 
 	try {
-		isMinting.value = true
-
-		await managers.faucet.mint(
+		managers.faucet.mint(
 			appStore.network.id,
 			appStore.account.address,
 			tokenNameTerm.value.trim(),
@@ -106,21 +103,18 @@ const handleMint = async () => {
 			8,
 			new BN(amountTerm.value).times(10 ** 8).dividedBy(2),
 		)
-		isMinting.value = false
 
-		await appStore.syncLocalTokens()
-
-		const tokenAwaitingBalanceIdx = appStore.tokens.findLast(t => t.symbol === tokenSymbolTerm.value)?.id
-		if (tokenAwaitingBalanceIdx) {
-			appStore.tokensAwaitingBalanceRefresh.push(tokenAwaitingBalanceIdx)
-		}
+		appStore.dummyTokens.push({
+			id: -1,
+			symbol: tokenSymbolTerm.value.trim(),
+			name: "Minting in progress...",
+		})
 
 		emit("onClose")
 
-		openToast({ label: "Succesfully minted" })
+		openToast({ label: "Mint is requested" })
 	} catch (err) {
 		error.value = err
-		isMinting.value = false
 	}
 }
 
@@ -170,7 +164,7 @@ const onKeydown = e => {
 					label="Token Name"
 					placeholder="Name"
 					v-model="tokenNameTerm"
-					:disabled="isPreselected || isMinting"
+					:disabled="isPreselected"
 					@focus="error = null"
 					@input="handleNameInput"
 					:autofocus="!token"
@@ -179,7 +173,7 @@ const onKeydown = e => {
 					label="Token Symbol"
 					placeholder="Symbol"
 					v-model="tokenSymbolTerm"
-					:disabled="isPreselected || isMinting"
+					:disabled="isPreselected"
 					@focus="error = null"
 					@input="handleSymbolInput"
 				/>
@@ -187,7 +181,6 @@ const onKeydown = e => {
 					label="Total Amount"
 					placeholder="0.00"
 					v-model="amountTerm"
-					:disabled="isMinting"
 					@focus="error = null"
 					@input="handleAmountInput"
 					:autofocus="!!token"
@@ -240,15 +233,8 @@ const onKeydown = e => {
 				</Input>
 
 				<Flex align="center" direction="column" gap="12">
-					<Button
-						@click="handleMint"
-						wide
-						:type="isMinting ? 'secondary' : 'primary'"
-						size="medium"
-						:disabled="!isAllowedToMint"
-						:loading="isMinting"
-					>
-						{{ isMinting ? "Minting" : "Mint" }}
+					<Button @click="handleMint" wide type="primary" size="medium" :disabled="!isAllowedToMint">
+						Mint
 					</Button>
 
 					<Tooltip v-if="isErrorOccurred" side="top">

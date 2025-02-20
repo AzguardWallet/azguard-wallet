@@ -70,10 +70,12 @@ const handleUnlockWallet = async () => {
 
 		appStore.profile = activeProfile
 		managers.account = new AccountServiceClient(appStore.profile, appStore.network)
+
 		initTokenService({
 			profile: appStore.profile,
 			network: appStore.network,
 			account: appStore.account,
+			onTokenAdded: appStore.onTokenAdded,
 		})
 		initTransactionService(() => {
 			appStore.isAwaitingTransaction = false

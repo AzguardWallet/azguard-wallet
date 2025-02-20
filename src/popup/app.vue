@@ -125,6 +125,7 @@ watch(
 				profile: appStore.profile,
 				network: appStore.network,
 				account: appStore.account,
+				onTokenAdded: appStore.onTokenAdded,
 			})
 			await appStore.syncLocalTokens()
 		} else {
@@ -134,6 +135,7 @@ watch(
 				profile: appStore.profile,
 				network: appStore.network,
 				account: appStore.account,
+				onTokenAdded: appStore.onTokenAdded,
 			})
 
 			await appStore.syncLocalTokens()
@@ -179,6 +181,7 @@ const loadProfile = async () => {
 			profile: appStore.profile,
 			network: appStore.network,
 			account: appStore.account,
+			onTokenAdded: appStore.onTokenAdded,
 		})
 		initTransactionService(tx => {
 			appStore.transactions.unshift(tx)

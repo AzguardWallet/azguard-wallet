@@ -61,6 +61,7 @@ const handleCreateProfile = async () => {
 		profile: appStore.profile,
 		network: appStore.network,
 		account: appStore.account,
+		onTokenAdded: appStore.onTokenAdded,
 	})
 
 	await chrome.storage.local.set({
