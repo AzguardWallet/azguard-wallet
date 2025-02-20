@@ -58,5 +58,6 @@ export const initTokenService = ({ profile, network, account, onTokenAdded, onTo
 }
 
 export const initTransactionService = onTransactionAdded => {
+	if (managers.transaction) managers.transaction.dispose()
 	managers.transaction = new TransactionServiceClient(null, null, onTransactionAdded)
 }

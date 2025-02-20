@@ -77,9 +77,8 @@ const handleUnlockWallet = async () => {
 			account: appStore.account,
 			onTokenAdded: appStore.onTokenAdded,
 		})
-		initTransactionService(() => {
-			appStore.isAwaitingTransaction = false
-		})
+		initTransactionService(appStore.onTxAdded)
+
 		await appStore.syncLocalTokens()
 		appStore.syncBalances()
 		await appStore.syncTransactions()

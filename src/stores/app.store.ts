@@ -12,8 +12,6 @@ export const useAppStore = defineStore("app", () => {
 
 	const isLoading = ref(false)
 
-	const isAwaitingTransaction = ref(false)
-
 	const displayOption = ref("total_account_value")
 
 	const profile = ref()
@@ -121,8 +119,6 @@ export const useAppStore = defineStore("app", () => {
 				)
 			}
 
-			console.log(newBalance)
-
 			const oldBalanceIdx = balances.value.findIndex(b => b.id === newBalance.id)
 			if (oldBalanceIdx === -1) {
 				balances.value.push(newBalance)
@@ -150,7 +146,12 @@ export const useAppStore = defineStore("app", () => {
 		networks.value = networks.value.filter(n => n.id !== target.id)
 	}
 
+	const isAwaitingTransaction = ref(false)
 	const transactions = ref([])
+	const onTxAdded = tx => {
+		transactions.value.unshift(tx)
+		isAwaitingTransaction.value = false
+	}
 	const syncTransactions = async () => {
 		transactions.value = (await managers.transaction.getTransactions(account.value))
 			.filter(t => t.account === account.value?.address)
@@ -199,6 +200,7 @@ export const useAppStore = defineStore("app", () => {
 		updateNetwork,
 		removeNetwork,
 		transactions,
+		onTxAdded,
 		syncTransactions,
 		showSendPopup,
 		showRegisterPopup,

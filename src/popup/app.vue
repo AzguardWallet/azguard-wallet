@@ -183,10 +183,7 @@ const loadProfile = async () => {
 			account: appStore.account,
 			onTokenAdded: appStore.onTokenAdded,
 		})
-		initTransactionService(tx => {
-			appStore.transactions.unshift(tx)
-			appStore.isAwaitingTransaction = false
-		})
+		initTransactionService(appStore.onTxAdded)
 
 		await appStore.syncLocalTokens()
 		appStore.syncBalances()
