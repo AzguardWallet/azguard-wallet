@@ -106,11 +106,9 @@ const handleCreateToken = async () => {
 			return
 		}
 
-		const newToken = await managers.token.addToken(parsingResult)
+		await managers.token.addToken(parsingResult)
 
 		isAddingNewToken.value = false
-
-		appStore.tokens.push(newToken)
 
 		await appStore.syncBalances()
 
@@ -130,9 +128,7 @@ const handleSaveToken = async () => {
 	isSavingToken.value = true
 
 	try {
-		const newToken = await managers.token.addToken(rawToken.value)
-
-		appStore.tokens.push(newToken)
+		await managers.token.addToken(rawToken.value)
 
 		await appStore.syncBalances()
 
@@ -189,7 +185,7 @@ watch(
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="4">
 								<Icon name="warning" size="12" color="orange" />
-								<Text size="12" weight="600" color="primary"> Already imported </Text>
+								<Text size="12" weight="600" color="primary"> Already exist </Text>
 							</Flex>
 						</Transition>
 					</template>
@@ -208,10 +204,10 @@ watch(
 						v-if="isCompleted"
 						@click="handleCreateToken"
 						wide
-						type="primary"
+						:type="isLoadingParseResult || isAddingNewToken ? 'secondary' : 'primary'"
 						size="medium"
 						:loading="isLoadingParseResult || isAddingNewToken"
-						:disabled="!isAvailableToCreateToken"
+						:disabled="!isAvailableToCreateToken || isLoadingParseResult || isAddingNewToken"
 					>
 						{{
 							(isLoadingParseResult && "Awaiting token interface") ||
