@@ -172,22 +172,7 @@ const handleDeleteToken = () => {
 						<Icon name="arrow-right" size="12" color="secondary" style="transform: rotate(180deg)" />
 					</Button>
 
-					<Tooltip :class="$style.token_address_badge">
-						<Flex @click="handleCopyContractAddress" align="center" gap="6" :class="[$style.badge]">
-							<Text size="12" weight="600" color="secondary">
-								{{ token.contract.slice(0, 6) }}
-								<Text color="dark">•••</Text>
-								{{ token.contract.slice(-4) }}
-							</Text>
-							<Icon
-								:name="isCopied ? 'check' : 'copy'"
-								size="12"
-								:color="isCopied ? 'green' : 'tertiary'"
-							/>
-						</Flex>
-
-						<template #content> Token contact address </template>
-					</Tooltip>
+					<Text size="12" weight="600" color="secondary" :class="$style.middle">{{ token.name }}</Text>
 
 					<Flex align="center" gap="4">
 						<Tooltip position="end">
@@ -339,10 +324,15 @@ const handleDeleteToken = () => {
 	min-height: 20px;
 }
 
-.token_address_badge {
+.middle {
+	max-width: 180px;
 	position: absolute;
 	left: 50%;
 	transform: translateX(-50%);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .balance {
