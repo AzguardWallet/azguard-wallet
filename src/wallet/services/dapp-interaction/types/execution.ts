@@ -28,7 +28,8 @@ export type Operation =
     RegisterSenderOperation |
     SendTransactionOperation | 
     SimulateTransactionOperation | 
-    SimulateUnconstrainedOperation;
+    SimulateUnconstrainedOperation |
+    SimulateViewsOperation;
 
 export type AddNoteOperation = {
     kind: OperationKind.AddNote,
@@ -78,6 +79,12 @@ export type SimulateUnconstrainedOperation = {
     args: any[],
 }
 
+export type SimulateViewsOperation = {
+    kind: OperationKind.SimulateViews,
+    account: CaipAccount,
+    calls: (CallAction | EncodedCallAction)[],
+}
+
 export type Action = 
     AddCapsuleAction |
     AddPrivateAuthwitAction |
@@ -113,12 +120,12 @@ export type CallAction = {
 export type EncodedCallAction = {
     kind: ActionKind.EncodedCall,
     to: string,
-    name: string,
+    name?: string,
     selector: string,
-    type: string,
-    isStatic: boolean,
+    type?: string,
+    isStatic?: boolean,
     args: string[],
-    returnTypes: unknown[],
+    returnTypes?: unknown[],
 }
 
 export type AuthwitContent =
@@ -139,12 +146,12 @@ export type EncodedCallAuthwitContent = {
     kind: AuthwitContentKind.EncodedCall,
     caller: string,
     to: string,
-    name: string,
+    name?: string,
     selector: string,
-    type: string,
-    isStatic: boolean,
+    type?: string,
+    isStatic?: boolean,
     args: string[],
-    returnTypes: unknown[],
+    returnTypes?: unknown[],
 }
 
 export type IntentAuthwitContent = {

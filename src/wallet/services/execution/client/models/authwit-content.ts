@@ -24,12 +24,12 @@ export class EncodedCallAuthwitContent implements IAuthwitContent {
     public constructor(
         public readonly caller: string,
         public readonly to: string,
-        public readonly name: string,
         public readonly selector: string,
-        public readonly type: string,
-        public readonly isStatic: boolean,
         public readonly args: string[],
-        public readonly returnTypes: unknown[],
+        public name?: string,
+        public type?: string,
+        public isStatic?: boolean,
+        public returnTypes?: unknown[],
     ) {}
 }
 

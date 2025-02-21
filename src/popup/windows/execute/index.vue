@@ -86,7 +86,8 @@ const init = async () => {
 				case OperationKind.GetCompleteAddress:
 				case OperationKind.SendTransaction:
 				case OperationKind.SimulateTransaction:
-				case OperationKind.SimulateUnconstrained: {
+				case OperationKind.SimulateUnconstrained:
+				case OperationKind.SimulateViews: {
 					const [_, chainId, address] = op.account.split(":")
 					const networks = await networkClient.getNetworks(+chainId)
 					if (networks.length === 0) {

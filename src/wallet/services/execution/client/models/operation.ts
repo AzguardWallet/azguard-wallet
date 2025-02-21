@@ -1,4 +1,4 @@
-import { IAction } from ".";
+import { CallAction, EncodedCallAction, IAction } from ".";
 
 export enum OperationKind {
     AddNote = "add_note",
@@ -8,6 +8,7 @@ export enum OperationKind {
     SendTransaction = "send_transaction",
     SimulateTransaction = "simulate_transaction",
     SimulateUnconstrained = "simulate_unconstrained",
+    SimulateViews = "simulate_views",
 }
 
 export interface IOperation {
@@ -78,5 +79,14 @@ export class SimulateUnconstrainedOperation implements IOperation {
         public readonly contract: string,
         public readonly method: string,
         public readonly args: any[],
+    ) {}
+}
+
+export class SimulateViewsOperation implements IOperation {
+    public readonly kind = OperationKind.SimulateViews;
+    public constructor(
+        public readonly networkId: string,
+        public readonly accountAddress: string,
+        public readonly calls: (CallAction | EncodedCallAction)[],
     ) {}
 }

@@ -19,9 +19,12 @@ import {
     ContractInstanceWithAddressSchema,
 } from "@aztec/circuits.js";
 import {
+    AbiDecoded,
+    AbiType,
     AbiTypeSchema,
     ContractArtifact,
     ContractArtifactSchema,
+    decodeFromAbi,
     encodeArguments,
     FunctionSelector,
     FunctionType,
@@ -69,6 +72,7 @@ import {
     SendTransactionOperation,
     SimulateTransactionOperation,
     SimulateUnconstrainedOperation,
+    SimulateViewsOperation,
     OperationStatus,
     IOperationResult,
     SkippedOperationResult,
@@ -305,6 +309,10 @@ export class ExecutionService extends Service {
                         result = await this.executeSimulateUnconstrained(operation as SimulateUnconstrainedOperation);
                         break;
                     }
+                    case OperationKind.SimulateViews: {
+                        result = await this.executeSimulateViews(operation as SimulateViewsOperation);
+                        break;
+                    }
                     default: {
                         throw new Error("Invalid operation");
                     }
@@ -407,7 +415,7 @@ export class ExecutionService extends Service {
         };
     }
     
-    async executeSimulateUnconstrained(op: SimulateUnconstrainedOperation): Promise<unknown> {
+    async executeSimulateUnconstrained(op: SimulateUnconstrainedOperation): Promise<AbiDecoded> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -432,6 +440,207 @@ export class ExecutionService extends Service {
             undefined,
             [account.address],
         );
+    }
+    
+    async executeSimulateViews(op: SimulateViewsOperation): Promise<{encoded: Fr[][], decoded: AbiDecoded[]}> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(op.networkId);
+        const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
+        
+        const pxe = createPXEClient(network.rpcUrl);
+        const contracts = this.getContracts(op.calls);
+        const instances = await this.getInstances(pxe, contracts);
+        const artifacts = await this.getArtifacts(pxe, instances);
+
+        const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
+        for (const [contract, instance] of instances) {
+            if (!registeredContracts.has(contract)) {
+                console.debug("Register contract");
+                await pxe.registerContract({
+                    instance,
+                    artifact: artifacts.get(instance.contractClassId.toString()),
+                });
+            }
+        }
+
+        const result: {
+            encoded: Fr[][],
+            decoded: AbiDecoded[],
+        } = {
+            encoded: [],
+            decoded: [],
+        };
+        
+        const args: HashedValues[] = [];
+        const calls: [AzguardFunctionCall, number, number, AbiType[]][] = [];
+        const unconstrained: [Promise<AbiDecoded>, number, AbiType[]][] = [];
+        const ensureArray = (value: any): any[] => Array.isArray(value) ? value : [value];
+        let privateCalls = 0;
+        let publicCalls = 0;
+
+        for (let i = 0; i < op.calls.length; i++) {
+            switch (op.calls[i].kind) {
+                case ActionKind.Call: {
+                    const _call = op.calls[i] as CallAction;
+                    const instance = instances.get(_call.contract);
+                    if (!instance) {
+                        throw new Error("Contract not found");
+                    }
+                    const artifact = artifacts.get(instance.contractClassId.toString());
+                    if (!artifact) {
+                        throw new Error("Contract not found");
+                    }
+                    const fn = artifact.functions.find(x => x.name === _call.method);
+                    if (!fn) {
+                        throw new Error("Method not found");
+                    }
+                    console.log(fn.name, (await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)).toString())
+                    if (fn.functionType === FunctionType.UNCONSTRAINED) {
+                        unconstrained.push([
+                            pxe.simulateUnconstrained(
+                                _call.method,
+                                _call.args,
+                                AztecAddress.fromString(_call.contract),
+                                account.address,
+                                [account.address],
+                            ),
+                            i,
+                            fn.returnTypes,
+                        ]);
+                    }
+                    else {
+                        const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
+                        const packedArgs = await HashedValues.fromValues(encodeArguments(fn, _call.args));
+                        args.push(packedArgs);
+                        calls.push([
+                            new AzguardFunctionCall(
+                                AztecAddress.fromString(_call.contract),
+                                fnSelector,
+                                packedArgs.hash,
+                                fn.functionType === FunctionType.PUBLIC,
+                                fn.isStatic,
+                            ),
+                            i,
+                            fn.functionType === FunctionType.PUBLIC ? (publicCalls++) : (privateCalls++),
+                            fn.returnTypes,
+                        ]);
+                    }
+                    console.debug("Call enqueued.");
+                    break;
+                }
+                case ActionKind.EncodedCall: {
+                    const _call = op.calls[i] as EncodedCallAction;
+                    const instance = instances.get(_call.to);
+                    if (!instance) {
+                        throw new Error("Contract not found");
+                    }
+                    const artifact = artifacts.get(instance.contractClassId.toString());
+                    if (!artifact) {
+                        throw new Error("Contract not found");
+                    }
+                    let fn;
+                    for (const _fn of artifact.functions) {
+                        const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
+                        if (selector.toString() === _call.selector) {
+                            fn = _fn;
+                            break;
+                        }
+                    }
+                    if (!fn) {
+                        throw new Error("Method not found");
+                    }
+                    if (fn.functionType === FunctionType.UNCONSTRAINED) {
+                        let decodedArgs;
+                        try {
+                            decodedArgs = ensureArray(decodeFromAbi(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
+                        }
+                        catch (error) {
+                            console.error("Failed to decode unconstrained call args", fn.parameters, _call.args);
+                            throw new Error(`Failed to decode unconstrained "encoded_call" args: ${(error as Error)?.message}. Try to use "call" instead.`);
+                        }
+                        unconstrained.push([
+                            pxe.simulateUnconstrained(
+                                fn.name,
+                                decodedArgs,
+                                AztecAddress.fromString(_call.to),
+                                account.address,
+                                [account.address],
+                            ),
+                            i,
+                            fn.returnTypes,
+                        ]);
+                    }
+                    else {
+                        const packedArgs = await HashedValues.fromValues(_call.args.map(x => Fr.fromString(x)));
+                        args.push(packedArgs);
+                        calls.push([
+                            new AzguardFunctionCall(
+                                AztecAddress.fromString(_call.to),
+                                FunctionSelector.fromString(_call.selector),
+                                packedArgs.hash,
+                                fn.functionType === FunctionType.PUBLIC,
+                                fn.isStatic,
+                            ),
+                            i,
+                            fn.functionType === FunctionType.PUBLIC ? (publicCalls++) : (privateCalls++),
+                            fn.returnTypes,
+                        ]);
+                    }
+                    console.debug("EncodedCall enqueued.");
+                    break;
+                }
+            }
+        }
+
+        const txRequest = await account.buildTxExecutionRequest(pxe, [], calls.map(x => x[0]), args, Fr.zero());
+        const simulatedTx = await pxe.simulateTx(
+            txRequest,
+            true,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            [account.address],
+        );
+
+        const publicReturn = simulatedTx.getPublicReturnValues();
+        const privateReturn = simulatedTx.getPrivateReturnValues().nested;
+
+        for (const [call, i, j, types] of calls) {
+            const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? [];
+            result.encoded[i] = values;
+            try {
+                result.decoded[i] = decodeFromAbi(types, values);
+            }
+            catch (error) {
+                console.error("Failed to decode simulation results", types, values, error);
+            }
+        }
+
+        for (const [promise, i, types] of unconstrained) {
+            const values = await promise;
+            try {
+                result.encoded[i] = encodeArguments(
+                    {
+                        parameters: types.map((x, ind) => ({
+                            type: x,
+                            name: `result${ind}`,
+                            visibility: "public"
+                        })),
+                    } as any,
+                    ensureArray(values),
+                );
+            }
+            catch (error) {
+                console.error("Failed to encode unconstrained simulation results", types, values, error);
+            }
+            result.decoded[i] = values;
+        }
+
+        return result;
     }
     
     async processTx(op: {
@@ -543,7 +752,7 @@ export class ExecutionService extends Service {
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
-                            messageHash = await this.getEncodedCallMessageHash(_content, network);
+                            messageHash = await this.getEncodedCallMessageHash(_content, network, instances, artifacts);
                             await this.pxeService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
                             );
@@ -595,7 +804,7 @@ export class ExecutionService extends Service {
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
-                            messageHash = await this.getEncodedCallMessageHash(_content, network);
+                            messageHash = await this.getEncodedCallMessageHash(_content, network, instances, artifacts);
                             await this.pxeService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, true,
                             );
@@ -675,6 +884,29 @@ export class ExecutionService extends Service {
                 }
                 case ActionKind.EncodedCall: {
                     const _action = (action as EncodedCallAction)!;
+                    if (_action.type === undefined || _action.isStatic === undefined) {
+                        const instance = instances.get(_action.to);
+                        if (!instance) {
+                            throw new Error("Contract not found");
+                        }
+                        const artifact = artifacts.get(instance.contractClassId.toString());
+                        if (!artifact) {
+                            throw new Error("Contract not found");
+                        }
+                        let fn;
+                        for (const _fn of artifact.functions) {
+                            const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
+                            if (selector.toString() === _action.selector) {
+                                fn = _fn;
+                                break;
+                            }
+                        }
+                        if (!fn) {
+                            throw new Error("Method not found");
+                        }
+                        _action.type = fn.functionType;
+                        _action.isStatic = fn.isStatic;
+                    }
                     const packedArgs = await HashedValues.fromValues(_action.args.map(x => Fr.fromString(x)));
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
@@ -737,7 +969,38 @@ export class ExecutionService extends Service {
     async getEncodedCallMessageHash(
         content: EncodedCallAuthwitContent,
         network: Network,
+        instances: Map<string, ContractInstanceWithAddress>,
+        artifacts: Map<string, ContractArtifact>,
     ): Promise<Fr> {
+        if (content.name === undefined ||
+            content.type === undefined ||
+            content.isStatic === undefined ||
+            content.returnTypes === undefined
+        ) {
+            const instance = instances.get(content.to);
+            if (!instance) {
+                throw new Error("Contract not found");
+            }
+            const artifact = artifacts.get(instance.contractClassId.toString());
+            if (!artifact) {
+                throw new Error("Contract not found");
+            }
+            let fn;
+            for (const _fn of artifact.functions) {
+                const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
+                if (selector.toString() === content.selector) {
+                    fn = _fn;
+                    break;
+                }
+            }
+            if (!fn) {
+                throw new Error("Method not found");
+            }
+            content.name = fn.name;
+            content.type = fn.functionType;
+            content.isStatic = fn.isStatic;
+            content.returnTypes = fn.returnTypes;
+        }
         return await computeAuthWitMessageHash(
             {
                 caller: AztecAddress.fromString(content.caller),

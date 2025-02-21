@@ -49,12 +49,12 @@ export class EncodedCallAction implements IAction {
     public readonly kind = ActionKind.EncodedCall;
     public constructor(
         public readonly to: string,
-        public readonly name: string,
         public readonly selector: string,
-        public readonly type: string,
-        public readonly isStatic: boolean,
         public readonly args: string[],
-        public readonly returnTypes: unknown[],
+        public name?: string,
+        public type?: string,
+        public isStatic?: boolean,
+        public returnTypes?: unknown[],
     ) {}
 }
 

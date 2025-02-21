@@ -29,7 +29,8 @@ import {
     RegisterSenderOperation,
     SendTransactionOperation,
     SimulateTransactionOperation,
-    SimulateUnconstrainedOperation, 
+    SimulateUnconstrainedOperation,
+    SimulateViewsOperation,
 } from "./types";
 
 type DappInteraction = {
@@ -229,6 +230,14 @@ export class DappInteractionService extends Service {
                     const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
                     this.checkAccountPermission(session, _operation.account);
                     this.checkMethodPermission(session, _operation.kind, chain);
+                    break;
+                }
+                case OperationKind.SimulateViews: {
+                    const _operation = operation as SimulateViewsOperation;
+                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
+                    this.checkAccountPermission(session, _operation.account);
+                    this.checkMethodPermission(session, _operation.kind, chain);
+                    _operation.calls.forEach(x => this.checkMethodPermission(session, x.kind, chain));
                     break;
                 }
             }

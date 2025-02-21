@@ -15,6 +15,7 @@ import {
     SendTransactionOperation,
     SimulateTransactionOperation,
     SimulateUnconstrainedOperation,
+    SimulateViewsOperation,
     Action,
     AddCapsuleAction,
     AddPrivateAuthwitAction,
@@ -86,6 +87,7 @@ export function parseMethod(data: any): string {
         case OperationKind.SendTransaction:
         case OperationKind.SimulateTransaction:
         case OperationKind.SimulateUnconstrained:
+        case OperationKind.SimulateViews:
         case ActionKind.AddCapsule:
         case ActionKind.AddPrivateAuthwit:
         case ActionKind.AddPublicAuthwit:
@@ -139,6 +141,9 @@ function parseOperation(data: any): Operation {
         }
         case OperationKind.SimulateUnconstrained: {
             return parseSimulateUnconstrainedOperation(data);
+        }
+        case OperationKind.SimulateViews: {
+            return parseSimulateViewsOperation(data);
         }
         default: {
             throw new Error("Invalid operation");
@@ -208,6 +213,15 @@ function parseSimulateUnconstrainedOperation(data: any): SimulateUnconstrainedOp
     };
 }
 
+function parseSimulateViewsOperation(data: any): SimulateViewsOperation {
+    return {
+        kind: OperationKind.SimulateViews,
+        account: parseAccountProp(data, "account"),
+        calls: parseArrayProp(data, "calls", parseAction)
+            .filter(x => x.kind === "call" || x.kind === "encoded_call"),
+    };
+}
+
 function parseAction(data: any): Action {
     switch (data?.kind) {
         case ActionKind.AddCapsule: {
@@ -268,12 +282,12 @@ function parseEncodedCallAction(data: any): EncodedCallAction {
     return {
         kind: ActionKind.EncodedCall,
         to: parseStringProp(data, "to"),
-        name: parseStringProp(data, "name"),
+        name: parseOptionalStringProp(data, "name"),
         selector: parseStringProp(data, "selector"),
-        type: parseStringProp(data, "type"),
-        isStatic: parseBooleanProp(data, "isStatic"),
+        type: parseOptionalStringProp(data, "type"),
+        isStatic: parseOptionalBooleanProp(data, "isStatic"),
         args: parseArrayProp(data, "args", parseString),
-        returnTypes: parseArrayProp(data, "returnTypes"),
+        returnTypes: parseOptionalArrayProp(data, "returnTypes"),
     };
 }
 
@@ -312,12 +326,12 @@ function parseEncodedCallAuthwitContent(data: any): EncodedCallAuthwitContent {
         kind: AuthwitContentKind.EncodedCall,
         caller: parseStringProp(data, "caller"),
         to: parseStringProp(data, "to"),
-        name: parseStringProp(data, "name"),
+        name: parseOptionalStringProp(data, "name"),
         selector: parseStringProp(data, "selector"),
-        type: parseStringProp(data, "type"),
-        isStatic: parseBooleanProp(data, "isStatic"),
+        type: parseOptionalStringProp(data, "type"),
+        isStatic: parseOptionalBooleanProp(data, "isStatic"),
         args: parseArrayProp(data, "args", parseString),
-        returnTypes: parseArrayProp(data, "returnTypes"),
+        returnTypes: parseOptionalArrayProp(data, "returnTypes"),
     };
 }
 
