@@ -206,7 +206,8 @@ const handleClear = () => {
 }
 
 .base.disabled {
-	opacity: 0.5;
+	opacity: 0.8;
+	background: var(--gray-10);
 	pointer-events: none;
 }
 
