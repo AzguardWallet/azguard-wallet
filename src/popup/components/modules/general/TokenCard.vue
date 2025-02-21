@@ -37,7 +37,7 @@ const handleRefreshBalance = async () => {
 
 <template>
 	<SettingItem
-		:to="`/popup/tokens/${token.id}`"
+		:to="token.id !== -1 ? `/popup/tokens/${token.id}` : null"
 		size="large"
 		:title="token.symbol"
 		:description="token.name"

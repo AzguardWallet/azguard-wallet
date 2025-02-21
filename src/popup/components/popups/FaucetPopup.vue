@@ -95,15 +95,6 @@ const handleMint = async () => {
 	if (!isAllowedToMint.value) return
 
 	try {
-		managers.faucet.mint(
-			appStore.network.id,
-			appStore.account.address,
-			tokenNameTerm.value.trim(),
-			tokenSymbolTerm.value.trim(),
-			8,
-			new BN(amountTerm.value).times(10 ** 8).dividedBy(2),
-		)
-
 		appStore.dummyTokens.push({
 			id: -1,
 			symbol: tokenSymbolTerm.value.trim(),
@@ -112,9 +103,20 @@ const handleMint = async () => {
 
 		emit("onClose")
 
-		openToast({ label: "Mint is requested" })
+		await managers.faucet.mint(
+			appStore.network.id,
+			appStore.account.address,
+			tokenNameTerm.value.trim(),
+			tokenSymbolTerm.value.trim(),
+			8,
+			new BN(amountTerm.value).times(10 ** 8).dividedBy(2),
+		)
 	} catch (err) {
 		error.value = err
+
+		openToast({ label: "Failed to mint", icon: "warning" })
+
+		appStore.dummyTokens.pop()
 	}
 }
 
