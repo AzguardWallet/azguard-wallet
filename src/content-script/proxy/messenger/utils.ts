@@ -82,7 +82,12 @@ export async function decrypt<T>(payload: string, key: CryptoKey): Promise<T> {
 }
 
 function bytesToBase64(bytes: ArrayBuffer) {
-    return window.btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(bytes))));
+    let res = "";
+    const array = new Uint8Array(bytes);
+    for (let i = 0; i < array.byteLength; i++) {
+        res += String.fromCharCode(array[i]);
+    }
+    return window.btoa(res);
 }
 
 function base64ToBytes(base64: string) {
