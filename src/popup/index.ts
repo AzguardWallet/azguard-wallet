@@ -6,6 +6,27 @@ import routes from "~pages"
 import "@/assets/styles/base.scss"
 import "./index.scss"
 
+/** Configure BigNumber format */
+import BigNumber from 'bignumber.js';
+
+const getDecimalSeparator = () => {
+    const s = (1.1).toLocaleString();
+    return s.substring(1, s.length - 1);
+};
+
+const getThousandSeparator = () => {
+    const s = (1111).toLocaleString();
+    return s.substring(1, s.length - 3);
+};
+
+BigNumber.config({
+    FORMAT: {
+        decimalSeparator: getDecimalSeparator(),
+        groupSeparator: getThousandSeparator(),
+        groupSize: 3,
+    },
+});
+
 import { managers } from "@/utils/core.js"
 
 /** Store */
