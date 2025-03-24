@@ -1,5 +1,11 @@
-import { AztecAddress, ContractArtifact, Fr } from "@aztec/aztec.js";
-import { FunctionAbi, FunctionType, StructType } from "@aztec/foundation/abi";
+import { Fr } from "@aztec/foundation/fields";
+import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import {
+	ContractArtifact,
+	FunctionAbi,
+	FunctionType,
+	StructType,
+} from "@aztec/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
 
 export enum BalanceOfPublicImpl {
@@ -67,12 +73,9 @@ export class DefaultBalanceOfPublicFn extends BalanceOfPublicFn {
 			],
 			returnTypes: [
 				{
-					fields: [
-						{ name: "lo", type: { kind: "field" } },
-						{ name: "hi", type: { kind: "field" } },
-					],
-					kind: "struct",
-					path: "std::uint128::U128",
+					kind: "integer",
+					sign: "unsigned",
+					width: 128,
 				},
 			],
 			errorTypes: {
@@ -114,7 +117,7 @@ export class DefaultBalanceOfPublicFn extends BalanceOfPublicFn {
 
 	public static getCandidates(artifact: ContractArtifact): BalanceOfPublicFn[] {
 		const res = [];
-		for (const fn of artifact.functions) {
+		for (const fn of artifact.nonDispatchPublicFunctions) {
 			if (
 				!fn.isInitializer &&
 				!fn.isInternal &&
@@ -124,7 +127,7 @@ export class DefaultBalanceOfPublicFn extends BalanceOfPublicFn {
 				(fn.parameters[0].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
 				fn.returnTypes.length === 1 &&
-				(fn.returnTypes[0] as StructType)?.path === "std::uint128::U128"
+				fn.returnTypes[0].kind === "integer"
 			) {
 				res.push(new DefaultBalanceOfPublicFn(fn.name));
 			}

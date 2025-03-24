@@ -1,5 +1,11 @@
-import { AztecAddress, ContractArtifact, Fr } from "@aztec/aztec.js";
-import { FunctionAbi, FunctionType, StructType } from "@aztec/foundation/abi";
+import { Fr } from "@aztec/foundation/fields";
+import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import {
+	ContractArtifact,
+	FunctionAbi,
+	FunctionType,
+	StructType,
+} from "@aztec/stdlib/abi";
 import { Fn } from "@/wallet/utils/fn";
 
 export enum TransferPublicImpl {
@@ -83,12 +89,9 @@ export class DefaultTransferPublicFn extends TransferPublicFn {
 				{
 					name: "amount",
 					type: {
-						fields: [
-							{ name: "lo", type: { kind: "field" } },
-							{ name: "hi", type: { kind: "field" } },
-						],
-						kind: "struct",
-						path: "std::uint128::U128",
+						kind: "integer",
+						sign: "unsigned",
+						width: 128,
 					},
 					visibility: "private",
 				},
@@ -150,7 +153,7 @@ export class DefaultTransferPublicFn extends TransferPublicFn {
 
 	public static getCandidates(artifact: ContractArtifact): TransferPublicFn[] {
 		const res = [];
-		for (const fn of artifact.functions) {
+		for (const fn of artifact.nonDispatchPublicFunctions) {
 			if (
 				!fn.isInitializer &&
 				!fn.isInternal &&
@@ -164,7 +167,7 @@ export class DefaultTransferPublicFn extends TransferPublicFn {
 				(fn.parameters[1].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
 				fn.parameters[2].name === "amount" &&
-				(fn.parameters[2].type as StructType)?.path === "std::uint128::U128" &&
+				fn.parameters[2].type.kind === "integer" &&
 				fn.parameters[3].name === "nonce" &&
 				fn.parameters[3].type.kind === "field" &&
 				fn.returnTypes.length === 0

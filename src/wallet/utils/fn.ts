@@ -1,6 +1,18 @@
-import { AztecAddress, Fr, FunctionSelector, HashedValues,PXE } from "@aztec/aztec.js";
-import { NestedProcessReturnValues, TxReceipt, TxStatus } from "@aztec/circuit-types";
-import { encodeArguments, FunctionAbi, FunctionType } from "@aztec/foundation/abi";
+import { Fr } from "@aztec/foundation/fields";
+import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { PXE } from "@aztec/stdlib/interfaces/client";
+import {
+    HashedValues,
+    NestedProcessReturnValues,
+    TxReceipt,
+    TxStatus,
+} from "@aztec/stdlib/tx";
+import {
+    encodeArguments,
+    FunctionAbi,
+    FunctionSelector,
+    FunctionType,
+} from "@aztec/stdlib/abi";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
 import { sleep } from "./sleep";
 
@@ -97,7 +109,7 @@ export async function simulate(
 
     const txRequest = await account.buildTxExecutionRequest(pxe, [], [call], [packedArgs], Fr.zero());
 
-    const tx = await pxe.simulateTx(txRequest, true);
+    const tx = await pxe.simulateTx(txRequest, true, undefined, undefined, true);
 
     return viewFn.type === FunctionType.PUBLIC
         ? viewFn.unpackResult(extractReturnValues(tx.getPublicReturnValues()))

@@ -1,6 +1,7 @@
-import { AztecAddress, PXE } from "@aztec/aztec.js"
-import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/circuits.js"
-import { FunctionAbi, FunctionSelector } from "@aztec/foundation/abi"
+import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/constants"
+import { FunctionAbi, FunctionSelector } from "@aztec/stdlib/abi"
+import { AztecAddress } from "@aztec/stdlib/aztec-address"
+import { PXE } from "@aztec/stdlib/interfaces/client"
 
 export const getAuthRegistryAddress = () => AztecAddress.fromNumber(CANONICAL_AUTH_REGISTRY_ADDRESS)
 

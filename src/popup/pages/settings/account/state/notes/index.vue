@@ -90,7 +90,7 @@ watch(
 
 						<Flex direction="column" gap="8">
 							<Text size="14" weight="600" color="primary"> Note </Text>
-							<Text size="13" weight="600" color="tertiary"> Type ID - {{ note.noteTypeId }} </Text>
+							<Text size="13" weight="600" color="tertiary"> Storage slot - {{ note.storageSlot }} </Text>
 						</Flex>
 					</Flex>
 

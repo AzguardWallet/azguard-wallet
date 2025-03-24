@@ -1,4 +1,6 @@
-import { createPXEClient, PXE, TxHash, TxStatus as AztecTxStatus } from "@aztec/aztec.js";
+import { createPXEClient } from "@aztec/aztec.js";
+import { PXE } from "@aztec/stdlib/interfaces/client";
+import { TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import { AccountService } from "@/wallet/services/account";

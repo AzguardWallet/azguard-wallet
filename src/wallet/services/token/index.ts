@@ -1,3 +1,6 @@
+import { createPXEClient } from "@aztec/aztec.js"
+import { AztecAddress } from "@aztec/stdlib/aztec-address"
+import { PXE } from "@aztec/stdlib/interfaces/client"
 import {
 	EventMessage,
 	RequestMessage,
@@ -7,6 +10,8 @@ import { Service } from "@/wallet/base/service"
 import { NetworkService } from "@/wallet/services/network"
 import { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage"
+import { array_max } from "@/wallet/utils"
+import { FnImpl, simulate } from "@/wallet/utils/fn"
 import {
 	AddTokenRequest,
 	AddTokenResponse,
@@ -29,7 +34,6 @@ import {
 	ParseInterfaceRequest,
 	ParseInterfaceResponse,
 } from "./client"
-import { AztecAddress, createPXEClient, PXE } from "@aztec/aztec.js"
 import {
 	BalanceOfPrivateFn,
 	BalanceOfPublicFn,
@@ -41,8 +45,6 @@ import {
 	TransferPublicFn,
 	TransferPublicToPrivateFn,
 } from "./functions"
-import { array_max } from "@/wallet/utils"
-import { FnImpl, simulate } from "@/wallet/utils/fn"
 import { AccountService } from "../account"
 import { IAccountContract } from "../account/contracts"
 
@@ -338,7 +340,7 @@ export class TokenService extends Service {
 			throw new Error("contract instance not found")
 		}
 
-		const classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.contractClassId, true);
+		const classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
 		if (!classMetadata.isContractClassPubliclyRegistered) {
 			throw new Error("contract class not registered")
 		}
@@ -420,7 +422,7 @@ export class TokenService extends Service {
 			throw new Error("contract instance not found")
 		}
 
-		const classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.contractClassId, true);
+		const classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
 		if (!classMetadata.isContractClassPubliclyRegistered) {
 			throw new Error("contract class not registered")
 		}

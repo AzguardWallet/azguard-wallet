@@ -8,7 +8,6 @@ export class Note {
      * @param owner The owner whose public key was used to encrypt the note.
      * @param contractAddress The contract address this note is created in.
      * @param storageSlot The specific storage location of the note on the contract.
-     * @param noteTypeId The type identifier of the note on the contract.
      * @param txHash The hash of the tx the note was created in.
      * @param nonce The nonce of the note.
      */
@@ -17,7 +16,6 @@ export class Note {
         public readonly owner: string,
         public readonly contractAddress: string,
         public readonly storageSlot: string,
-        public readonly noteTypeId: string,
         public readonly txHash: string,
         public readonly nonce: string,
     ) {}

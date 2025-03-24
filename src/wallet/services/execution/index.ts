@@ -1,23 +1,9 @@
 import {
-    AztecAddress,
     computeInnerAuthWitHash,
     computeAuthWitMessageHash,
     createPXEClient, 
-    ExtendedNote,
-    Fr,
-    HashedValues,
-    PXE,
-    FunctionCall,
-    ContractInstanceWithAddress,
-    TxExecutionRequest,
-    getContractClassFromArtifact,
-    AuthWitness,
 } from "@aztec/aztec.js";
-import {
-    CompleteAddress,
-    computeContractAddressFromInstance,
-    ContractInstanceWithAddressSchema,
-} from "@aztec/circuits.js";
+import { Fr } from '@aztec/foundation/fields';
 import {
     AbiDecoded,
     AbiType,
@@ -28,7 +14,19 @@ import {
     encodeArguments,
     FunctionSelector,
     FunctionType,
-} from "@aztec/foundation/abi";
+    FunctionCall,
+} from "@aztec/stdlib/abi";
+import { AuthWitness } from '@aztec/stdlib/auth-witness';
+import { AztecAddress } from '@aztec/stdlib/aztec-address';
+import {
+    CompleteAddress,
+    computeContractAddressFromInstance,
+    ContractInstanceWithAddress,
+    ContractInstanceWithAddressSchema,
+    getContractClassFromArtifact,
+} from "@aztec/stdlib/contract";
+import { PXE } from '@aztec/stdlib/interfaces/client';
+import { HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
 import { z } from "zod";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
@@ -327,9 +325,9 @@ export class ExecutionService extends Service {
     }
 
     async executeAddNote(op: AddNoteOperation): Promise<void> {
-        const network = await this.networkService.getNetwork(op.networkId);
-        const pxe = createPXEClient(network.rpcUrl);
-        await pxe.addNote(ExtendedNote.schema.parse(op.note), AztecAddress.fromString(op.accountAddress));
+        // const network = await this.networkService.getNetwork(op.networkId);
+        // const pxe = createPXEClient(network.rpcUrl);
+        // await pxe.addNote(ExtendedNote.schema.parse(op.note), AztecAddress.fromString(op.accountAddress));
     }
 
     async executeGetCompleteAddress(op: GetCompleteAddressOperation): Promise<CompleteAddress> {
@@ -353,13 +351,13 @@ export class ExecutionService extends Service {
         }
 
         const providedArtifact = op.artifact ? ContractArtifactSchema.parse(op.artifact) : undefined;
-        const artifact = providedArtifact ?? (await pxe.getContractClassMetadata(instance.contractClassId, true)).artifact;
+        const artifact = providedArtifact ?? (await pxe.getContractClassMetadata(instance.currentContractClassId, true)).artifact;
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
 
         const contractClass = await getContractClassFromArtifact(artifact);
-        if (contractClass.id.toString() !== instance.contractClassId.toString()) {
+        if (contractClass.id.toString() !== instance.currentContractClassId.toString()) {
             throw new Error("Contract artifact doesn't match instance class id");
         }
 
@@ -428,7 +426,7 @@ export class ExecutionService extends Service {
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         if (!registeredContracts.has(op.contract)) {
             const [_, instance] = await this.getInstance(pxe, op.contract);
-            const [__, artifact] = await this.getArtifact(pxe, instance.contractClassId.toString());
+            const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
             console.debug("Register contract");
             await pxe.registerContract({instance, artifact});
         }
@@ -461,7 +459,7 @@ export class ExecutionService extends Service {
                 console.debug("Register contract");
                 await pxe.registerContract({
                     instance,
-                    artifact: artifacts.get(instance.contractClassId.toString()),
+                    artifact: artifacts.get(instance.currentContractClassId.toString()),
                 });
             }
         }
@@ -489,15 +487,15 @@ export class ExecutionService extends Service {
                     if (!instance) {
                         throw new Error("Contract not found");
                     }
-                    const artifact = artifacts.get(instance.contractClassId.toString());
+                    const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
                         throw new Error("Contract not found");
                     }
-                    const fn = artifact.functions.find(x => x.name === _call.method);
+                    const fn = artifact.functions.find(x => x.name === _call.method)
+                        ?? artifact.nonDispatchPublicFunctions.find(x => x.name === _call.method);
                     if (!fn) {
                         throw new Error("Method not found");
                     }
-                    console.log(fn.name, (await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)).toString())
                     if (fn.functionType === FunctionType.UNCONSTRAINED) {
                         unconstrained.push([
                             pxe.simulateUnconstrained(
@@ -537,7 +535,7 @@ export class ExecutionService extends Service {
                     if (!instance) {
                         throw new Error("Contract not found");
                     }
-                    const artifact = artifacts.get(instance.contractClassId.toString());
+                    const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
                         throw new Error("Contract not found");
                     }
@@ -547,6 +545,15 @@ export class ExecutionService extends Service {
                         if (selector.toString() === _call.selector) {
                             fn = _fn;
                             break;
+                        }
+                    }
+                    if (!fn) {
+                        for (const _fn of artifact.nonDispatchPublicFunctions) {
+                            const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
+                            if (selector.toString() === _call.selector) {
+                                fn = _fn;
+                                break;
+                            }
                         }
                     }
                     if (!fn) {
@@ -667,7 +674,7 @@ export class ExecutionService extends Service {
                 console.debug("Register contract");
                 await pxe.registerContract({
                     instance,
-                    artifact: artifacts.get(instance.contractClassId.toString()),
+                    artifact: artifacts.get(instance.currentContractClassId.toString()),
                 });
             }
         }
@@ -856,11 +863,12 @@ export class ExecutionService extends Service {
                     if (!instance) {
                         throw new Error("Contract not found");
                     }
-                    const artifact = artifacts.get(instance.contractClassId.toString());
+                    const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
                         throw new Error("Contract not found");
                     }
-                    const fn = artifact.functions.find(x => x.name === _action.method);
+                    const fn = artifact.functions.find(x => x.name === _action.method)
+                        ?? artifact.nonDispatchPublicFunctions.find(x => x.name === _action.method);
                     if (!fn) {
                         throw new Error("Method not found");
                     }
@@ -889,7 +897,7 @@ export class ExecutionService extends Service {
                         if (!instance) {
                             throw new Error("Contract not found");
                         }
-                        const artifact = artifacts.get(instance.contractClassId.toString());
+                        const artifact = artifacts.get(instance.currentContractClassId.toString());
                         if (!artifact) {
                             throw new Error("Contract not found");
                         }
@@ -899,6 +907,15 @@ export class ExecutionService extends Service {
                             if (selector.toString() === _action.selector) {
                                 fn = _fn;
                                 break;
+                            }
+                        }
+                        if (!fn) {
+                            for (const _fn of artifact.nonDispatchPublicFunctions) {
+                                const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
+                                if (selector.toString() === _action.selector) {
+                                    fn = _fn;
+                                    break;
+                                }
                             }
                         }
                         if (!fn) {
@@ -938,11 +955,12 @@ export class ExecutionService extends Service {
         if (!instance) {
             throw new Error("Contract not found");
         }
-        const artifact = artifacts.get(instance.contractClassId.toString());
+        const artifact = artifacts.get(instance.currentContractClassId.toString());
         if (!artifact) {
             throw new Error("Contract not found");
         }
-        const fn = artifact.functions.find(x => x.name === content.method);
+        const fn = artifact.functions.find(x => x.name === content.method)
+            ?? artifact.nonDispatchPublicFunctions.find(x => x.name === content.method);
         if (!fn) {
             throw new Error("Method not found");
         }
@@ -981,7 +999,7 @@ export class ExecutionService extends Service {
             if (!instance) {
                 throw new Error("Contract not found");
             }
-            const artifact = artifacts.get(instance.contractClassId.toString());
+            const artifact = artifacts.get(instance.currentContractClassId.toString());
             if (!artifact) {
                 throw new Error("Contract not found");
             }
@@ -991,6 +1009,15 @@ export class ExecutionService extends Service {
                 if (selector.toString() === content.selector) {
                     fn = _fn;
                     break;
+                }
+            }
+            if (!fn) {
+                for (const _fn of artifact.nonDispatchPublicFunctions) {
+                    const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
+                    if (selector.toString() === content.selector) {
+                        fn = _fn;
+                        break;
+                    }
                 }
             }
             if (!fn) {
@@ -1090,8 +1117,8 @@ export class ExecutionService extends Service {
         const classIds = new Set(
             instances
                 .values()
-                .filter(x => !artifacts.has(x.contractClassId.toString()))
-                .map(x => x.contractClassId.toString())
+                .filter(x => !artifacts.has(x.currentContractClassId.toString()))
+                .map(x => x.currentContractClassId.toString())
         );
         console.debug(`Fetching ${classIds.size} artifacts...`);
         const fetched = await Promise.all(

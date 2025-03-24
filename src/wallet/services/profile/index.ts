@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/aztec.js";
+import { Fr } from "@aztec/foundation/fields";
 import { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import { EntityStorage, SimpleStorage, StorageType } from "@/wallet/storage";

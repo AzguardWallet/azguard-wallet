@@ -1,32 +1,38 @@
+import { GeneratorIndex } from '@aztec/constants';
 import {
-    AuthWitness,
-    AztecAddress,
-    deriveKeys,
-    encodeArguments,
     Fr,
-    FunctionSelector,
-    getContractInstanceFromDeployParams,
     GrumpkinScalar,
-    loadContractArtifact,
-    NoirCompiledContract,
-    HashedValues,
-    PublicKey,
-    PXE,
+} from '@aztec/foundation/fields';
+import {
+    poseidon2HashWithSeparator,
+    sha512ToGrumpkinScalar,
     Schnorr,
-    TxExecutionRequest
-} from '@aztec/aztec.js';
+} from '@aztec/foundation/crypto';
+import {
+    encodeArguments,
+    FunctionSelector,
+    loadContractArtifact,
+} from '@aztec/stdlib/abi';
+import { AuthWitness } from '@aztec/stdlib/auth-witness';
+import { AztecAddress } from '@aztec/stdlib/aztec-address';
 import {
     CompleteAddress,
     computePartialAddress,
     ContractInstanceWithAddress,
-    GasSettings,
-    GeneratorIndex,
-    TxContext,
-} from '@aztec/circuits.js';
+    getContractInstanceFromDeployParams,
+} from '@aztec/stdlib/contract';
+import { GasSettings } from '@aztec/stdlib/gas';
+import { PXE } from '@aztec/stdlib/interfaces/client';
+import { 
+    deriveKeys,
+    PublicKey,
+} from '@aztec/stdlib/keys';
+import { NoirCompiledContract } from '@aztec/stdlib/noir';
 import {
-    poseidon2HashWithSeparator,
-    sha512ToGrumpkinScalar,
-} from '@aztec/foundation/crypto';
+    HashedValues,
+    TxContext,
+    TxExecutionRequest,
+} from '@aztec/stdlib/tx';
 import {
     getMulticallEntrypointAddress,
     getMulticallEntrypointFn,
@@ -147,7 +153,7 @@ export class AzguardV0 implements IAccountContract {
         const gasSettings = GasSettings.default({maxFeesPerGas: baseFees});
         const txContext = new TxContext(nodeInfo.l1ChainId, nodeInfo.protocolVersion, gasSettings);
 
-        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits);
+        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, []);
         
         console.debug('registering account...');
         await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
@@ -242,7 +248,7 @@ export class AzguardV0 implements IAccountContract {
         const gasSettings = GasSettings.default({maxFeesPerGas: baseFees});
         const txContext = new TxContext(nodeInfo.l1ChainId, nodeInfo.protocolVersion, gasSettings);
 
-        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits);
+        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, []);
         
         console.debug('registering account...');
         await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
@@ -304,6 +310,7 @@ export class AzguardV0 implements IAccountContract {
             request.txContext,
             [mceArgs, ctorPackedArgs, ...request.argsOfCalls],
             request.authWitnesses,
+            request.capsules,
         );
     }
 }

@@ -1,5 +1,9 @@
-import { ContractArtifact, Fr } from "@aztec/aztec.js";
-import { FunctionAbi, FunctionType } from "@aztec/foundation/abi";
+import { Fr } from "@aztec/foundation/fields";
+import {
+	ContractArtifact,
+	FunctionAbi,
+	FunctionType,
+} from "@aztec/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
 
 export enum GetDecimalsImpl {
@@ -92,7 +96,7 @@ export class DefaultPublicGetDecimalsFn extends GetDecimalsFn {
 
 	public static getCandidates(artifact: ContractArtifact): GetDecimalsFn[] {
 		const res = [];
-		for (const fn of artifact.functions) {
+		for (const fn of artifact.nonDispatchPublicFunctions) {
 			if (
 				!fn.isInitializer &&
 				!fn.isInternal &&

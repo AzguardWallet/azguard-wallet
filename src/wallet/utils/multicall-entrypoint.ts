@@ -1,6 +1,6 @@
-import { AztecAddress } from "@aztec/aztec.js"
-import { MULTI_CALL_ENTRYPOINT_ADDRESS } from "@aztec/circuits.js"
-import { FunctionAbi, FunctionSelector } from "@aztec/foundation/abi"
+import { MULTI_CALL_ENTRYPOINT_ADDRESS } from "@aztec/constants"
+import { FunctionAbi, FunctionSelector } from "@aztec/stdlib/abi"
+import { AztecAddress } from "@aztec/stdlib/aztec-address"
 
 export const getMulticallEntrypointAddress = () => AztecAddress.fromNumber(MULTI_CALL_ENTRYPOINT_ADDRESS)
 

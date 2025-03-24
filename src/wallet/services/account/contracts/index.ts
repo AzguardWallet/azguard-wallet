@@ -1,13 +1,10 @@
-import {
-    AuthWitness,
-    AztecAddress,
-    CompleteAddress,
-    Fr,
-    FunctionSelector,
-    HashedValues,
-    PXE,
-    TxExecutionRequest,
-} from '@aztec/aztec.js';
+import { Fr } from '@aztec/foundation/fields';
+import { FunctionSelector } from '@aztec/stdlib/abi';
+import { AuthWitness } from '@aztec/stdlib/auth-witness';
+import { AztecAddress } from '@aztec/stdlib/aztec-address';
+import { CompleteAddress } from '@aztec/stdlib/contract';
+import { PXE } from '@aztec/stdlib/interfaces/client';
+import { HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
 
 export * from './azguard-v0';
 

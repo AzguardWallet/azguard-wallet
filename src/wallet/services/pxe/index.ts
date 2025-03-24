@@ -1,5 +1,9 @@
-import { AztecAddress, createPXEClient, Fr } from "@aztec/aztec.js";
-import { NoteStatus as _NoteStatus, PXE, TxHash } from "@aztec/circuit-types";
+import { createPXEClient } from "@aztec/aztec.js";
+import { Fr } from "@aztec/foundation/fields";
+import { AztecAddress } from '@aztec/stdlib/aztec-address';
+import { PXE } from '@aztec/stdlib/interfaces/client';
+import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
+import { TxHash } from "@aztec/stdlib/tx";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import { NetworkService } from "@/wallet/services/network";
@@ -203,17 +207,16 @@ export class PxeService extends Service {
         try {
             const pxe = createPXEClient(network.rpcUrl);
             const notes = await pxe.getNotes({
-                owner: owner ? AztecAddress.fromString(owner) : undefined,
+                recipient: owner ? AztecAddress.fromString(owner) : undefined,
                 status: status === NoteStatus.All ? _NoteStatus.ACTIVE_OR_NULLIFIED : undefined,
                 contractAddress: contract ? AztecAddress.fromString(contract) : undefined,
                 txHash: tx ? TxHash.fromString(tx) : undefined,
             });
             return notes.map(x => new Note(
                 x.note.items.map(x => x.toString()),
-                x.owner.toString(),
+                x.recipient.toString(),
                 x.contractAddress.toString(),
                 x.storageSlot.toString(),
-                x.noteTypeId.toString(),
                 x.txHash.toString(),
                 x.nonce.toString(),
             ));

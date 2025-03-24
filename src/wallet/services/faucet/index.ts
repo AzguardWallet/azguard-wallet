@@ -1,16 +1,19 @@
-import { createPXEClient, getContractClassFromArtifact } from "@aztec/aztec.js"
-import { bufferAsFields } from "@aztec/foundation/abi"
-import {
-    AztecAddress,
-    Fr,
-    getContractInstanceFromDeployParams,
+import { createPXEClient } from "@aztec/aztec.js"
+import { Fr } from "@aztec/foundation/fields"
+import { TokenContract } from "@aztec/noir-contracts.js/Token";
+import { bufferAsFields } from "@aztec/stdlib/abi"
+import { AztecAddress } from "@aztec/stdlib/aztec-address"
+import { 
     DEPLOYER_CONTRACT_ADDRESS,
     MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS,
     REGISTERER_CONTRACT_ADDRESS,
     REGISTERER_CONTRACT_BYTECODE_CAPSULE_SLOT,
-    PublicKeys,
-} from "@aztec/circuits.js"
-import { TokenContract } from "@aztec/noir-contracts.js/Token";
+ } from "@aztec/constants"
+import {
+    getContractInstanceFromDeployParams,
+    getContractClassFromArtifact,
+} from "@aztec/stdlib/contract"
+import { PublicKeys } from "@aztec/stdlib/keys"
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages"
 import { Service } from "@/wallet/base/service"
 import { TokenService } from "@/wallet/services/token"
@@ -151,14 +154,14 @@ export class FaucetService extends Service {
         const contractMetadata = await pxe.getContractMetadata(instance.address);
         if (!contractMetadata.isContractPubliclyDeployed) {
             console.debug("deploy faucet token");
-            const {salt, contractClassId, initializationHash, publicKeys} = instance;
+            const {salt, currentContractClassId, initializationHash, publicKeys} = instance;
             deployActions.push(
                 new CallAction(
                     AztecAddress.fromNumber(DEPLOYER_CONTRACT_ADDRESS).toString(), // ContractInstanceDeployer
                     "deploy",
                     [
                         salt,
-                        contractClassId,
+                        currentContractClassId,
                         initializationHash,
                         publicKeys,
                         true,

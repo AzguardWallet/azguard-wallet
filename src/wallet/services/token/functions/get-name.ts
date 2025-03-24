@@ -1,5 +1,10 @@
-import { ContractArtifact, Fr } from "@aztec/aztec.js";
-import { FunctionAbi, FunctionType, StructType } from "@aztec/foundation/abi";
+import { Fr } from "@aztec/foundation/fields";
+import {
+	ContractArtifact,
+	FunctionAbi,
+	FunctionType,
+	StructType,
+} from "@aztec/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
 
 export enum GetNameImpl {
@@ -98,7 +103,7 @@ export class DefaultPublicGetNameFn extends GetNameFn {
 
 	public static getCandidates(artifact: ContractArtifact): GetNameFn[] {
 		const res = [];
-		for (const fn of artifact.functions) {
+		for (const fn of artifact.nonDispatchPublicFunctions) {
 			if (
 				!fn.isInitializer &&
 				!fn.isInternal &&

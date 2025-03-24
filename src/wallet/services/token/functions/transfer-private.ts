@@ -1,5 +1,11 @@
-import { AztecAddress, ContractArtifact, Fr } from "@aztec/aztec.js";
-import { FunctionAbi, FunctionType, StructType } from "@aztec/foundation/abi";
+import { Fr } from "@aztec/foundation/fields";
+import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import {
+	ContractArtifact,
+	FunctionAbi,
+	FunctionType,
+	StructType,
+} from "@aztec/stdlib/abi";
 import { Fn } from "@/wallet/utils/fn";
 
 export enum TransferPrivateImpl {
@@ -81,12 +87,9 @@ export class DefaultTransferPrivateFn extends TransferPrivateFn {
 				{
 					name: "amount",
 					type: {
-						fields: [
-							{ name: "lo", type: { kind: "field" } },
-							{ name: "hi", type: { kind: "field" } },
-						],
-						kind: "struct",
-						path: "std::uint128::U128",
+						kind: "integer",
+						sign: "unsigned",
+						width: 128,
 					},
 					visibility: "private",
 				},
@@ -219,7 +222,7 @@ export class DefaultTransferPrivateFn extends TransferPrivateFn {
 				(fn.parameters[0].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
 				fn.parameters[1].name === "amount" &&
-				(fn.parameters[1].type as StructType)?.path === "std::uint128::U128" &&
+				fn.parameters[1].type.kind === "integer" &&
 				fn.returnTypes.length === 0
 			) {
 				res.push(new DefaultTransferPrivateFn(fn.name));
@@ -267,12 +270,9 @@ export class DefaultFromTransferPrivateFn extends TransferPrivateFn {
 				{
 					name: "amount",
 					type: {
-						fields: [
-							{ name: "lo", type: { kind: "field" } },
-							{ name: "hi", type: { kind: "field" } },
-						],
-						kind: "struct",
-						path: "std::uint128::U128",
+						kind: "integer",
+						sign: "unsigned",
+						width: 128,
 					},
 					visibility: "private",
 				},
@@ -413,7 +413,7 @@ export class DefaultFromTransferPrivateFn extends TransferPrivateFn {
 				(fn.parameters[1].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
 				fn.parameters[2].name === "amount" &&
-				(fn.parameters[2].type as StructType)?.path === "std::uint128::U128" &&
+				fn.parameters[2].type.kind === "integer" &&
 				fn.parameters[3].name === "nonce" &&
 				fn.parameters[3].type.kind === "field" &&
 				fn.returnTypes.length === 0

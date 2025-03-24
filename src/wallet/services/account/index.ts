@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/aztec.js"
+import { Fr } from "@aztec/foundation/fields"
 import { poseidon2Hash } from "@aztec/foundation/crypto"
 import {
 	RequestMessage,
