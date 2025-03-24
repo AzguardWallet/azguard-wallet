@@ -2,7 +2,7 @@ import { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
 import { TransferType } from "@/wallet/services/transaction/client";
 import { ExecuteOperationsRequest, ExecuteTransferRequest } from "./methods";
-import { IOperation, IOperationResult } from "./models";
+import { FeeSettings, IOperation, IOperationResult } from "./models";
 
 export { TransferType } from "../../transaction/client";
 export * from './methods';
@@ -51,6 +51,7 @@ export class ExecutionServiceClient extends ServiceClient {
         transferType: TransferType,
         recipient: string,
         amount: number | bigint,
+        feeSettings: FeeSettings,
     ): Promise<string> {
         return this.request(new ExecuteTransferRequest(
             network,
@@ -59,6 +60,7 @@ export class ExecutionServiceClient extends ServiceClient {
             transferType,
             recipient,
             amount,
+            feeSettings,
         ));
     }
 

@@ -6,9 +6,10 @@ import BN from "bignumber.js"
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
+import FeeSettingsCard from "@/popup/components/modules/send/FeeSettingsCard.vue"
 
 /** Utils */
-import { comma, purgeNumber, normalizeAmount } from "@/utils/amount.js"
+import { purgeNumber, normalizeAmount } from "@/utils/amount.js"
 import { managers } from "@/utils/core"
 
 /** Composables */
@@ -31,6 +32,8 @@ const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
 })
+
+const feeSettings = ref()
 
 const token = computed(() =>
 	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
@@ -85,6 +88,7 @@ const isAllowedToMint = computed(() => {
 	if (!amountTerm.value || new BN(amountTerm.value) <= 0) return
 	if (new BN(amountTerm.value) > 100_000) return
 	if (new BN(amountTerm.value) < 0.0000001) return
+	if (!feeSettings.value) return
 
 	return true
 })
@@ -110,6 +114,7 @@ const handleMint = async () => {
 			tokenSymbolTerm.value.trim(),
 			8,
 			new BN(amountTerm.value).times(10 ** 8).dividedBy(2),
+			feeSettings.value,
 		)
 	} catch (err) {
 		error.value = err
@@ -233,6 +238,13 @@ const onKeydown = e => {
 						</Tooltip>
 					</template>
 				</Input>
+
+				<FeeSettingsCard
+					:profile="appStore.profile"
+					:network="appStore.network"
+					:account="appStore.account"
+					v-model="feeSettings"
+				/>
 
 				<Flex align="center" direction="column" gap="12">
 					<Button @click="handleMint" wide type="primary" size="medium" :disabled="!isAllowedToMint">

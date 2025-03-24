@@ -1,4 +1,4 @@
-import { CallAction, EncodedCallAction, IAction } from ".";
+import { CallAction, EncodedCallAction, FeeSettings, IAction } from ".";
 
 export enum OperationKind {
     AddNote = "add_note",
@@ -55,8 +55,9 @@ export class SendTransactionOperation implements IOperation {
     public constructor(
         public readonly networkId: string,
         public readonly accountAddress: string,
+        public readonly feeSettings: FeeSettings,
         public readonly actions: IAction[],
-        public readonly setup?: IAction[],
+        public setup?: IAction[],
     ) {}
 }
 

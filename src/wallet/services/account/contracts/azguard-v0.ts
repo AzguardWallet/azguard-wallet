@@ -21,7 +21,7 @@ import {
     ContractInstanceWithAddress,
     getContractInstanceFromDeployParams,
 } from '@aztec/stdlib/contract';
-import { GasSettings } from '@aztec/stdlib/gas';
+import { Gas, GasFees, GasSettings } from '@aztec/stdlib/gas';
 import { PXE } from '@aztec/stdlib/interfaces/client';
 import { 
     deriveKeys,
@@ -83,10 +83,9 @@ export class AzguardV0 implements IAccountContract {
     }
 
     public buildTxExecutionRequest(pxe: PXE, setup: AzguardFunctionCall[], calls: AzguardFunctionCall[], args: HashedValues[], nonce: Fr): Promise<TxExecutionRequest> {
-        // if (!setup.length) {
-        //     return this._buildTxExecutionRequest(pxe, calls, args, nonce);
-        // }
-        return this._buildTxExecutionRequestWithSetup(pxe, setup, calls, args, nonce);
+        return setup.length 
+            ? this._buildTxExecutionRequestWithSetup(pxe, setup, calls, args, nonce)
+            : this._buildTxExecutionRequest(pxe, calls, args, nonce);
     }
 
     private async _buildTxExecutionRequest(pxe: PXE, calls: AzguardFunctionCall[], args: HashedValues[], nonce: Fr): Promise<TxExecutionRequest> {
@@ -148,10 +147,14 @@ export class AzguardV0 implements IAccountContract {
         const authwit = new AuthWitness(payloadHash, [...signature]);
         batchAuthwits.push(authwit);
 
-        const nodeInfo = await pxe.getNodeInfo();
-        const baseFees = await pxe.getCurrentBaseFees();
-        const gasSettings = GasSettings.default({maxFeesPerGas: baseFees});
-        const txContext = new TxContext(nodeInfo.l1ChainId, nodeInfo.protocolVersion, gasSettings);
+        const { l1ChainId, protocolVersion } = await pxe.getNodeInfo();
+        const gasSettings = new GasSettings(
+            new Gas(4_294_967_295, 4_294_967_295),
+            new Gas(294_967_295, 294_967_295),
+            new GasFees(0, 0),
+            new GasFees(0, 0),
+        )
+        const txContext = new TxContext(l1ChainId, protocolVersion, gasSettings);
 
         const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, []);
         
@@ -243,10 +246,14 @@ export class AzguardV0 implements IAccountContract {
         const authwit = new AuthWitness(payloadHash, [...signature]);
         batchAuthwits.push(authwit);
 
-        const nodeInfo = await pxe.getNodeInfo();
-        const baseFees = await pxe.getCurrentBaseFees();
-        const gasSettings = GasSettings.default({maxFeesPerGas: baseFees});
-        const txContext = new TxContext(nodeInfo.l1ChainId, nodeInfo.protocolVersion, gasSettings);
+        const { l1ChainId, protocolVersion } = await pxe.getNodeInfo();
+        const gasSettings = new GasSettings(
+            new Gas(4_294_967_295, 4_294_967_295),
+            new Gas(294_967_295, 294_967_295),
+            new GasFees(0, 0),
+            new GasFees(0, 0),
+        )
+        const txContext = new TxContext(l1ChainId, protocolVersion, gasSettings);
 
         const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, []);
         

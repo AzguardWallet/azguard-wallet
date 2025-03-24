@@ -7,7 +7,7 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import SendTypesCard from "../modules/send/SendTypesCard.vue"
 import AmountCard from "../modules/send/AmountCard.vue"
-import FeeJuiceCard from "../modules/send/FeeJuiceCard.vue"
+import FeeSettingsCard from "../modules/send/FeeSettingsCard.vue"
 import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 
 /** Utils */
@@ -35,6 +35,8 @@ const props = defineProps({
 	show: Boolean,
 	displace: Number,
 })
+
+const feeSettings = ref()
 
 const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.send
@@ -115,6 +117,7 @@ const isAllowedToSend = computed(() => {
 	if (!destinationAddressTerm.value.length || destinationAddressTerm.value.length !== 66) return
 	if (!destinationAddressTerm.value.startsWith("0x")) return
 	if (amountToSend > tokenBalanceByType.value) return
+	if (!feeSettings.value) return
 
 	return true
 })
@@ -147,6 +150,7 @@ const handleSend = async () => {
 		type,
 		destinationAddressTerm.value,
 		amountToSend,
+		feeSettings.value,
 	)
 
 	openToast({ label: "Transaction is sent" })
@@ -267,7 +271,13 @@ watch(
 								</Flex>
 							</template>
 						</Input>
-						<FeeJuiceCard />
+
+						<FeeSettingsCard
+							:profile="appStore.profile"
+							:network="appStore.network"
+							:account="appStore.account"
+							v-model="feeSettings"
+						/>
 					</Flex>
 				</Flex>
 

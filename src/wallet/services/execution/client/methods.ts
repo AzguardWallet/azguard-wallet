@@ -4,6 +4,7 @@ import {
     TransferType,
     IOperation,
     IOperationResult,
+    FeeSettings,
 } from ".";
 
 export enum ExecutionServiceMethod {
@@ -21,9 +22,10 @@ export class ExecuteTransferRequest extends RequestMessage {
         public readonly transferType: TransferType,
         public readonly recipient: string,
         amount: number | bigint,
+        public readonly feeSettings: FeeSettings,
     ) {
         super(EXECUTION_SERVICE_NAME, ExecutionServiceMethod.ExecuteTransfer);
-        this.amount = amount.toString();
+        this.amount = amount.toString(10);
     }
 }
 

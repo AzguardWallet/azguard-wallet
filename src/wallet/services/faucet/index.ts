@@ -32,6 +32,7 @@ import {
     OperationStatus,
     OkOperationResult,
     FailedOperationResult,
+    FeeSettings,
 } from "@/wallet/services/execution/client"
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
@@ -68,6 +69,7 @@ export class FaucetService extends Service {
                         _request.symbol,
                         _request.decimals,
                         _request.amount,
+                        _request.feeSettings,
                     );
 					return new MintResponse(_request);
 				} catch (error: any) {
@@ -91,6 +93,7 @@ export class FaucetService extends Service {
         symbol: string,
         decimals: number,
         amount: string,
+        feeSettings: FeeSettings,
     ) {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
@@ -108,7 +111,7 @@ export class FaucetService extends Service {
         
         const deployActions: IAction[] = [];
         const deployOps: IOperation[] = [
-            new SendTransactionOperation(networkId, accountAddress, deployActions)
+            new SendTransactionOperation(networkId, accountAddress, feeSettings, deployActions)
         ];
         
         const artifact = TokenContract.artifact;
@@ -209,7 +212,7 @@ export class FaucetService extends Service {
 
         const [mintResult] = await this.executionService.executeOperations(
             [
-                new SendTransactionOperation(networkId, accountAddress, [
+                new SendTransactionOperation(networkId, accountAddress, feeSettings, [
                     new CallAction(
                         instance.address.toString(),
                         "mint_to_private",

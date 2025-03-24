@@ -1,5 +1,6 @@
 import { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
+import { FeeSettings } from "@/wallet/services/execution/client";
 import { MintRequest } from "./methods";
 
 export * from './methods';
@@ -47,6 +48,7 @@ export class FaucetServiceClient extends ServiceClient {
         symbol: string,
         decimals: number,
         amount: number | bigint,
+        feeSettings: FeeSettings,
     ) {
         await this.request(new MintRequest(
             network,
@@ -55,6 +57,7 @@ export class FaucetServiceClient extends ServiceClient {
             symbol,
             decimals,
             amount.toString(),
+            feeSettings,
         ));
     }
 }

@@ -3,14 +3,20 @@
 import { computed, onMounted, onUnmounted } from "vue"
 
 /** Components */
-import FeeJuiceCard from "../../components/modules/send/FeeJuiceCard.vue"
-import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue"
+import FeeSettingsCard from "../../components/modules/send/FeeSettingsCard.vue"
+import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Services */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
 import { AccountServiceClient } from "@/wallet/services/account/client"
-import { ExecutionServiceClient, OperationKind } from "@/wallet/services/execution/client"
+import {
+	ActionKind,
+	CustomPaymentMethod,
+	ExecutionServiceClient,
+	FeeSettings,
+	OperationKind,
+} from "@/wallet/services/execution/client"
 import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 
 /** Store */
@@ -115,6 +121,9 @@ const init = async () => {
 				}
 			}
 		}
+		for (const op of _operations.filter(x => x.kind === OperationKind.SendTransaction)) {
+			op.feeSettings = op.setup ? new FeeSettings(new CustomPaymentMethod()) : undefined
+		}
 		session.value = payload.value.session
 		operations.value = _operations
 		accounts.value = _accounts
@@ -137,6 +146,14 @@ const onInteractionCancelled = _requestId => {
 }
 
 const approve = async () => {
+	if (operations.value.find(x => x.kind === OperationKind.SendTransaction && !x.feeSettings)) {
+		fillError(
+			"Validation error",
+			"You must specify fee payment method for each 'Send transaction' operations",
+			"warning",
+		)
+		return
+	}
 	try {
 		isLoading.value = true
 		const results = await executionService.executeOperations(
@@ -196,6 +213,20 @@ onMounted(async () => {
 onUnmounted(() => {
 	window.removeEventListener("beforeunload", reject)
 })
+
+const humanize = str => {
+	return `${str[0].toUpperCase()}${str.substring(1)}`.replace("_", " ")
+}
+
+const trimAddress = address => {
+	return `${address.substring(0, 8)}..${address.substring(62)}`
+}
+
+const showJson = () => {
+	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/json"))
+	url.searchParams.set("requestId", requestId.value)
+	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 900 })
+}
 </script>
 
 <template>
@@ -244,43 +275,226 @@ onUnmounted(() => {
 			</Flex>
 
 			<Flex
-				v-if="accounts?.length"
+				v-if="operations?.length"
 				direction="column"
 				align="start"
 				justify="start"
 				gap="8"
-				:class="$style.section"
+				style="padding-bottom: 8px"
 			>
-				<Flex direction="column" align="start" justify="start" gap="4">
-					<Text size="14" weight="600" color="primary">Account{{ accounts.length > 1 ? "s" : "" }}</Text>
-				</Flex>
-				<Flex v-for="account in accounts" :key="account.address" gap="10" :class="$style.account">
-					<Flex align="center">
-						<Icon name="check-circle" size="16" color="green" />
-					</Flex>
-
-					<Flex direction="column" gap="4">
-						<Text size="14" weight="600" color="primary">
-							{{ account.name }}
-						</Text>
-						<Text size="13" weight="600" color="tertiary">
-							{{ `${account.address.slice(0, 6)}...${account.address.slice(-4)}` }}
-						</Text>
-					</Flex>
-				</Flex>
-			</Flex>
-
-			<Flex v-if="payload?.params.operations?.length" direction="column" align="start" justify="start" gap="8">
-				<Flex justify="between">
+				<Flex wide justify="between">
 					<Text size="14" weight="600" color="primary">Requested operations:</Text>
+					<Icon @click="showJson" name="expand" size="16" color="tertiary" :class="$style.fullscreen_icon" />
 				</Flex>
 
-				<Flex align="start" direction="column" justify="start" gap="12" :class="$style.json_viewer">
-					<JsonViewer :data="payload.params.operations" :requestId="requestId" />
-				</Flex>
+				<template v-for="(op, i) in operations" :key="i">
+					<Flex v-if="op.kind === OperationKind.SendTransaction" direction="column" wide>
+						<Flex
+							:class="$style.operation"
+							direction="column"
+							wide
+							style="
+								margin-bottom: 0;
+								border-bottom-right-radius: 0;
+								border-bottom-left-radius: 0;
+								border-bottom: none;
+							"
+						>
+							<Flex wide justify="between">
+								<Text size="14" color="primary">{{ humanize(op.kind) }}</Text>
+								<NetworkBadge :chainId="op.network.chainId" />
+							</Flex>
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">From account:</Text>
+								<Text size="12" color="primary">
+									{{ op.account.name }}
+									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
+								</Text>
+							</Flex>
+							<Flex v-if="op.setup?.length" :class="$style.prop">
+								<Text size="12" color="secondary">Fee payload:</Text>
+								<Flex direction="column" gap="4">
+									<Text v-for="(action, j) in op.setup" :key="`${i}:${j}`" size="12" color="primary">
+										<template
+											v-if="
+												action.kind === ActionKind.Call ||
+												action.kind === ActionKind.EncodedCall
+											"
+										>
+											<Text color="secondary"> call </Text>
+											{{ action.method || action.selector }}
+											<Text color="secondary"> in </Text>
+											{{ trimAddress(action.contract || action.to) }}
+										</template>
+										<template v-else>
+											{{ action.kind.replace("_", " ") }}
+										</template>
+									</Text>
+								</Flex>
+							</Flex>
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Payload:</Text>
+								<Flex direction="column" gap="4">
+									<Text
+										v-for="(action, j) in op.actions"
+										:key="`${i}:${j}`"
+										size="12"
+										color="primary"
+									>
+										<template
+											v-if="
+												action.kind === ActionKind.Call ||
+												action.kind === ActionKind.EncodedCall
+											"
+										>
+											<Text color="secondary"> call </Text>
+											{{ action.method || action.selector }}
+											<Text color="secondary"> in </Text>
+											{{ trimAddress(action.contract || action.to) }}
+										</template>
+										<template v-else>
+											{{ action.kind.replace("_", " ") }}
+										</template>
+									</Text>
+								</Flex>
+							</Flex>
+						</Flex>
+						<FeeSettingsCard
+							:profile="profile"
+							:network="op.network"
+							:account="op.account"
+							:modelValue="op.feeSettings"
+							@update:modelValue="
+								$event => {
+									op.feeSettings = $event
+									fillError()
+								}
+							"
+							style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"
+						/>
+					</Flex>
+					<Flex v-else :class="$style.operation" direction="column" wide>
+						<Flex wide justify="between">
+							<Text size="14" color="primary">{{ humanize(op.kind) }}</Text>
+							<NetworkBadge :chainId="op.network.chainId" />
+						</Flex>
+						<template v-if="op.kind === OperationKind.AddNote"> </template>
+						<template v-else-if="op.kind === OperationKind.GetCompleteAddress">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Requested account:</Text>
+								<Text size="12" color="primary">
+									{{ op.account.name }}
+									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
+								</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === OperationKind.RegisterContract">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === OperationKind.RegisterSender">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Sender address:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === OperationKind.SimulateTransaction">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">From account:</Text>
+								<Text size="12" color="primary">
+									{{ op.account.name }}
+									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
+								</Text>
+							</Flex>
+							<Flex v-if="op.setup?.length" :class="$style.prop">
+								<Text size="12" color="secondary">Fee payload:</Text>
+								<Flex direction="column" gap="4">
+									<Text v-for="(action, j) in op.setup" :key="`${i}:${j}`" size="12" color="primary">
+										<template
+											v-if="
+												action.kind === ActionKind.Call ||
+												action.kind === ActionKind.EncodedCall
+											"
+										>
+											<Text color="secondary"> call </Text>
+											{{ action.method || action.selector }}
+											<Text color="secondary"> in </Text>
+											{{ trimAddress(action.contract || action.to) }}
+										</template>
+										<template v-else>
+											{{ action.kind.replace("_", " ") }}
+										</template>
+									</Text>
+								</Flex>
+							</Flex>
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Payload:</Text>
+								<Flex direction="column" gap="4">
+									<Text
+										v-for="(action, j) in op.actions"
+										:key="`${i}:${j}`"
+										size="12"
+										color="primary"
+									>
+										<template
+											v-if="
+												action.kind === ActionKind.Call ||
+												action.kind === ActionKind.EncodedCall
+											"
+										>
+											<Text color="secondary"> call </Text>
+											{{ action.method || action.selector }}
+											<Text color="secondary"> in </Text>
+											{{ trimAddress(action.contract || action.to) }}
+										</template>
+										<template v-else>
+											{{ action.kind.replace("_", " ") }}
+										</template>
+									</Text>
+								</Flex>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === OperationKind.SimulateUnconstrained">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">From account:</Text>
+								<Text size="12" color="primary">
+									{{ op.account.name }}
+									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
+								</Text>
+							</Flex>
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.contract) }}</Text>
+							</Flex>
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Function:</Text>
+								<Text size="12" color="primary">{{ op.method }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === OperationKind.SimulateViews">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">From account:</Text>
+								<Text size="12" color="primary">
+									{{ op.account.name }}
+									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
+								</Text>
+							</Flex>
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">View calls:</Text>
+								<Flex direction="column" gap="4">
+									<Text v-for="(call, j) in op.calls" :key="`${i}:${j}`" size="12" color="primary">
+										{{ call.method || call.selector }}
+										<Text color="secondary"> in </Text>
+										{{ trimAddress(call.contract || call.to) }}
+									</Text>
+								</Flex>
+							</Flex>
+						</template>
+					</Flex>
+				</template>
 			</Flex>
-
-			<FeeJuiceCard />
 		</Flex>
 
 		<Flex direction="column" gap="10">
@@ -331,6 +545,7 @@ onUnmounted(() => {
 
 <style module>
 .wrapper {
+	overflow: auto;
 	flex: 1;
 
 	background: var(--card-bg);
@@ -339,7 +554,7 @@ onUnmounted(() => {
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
 
-	padding: 10px 24px 12px 24px;
+	padding: 12px;
 }
 
 & img {
@@ -427,6 +642,31 @@ onUnmounted(() => {
 
 .section {
 	width: 100%;
+}
+
+.operation {
+	width: 100%;
+	border-radius: 12px;
+	border: 1px solid var(--gray-10);
+
+	padding: 12px;
+}
+
+.prop {
+	width: 100%;
+	justify-content: space-between;
+	padding-top: 12px;
+
+	:last-child {
+		text-align: right;
+	}
+}
+
+.fullscreen_icon {
+	cursor: pointer;
+	&:hover {
+		background: var(--op-10);
+	}
 }
 
 .account {

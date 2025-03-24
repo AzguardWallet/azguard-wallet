@@ -4,8 +4,6 @@ import { PXE } from "@aztec/stdlib/interfaces/client";
 import {
     HashedValues,
     NestedProcessReturnValues,
-    TxReceipt,
-    TxStatus,
 } from "@aztec/stdlib/tx";
 import {
     encodeArguments,
@@ -14,7 +12,6 @@ import {
     FunctionType,
 } from "@aztec/stdlib/abi";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
-import { sleep } from "./sleep";
 
 export class FnImpl {
     constructor(
@@ -57,36 +54,6 @@ export abstract class ViewFn extends Fn {
     public abstract unpackResult(values: Fr[]): any;
 }
 
-export async function execute(
-    pxe: PXE,
-    account: IAccountContract,
-    contract: string,
-    fn: Fn,
-    args: any[],
-): Promise<string> {
-    const packedArgs = await fn.packArgs(args);
-    const call = new AzguardFunctionCall(
-        AztecAddress.fromString(contract),
-        await fn.getSelector(),
-        packedArgs.hash,
-        fn.type === FunctionType.PUBLIC,
-        fn.isStatic
-    );
-
-    const txRequest = await account.buildTxExecutionRequest(pxe, [], [call], [packedArgs], Fr.random());
-
-    const tx = await pxe.simulateTx(txRequest, true);
-    const provenTx = await pxe.proveTx(txRequest, tx.privateExecutionResult);
-    const txHash = await pxe.sendTx(provenTx.toTx());
-
-    let tries = 100;
-    let txReceipt: TxReceipt;
-    do { await sleep(100); txReceipt = await pxe.getTxReceipt(txHash); }
-    while (txReceipt.status === TxStatus.PENDING && --tries >= 0);
-
-    return txReceipt.txHash.toString();
-}
-
 export async function simulate(
     pxe: PXE,
     account: IAccountContract,
@@ -109,7 +76,15 @@ export async function simulate(
 
     const txRequest = await account.buildTxExecutionRequest(pxe, [], [call], [packedArgs], Fr.zero());
 
-    const tx = await pxe.simulateTx(txRequest, true, undefined, undefined, true);
+    const tx = await pxe.simulateTx(
+        txRequest, // txRequest
+        true, // simulatePublic
+        undefined, // msgSender
+        undefined, // skipTxValidation
+        true, // skipFeeEnforcement
+        undefined, // profile
+        [account.address], // scopes
+    );
 
     return viewFn.type === FunctionType.PUBLIC
         ? viewFn.unpackResult(extractReturnValues(tx.getPublicReturnValues()))

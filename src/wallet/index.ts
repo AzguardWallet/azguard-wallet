@@ -6,15 +6,16 @@ import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
 import { WalletConnectService } from "./services/wallet-connect";
 import { TokenService } from "./services/token";
-import { sleep } from "./utils";
 import { TokenBalanceService } from "./services/token-balance";
 import { TransactionService } from "./services/transaction";
 import { ExecutionService } from "./services/execution";
 import { FaucetService } from "./services/faucet";
+import { FpcService } from "./services/fpc";
 import { PxeService } from "./services/pxe";
 import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
+import { sleep } from "./utils";
 import { jsonSanitize } from "./utils/serialization";
 
 export async function init() {
@@ -58,6 +59,7 @@ const tokenBalanceService = new TokenBalanceService(
     tokenService,
     broadcast,
 );
+const fpcService = new FpcService(profileService, networkService, broadcast);
 const transactionService = new TransactionService(
     profileService,
     accountService,
@@ -71,6 +73,7 @@ const executionService = new ExecutionService(
     networkService,
     accountService,
     tokenService,
+    fpcService,
     transactionService,
     pxeService,
     broadcast
@@ -103,6 +106,7 @@ const services = new Map<string, Service>([
     [accountService.name, accountService],
     [tokenService.name, tokenService],
     [tokenBalanceService.name, tokenBalanceService],
+    [fpcService.name, fpcService],
     [transactionService.name, transactionService],
     [executionService.name, executionService],
     [faucetService.name, faucetService],

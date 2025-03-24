@@ -26,6 +26,7 @@ import {
     getContractClassFromArtifact,
 } from "@aztec/stdlib/contract";
 import { PXE } from '@aztec/stdlib/interfaces/client';
+import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import { HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
 import { z } from "zod";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
@@ -43,6 +44,7 @@ import {
     TransferPublicFn,
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
+import { FpcService } from "@/wallet/services/fpc";
 import { TransactionService } from "@/wallet/services/transaction";
 import {
     OriginType,
@@ -54,6 +56,7 @@ import {
 } from "@/wallet/services/transaction/client";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import { Fn } from "@/wallet/utils/fn";
+import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import {
     EXECUTION_SERVICE_NAME,
     ExecutionServiceMethod,
@@ -88,6 +91,11 @@ import {
     AddPublicAuthwitAction,
     CallAction,
     EncodedCallAction,
+    FeePaymentMethodType,
+    FpcPaymentMethod,
+    FeeJuiceWithClaimPaymentMethod,
+    CustomPaymentMethod,
+    FeeSettings,
 } from "./client";
 
 export class ExecutionService extends Service {
@@ -96,6 +104,7 @@ export class ExecutionService extends Service {
         private readonly networkService: NetworkService,
         private readonly accountService: AccountService,
         private readonly tokenService: TokenService,
+        private readonly fpcService: FpcService,
         private readonly transactionService: TransactionService,
         private readonly pxeService: PxeService,
         emit: (event: EventMessage) => void,
@@ -115,6 +124,7 @@ export class ExecutionService extends Service {
                         _request.transferType,
                         _request.recipient,
                         BigInt(_request.amount),
+                        _request.feeSettings,
                     );
                     return new ExecuteTransferResponse(_request, txHash);
                 }
@@ -146,16 +156,12 @@ export class ExecutionService extends Service {
         transferType: TransferType,
         recipientAddress: string,
         amount: bigint,
+        feeSettings: FeeSettings,
     ): Promise<string> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Unauthorized");
         }
-        const network = await this.networkService.getNetwork(networkId);
-        if (!network) {
-            throw new Error("Unknown network");
-        }
-        const account = await this.accountService.getAccountContract(profile.id, network.chainId, accountAddress);
         const token = await this.tokenService.getTokenRaw(tokenId);
         
         let fn: Fn;
@@ -226,18 +232,38 @@ export class ExecutionService extends Service {
         }
         const packedArgs = await fn.packArgs(args);
         const selector = await fn.getSelector();
-        const call = new AzguardFunctionCall(
-            AztecAddress.fromString(token.contract),
-            selector,
-            packedArgs.hash,
-            fn.type === FunctionType.PUBLIC,
-            fn.isStatic,
-        );
-        const nonce = Fr.random();
 
-        const pxe = createPXEClient(network.rpcUrl);
-        const txRequest = await account.buildTxExecutionRequest(pxe, [], [call], [packedArgs], nonce);
-        const simulatedTx = await pxe.simulateTx(txRequest, true);
+        const op = new SendTransactionOperation(
+            networkId,
+            accountAddress,
+            feeSettings,
+            [
+                new EncodedCallAction(
+                    token.contract,
+                    selector.toString(),
+                    packedArgs.values.map(x => x.toString()),
+                    fn.name,
+                    fn.type,
+                    fn.isStatic,
+                    [],
+                ),
+            ],
+        );
+
+        const [_op, _gasSettings] = await this.withFeePayment(op);
+
+        const [txRequest, pxe, account, network, nonce] = await this.processTx(_op);
+        txRequest.txContext.gasSettings = _gasSettings;
+
+        const simulatedTx = await pxe.simulateTx(
+            txRequest, // txRequest
+            true, // simulatePublic
+            undefined, // msgSender
+            undefined, // skipTxValidation
+            undefined, // skipFeeEnforcement
+            undefined, // profile
+            [account.address], // scopes
+        );
         const provedTx = await pxe.proveTx(txRequest, simulatedTx.privateExecutionResult);
         const txHash = await pxe.sendTx(provedTx.toTx());
 
@@ -375,10 +401,159 @@ export class ExecutionService extends Service {
         await pxe.registerSender(AztecAddress.fromString(op.address));
     }
 
-    async executeSendTransaction(op: SendTransactionOperation, origin: string): Promise<string> {
-        const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(op);
+    async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings]> {
+        switch (op.feeSettings.paymentMethod.type) {
+            case FeePaymentMethodType.FeeJuice: {
+                if (op.setup?.length) {
+                    throw new Error("Custom setup payload is not allowed with this fee payment method");
+                }
+                let [txRequest, pxe, account] = await this.processTx(op);
+                const simulatedTx = await pxe.simulateTx(
+                    txRequest, // txRequest
+                    true, // simulatePublic
+                    undefined, // msgSender
+                    undefined, // skipTxValidation
+                    true, // skipFeeEnforcement
+                    undefined, // profile
+                    [account.address], // scopes
+                );
+                const baseFees = await pxe.getCurrentBaseFees();
+                const gasSettings = new GasSettings(
+                    simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
+                    simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
+                    baseFees,
+                    new GasFees(0, 0),
+                );
+                return [op, gasSettings];
+            }
+            case FeePaymentMethodType.FeeJuiceWithClaim: {
+                if (op.setup?.length) {
+                    throw new Error("Custom setup payload is not allowed with this fee payment method");
+                }
+                const method = op.feeSettings.paymentMethod as FeeJuiceWithClaimPaymentMethod;
+                op.actions.push(...getFeeJuiceClaimPayload(
+                    op.accountAddress,
+                    method.claimAmount,
+                    method.claimSecret,
+                    method.messageLeafIndex,
+                ));
+                let [txRequest, pxe, account] = await this.processTx(op);
+                const simulatedTx = await pxe.simulateTx(
+                    txRequest, // txRequest
+                    true, // simulatePublic
+                    undefined, // msgSender
+                    undefined, // skipTxValidation
+                    true, // skipFeeEnforcement
+                    undefined, // profile
+                    [account.address], // scopes
+                );
+                const baseFees = await pxe.getCurrentBaseFees();
+                const gasSettings = new GasSettings(
+                    simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
+                    simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
+                    baseFees,
+                    new GasFees(0, 0),
+                );
+                return [op, gasSettings];
+            }
+            case FeePaymentMethodType.Fpc: {
+                if (op.setup?.length) {
+                    throw new Error("Custom setup payload is not allowed with this fee payment method");
+                }
+                const { fpcId, inPublic } = op.feeSettings.paymentMethod as FpcPaymentMethod;
+                const fpc = await this.fpcService.getFpc(fpcId);
+                // first approach
+                let [txRequest, pxe, account] = await this.processTx(op);
+                let simulatedTx = await pxe.simulateTx(
+                    txRequest, // txRequest
+                    true, // simulatePublic
+                    undefined, // msgSender
+                    undefined, // skipTxValidation
+                    true, // skipFeeEnforcement
+                    undefined, // profile
+                    [account.address], // scopes
+                );
+                const baseFees = await pxe.getCurrentBaseFees();
+                let maxFee = simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)).computeFee(baseFees);
+                op.setup = fpc.getFeePayload(op.accountAddress, maxFee, inPublic);
+                // precise estimation
+                [txRequest] = await this.processTx(op);
+                txRequest.txContext.gasSettings = new GasSettings(
+                    simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)),
+                    simulatedTx.gasUsed.teardownGas.add(fpc.getTeardownGas(inPublic)),
+                    baseFees,
+                    new GasFees(0, 0),
+                );
+                simulatedTx = await pxe.simulateTx(
+                    txRequest, // txRequest
+                    true, // simulatePublic
+                    undefined, // msgSender
+                    undefined, // skipTxValidation
+                    true, // skipFeeEnforcement
+                    undefined, // profile
+                    [account.address], // scopes
+                );
+                maxFee = simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding).computeFee(baseFees);
+                op.setup = fpc.getFeePayload(op.accountAddress, maxFee, inPublic);
+                const gasSettings = new GasSettings(
+                    simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
+                    simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
+                    baseFees,
+                    new GasFees(0, 0),
+                );
+                return [op, gasSettings];
+            }
+            case FeePaymentMethodType.Custom: {
+                if (!op.setup?.length) {
+                    throw new Error("Setup payload is missed");
+                }
+                const { teardownDaGas, teardownL2Gas } = op.feeSettings.paymentMethod as CustomPaymentMethod;
+                let [txRequest, pxe, account] = await this.processTx(op);
+                const baseFees = await pxe.getCurrentBaseFees();
+                txRequest.txContext.gasSettings = new GasSettings(
+                    txRequest.txContext.gasSettings.gasLimits,
+                    new Gas(teardownDaGas, teardownL2Gas),
+                    baseFees,
+                    new GasFees(0, 0),
+                );
+                const simulatedTx = await pxe.simulateTx(
+                    txRequest, // txRequest
+                    true, // simulatePublic
+                    undefined, // msgSender
+                    undefined, // skipTxValidation
+                    true, // skipFeeEnforcement
+                    undefined, // profile
+                    [account.address], // scopes
+                );
+                const gasSettings = new GasSettings(
+                    simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
+                    simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
+                    baseFees,
+                    new GasFees(0, 0),
+                );
+                return [op, gasSettings];
+            }
+            default: {
+                throw new Error("Invalid fee payment method");
+            }
+        }
+    }
 
-        const simulatedTx = await pxe.simulateTx(txRequest, true);
+    async executeSendTransaction(op: SendTransactionOperation, origin: string): Promise<string> {
+        const [_op, _gasSettings] = await this.withFeePayment(op);
+
+        const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(_op);
+        txRequest.txContext.gasSettings = _gasSettings;
+
+        const simulatedTx = await pxe.simulateTx(
+            txRequest, // txRequest
+            true, // simulatePublic
+            undefined, // msgSender
+            undefined, // skipTxValidation
+            undefined, // skipFeeEnforcement
+            undefined, // profile
+            [account.address], // scopes
+        );
         const provedTx = await pxe.proveTx(txRequest, simulatedTx.privateExecutionResult);
         const txHash = await pxe.sendTx(provedTx.toTx());
 
@@ -398,13 +573,13 @@ export class ExecutionService extends Service {
     async executeSimulateTransaction(op: SimulateTransactionOperation): Promise<unknown> {
         const [txRequest, pxe, account] = await this.processTx(op);
         const simulatedTx = await pxe.simulateTx(
-            txRequest,
-            op.simulatePublic ?? false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            [account.address],
+            txRequest, // txRequest
+            op.simulatePublic ?? false, // simulatePublic
+            undefined, // msgSender
+            undefined, // skipTxValidation
+            true, // skipFeeEnforcement
+            undefined, // profile
+            [account.address], // scopes
         );
         return {
             gasUsed: simulatedTx.gasUsed,
@@ -604,18 +779,20 @@ export class ExecutionService extends Service {
 
         const txRequest = await account.buildTxExecutionRequest(pxe, [], calls.map(x => x[0]), args, Fr.zero());
         const simulatedTx = await pxe.simulateTx(
-            txRequest,
-            true,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            [account.address],
+            txRequest, // txRequest
+            true, // simulatePublic
+            undefined, // msgSender
+            undefined, // skipTxValidation
+            true, // skipFeeEnforcement
+            undefined, // profile
+            [account.address], // scopes
         );
 
         const publicReturn = simulatedTx.getPublicReturnValues();
-        const privateReturn = simulatedTx.getPrivateReturnValues().nested;
-
+        const privateReturn = txRequest.origin.toString() === op.accountAddress
+            ? simulatedTx.getPrivateReturnValues().nested
+            : simulatedTx.getPrivateReturnValues().nested[1].nested;
+        
         for (const [call, i, j, types] of calls) {
             const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? [];
             result.encoded[i] = values;
