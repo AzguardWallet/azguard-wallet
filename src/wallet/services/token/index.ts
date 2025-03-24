@@ -11,6 +11,12 @@ import { NetworkService } from "@/wallet/services/network"
 import { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max } from "@/wallet/utils"
+import {
+	feeJuiceAddress,
+	feeJuiceArtifact,
+	feeJuiceName,
+	feeJuiceSymbol,
+} from "@/wallet/utils/fee-juice"
 import { FnImpl, simulate } from "@/wallet/utils/fn"
 import {
 	AddTokenRequest,
@@ -340,12 +346,21 @@ export class TokenService extends Service {
 			throw new Error("contract instance not found")
 		}
 
-		const classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
+		let classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
 		if (!classMetadata.isContractClassPubliclyRegistered) {
-			throw new Error("contract class not registered")
+			if (token.contract !== feeJuiceAddress) {
+				throw new Error("contract class not registered")
+			}
 		}
 		if (!classMetadata.artifact) {
-			throw new Error("contract artifact not found")
+			if (token.contract !== feeJuiceAddress) {
+				throw new Error("contract artifact not found")
+			}
+			await pxe.registerContractClass(feeJuiceArtifact);
+			classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
+			if (!classMetadata.artifact) {
+				throw new Error("contract artifact not found")
+			}
 		}
 		const artifact = classMetadata.artifact;
 
@@ -422,12 +437,21 @@ export class TokenService extends Service {
 			throw new Error("contract instance not found")
 		}
 
-		const classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
+		let classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
 		if (!classMetadata.isContractClassPubliclyRegistered) {
-			throw new Error("contract class not registered")
+			if (contract !== feeJuiceAddress) {
+				throw new Error("contract class not registered")
+			}
 		}
 		if (!classMetadata.artifact) {
-			throw new Error("contract artifact not found")
+			if (contract !== feeJuiceAddress) {
+				throw new Error("contract artifact not found")
+			}
+			await pxe.registerContractClass(feeJuiceArtifact);
+			classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
+			if (!classMetadata.artifact) {
+				throw new Error("contract artifact not found")
+			}
 		}
 		const artifact = classMetadata.artifact;
 
@@ -564,7 +588,7 @@ export class TokenService extends Service {
 						getNameFn,
 						getNameFn.buildArgs()
 				)
-				: Promise.resolve("<name>"),
+				: Promise.resolve(ti.contract === feeJuiceAddress ? feeJuiceName : "<name>"),
 			getSymbolFn
 				? simulate(
 						pxe,
@@ -573,7 +597,7 @@ export class TokenService extends Service {
 						getSymbolFn,
 						getSymbolFn.buildArgs()
 				)
-				: Promise.resolve("<symbol>"),
+				: Promise.resolve(ti.contract === feeJuiceAddress ? feeJuiceSymbol : "<symbol>"),
 			getDecimalsFn
 				? simulate(
 						pxe,
