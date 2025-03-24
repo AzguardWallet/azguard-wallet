@@ -52,19 +52,11 @@ const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(profileService, broadcast);
 const accountService = new AccountService(profileService, networkService, broadcast);
 const tokenService = new TokenService(profileService, networkService, accountService, broadcast);
-const tokenBalanceService = new TokenBalanceService(
-    profileService,
-    networkService,
-    accountService,
-    tokenService,
-    broadcast,
-);
 const fpcService = new FpcService(profileService, networkService, broadcast);
 const transactionService = new TransactionService(
     profileService,
     accountService,
     networkService,
-    tokenBalanceService,
     broadcast,
 );
 const pxeService = new PxeService(networkService, broadcast);
@@ -77,6 +69,15 @@ const executionService = new ExecutionService(
     transactionService,
     pxeService,
     broadcast
+);
+const tokenBalanceService = new TokenBalanceService(
+    profileService,
+    networkService,
+    accountService,
+    tokenService,
+    transactionService,
+    executionService,
+    broadcast,
 );
 const faucetService = new FaucetService(
     profileService,

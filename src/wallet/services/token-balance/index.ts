@@ -1,4 +1,5 @@
 import { createPXEClient } from "@aztec/aztec.js"
+import { FunctionType } from "@aztec/stdlib/abi"
 import { PXE } from "@aztec/stdlib/interfaces/client"
 import {
 	EventMessage,
@@ -11,12 +12,17 @@ import { array_max, sleep } from "@/wallet/utils"
 import { Queue } from "@/wallet/utils/queue"
 import { AccountService } from "@/wallet/services/account"
 import { Account } from "@/wallet/services/account/client"
-import { IAccountContract } from "@/wallet/services/account/contracts"
 import { NetworkService } from "@/wallet/services/network"
 import { Network } from "@/wallet/services/network/client"
 import { ProfileService } from "@/wallet/services/profile"
 import { Token, TokenService } from "@/wallet/services/token"
+import { BalanceOfPrivateFn, BalanceOfPublicFn } from "@/wallet/services/token/functions"
 import { TokenInfo } from "@/wallet/services/token/client"
+import { ExecutionService } from "@/wallet/services/execution"
+import { CallAction, EncodedCallAction, SimulateViewsOperation } from "@/wallet/services/execution/client"
+import { TransactionService } from "@/wallet/services/transaction"
+import { Tx, TxStatus } from "@/wallet/services/transaction/client"
+import { ViewFn } from "@/wallet/utils/fn"
 import {
 	GetTokenBalancesRequest,
 	GetTokenBalancesResponse,
@@ -54,6 +60,8 @@ export class TokenBalanceService extends Service {
 		private readonly networkService: NetworkService,
 		private readonly accountService: AccountService,
 		private readonly tokenService: TokenService,
+		private readonly transactionService: TransactionService,
+		private readonly executionService: ExecutionService,
 		emit: (event: EventMessage) => void
 	) {
 		super(TOKEN_BALANCE_SERVICE_NAME, emit)
@@ -68,6 +76,7 @@ export class TokenBalanceService extends Service {
 		this.tokenService.onTokenAdded.push(this.onTokenAdded)
 		this.tokenService.onTokenUpdated.push(this.onTokenUpdated)
 		this.tokenService.onTokenDeleted.push(this.onTokenDeleted)
+		this.transactionService.onTransactionUpdated.push(this.onTransactionUpdated);
 
 		this.worker = this.startWorker()
 	}
@@ -253,6 +262,12 @@ export class TokenBalanceService extends Service {
 		}
 	}
 
+	private readonly onTransactionUpdated = async (tx: Tx) => {
+		if (tx.status !== TxStatus.Pending) {
+			await this.refreshAccountBalances(tx.account);
+		}
+	}
+
 	private async init() {
 		while (true) {
 			try {
@@ -287,9 +302,13 @@ export class TokenBalanceService extends Service {
 			if (this.profile) {
 				try {
 					if (Date.now() >= nextSync) {
-						for (const tb of await this.balances.getValues()) {
+						const balancesToUpdate = (await this.balances.getValues())
+							.toSorted((a, b) => a.account.localeCompare(b.account));
+						
+						for (const tb of balancesToUpdate) {
 							this.queue.enqueue(tb)
 						}
+
 						nextSync = Date.now() + 60_000 // TODO: settings
 					}
 					if (this.queue.length) {
@@ -297,13 +316,13 @@ export class TokenBalanceService extends Service {
 							`Syncing ${this.queue.length} token balances`
 						)
 						const start = Date.now()
-						const cache = new Map<string, IAccountContract>()
 						while (this.queue.length) {
-							await Promise.allSettled(
-								this.queue
-									.dequeueBatch(4)
-									.map((x) => this.syncTokenBalance(x, cache)) // TODO: settings
-							)
+							const firstAccount = this.queue.peek()!.account;
+							const tbs: TokenBalanceRaw[] = [];
+							while (this.queue.peek()?.account === firstAccount && tbs.length < 12) {
+								tbs.push(this.queue.dequeue()!);
+							}
+							await this.syncBatch(firstAccount, tbs);
 						}
 						const end = Date.now()
 						console.debug(
@@ -317,72 +336,146 @@ export class TokenBalanceService extends Service {
 			await sleep(1000)
 		}
 	}
-
-	private async syncTokenBalance(
-		tb: TokenBalanceRaw,
-		cache: Map<string, IAccountContract>
-	) {
+	
+	private async syncBatch(account: string, tbs: TokenBalanceRaw[]) {
 		try {
-			console.debug(`Syncing balance #${tb.id}...`)
+			console.debug(`Syncing ${tbs.length} balances for ${account}`)
 			const start = Date.now()
 
-			const token = this.tokens.get(tb.token)
-			if (!token) {
-				console.error("Unknown token")
-				return
-			}
-
-			let pxe = this.pxes.get(token.chainId)
-			if (!pxe) {
-				console.error("Unknown network")
-				return
-			}
-
-			let account = cache.get(tb.account)
-			if (!account) {
-				account = await this.accountService.getAccountContract(
-					this.profile!,
-					token.chainId,
-					tb.account
+			const calls: [CallAction | EncodedCallAction, number, boolean, ViewFn][] = [];
+			let chainId: number | undefined;
+			for (let i = 0; i < tbs.length; i++) {
+				const tb = tbs[i];
+				const token = this.tokens.get(tb.token)
+				if (!token) {
+					console.error(`Unknown token #${tb.token}`)
+					continue;
+				}
+				chainId = token.chainId;
+				// sync private balance
+				if (!token.balanceOfPrivateFn) {
+					tb.privateBalance = "0";
+					continue;
+				}
+				const balanceOfPrivateFn = BalanceOfPrivateFn.new(
+					token.balanceOfPrivateFn.name,
+					token.balanceOfPrivateFn.impl
 				)
-				cache.set(tb.account, account)
-			}
-
-			const [_privateBalance, _publicBalance] = await Promise.all([
-				this.tokenService.getPrivateBalance(pxe, account, token),
-				this.tokenService.getPublicBalance(pxe, account, token),
-			])
-			const privateBalance = _privateBalance.toString()
-			const publicBalance = _publicBalance.toString()
-
-			if (
-				privateBalance !== tb.privateBalance ||
-				publicBalance != tb.publicBalance
-			) {
-				console.debug(
-					`Balance #${tb.id} changed: `,
-					privateBalance,
-					publicBalance
+				if (balanceOfPrivateFn.type === FunctionType.UNCONSTRAINED) {
+					calls.push([
+						new CallAction(
+							token.contract,
+							balanceOfPrivateFn.name,
+							balanceOfPrivateFn.buildArgs(account),
+						),
+						i,
+						true,
+						balanceOfPrivateFn,
+					]);
+				}
+				else {
+					const selector = await balanceOfPrivateFn.getSelector();
+					const packedArgs = await balanceOfPrivateFn.packArgs(balanceOfPrivateFn.buildArgs(account))
+					calls.push([
+						new EncodedCallAction(
+							token.contract,
+							selector.toString(),
+							packedArgs.values.map(x => x.toString()),
+							balanceOfPrivateFn.name,
+							balanceOfPrivateFn.type,
+							balanceOfPrivateFn.isStatic,
+							balanceOfPrivateFn.getReturnTypes(),
+						),
+						i,
+						true,
+						balanceOfPrivateFn,
+					]);
+				}
+				// sync public balance
+				if (!token.balanceOfPublicFn) {
+					tb.publicBalance = "0";
+					continue;
+				}
+				const balanceOfPublicFn = BalanceOfPublicFn.new(
+					token.balanceOfPublicFn.name,
+					token.balanceOfPublicFn.impl
 				)
-				tb.privateBalance = privateBalance
-				tb.publicBalance = publicBalance
-			} else {
-				console.debug(`Balance #${tb.id} unchanged`)
+				if (balanceOfPublicFn.type === FunctionType.UNCONSTRAINED) {
+					calls.push([
+						new CallAction(
+							token.contract,
+							balanceOfPublicFn.name,
+							balanceOfPublicFn.buildArgs(account),
+						),
+						i,
+						false,
+						balanceOfPublicFn,
+					]);
+				}
+				else {
+					const selector = await balanceOfPublicFn.getSelector();
+					const packedArgs = await balanceOfPublicFn.packArgs(balanceOfPublicFn.buildArgs(account))
+					calls.push([
+						new EncodedCallAction(
+							token.contract,
+							selector.toString(),
+							packedArgs.values.map(x => x.toString()),
+							balanceOfPublicFn.name,
+							balanceOfPublicFn.type,
+							balanceOfPublicFn.isStatic,
+							balanceOfPublicFn.getReturnTypes(),
+						),
+						i,
+						false,
+						balanceOfPublicFn,
+					]);
+				}
 			}
-			
-			tb.updatedAt = Date.now()
-			await this.balances.set(`${tb.id}`, tb)
-			this.emit(
-				new TokenBalanceServiceEventMessage(
-					TokenBalanceServiceEvent.TokenBalanceUpdated,
-					this.getTokenBalanceInfo(tb)
+			if (chainId) {
+				const network = (await this.networkService.getNetworks(chainId)).find(x => x.isDefault);
+				if (!network) {
+					throw new Error(`Failed to find network #${chainId}`);
+				}
+				const results = await this.executionService.executeSimulateViews(
+					new SimulateViewsOperation(
+						network.id,
+						account,
+						calls.map(x => x[0]),
+					),
+				);
+				for (let i = 0; i < calls.length; i++) {
+					const [_, tbIndex, isPrivate, viewFn] = calls[i];
+					const balance = (viewFn.unpackResult(results.encoded[i]) as bigint).toString();
+					if (isPrivate) {
+						if (tbs[tbIndex].privateBalance !== balance) {
+							console.debug(`Private balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].privateBalance} -> ${balance}`);
+							tbs[tbIndex].privateBalance = balance;
+						}
+					}
+					else {
+						if (tbs[tbIndex].publicBalance !== balance) {
+							console.debug(`Public balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].publicBalance} -> ${balance}`);
+							tbs[tbIndex].publicBalance = balance;
+						}
+					}
+				}
+			}
+			const now = Date.now();
+			for (const tb of tbs) {
+				tb.updatedAt = now;
+				await this.balances.set(`${tb.id}`, tb);
+				this.emit(
+					new TokenBalanceServiceEventMessage(
+						TokenBalanceServiceEvent.TokenBalanceUpdated,
+						this.getTokenBalanceInfo(tb)
+					)
 				)
-			)
+			}
 
 			const stop = Date.now()
-			console.debug(`Balance #${tb.id} synced in ${stop - start}ms`)
+			console.debug(`Synced in ${stop - start}ms`)
 		} catch (error) {
-			console.error(`Failed to sync balance #${tb.id}`, error)
+			console.error(`Failed to sync`, error)
 		}
 	}
 }

@@ -53,4 +53,8 @@ export class Queue<TKey, TValue> {
         }
         return res;
     }
+
+    public peek(): TValue | undefined {
+        return this.items.at(0);
+    }
 }

@@ -8,7 +8,6 @@ import { Account } from "@/wallet/services/account/client";
 import { NetworkService } from "@/wallet/services/network";
 import { Network } from "@/wallet/services/network/client";
 import { ProfileService } from "@/wallet/services/profile"
-import { TokenBalanceService } from "@/wallet/services/token-balance";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
 import {
@@ -41,7 +40,6 @@ export class TransactionService extends Service {
         private readonly profileService: ProfileService,
         private readonly accountService: AccountService,
         private readonly networkService: NetworkService,
-        private readonly tokenBalanceService: TokenBalanceService,
         emit: (event: EventMessage) => void,
     ) {
         super(TRANSACTION_SERVICE_NAME, emit);
@@ -240,7 +238,6 @@ export class TransactionService extends Service {
         }
         if (tx.status != TxStatus.Pending) {
             this.pending.delete(tx.hash);
-            this.tokenBalanceService.refreshAccountBalances(tx.account); // async call
         }
         console.debug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
     }

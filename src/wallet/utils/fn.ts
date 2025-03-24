@@ -6,6 +6,7 @@ import {
     NestedProcessReturnValues,
 } from "@aztec/stdlib/tx";
 import {
+    AbiType,
     encodeArguments,
     FunctionAbi,
     FunctionSelector,
@@ -43,6 +44,10 @@ export abstract class Fn extends FnImpl {
 
     public async packArgs(args: any[]): Promise<HashedValues> {
         return await HashedValues.fromValues(encodeArguments(this.abi(), args));
+    }
+
+    public getReturnTypes(): AbiType[] {
+        return this.abi().returnTypes;
     }
 
     public getImpl(): FnImpl {
