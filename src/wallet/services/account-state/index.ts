@@ -25,24 +25,24 @@ import {
     GetVersionResponse,
     Note,
     NoteStatus,
-    PXE_SERVICE_NAME,
-    PxeServiceMethod,
+    ACCOUNT_STATE_SERVICE_NAME,
+    AccountStateServiceMethod,
 } from "./client";
 
-export class PxeService extends Service {
+export class AccountStateService extends Service {
     private readonly authwits: EntityStorage<Authwit>;
 
     constructor(
         private readonly networks: NetworkService,
         emit: (event: EventMessage) => void
     ) {
-        super(PXE_SERVICE_NAME, emit);
+        super(ACCOUNT_STATE_SERVICE_NAME, emit);
         this.authwits = new EntityStorage("azguard:core:authwits", StorageType.Local);
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
         switch (request.method) {
-            case PxeServiceMethod.GetAuthwits: {
+            case AccountStateServiceMethod.GetAuthwits: {
                 const _request = request as GetAuthwitsRequest;
                 try {
                     const authwits = await this.getAuthwits(_request.networkId, _request.owner, _request.isPublic);
@@ -51,7 +51,7 @@ export class PxeService extends Service {
                     return new GetAuthwitsResponse(_request, undefined, error.message);
                 }
             }
-            case PxeServiceMethod.GetAccounts: {
+            case AccountStateServiceMethod.GetAccounts: {
                 const _request = request as GetAccountsRequest;
                 try {
                     const accounts = await this.getAccounts(_request.networkId);
@@ -60,7 +60,7 @@ export class PxeService extends Service {
                     return new GetAccountsResponse(_request, undefined, error.message);
                 }
             }
-            case PxeServiceMethod.GetContacts: {
+            case AccountStateServiceMethod.GetContacts: {
                 const _request = request as GetContactsRequest;
                 try {
                     const contacts = await this.getContacts(_request.networkId);
@@ -69,7 +69,7 @@ export class PxeService extends Service {
                     return new GetContactsResponse(_request, undefined, error.message);
                 }
             }
-            case PxeServiceMethod.GetContracts: {
+            case AccountStateServiceMethod.GetContracts: {
                 const _request = request as GetContractsRequest;
                 try {
                     const contracts = await this.getContracts(_request.networkId);
@@ -78,7 +78,7 @@ export class PxeService extends Service {
                     return new GetContractsResponse(_request, undefined, error.message);
                 }
             }
-            case PxeServiceMethod.GetNotes: {
+            case AccountStateServiceMethod.GetNotes: {
                 const _request = request as GetNotesRequest;
                 try {
                     const notes = await this.getNotes(
@@ -93,7 +93,7 @@ export class PxeService extends Service {
                     return new GetNotesResponse(_request, undefined, error.message);
                 }
             }
-            case PxeServiceMethod.GetVersion: {
+            case AccountStateServiceMethod.GetVersion: {
                 const _request = request as GetVersionRequest;
                 try {
                     const version = await this.getVersion(_request.networkId);

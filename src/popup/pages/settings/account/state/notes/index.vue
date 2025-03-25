@@ -38,7 +38,7 @@ const fetchNotes = async isRefetching => {
 	isFetchingNotes.value = true
 
 	try {
-		notes.value = await managers.pxe.getNotes(appStore.network.id, appStore.account.address)
+		notes.value = await managers.accountState.getNotes(appStore.network.id, appStore.account.address)
 		console.log(notes.value)
 	} catch (err) {
 		error.value = err
@@ -90,7 +90,7 @@ watch(
 
 						<Flex direction="column" gap="8">
 							<Text size="14" weight="600" color="primary"> Note </Text>
-							<Text size="13" weight="600" color="tertiary"> Storage slot - {{ note.storageSlot }} </Text>
+							<Text size="13" weight="600" color="tertiary"> Contract - {{ note.contractAddress.substring(0, 10) }}..{{ note.contractAddress.substring(60) }} </Text>
 						</Flex>
 					</Flex>
 

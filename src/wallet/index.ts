@@ -11,7 +11,7 @@ import { TransactionService } from "./services/transaction";
 import { ExecutionService } from "./services/execution";
 import { FaucetService } from "./services/faucet";
 import { FpcService } from "./services/fpc";
-import { PxeService } from "./services/pxe";
+import { AccountStateService } from "./services/account-state";
 import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
@@ -59,7 +59,7 @@ const transactionService = new TransactionService(
     networkService,
     broadcast,
 );
-const pxeService = new PxeService(networkService, broadcast);
+const accountStateService = new AccountStateService(networkService, broadcast);
 const executionService = new ExecutionService(
     profileService,
     networkService,
@@ -67,7 +67,7 @@ const executionService = new ExecutionService(
     tokenService,
     fpcService,
     transactionService,
-    pxeService,
+    accountStateService,
     broadcast
 );
 const tokenBalanceService = new TokenBalanceService(
@@ -115,7 +115,7 @@ const services = new Map<string, Service>([
     [dappInteractionService.name, dappInteractionService],
     [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
-    [pxeService.name, pxeService],
+    [accountStateService.name, accountStateService],
 ]);
 
 // state

@@ -40,7 +40,7 @@ const fetchContracts = async isRefetching => {
 	isFetchingContracts.value = true
 
 	try {
-		contracts.value = await managers.pxe.getContracts(appStore.network.id, appStore.account.address)
+		contracts.value = await managers.accountState.getContracts(appStore.network.id, appStore.account.address)
 	} catch (err) {
 		error.value = err
 

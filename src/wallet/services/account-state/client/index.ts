@@ -13,14 +13,14 @@ import {
 export * from './methods';
 export * from './models';
 
-export const PXE_SERVICE_NAME = "pxe";
+export const ACCOUNT_STATE_SERVICE_NAME = "account-state";
 
 /**
- * Client for interaction with the PxeService via messaging API
+ * Client for interaction with the AccountStateService via messaging API
  */
-export class PxeServiceClient extends ServiceClient {
+export class AccountStateServiceClient extends ServiceClient {
     /**
-     * Creates PxeServiceClient instace.
+     * Creates AccountStateServiceClient instace.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      */
@@ -28,7 +28,7 @@ export class PxeServiceClient extends ServiceClient {
         onConnected?: () => void,
         onDisconnected?: () => void,
     ) {
-        super(PXE_SERVICE_NAME, onConnected, onDisconnected);
+        super(ACCOUNT_STATE_SERVICE_NAME, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

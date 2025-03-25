@@ -1,7 +1,7 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Authwit, Note, NoteStatus, PXE_SERVICE_NAME } from ".";
+import { Authwit, Note, NoteStatus, ACCOUNT_STATE_SERVICE_NAME } from ".";
 
-export enum PxeServiceMethod {
+export enum AccountStateServiceMethod {
     GetAuthwits,
     GetAccounts,
     GetContacts,
@@ -16,7 +16,7 @@ export class GetAuthwitsRequest extends RequestMessage {
         public readonly owner: string,
         public readonly isPublic?: boolean,
     ) {
-        super(PXE_SERVICE_NAME, PxeServiceMethod.GetAuthwits);
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetAuthwits);
     }
 }
 
@@ -26,7 +26,7 @@ export class GetAuthwitsResponse extends ResponseMessage {
         result?: Authwit[],
         error?: string,
     ) {
-        super(PXE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
     }
 }
 
@@ -34,7 +34,7 @@ export class GetAccountsRequest extends RequestMessage {
     constructor(
         public readonly networkId: string,
     ) {
-        super(PXE_SERVICE_NAME, PxeServiceMethod.GetAccounts);
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetAccounts);
     }
 }
 
@@ -44,7 +44,7 @@ export class GetAccountsResponse extends ResponseMessage {
         result?: string[],
         error?: string,
     ) {
-        super(PXE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
     }
 }
 
@@ -52,7 +52,7 @@ export class GetContactsRequest extends RequestMessage {
     constructor(
         public readonly networkId: string,
     ) {
-        super(PXE_SERVICE_NAME, PxeServiceMethod.GetContacts);
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetContacts);
     }
 }
 
@@ -62,7 +62,7 @@ export class GetContactsResponse extends ResponseMessage {
         result?: string[],
         error?: string,
     ) {
-        super(PXE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
     }
 }
 
@@ -70,7 +70,7 @@ export class GetContractsRequest extends RequestMessage {
     constructor(
         public readonly networkId: string,
     ) {
-        super(PXE_SERVICE_NAME, PxeServiceMethod.GetContracts);
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetContracts);
     }
 }
 
@@ -80,7 +80,7 @@ export class GetContractsResponse extends ResponseMessage {
         result?: string[],
         error?: string,
     ) {
-        super(PXE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
     }
 }
 
@@ -92,7 +92,7 @@ export class GetNotesRequest extends RequestMessage {
         public readonly contract?: string,
         public readonly tx?: string,
     ) {
-        super(PXE_SERVICE_NAME, PxeServiceMethod.GetNotes);
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetNotes);
     }
 }
 
@@ -102,7 +102,7 @@ export class GetNotesResponse extends ResponseMessage {
         result?: Note[],
         error?: string,
     ) {
-        super(PXE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
     }
 }
 
@@ -110,7 +110,7 @@ export class GetVersionRequest extends RequestMessage {
     constructor(
         public readonly networkId: string,
     ) {
-        super(PXE_SERVICE_NAME, PxeServiceMethod.GetVersion);
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetVersion);
     }
 }
 
@@ -120,6 +120,6 @@ export class GetVersionResponse extends ResponseMessage {
         result?: string,
         error?: string,
     ) {
-        super(PXE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
     }
 }

@@ -36,7 +36,7 @@ import { Network } from "@/wallet/services/network/client";
 import { AccountService } from "@/wallet/services/account";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
 import { ProfileService } from "@/wallet/services/profile";
-import { PxeService } from "@/wallet/services/pxe";
+import { AccountStateService } from "@/wallet/services/account-state";
 import { TokenService } from "@/wallet/services/token";
 import {
     TransferPrivateFn,
@@ -106,7 +106,7 @@ export class ExecutionService extends Service {
         private readonly tokenService: TokenService,
         private readonly fpcService: FpcService,
         private readonly transactionService: TransactionService,
-        private readonly pxeService: PxeService,
+        private readonly accountStateService: AccountStateService,
         emit: (event: EventMessage) => void,
     ) {
         super(EXECUTION_SERVICE_NAME, emit);
@@ -929,7 +929,7 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
                             messageHash = await this.getCallMessageHash(_content, network, instances, artifacts);
-                            await this.pxeService.addCallAuthwit(
+                            await this.accountStateService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, false,
                             );
                             break;
@@ -937,7 +937,7 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
                             messageHash = await this.getEncodedCallMessageHash(_content, network, instances, artifacts);
-                            await this.pxeService.addCallAuthwit(
+                            await this.accountStateService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
                             );
                             break;
@@ -945,7 +945,7 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
                             messageHash = await this.getIntentMessageHash(_content, network);
-                            await this.pxeService.addIntentAuthwit(
+                            await this.accountStateService.addIntentAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, false,
                             );
                             break;
@@ -953,7 +953,7 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.MessageHash: {
                             const _content = _action.content as MessageHashAuthwitContent;
                             messageHash = Fr.fromString(_content.messageHash);
-                            await this.pxeService.addAuthwit(
+                            await this.accountStateService.addAuthwit(
                                 account.address.toString(), messageHash.toString(), false,
                             );
                             break;
@@ -981,7 +981,7 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
                             messageHash = await this.getCallMessageHash(_content, network, instances, artifacts);
-                            await this.pxeService.addCallAuthwit(
+                            await this.accountStateService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, true,
                             );
                             break;
@@ -989,7 +989,7 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
                             messageHash = await this.getEncodedCallMessageHash(_content, network, instances, artifacts);
-                            await this.pxeService.addCallAuthwit(
+                            await this.accountStateService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, true,
                             );
                             break;
@@ -997,7 +997,7 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
                             messageHash = await this.getIntentMessageHash(_content, network);
-                            await this.pxeService.addIntentAuthwit(
+                            await this.accountStateService.addIntentAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, true,
                             );
                             break;
@@ -1005,7 +1005,7 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.MessageHash: {
                             const _content = _action.content as MessageHashAuthwitContent;
                             messageHash = Fr.fromString(_content.messageHash);
-                            await this.pxeService.addAuthwit(
+                            await this.accountStateService.addAuthwit(
                                 account.address.toString(), messageHash.toString(), true,
                             );
                             break;
