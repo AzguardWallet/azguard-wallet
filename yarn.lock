@@ -20,18 +20,6 @@
   resolved "https://registry.yarnpkg.com/@antfu/utils/-/utils-0.7.10.tgz#ae829f170158e297a9b6a28f161a8e487d00814d"
   integrity sha512-+562v9k4aI80m1+VuMHehNJWLOFjBnXn3tdOitzD0il5b7smkSBal4+a3oKiQTbrwMmN/TBUMDvbdoWDehgOww==
 
-"@aztec/accounts@0.81.0":
-  version "0.81.0"
-  resolved "https://registry.yarnpkg.com/@aztec/accounts/-/accounts-0.81.0.tgz#537c4154cd67b5c89720f1804f44618f8cb4533f"
-  integrity sha512-3IJS2q5LFfqQggrkBIywnjnb9z5z54rqgq99nBR36rgz9DB4NP9MvS+LSiJeL32n7rF6R7qBZSyoCngkPTLlVg==
-  dependencies:
-    "@aztec/aztec.js" "0.81.0"
-    "@aztec/entrypoints" "0.81.0"
-    "@aztec/ethereum" "0.81.0"
-    "@aztec/foundation" "0.81.0"
-    "@aztec/stdlib" "0.81.0"
-    tslib "^2.4.0"
-
 "@aztec/aztec.js@0.81.0":
   version "0.81.0"
   resolved "https://registry.yarnpkg.com/@aztec/aztec.js/-/aztec.js-0.81.0.tgz#19764fa0e08ed2f7659dc6d0dbaef084109cf578"
@@ -74,17 +62,6 @@
   resolved "https://registry.yarnpkg.com/@aztec/constants/-/constants-0.81.0.tgz#33c1d9b5756f8593d7bcb772b5ee32ffa333860b"
   integrity sha512-sBCHgT9Bb2gA0K8y0uLFOgtQqoIb3wevDtfl1isHDDP7lQpLbQx8qfeDQpGm7KW/b1pSQwOlZedlzNSAI9Y4lg==
   dependencies:
-    tslib "^2.4.0"
-
-"@aztec/entrypoints@0.81.0":
-  version "0.81.0"
-  resolved "https://registry.yarnpkg.com/@aztec/entrypoints/-/entrypoints-0.81.0.tgz#344baccbb21d789b330f4f36ddd1e533e23de2ad"
-  integrity sha512-h6csNqPxBWYZoyG+oyF+xosyMKhFAdu/kUDmiHPxeU3isj+ygtreq8/2w0Ea+Ht5yGgwA11QmZFINo0QMv4dGg==
-  dependencies:
-    "@aztec/aztec.js" "0.81.0"
-    "@aztec/foundation" "0.81.0"
-    "@aztec/protocol-contracts" "0.81.0"
-    "@aztec/stdlib" "0.81.0"
     tslib "^2.4.0"
 
 "@aztec/ethereum@0.81.0":

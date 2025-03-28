@@ -4,7 +4,9 @@ import { Authwit, Note, NoteStatus, ACCOUNT_STATE_SERVICE_NAME } from ".";
 export enum AccountStateServiceMethod {
     GetAuthwits,
     GetAccounts,
-    GetContacts,
+    GetSenders,
+    AddSender,
+    DeleteSender,
     GetContracts,
     GetNotes,
     GetVersion,
@@ -48,18 +50,56 @@ export class GetAccountsResponse extends ResponseMessage {
     }
 }
 
-export class GetContactsRequest extends RequestMessage {
+export class GetSendersRequest extends RequestMessage {
     constructor(
         public readonly networkId: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetContacts);
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetSenders);
     }
 }
 
-export class GetContactsResponse extends ResponseMessage {
+export class GetSendersResponse extends ResponseMessage {
     constructor(
-        request: GetContactsRequest,
+        request: GetSendersRequest,
         result?: string[],
+        error?: string,
+    ) {
+        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class AddSenderRequest extends RequestMessage {
+    constructor(
+        public readonly networkId: string,
+        public readonly address: string,
+    ) {
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.AddSender);
+    }
+}
+
+export class AddSenderResponse extends ResponseMessage {
+    constructor(
+        request: AddSenderRequest,
+        result?: string,
+        error?: string,
+    ) {
+        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class DeleteSenderRequest extends RequestMessage {
+    constructor(
+        public readonly networkId: string,
+        public readonly address: string,
+    ) {
+        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.DeleteSender);
+    }
+}
+
+export class DeleteSenderResponse extends ResponseMessage {
+    constructor(
+        request: DeleteSenderRequest,
+        result?: string,
         error?: string,
     ) {
         super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
