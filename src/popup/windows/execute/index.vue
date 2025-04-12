@@ -6,6 +6,9 @@ import { computed, onMounted, onUnmounted } from "vue"
 import FeeSettingsCard from "../../components/modules/send/FeeSettingsCard.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
+/** Utils */
+import { trimAddress } from "@/utils/string"
+
 /** Services */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
@@ -216,10 +219,6 @@ onUnmounted(() => {
 
 const humanize = str => {
 	return `${str[0].toUpperCase()}${str.substring(1)}`.replace("_", " ")
-}
-
-const trimAddress = address => {
-	return `${address.substring(0, 8)}..${address.substring(62)}`
 }
 
 const showJson = () => {

@@ -48,3 +48,8 @@ export const normalizeAmount = target => {
 	if (target.length === 1 && !/^(0|[1-9]\d*)(\.\d+)?$/.test(target)) return ""
 	if (Number.parseFloat(purgeNumber(target)) >= 9_999_999_999_999) return "9999999999999"
 }
+
+export const isValidAmount = (value) => {
+	const num = Number(value)
+	return !Number.isNaN(num) && num > 0 && String(num) === value
+}

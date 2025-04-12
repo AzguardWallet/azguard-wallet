@@ -17,7 +17,7 @@ const props = defineProps({
 	token: Object,
 })
 
-const balance = computed(() => appStore.balances.filter(Boolean).find(b => b.token.id === props.token.id))
+const balance = computed(() => appStore.balances.filter(Boolean).find(b => b.token?.id === props.token?.id))
 const totalBalance = computed(() => {
 	if (!balance.value) return 0
 
@@ -30,18 +30,18 @@ const totalBalance = computed(() => {
 const isHovered = ref(false)
 
 const handleRefreshBalance = async () => {
-	appStore.tokensAwaitingBalanceRefresh.push(props.token.id)
-	managers.balance.refreshTokenBalance(props.token.id)
+	appStore.tokensAwaitingBalanceRefresh.push(props.token?.id)
+	managers.balance.refreshTokenBalance(props.token?.id)
 }
 </script>
 
 <template>
 	<SettingItem
-		:to="token.id !== -1 ? `/popup/tokens/${token.id}` : null"
+		:to="token?.id !== -1 ? `/popup/tokens/${token?.id}` : null"
 		size="large"
 		:title="token.symbol"
 		:description="token.name"
-		:disabled="token.id === -1"
+		:disabled="token?.id === -1"
 		icon="banknote"
 		@pointerenter="isHovered = true"
 		@pointerleave="isHovered = false"
@@ -49,7 +49,7 @@ const handleRefreshBalance = async () => {
 		<template #icon>
 			<Tooltip position="start">
 				<Icon
-					v-if="token.id !== -1 && !appStore.tokensAwaitingBalanceRefresh.includes(token.id)"
+					v-if="token?.id !== -1 && !appStore.tokensAwaitingBalanceRefresh.includes(token?.id)"
 					@click.stop="handleRefreshBalance"
 					:name="!isHovered ? 'banknote' : 'refresh'"
 					size="16"
@@ -70,7 +70,7 @@ const handleRefreshBalance = async () => {
 		</template>
 
 		<template #right>
-			<Flex v-if="token.id !== -1" direction="column" align="end" gap="6">
+			<Flex v-if="token?.id !== -1" direction="column" align="end" gap="6">
 				<Text size="13" weight="600" color="tertiary" noWrap :class="$style.balance_text">
 					<Text color="primary">{{ balance ? comma(totalBalance, ",", 8) : 0 }}</Text>
 					<Text :class="$style.symbol_wrapper">&nbsp;{{ token.symbol }}</Text>

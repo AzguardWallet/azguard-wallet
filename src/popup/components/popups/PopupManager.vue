@@ -25,6 +25,10 @@ import NewTokenPopup from "./NewTokenPopup/NewTokenPopup.vue"
 import EditTokenPopup from "./EditTokenPopup.vue"
 import TransactionPopup from "./TransactionPopup.vue"
 import SelectBalanceTypePopup from "./SelectBalanceTypePopup.vue"
+import NewFpcPopup from "./NewFpcPopup.vue"
+import EditFpcPopup from "./EditFpcPopup.vue"
+import SelectFpcPopup from "./SelectFpcPopup.vue"
+import EditClaimParametersPopup from "./EditClaimParametersPopup.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -63,4 +67,8 @@ const popupStore = usePopupStore()
 		:show="popupStore.isOpened('select_balance_type')"
 		@onClose="popupStore.close('select_balance_type')"
 	/>
+	<NewFpcPopup :show="popupStore.isOpened('new_fpc')" @onClose="popupStore.close('new_fpc')" />
+	<EditFpcPopup :show="popupStore.isOpened('edit_fpc')" @onClose="popupStore.close('edit_fpc')" />
+	<SelectFpcPopup :show="popupStore.isOpened('select_fpc')" @onClose="popupStore.close('select_fpc')" />
+	<EditClaimParametersPopup :show="popupStore.isOpened('edit_claim_parameters')" @onClose="popupStore.close('edit_claim_parameters')" />
 </template>

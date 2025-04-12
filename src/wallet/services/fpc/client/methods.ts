@@ -1,9 +1,11 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { FpcInfo, FPC_SERVICE_NAME, FpcType } from ".";
+import { type FpcInfo, FPC_SERVICE_NAME, type FpcType } from ".";
 
 export enum FpcServiceMethod {
+    GetFpc,
     GetFpcs,
     AddFpc,
+    UpdateFpc,
     DeleteFpc,
 }
 
@@ -25,6 +27,24 @@ export class GetFpcsResponse extends ResponseMessage {
     }
 }
 
+export class GetFpcRequest extends RequestMessage {
+    constructor(
+        public readonly fpcId: string,
+    ) {
+        super(FPC_SERVICE_NAME, FpcServiceMethod.GetFpc);
+    }
+}
+
+export class GetFpcResponse extends ResponseMessage {
+    constructor(
+        request: GetFpcRequest,
+        result?: FpcInfo,
+        error?: string,
+    ) {
+        super(FPC_SERVICE_NAME, request.id, result, error);
+    }
+}
+
 export class AddFpcRequest extends RequestMessage {
     constructor(
         public readonly networkId: string,
@@ -39,6 +59,25 @@ export class AddFpcRequest extends RequestMessage {
 export class AddFpcResponse extends ResponseMessage {
     constructor(
         request: AddFpcRequest,
+        result?: FpcInfo,
+        error?: string,
+    ) {
+        super(FPC_SERVICE_NAME, request.id, result, error);
+    }
+}
+
+export class UpdateFpcRequest extends RequestMessage {
+    constructor(
+        public readonly fpcId: string,
+        public readonly name: string,
+    ) {
+        super(FPC_SERVICE_NAME, FpcServiceMethod.UpdateFpc);
+    }
+}
+
+export class UpdateFpcResponse extends ResponseMessage {
+    constructor(
+        request: UpdateFpcRequest,
         result?: FpcInfo,
         error?: string,
     ) {

@@ -130,7 +130,7 @@ const onKeydown = e => {
 							wide
 							type="primary"
 							size="medium"
-							:disabled="!isAvailableToUpdateNetwork"
+							:disabled="!isAvailableToUpdateNetwork || !isStartedEditing"
 							:loading="isNetworkUpdateInProgress"
 						>
 							Update

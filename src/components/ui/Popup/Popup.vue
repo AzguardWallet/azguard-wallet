@@ -26,7 +26,7 @@ watch(
 			const _ = managers.profile?.refreshSession()
 
 			await nextTick()
-			trap = focusTrap.createFocusTrap(popupEl.value.wrapper, {
+			trap = focusTrap.createFocusTrap(popupEl.value?.wrapper, {
 				initialFocus: false,
 			})
 			trap.activate()
@@ -51,6 +51,11 @@ watch(
 					:style="{ zIndex: (displaceIdx + 1) * 100 * 5 }"
 				>
 					<div @click="emit('onClose')" :class="$style.close_area" />
+
+					<!-- Need to refactor !!! -->
+					<button style="position: absolute; opacity: 0; pointer-events: none;" aria-hidden="true" tabindex="0">
+						focus trap dummy
+					</button>
 
 					<slot />
 				</Flex>

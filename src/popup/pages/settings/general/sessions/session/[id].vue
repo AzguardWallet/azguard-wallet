@@ -190,21 +190,22 @@ onMounted(async () => {
 			<Flex direction="column" align="start" justify="start" gap="8">
 				<Text size="15" weight="600" color="primary">Session allowances:</Text>
 
-				<Flex align="center" gap="4" :style="{ paddingLeft: '4px' }">
-					<Text size="13" color="secondary">Networks:</Text>
-					<Text size="13" color="secondary">
+				<Flex align="start" gap="4" :style="{ paddingLeft: '4px' }">
+					<Text size="13" weight="600" color="secondary">Networks:</Text>
+					<Text size="13" color="secondary" :style="{ lineHeight: '1.2' }">
 						{{ chains.map(ch => getNetworkType(Number(ch.split(":").pop()))).join(", ") }}
 					</Text>
 				</Flex>
 
-				<Flex align="center" gap="4" :style="{ paddingLeft: '4px' }">
-					<Text size="13" color="secondary">Methods:</Text>
-					<Text size="13" color="secondary"> {{ methods.join(", ") }} </Text>
+				<Flex align="start" gap="4" :style="{ paddingLeft: '4px' }">
+					<Text size="13" weight="600" color="secondary">Methods:</Text>
+					<Text size="13" color="secondary" :style="{ lineHeight: '1.2' }"> {{ methods.join(", ") }} </Text>
 				</Flex>
 
-				<Flex align="center" gap="4" :style="{ paddingLeft: '4px' }">
-					<Text size="13" color="secondary">Events:</Text>
-					<Text size="13" color="secondary"> {{ events.join(", ") }} </Text>
+				<Flex align="start" gap="4" :style="{ paddingLeft: '4px' }">
+					<Text size="13" weight="600" color="secondary">Events:</Text>
+					<Text v-if="events.length" size="13" color="secondary" :style="{ lineHeight: '1.2' }"> {{ events.join(", ") }} </Text>
+					<Text v-else size="13" color="tertiary" :style="{ lineHeight: '1.2' }"> no allowances given </Text>
 				</Flex>
 			</Flex>
 		</Flex>

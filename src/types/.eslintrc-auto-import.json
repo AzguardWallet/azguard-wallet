@@ -319,6 +319,10 @@
     "CAIP": true,
     "AZTEC_EVENTS": true,
     "AZTEC_METHODS": true,
-    "createNotification": true
+    "createNotification": true,
+    "isValidHex": true,
+    "trimAddress": true,
+    "debounce": true,
+    "isValidAmount": true
   }
 }

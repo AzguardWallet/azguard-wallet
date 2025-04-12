@@ -23,6 +23,7 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 		<ItemsContainer title="Profile">
 			<SettingItem to="/popup/settings/general/accounts" title="Accounts" icon="vault" iconBgColor="green" />
 			<SettingItem to="/popup/settings/general/tokens" title="Tokens" icon="banknote" iconBgColor="blue" />
+			<SettingItem to="/popup/settings/general/fpcs" title="FPCs" icon="fpcs" iconBgColor="blue" />
 			<SettingItem title="Contacts" icon="contacts" iconBgColor="blue" disabled />
 			<SettingItem to="/popup/settings/general/networks" title="Nodes" icon="globe" iconBgColor="blue" />
 			<SettingItem to="/popup/settings/general/sessions" title="Sessions" icon="plug-circle" iconBgColor="sand" />

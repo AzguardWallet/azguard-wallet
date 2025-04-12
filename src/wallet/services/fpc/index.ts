@@ -1,17 +1,21 @@
 import { createPXEClient } from "@aztec/aztec.js";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
-import { ProfileService } from "@/wallet/services/profile";
-import { NetworkService } from "@/wallet/services/network";
+import type { ProfileService } from "@/wallet/services/profile";
+import type { NetworkService } from "@/wallet/services/network";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
-    GetFpcsRequest,
+    type GetFpcsRequest,
     GetFpcsResponse,
-    AddFpcRequest,
+    type GetFpcRequest,
+    GetFpcResponse,
+    type AddFpcRequest,
     AddFpcResponse,
-    DeleteFpcRequest,
+    type UpdateFpcRequest,
+    UpdateFpcResponse,
+    type DeleteFpcRequest,
     DeleteFpcResponse,
     FpcInfo,
     FpcType,
@@ -44,8 +48,19 @@ export class FpcService extends Service {
                 try {
                     const result = await this.getFpcs(_request.chainId);
                     return new GetFpcsResponse(_request, result);
+                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 } catch (error: any) {
                     return new GetFpcsResponse(_request, undefined, error.message);
+                }
+            }
+            case FpcServiceMethod.GetFpc: {
+                const _request = request as GetFpcRequest;
+                try {
+                    const result = await this.getFpc(_request.fpcId);
+                    return new GetFpcResponse(_request, result.infoData);
+                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                } catch (error: any) {
+                    return new GetFpcResponse(_request, undefined, error.message);
                 }
             }
             case FpcServiceMethod.AddFpc: {
@@ -58,15 +73,29 @@ export class FpcService extends Service {
                         _request.fpcName,
                     );
                     return new AddFpcResponse(_request, result);
+                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 } catch (error: any) {
                     return new AddFpcResponse(_request, undefined, error.message);
                 }
             }
-            case FpcServiceMethod.DeleteFpc: {
+            case FpcServiceMethod.UpdateFpc: {
+                const _request = request as UpdateFpcRequest;
+                try {
+                    const result = await this.updateFpc(
+                        _request.fpcId,
+                        _request.name,
+                    );
+                    return new UpdateFpcResponse(_request, result);
+                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                } catch (error: any) {
+                    return new UpdateFpcResponse(_request, undefined, error.message);
+                }
+            }            case FpcServiceMethod.DeleteFpc: {
                 const _request = request as DeleteFpcRequest;
                 try {
                     const result = await this.deleteFpc(_request.fpcId);
                     return new DeleteFpcResponse(_request, result);
+                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 } catch (error: any) {
                     return new DeleteFpcResponse(_request, undefined, error.message);
                 }
@@ -195,6 +224,25 @@ export class FpcService extends Service {
         }
     }
 
+    public async updateFpc(fpcId: string, name: string): Promise<FpcInfo> {
+        const profile = await this.profiles.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+        const fpc = await this.storage.get(fpcId);
+        if (fpc?.profileId !== profile.id) {
+            throw new Error("Invalid id");
+        }
+
+        const newFpc = {
+            ...fpc,
+            name,
+        };
+        await this.storage.set(fpcId, newFpc);
+        this.emit(new FpcServiceEventMessage(FpcServiceEvent.FpcUpdated, newFpc));
+        return newFpc;
+    }
+        
     public async deleteFpc(id: string): Promise<FpcInfo> {
         const profile = await this.profiles.getActiveProfile();
         if (!profile) {

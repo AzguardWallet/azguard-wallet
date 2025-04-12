@@ -7,6 +7,7 @@ import CandidatesForm from "./CandidatesForm.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
+import { isValidHex } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -35,8 +36,7 @@ const isAddingNewToken = ref(false)
 
 const isAlreadyExist = computed(() => appStore.tokens.findLast(t => t.contract === contractAddressTerm.value))
 const isAvailableToCreateToken = computed(() => {
-	if (!contractAddressTerm.value.length || contractAddressTerm.value.length !== 66) return
-	if (!contractAddressTerm.value.startsWith("0x")) return
+	if (!isValidHex(contractAddressTerm.value)) return
 	if (isLoadingParseResult.value) return
 	if (isAlreadyExist.value) return
 

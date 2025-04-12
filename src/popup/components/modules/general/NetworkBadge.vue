@@ -56,31 +56,6 @@ const chain = computed(() => {
 	border-radius: 6px;
 	padding: 2px 4px;
 	color: var(--txt-inverse);
-
-	/* &.mainnet {
-		background: var(--green);
-		color: var(--txt-inverse);
-	}
-
-	&.azguardbox {
-		background: var(--blue);
-		color: var(--txt-inverse);
-	}
-
-	&.devnet {
-		background: var(--gray);
-		color: var(--txt-inverse);
-	}
-
-	&.sandbox {
-		background: var(--sand);
-		color: var(--txt-inverse);
-	}
-
-	&.custom {
-		background: var(--purple);
-		color: var(--txt-inverse);
-	} */
 }
 
 .divider {

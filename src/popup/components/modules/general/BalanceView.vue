@@ -49,9 +49,9 @@ watch(
 const tokenBalance = computed(() => {
 	if (props.token) {
 		return appStore.balances.filter(Boolean).find(b => b.token?.id === props.token?.id)
-	} else {
-		return appStore.balances.filter(Boolean).find(b => b.token?.id === tokenToDisplay.value?.id)
 	}
+
+	return appStore.balances.filter(Boolean).find(b => b.token?.id === tokenToDisplay.value?.id)
 })
 const totalTokenBalance = computed(() => {
 	if (!tokenBalance.value) return 0
@@ -123,7 +123,7 @@ const handleRefreshBalance = () => {
 	appStore.tokensAwaitingBalanceRefresh.push(props.token.id)
 	managers.balance.refreshTokenBalance(props.token.id)
 }
-const isRefreshingBalance = computed(() => appStore.tokensAwaitingBalanceRefresh.includes(props.token.id))
+const isRefreshingBalance = computed(() => appStore.tokensAwaitingBalanceRefresh.includes(props.token?.id))
 
 const handleEditToken = () => {
 	cacheStore.tokenToEditIdx = props.token.id

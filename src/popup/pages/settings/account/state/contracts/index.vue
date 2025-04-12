@@ -43,8 +43,6 @@ const fetchContracts = async isRefetching => {
 		contracts.value = await managers.accountState.getContracts(appStore.network.id, appStore.account.address)
 	} catch (err) {
 		error.value = err
-
-		isFetchingContracts.value = false
 	} finally {
 		isFetchingContracts.value = false
 	}

@@ -12,7 +12,7 @@ import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 
 /** Utils */
 import { managers } from "@/utils/core.js"
-import { capitalize } from "@/utils/string"
+import { capitalize, isValidHex } from "@/utils/string"
 import { TransferType } from "@/wallet/services/transaction/client"
 import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
 
@@ -114,8 +114,7 @@ const isAllowedToSend = computed(() => {
 	if (Number.isNaN(amountToSend)) return
 	if (amountToSend < 0.00000001) return
 	if (!amountToSend) return
-	if (!destinationAddressTerm.value.length || destinationAddressTerm.value.length !== 66) return
-	if (!destinationAddressTerm.value.startsWith("0x")) return
+	if (!isValidHex(destinationAddressTerm.value)) return
 	if (amountToSend > tokenBalanceByType.value) return
 	if (!feeSettings.value) return
 
