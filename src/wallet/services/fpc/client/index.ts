@@ -20,7 +20,7 @@ export class FpcServiceClient extends ServiceClient {
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onFpcAdded Callback, called when a new transaction was created.
      * @param onFpcUpdated Callback, called when an existing transaction was updated.
-     * @param onFpcDeleted Callback, called when an existing transaction was updated.
+     * @param onFpcDeleted Callback, called when an existing transaction was deleted.
      */
     constructor(
         onConnected?: () => void,

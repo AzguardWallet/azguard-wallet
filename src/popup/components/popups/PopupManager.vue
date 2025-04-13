@@ -29,6 +29,7 @@ import NewFpcPopup from "./NewFpcPopup.vue"
 import EditFpcPopup from "./EditFpcPopup.vue"
 import SelectFpcPopup from "./SelectFpcPopup.vue"
 import EditClaimParametersPopup from "./EditClaimParametersPopup.vue"
+import NewSenderPopup from "./NewSenderPopup.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -71,4 +72,5 @@ const popupStore = usePopupStore()
 	<EditFpcPopup :show="popupStore.isOpened('edit_fpc')" @onClose="popupStore.close('edit_fpc')" />
 	<SelectFpcPopup :show="popupStore.isOpened('select_fpc')" @onClose="popupStore.close('select_fpc')" />
 	<EditClaimParametersPopup :show="popupStore.isOpened('edit_claim_parameters')" @onClose="popupStore.close('edit_claim_parameters')" />
+	<NewSenderPopup :show="popupStore.isOpened('new_sender')" @onClose="popupStore.close('new_sender')" />
 </template>

@@ -31,6 +31,8 @@ import {
     NoteStatus,
     ACCOUNT_STATE_SERVICE_NAME,
     AccountStateServiceMethod,
+    AccountStateServiceEvent,
+    AccountStateServiceEventMessage,
 } from "./client";
 
 export class AccountStateService extends Service {
@@ -210,7 +212,9 @@ export class AccountStateService extends Service {
         const network = await this.networks.getNetwork(networkId);
         try {
             const pxe = createPXEClient(network.rpcUrl);
-            return (await pxe.registerSender(AztecAddress.fromString(address))).toString();
+            const sender = (await pxe.registerSender(AztecAddress.fromString(address))).toString()
+            this.emit(new AccountStateServiceEventMessage(AccountStateServiceEvent.SenderAdded, sender));
+            return sender;
         }
         catch (error) {
             console.error("Failed to register sender", error);
@@ -223,6 +227,7 @@ export class AccountStateService extends Service {
         try {
             const pxe = createPXEClient(network.rpcUrl);
             await pxe.removeSender(AztecAddress.fromString(address));
+            this.emit(new AccountStateServiceEventMessage(AccountStateServiceEvent.SenderDeleted, address));
             return address;
         }
         catch (error) {

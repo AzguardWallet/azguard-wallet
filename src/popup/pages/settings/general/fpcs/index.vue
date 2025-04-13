@@ -38,6 +38,7 @@ const balances = ref([])
 const tokens = computed(() => new Map(balances.value?.map(b => [b.token.contract, b.token])))
 const tokenContracts = computed(() => new Set(tokens.value?.keys()))
 const isLoading = ref(false)
+const error = ref()
 
 const showSearchInput = ref(false)
 const searchTerm = ref()
@@ -84,7 +85,7 @@ const fetchFpcs = async () => {
 		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
 		fpcs.value = allFpcs.map(f => prepareFpc(f))
 	} catch (err) {
-		console.log(err);
+		error.value = err
 	} finally {
 		isLoading.value = false
 	}
@@ -181,7 +182,19 @@ onBeforeUnmount(() => {
 	<Flex direction="column" gap="20" :class="$style.wrapper">
 		<Breadcrumbs />
 
-		<Flex direction="column" gap="16">
+		<Banner v-if="isLoading" isLoading> Fetching FPCs </Banner>
+
+		<Tooltip v-else-if="error" wide>
+			<Banner :action="{ name: 'Try again', callback: () => fetchFpcs() }" variant="error" wide>
+				Something went wrong
+			</Banner>
+
+			<template #content>
+				{{ error }}
+			</template>
+		</Tooltip>
+
+		<Flex v-else direction="column" gap="16">
 			<Flex align="center" justify="between" gap="16">
 				<Text size="13" weight="600" color="primary">
 					FPCs &nbsp;<Text color="tertiary">{{ filteredFpcs.length }} </Text>
@@ -247,6 +260,7 @@ onBeforeUnmount(() => {
 					@click="handleCopyAddress(fpc.address)"
 					:title="fpc.name || fpc.address"
 					:description="fpc.name ? fpc.address : null"
+					icon="fpc"
 					iconBgColor="transparent"
 				>
 					<template #right>
