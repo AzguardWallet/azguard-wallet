@@ -10,9 +10,7 @@
 <script setup>
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
-// import { Dropdown, DropdownDivider, DropdownItem } from "../../../../components/ui/Dropdown"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
@@ -29,25 +27,51 @@ const { openToast } = useToast()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
-const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
 
 const fpcs = ref([])
 const balances = ref([])
 const tokens = computed(() => new Map(balances.value?.map(b => [b.token.contract, b.token])))
 const tokenContracts = computed(() => new Set(tokens.value?.keys()))
 const isLoading = ref(false)
+
+const showSearchInput = ref(false)
+const searchTerm = ref()
+const showAllFpcs = ref(true)
+const filteredFpcs = computed(() => {
+	let arr = [...fpcs.value]
+	if (!showAllFpcs.value) {
+		arr = arr.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
+	}
+	const lowTerm = searchTerm.value?.toLowerCase() || ""
+	if (!lowTerm) return arr
+
+	return arr.filter(fpc => {
+		return (
+			fpc.name?.toLowerCase().includes(lowTerm) ||
+			fpc.typeName?.toLowerCase().includes(lowTerm) ||
+			fpc.token?.name?.toLowerCase().includes(lowTerm) ||
+			fpc.token?.symbol?.toLowerCase().includes(lowTerm) ||
+			fpc.address  === searchTerm.value ||
+			fpc.asset === searchTerm.value
+		)
+	})
+})
+
 const prepareFpc = (fpc) => {
 	return fpc.type === FpcType.DefaultSponsoredFpc
 		? {
 			...fpc,
+			typeName: "sponsored",
 			color: getNetworkColor(appStore.network.chainId),
 		}
 		: {
 			...fpc,
+			typeName: "fpc",
 			color: "green",
 			token: tokens.value?.get(fpc.asset),
 		}
@@ -58,10 +82,7 @@ const fetchFpcs = async () => {
 	try {
 		const allFpcs = await fpcService.getFpcs(appStore.network.chainId)
 		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
-
-		fpcs.value = allFpcs
-			// .filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
-			.map(f => prepareFpc(f))
+		fpcs.value = allFpcs.map(f => prepareFpc(f))
 	} catch (err) {
 		console.log(err);
 	} finally {
@@ -74,19 +95,22 @@ const handleCopyAddress = (address) => {
 	openToast({ label: "FPC's address is copied", icon: "copy" })
 }
 
-const handleEdit = target => {
-	cacheStore.fpcToEditIdx = target.id
+const handleAddToken = (fpc) => {
+	cacheStore.preselectedTokenAddressToAdd = fpc.asset
+	popupStore.open("new_token")
+}
+const handleEdit = (fpc) => {
+	cacheStore.fpcToEditIdx = fpc.id
 	popupStore.open("edit_fpc")
 }
-
-const handleDelete = target => {
+const handleDelete = (fpc) => {
 	cacheStore.confirm.confirm_text = "Yes, delete FPC"
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.title = "Delete this FPC?"
 	cacheStore.confirm.description =
 		"By confirming this action, the selected FPC will be permanently deleted from your wallet"
 	cacheStore.confirm.callback = async () => {
-		await fpcService.deleteFpc(target.id)
+		await fpcService.deleteFpc(fpc.id)
 
 		openToast({ label: "FPC is deleted" })
 	}
@@ -106,10 +130,38 @@ const onFpcUpdated = (fpc) => {
 const onFpcDeleted = (fpc) => {
 	fpcs.value = fpcs.value.filter(f => f.id !== fpc.id)
 }
+const onBalanceAdded = (balance) => {
+	balances.value.push(balance)
 
-const onBalanceUpdated = () => {}
+	fpcs.value = fpcs.value.map(f => {
+		if (f.asset === balance.token.contract) {
+			return prepareFpc({
+				...f,
+				token: balance.token,
+			})
+		}
+		return f
+	})
+}
+const onBalanceUpdated = (balance) => {
+	const balanceIdx = balances.value.findIndex(b => b.token.contract === balance.token.contract)
+	if (balanceIdx === -1) return
+	balances.value[balanceIdx] = balance
+}
+const onBalanceDeleted = (balance) => {
+	balances.value = balances.value.filter(b => b.token.contract !== balance.token.contract)
+	fpcs.value = fpcs.value.map(f => {
+		if (f.asset === balance.token.contract) {
+			return prepareFpc({
+				...f,
+				token: null,
+			})
+		}
+		return f
+	})
+}
 const fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
-const tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined,	onBalanceUpdated, onBalanceUpdated, onBalanceUpdated)
+const tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined,	onBalanceAdded, onBalanceUpdated, onBalanceDeleted)
 watch(
 	() => [appStore.network, appStore.account],
 	() => {
@@ -130,13 +182,68 @@ onBeforeUnmount(() => {
 		<Breadcrumbs />
 
 		<Flex direction="column" gap="16">
-			<Text size="13" weight="600" color="primary">
-				FPCs &nbsp;<Text color="tertiary">{{ fpcs.length }} </Text>
-			</Text>
+			<Flex align="center" justify="between" gap="16">
+				<Text size="13" weight="600" color="primary">
+					FPCs &nbsp;<Text color="tertiary">{{ filteredFpcs.length }} </Text>
+				</Text>
 
-			<ItemsContainer>
+				<Flex align="center" gap="8">
+					<Tooltip v-if="showAllFpcs" position="end">
+						<Icon
+							@click="showAllFpcs = !showAllFpcs"
+							name="eye"
+							size="14"
+							color="secondary"
+							:class="$style.search_icon"
+						/>
+
+						<template #content>
+							<Text size="12" color="secondary"> Show only availiable </Text>
+						</template>
+					</Tooltip>
+
+					<Tooltip v-else position="end">
+						<Icon
+							@click="showAllFpcs = !showAllFpcs"
+							name="eye-off"
+							size="14"
+							color="secondary"
+							:class="$style.search_icon"
+							:style="{transform: 'translate(1px, 1px)'}"
+						/>
+
+						<template #content>
+							<Text size="12" color="secondary"> Show all </Text>
+						</template>
+					</Tooltip>
+
+					<Tooltip position="end">
+						<Icon
+							@click="showSearchInput = !showSearchInput"
+							name="search"
+							size="14"
+							color="secondary"
+							:class="[$style.search_icon, (showSearchInput || searchTerm) && $style.active]"
+						/>
+
+						<template #content>
+							<Text v-if="!showSearchInput" size="12" color="secondary"> Show search field </Text>
+							<Text v-else size="12" color="secondary"> Hide search field </Text>
+						</template>
+					</Tooltip>
+				</Flex>
+			</Flex>
+
+			<Input
+				v-if="showSearchInput"
+				v-model="searchTerm"
+				icon="search"
+				placeholder="Search by name, type, address or token"
+			/>
+
+			<ItemsContainer v-if="fpcs.length">
 				<SettingItem
-					v-for="fpc in fpcs"
+					v-for="fpc in filteredFpcs"
 					@click="handleCopyAddress(fpc.address)"
 					:title="fpc.name || fpc.address"
 					:description="fpc.name ? fpc.address : null"
@@ -144,6 +251,7 @@ onBeforeUnmount(() => {
 				>
 					<template #right>
 						<Flex
+							v-if="fpc.type === FpcType.DefaultSponsoredFpc || fpc.token?.symbol"
 							align="center"
 							gap="6"
 							:class="$style.badge"
@@ -153,6 +261,18 @@ onBeforeUnmount(() => {
 						</Flex>
 
 						<Flex align="center" gap="8">
+							<Tooltip v-if="!(fpc.type === FpcType.DefaultSponsoredFpc || fpc.token?.symbol)" position="end" delay="350">
+								<Icon
+									@click.stop="handleAddToken(fpc)"
+									name="banknote"
+									size="20"
+									color="tertiary"
+									:class="$style.icon_btn"
+								/>
+
+								<template #content> Add token </template>
+							</Tooltip>
+
 							<Tooltip position="end" delay="350">
 								<Icon
 									@click.stop="handleEdit(fpc)"
@@ -179,6 +299,10 @@ onBeforeUnmount(() => {
 						</Flex>
 					</template>
 				</SettingItem>
+
+				<Flex v-if="filteredFpcs.length === 0 && searchTerm" align="center" justify="center" gap="8">
+					<Text size="13" weight="600" color="tertiary"> No FPCs found </Text>
+				</Flex>
 			</ItemsContainer>
 
 			<Button
@@ -211,6 +335,19 @@ onBeforeUnmount(() => {
 	border-top-right-radius: 24px;
 
 	padding: 20px 24px 80px 24px;
+}
+
+.search_icon {
+	cursor: pointer;
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		fill: var(--txt-primary);
+	}
+
+	&.active {
+		fill: var(--blue);
+	}
 }
 
 .badge {

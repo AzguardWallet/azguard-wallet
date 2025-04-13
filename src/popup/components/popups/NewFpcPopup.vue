@@ -11,7 +11,8 @@ import { managers } from "@/utils/core"
 import { isValidHex } from "@/utils/string"
 
 /** Services */
-import { FpcInfo, FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
+import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -19,9 +20,10 @@ const { openToast } = useToast()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
-import { ref } from "vue"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
@@ -34,7 +36,9 @@ const props = defineProps({
 })
 
 let fpcService = null
+let tokenBalanceService = null
 const fpcs = ref([])
+const balances = ref([])
 const selectedFpcType = ref(null)
 const fpcTypes = {
 	"DefaultFpc": "FPC",
@@ -75,6 +79,22 @@ const handleAddFpc = async () => {
 			nameTerm.value,
 		)
 
+		if (newFpc.type === FpcType.DefaultFpc) {
+			const balanceIdx = balances.value.findIndex(b => b.token.contract === newFpc.asset)
+			if (balanceIdx === -1) {
+				cacheStore.confirm.confirm_text = "Yes, add token"
+				cacheStore.confirm.confirm_color = "primary"
+				cacheStore.confirm.title = "Want to add token along with FPC?"
+				cacheStore.confirm.description = "Upon confirmation of this action, the token associated with the FPC will be added to your wallet"
+				cacheStore.confirm.callback = async () => {
+					cacheStore.preselectedTokenAddressToAdd = newFpc.asset
+					popupStore.open("new_token")
+				}
+
+				popupStore.open("confirm")
+			}
+		}
+
 		emit("onClose")
 		openToast({ label: "FPC is added" })
 	} catch (err) {
@@ -101,21 +121,33 @@ const onFpcUpdated = (fpc) => {
 const onFpcDeleted = (fpc) => {
 	fpcs.value = fpcs.value.filter(f => f.id !== fpc.id)
 }
+const onBalanceAdded = (balance) => {
+	balances.value.push(balance)
+}
+const onBalanceDeleted = (balance) => {
+	balances.value = balances.value.filter(b => b.id !== balance.id)
+}
 watch(
 	() => props.show,
 	async () => {
 		if (!props.show) {
-			document.removeEventListener("keydown", onKeydown)
-
 			fpcService.dispose()
 			fpcService = null
 			fpcs.value = []
+			tokenBalanceService.dispose()
+			tokenBalanceService = null
+			balances.value = []
 			selectedFpcType.value = null
 			nameTerm.value = ""
 			fpcAddressTerm.value = ""
+
+			document.removeEventListener("keydown", onKeydown)
 		} else {
 			fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
 			fpcs.value = await fpcService.getFpcs(appStore.network.chainId)
+			tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined, onBalanceAdded, undefined, onBalanceDeleted)
+			balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
+
 			document.addEventListener("keydown", onKeydown)
 		}
 	},
@@ -160,7 +192,7 @@ const onKeydown = e => {
 							<Text v-if="selectedFpcType" size="13" weight="600" color="primary">
 								{{ fpcTypes[selectedFpcType] }}
 							</Text>
-							<Text v-else size="12" weight="600" color="red" style="padding: 2px 0"> Select FPC type </Text>
+							<Text v-else size="12" weight="600" color="red"> Select FPC type </Text>
 
 							<Icon
 								name="chevron"

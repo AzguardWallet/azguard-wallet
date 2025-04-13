@@ -16,10 +16,8 @@ import { isValidHex } from "@/utils/string"
 import { isValidAmount } from "@/utils/amount"
 
 /** Store */
-import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
-const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 

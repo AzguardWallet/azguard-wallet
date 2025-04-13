@@ -59,6 +59,7 @@ const methods = ref([
 ])
 const isCustomMethod = computed(() => settings.value?.paymentMethod.type === FeePaymentMethodType.Custom)
 const selectedMethod = ref()
+const isMethodsDropdownOpen = ref(false)
 
 const balances = ref([])
 const feeJuiceBalance = computed(() => balances.value?.find(isFeeJuice))
@@ -192,8 +193,17 @@ watch(
 				)
 				break;
 			case "fpc":
-				if (!selectedMethod.value.fpc) {
+				if (!selectedMethod.value.fpc && !selectedFpc.value) {
 					settings.value = undefined
+					break;
+				}
+				if (!selectedMethod.value.fpc && selectedFpc.value) {
+					selectedMethod.value = {
+						...selectedMethod.value,
+						fpc: selectedFpc.value,
+						balance: selectedFpc.value.balance,
+						inPublic: selectedFpc.value.balance?.privateBalance === "0" && selectedFpc.value.balance?.publicBalance !== "0",
+					}
 					break;
 				}
 
@@ -268,7 +278,7 @@ onBeforeUnmount(() => {
 			<Text size="13" weight="600" color="primary">Pay fee with</Text>
 
 			<Text v-if="isCustomMethod" size="13" weight="600" color="primary"> Custom method </Text>
-			<Dropdown v-else>
+			<Dropdown v-else @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false">
 				<template #trigger>
 					<Spinner v-if="loading" color="--txt-primary" />
 					<Flex v-else align="center" gap="8" class="clickable">
@@ -278,10 +288,16 @@ onBeforeUnmount(() => {
 								{{ selectedMethod.title }}
 							</Text>
 						</template>
-						<template v-else>
-							<Text size="13" weight="600" color="red" style="padding: 2px 0"> Select method </Text>
-						</template>
-						<Icon name="chevron" size="12" color="secondary" />
+						<Text v-else size="13" weight="600" color="red" style="padding: 2px 0"> Select method </Text>
+						<Icon
+							name="chevron"
+							size="12"
+							color="secondary"
+							:style="{
+								transform: `rotate(${isMethodsDropdownOpen ? '180' : '0'}deg)`,
+								transition: 'all 0.2s ease'
+							}"
+						/>
 					</Flex>
 				</template>
 
@@ -349,7 +365,6 @@ onBeforeUnmount(() => {
 							:class="$style.icon_btn"
 						/>
 					</Flex>
-					
 				</Flex>
 			</Flex>
 		</template>

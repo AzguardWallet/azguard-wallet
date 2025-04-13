@@ -28,6 +28,24 @@ let fpcService = null
 let tokenBalanceService = null
 const fpcs = ref([])
 const balances = ref([])
+const tokenContracts = computed(() => new Set(balances.value?.map(b => b.token?.contract)))
+const showSearchInput = ref(false)
+const searchTerm = ref()
+const filteredFpcs = computed(() => {
+	const lowTerm = searchTerm.value?.toLowerCase() || ""
+	if (!lowTerm) return fpcs.value
+
+	return fpcs.value.filter(fpc => {
+		return (
+			fpc.name?.toLowerCase().includes(lowTerm) ||
+			fpc.typeName?.toLowerCase().includes(lowTerm) ||
+			fpc.balance?.token?.name?.toLowerCase().includes(lowTerm) ||
+			fpc.balance?.token?.symbol?.toLowerCase().includes(lowTerm) ||
+			fpc.address  === searchTerm.value ||
+			fpc.asset === searchTerm.value
+		)
+	})
+})
 
 const isLoading = ref(false)
 
@@ -40,10 +58,12 @@ const prepareFpc = (fpc) => {
 	return fpc.type === FpcType.DefaultSponsoredFpc
 		? {
 			...fpc,
+			typeName: "sponsored",
 			color: getNetworkColor(appStore.network.chainId),
 		}
 		: {
 			...fpc,
+			typeName: "fpc",
 			color: "green",
 			balance: balances.value.find(b => b.token.contract === fpc.asset),
 		}
@@ -70,7 +90,11 @@ watch(
 			fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
 			tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined, onBalanceUpdate, onBalanceUpdate, onBalanceUpdate)
 			balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
-			fpcs.value = (await fpcService.getFpcs(appStore.network.chainId)).map(f => prepareFpc(f))
+			const tokenContracts = new Set(balances.value?.map(b => b.token?.contract))
+			const allFpcs = await fpcService.getFpcs(appStore.network.chainId)
+			fpcs.value = allFpcs
+				.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts?.has(f.asset)))
+				.map(f => prepareFpc(f))
 
 			isLoading.value = false
 		}
@@ -89,53 +113,75 @@ watch(
 				:class="$style.wrapper"
 			>
 				<Flex direction="column" gap="16">
-					<Flex align="center" justify="start">
+					<Flex align="center" justify="between" gap="16">
 						<Text size="14" weight="600" color="primary">
 							Select FPC
 						</Text>
+
+						<Tooltip position="end">
+							<Icon
+								@click="showSearchInput = !showSearchInput"
+								name="search"
+								size="14"
+								color="secondary"
+								:class="[$style.search_icon, showSearchInput && $style.active]"
+							/>
+
+							<template #content>
+								<Text v-if="!showSearchInput" size="12" color="secondary"> Show search field </Text>
+								<Text v-else size="12" color="secondary"> Hide search field </Text>
+							</template>
+						</Tooltip>
 					</Flex>
-					<Flex direction="column" gap="6">
+
+					<Input
+						v-if="showSearchInput"
+						v-model="searchTerm"
+						icon="search"
+						placeholder="Search by name, type, address or token"
+					/>
+				</Flex>
+				<Flex direction="column" gap="6">
+					<Flex
+						v-for="fpc in filteredFpcs"
+						@click="handleSelectFpc(fpc)"
+						align="center"
+						justify="between"
+						gap="12"
+						:class="$style.fpc"
+					>
+						<Flex align="center" gap="10" wide>
+							<Icon
+								:name="
+									cacheStore.selectedFpc?.id === fpc.id
+										? 'check-circle'
+										: 'circle'
+								"
+								size="16"
+								:color="
+									cacheStore.selectedFpc?.id === fpc.id
+										? 'green'
+										: 'tertiary'
+								"
+							/>
+
+							<Flex direction="column" gap="4" wide>
+								<Text size="14" weight="600" color="primary" :class="$style.title">
+									{{ fpc.name || fpc.address }}
+								</Text>
+								<Text v-if="fpc.name" size="13" weight="600" color="tertiary" :class="$style.description">
+									{{ fpc.address }}
+								</Text>
+							</Flex>
+						</Flex>
+
 						<Flex
-							v-for="fpc in fpcs"
-							@click="handleSelectFpc(fpc)"
 							align="center"
-							justify="between"
-							gap="12"
-							:class="$style.fpc"
+							gap="6"
+							:class="$style.badge"
+							:style="{ background: `var(--${fpc.color})` }"
 						>
-							<Flex align="center" gap="10" wide>
-								<Icon
-									:name="
-										cacheStore.selectedFpc?.id === fpc.id
-											? 'check-circle'
-											: 'fpc'
-									"
-									size="16"
-									:color="
-										cacheStore.selectedFpc?.id === fpc.id
-											? 'green'
-											: 'tertiary'
-									"
-								/>
-
-								<Flex direction="column" gap="4" wide>
-									<Text size="14" weight="600" color="primary" :class="$style.title">
-										{{ fpc.name || fpc.address }}
-									</Text>
-									<Text v-if="fpc.name" size="13" weight="600" color="tertiary" :class="$style.description">
-										{{ fpc.address }}
-									</Text>
-								</Flex>
-							</Flex>
-
-							<Flex
-								align="center"
-								gap="6"
-								:class="$style.badge"
-								:style="{ background: `var(--${fpc.color})` }"
-							>
-								<Text size="11" weight="700"> {{ fpc.balance?.token?.symbol || 'Sponsored' }} </Text>
-							</Flex>
+							<Text size="11" weight="700"> {{ fpc.balance?.token?.symbol || 'Sponsored' }} </Text>
 						</Flex>
 					</Flex>
 				</Flex>
@@ -197,6 +243,19 @@ watch(
 	text-overflow: ellipsis;
 	overflow: hidden;
 	white-space: nowrap;
+}
+
+.search_icon {
+	cursor: pointer;
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		fill: var(--txt-primary);
+	}
+
+	&.active {
+		fill: var(--blue);
+	}
 }
 
 .badge {

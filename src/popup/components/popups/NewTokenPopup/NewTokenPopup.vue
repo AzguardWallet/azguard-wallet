@@ -15,8 +15,10 @@ const { openToast } = useToast()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
@@ -34,7 +36,8 @@ const contractAddressTerm = ref("")
 const isLoadingParseResult = ref(false)
 const isAddingNewToken = ref(false)
 
-const isAlreadyExist = computed(() => appStore.tokens.findLast(t => t.contract === contractAddressTerm.value))
+const tokens = ref([])
+const isAlreadyExist = computed(() => tokens.value?.findLast(t => t.contract === contractAddressTerm.value))
 const isAvailableToCreateToken = computed(() => {
 	if (!isValidHex(contractAddressTerm.value)) return
 	if (isLoadingParseResult.value) return
@@ -135,18 +138,17 @@ const handleSaveToken = async () => {
 		openToast({ label: "New token has been added" })
 	} catch (err) {
 		error.value = err
-
-		isSavingToken.value = false
 	} finally {
 		isSavingToken.value = false
 	}
 
+	cacheStore.preselectedTokenAddressToAdd = ""
 	emit("onClose")
 }
 
 watch(
 	() => props.show,
-	() => {
+	async () => {
 		if (!props.show) {
 			contractAddressTerm.value = ""
 
@@ -155,6 +157,13 @@ watch(
 			selectedFields.value = {}
 
 			error.value = null
+		} else {
+			const rawTokens = await managers.token?.getTokens()
+			tokens.value = rawTokens?.length ? rawTokens.filter(t => t.chainId === appStore.network.chainId) : []
+
+			if (cacheStore.preselectedTokenAddressToAdd) {
+				contractAddressTerm.value = cacheStore.preselectedTokenAddressToAdd
+			}
 		}
 	},
 )
