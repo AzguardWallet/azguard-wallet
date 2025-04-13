@@ -35,7 +35,7 @@ const token = computed(() => appStore.tokens.find(t => call.value?.contract === 
 watch(
 	() => props.show,
 	() => {
-		console.log(tx.value)
+		// console.log(tx.value)
 	},
 )
 

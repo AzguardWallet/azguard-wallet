@@ -19,10 +19,10 @@ const executionService = new ExecutionServiceClient(
 	null,
 	null,
 	tx => {
-		console.log(tx)
+		// console.log(tx)
 	},
 	tx => {
-		console.log(tx)
+		// console.log(tx)
 	},
 )
 

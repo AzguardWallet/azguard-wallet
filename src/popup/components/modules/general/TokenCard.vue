@@ -30,8 +30,10 @@ const totalBalance = computed(() => {
 const isHovered = ref(false)
 
 const handleRefreshBalance = async () => {
+	if (!balance.value) return
+
 	appStore.tokensAwaitingBalanceRefresh.push(props.token?.id)
-	managers.balance.refreshTokenBalance(props.token?.id)
+	managers.balance.refreshTokenBalance(balance.value.id)
 }
 </script>
 

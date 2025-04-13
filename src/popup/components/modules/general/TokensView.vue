@@ -19,11 +19,22 @@ const popupStore = usePopupStore()
 
 const router = useRouter()
 
-const handleRefreshBalances = () => {
+const handleRefreshBalances = async () => {
+	let balances = []
 	for (const token of appStore.tokens) {
 		if (appStore.tokensAwaitingBalanceRefresh.includes(token.id)) continue
-		appStore.tokensAwaitingBalanceRefresh.push(token.id)
-		managers.balance.refreshTokenBalance(token.id)
+
+		const balance = await managers.balance.getTokenBalances(token.id, appStore.account.address)
+		if (balance.length) {
+			balances = [...balances, ...balance]
+			appStore.tokensAwaitingBalanceRefresh.push(token.id)
+		}
+	}
+
+	if (balances.length) {
+		for (const balance of balances) {
+			managers.balance.refreshTokenBalance(balance.id)
+		}
 	}
 }
 </script>

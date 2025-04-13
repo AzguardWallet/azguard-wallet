@@ -39,7 +39,6 @@ const fetchNotes = async isRefetching => {
 
 	try {
 		notes.value = await managers.accountState.getNotes(appStore.network.id, appStore.account.address)
-		console.log(notes.value)
 	} catch (err) {
 		error.value = err
 
