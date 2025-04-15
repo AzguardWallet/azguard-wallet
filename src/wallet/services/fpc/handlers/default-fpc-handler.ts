@@ -17,15 +17,15 @@ import { IFpcHandler } from ".";
 export class DefaultFpcHandler implements IFpcHandler {
     public async getAsset(fpcAddress: string, pxe: PXE): Promise<string | undefined> {
         const fnSelector = await FunctionSelector.fromSignature("get_accepted_asset()");
-        const packedArgs = await HashedValues.fromValues([]);
-        const { l1ChainId, protocolVersion } = await pxe.getNodeInfo();
+        const packedArgs = await HashedValues.fromArgs([]);
+        const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
         const gasSettings = new GasSettings(
             new Gas(4_294_967_295, 4_294_967_295),
             new Gas(0, 0),
             new GasFees(0, 0),
             new GasFees(0, 0),
         );
-        const txContext = new TxContext(l1ChainId, protocolVersion, gasSettings);
+        const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
         const txRequest = new TxExecutionRequest(
             AztecAddress.fromString(fpcAddress),
             fnSelector,
@@ -41,7 +41,6 @@ export class DefaultFpcHandler implements IFpcHandler {
             undefined, // msgSender
             undefined, // skipTxValidation
             true, // skipFeeEnforcement
-            undefined, // profile
             undefined, // scopes
         );
         const returnValues = simulatedTx.getPrivateReturnValues();

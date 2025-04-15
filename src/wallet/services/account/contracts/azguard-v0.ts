@@ -29,6 +29,7 @@ import {
 } from '@aztec/stdlib/keys';
 import { NoirCompiledContract } from '@aztec/stdlib/noir';
 import {
+    Capsule,
     HashedValues,
     TxContext,
     TxExecutionRequest,
@@ -82,26 +83,42 @@ export class AzguardV0 implements IAccountContract {
         return new AuthWitness(messageHash, [...signature.toBuffer()]);
     }
 
-    public buildTxExecutionRequest(pxe: PXE, setup: AzguardFunctionCall[], calls: AzguardFunctionCall[], args: HashedValues[], nonce: Fr): Promise<TxExecutionRequest> {
+    public buildTxExecutionRequest(
+        pxe: PXE,
+        setup: AzguardFunctionCall[],
+        calls: AzguardFunctionCall[],
+        args: HashedValues[],
+        nonce: Fr,
+        authwits?: AuthWitness[],
+        capsules?: Capsule[],
+    ): Promise<TxExecutionRequest> {
         return setup.length 
-            ? this._buildTxExecutionRequestWithSetup(pxe, setup, calls, args, nonce)
-            : this._buildTxExecutionRequest(pxe, calls, args, nonce);
+            ? this._buildTxExecutionRequestWithSetup(pxe, setup, calls, args, nonce, authwits, capsules)
+            : this._buildTxExecutionRequest(pxe, calls, args, nonce, authwits, capsules);
     }
 
-    private async _buildTxExecutionRequest(pxe: PXE, calls: AzguardFunctionCall[], args: HashedValues[], nonce: Fr): Promise<TxExecutionRequest> {
+    private async _buildTxExecutionRequest(
+        pxe: PXE,
+        calls: AzguardFunctionCall[],
+        args: HashedValues[],
+        nonce: Fr,
+        authwits?: AuthWitness[],
+        capsules?: Capsule[],
+    ): Promise<TxExecutionRequest> {
         const fn = azguardV0Artifact.functions.find(x => x.name === "execute")!
         const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
         
         let batchCalls = calls.slice();
         const batchArgs = args.slice();
-        const batchAuthwits = [];
+        const batchAuthwits = authwits ?? [];
+        const batchCapsules = capsules ?? [];
 
         while (batchCalls.length > CHUNK_SIZE) {
             let new_calls = [];
             while (batchCalls.length >= CHUNK_SIZE) {
                 const chunkCalls = batchCalls.splice(0, CHUNK_SIZE);
                 const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromValues(encodeArguments(fn, [chunkCalls, chunkNonce]));
+                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [chunkCalls, chunkNonce]));
                 batchArgs.push(chunkArgs);
                 
                 const chunkPayload = chunkCalls.flatMap(x => x.toFields()).concat(chunkNonce);
@@ -118,7 +135,7 @@ export class AzguardV0 implements IAccountContract {
                 }
                 const chunkCalls = batchCalls;
                 const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromValues(encodeArguments(fn, [chunkCalls, chunkNonce]));
+                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [chunkCalls, chunkNonce]));
                 batchArgs.push(chunkArgs);
 
                 const chunkPayload = chunkCalls.flatMap(x => x.toFields()).concat(chunkNonce);
@@ -138,7 +155,7 @@ export class AzguardV0 implements IAccountContract {
             batchCalls.push(AzguardFunctionCall.empty());
         }
 
-        const fnArgs = await HashedValues.fromValues(encodeArguments(fn, [batchCalls, nonce]));
+        const fnArgs = await HashedValues.fromArgs(encodeArguments(fn, [batchCalls, nonce]));
         batchArgs.push(fnArgs);
 
         const payload = batchCalls.flatMap(x => x.toFields()).concat(nonce);
@@ -147,23 +164,27 @@ export class AzguardV0 implements IAccountContract {
         const authwit = new AuthWitness(payloadHash, [...signature]);
         batchAuthwits.push(authwit);
 
-        const { l1ChainId, protocolVersion } = await pxe.getNodeInfo();
+        const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
         const gasSettings = new GasSettings(
             new Gas(4_294_967_295, 4_294_967_295),
             new Gas(294_967_295, 294_967_295),
             new GasFees(0, 0),
             new GasFees(0, 0),
         )
-        const txContext = new TxContext(l1ChainId, protocolVersion, gasSettings);
+        const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
 
-        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, []);
+        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, batchCapsules);
         
-        console.debug('registering account...');
-        await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
-        console.debug('registering contract...');
-        await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
-
+        const accounts = await pxe.getRegisteredAccounts();
+        if (!accounts.find(x => x.address.toString() === this.address.toString())) {
+            console.debug('register account...');
+            await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
+        }
         const contractMetadata = await pxe.getContractMetadata(this.address);
+        if (!contractMetadata.contractInstance) {
+            console.debug('register contract...');
+            await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
+        }
         if (!contractMetadata.isContractInitialized) {
             console.debug('initialize account contract instance...');
             return await this._withInitialization(request);
@@ -172,14 +193,23 @@ export class AzguardV0 implements IAccountContract {
         return request;
     }
 
-    private async _buildTxExecutionRequestWithSetup(pxe: PXE, setup: AzguardFunctionCall[], calls: AzguardFunctionCall[], args: HashedValues[], nonce: Fr): Promise<TxExecutionRequest> {
+    private async _buildTxExecutionRequestWithSetup(
+        pxe: PXE,
+        setup: AzguardFunctionCall[],
+        calls: AzguardFunctionCall[],
+        args: HashedValues[],
+        nonce: Fr,
+        authwits?: AuthWitness[],
+        capsules?: Capsule[],
+    ): Promise<TxExecutionRequest> {
         const fn = azguardV0Artifact.functions.find(x => x.name === "execute_with_setup")!
         const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
         
         let setupCalls = setup.slice();
         let batchCalls = calls.slice();
         const batchArgs = args.slice();
-        const batchAuthwits = [];
+        const batchAuthwits = authwits ?? [];
+        const batchCapsules = capsules ?? [];
 
         if (setupCalls.length > SETUP_CHUNK_SIZE) {
             throw new Error("Unsuported number of setup calls");
@@ -190,7 +220,7 @@ export class AzguardV0 implements IAccountContract {
             while (batchCalls.length >= CHUNK_SIZE) {
                 const chunkCalls = batchCalls.splice(0, CHUNK_SIZE);
                 const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromValues(encodeArguments(fn, [emptySetup, chunkCalls, chunkNonce]));
+                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [emptySetup, chunkCalls, chunkNonce]));
                 batchArgs.push(chunkArgs);
                 
                 const chunkPayload = emptySetup.flatMap(x => x.toFields())
@@ -209,7 +239,7 @@ export class AzguardV0 implements IAccountContract {
                 }
                 const chunkCalls = batchCalls;
                 const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromValues(encodeArguments(fn, [emptySetup, chunkCalls, chunkNonce]));
+                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [emptySetup, chunkCalls, chunkNonce]));
                 batchArgs.push(chunkArgs);
 
                 const chunkPayload = emptySetup.flatMap(x => x.toFields())
@@ -235,7 +265,7 @@ export class AzguardV0 implements IAccountContract {
             batchCalls.push(AzguardFunctionCall.empty());
         }
 
-        const fnArgs = await HashedValues.fromValues(encodeArguments(fn, [setupCalls, batchCalls, nonce]));
+        const fnArgs = await HashedValues.fromArgs(encodeArguments(fn, [setupCalls, batchCalls, nonce]));
         batchArgs.push(fnArgs);
 
         const payload = setupCalls.flatMap(x => x.toFields())
@@ -246,23 +276,27 @@ export class AzguardV0 implements IAccountContract {
         const authwit = new AuthWitness(payloadHash, [...signature]);
         batchAuthwits.push(authwit);
 
-        const { l1ChainId, protocolVersion } = await pxe.getNodeInfo();
+        const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
         const gasSettings = new GasSettings(
             new Gas(4_294_967_295, 4_294_967_295),
             new Gas(294_967_295, 294_967_295),
             new GasFees(0, 0),
             new GasFees(0, 0),
         )
-        const txContext = new TxContext(l1ChainId, protocolVersion, gasSettings);
+        const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
 
-        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, []);
+        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, batchCapsules);
         
-        console.debug('registering account...');
-        await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
-        console.debug('registering contract...');
-        await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
-
+        const accounts = await pxe.getRegisteredAccounts();
+        if (!accounts.find(x => x.address.toString() === this.address.toString())) {
+            console.debug('register account...');
+            await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
+        }
         const contractMetadata = await pxe.getContractMetadata(this.address);
+        if (!contractMetadata.contractInstance) {
+            console.debug('register contract...');
+            await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
+        }
         if (!contractMetadata.isContractInitialized) {
             console.debug('initialize account contract instance...');
             return await this._withInitialization(request);
@@ -274,7 +308,7 @@ export class AzguardV0 implements IAccountContract {
     private async _withInitialization(request: TxExecutionRequest): Promise<TxExecutionRequest> {
         const ctor = azguardV0Artifact.functions.find(x => x.name === "constructor")!;
         const ctorSelector = await FunctionSelector.fromNameAndParameters(ctor.name, ctor.parameters);
-        const ctorPackedArgs = await HashedValues.fromValues(encodeArguments(ctor, [this.signingPubKey.x, this.signingPubKey.y]));
+        const ctorPackedArgs = await HashedValues.fromArgs(encodeArguments(ctor, [this.signingPubKey.x, this.signingPubKey.y]));
 
         const mceCalls = [
             {
@@ -306,7 +340,7 @@ export class AzguardV0 implements IAccountContract {
                 is_static: false,
             },
         ];
-        const mceArgs = await HashedValues.fromValues(
+        const mceArgs = await HashedValues.fromArgs(
             encodeArguments(getMulticallEntrypointFn(), [{ function_calls: mceCalls, nonce: Fr.zero() }]),
         );
 

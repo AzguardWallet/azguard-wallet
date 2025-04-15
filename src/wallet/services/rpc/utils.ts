@@ -14,7 +14,7 @@ import {
     RegisterSenderOperation,
     SendTransactionOperation,
     SimulateTransactionOperation,
-    SimulateUnconstrainedOperation,
+    SimulateUtilityOperation,
     SimulateViewsOperation,
     Action,
     AddCapsuleAction,
@@ -86,7 +86,7 @@ export function parseMethod(data: any): string {
         case OperationKind.RegisterContract:
         case OperationKind.SendTransaction:
         case OperationKind.SimulateTransaction:
-        case OperationKind.SimulateUnconstrained:
+        case OperationKind.SimulateUtility:
         case OperationKind.SimulateViews:
         case ActionKind.AddCapsule:
         case ActionKind.AddPrivateAuthwit:
@@ -139,8 +139,8 @@ function parseOperation(data: any): Operation {
         case OperationKind.SimulateTransaction: {
             return parseSimulateTransactionOperation(data);
         }
-        case OperationKind.SimulateUnconstrained: {
-            return parseSimulateUnconstrainedOperation(data);
+        case OperationKind.SimulateUtility: {
+            return parseSimulateUtilityOperation(data);
         }
         case OperationKind.SimulateViews: {
             return parseSimulateViewsOperation(data);
@@ -203,9 +203,9 @@ function parseSimulateTransactionOperation(data: any): SimulateTransactionOperat
     };
 }
 
-function parseSimulateUnconstrainedOperation(data: any): SimulateUnconstrainedOperation {
+function parseSimulateUtilityOperation(data: any): SimulateUtilityOperation {
     return {
-        kind: OperationKind.SimulateUnconstrained,
+        kind: OperationKind.SimulateUtility,
         account: parseAccountProp(data, "account"),
         contract: parseStringProp(data, "contract"),
         method: parseStringProp(data, "method"),

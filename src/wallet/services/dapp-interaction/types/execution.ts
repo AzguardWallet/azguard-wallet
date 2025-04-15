@@ -28,7 +28,7 @@ export type Operation =
     RegisterSenderOperation |
     SendTransactionOperation | 
     SimulateTransactionOperation | 
-    SimulateUnconstrainedOperation |
+    SimulateUtilityOperation |
     SimulateViewsOperation;
 
 export type AddNoteOperation = {
@@ -71,8 +71,8 @@ export type SimulateTransactionOperation = {
     simulatePublic?: boolean,
 }
 
-export type SimulateUnconstrainedOperation = {
-    kind: OperationKind.SimulateUnconstrained,
+export type SimulateUtilityOperation = {
+    kind: OperationKind.SimulateUtility,
     account: CaipAccount,
     contract: string,
     method: string,

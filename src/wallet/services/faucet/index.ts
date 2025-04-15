@@ -21,6 +21,7 @@ import { TransactionService } from "@/wallet/services/transaction"
 import { NetworkService } from "@/wallet/services/network"
 import { AccountService } from "@/wallet/services/account"
 import { ProfileService } from "@/wallet/services/profile"
+import { PxeService } from "@/wallet/services/pxe";
 import { ExecutionService } from "@/wallet/services/execution"
 import {
     IOperation,
@@ -46,6 +47,7 @@ export class FaucetService extends Service {
 	constructor(
         private readonly profileService: ProfileService,
         private readonly networkService: NetworkService,
+        private readonly pxeService: PxeService,
         private readonly accountService: AccountService,
         private readonly executionService: ExecutionService,
         private readonly transactionService: TransactionService,
@@ -107,7 +109,7 @@ export class FaucetService extends Service {
         if (!account) {
             throw new Error("unknown account")
         }
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
         
         const deployActions: IAction[] = [];
         const deployOps: IOperation[] = [

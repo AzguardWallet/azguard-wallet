@@ -1,6 +1,4 @@
-import { createPXEClient } from "@aztec/aztec.js"
 import { FunctionType } from "@aztec/stdlib/abi"
-import { PXE } from "@aztec/stdlib/interfaces/client"
 import {
 	EventMessage,
 	RequestMessage,
@@ -13,7 +11,6 @@ import { Queue } from "@/wallet/utils/queue"
 import { AccountService } from "@/wallet/services/account"
 import { Account } from "@/wallet/services/account/client"
 import { NetworkService } from "@/wallet/services/network"
-import { Network } from "@/wallet/services/network/client"
 import { ProfileService } from "@/wallet/services/profile"
 import { Token, TokenService } from "@/wallet/services/token"
 import { BalanceOfPrivateFn, BalanceOfPublicFn } from "@/wallet/services/token/functions"
@@ -52,7 +49,6 @@ export class TokenBalanceService extends Service {
 	private readonly worker: Promise<void>
 
 	private profile?: string = undefined
-	private readonly pxes: Map<number, PXE> = new Map()
 	private readonly tokens: Map<number, Token> = new Map()
 
 	constructor(
@@ -71,7 +67,6 @@ export class TokenBalanceService extends Service {
 		)
 
 		this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged)
-		this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged)
 		this.accountService.onAccountAdded.push(this.onAccountAdded)
 		this.tokenService.onTokenAdded.push(this.onTokenAdded)
 		this.tokenService.onTokenUpdated.push(this.onTokenUpdated)
@@ -206,19 +201,11 @@ export class TokenBalanceService extends Service {
 	private readonly onActiveProfileChanged = async (profileId?: string) => {
 		this.profile = profileId
 		if (profileId) {
-			this.pxes.clear();
-			for (const network of (await this.networkService.getNetworks()).filter((x) => x.isDefault)) {
-				this.pxes.set(network.chainId, createPXEClient(network.rpcUrl))
-			}
 			this.tokens.clear();
 			for (const token of await this.tokenService.getTokens(profileId)) {
 				this.tokens.set(token.id, token)
 			}
 		}
-	}
-
-	private readonly onDefaultNetworkChanged = async (network: Network) => {
-		this.pxes.set(network.chainId, createPXEClient(network.rpcUrl))
 	}
 
 	private readonly onAccountAdded = async (account: Account) => {
@@ -276,9 +263,6 @@ export class TokenBalanceService extends Service {
 				)?.id
 
 				if (this.profile) {
-					for (const network of (await this.networkService.getNetworks()).filter((x) => x.isDefault)) {
-						this.pxes.set(network.chainId, createPXEClient(network.rpcUrl))
-					}
 					for (const token of await this.tokenService.getTokens(this.profile)) {
 						this.tokens.set(token.id, token)
 					}
@@ -361,7 +345,7 @@ export class TokenBalanceService extends Service {
 					token.balanceOfPrivateFn.name,
 					token.balanceOfPrivateFn.impl
 				)
-				if (balanceOfPrivateFn.type === FunctionType.UNCONSTRAINED) {
+				if (balanceOfPrivateFn.type === FunctionType.UTILITY) {
 					calls.push([
 						new CallAction(
 							token.contract,
@@ -400,7 +384,7 @@ export class TokenBalanceService extends Service {
 					token.balanceOfPublicFn.name,
 					token.balanceOfPublicFn.impl
 				)
-				if (balanceOfPublicFn.type === FunctionType.UNCONSTRAINED) {
+				if (balanceOfPublicFn.type === FunctionType.UTILITY) {
 					calls.push([
 						new CallAction(
 							token.contract,
