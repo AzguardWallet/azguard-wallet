@@ -95,8 +95,8 @@ export class FpcService extends Service {
                 const pxe = await this.pxeService.getPXEClient(chainId);
 
                 for (const contract of [
-                    AztecAddress.fromString("0x15d14a7a070d9d33ca31ec6d75354e3ed48a419ebc3d30d9ae8d35ddaa8a1e50"),
-                    AztecAddress.fromString("0x2742bae7b298acd9ae3f09ff48f6e6254f1e28bb71fbec9b6e79fe9955adf83c"),
+                    AztecAddress.fromString("0x097d86b77f924ecf8c7c6e058db2268b21615bf860ca4e87f0254fad6dee7dde"),
+                    AztecAddress.fromString("0x0b27e30667202907fc700d50e9bc816be42f8141fae8b9f2281873dbdb9fc2e5"),
                 ]) {
                     const contractMeta = await this.pxeService.getContractMetadata(chainId, contract);
                     if (contractMeta.contractInstance) {
