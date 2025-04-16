@@ -1,14 +1,14 @@
 import { createPXEClient } from "@aztec/aztec.js"
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { PXE } from "@aztec/stdlib/interfaces/client"
-import {
+import type { PXE } from "@aztec/stdlib/interfaces/client"
+import type {
 	EventMessage,
 	RequestMessage,
 	ResponseMessage,
 } from "@/wallet/base/messages"
 import { Service } from "@/wallet/base/service"
-import { NetworkService } from "@/wallet/services/network"
-import { ProfileService } from "@/wallet/services/profile"
+import type { NetworkService } from "@/wallet/services/network"
+import type { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max } from "@/wallet/utils"
 import {
@@ -17,27 +17,27 @@ import {
 	feeJuiceName,
 	feeJuiceSymbol,
 } from "@/wallet/utils/fee-juice"
-import { FnImpl, simulate } from "@/wallet/utils/fn"
+import { type FnImpl, simulate } from "@/wallet/utils/fn"
 import {
-	AddTokenRequest,
+	type AddTokenRequest,
 	AddTokenResponse,
-	DeleteTokenRequest,
+	type DeleteTokenRequest,
 	DeleteTokenResponse,
-	GetTokenRequest,
+	type GetTokenRequest,
 	GetTokenResponse,
-	GetTokensRequest,
+	type GetTokensRequest,
 	GetTokensResponse,
 	TokenInfo,
 	TOKEN_SERVICE_NAME,
 	TokenServiceEvent,
 	TokenServiceEventMessage,
 	TokenServiceMethod,
-	UpdateTokenRequest,
+	type UpdateTokenRequest,
 	UpdateTokenResponse,
 	TokenInterface,
-	GetInterfaceRequest,
+	type GetInterfaceRequest,
 	GetInterfaceResponse,
-	ParseInterfaceRequest,
+	type ParseInterfaceRequest,
 	ParseInterfaceResponse,
 } from "./client"
 import {
@@ -51,8 +51,8 @@ import {
 	TransferPublicFn,
 	TransferPublicToPrivateFn,
 } from "./functions"
-import { AccountService } from "../account"
-import { IAccountContract } from "../account/contracts"
+import type { AccountService } from "../account"
+import type { IAccountContract } from "../account/contracts"
 
 export type Token = {
 	id: number

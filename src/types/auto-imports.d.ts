@@ -19,6 +19,8 @@ declare global {
   const EffectScope: typeof import('vue')['EffectScope']
   const asyncComputed: typeof import("@vueuse/core")["asyncComputed"]
   const autoResetRef: typeof import("@vueuse/core")["autoResetRef"]
+  const balanceFormatted: typeof import('../utils/amount.js')['balanceFormatted']
+  const bn: typeof import('../utils/bn.js')['default']
   const browser: typeof import('webextension-polyfill')
   const capitalize: typeof import('../utils/string.js')['capitalize']
   const capitilize: typeof import('../utils/string.js')['capitilize']
@@ -51,6 +53,7 @@ declare global {
   const eagerComputed: typeof import("@vueuse/core")["eagerComputed"]
   const effectScope: typeof import('vue')['effectScope']
   const extendRef: typeof import("@vueuse/core")["extendRef"]
+  const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
   const h: typeof import('vue')['h']

@@ -18,7 +18,7 @@ const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.import
+	return popupStore.len - popupStore.popups.import?.order
 })
 
 const router = useRouter()
@@ -176,7 +176,7 @@ watch(
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.import">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.import?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">

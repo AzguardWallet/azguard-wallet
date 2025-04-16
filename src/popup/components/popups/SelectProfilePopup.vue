@@ -18,7 +18,7 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.select_profile
+	return popupStore.len - popupStore.popups.select_profile?.order
 })
 
 const handleSelectProfile = profile => {
@@ -28,7 +28,7 @@ const handleSelectProfile = profile => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_profile">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_profile?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="16" :class="$style.wrapper">
 				<Flex direction="column" gap="12">

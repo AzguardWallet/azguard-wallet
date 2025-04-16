@@ -37,6 +37,13 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 				description="View all contracts"
 				chevron
 			/>
+			<SettingItem
+				size="large"
+				to="/popup/settings/account/state/senders"
+				title="Senders"
+				description="View all senders"
+				chevron
+			/>
 		</ItemsContainer>
 
 		<Navigation />

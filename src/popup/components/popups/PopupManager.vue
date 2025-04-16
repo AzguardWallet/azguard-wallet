@@ -70,7 +70,7 @@ const popupStore = usePopupStore()
 	/>
 	<NewFpcPopup :show="popupStore.isOpened('new_fpc')" @onClose="popupStore.close('new_fpc')" />
 	<EditFpcPopup :show="popupStore.isOpened('edit_fpc')" @onClose="popupStore.close('edit_fpc')" />
-	<SelectFpcPopup :show="popupStore.isOpened('select_fpc')" @onClose="popupStore.close('select_fpc')" />
-	<EditClaimParametersPopup :show="popupStore.isOpened('edit_claim_parameters')" @onClose="popupStore.close('edit_claim_parameters')" />
+	<SelectFpcPopup :show="popupStore.isOpened('select_fpc')" :payload="popupStore.getPayload('select_fpc')" @onClose="popupStore.close('select_fpc')" />
+	<EditClaimParametersPopup :show="popupStore.isOpened('edit_claim_parameters')" :payload="popupStore.getPayload('edit_claim_parameters')" @onClose="popupStore.close('edit_claim_parameters')" />
 	<NewSenderPopup :show="popupStore.isOpened('new_sender')" @onClose="popupStore.close('new_sender')" />
 </template>

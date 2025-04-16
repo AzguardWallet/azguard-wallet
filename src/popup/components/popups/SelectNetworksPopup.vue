@@ -11,8 +11,13 @@ const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const emit = defineEmits(["onClose"])
+
 const props = defineProps({
 	show: Boolean,
+})
+
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.select_network?.order
 })
 
 const networks = ref([])
@@ -33,8 +38,8 @@ watch(
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx=popupStore.popups.select_network>
-		<PopupCard>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx=popupStore.popups.select_network?.order>
+		<PopupCard :displaceIdx>
 			<Flex
 				wide
 				direction="column"

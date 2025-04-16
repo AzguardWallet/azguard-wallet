@@ -75,11 +75,14 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const tokens = ref([])
+	const mintingTokens	= ref([])
 	const dummyTokens = ref([])
 	const onTokenAdded = token => {
 		const dummyTokenIdx = dummyTokens.value.findLastIndex(t => t.id === -1)
 		if (dummyTokenIdx !== -1) dummyTokens.value.splice(dummyTokenIdx, 1)
-		tokens.value.push(token)
+		
+		const tokenIdx = tokens.value.findIndex(t => t.id ===  token.id)
+		if (tokenIdx === -1) tokens.value.push(token)
 	}
 	const syncLocalTokens = async () => {
 		const rawTokens = await managers.token?.getTokens()
@@ -183,6 +186,7 @@ export const useAppStore = defineStore("app", () => {
 		changeAccountVisibility,
 		updateAccount,
 		tokens,
+		mintingTokens,
 		dummyTokens,
 		onTokenAdded,
 		syncLocalTokens,

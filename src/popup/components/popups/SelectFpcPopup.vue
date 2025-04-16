@@ -22,10 +22,16 @@ const popupStore = usePopupStore()
 const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
+	payload: Object,
+})
+
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.select_fpc?.order
 })
 
 let fpcService = null
 let tokenBalanceService = null
+const selectedFpc = ref()
 const fpcs = ref([])
 const balances = ref([])
 const tokenContracts = computed(() => new Set(balances.value?.map(b => b.token?.contract)))
@@ -48,9 +54,40 @@ const filteredFpcs = computed(() => {
 })
 
 const isLoading = ref(false)
+const error = ref()
+const init = async () => {
+	isLoading.value = true
+	error.value = ""
+
+	try {
+		fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
+		tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined, onBalanceUpdate, onBalanceUpdate, onBalanceUpdate)
+		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
+		const tokenContracts = new Set(balances.value?.map(b => b.token?.contract))
+		const allFpcs = await fpcService.getFpcs(appStore.network.chainId)
+		fpcs.value = allFpcs
+			.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts?.has(f.asset)))
+			.map(f => prepareFpc(f))
+	}
+	catch (err) {
+		error.value = err
+	}
+	finally {
+		isLoading.value = false
+	}
+}
 
 const handleSelectFpc = (fpc) => {
-	cacheStore.selectedFpc = fpc
+	const methodIx = cacheStore.feePaymentMethods.findIndex(m => m.id === props.payload?.id)
+	if (methodIx === -1) {
+		console.log('fpc methodIx === -1');
+		cacheStore.feePaymentMethods.push({
+			id: props.payload?.id,
+			fpc: fpc,
+		})
+	} else {
+		cacheStore.feePaymentMethods[methodIx].fpc = fpc
+	}
 	emit("onClose")
 }
 
@@ -85,26 +122,16 @@ watch(
 	() => props.show,
 	async () => {
 		if (props.show) {
-			isLoading.value = true
-
-			fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
-			tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined, onBalanceUpdate, onBalanceUpdate, onBalanceUpdate)
-			balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
-			const tokenContracts = new Set(balances.value?.map(b => b.token?.contract))
-			const allFpcs = await fpcService.getFpcs(appStore.network.chainId)
-			fpcs.value = allFpcs
-				.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts?.has(f.asset)))
-				.map(f => prepareFpc(f))
-
-			isLoading.value = false
+			selectedFpc.value = cacheStore.feePaymentMethods.find(m => m.id === props.payload?.id)?.fpc
+			await init()
 		}
 	}
 )
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx=popupStore.popups.select_fpc>
-		<PopupCard>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx=popupStore.popups.select_fpc?.order>
+		<PopupCard :displaceIdx>
 			<Flex
 				wide
 				direction="column"
@@ -141,7 +168,20 @@ watch(
 						placeholder="Search by name, type, address or token"
 					/>
 				</Flex>
-				<Flex direction="column" gap="6">
+
+				<Banner v-if="isLoading" isLoading> Fetching FPCs </Banner>
+
+				<Tooltip v-else-if="error" wide>
+					<Banner :action="{ name: 'Try again', callback: () => init() }" variant="error" wide>
+						Something went wrong
+					</Banner>
+
+					<template #content>
+						{{ error }}
+					</template>
+				</Tooltip>
+
+				<Flex v-else direction="column" gap="6">
 					<Flex
 						v-for="fpc in filteredFpcs"
 						@click="handleSelectFpc(fpc)"
@@ -153,13 +193,13 @@ watch(
 						<Flex align="center" gap="10" wide>
 							<Icon
 								:name="
-									cacheStore.selectedFpc?.id === fpc.id
+									selectedFpc?.id === fpc.id
 										? 'check-circle'
 										: 'circle'
 								"
 								size="16"
 								:color="
-									cacheStore.selectedFpc?.id === fpc.id
+									selectedFpc?.id === fpc.id
 										? 'green'
 										: 'tertiary'
 								"
@@ -183,6 +223,10 @@ watch(
 						>
 							<Text size="11" weight="700"> {{ fpc.balance?.token?.symbol || 'Sponsored' }} </Text>
 						</Flex>
+					</Flex>
+
+					<Flex v-if="filteredFpcs.length === 0" align="center" justify="center" gap="8">
+						<Text size="13" weight="600" color="tertiary"> No FPCs found </Text>
 					</Flex>
 				</Flex>
 			</Flex>

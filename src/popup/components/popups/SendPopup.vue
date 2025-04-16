@@ -1,6 +1,6 @@
 <script setup>
 /** Vendor */
-import BN from "bignumber.js"
+import BN from "@/utils/bn.js"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
@@ -39,13 +39,12 @@ const props = defineProps({
 const feeSettings = ref()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.send
+	return popupStore.len - popupStore.popups.send?.order
 })
 
 const awaitingNewToken = ref(false)
 
 const activeToken = computed(() =>
-	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 	appStore.tokens.find(t => t.id == cacheStore.activeTokenIdx),
 )
 const isBlockedTranfer = computed(
@@ -53,7 +52,6 @@ const isBlockedTranfer = computed(
 )
 const tokenBalance = computed(() => {
 	return appStore.balances.find(
-		// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 		b => b?.token.id == cacheStore.activeTokenIdx,
 	)
 })
@@ -209,7 +207,7 @@ watch(
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.send">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.send?.order">
 		<PopupCard large :displaceIdx>
 			<Flex wide direction="column" justify="between" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="16" :class="$style.top">

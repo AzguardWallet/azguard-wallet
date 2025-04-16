@@ -12,6 +12,10 @@ const popupStore = usePopupStore()
 
 const emit = defineEmits(["onClose"])
 
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.connect_by_uri?.order
+})
+
 const uri = ref("")
 const isLoading = ref(false)
 const processingError = ref({
@@ -76,8 +80,8 @@ onMounted(() => {
 </script>
 
 <template>
-	<Popup @onClose="closePopup" :displaceIdx="popupStore.popups.connect_by_uri">
-		<PopupCard>
+	<Popup @onClose="closePopup" :displaceIdx="popupStore.popups.connect_by_uri?.order">
+		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="12" :class="$style.wrapper">
 				<Text size="13" weight="600" color="primary"> Connect by URI </Text>
 

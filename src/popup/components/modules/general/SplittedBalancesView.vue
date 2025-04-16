@@ -1,6 +1,9 @@
 <script setup>
+/** Vendor */
+import BN from "@/utils/bn.js"
+
 /** Utils */
-import { comma } from "@/utils/amount.js"
+import { balanceFormatted, comma } from "@/utils/amount.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -25,11 +28,26 @@ const tokenBalance = computed(() => {
 	return appStore.balances.find(b => b.token.id == props.token?.id)
 })
 
-const getBalance = target => {
+const showFullBalance = ref({
+	private: false,
+	public: false,
+})
+const privateBalance = computed(() => {
 	if (!tokenBalance.value) return 0
-	return Number.parseFloat(tokenBalance.value[target]) / 10 ** tokenBalance.value.token.decimals
-}
 
+	const decimals = new BN(10).pow(tokenBalance.value?.token?.decimals || 0)
+	const balance = new BN(tokenBalance.value.privateBalance || 0).dividedBy(decimals)
+	
+	return balanceFormatted(balance, showFullBalance.value.private ? 100 : 20)
+})
+const pubicBalance = computed(() => {
+	if (!tokenBalance.value) return 0
+
+	const decimals = new BN(10).pow(tokenBalance.value?.token?.decimals || 0)
+	const balance = new BN(tokenBalance.value.publicBalance || 0).dividedBy(decimals)
+	
+	return balanceFormatted(balance, showFullBalance.value.public ? 100 : 20)
+})
 const handleOpenSendPopup = target => {
 	cacheStore.preselectedBalanceType = target
 	popupStore.open("send")
@@ -50,7 +68,7 @@ const handleOpenSendPopup = target => {
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">
-						{{ comma(getBalance("privateBalance"), ",", 8) }}
+						{{ privateBalance.value }}
 					</Text>
 					<Text size="11" weight="500" color="tertiary"> Private Balance </Text>
 				</Flex>
@@ -69,7 +87,7 @@ const handleOpenSendPopup = target => {
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">
-						{{ comma(getBalance("publicBalance"), ",", 8) }}
+						{{ pubicBalance.value }}
 					</Text>
 					<Text size="11" weight="500" color="tertiary"> Public Balance </Text>
 				</Flex>

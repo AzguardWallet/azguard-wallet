@@ -1,7 +1,7 @@
 <script setup>
 /** Vendor */
+import BN from "@/utils/bn.js"
 import { DateTime } from "luxon"
-import BN from "bignumber.js"
 
 /** Utils */
 import { comma } from "@/utils/amount.js"

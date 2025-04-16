@@ -1,6 +1,6 @@
-import { EventMessage } from "@/wallet/base/messages";
+import type { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
-import { FeeSettings } from "@/wallet/services/execution/client";
+import type { FeeSettings } from "@/wallet/services/execution/client";
 import { MintRequest } from "./methods";
 
 export * from './methods';

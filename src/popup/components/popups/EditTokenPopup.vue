@@ -23,7 +23,7 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.edit_token
+	return popupStore.len - popupStore.popups.edit_token?.order
 })
 
 const props = defineProps({
@@ -137,7 +137,7 @@ const handleCopyContractAddress = () => {
 </script>
 
 <template>
-	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_token">
+	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_token?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

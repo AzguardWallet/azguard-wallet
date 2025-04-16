@@ -22,7 +22,6 @@ const cacheStore = useCacheStore()
 const route = useRoute()
 
 const token = computed(() =>
-	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 	appStore.tokens.find(t => t.id == route.params.id),
 )
 watch(

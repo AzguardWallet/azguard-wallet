@@ -1,13 +1,13 @@
-import { Fr } from "@aztec/foundation/fields"
+import type { Fr } from "@aztec/foundation/fields"
 import { poseidon2Hash } from "@aztec/foundation/crypto"
-import {
+import type {
 	RequestMessage,
 	ResponseMessage,
 	EventMessage,
 } from "@/wallet/base/messages"
 import { Service } from "@/wallet/base/service"
-import { NetworkService } from "@/wallet/services/network"
-import { ProfileService } from "@/wallet/services/profile"
+import type { NetworkService } from "@/wallet/services/network"
+import type { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max } from "@/wallet/utils"
 import {
@@ -17,18 +17,18 @@ import {
 	AccountServiceEventMessage,
 	AccountServiceMethod,
 	AccountType,
-	ChangeAccountNameRequest,
+	type ChangeAccountNameRequest,
 	ChangeAccountNameResponse,
-	ChangeAccountVisibilityRequest,
+	type ChangeAccountVisibilityRequest,
 	ChangeAccountVisibilityResponse,
-	CreateAccountRequest,
+	type CreateAccountRequest,
 	CreateAccountResponse,
-	GetAccountRequest,
+	type GetAccountRequest,
 	GetAccountResponse,
-	GetAccountsRequest,
+	type GetAccountsRequest,
 	GetAccountsResponse,
 } from "./client"
-import { AzguardV0, IAccountContract } from "./contracts"
+import { AzguardV0, type IAccountContract } from "./contracts"
 
 type AccountDto = {
 	profileId: string,
@@ -252,7 +252,7 @@ export class AccountService extends Service {
 			type,
 			index
 		)
-		let address
+		let address: string
 		switch (type) {
 			case AccountType.Azguard_v0:
 				address = (await AzguardV0.new(secret)).address.toString()

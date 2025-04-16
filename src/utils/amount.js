@@ -37,9 +37,9 @@ export const normalizeAmount = target => {
 	if (target === ".") return "0."
 
 	let dotCounter = 0
-	target.split("").forEach(char => {
+	for (const char of target) {
 		if (char === ".") dotCounter++
-	})
+	}
 
 	if (dotCounter > 1) return target.slice(0, target.length - 1)
 
@@ -47,6 +47,23 @@ export const normalizeAmount = target => {
 	if (!target.length) return ""
 	if (target.length === 1 && !/^(0|[1-9]\d*)(\.\d+)?$/.test(target)) return ""
 	if (Number.parseFloat(purgeNumber(target)) >= 9_999_999_999_999) return "9999999999999"
+}
+
+export const balanceFormatted = (balance, length = 10) => {
+	let slashed = false
+	if (!balance || balance.isZero()) return { value: '0', slashed }
+
+	let str = balance.toFormat()
+
+	if (balance.lt(`1e-${length - 1}`)) {
+		str = `<0.${'0'.repeat(length - 2)}1`
+		slashed = true
+	} else if (str.length > length + 1) {
+		str = `${str.slice(0, length)}...`
+		slashed = true
+	}
+
+	return { value: str, slashed }
 }
 
 export const isValidAmount = (value) => {

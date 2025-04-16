@@ -1,11 +1,16 @@
+<route lang="json">
+{
+	"meta": {
+		"title": "Senders",
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
+import Navigation from "../../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
-import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
 import { trimAddress } from "@/utils/string"
@@ -24,9 +29,6 @@ import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
-
-const tabs = ["Recipients", "Senders"]
-const activeTab = ref(tabs[1])
 
 const senders = ref([])
 const isLoading = ref(false)
@@ -63,6 +65,8 @@ const handleDelete = (sender) => {
 }
 
 const onSenderAdded = (sender) => {
+	if (senders.value.includes(sender)) return
+
 	senders.value.push(sender)
 }
 const onSenderDeleted = (sender) => {
@@ -88,67 +92,52 @@ onBeforeUnmount(() => {
 		<Breadcrumbs />
 
 		<Flex direction="column" gap="16">
-			<Flex align="center" gap="8">
-				<Text
-					v-for="tab in tabs"
-					@click="activeTab = tab"
-					size="13"
-					weight="600"
-					:color="tab === activeTab ? 'primary' : 'tertiary'"
-					:style="{
-						transition: 'all 0.2s ease',
-						cursor: 'pointer'
-					}"
-				>
-					{{ tab }}
-				</Text>
+			<Banner v-if="isLoading" isLoading> Fetching senders </Banner>
+
+			<Tooltip v-else-if="error" wide>
+				<Banner :action="{ name: 'Try again', callback: () => fetchSenders() }" variant="error" wide>
+					Something went wrong
+				</Banner>
+
+				<template #content>
+					{{ error }}
+				</template>
+			</Tooltip>
+
+			<Flex v-else-if="senders.length" direction="column" gap="8">
+				<Flex v-for="sender in senders" @click="handleCopyAddress(sender)" justify="between" :class="$style.card">
+					<Flex gap="10">
+						<Icon name="user" size="16" color="tertiary" />
+
+						<Text size="14" weight="600" color="secondary"> {{ trimAddress(sender, 8, 8) }} </Text>
+					</Flex>
+
+					<Tooltip position="end" delay="350">
+						<Icon
+							@click.stop="handleDelete(sender)"
+							name="close-circle"
+							size="14"
+							color="tertiary"
+							:class="$style.icon_btn"
+						/>
+
+						<template #content> Delete sender </template>
+					</Tooltip>
+				</Flex>
 			</Flex>
 
-			<template v-if="activeTab === 'Recipients'">
-				<Flex align="center" justify="center" :style="{ paddingTop: '24px' }">
-					<Text size="14" weight="600" color="tertiary"> No recipients yet </Text>
-				</Flex>
-			</template>
+			<Banner v-else> So far, it's empty </Banner>
 
-			<template v-else-if="activeTab === 'Senders'">
-				<ItemsContainer v-if="senders.length">
-					<SettingItem
-						v-for="sender in senders"
-						@click="handleCopyAddress(sender)"
-						:title="trimAddress(sender, 8, 8)"
-						icon="user"
-						iconBgColor="transparent"
-					>
-						<template #right>
-							<Tooltip position="end" delay="350">
-								<Icon
-									@click.stop="handleDelete(sender)"
-									name="close-circle"
-									size="14"
-									color="tertiary"
-									:class="$style.icon_btn"
-								/>
-
-								<template #content> Delete sender </template>
-							</Tooltip>
-						</template>
-					</SettingItem>
-				</ItemsContainer>
-				<Flex v-else align="center" justify="center" gap="8" :style="{ paddingTop: '12px' }">
-					<Text size="13" weight="600" color="tertiary"> No Senders found </Text>
-				</Flex>
-
-				<Button
-					@click="popupStore.open('new_sender')"
-					wide
-					type="secondary"
-					size="medium"
-					leftIcon="plus-circle"
-					leftIconColor="primary"
-				>
-					<Text size="13">New sender</Text>
-				</Button>
-			</template>
+			<Button
+				@click="popupStore.open('new_sender')"
+				wide
+				type="secondary"
+				size="medium"
+				leftIcon="plus-circle"
+				leftIconColor="primary"
+			>
+				<Text size="13">New sender</Text>
+			</Button>
 		</Flex>
 
 		<Navigation />
@@ -169,6 +158,25 @@ onBeforeUnmount(() => {
 	border-top-right-radius: 24px;
 
 	padding: 20px 24px 80px 24px;
+}
+
+.card {
+	border-radius: 12px;
+	cursor: pointer;
+	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
+
+	padding: 12px;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--gray-3);
+		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-10);
+	}
+
+	&:active {
+		background: var(--gray-5);
+	}
 }
 
 .icon_btn {

@@ -7,6 +7,7 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
 /** Utils */
 import { trimAddress } from "@/utils/string"
+import { getRandomHex } from "@/wallet/utils"
 
 /** Services */
 import {
@@ -43,6 +44,7 @@ const props = defineProps({
 
 const settings = defineModel()
 
+const methodId = getRandomHex(6)
 const methods = ref([
 	{
 		type: "fj",
@@ -66,15 +68,15 @@ const feeJuiceBalance = computed(() => balances.value?.find(isFeeJuice))
 const loading = ref(false)
 const error = ref("")
 
-const selectedFpc = computed(() => cacheStore.selectedFpc)
-const claimParameters = computed(() => cacheStore.claimParameters)
+const selectedFpc = computed(() => cacheStore.feePaymentMethods.find(m => m.id === methodId)?.fpc)
+const claimParameters = computed(() => cacheStore.feePaymentMethods.find(m => m.id === methodId)?.claimParameters)
 const isClaimParametersFilled = computed(() => !!(selectedMethod.value?.claimAmount && selectedMethod.value?.claimSecret && selectedMethod.value?.messageLeafIndex))
 
 const handleFillClaimParameters = () => {
-	popupStore.open("edit_claim_parameters")
+	popupStore.open("edit_claim_parameters", { id: methodId })
 }
 const handleSelectFPC = () => {
-	popupStore.open("select_fpc")
+	popupStore.open("select_fpc", { id: methodId })
 }
 
 const isFeeJuice = (tb) => {
@@ -155,7 +157,6 @@ const init = async () => {
 		loading.value = true
 
 		if (props.network && props.account) {
-			// const allFpcs = await fpcService.getFpcs(props.network.chainId)
 			balances.value = await tokenBalanceService.getTokenBalances(undefined, props.account.address)
 			methods.value[0].balance = feeJuiceBalance.value
 			methods.value[1].balance = feeJuiceBalance.value
@@ -180,6 +181,15 @@ watch(
 				settings.value = new FeeSettings(new FeeJuicePaymentMethod())
 				break;
 			case "fjwc":
+				if (!selectedMethod.value.claimAmount && claimParameters.value) {
+					selectedMethod.value = {
+						...selectedMethod.value,
+						claimAmount: claimParameters.value.claimAmount,
+						claimSecret: claimParameters.value.claimSecret,
+						messageLeafIndex: claimParameters.value.messageLeafIndex,
+					}
+					break;
+				}
 				if (!selectedMethod.value.claimAmount || !selectedMethod.value.claimSecret || !selectedMethod.value.messageLeafIndex) {
 					settings.value = undefined
 					break;
@@ -193,10 +203,6 @@ watch(
 				)
 				break;
 			case "fpc":
-				if (!selectedMethod.value.fpc && !selectedFpc.value) {
-					settings.value = undefined
-					break;
-				}
 				if (!selectedMethod.value.fpc && selectedFpc.value) {
 					selectedMethod.value = {
 						...selectedMethod.value,
@@ -206,7 +212,10 @@ watch(
 					}
 					break;
 				}
-
+				if (!selectedMethod.value.fpc) {
+					settings.value = undefined
+					break;
+				}
 				switch (selectedMethod.value.fpc.type) {
 					case FpcType.DefaultSponsoredFpc:
 						settings.value = new FeeSettings(new FpcPaymentMethod(selectedMethod.value.fpc.id))
@@ -265,8 +274,8 @@ watch(
 onBeforeMount(async () => {
 	await init()
 })
-
 onBeforeUnmount(() => {
+	cacheStore.feePaymentMethods = cacheStore.feePaymentMethods.filter(m => m.id !== methodId)
 	fpcService.dispose()
 	tokenBalanceService.dispose()
 })

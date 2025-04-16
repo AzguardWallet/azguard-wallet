@@ -14,31 +14,31 @@ import {
     getContractClassFromArtifact,
 } from "@aztec/stdlib/contract"
 import { PublicKeys } from "@aztec/stdlib/keys"
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages"
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages"
 import { Service } from "@/wallet/base/service"
-import { TokenService } from "@/wallet/services/token"
-import { TransactionService } from "@/wallet/services/transaction"
-import { NetworkService } from "@/wallet/services/network"
-import { AccountService } from "@/wallet/services/account"
-import { ProfileService } from "@/wallet/services/profile"
-import { ExecutionService } from "@/wallet/services/execution"
+import type { TokenService } from "@/wallet/services/token"
+import type { TransactionService } from "@/wallet/services/transaction"
+import type { NetworkService } from "@/wallet/services/network"
+import type { AccountService } from "@/wallet/services/account"
+import type { ProfileService } from "@/wallet/services/profile"
+import type { ExecutionService } from "@/wallet/services/execution"
 import {
-    IOperation,
+    type IOperation,
     RegisterContractOperation,
     SendTransactionOperation,
-    IAction,
+    type IAction,
     AddCapsuleAction,
     CallAction,
     OperationStatus,
-    OkOperationResult,
-    FailedOperationResult,
-    FeeSettings,
+    type OkOperationResult,
+    type FailedOperationResult,
+    type FeeSettings,
 } from "@/wallet/services/execution/client"
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
 	FaucetServiceMethod,
     FAUCET_SERVICE_NAME,
-    MintRequest,
+    type MintRequest,
     MintResponse,
 } from "./client"
 
@@ -97,7 +97,7 @@ export class FaucetService extends Service {
     ) {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
-            throw new Error("unauthorized")
+            throw new Error("Profile locked")
         }
         const network = await this.networkService.getNetwork(networkId);
         if (!network) {

@@ -15,13 +15,14 @@ import { useCacheStore } from "@/stores/cache.store"
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.edit_claim_parameters
-})
-
 const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
+	payload: Object,
+})
+
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.edit_claim_parameters?.order
 })
 
 const claimParameters = ref()
@@ -71,10 +72,22 @@ const validateMessageLeafIndex = debounce(() => {
 const handleUpdateParameters = async () => {
 	if (error.value.sources.length) return
 
-	cacheStore.claimParameters = {
-		claimAmount: claimAmount.value,
-		claimSecret: claimSecret.value,
-		messageLeafIndex: messageLeafIndex.value,
+	const methodIx = cacheStore.feePaymentMethods.findIndex(m => m.id === props.payload?.id)
+	if (methodIx === -1) {
+		cacheStore.feePaymentMethods.push({
+			id: props.payload?.id,
+			claimParameters: {
+				claimAmount: claimAmount.value,
+				claimSecret: claimSecret.value,
+				messageLeafIndex: messageLeafIndex.value,
+			},
+		})
+	} else {
+		cacheStore.feePaymentMethods[methodIx].claimParameters = {
+			claimAmount: claimAmount.value,
+			claimSecret: claimSecret.value,
+			messageLeafIndex: messageLeafIndex.value,
+		}
 	}
 
 	emit("onClose")
@@ -106,10 +119,10 @@ watch(
 
 			document.removeEventListener("keydown", onKeydown)
 		} else {
-			claimParameters.value = cacheStore.claimParameters
-			claimAmount.value = cacheStore.claimParameters?.claimAmount
-			claimSecret.value = cacheStore.claimParameters?.claimSecret
-			messageLeafIndex.value = cacheStore.claimParameters?.messageLeafIndex
+			claimParameters.value = cacheStore.feePaymentMethods.find(m => m.id === props.payload?.id)?.claimParameters
+			claimAmount.value = claimParameters.value?.claimAmount
+			claimSecret.value = claimParameters.value?.claimSecret
+			messageLeafIndex.value = claimParameters.value?.messageLeafIndex
 
 			document.addEventListener("keydown", onKeydown)
 		}
@@ -122,7 +135,7 @@ const onKeydown = e => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_claim_parameters">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.edit_claim_parameters?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

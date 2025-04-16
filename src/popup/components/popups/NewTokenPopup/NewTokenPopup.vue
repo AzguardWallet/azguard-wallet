@@ -22,7 +22,7 @@ const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.new_token
+	return popupStore.len - popupStore.popups.new_token?.order
 })
 
 const props = defineProps({
@@ -170,7 +170,7 @@ watch(
 </script>
 
 <template>
-	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_token">
+	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_token?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

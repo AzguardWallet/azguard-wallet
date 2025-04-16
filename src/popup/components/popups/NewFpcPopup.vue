@@ -27,7 +27,7 @@ const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.new_fpc
+	return popupStore.len - popupStore.popups.new_fpc?.order
 })
 
 const emit = defineEmits(["onClose"])
@@ -164,7 +164,7 @@ const onKeydown = e => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_fpc">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_fpc?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

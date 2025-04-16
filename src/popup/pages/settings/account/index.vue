@@ -57,7 +57,7 @@ const handleEditCurrentAccount = () => {
 			<Breadcrumbs />
 
 			<PageHeader
-				:title="appStore.account?.name"
+				:title="appStore.account?.name || ''"
 				description="Edit your account name or explore it on block explorer"
 				icon="vault"
 			/>
@@ -66,10 +66,10 @@ const handleEditCurrentAccount = () => {
 				<SettingField
 					@click="handleEditCurrentAccount"
 					label="Name"
-					:value="appStore.account?.name"
+					:value="appStore.account?.name || ''"
 					icon="edit"
 				/>
-				<SettingValue label="Icon" icon="chevron-right" disabled>
+				<SettingValue value="" label="Icon" icon="chevron-right" disabled>
 					<template #value>
 						<Icon name="vault" size="16" color="primary" />
 					</template>

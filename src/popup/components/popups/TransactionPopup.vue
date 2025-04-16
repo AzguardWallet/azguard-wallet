@@ -1,6 +1,6 @@
 <script setup>
 /** Vendor */
-import BN from "bignumber.js"
+import BN from "@/utils/bn.js"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
@@ -19,7 +19,7 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.tx
+	return popupStore.len - popupStore.popups.tx?.order
 })
 
 const emit = defineEmits(["onClose"])
@@ -46,7 +46,7 @@ const handleCopy = target => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.tx">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.tx?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" align="center" gap="32" :class="$style.wrapper">
 				<Flex direction="column" align="center" gap="12">

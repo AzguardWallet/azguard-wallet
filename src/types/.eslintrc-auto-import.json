@@ -323,6 +323,10 @@
     "isValidHex": true,
     "trimAddress": true,
     "debounce": true,
-    "isValidAmount": true
+    "isValidAmount": true,
+    "balanceFormatted": true,
+    "formatNumberWithSpaces": true,
+    "amount copy": true,
+    "bn": true
   }
 }

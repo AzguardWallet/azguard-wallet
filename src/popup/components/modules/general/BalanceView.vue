@@ -1,5 +1,6 @@
 <script setup>
 /** Vendor */
+import BN from "@/utils/bn.js"
 import { DateTime } from "luxon"
 
 /** Components */
@@ -7,7 +8,7 @@ import ActionButtonsView from "./ActionButtonsView.vue"
 import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
 
 /** Utils */
-import { comma } from "@/utils/amount.js"
+import { balanceFormatted, comma } from "@/utils/amount.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -32,20 +33,8 @@ const props = defineProps({
 })
 
 const balanceEl = useTemplateRef("balanceEl")
-const dynamicFontSize = ref(2)
 
 const tokenToDisplay = computed(() => appStore.tokens.find(t => appStore.displayOption === t.id))
-watch(
-	() => tokenToDisplay.value,
-	() => {
-		if (!tokenToDisplay.value) {
-			if (!appStore.tokens.find(t => t.id === appStore.displayOption)) {
-				appStore.displayOption = "total_account_value"
-			}
-		}
-	},
-)
-
 const tokenBalance = computed(() => {
 	if (props.token) {
 		return appStore.balances.filter(Boolean).find(b => b.token?.id === props.token?.id)
@@ -53,27 +42,18 @@ const tokenBalance = computed(() => {
 
 	return appStore.balances.filter(Boolean).find(b => b.token?.id === tokenToDisplay.value?.id)
 })
+const showFullBalance = ref(false)
 const totalTokenBalance = computed(() => {
-	if (!tokenBalance.value) return 0
+	if (!tokenBalance.value) return { value: 0 }
 
-	return (
-		(Number.parseFloat(tokenBalance.value.privateBalance) + Number.parseFloat(tokenBalance.value.publicBalance)) /
-		10 ** tokenBalance.value.token.decimals
-	)
+	const decimals = new BN(10).pow(tokenBalance.value?.token?.decimals || 0)
+	const publicBalance = new BN(tokenBalance.value?.publicBalance || 0).dividedBy(decimals)
+	const privateBalance = new BN(tokenBalance.value?.privateBalance || 0).dividedBy(decimals)
+
+	const total = privateBalance.plus(publicBalance)
+
+	return balanceFormatted(total, 20)
 })
-
-const calcDynamicFontSize = () => {
-	const aWidth = balanceEl.value.wrapper.getBoundingClientRect().width
-	dynamicFontSize.value = Math.min(2, (300 / aWidth) * 2)
-}
-
-watch(
-	() => totalTokenBalance.value,
-	async () => {
-		await nextTick()
-		calcDynamicFontSize()
-	},
-)
 
 const BalanceDisplayOptionsMap = {
 	total_account_value: "Account Value",
@@ -81,47 +61,18 @@ const BalanceDisplayOptionsMap = {
 	total_public_balances: "Public Account Value",
 }
 
-onMounted(async () => {
-	/** Setup balance display */
-	const balanceDisplayOptionResult = await chrome.storage.local.get("azguard:ui:balanceDisplayOption")
-	if ("azguard:ui:balanceDisplayOption" in balanceDisplayOptionResult) {
-		const balanceDisplayOption = balanceDisplayOptionResult["azguard:ui:balanceDisplayOption"]
-		appStore.displayOption = balanceDisplayOption
-
-		if (!appStore.tokens.find(t => t.id === appStore.displayOption)) {
-			appStore.displayOption = "total_account_value"
-		}
-	} else {
-		chrome.storage.local.set({ "azguard:ui:balanceDisplayOption": "total_account_value" })
-	}
-
-	if (!totalTokenBalance.value) return
-
-	calcDynamicFontSize()
-})
-
 const isCopied = ref(false)
-const handleCopyAccountAddress = () => {
+const handleCopy = (value, label) => {
 	isCopied.value = true
-	window.navigator.clipboard.writeText(appStore.account.address)
-	openToast({ label: "Address is copied", icon: "copy" })
+	window.navigator.clipboard.writeText(value)
+	openToast({ label: `${label} is copied`, icon: "copy" })
 	setTimeout(() => {
 		isCopied.value = false
 	}, 2500)
 }
-
-const handleCopyContractAddress = () => {
-	isCopied.value = true
-	window.navigator.clipboard.writeText(props.token.contract)
-	openToast({ label: "Token address is copied", icon: "copy" })
-	setTimeout(() => {
-		isCopied.value = false
-	}, 2500)
-}
-
 const handleRefreshBalance = () => {
 	appStore.tokensAwaitingBalanceRefresh.push(props.token.id)
-	managers.balance.refreshTokenBalance(props.token.id)
+	managers.balance.refreshTokenBalance(tokenBalance.value.id)
 }
 const isRefreshingBalance = computed(() => appStore.tokensAwaitingBalanceRefresh.includes(props.token?.id))
 
@@ -144,6 +95,62 @@ const handleDeleteToken = () => {
 
 	popupStore.open("confirm")
 }
+const handleTokenBalanceClick = async () => {
+	let balance = totalTokenBalance.value?.value
+	if (totalTokenBalance.value?.slashed || showFullBalance.value) {
+		showFullBalance.value = !showFullBalance.value
+		await nextTick()
+		balance = totalTokenBalance.value?.value
+	}
+	
+	handleCopy(balance, "Balance")
+}
+
+const dynamicFontSize = ref(2)
+const calcDynamicFontSize = async () => {
+	const aWidth = balanceEl.value.wrapper.getBoundingClientRect().width
+	dynamicFontSize.value = Math.min(2, Math.max(0.75, (300 / aWidth) * 2))
+}
+
+watch(
+	() => totalTokenBalance.value.value,
+	async () => {
+		if (showFullBalance.value) return
+
+		dynamicFontSize.value = 2
+		await nextTick()
+		calcDynamicFontSize()
+	},
+)
+watch(
+	() => tokenToDisplay.value,
+	() => {
+		if (!tokenToDisplay.value) {
+			if (!appStore.tokens.find(t => t.id === appStore.displayOption)) {
+				appStore.displayOption = "total_account_value"
+			}
+		}
+	},
+)
+
+onMounted(async () => {
+	/** Setup balance display */
+	const balanceDisplayOptionResult = await chrome.storage.local.get("azguard:ui:balanceDisplayOption")
+	if ("azguard:ui:balanceDisplayOption" in balanceDisplayOptionResult) {
+		const balanceDisplayOption = balanceDisplayOptionResult["azguard:ui:balanceDisplayOption"]
+		appStore.displayOption = balanceDisplayOption
+
+		if (!appStore.tokens.find(t => t.id === appStore.displayOption)) {
+			appStore.displayOption = "total_account_value"
+		}
+	} else {
+		chrome.storage.local.set({ "azguard:ui:balanceDisplayOption": "total_account_value" })
+	}
+
+	if (!totalTokenBalance.value) return
+
+	calcDynamicFontSize()
+})
 </script>
 
 <template>
@@ -151,7 +158,7 @@ const handleDeleteToken = () => {
 		<Flex direction="column" align="center" gap="20" wide>
 			<Flex justify="center" wide :class="$style.header">
 				<Tooltip v-if="!token">
-					<Flex @click="handleCopyAccountAddress" align="center" gap="6" :class="[$style.badge]">
+					<Flex @click="handleCopy(appStore.account?.address, 'Address')" align="center" gap="6" :class="[$style.badge]">
 						<Text size="12" weight="600" color="secondary">
 							{{ appStore.account.address.slice(0, 6) }}
 							<Text color="dark">•••</Text>
@@ -175,7 +182,7 @@ const handleDeleteToken = () => {
 					<Text size="12" weight="600" color="secondary" :class="$style.middle">{{ token.name }}</Text>
 
 					<Flex align="center" gap="4">
-						<Tooltip position="end">
+						<Tooltip position="end" :disabled="isRefreshingBalance">
 							<Button
 								@click="handleRefreshBalance"
 								type="secondary"
@@ -210,7 +217,7 @@ const handleDeleteToken = () => {
 									</Flex>
 								</DropdownItem>
 								<DropdownDivider />
-								<DropdownItem @click="handleCopyContractAddress">
+								<DropdownItem @click="handleCopy(props.token?.contract, 'Token address')">
 									<Flex align="center" gap="8">
 										<Icon name="copy" size="14" color="primary" />
 										Copy address
@@ -286,14 +293,15 @@ const handleDeleteToken = () => {
 							</Text>
 							<Text
 								v-else
+								@click="handleTokenBalanceClick"
 								weight="500"
 								height="100"
 								color="primary"
 								tabular
 								:style="{ fontSize: `${dynamicFontSize}rem` }"
-								:class="[$style.amount_wrapper, isRefreshingBalance && $style.refreshing]"
+								:class="[$style.amount_wrapper, showFullBalance && $style.amount_wrapper_full, isRefreshingBalance && $style.refreshing]"
 							>
-								{{ comma(totalTokenBalance, ",", 8) }}
+								{{ totalTokenBalance.value }}
 								<Text color="tertiary">{{ token?.symbol || tokenToDisplay.symbol }}</Text>
 							</Text>
 						</Flex>
@@ -366,7 +374,22 @@ const handleDeleteToken = () => {
 
 	opacity: 1;
 
-	transition: all 0.2s ease;
+	/* transition: all 0.2s ease; */
+
+	&.refreshing {
+		animation: blink 2s linear infinite;
+	}
+}
+
+.amount_wrapper_full {
+	white-space: wrap;
+	word-break: break-word;
+
+	line-height: 1.4;
+
+	opacity: 1;
+
+	/* transition: all 0.2s ease; */
 
 	&.refreshing {
 		animation: blink 2s linear infinite;

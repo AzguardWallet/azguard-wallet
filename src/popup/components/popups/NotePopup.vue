@@ -20,14 +20,14 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.note
+	return popupStore.len - popupStore.popups.note?.order
 })
 
 const note = computed(() => cacheStore.activeNote)
 </script>
 
 <template>
-	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.note">
+	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.note?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide align="center" direction="column" gap="24" :class="$style.wrapper">
 				<JsonViewer :data="note" />

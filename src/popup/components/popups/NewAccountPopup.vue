@@ -20,7 +20,7 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.new_account
+	return popupStore.len - popupStore.popups.new_account?.order
 })
 
 const inputEl = useTemplateRef("inputEl")
@@ -75,7 +75,7 @@ const onKeydown = e => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_account">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_account?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

@@ -1,31 +1,31 @@
 import { createPXEClient } from "@aztec/aztec.js";
 import { Fr } from "@aztec/foundation/fields";
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
-import { PXE } from '@aztec/stdlib/interfaces/client';
+import type { PXE } from '@aztec/stdlib/interfaces/client';
 import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
 import { TxHash } from "@aztec/stdlib/tx";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
-import { NetworkService } from "@/wallet/services/network";
+import type { NetworkService } from "@/wallet/services/network";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { isPublicAuthwitConsumable } from "@/wallet/utils/auth-registry";
 import {
-    Authwit,
-    GetAccountsRequest,
+    type Authwit,
+    type GetAccountsRequest,
     GetAccountsResponse,
-    GetAuthwitsRequest,
+    type GetAuthwitsRequest,
     GetAuthwitsResponse,
-    GetSendersRequest,
+    type GetSendersRequest,
     GetSendersResponse,
-    AddSenderRequest,
+    type AddSenderRequest,
     AddSenderResponse,
-    DeleteSenderRequest,
+    type DeleteSenderRequest,
     DeleteSenderResponse,
-    GetContractsRequest,
+    type GetContractsRequest,
     GetContractsResponse,
-    GetNotesRequest,
+    type GetNotesRequest,
     GetNotesResponse,
-    GetVersionRequest,
+    type GetVersionRequest,
     GetVersionResponse,
     Note,
     NoteStatus,

@@ -20,7 +20,7 @@ const router = useRouter()
 const emit = defineEmits(["onClose"])
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.menu
+	return popupStore.len - popupStore.popups.menu?.order
 })
 
 const handleNavigation = () => {
@@ -36,7 +36,7 @@ const handleLockWallet = () => {
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')" :displaceIdx="popupStore.popups.menu">
+	<Popup @onClose="emit('onClose')" :displaceIdx="popupStore.popups.menu?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

@@ -1,7 +1,10 @@
 import { defineStore } from "pinia"
 
 type OpenedPopups = {
-	[key: string]: number
+	[key: string]: {
+		order: number,
+		payload?: any,
+	}
 }
 
 export const usePopupStore = defineStore("popup", () => {
@@ -11,8 +14,14 @@ export const usePopupStore = defineStore("popup", () => {
 	const isOpened = (target: string) => {
 		return target in popups.value
 	}
-	const open = (target: string) => {
-		popups.value[target] = Object.keys(popups.value).length
+	const open = (target: string, payload?: any) => {
+		popups.value[target] = {
+			order: Object.keys(popups.value).length,
+			payload
+		}
+	}
+	const getPayload = (target: string) => {
+		return popups.value[target]?.payload
 	}
 	const close = (target: string) => {
 		if (target in popups.value) delete popups.value[target]
@@ -21,5 +30,5 @@ export const usePopupStore = defineStore("popup", () => {
 		popups.value = {}
 	}
 
-	return { popups, len, isOpened, open, close, closeAll }
+	return { popups, len, isOpened, open, close, closeAll, getPayload }
 })

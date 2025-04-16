@@ -68,7 +68,7 @@ const handleCreateProfile = async () => {
 	appStore.initBalanceListeners()
 
 	await chrome.storage.local.set({
-		"azguard:ui:activeAccount": appStore.account.address,
+		"azguard:ui:activeAccount": appStore.account?.address,
 	})
 
 	router.push("/popup/general")

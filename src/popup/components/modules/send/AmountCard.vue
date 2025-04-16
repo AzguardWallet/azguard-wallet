@@ -1,6 +1,6 @@
 <script setup>
 /** Vendor */
-import BN from "bignumber.js"
+import BN from "@/utils/bn.js"
 
 /** Utils */
 import { purgeNumber, normalizeAmount, comma } from "@/utils/amount.js"

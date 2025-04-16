@@ -1,5 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { FeeSettings } from "@/wallet/services/execution/client";
+import type { FeeSettings } from "@/wallet/services/execution/client";
 import { FAUCET_SERVICE_NAME } from ".";
 
 export enum FaucetServiceMethod {

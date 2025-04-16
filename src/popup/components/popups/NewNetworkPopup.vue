@@ -18,7 +18,7 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.new_network
+	return popupStore.len - popupStore.popups.new_network?.order
 })
 
 const emit = defineEmits(["onClose"])
@@ -93,7 +93,7 @@ const onKeydown = e => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_network">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_network?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

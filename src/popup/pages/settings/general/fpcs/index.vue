@@ -1,7 +1,7 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Manage fpcs",
+		"title": "Manage FPCs",
 		"isAuthRequired": true
 	}
 }

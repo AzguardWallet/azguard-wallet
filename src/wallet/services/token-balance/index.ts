@@ -1,7 +1,7 @@
 import { createPXEClient } from "@aztec/aztec.js"
 import { FunctionType } from "@aztec/stdlib/abi"
-import { PXE } from "@aztec/stdlib/interfaces/client"
-import {
+import type { PXE } from "@aztec/stdlib/interfaces/client"
+import type {
 	EventMessage,
 	RequestMessage,
 	ResponseMessage,
@@ -10,23 +10,23 @@ import { Service } from "@/wallet/base/service"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, sleep } from "@/wallet/utils"
 import { Queue } from "@/wallet/utils/queue"
-import { AccountService } from "@/wallet/services/account"
-import { Account } from "@/wallet/services/account/client"
-import { NetworkService } from "@/wallet/services/network"
-import { Network } from "@/wallet/services/network/client"
-import { ProfileService } from "@/wallet/services/profile"
-import { Token, TokenService } from "@/wallet/services/token"
+import type { AccountService } from "@/wallet/services/account"
+import type { Account } from "@/wallet/services/account/client"
+import type { NetworkService } from "@/wallet/services/network"
+import type { Network } from "@/wallet/services/network/client"
+import type { ProfileService } from "@/wallet/services/profile"
+import type { Token, TokenService } from "@/wallet/services/token"
 import { BalanceOfPrivateFn, BalanceOfPublicFn } from "@/wallet/services/token/functions"
 import { TokenInfo } from "@/wallet/services/token/client"
-import { ExecutionService } from "@/wallet/services/execution"
+import type { ExecutionService } from "@/wallet/services/execution"
 import { CallAction, EncodedCallAction, SimulateViewsOperation } from "@/wallet/services/execution/client"
-import { TransactionService } from "@/wallet/services/transaction"
-import { Tx, TxStatus } from "@/wallet/services/transaction/client"
-import { ViewFn } from "@/wallet/utils/fn"
+import type { TransactionService } from "@/wallet/services/transaction"
+import { type Tx, TxStatus } from "@/wallet/services/transaction/client"
+import type { ViewFn } from "@/wallet/utils/fn"
 import {
-	GetTokenBalancesRequest,
+	type GetTokenBalancesRequest,
 	GetTokenBalancesResponse,
-	RefreshTokenBalanceRequest,
+	type RefreshTokenBalanceRequest,
 	RefreshTokenBalanceResponse,
 	TOKEN_BALANCE_SERVICE_NAME,
 	TokenBalanceInfo,
@@ -475,7 +475,7 @@ export class TokenBalanceService extends Service {
 			const stop = Date.now()
 			console.debug(`Synced in ${stop - start}ms`)
 		} catch (error) {
-			console.error(`Failed to sync`, error)
+			console.error("Failed to sync", error)
 		}
 	}
 }

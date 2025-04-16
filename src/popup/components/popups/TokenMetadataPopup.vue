@@ -1,13 +1,8 @@
 <script setup>
-/** Vendor */
-import BN from "bignumber.js"
-
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
-/** Utils */
-import { managers } from "@/utils/core"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -24,7 +19,7 @@ const cacheStore = useCacheStore()
 const route = useRoute()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.token_metadata
+	return popupStore.len - popupStore.popups.token_metadata?.order
 })
 
 const emit = defineEmits(["onClose"])
@@ -33,7 +28,6 @@ const props = defineProps({
 })
 
 const token = computed(() => {
-	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 	return appStore.tokens.findLast(t => t.id == cacheStore.activeTokenIdx)
 })
 
@@ -55,7 +49,7 @@ watch(
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.token_metadata">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.token_metadata?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
 				<Text size="14" weight="600" color="primary"> Token Metadata </Text>

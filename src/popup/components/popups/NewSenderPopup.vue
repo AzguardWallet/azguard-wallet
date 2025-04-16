@@ -5,6 +5,7 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 
 /** Utils */
+import { debounce } from "@/utils/general"
 import { isValidHex } from "@/utils/string"
 
 /** Services */
@@ -26,21 +27,40 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.new_sender
+	return popupStore.len - popupStore.popups.new_sender?.order
 })
 
 
 let accountStateClientService = null
+const senders = ref([])
 const senderAddress = ref("")
 const isLoading = ref(false)
-const error = ref("")
+const error = ref({ type: "", title: "", tooltip: ""})
+const fillError = (type, title, tooltip) => {
+	error.value = { type, title, tooltip }
+}
 
+const isAlreadyExist = computed(() => senders.value?.includes(senderAddress.value))
 const isAvailableToAddSender = computed(() => {
 	if (!senderAddress.value.length) return
 	if (!isValidHex(senderAddress.value)) return
 
 	return true
 })
+const validateSenderAddress = () => {
+	fillError()
+	if (!senderAddress.value) return
+
+	if (isAlreadyExist.value) {
+		fillError("validation", "Already exist")
+		return
+	}
+
+	if (!isValidHex(senderAddress.value)) {
+		fillError("validation", "Invalid sender address")
+		return
+	}
+}
 
 const handleAddSender = async () => {
 	if (!isAvailableToAddSender.value) return
@@ -52,12 +72,16 @@ const handleAddSender = async () => {
 		emit("onClose")
 		openToast({ label: "Sender is added" })
 	} catch (err) {
-		error.value = err
+		fillError("error", "Failed to add sender", err)
 	} finally {
 		isLoading.value = false
 	}
 }
 
+watch(
+	() => senderAddress.value,
+	() => validateSenderAddress()
+)
 watch(
 	() => props.show,
 	async () => {
@@ -69,6 +93,7 @@ watch(
 			senderAddress.value = ""
 		} else {
 			accountStateClientService = new AccountStateServiceClient()
+			senders.value = await accountStateClientService.getSenders(appStore.network.id)
 
 			document.addEventListener("keydown", onKeydown)
 		}
@@ -81,7 +106,7 @@ const onKeydown = e => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_sender">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_sender?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
@@ -98,9 +123,9 @@ const onKeydown = e => {
 				>
 					<template #right>
 						<Transition name="fade">
-							<Flex v-if="!isAvailableToAddSender && senderAddress" align="center" gap="6">
+							<Flex v-if="error.type === 'validation'" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary"> Invalid address </Text>
+								<Text size="12" weight="600" color="primary"> {{ error.title }} </Text>
 							</Flex>
 						</Transition>
 					</template>
@@ -109,7 +134,7 @@ const onKeydown = e => {
 				<Flex direction="column" gap="10">
 					<Transition name="fade">
 						<Tooltip
-							v-if="error"
+							v-if="error.type === 'error'"
 							side="top"
 							position="start"
 							wide
@@ -123,13 +148,13 @@ const onKeydown = e => {
 								/>
 
 								<Text size="12" weight="600" color="secondary">
-									Failed to add sender
+									{{ error.title }}
 								</Text>
 							</Flex>
 
 							<template #content>
 								<Text size="12" color="secondary">
-									{{ error }}
+									{{ error.tooltip }}
 								</Text>
 							</template>
 						</Tooltip>
@@ -141,8 +166,8 @@ const onKeydown = e => {
 						type="primary"
 						size="medium"
 						:loading="isLoading"
-						:class="error && $style.shake"
-						:disabled="!isAvailableToAddSender || !senderAddress"
+						:class="error.type === 'error' && $style.shake"
+						:disabled="!!error.type || !senderAddress"
 					>
 						Add sender
 					</Button>

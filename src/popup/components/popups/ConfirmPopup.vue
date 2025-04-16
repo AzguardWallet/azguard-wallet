@@ -11,13 +11,13 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.confirm
-})
-
 const emit = defineEmits(["onClose"])
 const props = defineProps({
 	show: Boolean,
+})
+
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.confirm?.order
 })
 
 const confirmationInputEl = useTemplateRef("confirmationInputEl")
@@ -47,7 +47,7 @@ watch(
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.confirm">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.confirm?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">

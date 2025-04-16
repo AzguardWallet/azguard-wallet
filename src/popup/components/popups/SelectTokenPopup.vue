@@ -23,7 +23,7 @@ const props = defineProps({
 const router = useRouter()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.select_token
+	return popupStore.len - popupStore.popups.select_token?.order
 })
 
 const handleSelectToken = id => {
@@ -38,7 +38,7 @@ const handleManageTokens = () => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_token">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_token?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
