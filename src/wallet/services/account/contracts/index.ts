@@ -4,7 +4,7 @@ import { AuthWitness } from '@aztec/stdlib/auth-witness';
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
 import { CompleteAddress } from '@aztec/stdlib/contract';
 import { PXE } from '@aztec/stdlib/interfaces/client';
-import { HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
+import { Capsule, HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
 
 export * from './azguard-v0';
 
@@ -21,6 +21,8 @@ export interface IAccountContract {
         calls: AzguardFunctionCall[],
         args: HashedValues[],
         nonce: Fr,
+        authwits?: AuthWitness[],
+        capsules?: Capsule[],
     ): Promise<TxExecutionRequest>;
 }
 

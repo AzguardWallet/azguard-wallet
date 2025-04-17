@@ -29,9 +29,15 @@ export default {
 			run_at: "document_start",
 		},
 	],
-	permissions: ["storage",/* "tabs",*/ "background", "sidePanel"/*, "notifications"*/],
+	permissions: ["storage", "sidePanel"],
 	content_security_policy: {
 		extension_pages: "script-src 'self' 'wasm-unsafe-eval'",
+	},
+	cross_origin_embedder_policy: {
+	  value: "require-corp"
+	},
+	cross_origin_opener_policy: {
+	  value: "same-origin"
 	},
 	icons: {
 		16: "src/assets/logo.png",

@@ -29,7 +29,7 @@ import {
     RegisterSenderOperation,
     SendTransactionOperation,
     SimulateTransactionOperation,
-    SimulateUnconstrainedOperation,
+    SimulateUtilityOperation,
     SimulateViewsOperation,
 } from "./types";
 
@@ -225,8 +225,8 @@ export class DappInteractionService extends Service {
                     _operation.setup?.forEach(x => this.checkMethodPermission(session, x.kind, chain));
                     break;
                 }
-                case OperationKind.SimulateUnconstrained: {
-                    const _operation = operation as SimulateUnconstrainedOperation;
+                case OperationKind.SimulateUtility: {
+                    const _operation = operation as SimulateUtilityOperation;
                     const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
                     this.checkAccountPermission(session, _operation.account);
                     this.checkMethodPermission(session, _operation.kind, chain);

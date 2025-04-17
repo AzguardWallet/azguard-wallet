@@ -7,7 +7,7 @@ export enum OperationKind {
     RegisterSender = "register_sender",
     SendTransaction = "send_transaction",
     SimulateTransaction = "simulate_transaction",
-    SimulateUnconstrained = "simulate_unconstrained",
+    SimulateUtility = "simulate_utility",
     SimulateViews = "simulate_views",
 }
 
@@ -72,8 +72,8 @@ export class SimulateTransactionOperation implements IOperation {
     ) {}
 }
 
-export class SimulateUnconstrainedOperation implements IOperation {
-    public readonly kind = OperationKind.SimulateUnconstrained;
+export class SimulateUtilityOperation implements IOperation {
+    public readonly kind = OperationKind.SimulateUtility;
     public constructor(
         public readonly networkId: string,
         public readonly accountAddress: string,

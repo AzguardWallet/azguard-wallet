@@ -58,7 +58,7 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
 		return {
 			name: this.name,
 			isInitializer: false,
-			functionType: FunctionType.UNCONSTRAINED,
+			functionType: FunctionType.UTILITY,
 			isInternal: false,
 			isStatic: false,
 			parameters: [
@@ -127,7 +127,7 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
 				!fn.isInitializer &&
 				!fn.isInternal &&
 				!fn.isStatic &&
-				fn.functionType === FunctionType.UNCONSTRAINED &&
+				fn.functionType === FunctionType.UTILITY &&
 				fn.parameters.length === 1 &&
 				(fn.parameters[0].type as StructType)?.path ===
 					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&

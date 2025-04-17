@@ -1,6 +1,4 @@
-import { createPXEClient } from "@aztec/aztec.js"
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { PXE } from "@aztec/stdlib/interfaces/client"
 import {
 	EventMessage,
 	RequestMessage,
@@ -9,11 +7,12 @@ import {
 import { Service } from "@/wallet/base/service"
 import { NetworkService } from "@/wallet/services/network"
 import { ProfileService } from "@/wallet/services/profile"
+import { AccountService } from "@/wallet/services/account"
+import { PxeService } from "@/wallet/services/pxe"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max } from "@/wallet/utils"
 import {
 	feeJuiceAddress,
-	feeJuiceArtifact,
 	feeJuiceName,
 	feeJuiceSymbol,
 } from "@/wallet/utils/fee-juice"
@@ -51,8 +50,6 @@ import {
 	TransferPublicFn,
 	TransferPublicToPrivateFn,
 } from "./functions"
-import { AccountService } from "../account"
-import { IAccountContract } from "../account/contracts"
 
 export type Token = {
 	id: number
@@ -86,6 +83,7 @@ export class TokenService extends Service {
 	constructor(
 		private readonly profiles: ProfileService,
 		private readonly networks: NetworkService,
+		private readonly pxeService: PxeService,
 		private readonly accounts: AccountService,
 		emit: (event: EventMessage) => void
 	) {
@@ -339,30 +337,26 @@ export class TokenService extends Service {
 			throw new Error("unknown network id")
 		}
 
-		const pxe = createPXEClient(network.rpcUrl)
-
-		const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(token.contract));
+		const contractMetadata = await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(token.contract));
 		if (!contractMetadata.contractInstance) {
 			throw new Error("contract instance not found")
 		}
+		const instance = contractMetadata.contractInstance;
 
-		let classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
-		if (!classMetadata.isContractClassPubliclyRegistered) {
-			if (token.contract !== feeJuiceAddress) {
-				throw new Error("contract class not registered")
-			}
-		}
+		let classMetadata = await this.pxeService.getContractClassMetadata(network.chainId, instance.currentContractClassId);
 		if (!classMetadata.artifact) {
-			if (token.contract !== feeJuiceAddress) {
-				throw new Error("contract artifact not found")
-			}
-			await pxe.registerContractClass(feeJuiceArtifact);
-			classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
-			if (!classMetadata.artifact) {
-				throw new Error("contract artifact not found")
-			}
+			throw new Error("contract artifact not found")
 		}
 		const artifact = classMetadata.artifact;
+
+		const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const registeredContracts = await pxe.getContracts();
+        if (!registeredContracts.find(x => x.toString() === token.contract)) {
+            await pxe.registerContract({
+                instance,
+                artifact,
+            });
+        }
 
 		const getNameFnCandidates = GetNameFn.getCandidates(artifact)
 		const getNameFn = token.getNameFn
@@ -430,30 +424,26 @@ export class TokenService extends Service {
 			throw new Error("unknown network id")
 		}
 
-		const pxe = createPXEClient(network.rpcUrl)
-
-		const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(contract));
+		const contractMetadata = await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(contract));
 		if (!contractMetadata.contractInstance) {
 			throw new Error("contract instance not found")
 		}
+		const instance = contractMetadata.contractInstance;
 
-		let classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
-		if (!classMetadata.isContractClassPubliclyRegistered) {
-			if (contract !== feeJuiceAddress) {
-				throw new Error("contract class not registered")
-			}
-		}
+		let classMetadata = await this.pxeService.getContractClassMetadata(network.chainId, instance.currentContractClassId);
 		if (!classMetadata.artifact) {
-			if (contract !== feeJuiceAddress) {
-				throw new Error("contract artifact not found")
-			}
-			await pxe.registerContractClass(feeJuiceArtifact);
-			classMetadata = await pxe.getContractClassMetadata(contractMetadata.contractInstance.currentContractClassId, true);
-			if (!classMetadata.artifact) {
-				throw new Error("contract artifact not found")
-			}
+			throw new Error("contract artifact not found")
 		}
 		const artifact = classMetadata.artifact;
+
+		const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const registeredContracts = await pxe.getContracts();
+        if (!registeredContracts.find(x => x.toString() === contract)) {
+            await pxe.registerContract({
+                instance,
+                artifact,
+            });
+        }
 
 		const getNameFnCandidates = GetNameFn.getCandidates(artifact)
 		const getNameFn = GetNameFn.getDefault(getNameFnCandidates)
@@ -524,38 +514,6 @@ export class TokenService extends Service {
 		)
 	}
 
-	public async getPrivateBalance(
-		pxe: PXE,
-		account: IAccountContract,
-		token: Token
-	): Promise<bigint> {
-		if (!token.balanceOfPrivateFn) {
-			return 0n
-		}
-		const viewFn = BalanceOfPrivateFn.new(
-			token.balanceOfPrivateFn.name,
-			token.balanceOfPrivateFn.impl
-		)
-		const args = viewFn.buildArgs(account.address)
-		return await simulate(pxe, account, token.contract, viewFn, args)
-	}
-
-	public async getPublicBalance(
-		pxe: PXE,
-		account: IAccountContract,
-		token: Token
-	): Promise<bigint> {
-		if (!token.balanceOfPublicFn) {
-			return 0n
-		}
-		const viewFn = BalanceOfPublicFn.new(
-			token.balanceOfPublicFn.name,
-			token.balanceOfPublicFn.impl
-		)
-		const args = viewFn.buildArgs(account.address)
-		return await simulate(pxe, account, token.contract, viewFn, args)
-	}
-
 	private async getTokenMetadata(
 		profileId: string,
 		networkId: string,
@@ -573,41 +531,41 @@ export class TokenService extends Service {
 			address
 		)
 
-		const pxe = createPXEClient(network.rpcUrl)
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
 
 		const getNameFn = ti.getNameFn ? GetNameFn.new(ti.getNameFn.name, ti.getNameFn.impl) : undefined;
 		const getSymbolFn = ti.getSymbolFn ? GetSymbolFn.new(ti.getSymbolFn.name, ti.getSymbolFn.impl) : undefined;
 		const getDecimalsFn = ti.getDecimalsFn ? GetDecimalsFn.new(ti.getDecimalsFn.name, ti.getDecimalsFn.impl) : undefined;
 
-		return await Promise.all([
+		return [
 			getNameFn
-				? simulate(
+				? await simulate(
 						pxe,
 						account,
 						ti.contract,
 						getNameFn,
 						getNameFn.buildArgs()
 				)
-				: Promise.resolve(ti.contract === feeJuiceAddress ? feeJuiceName : "<name>"),
+				: ti.contract === feeJuiceAddress ? feeJuiceName : "<name>",
 			getSymbolFn
-				? simulate(
+				? await simulate(
 						pxe,
 						account,
 						ti.contract,
 						getSymbolFn,
 						getSymbolFn.buildArgs()
 				)
-				: Promise.resolve(ti.contract === feeJuiceAddress ? feeJuiceSymbol : "<symbol>"),
+				: ti.contract === feeJuiceAddress ? feeJuiceSymbol : "<symbol>",
 			getDecimalsFn
-				? simulate(
+				? await simulate(
 						pxe,
 						account,
 						ti.contract,
 						getDecimalsFn,
 						getDecimalsFn.buildArgs()
 				)
-				: Promise.resolve(0),
-		])
+				: 0,
+		];
 	}
 
 	private async findToken(

@@ -5,6 +5,7 @@ import { AccountService } from "./services/account";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
 import { WalletConnectService } from "./services/wallet-connect";
+import { PxeService } from "./services/pxe";
 import { TokenService } from "./services/token";
 import { TokenBalanceService } from "./services/token-balance";
 import { TransactionService } from "./services/transaction";
@@ -20,7 +21,7 @@ import { jsonSanitize } from "./utils/serialization";
 
 export async function init() {
     console.debug("Init BarretenbergSync...");
-    await BarretenbergSync.initSingleton();
+    await BarretenbergSync.initSingleton(process.env.BB_WASM_PATH);
     console.debug("BarretenbergSync inited.");
 }
 
@@ -50,19 +51,21 @@ export async function stop() {
 // services
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(profileService, broadcast);
+const pxeService = new PxeService(profileService, networkService, broadcast);
 const accountService = new AccountService(profileService, networkService, broadcast);
-const tokenService = new TokenService(profileService, networkService, accountService, broadcast);
-const fpcService = new FpcService(profileService, networkService, broadcast);
+const tokenService = new TokenService(profileService, networkService, pxeService,accountService, broadcast);
+const fpcService = new FpcService(profileService, networkService, pxeService,broadcast);
 const transactionService = new TransactionService(
     profileService,
     accountService,
     networkService,
     broadcast,
 );
-const accountStateService = new AccountStateService(networkService, broadcast);
+const accountStateService = new AccountStateService(networkService, pxeService, broadcast);
 const executionService = new ExecutionService(
     profileService,
     networkService,
+    pxeService,
     accountService,
     tokenService,
     fpcService,
@@ -82,6 +85,7 @@ const tokenBalanceService = new TokenBalanceService(
 const faucetService = new FaucetService(
     profileService,
     networkService,
+    pxeService,
     accountService,
     executionService,
     transactionService,
@@ -104,6 +108,7 @@ const walletConnectService = new WalletConnectService(
 const services = new Map<string, Service>([
     [profileService.name, profileService],
     [networkService.name, networkService],
+    [pxeService.name, pxeService],
     [accountService.name, accountService],
     [tokenService.name, tokenService],
     [tokenBalanceService.name, tokenBalanceService],
