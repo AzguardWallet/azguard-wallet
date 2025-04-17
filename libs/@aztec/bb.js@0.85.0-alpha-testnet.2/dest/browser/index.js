@@ -4139,8 +4139,7 @@ var __webpack_exports__ = {};
         return worker;
     }
     function getSharedMemoryAvailable() {
-        const globalScope = typeof window !== "undefined" ? window : globalThis;
-        return typeof SharedArrayBuffer !== "undefined";// && globalScope.crossOriginIsolated;
+        return typeof SharedArrayBuffer !== "undefined";
     }
     function browser_getRemoteBarretenbergWasm(worker) {
         return wrap(worker);

@@ -1,4 +1,3 @@
-import { createPXEClient } from "@aztec/aztec.js"
 import { Fr } from "@aztec/foundation/fields"
 import { TokenContract } from "@aztec/noir-contracts.js/Token";
 import { bufferAsFields } from "@aztec/stdlib/abi"
