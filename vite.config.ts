@@ -29,7 +29,9 @@ export default defineConfig({
 			src: fileURLToPath(new URL("./src", import.meta.url)),
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
 			// "fs/promises": "node-stdlib-browser/mock/empty",
-			"@aztec/bb.js": fileURLToPath(new URL("./libs/@aztec/bb.js@0.85.0-alpha-testnet.2/dest/browser/index.js", import.meta.url)),
+			"@aztec/bb.js": fileURLToPath(
+				new URL("./libs/@aztec/bb.js@0.85.0-alpha-testnet.2/dest/browser/index.js", import.meta.url),
+			),
 			comlink: "comlink",
 			debug: "debug",
 		},
@@ -119,7 +121,7 @@ export default defineConfig({
 
 		{
 			...nodePolyfills({
-				include: ["buffer", "path"],
+				include: ["buffer", "crypto", "net", "path", "stream", "tty", "vm"],
 			}),
 			// Unfortunate, but needed due to https://github.com/davidmyersdev/vite-plugin-node-polyfills/issues/81
 			// Suspected to be because of the yarn workspace setup, but not sure

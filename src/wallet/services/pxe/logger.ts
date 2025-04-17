@@ -25,7 +25,7 @@ export class Logger implements AztecLogger {
         for (const logLevel of LogLevels) {
             this.levels.add(logLevel);
             this[logLevel] = (msg: string, ...data: unknown[]) => {
-                console.log(`[${new Date().toUTCString()}][${module}][${level}]: ${msg}`, ...data);
+                console.debug(`[${new Date().toUTCString()}][${module}][${level}]: ${msg}`, ...data);
             };
             if (logLevel === level) {
                 break;
