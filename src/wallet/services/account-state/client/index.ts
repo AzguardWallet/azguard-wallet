@@ -1,7 +1,7 @@
-import { EventMessage } from "@/wallet/base/messages";
+import type { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
 import { AccountStateServiceEvent, type AccountStateServiceEventMessage } from "./events";
-import { Authwit, Note, NoteStatus } from "./models";
+import type { Authwit, Note, NoteStatus } from "./models";
 import {
     GetAccountsRequest,
     GetAuthwitsRequest,

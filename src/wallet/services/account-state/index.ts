@@ -211,7 +211,7 @@ export class AccountStateService extends Service {
     public async addSender(networkId: string, address: string): Promise<string> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
+            const pxe = await this.pxeService.getPXEClient(network.chainId);
             const sender = (await pxe.registerSender(AztecAddress.fromString(address))).toString()
             this.emit(new AccountStateServiceEventMessage(AccountStateServiceEvent.SenderAdded, sender));
             return sender;
@@ -225,7 +225,7 @@ export class AccountStateService extends Service {
     public async deleteSender(networkId: string, address: string): Promise<string> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
+            const pxe = await this.pxeService.getPXEClient(network.chainId);
             await pxe.removeSender(AztecAddress.fromString(address));
             this.emit(new AccountStateServiceEventMessage(AccountStateServiceEvent.SenderDeleted, address));
             return address;
