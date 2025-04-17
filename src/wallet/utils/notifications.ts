@@ -1,4 +1,3 @@
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 // export function createNotification(notification: any) {
 //     chrome.notifications.create({
 //         type: notification.type || "basic",

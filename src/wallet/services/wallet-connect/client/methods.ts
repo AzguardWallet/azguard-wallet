@@ -1,7 +1,6 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { WALLET_CONNECT_SERVICE_NAME } from ".";
 
-// biome-ignore lint/style/useEnumInitializers: <explanation>
 export enum WalletConnectServiceMethod {
     ConnectByURI,
 }

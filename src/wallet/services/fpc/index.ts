@@ -48,7 +48,6 @@ export class FpcService extends Service {
                 try {
                     const result = await this.getFpcs(_request.chainId);
                     return new GetFpcsResponse(_request, result);
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 } catch (error: any) {
                     return new GetFpcsResponse(_request, undefined, error.message);
                 }
@@ -58,7 +57,6 @@ export class FpcService extends Service {
                 try {
                     const result = await this.getFpc(_request.fpcId);
                     return new GetFpcResponse(_request, result.infoData);
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 } catch (error: any) {
                     return new GetFpcResponse(_request, undefined, error.message);
                 }
@@ -73,7 +71,6 @@ export class FpcService extends Service {
                         _request.fpcName,
                     );
                     return new AddFpcResponse(_request, result);
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 } catch (error: any) {
                     return new AddFpcResponse(_request, undefined, error.message);
                 }
@@ -86,7 +83,6 @@ export class FpcService extends Service {
                         _request.name,
                     );
                     return new UpdateFpcResponse(_request, result);
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 } catch (error: any) {
                     return new UpdateFpcResponse(_request, undefined, error.message);
                 }
@@ -95,7 +91,6 @@ export class FpcService extends Service {
                 try {
                     const result = await this.deleteFpc(_request.fpcId);
                     return new DeleteFpcResponse(_request, result);
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 } catch (error: any) {
                     return new DeleteFpcResponse(_request, undefined, error.message);
                 }
@@ -229,18 +224,23 @@ export class FpcService extends Service {
         if (!profile) {
             throw new Error("Profile locked");
         }
-        const fpc = await this.storage.get(fpcId);
-        if (fpc?.profileId !== profile.id) {
-            throw new Error("Invalid id");
-        }
+        try {
+            await this.lock.enter();
+            const fpc = await this.storage.get(fpcId);
+            if (fpc?.profileId !== profile.id) {
+                throw new Error("Invalid id");
+            }
 
-        const newFpc = {
-            ...fpc,
-            name,
-        };
-        await this.storage.set(fpcId, newFpc);
-        this.emit(new FpcServiceEventMessage(FpcServiceEvent.FpcUpdated, newFpc));
-        return newFpc;
+            const newFpc = {
+                ...fpc,
+                name,
+            };
+            await this.storage.set(fpcId, newFpc);
+            this.emit(new FpcServiceEventMessage(FpcServiceEvent.FpcUpdated, newFpc));
+            return newFpc;
+        } finally {
+            this.lock.leave();
+        }
     }
         
     public async deleteFpc(id: string): Promise<FpcInfo> {
