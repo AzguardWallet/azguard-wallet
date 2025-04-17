@@ -7,6 +7,7 @@ import useComponents from "unplugin-vue-components/vite"
 import { defineConfig } from "vite"
 import { nodePolyfills } from "vite-plugin-node-polyfills"
 import packageJson from "./package.json"
+import { viteStaticCopy } from "vite-plugin-static-copy"
 
 export default defineConfig({
 	server: {
@@ -14,6 +15,11 @@ export default defineConfig({
 		strictPort: true,
 		hmr: {
 			port: 8088,
+		},
+		// Headers needed for bb WASM to work in multithreaded mode
+		headers: {
+			"Cross-Origin-Embedder-Policy": "require-corp",
+			"Cross-Origin-Opener-Policy": "same-origin",
 		},
 	},
 	resolve: {
@@ -24,7 +30,7 @@ export default defineConfig({
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
 			// "fs/promises": "node-stdlib-browser/mock/empty",
 			"@aztec/bb.js": fileURLToPath(
-				new URL("./libs/@aztec/bb.js@0.81.0/dest/browser/index.js", import.meta.url)
+				new URL("./libs/@aztec/bb.js@0.85.0-alpha-testnet.2/dest/browser/index.js", import.meta.url),
 			),
 			comlink: "comlink",
 			debug: "debug",
@@ -38,15 +44,6 @@ export default defineConfig({
 		},
 	},
 	plugins: [
-		nodePolyfills({
-			globals: {
-				Buffer: true,
-				global: true,
-				process: true,
-			},
-			exclude: ["fs"],
-		}),
-
 		vue(),
 
 		usePages({
@@ -96,11 +93,43 @@ export default defineConfig({
 			enforce: "post",
 			apply: "build",
 			transformIndexHtml(html, { path }) {
-				const assetsPath = relative(dirname(path), "/assets").replace(
-					/\\/g,
-					"/"
-				)
+				const assetsPath = relative(dirname(path), "/assets").replace(/\\/g, "/")
 				return html.replace(/"\/assets\//g, `"${assetsPath}/`)
+			},
+		},
+
+		{
+			name: "wasm-content-type",
+			configureServer(server) {
+				server.middlewares.use((req, res, next) => {
+					if (req.url?.endsWith(".wasm")) {
+						res.setHeader("Content-Type", "application/wasm")
+					}
+					next()
+				})
+			},
+		},
+
+		viteStaticCopy({
+			targets: [
+				{
+					src: "./node_modules/@aztec/bb.js/dest/node/barretenberg_wasm/*.gz",
+					dest: "assets/",
+				},
+			],
+		}),
+
+		{
+			...nodePolyfills({
+				include: ["buffer", "crypto", "net", "path", "stream", "tty", "vm", "util"],
+			}),
+			// Unfortunate, but needed due to https://github.com/davidmyersdev/vite-plugin-node-polyfills/issues/81
+			// Suspected to be because of the yarn workspace setup, but not sure
+			resolveId(source: string) {
+				const m = /^vite-plugin-node-polyfills\/shims\/(buffer|global|process)$/.exec(source)
+				if (m) {
+					return `./node_modules/vite-plugin-node-polyfills/shims/${m[1]}/dist/index.cjs`
+				}
 			},
 		},
 	],
@@ -115,7 +144,7 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		include: ["vue", "webextension-polyfill"],
-		exclude: ["vue-demi", "@aztec/bb.js", "@aztec/noir-contracts.js"],
+		exclude: ["vue-demi", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi"],
 		esbuildOptions: {
 			target: "esnext",
 		},
@@ -125,5 +154,10 @@ export default defineConfig({
 		__NAME__: JSON.stringify(packageJson.name),
 		__DISPLAY_NAME__: JSON.stringify(packageJson.displayName),
 		"import.meta.env.HTML_TITLE": JSON.stringify(packageJson.displayName),
+		"process.browser": true,
+		"process.env": JSON.stringify({
+			LOG_LEVEL: "verbose",
+			BB_WASM_PATH: "/assets/barretenberg.wasm.gz",
+		}),
 	},
 })

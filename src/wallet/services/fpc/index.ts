@@ -1,9 +1,9 @@
-import { createPXEClient } from "@aztec/aztec.js";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import type { ProfileService } from "@/wallet/services/profile";
 import type { NetworkService } from "@/wallet/services/network";
+import type { PxeService } from "@/wallet/services/pxe";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
@@ -34,6 +34,7 @@ export class FpcService extends Service {
     constructor(
         private readonly profiles: ProfileService,
         private readonly networks: NetworkService,
+        private readonly pxeService: PxeService,
         emit: (event: EventMessage) => void,
     ) {
         super(FPC_SERVICE_NAME, emit);
@@ -115,47 +116,56 @@ export class FpcService extends Service {
             console.log("Discovering FPCs...");
             try {
                 await this.lock.enter();
-                const network = (await this.networks.getNetworks(chainId)).find(x => x.isDefault);
-                if (network) {
-                    const pxe = createPXEClient(network.rpcUrl);
-                    for (const contract of await pxe.getContracts()) {
-                        const contractMeta = await pxe.getContractMetadata(contract);
-                        if (contractMeta.contractInstance) {
-                            const classMeta = await pxe.getContractClassMetadata(
-                                contractMeta.contractInstance.currentContractClassId,
-                                true,
-                            );
-                            if (classMeta.artifact?.name === "FPC" || classMeta.artifact?.name === "SponsoredFPC") {
-                                console.log(`Found FPC: ${contract.toString()}`);
-                                const type = classMeta.artifact.name === "FPC"
-									? FpcType.DefaultFpc
-									: FpcType.DefaultSponsoredFpc;
-                                const fpcHandler = getFpcHandler(type);
-                                fpcHandler.validateArtifact(classMeta.artifact);
+                const pxe = await this.pxeService.getPXEClient(chainId);
 
-                                const asset = await fpcHandler.getAsset(contract.toString(), pxe);
-                                const acceptsPrivate = fpcHandler.acceptsPrivate();
-                                const acceptsPublic = fpcHandler.acceptsPublic();
+                for (const contract of [
+                    AztecAddress.fromString("0x097d86b77f924ecf8c7c6e058db2268b21615bf860ca4e87f0254fad6dee7dde"),
+                    AztecAddress.fromString("0x0b27e30667202907fc700d50e9bc816be42f8141fae8b9f2281873dbdb9fc2e5"),
+                ]) {
+                    const contractMeta = await this.pxeService.getContractMetadata(chainId, contract);
+                    if (contractMeta.contractInstance) {
+                        const classMeta = await this.pxeService.getContractClassMetadata(
+                            chainId,
+                            contractMeta.contractInstance.currentContractClassId,
+                        );
+                        if (classMeta.artifact) {
+                            console.log(`Found FPC: ${contract.toString()}`);
 
-                                let id: string;
-                                do {
-                                    id = getRandomHex(8);
-                                } while (await this.storage.contains(id));
-                                const fpc = new FpcInfo(
-                                    id,
-                                    profile.id,
-                                    network.chainId,
-                                    type,
-                                    contract.toString(),
-                                    undefined,
-                                    asset,
-                                    acceptsPrivate,
-                                    acceptsPublic,
-                                );
-                                await this.storage.set(id, fpc);
-                                this.emit(new FpcServiceEventMessage(FpcServiceEvent.FpcAdded, fpc));
-                                result.push(fpc);
+                            const registeredContracts = await pxe.getContracts();
+                            if (!registeredContracts.find(x => x.toString() === contract.toString())) {
+                                await pxe.registerContract({
+                                    instance: contractMeta.contractInstance,
+                                    artifact: classMeta.artifact,
+                                });
                             }
+
+                            const type = classMeta.artifact.name === "FPC"
+                                ? FpcType.DefaultFpc
+                                : FpcType.DefaultSponsoredFpc;
+                            const fpcHandler = getFpcHandler(type);
+                            fpcHandler.validateArtifact(classMeta.artifact);
+                            
+                            const asset = await fpcHandler.getAsset(contract.toString(), pxe);
+                            const acceptsPrivate = fpcHandler.acceptsPrivate();
+                            const acceptsPublic = fpcHandler.acceptsPublic();
+                            
+                            let id: string;
+                            do {
+                                id = getRandomHex(8);
+                            } while (await this.storage.contains(id));
+                            const fpc = new FpcInfo(
+                                id,
+                                profile.id,
+                                chainId,
+                                type,
+                                contract.toString(),
+                                undefined,
+                                asset,
+                                acceptsPrivate,
+                                acceptsPublic,
+                            );
+                            await this.storage.set(id, fpc);
+                            result.push(fpc);
                         }
                     }
                 }
@@ -172,19 +182,27 @@ export class FpcService extends Service {
             throw new Error("Profile locked");
         }
         const network = await this.networks.getNetwork(networkId);
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
 
-        const fpcMetadata = await pxe.getContractMetadata(AztecAddress.fromString(address));
+        const fpcMetadata = await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(address));
         if (!fpcMetadata.contractInstance) {
             throw new Error("Contract instance not found");
         }
 
-        const fpcClassMetadata = await pxe.getContractClassMetadata(
+        const fpcClassMetadata = await this.pxeService.getContractClassMetadata(
+            network.chainId,
             fpcMetadata.contractInstance.currentContractClassId,
-            true,
         );
         if (!fpcClassMetadata.artifact) {
             throw new Error("Contract artifact not found");
+        }
+
+        const registeredContracts = await pxe.getContracts();
+        if (!registeredContracts.find(x => x.toString() === address)) {
+            await pxe.registerContract({
+                instance: fpcMetadata.contractInstance,
+                artifact: fpcClassMetadata.artifact,
+            });
         }
 
         const fpcHandler = getFpcHandler(type);

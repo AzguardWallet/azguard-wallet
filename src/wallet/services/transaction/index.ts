@@ -1,12 +1,9 @@
-import { createPXEClient } from "@aztec/aztec.js";
-import { PXE } from "@aztec/stdlib/interfaces/client";
 import { TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import { AccountService } from "@/wallet/services/account";
 import { Account } from "@/wallet/services/account/client";
 import { NetworkService } from "@/wallet/services/network";
-import { Network } from "@/wallet/services/network/client";
 import { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
@@ -30,10 +27,8 @@ export class TransactionService extends Service {
     public readonly onTransactionAdded: ((tx: Tx) => void)[] = [];
     public readonly onTransactionUpdated: ((tx: Tx) => void)[] = [];
 
-	private profile?: string = undefined
     private readonly txs: EntityStorage<Tx>;
     private readonly pending: Map<string, Tx> = new Map();
-    private readonly pxes: Map<number, PXE> = new Map();
     private readonly worker: Promise<void>;
 
     constructor(
@@ -44,10 +39,7 @@ export class TransactionService extends Service {
     ) {
         super(TRANSACTION_SERVICE_NAME, emit);
         this.txs = new EntityStorage("azguard:core:txs", StorageType.Local);
-
-        this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged);
         this.accountService.onAccountDeleted.push(this.onAccountDeleted);
-        this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged);
 
         this.worker = this.runWorker();
     }
@@ -133,20 +125,6 @@ export class TransactionService extends Service {
         }
     }
 
-	private readonly onActiveProfileChanged = async (profileId?: string) => {
-		this.profile = profileId
-		if (profileId) {
-			this.pxes.clear();
-            for (const network of (await this.networkService.getNetworks()).filter(x => x.isDefault)) {
-                this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
-            }
-		}
-	}
-
-    private readonly onDefaultNetworkChanged = async (network: Network) => {
-        this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
-    }
-
     private readonly onAccountDeleted = async (account: Account) => {
         console.debug(`account ${account.address} deleted, remove related txs`);
         for (const tx of (await this.txs.getValues()).filter(x => x.account === account.address)) {
@@ -160,20 +138,9 @@ export class TransactionService extends Service {
     private async init() {
         while(true) {
             try {
-				this.profile = (
-					await this.profileService.getActiveProfile()
-				)?.id
-                
-				if (this.profile) {
-                    for (const network of (await this.networkService.getNetworks()).filter(x => x.isDefault)) {
-                        this.pxes.set(network.chainId, createPXEClient(network.rpcUrl));
-                    }
-				}
-
                 for (const tx of (await this.txs.getValues()).filter(x => x.status === TxStatus.Pending)) {
                     this.pending.set(tx.hash, tx);
                 }
-
                 console.debug("Transaction service initialized");
                 break;
             }
@@ -186,11 +153,11 @@ export class TransactionService extends Service {
 
     private async runWorker() {
         await this.init();
-
         while (true) {
-			if (this.profile) {
-                try {
-                    if (this.pending.size) {
+            if (this.pending.size) {
+                const activeProfile = await this.profileService.getActiveProfile();
+                if (activeProfile) {
+                    try {
                         console.debug(`Sync ${this.pending.size} transactions...`);
                         const start = Date.now();
                         await Promise.allSettled(
@@ -199,9 +166,9 @@ export class TransactionService extends Service {
                         const end = Date.now();
                         console.debug(`Transactions synced in ${end - start}ms`);
                     }
-                }
-                catch (error) {
-                    console.error("Failed to sync transaction status.", error);
+                    catch (error) {
+                        console.error("Failed to sync transaction status.", error);
+                    }
                 }
             }
             await sleep(1000);
@@ -210,13 +177,13 @@ export class TransactionService extends Service {
 
     private async updateTx(tx: Tx) {
         console.debug(`Sync tx ${tx.hash.slice(0, 8)}`);
-        const pxe = this.pxes.get(tx.chainId);
-        if (!pxe) {
+        const node = await this.networkService.getNode(tx.chainId);
+        if (!node) {
             console.error("Unknown network");
             return;
         }
 
-        const receipt = await pxe.getTxReceipt(TxHash.fromString(tx.hash));
+        const receipt = await node.getTxReceipt(TxHash.fromString(tx.hash));
         const status = this.getTxStatus(receipt.status);
         if (status === tx.status) {
             console.debug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);

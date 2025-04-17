@@ -43,7 +43,7 @@ export abstract class Fn extends FnImpl {
     }
 
     public async packArgs(args: any[]): Promise<HashedValues> {
-        return await HashedValues.fromValues(encodeArguments(this.abi(), args));
+        return await HashedValues.fromArgs(encodeArguments(this.abi(), args));
     }
 
     public getReturnTypes(): AbiType[] {
@@ -66,8 +66,8 @@ export async function simulate(
     viewFn: ViewFn,
     args: any[],
 ): Promise<any> {
-    if (viewFn.type === FunctionType.UNCONSTRAINED) {
-        return await pxe.simulateUnconstrained(viewFn.name, args, AztecAddress.fromString(contract));
+    if (viewFn.type === FunctionType.UTILITY) {
+        return await pxe.simulateUtility(viewFn.name, args, AztecAddress.fromString(contract));
     }
 
     const packedArgs = await viewFn.packArgs(args);
@@ -87,7 +87,6 @@ export async function simulate(
         undefined, // msgSender
         undefined, // skipTxValidation
         true, // skipFeeEnforcement
-        undefined, // profile
         [account.address], // scopes
     );
 

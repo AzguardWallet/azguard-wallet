@@ -1,5 +1,3 @@
-import { createPXEClient } from "@aztec/aztec.js";
-import { Fr } from "@aztec/foundation/fields";
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
 import type { PXE } from '@aztec/stdlib/interfaces/client';
 import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
@@ -7,6 +5,7 @@ import { TxHash } from "@aztec/stdlib/tx";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import type { NetworkService } from "@/wallet/services/network";
+import type { PxeService } from "@/wallet/services/pxe";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { isPublicAuthwitConsumable } from "@/wallet/utils/auth-registry";
 import {
@@ -40,6 +39,7 @@ export class AccountStateService extends Service {
 
     constructor(
         private readonly networks: NetworkService,
+        private readonly pxeService: PxeService,
         emit: (event: EventMessage) => void
     ) {
         super(ACCOUNT_STATE_SERVICE_NAME, emit);
@@ -187,7 +187,7 @@ export class AccountStateService extends Service {
     public async getAccounts(networkId: string): Promise<string[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
+            const pxe = await this.pxeService.getPXEClient(network.chainId);
             return (await pxe.getRegisteredAccounts()).map(x => x.address.toString());
         }
         catch (error) {
@@ -199,7 +199,7 @@ export class AccountStateService extends Service {
     public async getSenders(networkId: string): Promise<string[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
+            const pxe = await this.pxeService.getPXEClient(network.chainId);
             return (await pxe.getSenders()).map(x => x.toString());
         }
         catch (error) {
@@ -239,7 +239,7 @@ export class AccountStateService extends Service {
     public async getContracts(networkId: string): Promise<string[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
+            const pxe = await this.pxeService.getPXEClient(network.chainId);
             return (await pxe.getContracts()).map(x => x.toString());
         }
         catch (error) {
@@ -257,7 +257,7 @@ export class AccountStateService extends Service {
     ): Promise<Note[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
+            const pxe = await this.pxeService.getPXEClient(network.chainId);
             const notes = await pxe.getNotes({
                 recipient: owner ? AztecAddress.fromString(owner) : undefined,
                 status: status === NoteStatus.All ? _NoteStatus.ACTIVE_OR_NULLIFIED : undefined,
@@ -282,7 +282,7 @@ export class AccountStateService extends Service {
     public async getVersion(networkId: string): Promise<string> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
+            const pxe = await this.pxeService.getPXEClient(network.chainId);
             return (await pxe.getPXEInfo()).pxeVersion;
         }
         catch (error) {
@@ -293,7 +293,7 @@ export class AccountStateService extends Service {
 
     private async syncAuthwits(networkId: string, owner: string) {
         const network = await this.networks.getNetwork(networkId);
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
         const active = (await this.authwits.getValues()).filter(x => x.owner === owner);
         await Promise.allSettled(
             active.map(x => x.isPublic ? this.syncPublicAuthwit(pxe, x) : this.syncPrivateAuthwit(pxe, x))
@@ -302,7 +302,7 @@ export class AccountStateService extends Service {
 
     private async syncPrivateAuthwit(pxe: PXE, authwit: Authwit) {
         // TODO: Check nullifiers
-        const res = await pxe.getAuthWitness(Fr.fromString(authwit.hash)); // TODO: Fr.fromHexString
+        const res = [] as any; //await pxe.getAuthWitness(Fr.fromString(authwit.hash)); // TODO: Fr.fromHexString
         if (!res || res.length === 0) {
             await this.authwits.delete(`${authwit.hash}:${authwit.isPublic}`);
         }

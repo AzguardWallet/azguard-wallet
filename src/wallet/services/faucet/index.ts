@@ -1,4 +1,3 @@
-import { createPXEClient } from "@aztec/aztec.js"
 import { Fr } from "@aztec/foundation/fields"
 import { TokenContract } from "@aztec/noir-contracts.js/Token";
 import { bufferAsFields } from "@aztec/stdlib/abi"
@@ -21,6 +20,7 @@ import type { TransactionService } from "@/wallet/services/transaction"
 import type { NetworkService } from "@/wallet/services/network"
 import type { AccountService } from "@/wallet/services/account"
 import type { ProfileService } from "@/wallet/services/profile"
+import type { PxeService } from "@/wallet/services/pxe";
 import type { ExecutionService } from "@/wallet/services/execution"
 import {
     type IOperation,
@@ -46,6 +46,7 @@ export class FaucetService extends Service {
 	constructor(
         private readonly profileService: ProfileService,
         private readonly networkService: NetworkService,
+        private readonly pxeService: PxeService,
         private readonly accountService: AccountService,
         private readonly executionService: ExecutionService,
         private readonly transactionService: TransactionService,
@@ -107,7 +108,7 @@ export class FaucetService extends Service {
         if (!account) {
             throw new Error("unknown account")
         }
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
         
         const deployActions: IAction[] = [];
         const deployOps: IOperation[] = [

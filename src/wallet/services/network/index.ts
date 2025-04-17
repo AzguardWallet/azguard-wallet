@@ -1,4 +1,4 @@
-import { createPXEClient } from "@aztec/aztec.js";
+import { AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import { ProfileService } from "@/wallet/services/profile";
@@ -34,7 +34,7 @@ type NetworkDto = {
 	name: string;
 	rpcUrl: string;
 	chainId: number;
-	protocolVersion: number;
+	rollupVersion: number;
 	isDefault: boolean;
 };
 
@@ -43,6 +43,7 @@ export class NetworkService extends Service {
 
 	private readonly storage: EntityStorage<NetworkDto>;
 	private readonly lock = new Lock();
+	private readonly nodes = new Map<number, AztecNode>();
 
 	constructor(
 		private readonly profiles: ProfileService,
@@ -50,6 +51,7 @@ export class NetworkService extends Service {
 	) {
 		super(NETWORK_SERVICE_NAME, emit);
 		this.storage = new EntityStorage("azguard:core:networks", StorageType.Local);
+		this.profiles.onActiveProfileChanged.push(this.onActiveProfileChanged);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
 	}
 
@@ -145,15 +147,33 @@ export class NetworkService extends Service {
 			if (networks.length) {
 				return networks.map(([id, network]) => this.makeNetwork(id, network));
 			}
-			const defaultNetworks = [
-				await this._addNetwork(profile.id, "Shared PXE", "https://rpc.sandbox.azguardwallet.io", 41337, 1, true),
-				await this._addNetwork(profile.id, "Local PXE", "http://localhost:8080", 31337, 1, true),
-			];
+			
+			let defaultNetworks = [];
+			try {
+				const name = "Shared Sandbox";
+				const rpcUrl = "https://rpc.sandbox.azguardwallet.io";
+				const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);
+				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, rollupVersion, true));
+			}
+			catch (error) {
+				console.error("Failed to add 'Shared Sandbox'", error);
+			}
+			try {
+				const name = "Local Sandbox";
+				const rpcUrl = "http://localhost:8080";
+				const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);
+				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, rollupVersion, true));
+			}
+			catch (error) {
+				console.error("Failed to add 'Local Sandbox'", error);
+			}
+			
 			for (const network of defaultNetworks) {
 				this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, network));
 				for (const emit of this.onDefaultNetworkChanged) {
 					try {emit(network)} catch {}
 				}
+				this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl));
 			}
 			return defaultNetworks;
 		} finally {
@@ -192,10 +212,10 @@ export class NetworkService extends Service {
 		if (!profile) {
 			throw new Error("Profile locked");
 		}
-		const [chainId, protocolVersion] = await this.getNodeInfo(rpcUrl);
+		const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);
 		try {
 			await this.lock.enter();
-			const network = await this._addNetwork(profile.id, name, rpcUrl, chainId, protocolVersion, false);
+			const network = await this._addNetwork(profile.id, name, rpcUrl, chainId, rollupVersion, false);
 			this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkAdded, network));
 			return network;
 		} finally {
@@ -208,7 +228,7 @@ export class NetworkService extends Service {
 		if (!profile) {
 			throw new Error("Profile locked");
 		}
-		const [chainId, protocolVersion] = await this.getNodeInfo(rpcUrl);
+		const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);
 		try {
 			await this.lock.enter();
 			const network = await this.storage.get(id);
@@ -219,7 +239,7 @@ export class NetworkService extends Service {
 			network.name = name;
 			network.rpcUrl = rpcUrl;
 			network.chainId = chainId;
-			network.protocolVersion = protocolVersion;
+			network.rollupVersion = rollupVersion;
 			await this.storage.set(id, network);
 			const res = this.makeNetwork(id, network);
 			this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkUpdated, res));
@@ -277,6 +297,7 @@ export class NetworkService extends Service {
 			for (const emit of this.onDefaultNetworkChanged) {
 				try {emit(res)} catch {}
 			}
+			this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl));
 			return res;
 		} finally {
 			this.lock.leave();
@@ -293,8 +314,8 @@ export class NetworkService extends Service {
 			throw new Error("Invalid id");
 		}
 		try {
-			const [chainId, protocolVersion] = await this.getNodeInfo(network.rpcUrl);
-			if (chainId !== network.chainId || protocolVersion !== network.protocolVersion) {
+			const [chainId, rollupVersion] = await this.getNodeInfo(network.rpcUrl);
+			if (chainId !== network.chainId || rollupVersion !== network.rollupVersion) {
 				return NodeStatus.InvalidChain;
 			}
 			return NodeStatus.Active;
@@ -304,12 +325,33 @@ export class NetworkService extends Service {
 		}
 	}
 
+	public async getNode(chainId: number): Promise<AztecNode> {
+        try {
+            await this.lock.enter();
+            let node = this.nodes.get(chainId);
+            if (!node) {
+				const profile = await this.profiles.getActiveProfile();
+				if (!profile) {
+					throw new Error("Profile locked");
+				}
+                const networks = (await this.storage.getValues()).filter(x => x.profileId === profile.id && x.chainId === chainId);
+                const network = networks.find(x => x.isDefault) ?? networks[0];
+                node = createAztecNodeClient(network.rpcUrl);
+                this.nodes.set(chainId, node);
+            }
+            return node;
+        }
+        finally {
+            this.lock.leave();
+        }
+	}
+
 	private async _addNetwork(
 		profileId: string,
 		name: string,
 		rpcUrl: string,
 		chainId: number,
-		protocolVersion: number,
+		rollupVersion: number,
 		isDefault: boolean,
 	): Promise<Network> {
 		let id: string;
@@ -321,7 +363,7 @@ export class NetworkService extends Service {
 			name,
 			rpcUrl,
 			chainId,
-			protocolVersion,
+			rollupVersion,
 			isDefault,
 		};
 		await this.storage.set(id, network);
@@ -330,9 +372,9 @@ export class NetworkService extends Service {
 
 	private async getNodeInfo(rpcUrl: string): Promise<[number, number]> {
 		try {
-			const pxe = createPXEClient(rpcUrl);
-			const nodeInfo = await pxe.getNodeInfo();
-			return [nodeInfo.l1ChainId, nodeInfo.protocolVersion];
+			const rpc = createAztecNodeClient(rpcUrl);
+			const nodeInfo = await rpc.getNodeInfo();
+			return [nodeInfo.l1ChainId, nodeInfo.rollupVersion];
 		} catch (error) {
 			console.error(error);
 			throw new Error("Failed to fetch node info");
@@ -342,18 +384,30 @@ export class NetworkService extends Service {
 	private makeNetwork(id: string, network: NetworkDto): Network {
 		return new Network(
 			id,
+			network.profileId,
 			network.name,
 			network.rpcUrl,
 			network.chainId,
-			network.protocolVersion,
+			network.rollupVersion,
 			network.isDefault,
 		);
 	}
+    
+    private readonly onActiveProfileChanged = async () => {
+        try {
+            await this.lock.enter();
+            this.nodes.clear();
+        }
+        finally {
+            this.lock.leave();
+        }
+    };
 
     private readonly onProfileDeleted = async (profileId: string) => {
         console.debug(`profile ${profileId} deleted, remove related networks`);
         try {
 			await this.lock.enter();
+            this.nodes.clear();
 			const networks = (await this.storage.getAll()).filter(([_, network]) => network.profileId === profileId);
 			for (const [id, network] of networks) {
 				console.debug(`remove network #${id}`);

@@ -1,7 +1,6 @@
 import {
     computeInnerAuthWitHash,
     computeAuthWitMessageHash,
-    createPXEClient, 
 } from "@aztec/aztec.js";
 import { Fr } from '@aztec/foundation/fields';
 import {
@@ -27,12 +26,13 @@ import {
 } from "@aztec/stdlib/contract";
 import { PXE } from '@aztec/stdlib/interfaces/client';
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
-import { HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
+import { Capsule, HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
 import { z } from "zod";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import { Service } from "@/wallet/base/service";
 import { NetworkService } from "@/wallet/services/network";
 import { Network } from "@/wallet/services/network/client";
+import { PxeService } from "@/wallet/services/pxe";
 import { AccountService } from "@/wallet/services/account";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
 import { ProfileService } from "@/wallet/services/profile";
@@ -72,7 +72,7 @@ import {
     RegisterContractOperation,
     SendTransactionOperation,
     SimulateTransactionOperation,
-    SimulateUnconstrainedOperation,
+    SimulateUtilityOperation,
     SimulateViewsOperation,
     OperationStatus,
     IOperationResult,
@@ -102,6 +102,7 @@ export class ExecutionService extends Service {
     constructor(
         private readonly profileService: ProfileService,
         private readonly networkService: NetworkService,
+        private readonly pxeService: PxeService,
         private readonly accountService: AccountService,
         private readonly tokenService: TokenService,
         private readonly fpcService: FpcService,
@@ -261,7 +262,6 @@ export class ExecutionService extends Service {
             undefined, // msgSender
             undefined, // skipTxValidation
             undefined, // skipFeeEnforcement
-            undefined, // profile
             [account.address], // scopes
         );
         const provedTx = await pxe.proveTx(txRequest, simulatedTx.privateExecutionResult);
@@ -329,8 +329,8 @@ export class ExecutionService extends Service {
                         result = await this.executeSimulateTransaction(operation as SimulateTransactionOperation);
                         break;
                     }
-                    case OperationKind.SimulateUnconstrained: {
-                        result = await this.executeSimulateUnconstrained(operation as SimulateUnconstrainedOperation);
+                    case OperationKind.SimulateUtility: {
+                        result = await this.executeSimulateUtility(operation as SimulateUtilityOperation);
                         break;
                     }
                     case OperationKind.SimulateViews: {
@@ -368,16 +368,18 @@ export class ExecutionService extends Service {
 
     async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
 
         const providedInstance = op.instance ? ContractInstanceWithAddressSchema.parse(op.instance) : undefined;
-        const instance = providedInstance ?? (await pxe.getContractMetadata(AztecAddress.fromString(op.address))).contractInstance;
+        const instance = providedInstance ??
+            (await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(op.address))).contractInstance;
         if (!instance) {
             throw new Error("Contract instance not found");
         }
 
         const providedArtifact = op.artifact ? ContractArtifactSchema.parse(op.artifact) : undefined;
-        const artifact = providedArtifact ?? (await pxe.getContractClassMetadata(instance.currentContractClassId, true)).artifact;
+        const artifact = providedArtifact
+            ?? (await this.pxeService.getContractClassMetadata(network.chainId, instance.currentContractClassId)).artifact;
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
@@ -397,7 +399,7 @@ export class ExecutionService extends Service {
 
     async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
         await pxe.registerSender(AztecAddress.fromString(op.address));
     }
 
@@ -414,7 +416,6 @@ export class ExecutionService extends Service {
                     undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
-                    undefined, // profile
                     [account.address], // scopes
                 );
                 const baseFees = await pxe.getCurrentBaseFees();
@@ -444,7 +445,6 @@ export class ExecutionService extends Service {
                     undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
-                    undefined, // profile
                     [account.address], // scopes
                 );
                 const baseFees = await pxe.getCurrentBaseFees();
@@ -470,7 +470,6 @@ export class ExecutionService extends Service {
                     undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
-                    undefined, // profile
                     [account.address], // scopes
                 );
                 const baseFees = await pxe.getCurrentBaseFees();
@@ -490,7 +489,6 @@ export class ExecutionService extends Service {
                     undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
-                    undefined, // profile
                     [account.address], // scopes
                 );
                 maxFee = simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding).computeFee(baseFees);
@@ -522,7 +520,6 @@ export class ExecutionService extends Service {
                     undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
-                    undefined, // profile
                     [account.address], // scopes
                 );
                 const gasSettings = new GasSettings(
@@ -551,7 +548,6 @@ export class ExecutionService extends Service {
             undefined, // msgSender
             undefined, // skipTxValidation
             undefined, // skipFeeEnforcement
-            undefined, // profile
             [account.address], // scopes
         );
         const provedTx = await pxe.proveTx(txRequest, simulatedTx.privateExecutionResult);
@@ -578,7 +574,6 @@ export class ExecutionService extends Service {
             undefined, // msgSender
             undefined, // skipTxValidation
             true, // skipFeeEnforcement
-            undefined, // profile
             [account.address], // scopes
         );
         return {
@@ -588,7 +583,7 @@ export class ExecutionService extends Service {
         };
     }
     
-    async executeSimulateUnconstrained(op: SimulateUnconstrainedOperation): Promise<AbiDecoded> {
+    async executeSimulateUtility(op: SimulateUtilityOperation): Promise<AbiDecoded> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -596,22 +591,23 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
         
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         if (!registeredContracts.has(op.contract)) {
-            const [_, instance] = await this.getInstance(pxe, op.contract);
-            const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
+            const [_, instance] = await this.getInstance(network.chainId, op.contract);
+            const [__, artifact] = await this.getArtifact(network.chainId, instance.currentContractClassId.toString());
             console.debug("Register contract");
             await pxe.registerContract({instance, artifact});
         }
 
-        return await pxe.simulateUnconstrained(
-            op.method,
-            op.args,
-            AztecAddress.fromString(op.contract),
-            undefined,
-            [account.address],
+        return await pxe.simulateUtility(
+            op.method, // functionName
+            op.args, // args
+            AztecAddress.fromString(op.contract), // to
+            undefined, // authwits
+            undefined, // from
+            [account.address], // scopes
         );
     }
     
@@ -623,10 +619,10 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
         const contracts = this.getContracts(op.calls);
-        const instances = await this.getInstances(pxe, contracts);
-        const artifacts = await this.getArtifacts(pxe, instances);
+        const instances = await this.getInstances(network.chainId, contracts);
+        const artifacts = await this.getArtifacts(network.chainId, instances);
 
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
@@ -649,7 +645,7 @@ export class ExecutionService extends Service {
         
         const args: HashedValues[] = [];
         const calls: [AzguardFunctionCall, number, number, AbiType[]][] = [];
-        const unconstrained: [Promise<AbiDecoded>, number, AbiType[]][] = [];
+        const utility: [Promise<AbiDecoded>, number, AbiType[]][] = [];
         const ensureArray = (value: any): any[] => Array.isArray(value) ? value : [value];
         let privateCalls = 0;
         let publicCalls = 0;
@@ -671,12 +667,13 @@ export class ExecutionService extends Service {
                     if (!fn) {
                         throw new Error("Method not found");
                     }
-                    if (fn.functionType === FunctionType.UNCONSTRAINED) {
-                        unconstrained.push([
-                            pxe.simulateUnconstrained(
+                    if (fn.functionType === FunctionType.UTILITY) {
+                        utility.push([
+                            pxe.simulateUtility(
                                 _call.method,
                                 _call.args,
                                 AztecAddress.fromString(_call.contract),
+                                undefined, // authwits
                                 account.address,
                                 [account.address],
                             ),
@@ -686,7 +683,9 @@ export class ExecutionService extends Service {
                     }
                     else {
                         const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
-                        const packedArgs = await HashedValues.fromValues(encodeArguments(fn, _call.args));
+                        const packedArgs = fn.functionType === FunctionType.PUBLIC
+                            ? await HashedValues.fromCalldata([fnSelector.toField(), ...encodeArguments(fn, _call.args)])
+                            : await HashedValues.fromArgs(encodeArguments(fn, _call.args));
                         args.push(packedArgs);
                         calls.push([
                             new AzguardFunctionCall(
@@ -734,20 +733,21 @@ export class ExecutionService extends Service {
                     if (!fn) {
                         throw new Error("Method not found");
                     }
-                    if (fn.functionType === FunctionType.UNCONSTRAINED) {
+                    if (fn.functionType === FunctionType.UTILITY) {
                         let decodedArgs;
                         try {
                             decodedArgs = ensureArray(decodeFromAbi(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
                         }
                         catch (error) {
-                            console.error("Failed to decode unconstrained call args", fn.parameters, _call.args);
-                            throw new Error(`Failed to decode unconstrained "encoded_call" args: ${(error as Error)?.message}. Try to use "call" instead.`);
+                            console.error("Failed to decode utility call args", fn.parameters, _call.args);
+                            throw new Error(`Failed to decode utility "encoded_call" args: ${(error as Error)?.message}. Try to use "call" instead.`);
                         }
-                        unconstrained.push([
-                            pxe.simulateUnconstrained(
+                        utility.push([
+                            pxe.simulateUtility(
                                 fn.name,
                                 decodedArgs,
                                 AztecAddress.fromString(_call.to),
+                                undefined, // authwits
                                 account.address,
                                 [account.address],
                             ),
@@ -756,7 +756,9 @@ export class ExecutionService extends Service {
                         ]);
                     }
                     else {
-                        const packedArgs = await HashedValues.fromValues(_call.args.map(x => Fr.fromString(x)));
+                        const packedArgs = fn.functionType === FunctionType.PUBLIC
+                            ? await HashedValues.fromCalldata([FunctionSelector.fromString(_call.selector).toField(), ..._call.args.map(x => Fr.fromString(x))])
+                            : await HashedValues.fromArgs(_call.args.map(x => Fr.fromString(x)));
                         args.push(packedArgs);
                         calls.push([
                             new AzguardFunctionCall(
@@ -784,7 +786,6 @@ export class ExecutionService extends Service {
             undefined, // msgSender
             undefined, // skipTxValidation
             true, // skipFeeEnforcement
-            undefined, // profile
             [account.address], // scopes
         );
 
@@ -804,7 +805,7 @@ export class ExecutionService extends Service {
             }
         }
 
-        for (const [promise, i, types] of unconstrained) {
+        for (const [promise, i, types] of utility) {
             const values = await promise;
             try {
                 result.encoded[i] = encodeArguments(
@@ -819,7 +820,7 @@ export class ExecutionService extends Service {
                 );
             }
             catch (error) {
-                console.error("Failed to encode unconstrained simulation results", types, values, error);
+                console.error("Failed to encode utility simulation results", types, values, error);
             }
             result.decoded[i] = values;
         }
@@ -840,10 +841,10 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
 
-        const pxe = createPXEClient(network.rpcUrl);
+        const pxe = await this.pxeService.getPXEClient(network.chainId);
         const contracts = this.getContracts(op.actions.concat(op.setup ?? []));
-        const instances = await this.getInstances(pxe, contracts);
-        const artifacts = await this.getArtifacts(pxe, instances);
+        const instances = await this.getInstances(network.chainId, contracts);
+        const artifacts = await this.getArtifacts(network.chainId, instances);
 
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
@@ -856,6 +857,8 @@ export class ExecutionService extends Service {
             }
         }
 
+        const capsules: Capsule[] = [];
+        const authwits: AuthWitness[] = [];
         const args: HashedValues[] = [];
         const calls: AzguardFunctionCall[] = [];
         const setup: AzguardFunctionCall[] = [];
@@ -865,6 +868,8 @@ export class ExecutionService extends Service {
         if (op.setup?.length) {
             await this.processTxActions(
                 op.setup,
+                capsules,
+                authwits,
                 account,
                 network,
                 pxe,
@@ -879,6 +884,8 @@ export class ExecutionService extends Service {
         if (op.actions?.length) {
             await this.processTxActions(
                 op.actions,
+                capsules,
+                authwits,
                 account,
                 network,
                 pxe,
@@ -898,6 +905,8 @@ export class ExecutionService extends Service {
 
     async processTxActions(
         actions: IAction[],
+        capsules: Capsule[],
+        authwits: AuthWitness[],
         account: IAccountContract,
         network: Network,
         pxe: PXE,
@@ -912,11 +921,11 @@ export class ExecutionService extends Service {
                 case ActionKind.AddCapsule: {
                     const _action = action as AddCapsuleAction;
                     console.debug("Adding capsule...");
-                    await pxe.storeCapsule(
+                    capsules.push(new Capsule(
                         AztecAddress.fromString(_action.contract),
                         Fr.fromString(_action.storageSlot),
                         _action.capsule.map(Fr.fromString)
-                    );
+                    ));
                     console.debug("Capsule added.");
                     break;
                 }
@@ -966,8 +975,8 @@ export class ExecutionService extends Service {
                     const authwit = _action.authwit
                         ? new AuthWitness(messageHash, _action.authwit.map(x => Fr.fromString(x)))
                         : await account.buildAuthWitness(messageHash);
-                        
-                    await pxe.addAuthWitness(authwit);
+                    
+                    authwits.push(authwit);
 
                     console.debug("Private authwit added.");
                     break;
@@ -1016,7 +1025,9 @@ export class ExecutionService extends Service {
                     }
 
                     const fn = getSetAuthorizedFn();
-                    const packedArgs = await HashedValues.fromValues(encodeArguments(fn, [messageHash, true]));
+                    const packedArgs = fn.functionType === FunctionType.PUBLIC
+                        ? await HashedValues.fromCalldata([(await getSetAuthorizedSelector()).toField(), ...encodeArguments(fn, [messageHash, true])])
+                        : await HashedValues.fromArgs(encodeArguments(fn, [messageHash, true]));
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
                         getAuthRegistryAddress(),
@@ -1050,7 +1061,9 @@ export class ExecutionService extends Service {
                         throw new Error("Method not found");
                     }
                     const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
-                    const packedArgs = await HashedValues.fromValues(encodeArguments(fn, _action.args));
+                    const packedArgs = fn.functionType === FunctionType.PUBLIC
+                        ? await HashedValues.fromCalldata([fnSelector.toField(), ...encodeArguments(fn, _action.args)])
+                        : await HashedValues.fromArgs(encodeArguments(fn, _action.args));
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
                         AztecAddress.fromString(_action.contract),
@@ -1101,7 +1114,9 @@ export class ExecutionService extends Service {
                         _action.type = fn.functionType;
                         _action.isStatic = fn.isStatic;
                     }
-                    const packedArgs = await HashedValues.fromValues(_action.args.map(x => Fr.fromString(x)));
+                    const packedArgs = _action.type === FunctionType.PUBLIC
+                        ? await HashedValues.fromCalldata([FunctionSelector.fromString(_action.selector).toField(), ..._action.args.map(x => Fr.fromString(x))])
+                        : await HashedValues.fromArgs(_action.args.map(x => Fr.fromString(x)));
                     args.push(packedArgs);
                     calls.push(new AzguardFunctionCall(
                         AztecAddress.fromString(_action.to),
@@ -1156,7 +1171,7 @@ export class ExecutionService extends Service {
             },
             {
                 chainId: new Fr(network.chainId),
-                version: new Fr(network.protocolVersion),
+                version: new Fr(network.rollupVersion),
             },
         );
     }
@@ -1220,7 +1235,7 @@ export class ExecutionService extends Service {
             },
             {
                 chainId: new Fr(network.chainId),
-                version: new Fr(network.protocolVersion),
+                version: new Fr(network.rollupVersion),
             },
         );
     }
@@ -1236,7 +1251,7 @@ export class ExecutionService extends Service {
             },
             {
                 chainId: new Fr(network.chainId),
-                version: new Fr(network.protocolVersion),
+                version: new Fr(network.rollupVersion),
             },
         );
     }
@@ -1266,12 +1281,12 @@ export class ExecutionService extends Service {
         )];
     }
 
-    private async getInstances(pxe: PXE, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
+    private async getInstances(chainId: number, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
         console.debug("Get instances...");
         const instances = new Map<string, ContractInstanceWithAddress>();
         console.debug(`Fetching ${contracts.length} instances...`);
         const fetched = await Promise.all(
-            contracts.map(x => this.getInstance(pxe, x)),
+            contracts.map(x => this.getInstance(chainId, x)),
         );
         console.debug(`${fetched.length} instances fetched`);
         for (const [address, instance] of fetched) {
@@ -1280,15 +1295,15 @@ export class ExecutionService extends Service {
         return instances;
     }
 
-    private async getInstance(pxe: PXE, contract: string): Promise<[string, ContractInstanceWithAddress]> {
-        const metadata = await pxe.getContractMetadata(AztecAddress.fromString(contract))
+    private async getInstance(chainId: number, contract: string): Promise<[string, ContractInstanceWithAddress]> {
+        const metadata = await this.pxeService.getContractMetadata(chainId, AztecAddress.fromString(contract))
         if (!metadata.contractInstance) {
             throw new Error("Contract instance not found");
         }
         return [contract, metadata.contractInstance];
     }
 
-    private async getArtifacts(pxe: PXE, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
+    private async getArtifacts(chainId: number, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
         console.debug("Get artifacts...");
         const artifacts = new Map<string, ContractArtifact>();
         const classIds = new Set(
@@ -1299,7 +1314,7 @@ export class ExecutionService extends Service {
         );
         console.debug(`Fetching ${classIds.size} artifacts...`);
         const fetched = await Promise.all(
-            classIds.values().map(x => this.getArtifact(pxe, x))
+            classIds.values().map(x => this.getArtifact(chainId, x))
         );
         console.debug(`${fetched.length} artifacts fetched`);
         for (const [classId, artifact] of fetched) {
@@ -1309,10 +1324,10 @@ export class ExecutionService extends Service {
     }
 
     private async getArtifact(
-        pxe: PXE,
+        chainId: number,
         classId: string,
     ): Promise<[string, ContractArtifact]> {
-        const metadata = await pxe.getContractClassMetadata(Fr.fromString(classId), true)
+        const metadata = await this.pxeService.getContractClassMetadata(chainId, Fr.fromString(classId))
         if (!metadata.artifact) {
             throw new Error("Contract artifact not found");
         }
