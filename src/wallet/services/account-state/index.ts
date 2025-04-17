@@ -14,8 +14,12 @@ import {
     GetAccountsResponse,
     GetAuthwitsRequest,
     GetAuthwitsResponse,
-    GetContactsRequest,
-    GetContactsResponse,
+    GetSendersRequest,
+    GetSendersResponse,
+    AddSenderRequest,
+    AddSenderResponse,
+    DeleteSenderRequest,
+    DeleteSenderResponse,
     GetContractsRequest,
     GetContractsResponse,
     GetNotesRequest,
@@ -60,13 +64,31 @@ export class AccountStateService extends Service {
                     return new GetAccountsResponse(_request, undefined, error.message);
                 }
             }
-            case AccountStateServiceMethod.GetContacts: {
-                const _request = request as GetContactsRequest;
+            case AccountStateServiceMethod.GetSenders: {
+                const _request = request as GetSendersRequest;
                 try {
-                    const contacts = await this.getContacts(_request.networkId);
-                    return new GetContactsResponse(_request, contacts)
+                    const res = await this.getSenders(_request.networkId);
+                    return new GetSendersResponse(_request, res)
                 } catch (error: any) {
-                    return new GetContactsResponse(_request, undefined, error.message);
+                    return new GetSendersResponse(_request, undefined, error.message);
+                }
+            }
+            case AccountStateServiceMethod.AddSender: {
+                const _request = request as AddSenderRequest;
+                try {
+                    const res = await this.addSender(_request.networkId, _request.address);
+                    return new AddSenderResponse(_request, res)
+                } catch (error: any) {
+                    return new AddSenderResponse(_request, undefined, error.message);
+                }
+            }
+            case AccountStateServiceMethod.DeleteSender: {
+                const _request = request as DeleteSenderRequest;
+                try {
+                    const res = await this.deleteSender(_request.networkId, _request.address);
+                    return new DeleteSenderResponse(_request, res)
+                } catch (error: any) {
+                    return new DeleteSenderResponse(_request, undefined, error.message);
                 }
             }
             case AccountStateServiceMethod.GetContracts: {
@@ -172,7 +194,7 @@ export class AccountStateService extends Service {
         }
     }
 
-    public async getContacts(networkId: string): Promise<string[]> {
+    public async getSenders(networkId: string): Promise<string[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
             const pxe = await this.pxeService.getPXEClient(network.chainId);
@@ -180,6 +202,31 @@ export class AccountStateService extends Service {
         }
         catch (error) {
             console.error("Failed to fetch registered senders", error);
+            throw new Error("PXE request failed");
+        }
+    }
+
+    public async addSender(networkId: string, address: string): Promise<string> {
+        const network = await this.networks.getNetwork(networkId);
+        try {
+            const pxe = createPXEClient(network.rpcUrl);
+            return (await pxe.registerSender(AztecAddress.fromString(address))).toString();
+        }
+        catch (error) {
+            console.error("Failed to register sender", error);
+            throw new Error("PXE request failed");
+        }
+    }
+
+    public async deleteSender(networkId: string, address: string): Promise<string> {
+        const network = await this.networks.getNetwork(networkId);
+        try {
+            const pxe = createPXEClient(network.rpcUrl);
+            await pxe.removeSender(AztecAddress.fromString(address));
+            return address;
+        }
+        catch (error) {
+            console.error("Failed to remove sender", error);
             throw new Error("PXE request failed");
         }
     }

@@ -4,7 +4,9 @@ import { Authwit, Note, NoteStatus } from "./models";
 import {
     GetAccountsRequest,
     GetAuthwitsRequest,
-    GetContactsRequest,
+    GetSendersRequest,
+    AddSenderRequest,
+    DeleteSenderRequest,
     GetContractsRequest,
     GetNotesRequest,
     GetVersionRequest,
@@ -64,14 +66,38 @@ export class AccountStateServiceClient extends ServiceClient {
     }
 
     /**
-     * Returns a list of registered contacts.
+     * Returns a list of registered senders.
      * @param networkId Network id.
      * @throws "Profile locked" if profile is locked.
      * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
      * @throws "PXE request failed" if request failed.
      */
-    public getContacts(networkId: string): Promise<string[]> {
-        return this.request(new GetContactsRequest(networkId));
+    public getSenders(networkId: string): Promise<string[]> {
+        return this.request(new GetSendersRequest(networkId));
+    }
+
+    /**
+     * Adds a sender.
+     * @param networkId Network id.
+     * @param address Sender address.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
+     * @throws "PXE request failed" if request failed.
+     */
+    public addSender(networkId: string, address: string): Promise<string> {
+        return this.request(new AddSenderRequest(networkId, address));
+    }
+
+    /**
+     * Deletes a sender.
+     * @param networkId Network id.
+     * @param address Sender address.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
+     * @throws "PXE request failed" if request failed.
+     */
+    public deleteSender(networkId: string, address: string): Promise<string> {
+        return this.request(new DeleteSenderRequest(networkId, address));
     }
 
     /**
