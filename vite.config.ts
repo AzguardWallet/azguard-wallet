@@ -121,7 +121,7 @@ export default defineConfig({
 
 		{
 			...nodePolyfills({
-				include: ["buffer", "crypto", "net", "path", "stream", "tty", "vm"],
+				include: ["buffer", "crypto", "net", "path", "stream", "tty", "vm", "util"],
 			}),
 			// Unfortunate, but needed due to https://github.com/davidmyersdev/vite-plugin-node-polyfills/issues/81
 			// Suspected to be because of the yarn workspace setup, but not sure
@@ -154,6 +154,7 @@ export default defineConfig({
 		__NAME__: JSON.stringify(packageJson.name),
 		__DISPLAY_NAME__: JSON.stringify(packageJson.displayName),
 		"import.meta.env.HTML_TITLE": JSON.stringify(packageJson.displayName),
+		"process.browser": true,
 		"process.env": JSON.stringify({
 			LOG_LEVEL: "verbose",
 			BB_WASM_PATH: "/assets/barretenberg.wasm.gz",
