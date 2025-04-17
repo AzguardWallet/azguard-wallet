@@ -1,10 +1,10 @@
 <script setup>
 /** Vendor */
-import BN from "@/utils/bn.js"
+import BN from "bignumber.js"
 import { DateTime } from "luxon"
 
 /** Utils */
-import { comma } from "@/utils/amount.js"
+import { balanceFormatted } from "@/utils/amount.js"
 
 const props = defineProps({
 	tx: {
@@ -19,8 +19,9 @@ const type = computed(() => {
 	return "tx"
 })
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
-const transferAmount = computed(() => new BN((transfer.value?.amount ?? 0) / 10 ** 8).toFixed())
-const mintAmount = computed(() => new BN((call.value.args[2] ?? 0) / 10 ** 8).toFixed() * 2) /** refactor */
+const decimals = new BN(10).pow(8) // Need to refactor this to use the token decimals from the transfer object
+const transferAmount = computed(() => balanceFormatted(new BN((transfer.value?.amount ?? 0)).dividedBy(decimals), 8).value)
+const mintAmount = computed(() => balanceFormatted(new BN((call.value.args[2] ?? 0)).dividedBy(decimals), 8).value)
 const token = computed(() => transfer.value?.token)
 
 const icon = computed(() => {
@@ -57,19 +58,13 @@ const title = computed(() => {
 
 		<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
-				<template v-if="transferAmount > 0.01">
-					{{ comma(transferAmount) }}
-				</template>
-				<template v-else> <Text color="tertiary"><</Text> 0.01 </template>
+				{{ transferAmount }}
 				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
 			</Text>
 		</Flex>
 		<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
-				<template v-if="mintAmount > 0.01">
-					{{ comma(mintAmount) }}
-				</template>
-				<template v-else> <Text color="tertiary"><</Text> 0.01 </template>
+				{{ mintAmount }}
 			</Text>
 		</Flex>
 	</Flex>

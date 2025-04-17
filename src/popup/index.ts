@@ -20,6 +20,7 @@ const getThousandSeparator = () => {
 };
 
 BigNumber.config({
+	DECIMAL_PLACES: 100,
     FORMAT: {
         decimalSeparator: getDecimalSeparator(),
         groupSeparator: getThousandSeparator(),

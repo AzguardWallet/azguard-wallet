@@ -80,7 +80,6 @@ const init = async () => {
 const handleSelectFpc = (fpc) => {
 	const methodIx = cacheStore.feePaymentMethods.findIndex(m => m.id === props.payload?.id)
 	if (methodIx === -1) {
-		console.log('fpc methodIx === -1');
 		cacheStore.feePaymentMethods.push({
 			id: props.payload?.id,
 			fpc: fpc,

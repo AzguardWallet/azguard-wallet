@@ -1,6 +1,6 @@
 <script setup>
 /** Vendor */
-import BN from "@/utils/bn.js"
+import BN from "bignumber.js"
 import { DateTime } from "luxon"
 
 /** Components */
@@ -52,7 +52,7 @@ const totalTokenBalance = computed(() => {
 
 	const total = privateBalance.plus(publicBalance)
 
-	return balanceFormatted(total, 20)
+	return balanceFormatted(total, showFullBalance.value ? 100 : 20)
 })
 
 const BalanceDisplayOptionsMap = {

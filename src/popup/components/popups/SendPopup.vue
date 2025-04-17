@@ -1,6 +1,6 @@
 <script setup>
 /** Vendor */
-import BN from "@/utils/bn.js"
+import BN from "bignumber.js"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"

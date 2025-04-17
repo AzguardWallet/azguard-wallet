@@ -1,3 +1,6 @@
+/** Vendor */
+import BN from 'bignumber.js'
+
 export const comma = (target, symbol = ",", fixed = 2) => {
 	if (!target) return 0
 
@@ -53,12 +56,15 @@ export const balanceFormatted = (balance, length = 10) => {
 	let slashed = false
 	if (!balance || balance.isZero()) return { value: '0', slashed }
 
-	let str = balance.toFormat()
+	if (balance.lt(new BN(10).pow(-(length - 2)))) {
+		return {
+			value: `<0.${'0'.repeat(length - 3)}1`,
+			slashed: true,
+		}
+	}
 
-	if (balance.lt(`1e-${length - 1}`)) {
-		str = `<0.${'0'.repeat(length - 2)}1`
-		slashed = true
-	} else if (str.length > length + 1) {
+	let str = balance.toFormat()
+	if (str.length > length) {
 		str = `${str.slice(0, length)}...`
 		slashed = true
 	}
