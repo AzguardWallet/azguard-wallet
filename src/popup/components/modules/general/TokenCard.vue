@@ -56,7 +56,7 @@ const handleRefreshBalance = async () => {
 		@pointerleave="isHovered = false"
 	>
 		<template #icon>
-			<Tooltip position="start">
+			<Tooltip position="start" :disabled="!!balance?.updatedAt">
 				<Icon
 					v-if="token?.id !== -1 && !appStore.tokensAwaitingBalanceRefresh.includes(token?.id) && !appStore.mintingTokens.includes(token?.id)"
 					@click.stop="handleRefreshBalance"
@@ -72,7 +72,7 @@ const handleRefreshBalance = async () => {
 				<template #content>
 					<Text color="secondary">Latest balance refresh - </Text>
 					<Text>
-						{{ DateTime.fromSeconds(balance.updatedAt / 1_000).toRelative({ locale: "en" }) }}
+						{{ DateTime.fromSeconds(balance?.updatedAt / 1_000).toRelative({ locale: "en" }) }}
 					</Text>
 				</template>
 			</Tooltip>

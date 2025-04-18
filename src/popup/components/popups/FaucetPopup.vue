@@ -106,7 +106,10 @@ const handleMint = async () => {
 	isLoading.value = true
 	error.value = null
 	try {
+		const name = tokenNameTerm.value.trim()
 		const symbol = tokenSymbolTerm.value.trim()
+		console.log('token.value', token.value);
+		
 		if (!token.value) {
 			appStore.dummyTokens.push({
 				id: -1,
@@ -123,16 +126,33 @@ const handleMint = async () => {
 		await managers.faucet.mint(
 			appStore.network.id,
 			appStore.account.address,
-			tokenNameTerm.value.trim(),
+			name,
 			symbol,
 			8,
 			new BN(amountTerm.value).times(10 ** 8).dividedBy(2),
 			feeSettings.value,
 		)
-
+		
 		if (mintingTokenId.value) {
 			appStore.mintingTokens.pop()
 			appStore.tokensAwaitingBalanceRefresh.push(mintingTokenId.value)
+		} else {
+			const allTokens = await managers.token?.getTokens()
+			console.log('allTokens', allTokens);
+			
+			const newToken = allTokens.find(t => {
+				console.log('t.symbol', t.symbol);
+				console.log('symbol', symbol);
+				console.log('t.name', t.name);
+				console.log('tokenNameTerm.value.trim()', name);
+				
+				return t.symbol === symbol && t.name === name
+			})
+			console.log('newToken', newToken);
+			
+			if (newToken) {
+				appStore.tokensAwaitingBalanceRefresh.push(newToken.id)
+			}
 		}
 	} catch (err) {
 		error.value = err
