@@ -6,6 +6,8 @@ export function getNetworkColor(chainId) {
 			return 'sand'
 		case 41337:
 			return 'blue'
+		case 11155111:
+			return 'green'
 		default:
 			return 'purple'
 	}
@@ -19,6 +21,8 @@ export function getNetworkType(chainId) {
 			return 'Sandbox'
 		case 41337:
 			return 'AzguardBox'
+		case 11155111:
+			return 'Testnet'
 		default:
 			return `Aztec:${chainId}`
 	}
