@@ -150,6 +150,24 @@ export class NetworkService extends Service {
 			
 			let defaultNetworks = [];
 			try {
+				const name = "Testnet";
+				const rpcUrl = "http://34.107.66.170";
+				const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);
+				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, rollupVersion, true));
+			}
+			catch (error) {
+				console.error("Failed to add 'Testnet'", error);
+			}
+			try {
+				const name = "Devnet";
+				const rpcUrl = "http://34.169.170.55:8080";
+				const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);
+				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, rollupVersion, true));
+			}
+			catch (error) {
+				console.error("Failed to add 'Devnet'", error);
+			}
+			try {
 				const name = "Shared Sandbox";
 				const rpcUrl = "https://rpc.sandbox.azguardwallet.io";
 				const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);

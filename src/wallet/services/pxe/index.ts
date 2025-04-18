@@ -11,7 +11,12 @@ import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/Sponsored
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { ContractArtifact } from "@aztec/stdlib/abi";
-import { ContractClassWithId, getContractClassFromArtifact } from "@aztec/stdlib/contract";
+import {
+    ContractClassWithId,
+    ContractInstanceWithAddress,
+    getContractClassFromArtifact,
+    getContractInstanceFromDeployParams,
+} from "@aztec/stdlib/contract";
 import { ContractClassMetadata, ContractMetadata, createAztecNodeClient, PXE } from "@aztec/stdlib/interfaces/client";
 import { Service } from "@/wallet/base/service";
 import { EventMessage, ResponseMessage } from "@/wallet/base/messages";
@@ -28,6 +33,7 @@ export class PxeService extends Service {
     private readonly pxes = new Map<number, PXE>();
     private readonly knownArtifacts = new Map<string, ContractArtifact>();
     private readonly knownClasses = new Map<string, ContractClassWithId>();
+    private readonly knownInstances = new Map<string, ContractInstanceWithAddress>();
 
     constructor(
         private readonly profileService: ProfileService,
@@ -67,6 +73,12 @@ export class PxeService extends Service {
         if (!metadata.contractInstance) {
             const node = await this.networkService.getNode(chainId);
             metadata.contractInstance = await node.getContract(address);
+            if (!metadata.contractInstance) {
+                if (!this.knownInstances.size) {
+                    await this.initKnown();
+                }
+                metadata.contractInstance = this.knownInstances.get(address.toString());
+            }
         }
         return metadata;
     }
@@ -106,6 +118,15 @@ export class PxeService extends Service {
             this.knownArtifacts.set(contractClass.id.toString(), artifact);
             this.knownClasses.set(contractClass.id.toString(), contractClass);
         }
+
+        const sponsoredFpcInstace = await getContractInstanceFromDeployParams(
+            SponsoredFPCContractArtifact,
+            {
+                constructorArgs: [],
+                salt: Fr.zero()
+            }
+        );
+        this.knownInstances.set(sponsoredFpcInstace.address.toString(), sponsoredFpcInstace);
     }
 
     private async createPXE(network: Network) {
