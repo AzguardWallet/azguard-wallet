@@ -445,15 +445,19 @@ export class TokenBalanceService extends Service {
 				}
 			}
 			const now = Date.now();
+			const balances = await this.balances.getValues()
 			for (const tb of tbs) {
 				tb.updatedAt = now;
-				await this.balances.set(`${tb.id}`, tb);
-				this.emit(
-					new TokenBalanceServiceEventMessage(
-						TokenBalanceServiceEvent.TokenBalanceUpdated,
-						this.getTokenBalanceInfo(tb)
+				const balance = balances.find(x => x.token === tb.token && x.account === tb.account);
+				if (balance) {
+					await this.balances.set(`${tb.id}`, tb);
+					this.emit(
+						new TokenBalanceServiceEventMessage(
+							TokenBalanceServiceEvent.TokenBalanceUpdated,
+							this.getTokenBalanceInfo(tb)
+						)
 					)
-				)
+				}
 			}
 
 			const stop = Date.now()

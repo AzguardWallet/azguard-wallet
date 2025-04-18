@@ -108,7 +108,6 @@ const handleMint = async () => {
 	try {
 		const name = tokenNameTerm.value.trim()
 		const symbol = tokenSymbolTerm.value.trim()
-		console.log('token.value', token.value);
 		
 		if (!token.value) {
 			appStore.dummyTokens.push({
@@ -138,17 +137,7 @@ const handleMint = async () => {
 			appStore.tokensAwaitingBalanceRefresh.push(mintingTokenId.value)
 		} else {
 			const allTokens = await managers.token?.getTokens()
-			console.log('allTokens', allTokens);
-			
-			const newToken = allTokens.find(t => {
-				console.log('t.symbol', t.symbol);
-				console.log('symbol', symbol);
-				console.log('t.name', t.name);
-				console.log('tokenNameTerm.value.trim()', name);
-				
-				return t.symbol === symbol && t.name === name
-			})
-			console.log('newToken', newToken);
+			const newToken = allTokens.find(t => t.symbol === symbol && t.name === name)
 			
 			if (newToken) {
 				appStore.tokensAwaitingBalanceRefresh.push(newToken.id)
