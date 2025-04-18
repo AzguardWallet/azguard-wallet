@@ -167,7 +167,24 @@ export class NetworkService extends Service {
 			catch (error) {
 				console.error("Failed to add 'Local Sandbox'", error);
 			}
-			
+			try {
+				const name = "Testnet";
+				const rpcUrl = "http://34.107.66.170";
+				const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);
+				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, rollupVersion, true));
+			}
+			catch (error) {
+				console.error("Failed to add 'Testnet'", error);
+			}
+			try {
+				const name = "Devnet";
+				const rpcUrl = "http://34.169.170.55:8080";
+				const [chainId, rollupVersion] = await this.getNodeInfo(rpcUrl);
+				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, rollupVersion, true));
+			}
+			catch (error) {
+				console.error("Failed to add 'Devnet'", error);
+			}
 			for (const network of defaultNetworks) {
 				this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, network));
 				for (const emit of this.onDefaultNetworkChanged) {
