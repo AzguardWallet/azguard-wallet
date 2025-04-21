@@ -428,10 +428,13 @@ export class WalletConnectService extends Service {
                     }
                 }
                 else {
-                    namespaces[k] = {
-                        methods,
-                        events,
-                        accounts: (v.chains ?? [k]).flatMap(c => accounts.filter(a => a.startsWith(c))),
+                    const approvedAccounts = (v.chains ?? [k]).flatMap(c => accounts.filter(a => a.startsWith(c)))
+                    if (approvedAccounts.length) {
+                        namespaces[k] = {
+                            methods,
+                            events,
+                            accounts: approvedAccounts,
+                        }
                     }
                 }
             }
