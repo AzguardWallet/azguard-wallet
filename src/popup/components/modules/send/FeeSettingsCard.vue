@@ -364,13 +364,18 @@ onBeforeUnmount(() => {
 			</Flex>
 			<Flex align="center" justify="end" :class="$style.fjc_price" :style="{paddingTop: `${isClaimParametersFilled ? '0px' : '12px'}` }">
 				<Flex @click="handleFillClaimParameters" :style="{ cursor: 'pointer'}">
-					<Text v-if="!isClaimParametersFilled" size="13" weight="600" color="red" :style="{paddingRight: '0px'}"> Fill in parameters </Text>
-					<Flex v-else align="center" gap="6">
-						<Text size="12" weight="600" color="green"> Edit </Text>
+					<Flex align="center" gap="6">
+						<Text
+							size="12"
+							weight="600"
+							:color="isClaimParametersFilled ? 'green' : 'red'"
+						>
+							Edit parameters
+						</Text>
 						<Icon
 							name="edit"
 							size="12"
-							color="green"
+							:color="isClaimParametersFilled ? 'green' : 'red'"
 							:class="$style.icon_btn"
 						/>
 					</Flex>

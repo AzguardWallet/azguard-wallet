@@ -70,7 +70,6 @@ watch(
 )
 
 const toggleDropdown = event => {
-	emit("onOpen")
 	if (event) event.stopPropagation()
 	if (props.disabled) return
 	isOpen.value = !isOpen.value
@@ -79,8 +78,6 @@ const close = event => {
 	if (event) event.stopPropagation()
 
 	isOpen.value = false
-
-	emit("onClose")
 }
 
 const dropdownStyles = ref({})
@@ -107,6 +104,8 @@ watch(isOpen, () => {
 			dropdownStyles.value.bottom = undefined
 		}
 
+		emit("onClose")
+		
 		document.removeEventListener("keydown", onKeydown)
 	} else {
 		document.addEventListener("keydown", onKeydown)
@@ -170,6 +169,8 @@ watch(isOpen, () => {
 
 			if (props.height) dropdownStyles.value.maxHeight = props.height
 			if (props.verticalOverflow) dropdownStyles.value.overflowY = "auto"
+
+			emit("onOpen")
 
 			removeOutside = useOutside(dropdown.value.wrapper, handleOutside)
 		})

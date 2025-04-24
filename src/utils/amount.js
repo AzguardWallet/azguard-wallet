@@ -1,6 +1,16 @@
 /** Vendor */
 import BN from 'bignumber.js'
 
+export const getDecimalSeparator = () => {
+    const s = (1.1).toLocaleString()
+    return s.substring(1, s.length - 1)
+}
+
+export const getThousandSeparator = () => {
+    const s = (1111).toLocaleString()
+    return s.substring(1, s.length - 3)
+}
+
 export const comma = (target, symbol = ",", fixed = 2) => {
 	if (!target) return 0
 
@@ -58,7 +68,7 @@ export const balanceFormatted = (balance, length = 10) => {
 
 	if (balance.lt(new BN(10).pow(-(length - 2)))) {
 		return {
-			value: `<0.${'0'.repeat(length - 3)}1`,
+			value: `<0${getDecimalSeparator()}${'0'.repeat(length - 3)}1`,
 			slashed: true,
 		}
 	}

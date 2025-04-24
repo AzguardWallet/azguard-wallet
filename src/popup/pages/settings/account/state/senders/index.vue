@@ -32,6 +32,7 @@ const cacheStore = useCacheStore()
 
 const senders = ref([])
 const isLoading = ref(false)
+const isCopied = ref(false)
 const error = ref()
 const fetchSenders = async () => {
 	isLoading.value = true
@@ -45,16 +46,22 @@ const fetchSenders = async () => {
 }
 
 const handleCopyAddress = (address) => {
+	isCopied.value = true
+
 	window.navigator.clipboard.writeText(address)
 	openToast({ label: "Sender's address is copied", icon: "copy" })
+
+	setTimeout(() => {
+		isCopied.value = false
+	}, 2_000)
 }
 
 const handleDelete = (sender) => {
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.confirm_text = "Yes, delete sender"
-	cacheStore.confirm.title = "Remove this sender?"
+	cacheStore.confirm.title = "Delete this sender?"
 	cacheStore.confirm.description =
-		"Removing a sender only affects transaction parsing — the wallet will no longer automatically recognize incoming transactions from this address"
+		"If you delete a sender, further private transactions from that sender won’t appear in your wallet"
 	cacheStore.confirm.callback = async () => {
 		await accountStateClientService.deleteSender(appStore.network.id, sender)
 
@@ -105,28 +112,49 @@ onBeforeUnmount(() => {
 			</Tooltip>
 
 			<Flex v-else-if="senders.length" direction="column" gap="8">
-				<Flex v-for="sender in senders" @click="handleCopyAddress(sender)" justify="between" :class="$style.card">
+				<Flex v-for="sender in senders" justify="between" :class="$style.card">
 					<Flex gap="10">
 						<Icon name="user" size="16" color="tertiary" />
 
-						<Text size="14" weight="600" color="secondary"> {{ trimAddress(sender, 8, 8) }} </Text>
+						<Text @click="handleCopyAddress(sender)" size="14" weight="600" color="secondary"> {{ trimAddress(sender, 8, 8) }} </Text>
 					</Flex>
 
-					<Tooltip position="end" delay="350">
-						<Icon
-							@click.stop="handleDelete(sender)"
-							name="close-circle"
-							size="14"
-							color="tertiary"
-							:class="$style.icon_btn"
-						/>
+					<Flex align="center" gap="8">
+						<Tooltip position="end" delay="350">
+							<Icon
+								v-if="!isCopied"
+								@click.stop="handleCopyAddress(sender)"
+								name="copy"
+								size="14"
+								color="tertiary"
+								:class="$style.icon_btn"
+							/>
+							<Icon
+								v-else
+								name="check-circle"
+								size="14"
+								color="green"
+								:style="{ transition: 'all 0.2s ease' }"
+							/>
 
-						<template #content> Delete sender </template>
-					</Tooltip>
+							<template #content> Copy address </template>
+						</Tooltip>
+						<Tooltip position="end" delay="350">
+							<Icon
+								@click.stop="handleDelete(sender)"
+								name="close-circle"
+								size="14"
+								color="tertiary"
+								:class="$style.icon_btn"
+							/>
+
+							<template #content> Delete sender </template>
+						</Tooltip>
+					</Flex>
 				</Flex>
 			</Flex>
 
-			<Banner v-else> So far, it's empty </Banner>
+			<Banner v-else> To receive private transactions, add the sender account to your list </Banner>
 
 			<Button
 				@click="popupStore.open('new_sender')"
@@ -162,7 +190,7 @@ onBeforeUnmount(() => {
 
 .card {
 	border-radius: 12px;
-	cursor: pointer;
+	/* cursor: pointer; */
 	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
 
 	padding: 12px;
@@ -170,12 +198,11 @@ onBeforeUnmount(() => {
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
 		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-10);
-	}
-
-	&:active {
-		background: var(--gray-5);
+		span {
+			color: var(--txt-primary);
+			cursor: copy;
+		}
 	}
 }
 

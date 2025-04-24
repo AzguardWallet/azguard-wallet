@@ -56,6 +56,8 @@ declare global {
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const getDecimalSeparator: typeof import('../utils/amount.js')['getDecimalSeparator']
+  const getThousandSeparator: typeof import('../utils/amount.js')['getThousandSeparator']
   const h: typeof import('vue')['h']
   const ignorableWatch: typeof import("@vueuse/core")["ignorableWatch"]
   const initProfileService: typeof import('../utils/core.js')['initProfileService']

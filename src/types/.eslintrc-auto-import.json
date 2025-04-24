@@ -327,6 +327,8 @@
     "balanceFormatted": true,
     "formatNumberWithSpaces": true,
     "amount copy": true,
-    "bn": true
+    "bn": true,
+    "getDecimalSeparator": true,
+    "getThousandSeparator": true
   }
 }

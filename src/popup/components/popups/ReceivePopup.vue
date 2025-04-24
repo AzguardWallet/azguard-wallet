@@ -27,6 +27,11 @@ const displaceIdx = computed(() => {
 
 const account = computed(() => appStore.account)
 
+const handleCopyAddress = () => {
+	window.navigator.clipboard.writeText(appStore.account.address)
+	openToast({ label: "Address is copied", icon: "copy" })
+}
+
 watch(
 	() => props.show,
 	() => {
@@ -38,11 +43,6 @@ watch(
 		})
 	},
 )
-
-const handleCopyAddress = () => {
-	window.navigator.clipboard.writeText(appStore.account.address)
-	openToast({ label: "Address is copied", icon: "copy" })
-}
 </script>
 
 <template>

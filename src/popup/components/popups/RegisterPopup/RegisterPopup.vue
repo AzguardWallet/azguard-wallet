@@ -55,8 +55,6 @@ const handleCreateProfile = async () => {
 	appStore.profile = profile
 	appStore.accounts = await managers.account.getAccounts(true)
 
-	isCreatingProfile.value = false
-
 	initTokenService({
 		profile: appStore.profile,
 		network: appStore.network,
@@ -73,6 +71,7 @@ const handleCreateProfile = async () => {
 
 	router.push("/popup/general")
 
+	isCreatingProfile.value = false
 	appStore.showRegisterPopup = false
 }
 

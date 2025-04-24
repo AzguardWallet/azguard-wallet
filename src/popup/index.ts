@@ -7,17 +7,8 @@ import "@/assets/styles/base.scss"
 import "./index.scss"
 
 /** Configure BigNumber format */
-import BigNumber from 'bignumber.js';
-
-const getDecimalSeparator = () => {
-    const s = (1.1).toLocaleString();
-    return s.substring(1, s.length - 1);
-};
-
-const getThousandSeparator = () => {
-    const s = (1111).toLocaleString();
-    return s.substring(1, s.length - 3);
-};
+import BigNumber from "bignumber.js";
+import { getDecimalSeparator, getThousandSeparator } from "@/utils/amount.js"
 
 BigNumber.config({
 	DECIMAL_PLACES: 100,

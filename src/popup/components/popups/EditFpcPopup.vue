@@ -84,6 +84,11 @@ const onFpcDeleted = (fpc) => {
 	}
 	fpcs.value = fpcs.value.filter(f => f.id !== fpc.id)
 }
+const handleCopyAddress = () => {
+	window.navigator.clipboard.writeText(fpcToEdit.value.address)
+	openToast({ label: "FPC's address is copied", icon: "copy" })
+}
+
 watch(
 	() => props.show,
 	async () => {
@@ -133,7 +138,24 @@ const onKeydown = e => {
 						description="Selected FPC for editing"
 						icon="fpc"
 						raw
-					/>
+					>
+						<template #right>
+							<Flex align="center" gap="8">
+								<Tooltip position="end" delay="350">
+									<Icon
+										@click.stop="handleCopyAddress"
+										name="copy"
+										size="14"
+										color="tertiary"
+										hoverColor="primary"
+										:class="$style.icon_btn"
+									/>
+
+									<template #content>Copy FPC's address</template>
+								</Tooltip>
+							</Flex>
+						</template>
+					</SettingItem>
 				</ItemsContainer>
 
 				<Input
@@ -176,5 +198,20 @@ const onKeydown = e => {
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.icon_btn {
+	cursor: pointer;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		fill: var(--txt-primary);
+	}
+
+	&.disabled {
+		pointer-events: none;
+		opacity: 0.3;
+	}
 }
 </style>

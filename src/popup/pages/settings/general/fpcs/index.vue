@@ -63,6 +63,18 @@ const filteredFpcs = computed(() => {
 	})
 })
 
+const getFPCBadgeTitle = (fpc) => {
+	if (fpc.type === FpcType.DefaultSponsoredFpc) return "Sponsored"
+	if (fpc.token?.symbol) {
+		if (fpc.token?.symbol.length > 6) {
+			return `${fpc.token?.symbol.slice(0, 6)}...`
+		}
+
+		return fpc.token.symbol
+	}
+	
+	return ""
+}
 const prepareFpc = (fpc) => {
 	return fpc.type === FpcType.DefaultSponsoredFpc
 		? {
@@ -194,6 +206,10 @@ onBeforeUnmount(() => {
 			</template>
 		</Tooltip>
 
+		<Banner v-else-if="!fpcs.length" wide>
+			Get started by adding your first Fee Payment Contract
+		</Banner>
+
 		<Flex v-else direction="column" gap="16">
 			<Flex align="center" justify="between" gap="16">
 				<Text size="13" weight="600" color="primary">
@@ -222,7 +238,6 @@ onBeforeUnmount(() => {
 							size="14"
 							color="secondary"
 							:class="$style.search_icon"
-							:style="{transform: 'translate(1px, 1px)'}"
 						/>
 
 						<template #content>
@@ -257,21 +272,21 @@ onBeforeUnmount(() => {
 			<ItemsContainer v-if="fpcs.length">
 				<SettingItem
 					v-for="fpc in filteredFpcs"
-					@click="handleCopyAddress(fpc.address)"
+					size="large"
 					:title="fpc.name || fpc.address"
 					:description="fpc.name ? fpc.address : null"
 					icon="fpc"
 					iconBgColor="transparent"
+					raw
 				>
 					<template #right>
 						<Flex
 							v-if="fpc.type === FpcType.DefaultSponsoredFpc || fpc.token?.symbol"
-							align="center"
-							gap="6"
+							align="start"
 							:class="$style.badge"
 							:style="{ background: `var(--${fpc.color})` }"
 						>
-							<Text size="11" weight="700"> {{ fpc.token?.symbol || 'Sponsored' }} </Text>
+							<Text size="11" weight="700"> {{ getFPCBadgeTitle(fpc) }} </Text>
 						</Flex>
 
 						<Flex align="center" gap="8">
@@ -285,6 +300,18 @@ onBeforeUnmount(() => {
 								/>
 
 								<template #content> Add token </template>
+							</Tooltip>
+
+							<Tooltip position="end" delay="350">
+								<Icon
+									@click="handleCopyAddress(fpc.address)"
+									name="copy"
+									size="14"
+									color="tertiary"
+									:class="$style.icon_btn"
+								/>
+
+								<template #content> Copy FPC address </template>
 							</Tooltip>
 
 							<Tooltip position="end" delay="350">
@@ -318,18 +345,18 @@ onBeforeUnmount(() => {
 					<Text size="13" weight="600" color="tertiary"> No FPCs found </Text>
 				</Flex>
 			</ItemsContainer>
-
-			<Button
-				@click="popupStore.open('new_fpc')"
-				wide
-				type="secondary"
-				size="medium"
-				leftIcon="plus-circle"
-				leftIconColor="primary"
-			>
-				<Text size="13">New FPC</Text>
-			</Button>
 		</Flex>
+
+		<Button
+			@click="popupStore.open('new_fpc')"
+			wide
+			type="secondary"
+			size="medium"
+			leftIcon="plus-circle"
+			leftIconColor="primary"
+		>
+			<Text size="13">New FPC</Text>
+		</Button>
 
 		<Navigation />
 	</Flex>
@@ -368,9 +395,14 @@ onBeforeUnmount(() => {
 	border-radius: 6px;
 	padding: 2px 4px;
 	color: var(--txt-inverse);
+	span {
+		line-height: 1.2;
+	}
 }
 
 .icon_btn {
+	cursor: pointer;
+
 	transition: all 0.2s var(--bezier);
 
 	&:hover {

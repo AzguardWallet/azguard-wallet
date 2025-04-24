@@ -29,7 +29,11 @@ const popupStore = usePopupStore()
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
 
+const router = useRouter()
 const version = __VERSION__
+
+const accounts = computed(() => appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index))
+const isLoading = ref(false)
 
 const handleCopyVersion = () => {
 	window.navigator.clipboard.writeText(version)
@@ -49,6 +53,27 @@ const handleEditCurrentAccount = () => {
 	cacheStore.accountToEditIdx = appStore.account.address
 	popupStore.open("edit_account")
 }
+
+const handleHideAccount = async () => {
+	if (accounts.value.length === 1) return
+	isLoading.value = true
+
+	const nextAccount = accounts.value.filter(acc => acc.address !== appStore.account.address)[0]
+	try {
+		await appStore.changeAccountVisibility(appStore.account, false)
+		await appStore.selectAccount(nextAccount)
+
+		openToast({ label: "Account successfully hidden" })
+
+		router.go(-1)
+	} catch (err) {
+		console.error(err)
+		openToast({ label: "Failed to hide account", icon: "error" })
+	} finally {
+		isLoading.value = false
+	}
+}
+
 </script>
 
 <template>
@@ -95,6 +120,16 @@ const handleEditCurrentAccount = () => {
 					icon="search"
 					external
 					disabled
+				/>
+			</ItemsContainer>
+
+			<ItemsContainer wide>
+				<SettingItem
+					@click="handleHideAccount"
+					title="Hide account"
+					icon="eye-off"
+					:loading="isLoading"
+					:disabled="accounts.length === 1"
 				/>
 			</ItemsContainer>
 		</Flex>

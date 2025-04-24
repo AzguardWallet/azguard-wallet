@@ -11,6 +11,7 @@ const props = defineProps({
 		type: Object,
 	},
 })
+console.log('props.tx', props.tx);
 
 const call = computed(() => props.tx.calls[0])
 const type = computed(() => {
@@ -23,6 +24,7 @@ const decimals = new BN(10).pow(8) // Need to refactor this to use the token dec
 const transferAmount = computed(() => balanceFormatted(new BN((transfer.value?.amount ?? 0)).dividedBy(decimals), 8).value)
 const mintAmount = computed(() => balanceFormatted(new BN((call.value.args[2] ?? 0)).dividedBy(decimals), 8).value)
 const token = computed(() => transfer.value?.token)
+console.log('call.value', call.value);
 
 const icon = computed(() => {
 	if (type.value === "transfer") return "arrow-narrow-up-right"

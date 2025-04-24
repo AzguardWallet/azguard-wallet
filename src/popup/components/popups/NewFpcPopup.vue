@@ -168,7 +168,7 @@ const onKeydown = e => {
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
-					<Text size="14" weight="600" color="primary">New fpc</Text>
+					<Text size="14" weight="600" color="primary">New FPC</Text>
 				</template>
 			</PopupHeader>
 

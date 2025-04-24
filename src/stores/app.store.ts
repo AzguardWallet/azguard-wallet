@@ -50,7 +50,7 @@ export const useAppStore = defineStore("app", () => {
 	const changeAccountVisibility = async (acc: Account, value: boolean) => {
 		const accIdx = accounts.value.findIndex(a => acc.address === a.address)
 
-		managers.account.changeAccountVisibility(acc.address, value)
+		await managers.account.changeAccountVisibility(acc.address, value)
 		accounts.value[accIdx] = { ...acc, visible: value }
 
 		if (!value) {

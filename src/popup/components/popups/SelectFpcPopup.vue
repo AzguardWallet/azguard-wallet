@@ -32,7 +32,12 @@ const displaceIdx = computed(() => {
 let fpcService = null
 let tokenBalanceService = null
 const selectedFpc = ref()
-const fpcs = ref([])
+const allFpcs = ref([])
+const fpcs = computed(() => {
+	return allFpcs.value
+		.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
+		.map(f => prepareFpc(f))
+})
 const balances = ref([])
 const tokenContracts = computed(() => new Set(balances.value?.map(b => b.token?.contract)))
 const showSearchInput = ref(false)
@@ -61,13 +66,9 @@ const init = async () => {
 
 	try {
 		fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
-		tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined, onBalanceUpdate, onBalanceUpdate, onBalanceUpdate)
+		tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined, onBalanceAdded, undefined, onBalanceDeleted)
 		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
-		const tokenContracts = new Set(balances.value?.map(b => b.token?.contract))
-		const allFpcs = await fpcService.getFpcs(appStore.network.chainId)
-		fpcs.value = allFpcs
-			.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts?.has(f.asset)))
-			.map(f => prepareFpc(f))
+		allFpcs.value = await fpcService.getFpcs(appStore.network.chainId)
 	}
 	catch (err) {
 		error.value = err
@@ -116,7 +117,12 @@ const onFpcUpdated = (fpc) => {
 const onFpcDeleted = (fpc) => {
 	fpcs.value = fpcs.value.filter(f => f.id !== fpc.id)
 }
-const onBalanceUpdate = () => {}
+const onBalanceAdded = (balance) => {
+	balances.value.push(balance)
+}
+const onBalanceDeleted = (balance) => {
+	balances.value = balances.value.filter(b => b.id !== balance.id)
+}
 watch(
 	() => props.show,
 	async () => {
@@ -228,6 +234,17 @@ watch(
 						<Text size="13" weight="600" color="tertiary"> No FPCs found </Text>
 					</Flex>
 				</Flex>
+
+				<Button
+					@click="popupStore.open('new_fpc')"
+					wide
+					type="secondary"
+					size="medium"
+					leftIcon="plus-circle"
+					leftIconColor="primary"
+				>
+					<Text size="13">New FPC</Text>
+				</Button>
 			</Flex>
 		</PopupCard>
 	</Popup>
