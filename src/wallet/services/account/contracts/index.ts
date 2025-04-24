@@ -18,6 +18,7 @@ export interface IAccountContract {
     buildTxExecutionRequest(
         pxe: PXE,
         setup: AzguardFunctionCall[],
+        isFeePayer: boolean,
         calls: AzguardFunctionCall[],
         args: HashedValues[],
         nonce: Fr,

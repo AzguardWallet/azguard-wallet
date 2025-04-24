@@ -79,7 +79,7 @@ export async function simulate(
         viewFn.isStatic
     );
 
-    const txRequest = await account.buildTxExecutionRequest(pxe, [], [call], [packedArgs], Fr.zero());
+    const txRequest = await account.buildTxExecutionRequest(pxe, [], false, [call], [packedArgs], Fr.zero());
 
     const tx = await pxe.simulateTx(
         txRequest, // txRequest

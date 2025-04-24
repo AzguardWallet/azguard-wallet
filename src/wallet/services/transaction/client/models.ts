@@ -103,6 +103,7 @@ export class Tx {
 	 * @param chainId Chain id.
 	 * @param account Sender address.
 	 * @param setup Setup calls.
+	 * @param isFeePayer Whether or not the account will pay for fees.
 	 * @param calls App calls.
 	 * @param nonce Nonce.
 	 * @param hash Transaction hash.
@@ -118,6 +119,7 @@ export class Tx {
 		public readonly chainId: number,
 		public readonly account: string,
 		public readonly setup: TxCall[],
+		public readonly isFeePayer: boolean,
 		public readonly calls: TxCall[],
 		public readonly nonce: string,
 		public readonly hash: string,

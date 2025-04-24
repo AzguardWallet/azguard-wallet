@@ -33,6 +33,8 @@ import {
     type OkOperationResult,
     type FailedOperationResult,
     type FeeSettings,
+    FeePaymentMethodType,
+    FeeJuicePaymentMethod,
 } from "@/wallet/services/execution/client"
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
@@ -209,6 +211,12 @@ export class FaucetService extends Service {
             console.debug("faucet deploy tx:", deployTx);
             await this.transactionService.waitForTx(deployTx);
             console.debug("faucet deploy tx mined");
+            if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
+                feeSettings = {
+                    ...feeSettings,
+                    paymentMethod: new FeeJuicePaymentMethod(),
+                };
+            }
         }
 
         const [mintResult] = await this.executionService.executeOperations(

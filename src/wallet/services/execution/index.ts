@@ -251,9 +251,9 @@ export class ExecutionService extends Service {
             ],
         );
 
-        const [_op, _gasSettings] = await this.withFeePayment(op);
+        const [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op);
 
-        const [txRequest, pxe, account, network, nonce] = await this.processTx(_op);
+        const [txRequest, pxe, account, network, nonce, _, txSetup] = await this.processTx(_op, _isFeePayer);
         txRequest.txContext.gasSettings = _gasSettings;
 
         const simulatedTx = await pxe.simulateTx(
@@ -271,7 +271,8 @@ export class ExecutionService extends Service {
             new TxOrigin(OriginType.UI),
             network.chainId,
             accountAddress,
-            [],
+            txSetup,
+            _isFeePayer,
             [
                 new TxCall(
                     token.contract,
@@ -403,7 +404,7 @@ export class ExecutionService extends Service {
         await pxe.registerSender(AztecAddress.fromString(op.address));
     }
 
-    async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings]> {
+    async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings, boolean]> {
         switch (op.feeSettings.paymentMethod.type) {
             case FeePaymentMethodType.FeeJuice: {
                 if (op.setup?.length) {
@@ -425,19 +426,19 @@ export class ExecutionService extends Service {
                     baseFees,
                     new GasFees(0, 0),
                 );
-                return [op, gasSettings];
+                return [op, gasSettings, true];
             }
             case FeePaymentMethodType.FeeJuiceWithClaim: {
                 if (op.setup?.length) {
                     throw new Error("Custom setup payload is not allowed with this fee payment method");
                 }
                 const method = op.feeSettings.paymentMethod as FeeJuiceWithClaimPaymentMethod;
-                op.actions.push(...getFeeJuiceClaimPayload(
+                op.setup = getFeeJuiceClaimPayload(
                     op.accountAddress,
                     method.claimAmount,
                     method.claimSecret,
                     method.messageLeafIndex,
-                ));
+                );
                 let [txRequest, pxe, account] = await this.processTx(op);
                 const simulatedTx = await pxe.simulateTx(
                     txRequest, // txRequest
@@ -454,7 +455,7 @@ export class ExecutionService extends Service {
                     baseFees,
                     new GasFees(0, 0),
                 );
-                return [op, gasSettings];
+                return [op, gasSettings, true];
             }
             case FeePaymentMethodType.Fpc: {
                 if (op.setup?.length) {
@@ -499,7 +500,7 @@ export class ExecutionService extends Service {
                     baseFees,
                     new GasFees(0, 0),
                 );
-                return [op, gasSettings];
+                return [op, gasSettings, false];
             }
             case FeePaymentMethodType.Custom: {
                 if (!op.setup?.length) {
@@ -528,7 +529,12 @@ export class ExecutionService extends Service {
                     baseFees,
                     new GasFees(0, 0),
                 );
-                return [op, gasSettings];
+                const isFeePayer =
+                    simulatedTx.publicInputs.feePayer.isZero() ||
+                    simulatedTx.publicInputs.feePayer.equals(account.address) ||
+                    // see [previous_kernel_public_inputs.fee_payer] at Prover.toml
+                    simulatedTx.publicInputs.feePayer.equals(AztecAddress.fromString("0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000"));
+                return [op, gasSettings, isFeePayer];
             }
             default: {
                 throw new Error("Invalid fee payment method");
@@ -537,9 +543,9 @@ export class ExecutionService extends Service {
     }
 
     async executeSendTransaction(op: SendTransactionOperation, origin: string): Promise<string> {
-        const [_op, _gasSettings] = await this.withFeePayment(op);
+        const [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op);
 
-        const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(_op);
+        const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(_op, _isFeePayer);
         txRequest.txContext.gasSettings = _gasSettings;
 
         const simulatedTx = await pxe.simulateTx(
@@ -558,6 +564,7 @@ export class ExecutionService extends Service {
             network.chainId,
             account.address.toString(),
             txSetup,
+            _isFeePayer,
             txCalls,
             nonce.toString(),
             txHash.toString(),
@@ -779,7 +786,7 @@ export class ExecutionService extends Service {
             }
         }
 
-        const txRequest = await account.buildTxExecutionRequest(pxe, [], calls.map(x => x[0]), args, Fr.zero());
+        const txRequest = await account.buildTxExecutionRequest(pxe, [], false, calls.map(x => x[0]), args, Fr.zero());
         const simulatedTx = await pxe.simulateTx(
             txRequest, // txRequest
             true, // simulatePublic
@@ -828,12 +835,15 @@ export class ExecutionService extends Service {
         return result;
     }
     
-    async processTx(op: {
-        networkId: string,
-        accountAddress: string,
-        actions: IAction[],
-        setup?: IAction[],
-    }): Promise<[TxExecutionRequest, PXE, IAccountContract, Network, Fr, TxCall[], TxCall[]]> {
+    async processTx(
+        op: {
+            networkId: string,
+            accountAddress: string,
+            actions: IAction[],
+            setup?: IAction[],
+        },
+        isFeePayer = false,
+): Promise<[TxExecutionRequest, PXE, IAccountContract, Network, Fr, TxCall[], TxCall[]]> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -872,7 +882,6 @@ export class ExecutionService extends Service {
                 authwits,
                 account,
                 network,
-                pxe,
                 instances,
                 artifacts,
                 args,
@@ -888,7 +897,6 @@ export class ExecutionService extends Service {
                 authwits,
                 account,
                 network,
-                pxe,
                 instances,
                 artifacts,
                 args,
@@ -898,7 +906,7 @@ export class ExecutionService extends Service {
         }
 
         const nonce = Fr.random();
-        const txRequest = await account.buildTxExecutionRequest(pxe, setup, calls, args, nonce);
+        const txRequest = await account.buildTxExecutionRequest(pxe, setup, isFeePayer, calls, args, nonce);
 
         return [txRequest, pxe, account, network, nonce, txCalls, txSetup];
     }
@@ -909,7 +917,6 @@ export class ExecutionService extends Service {
         authwits: AuthWitness[],
         account: IAccountContract,
         network: Network,
-        pxe: PXE,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
         args: HashedValues[],

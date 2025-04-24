@@ -49,10 +49,12 @@ const methods = ref([
 	{
 		type: "fj",
 		title: "Fee Juice",
+		inPublic: true,
 	},
 	{
 		type: "fjwc",
 		title: "Fee Juice with claim",
+		inPublic: true,
 	},
 	{
 		type: "fpc",

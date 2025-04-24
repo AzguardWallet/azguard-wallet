@@ -25,8 +25,7 @@ export default {
 		{
 			all_frames: true,
 			js: ["src/content-script/content.ts"],
-			// matches: ["*://*/*"],
-			matches: ["https://google.com/*"],
+			matches: ["*://*/*"],
 			run_at: "document_start",
 		},
 	],

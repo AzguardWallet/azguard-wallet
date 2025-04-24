@@ -337,82 +337,84 @@ export class TokenBalanceService extends Service {
 				}
 				chainId = token.chainId;
 				// sync private balance
-				if (!token.balanceOfPrivateFn) {
-					tb.privateBalance = "0";
-					continue;
-				}
-				const balanceOfPrivateFn = BalanceOfPrivateFn.new(
-					token.balanceOfPrivateFn.name,
-					token.balanceOfPrivateFn.impl
-				)
-				if (balanceOfPrivateFn.type === FunctionType.UTILITY) {
-					calls.push([
-						new CallAction(
-							token.contract,
-							balanceOfPrivateFn.name,
-							balanceOfPrivateFn.buildArgs(account),
-						),
-						i,
-						true,
-						balanceOfPrivateFn,
-					]);
+				if (token.balanceOfPrivateFn) {
+					const balanceOfPrivateFn = BalanceOfPrivateFn.new(
+						token.balanceOfPrivateFn.name,
+						token.balanceOfPrivateFn.impl
+					)
+					if (balanceOfPrivateFn.type === FunctionType.UTILITY) {
+						calls.push([
+							new CallAction(
+								token.contract,
+								balanceOfPrivateFn.name,
+								balanceOfPrivateFn.buildArgs(account),
+							),
+							i,
+							true,
+							balanceOfPrivateFn,
+						]);
+					}
+					else {
+						const selector = await balanceOfPrivateFn.getSelector();
+						const packedArgs = await balanceOfPrivateFn.packArgs(balanceOfPrivateFn.buildArgs(account))
+						calls.push([
+							new EncodedCallAction(
+								token.contract,
+								selector.toString(),
+								packedArgs.values.map(x => x.toString()),
+								balanceOfPrivateFn.name,
+								balanceOfPrivateFn.type,
+								balanceOfPrivateFn.isStatic,
+								balanceOfPrivateFn.getReturnTypes(),
+							),
+							i,
+							true,
+							balanceOfPrivateFn,
+						]);
+					}
 				}
 				else {
-					const selector = await balanceOfPrivateFn.getSelector();
-					const packedArgs = await balanceOfPrivateFn.packArgs(balanceOfPrivateFn.buildArgs(account))
-					calls.push([
-						new EncodedCallAction(
-							token.contract,
-							selector.toString(),
-							packedArgs.values.map(x => x.toString()),
-							balanceOfPrivateFn.name,
-							balanceOfPrivateFn.type,
-							balanceOfPrivateFn.isStatic,
-							balanceOfPrivateFn.getReturnTypes(),
-						),
-						i,
-						true,
-						balanceOfPrivateFn,
-					]);
+					tb.privateBalance = "0";
 				}
 				// sync public balance
-				if (!token.balanceOfPublicFn) {
-					tb.publicBalance = "0";
-					continue;
-				}
-				const balanceOfPublicFn = BalanceOfPublicFn.new(
-					token.balanceOfPublicFn.name,
-					token.balanceOfPublicFn.impl
-				)
-				if (balanceOfPublicFn.type === FunctionType.UTILITY) {
-					calls.push([
-						new CallAction(
-							token.contract,
-							balanceOfPublicFn.name,
-							balanceOfPublicFn.buildArgs(account),
-						),
-						i,
-						false,
-						balanceOfPublicFn,
-					]);
+				if (token.balanceOfPublicFn) {
+					const balanceOfPublicFn = BalanceOfPublicFn.new(
+						token.balanceOfPublicFn.name,
+						token.balanceOfPublicFn.impl
+					)
+					if (balanceOfPublicFn.type === FunctionType.UTILITY) {
+						calls.push([
+							new CallAction(
+								token.contract,
+								balanceOfPublicFn.name,
+								balanceOfPublicFn.buildArgs(account),
+							),
+							i,
+							false,
+							balanceOfPublicFn,
+						]);
+					}
+					else {
+						const selector = await balanceOfPublicFn.getSelector();
+						const packedArgs = await balanceOfPublicFn.packArgs(balanceOfPublicFn.buildArgs(account))
+						calls.push([
+							new EncodedCallAction(
+								token.contract,
+								selector.toString(),
+								packedArgs.values.map(x => x.toString()),
+								balanceOfPublicFn.name,
+								balanceOfPublicFn.type,
+								balanceOfPublicFn.isStatic,
+								balanceOfPublicFn.getReturnTypes(),
+							),
+							i,
+							false,
+							balanceOfPublicFn,
+						]);
+					}
 				}
 				else {
-					const selector = await balanceOfPublicFn.getSelector();
-					const packedArgs = await balanceOfPublicFn.packArgs(balanceOfPublicFn.buildArgs(account))
-					calls.push([
-						new EncodedCallAction(
-							token.contract,
-							selector.toString(),
-							packedArgs.values.map(x => x.toString()),
-							balanceOfPublicFn.name,
-							balanceOfPublicFn.type,
-							balanceOfPublicFn.isStatic,
-							balanceOfPublicFn.getReturnTypes(),
-						),
-						i,
-						false,
-						balanceOfPublicFn,
-					]);
+					tb.publicBalance = "0";
 				}
 			}
 			if (chainId) {

@@ -86,6 +86,7 @@ export class AzguardV0 implements IAccountContract {
     public buildTxExecutionRequest(
         pxe: PXE,
         setup: AzguardFunctionCall[],
+        isFeePayer: boolean,
         calls: AzguardFunctionCall[],
         args: HashedValues[],
         nonce: Fr,
@@ -93,7 +94,7 @@ export class AzguardV0 implements IAccountContract {
         capsules?: Capsule[],
     ): Promise<TxExecutionRequest> {
         return setup.length 
-            ? this._buildTxExecutionRequestWithSetup(pxe, setup, calls, args, nonce, authwits, capsules)
+            ? this._buildTxExecutionRequestWithSetup(pxe, setup, isFeePayer, calls, args, nonce, authwits, capsules)
             : this._buildTxExecutionRequest(pxe, calls, args, nonce, authwits, capsules);
     }
 
@@ -196,6 +197,7 @@ export class AzguardV0 implements IAccountContract {
     private async _buildTxExecutionRequestWithSetup(
         pxe: PXE,
         setup: AzguardFunctionCall[],
+        isFeePayer: boolean,
         calls: AzguardFunctionCall[],
         args: HashedValues[],
         nonce: Fr,
@@ -220,7 +222,7 @@ export class AzguardV0 implements IAccountContract {
             while (batchCalls.length >= CHUNK_SIZE) {
                 const chunkCalls = batchCalls.splice(0, CHUNK_SIZE);
                 const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [emptySetup, chunkCalls, chunkNonce]));
+                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [emptySetup, false, chunkCalls, chunkNonce]));
                 batchArgs.push(chunkArgs);
                 
                 const chunkPayload = emptySetup.flatMap(x => x.toFields())
@@ -239,7 +241,7 @@ export class AzguardV0 implements IAccountContract {
                 }
                 const chunkCalls = batchCalls;
                 const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [emptySetup, chunkCalls, chunkNonce]));
+                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [emptySetup, false, chunkCalls, chunkNonce]));
                 batchArgs.push(chunkArgs);
 
                 const chunkPayload = emptySetup.flatMap(x => x.toFields())
@@ -265,10 +267,11 @@ export class AzguardV0 implements IAccountContract {
             batchCalls.push(AzguardFunctionCall.empty());
         }
 
-        const fnArgs = await HashedValues.fromArgs(encodeArguments(fn, [setupCalls, batchCalls, nonce]));
+        const fnArgs = await HashedValues.fromArgs(encodeArguments(fn, [setupCalls, isFeePayer, batchCalls, nonce]));
         batchArgs.push(fnArgs);
 
         const payload = setupCalls.flatMap(x => x.toFields())
+            .concat(new Fr(isFeePayer))
             .concat(batchCalls.flatMap(x => x.toFields()))
             .concat(nonce);
         const payloadHash = await poseidon2HashWithSeparator(payload, GeneratorIndex.SIGNATURE_PAYLOAD);
