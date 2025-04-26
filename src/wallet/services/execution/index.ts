@@ -296,7 +296,7 @@ export class ExecutionService extends Service {
         return tx.hash;
     }
 
-    public async executeOperations(operations: IOperation[], origin: string): Promise<IOperationResult[]> {
+    public async executeOperations(operations: IOperation[], origin: TxOrigin): Promise<IOperationResult[]> {
         const results: IOperationResult[] = [];
         for (const operation of operations) {
             if (results.length && results.at(-1)!.status !== OperationStatus.Ok) {
@@ -542,7 +542,7 @@ export class ExecutionService extends Service {
         }
     }
 
-    async executeSendTransaction(op: SendTransactionOperation, origin: string): Promise<string> {
+    async executeSendTransaction(op: SendTransactionOperation, origin: TxOrigin): Promise<string> {
         const [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op);
 
         const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(_op, _isFeePayer);
@@ -560,7 +560,7 @@ export class ExecutionService extends Service {
         const txHash = await pxe.sendTx(provedTx.toTx());
 
         const tx = await this.transactionService.addTransaction(
-            new TxOrigin(OriginType.DAPP, origin),
+            origin,
             network.chainId,
             account.address.toString(),
             txSetup,

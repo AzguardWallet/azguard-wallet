@@ -39,7 +39,7 @@ const privateBalance = computed(() => {
 	const decimals = new BN(10).pow(tokenBalance.value?.token?.decimals || 0)
 	const balance = new BN(tokenBalance.value.privateBalance || 0).dividedBy(decimals)
 	
-	return balanceFormatted(balance, showFullBalance.value.private ? 100 : 30)
+	return balanceFormatted(balance, showFullBalance.value.private ? undefined : 30)
 })
 const pubicBalance = computed(() => {
 	if (!tokenBalance.value) return 0
@@ -47,7 +47,7 @@ const pubicBalance = computed(() => {
 	const decimals = new BN(10).pow(tokenBalance.value?.token?.decimals || 0)
 	const balance = new BN(tokenBalance.value.publicBalance || 0).dividedBy(decimals)
 
-	return balanceFormatted(balance, showFullBalance.value.public ? 100 : 30)
+	return balanceFormatted(balance, showFullBalance.value.public ? undefined : 30)
 })
 
 const isCopied = ref(false)

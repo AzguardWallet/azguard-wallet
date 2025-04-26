@@ -21,6 +21,7 @@ import {
 	OperationKind,
 } from "@/wallet/services/execution/client"
 import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
+import { TxOrigin, OriginType } from "@/wallet/services/transaction/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -161,7 +162,7 @@ const approve = async () => {
 		isLoading.value = true
 		const results = await executionService.executeOperations(
 			operations.value,
-			session.value.dappMetadata.name ?? "Unknown dapp",
+			new TxOrigin(OriginType.DAPP, session.value.dappMetadata.name ?? "Unknown dapp")
 		)
 		interactionService.resolveInteraction(requestId.value, results)
 		closeWindow(true)
@@ -525,7 +526,7 @@ const showJson = () => {
 					:loading="isLoading"
 					:disabled="processingError.show"
 				>
-					<Text size="13" color="inverse">Confirm</Text>
+					<Text size="13" color="inverse"> {{ `${isLoading ? 'Executing' : 'Confirm'}` }} </Text>
 				</Button>
 			</Flex>
 		</Flex>

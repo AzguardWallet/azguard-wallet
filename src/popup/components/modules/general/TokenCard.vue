@@ -26,7 +26,7 @@ const totalBalance = computed(() => {
 
 	const total = privateBalance.plus(publicBalance)
 
-	return balanceFormatted(total).value
+	return balanceFormatted(total, 10).value
 })
 const description = computed(() => {
 	if (appStore.mintingTokens.includes(props.token?.id)) return "Minting more tokens..."

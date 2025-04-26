@@ -109,6 +109,7 @@ const onKeydown = e => {
 					placeholder="My node"
 					v-model="nameTerm"
 					autofocus
+					:maxLength="64"
 					@input="isStartedEditing = true"
 				>
 					<template #right>

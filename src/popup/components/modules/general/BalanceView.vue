@@ -52,7 +52,7 @@ const totalTokenBalance = computed(() => {
 
 	const total = privateBalance.plus(publicBalance)
 
-	return balanceFormatted(total, showFullBalance.value ? 100 : 20)
+	return balanceFormatted(total, showFullBalance.value ? undefined : 20)
 })
 
 const BalanceDisplayOptionsMap = {

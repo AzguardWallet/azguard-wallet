@@ -1,11 +1,12 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
 import {
     EXECUTION_SERVICE_NAME,
-    TransferType,
-    IOperation,
-    IOperationResult,
-    FeeSettings,
+    type TransferType,
+    type IOperation,
+    type IOperationResult,
+    type FeeSettings,
 } from ".";
+import type { TxOrigin } from "@/wallet/services/transaction/client";
 
 export enum ExecutionServiceMethod {
     ExecuteTransfer,
@@ -42,7 +43,7 @@ export class ExecuteTransferResponse extends ResponseMessage {
 export class ExecuteOperationsRequest extends RequestMessage {
     constructor(
         public readonly operations: IOperation[],
-        public readonly origin: string,
+        public readonly origin: TxOrigin,
     ) {
         super(EXECUTION_SERVICE_NAME, ExecutionServiceMethod.ExecuteOperations);
     }

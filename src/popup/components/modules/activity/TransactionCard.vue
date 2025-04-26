@@ -3,6 +3,9 @@
 import BN from "bignumber.js"
 import { DateTime } from "luxon"
 
+/** Services */
+import { OriginType } from "@/wallet/services/transaction/client/models"
+
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 
@@ -11,7 +14,6 @@ const props = defineProps({
 		type: Object,
 	},
 })
-console.log('props.tx', props.tx);
 
 const call = computed(() => props.tx.calls[0])
 const type = computed(() => {
@@ -20,11 +22,27 @@ const type = computed(() => {
 	return "tx"
 })
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
-const decimals = new BN(10).pow(8) // Need to refactor this to use the token decimals from the transfer object
-const transferAmount = computed(() => balanceFormatted(new BN((transfer.value?.amount ?? 0)).dividedBy(decimals), 8).value)
-const mintAmount = computed(() => balanceFormatted(new BN((call.value.args[2] ?? 0)).dividedBy(decimals), 8).value)
 const token = computed(() => transfer.value?.token)
-console.log('call.value', call.value);
+const transferAmount = computed(() => {
+	if (transfer.value) {
+		const decimals = new BN(10).pow(token.value?.decimals || 0)
+		return balanceFormatted(new BN((transfer.value.amount || 0)).dividedBy(decimals), 8).value
+	}
+	
+	return 0
+})
+
+const mintAmount = computed(() => {
+	if (type.value !== "mint") return 0
+
+	const decimals = new BN(10).pow(props.tx?.origin?.type === OriginType.UI ? 8 : 0)
+	let amount = new BN(0)
+	for (const c of props.tx.calls) {
+		amount = amount.plus(new BN(c.args.at(-1) || 0))
+	}
+
+	return balanceFormatted(amount.dividedBy(decimals), 8).value
+})
 
 const icon = computed(() => {
 	if (type.value === "transfer") return "arrow-narrow-up-right"

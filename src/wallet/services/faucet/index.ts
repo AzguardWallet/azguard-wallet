@@ -17,6 +17,7 @@ import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/bas
 import { Service } from "@/wallet/base/service"
 import type { TokenService } from "@/wallet/services/token"
 import type { TransactionService } from "@/wallet/services/transaction"
+import { TxOrigin, OriginType } from "@/wallet/services/transaction/client"
 import type { NetworkService } from "@/wallet/services/network"
 import type { AccountService } from "@/wallet/services/account"
 import type { ProfileService } from "@/wallet/services/profile"
@@ -200,8 +201,9 @@ export class FaucetService extends Service {
             );
         }
         
+        const origin = new TxOrigin(OriginType.UI, "Faucet")
         if (deployActions.length) {
-            const deployResults = await this.executionService.executeOperations(deployOps, "Faucet");
+            const deployResults = await this.executionService.executeOperations(deployOps, origin);
             if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
                 throw new Error(`Token deployment failed: ${
                     (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)?.error
@@ -234,7 +236,7 @@ export class FaucetService extends Service {
                     ),
                 ]),
             ],
-            "Faucet"
+            origin
         );
         if (mintResult.status !== OperationStatus.Ok) {
             throw new Error(`Token mint failed: ${

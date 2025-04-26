@@ -62,9 +62,14 @@ export const normalizeAmount = target => {
 	if (Number.parseFloat(purgeNumber(target)) >= 9_999_999_999_999) return "9999999999999"
 }
 
-export const balanceFormatted = (balance, length = 10) => {
+export const balanceFormatted = (balance, length) => {
 	let slashed = false
 	if (!balance || balance.isZero()) return { value: '0', slashed }
+
+	let str = balance.toFormat()
+	if (!length) {
+		return { value: str, slashed }
+	}
 
 	if (balance.lt(new BN(10).pow(-(length - 2)))) {
 		return {
@@ -73,7 +78,6 @@ export const balanceFormatted = (balance, length = 10) => {
 		}
 	}
 
-	let str = balance.toFormat()
 	if (str.length > length) {
 		str = `${str.slice(0, length)}...`
 		slashed = true
@@ -83,6 +87,11 @@ export const balanceFormatted = (balance, length = 10) => {
 }
 
 export const isValidAmount = (value) => {
-	const num = Number(value)
-	return !Number.isNaN(num) && num > 0 && String(num) === value
+	try {
+		const amount = new BN(value)
+
+		return amount.isFinite() && !amount.isNaN() && amount.gt(0)
+	} catch (err) {
+		return false
+	}
 }

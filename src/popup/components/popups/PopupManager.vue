@@ -18,6 +18,7 @@ import ForgotPasswordPopup from "./ForgotPasswordPopup.vue"
 import ImportPopup from "./ImportPopup.vue"
 import ConfirmPopup from "./ConfirmPopup.vue"
 import SelectTokenPopup from "./SelectTokenPopup.vue"
+import EditProfilePopup from "./EditProfilePopup.vue"
 import SelectProfilePopup from "./SelectProfilePopup.vue"
 import TokensPopup from "./TokensPopup.vue"
 import TokenMetadataPopup from "./TokenMetadataPopup.vue"
@@ -58,6 +59,7 @@ const popupStore = usePopupStore()
 	<ImportPopup :show="popupStore.isOpened('import')" @onClose="popupStore.close('import')" />
 	<ConfirmPopup :show="popupStore.isOpened('confirm')" @onClose="popupStore.close('confirm')" />
 	<SelectTokenPopup :show="popupStore.isOpened('select_token')" @onClose="popupStore.close('select_token')" />
+	<EditProfilePopup :show="popupStore.isOpened('edit_profile')" @onClose="popupStore.close('edit_profile')" />
 	<SelectProfilePopup :show="popupStore.isOpened('select_profile')" @onClose="popupStore.close('select_profile')" />
 	<TokensPopup :show="popupStore.isOpened('tokens')" @onClose="popupStore.close('tokens')" />
 	<TokenMetadataPopup :show="popupStore.isOpened('token_metadata')" @onClose="popupStore.close('token_metadata')" />

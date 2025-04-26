@@ -67,7 +67,7 @@ const isMethodsDropdownOpen = ref(false)
 
 const balances = ref([])
 const feeJuiceBalance = computed(() => balances.value?.find(isFeeJuice))
-const loading = ref(false)
+const isLoading = ref(false)
 const error = ref("")
 
 const selectedFpc = computed(() => cacheStore.feePaymentMethods.find(m => m.id === methodId)?.fpc)
@@ -156,18 +156,23 @@ const tokenBalanceService = new TokenBalanceServiceClient(
 
 const init = async () => {
 	try {
-		loading.value = true
+		isLoading.value = true
 
 		if (props.network && props.account) {
 			balances.value = await tokenBalanceService.getTokenBalances(undefined, props.account.address)
 			methods.value[0].balance = feeJuiceBalance.value
 			methods.value[1].balance = feeJuiceBalance.value
+
+			const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+			if (fpms[props.account.address]) {
+				selectedMethod.value = fpms[props.account.address]
+			}
 		}
 	} catch (e) {
 		console.error("Failed to init", e)
-		error.value = (e)?.message ?? e
+		error.value = (e)?.message || e
 	} finally {
-		loading.value = false
+		isLoading.value = false
 	}
 }
 
@@ -276,7 +281,17 @@ watch(
 onBeforeMount(async () => {
 	await init()
 })
-onBeforeUnmount(() => {
+onBeforeUnmount(async () => {
+	const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+	let method
+	if (selectedMethod.value?.type === "fjwc") {
+		method = methods.value[0]
+	} else {
+		method = selectedMethod.value
+	}
+	fpms[props.account.address] = method
+	chrome.storage.local.set({ "azguard:ui:feePaymentMethods": fpms })
+
 	cacheStore.feePaymentMethods = cacheStore.feePaymentMethods.filter(m => m.id !== methodId)
 	fpcService.dispose()
 	tokenBalanceService.dispose()
@@ -291,7 +306,7 @@ onBeforeUnmount(() => {
 			<Text v-if="isCustomMethod" size="13" weight="600" color="primary"> Custom method </Text>
 			<Dropdown v-else @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false">
 				<template #trigger>
-					<Spinner v-if="loading" color="--txt-primary" />
+					<Spinner v-if="isLoading" color="--txt-primary" />
 					<Flex v-else align="center" gap="8" class="clickable">
 						<template v-if="selectedMethod">
 							<Icon name="discount" size="16" color="purple" />

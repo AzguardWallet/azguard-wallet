@@ -85,9 +85,7 @@ const handleSymbolInput = () => {
 
 const isAllowedToMint = computed(() => {
 	if (!tokenNameTerm.value.length) return
-	if (tokenNameTerm.value.length > 32) return
 	if (!tokenSymbolTerm.value.length) return
-	if (tokenSymbolTerm.value.length > 32) return
 	if (!feeSettings.value) return
 
 	const bnAmount = new BN(amountTerm.value)
@@ -205,6 +203,7 @@ const onKeydown = e => {
 					label="Token Name"
 					placeholder="Name"
 					v-model="tokenNameTerm"
+					:maxLength="32"
 					:disabled="isPreselected"
 					@focus="error = null"
 					@input="handleNameInput"
@@ -214,6 +213,7 @@ const onKeydown = e => {
 					label="Token Symbol"
 					placeholder="Symbol"
 					v-model="tokenSymbolTerm"
+					:maxLength="32"
 					:disabled="isPreselected"
 					@focus="error = null"
 					@input="handleSymbolInput"

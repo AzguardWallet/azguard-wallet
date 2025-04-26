@@ -1,8 +1,8 @@
-import { EventMessage } from "@/wallet/base/messages";
+import type { EventMessage } from "@/wallet/base/messages";
 import { ServiceClient } from "@/wallet/base/service-client";
-import { TransferType } from "@/wallet/services/transaction/client";
+import type { TransferType, TxOrigin } from "@/wallet/services/transaction/client";
 import { ExecuteOperationsRequest, ExecuteTransferRequest } from "./methods";
-import { FeeSettings, IOperation, IOperationResult } from "./models";
+import type { FeeSettings, IOperation, IOperationResult } from "./models";
 
 export { TransferType } from "../../transaction/client";
 export * from './methods';
@@ -64,7 +64,7 @@ export class ExecutionServiceClient extends ServiceClient {
         ));
     }
 
-    public executeOperations(operations: IOperation[], origin: string): Promise<IOperationResult[]> {
+    public executeOperations(operations: IOperation[], origin: TxOrigin): Promise<IOperationResult[]> {
         return this.request(new ExecuteOperationsRequest(operations, origin));
     }
 }

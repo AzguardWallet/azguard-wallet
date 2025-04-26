@@ -51,7 +51,9 @@ const handleOpen = target => {
 			<PageHeader :title="appStore.profile?.name" :description="appStore.profile?.id" icon="user" />
 
 			<ItemsContainer wide>
-				<SettingField label="Name" :value="appStore.profile?.name" icon="edit" />
+				<SettingField
+					@click="popupStore.open('edit_profile')"
+					label="Name" :value="appStore.profile?.name" icon="edit" />
 			</ItemsContainer>
 
 			<ItemsContainer wide>

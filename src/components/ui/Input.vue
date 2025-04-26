@@ -16,6 +16,10 @@ const props = defineProps({
 	max: {
 		type: [String, Number],
 	},
+	maxLength: {
+		type: Number,
+		required: false,
+	},
 	label: {
 		type: String,
 	},
@@ -60,6 +64,20 @@ const inputEl = ref(null)
 defineExpose({ inputEl })
 
 const text = ref(props.modelValue ? props.modelValue : "")
+const warning = ref({
+	show: false,
+	text: "",
+})
+const fillWarning = (text) => {
+	if (text) {
+		warning.value = {
+			show: true,
+			text
+		}
+	} else {
+		warning.value.show = false
+	}
+}
 
 onMounted(() => {
 	if (props.autofocus) {
@@ -81,6 +99,15 @@ const getInputType = computed(() => {
 
 const handleInput = () => {
 	if (props.disabled) return
+	fillWarning()
+
+	if (!!props.maxLength && text.value.length > props.maxLength) {
+		text.value = text.value.slice(0, props.maxLength)
+	}
+
+	if (!!props.maxLength && text.value.length == props.maxLength) {
+		fillWarning(`You can’t enter more than ${props.maxLength} characters`)
+	}
 
 	if (props.type === "number") {
 		emit(
@@ -114,7 +141,35 @@ const handleBlur = () => {
 }
 
 const handlePaste = e => {
-	if (props.disablePaste) e.preventDefault()
+	if (props.disablePaste) {
+		e.preventDefault()
+		return
+	}
+	
+	if (!!props.maxLength) {
+		e.preventDefault()
+		const paste = (e.clipboardData || window.clipboardData).getData('text') || ''
+		const el = inputEl.value
+		const start = el.selectionStart ?? text.value.length
+		const end = el.selectionEnd ?? start
+		const before = text.value.slice(0, start)
+		const after = text.value.slice(end)
+		let newText = before + paste + after
+
+		if (newText.length > props.maxLength) {
+			newText = newText.slice(0, props.maxLength)
+		}
+
+		text.value = newText
+		handleInput()
+
+		nextTick(() => {
+			const pos = Math.min(start + paste.length, props.maxLength)
+			el.setSelectionRange(pos, pos)
+		})
+
+		return
+	}
 }
 
 const handleClear = () => {
@@ -131,7 +186,20 @@ const handleClear = () => {
 				<slot name="labelSuffix" />
 			</Flex>
 
-			<slot name="right" />
+			<Transition v-if="warning.show" name="fade">
+				<Tooltip position="end">
+					<Flex align="center" gap="6">
+						<Icon name="warning" size="12" color="yellow" />
+						<Text size="12" color="primary"> Maximum length reached </Text>
+					</Flex>
+
+					<template #content>
+						{{ warning.text }}
+					</template>
+				</Tooltip>
+			</Transition>
+
+			<slot v-else name="right" />
 		</Flex>
 
 		<Flex
@@ -167,6 +235,7 @@ const handleClear = () => {
 				color="tertiary"
 				:class="$style.clear_btn"
 			/>
+			
 			<slot v-else name="suffix" />
 		</Flex>
 

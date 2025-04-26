@@ -104,6 +104,7 @@ const onKeydown = e => {
 					placeholder="My Vault"
 					v-model="nameTerm"
 					autofocus
+					:maxLength="64"
 					@input="isStartedEditing = true"
 				>
 				</Input>

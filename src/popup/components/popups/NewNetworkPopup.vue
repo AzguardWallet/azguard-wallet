@@ -102,7 +102,13 @@ const onKeydown = e => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<Input label="Name" placeholder="My node" v-model="nameTerm" autofocus>
+				<Input
+					label="Name"
+					placeholder="My node"
+					autofocus
+					:maxLength="64"
+					v-model="nameTerm"
+				>
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">
