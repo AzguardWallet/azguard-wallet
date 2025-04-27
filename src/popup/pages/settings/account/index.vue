@@ -106,7 +106,7 @@ const handleHideAccount = async () => {
 					to="/popup/settings/account/state"
 					size="large"
 					title="Account State"
-					description="Notes, authwits and contracts"
+					description="Notes, authwits, contracts, senders"
 					icon="code-asterisk"
 				/>
 			</ItemsContainer>
