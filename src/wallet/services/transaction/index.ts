@@ -1,6 +1,6 @@
 import { TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
+import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
 import { AccountService } from "@/wallet/services/account";
 import { Account } from "@/wallet/services/account/client";
 import { NetworkService } from "@/wallet/services/network";

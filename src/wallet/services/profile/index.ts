@@ -1,6 +1,6 @@
 import { Fr } from "@aztec/foundation/fields";
-import { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
+import { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
 import { EntityStorage, SimpleStorage, StorageType } from "@/wallet/storage";
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
 import { getEntropy, getMnemonic } from "@/wallet/utils/mnemonic";

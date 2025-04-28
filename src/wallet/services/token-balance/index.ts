@@ -3,8 +3,8 @@ import type {
 	EventMessage,
 	RequestMessage,
 	ResponseMessage,
-} from "@/wallet/base/messages"
-import { Service } from "@/wallet/base/service"
+} from "@/wallet/base/port-service/messages"
+import { Service } from "@/wallet/base/port-service/service"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, sleep } from "@/wallet/utils"
 import { Queue } from "@/wallet/utils/queue"

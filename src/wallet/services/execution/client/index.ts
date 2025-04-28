@@ -1,5 +1,5 @@
-import type { EventMessage } from "@/wallet/base/messages";
-import { ServiceClient } from "@/wallet/base/service-client";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
+import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import type { TransferType, TxOrigin } from "@/wallet/services/transaction/client";
 import { ExecuteOperationsRequest, ExecuteTransferRequest } from "./methods";
 import type { FeeSettings, IOperation, IOperationResult } from "./models";

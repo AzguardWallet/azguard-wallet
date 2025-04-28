@@ -3,8 +3,8 @@ import { Core } from '@walletconnect/core';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import { getSdkError } from "@walletconnect/utils";
 
-import { Service } from "@/wallet/base/service";
-import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { Service } from "@/wallet/base/port-service/service";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import type { DappSessionService } from "@/wallet/services/dapp-session";
 import type { DappMetadata, DappPermissions, DappSession } from "@/wallet/services/dapp-session/client";
 import type { DappInteractionService } from '@/wallet/services/dapp-interaction';

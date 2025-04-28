@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import {
     EXECUTION_SERVICE_NAME,
     type TransferType,
@@ -36,7 +36,7 @@ export class ExecuteTransferResponse extends ResponseMessage {
         result?: string,
         error?: string,
     ) {
-        super(EXECUTION_SERVICE_NAME, request.id, result, error);
+        super(EXECUTION_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -55,6 +55,6 @@ export class ExecuteOperationsResponse extends ResponseMessage {
         result?: IOperationResult[],
         error?: string,
     ) {
-        super(EXECUTION_SERVICE_NAME, request.id, result, error);
+        super(EXECUTION_SERVICE_NAME, request.requestId, result, error);
     }
 }

@@ -13,15 +13,15 @@ import {
     getContractClassFromArtifact,
 } from "@aztec/stdlib/contract"
 import { PublicKeys } from "@aztec/stdlib/keys"
-import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages"
-import { Service } from "@/wallet/base/service"
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages"
+import { Service } from "@/wallet/base/port-service/service"
 import type { TokenService } from "@/wallet/services/token"
 import type { TransactionService } from "@/wallet/services/transaction"
 import { TxOrigin, OriginType } from "@/wallet/services/transaction/client"
 import type { NetworkService } from "@/wallet/services/network"
 import type { AccountService } from "@/wallet/services/account"
 import type { ProfileService } from "@/wallet/services/profile"
-import type { PxeService } from "@/wallet/services/pxe";
+import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import type { ExecutionService } from "@/wallet/services/execution"
 import {
     type IOperation,
@@ -46,10 +46,11 @@ import {
 } from "./client"
 
 export class FaucetService extends Service {
+    private readonly pxeService: PxeServiceClient;
+
 	constructor(
         private readonly profileService: ProfileService,
         private readonly networkService: NetworkService,
-        private readonly pxeService: PxeService,
         private readonly accountService: AccountService,
         private readonly executionService: ExecutionService,
         private readonly transactionService: TransactionService,
@@ -57,6 +58,7 @@ export class FaucetService extends Service {
         emit: (event: EventMessage) => void
     ) {
 		super(FAUCET_SERVICE_NAME, emit)
+        this.pxeService = new PxeServiceClient();
 	}
 
 	public async process(
@@ -111,7 +113,7 @@ export class FaucetService extends Service {
         if (!account) {
             throw new Error("unknown account")
         }
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         
         const deployActions: IAction[] = [];
         const deployOps: IOperation[] = [

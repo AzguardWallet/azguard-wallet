@@ -28,11 +28,11 @@ import { PXE } from '@aztec/stdlib/interfaces/client';
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import { Capsule, HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
 import { z } from "zod";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
+import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
 import { NetworkService } from "@/wallet/services/network";
 import { Network } from "@/wallet/services/network/client";
-import { PxeService } from "@/wallet/services/pxe";
+import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { AccountService } from "@/wallet/services/account";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
 import { ProfileService } from "@/wallet/services/profile";
@@ -99,10 +99,11 @@ import {
 } from "./client";
 
 export class ExecutionService extends Service {
+    private readonly pxeService: PxeServiceClient;
+
     constructor(
         private readonly profileService: ProfileService,
         private readonly networkService: NetworkService,
-        private readonly pxeService: PxeService,
         private readonly accountService: AccountService,
         private readonly tokenService: TokenService,
         private readonly fpcService: FpcService,
@@ -111,6 +112,7 @@ export class ExecutionService extends Service {
         emit: (event: EventMessage) => void,
     ) {
         super(EXECUTION_SERVICE_NAME, emit);
+        this.pxeService = new PxeServiceClient();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -369,18 +371,17 @@ export class ExecutionService extends Service {
 
     async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
 
-        const providedInstance = op.instance ? ContractInstanceWithAddressSchema.parse(op.instance) : undefined;
+        const providedInstance = await ContractInstanceWithAddressSchema.optional().parseAsync(op.instance);
         const instance = providedInstance ??
-            (await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(op.address))).contractInstance;
+            (await this.pxeService.getContractMetadata(network, AztecAddress.fromString(op.address))).contractInstance;
         if (!instance) {
             throw new Error("Contract instance not found");
         }
 
-        const providedArtifact = op.artifact ? ContractArtifactSchema.parse(op.artifact) : undefined;
+        const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
         const artifact = providedArtifact
-            ?? (await this.pxeService.getContractClassMetadata(network.chainId, instance.currentContractClassId)).artifact;
+            ?? (await this.pxeService.getContractClassMetadata(network, instance.currentContractClassId)).artifact;
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
@@ -395,13 +396,12 @@ export class ExecutionService extends Service {
             throw new Error("Contract address doesn't match instance address");
         }
 
-        await pxe.registerContract({instance, artifact});
+        await this.pxeService.registerContract(network, {instance, artifact});
     }
 
     async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
-        await pxe.registerSender(AztecAddress.fromString(op.address));
+        await this.pxeService.registerSender(network, AztecAddress.fromString(op.address));
     }
 
     async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings, boolean]> {
@@ -423,7 +423,7 @@ export class ExecutionService extends Service {
                 const gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                     simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
                 return [op, gasSettings, true];
@@ -452,7 +452,7 @@ export class ExecutionService extends Service {
                 const gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                     simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
                 return [op, gasSettings, true];
@@ -481,7 +481,7 @@ export class ExecutionService extends Service {
                 txRequest.txContext.gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)),
                     simulatedTx.gasUsed.teardownGas.add(fpc.getTeardownGas(inPublic)),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
                 simulatedTx = await pxe.simulateTx(
@@ -497,7 +497,7 @@ export class ExecutionService extends Service {
                 const gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                     simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
                 return [op, gasSettings, false];
@@ -512,7 +512,7 @@ export class ExecutionService extends Service {
                 txRequest.txContext.gasSettings = new GasSettings(
                     txRequest.txContext.gasSettings.gasLimits,
                     new Gas(teardownDaGas, teardownL2Gas),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
                 const simulatedTx = await pxe.simulateTx(
@@ -526,7 +526,7 @@ export class ExecutionService extends Service {
                 const gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                     simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
                 const isFeePayer =
@@ -598,12 +598,12 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         if (!registeredContracts.has(op.contract)) {
-            const [_, instance] = await this.getInstance(network.chainId, op.contract);
-            const [__, artifact] = await this.getArtifact(network.chainId, instance.currentContractClassId.toString());
+            const [_, instance] = await this.getInstance(pxe, op.contract);
+            const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
             console.debug("Register contract");
             await pxe.registerContract({instance, artifact});
         }
@@ -626,10 +626,10 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         const contracts = this.getContracts(op.calls);
-        const instances = await this.getInstances(network.chainId, contracts);
-        const artifacts = await this.getArtifacts(network.chainId, instances);
+        const instances = await this.getInstances(pxe, contracts);
+        const artifacts = await this.getArtifacts(pxe, instances);
 
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
@@ -851,10 +851,10 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
 
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         const contracts = this.getContracts(op.actions.concat(op.setup ?? []));
-        const instances = await this.getInstances(network.chainId, contracts);
-        const artifacts = await this.getArtifacts(network.chainId, instances);
+        const instances = await this.getInstances(pxe, contracts);
+        const artifacts = await this.getArtifacts(pxe, instances);
 
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
@@ -1237,7 +1237,7 @@ export class ExecutionService extends Service {
                     content.type as FunctionType,
                     content.isStatic,
                     content.args.map(x => Fr.fromString(x)),
-                    z.array(AbiTypeSchema).parse(content.returnTypes),
+                    await z.array(AbiTypeSchema).parseAsync(content.returnTypes),
                 ),
             },
             {
@@ -1288,12 +1288,12 @@ export class ExecutionService extends Service {
         )];
     }
 
-    private async getInstances(chainId: number, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
+    private async getInstances(pxe: PXE, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
         console.debug("Get instances...");
         const instances = new Map<string, ContractInstanceWithAddress>();
         console.debug(`Fetching ${contracts.length} instances...`);
         const fetched = await Promise.all(
-            contracts.map(x => this.getInstance(chainId, x)),
+            contracts.map(x => this.getInstance(pxe, x)),
         );
         console.debug(`${fetched.length} instances fetched`);
         for (const [address, instance] of fetched) {
@@ -1302,15 +1302,15 @@ export class ExecutionService extends Service {
         return instances;
     }
 
-    private async getInstance(chainId: number, contract: string): Promise<[string, ContractInstanceWithAddress]> {
-        const metadata = await this.pxeService.getContractMetadata(chainId, AztecAddress.fromString(contract))
+    private async getInstance(pxe: PXE, contract: string): Promise<[string, ContractInstanceWithAddress]> {
+        const metadata = await pxe.getContractMetadata(AztecAddress.fromString(contract))
         if (!metadata.contractInstance) {
             throw new Error("Contract instance not found");
         }
         return [contract, metadata.contractInstance];
     }
 
-    private async getArtifacts(chainId: number, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
+    private async getArtifacts(pxe: PXE, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
         console.debug("Get artifacts...");
         const artifacts = new Map<string, ContractArtifact>();
         const classIds = new Set(
@@ -1321,7 +1321,7 @@ export class ExecutionService extends Service {
         );
         console.debug(`Fetching ${classIds.size} artifacts...`);
         const fetched = await Promise.all(
-            classIds.values().map(x => this.getArtifact(chainId, x))
+            classIds.values().map(x => this.getArtifact(pxe, x))
         );
         console.debug(`${fetched.length} artifacts fetched`);
         for (const [classId, artifact] of fetched) {
@@ -1330,11 +1330,8 @@ export class ExecutionService extends Service {
         return artifacts;
     }
 
-    private async getArtifact(
-        chainId: number,
-        classId: string,
-    ): Promise<[string, ContractArtifact]> {
-        const metadata = await this.pxeService.getContractClassMetadata(chainId, Fr.fromString(classId))
+    private async getArtifact(pxe: PXE, classId: string): Promise<[string, ContractArtifact]> {
+        const metadata = await pxe.getContractClassMetadata(Fr.fromString(classId))
         if (!metadata.artifact) {
             throw new Error("Contract artifact not found");
         }

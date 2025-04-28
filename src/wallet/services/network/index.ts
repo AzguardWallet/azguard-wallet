@@ -1,6 +1,6 @@
 import { AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
+import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
 import { ProfileService } from "@/wallet/services/profile";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";

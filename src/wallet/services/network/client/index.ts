@@ -1,5 +1,5 @@
-import { EventMessage } from "@/wallet/base/messages";
-import { ServiceClient } from "@/wallet/base/service-client";
+import { EventMessage } from "@/wallet/base/port-service/messages";
+import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import { NetworkServiceEvent, NetworkServiceEventMessage } from "./events";
 import { Network, NodeStatus } from "./models";
 import {

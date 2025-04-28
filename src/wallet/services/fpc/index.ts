@@ -1,9 +1,9 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
 import type { ProfileService } from "@/wallet/services/profile";
 import type { NetworkService } from "@/wallet/services/network";
-import type { PxeService } from "@/wallet/services/pxe";
+import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
@@ -28,16 +28,17 @@ import { Fpc } from "./fpc";
 import { getFpcHandler } from "./handlers";
 
 export class FpcService extends Service {
+    private readonly pxeService: PxeServiceClient;
     private readonly storage: EntityStorage<FpcInfo>;
     private readonly lock = new Lock();
 
     constructor(
         private readonly profiles: ProfileService,
         private readonly networks: NetworkService,
-        private readonly pxeService: PxeService,
         emit: (event: EventMessage) => void,
     ) {
         super(FPC_SERVICE_NAME, emit);
+        this.pxeService = new PxeServiceClient();
         this.storage = new EntityStorage("azguard:core:fpcs", StorageType.Local);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
     }
@@ -116,17 +117,18 @@ export class FpcService extends Service {
             console.log("Discovering FPCs...");
             try {
                 await this.lock.enter();
-                const pxe = await this.pxeService.getPXEClient(chainId);
+                const networks = await this.networks.getNetworks(chainId);
+                const network = networks.find(x => x.isDefault) ?? networks[0];
+                const pxe = this.pxeService.getPXE(network);
 
                 for (const contract of [
                     AztecAddress.fromString("0x097d86b77f924ecf8c7c6e058db2268b21615bf860ca4e87f0254fad6dee7dde"),
                     AztecAddress.fromString("0x0b27e30667202907fc700d50e9bc816be42f8141fae8b9f2281873dbdb9fc2e5"),
                     AztecAddress.fromString("0x28c18c0fc136706445df221b4d80d72a4464ef278b62c5de196dd3bd0527c938"),
                 ]) {
-                    const contractMeta = await this.pxeService.getContractMetadata(chainId, contract);
+                    const contractMeta = await pxe.getContractMetadata(contract);
                     if (contractMeta.contractInstance) {
-                        const classMeta = await this.pxeService.getContractClassMetadata(
-                            chainId,
+                        const classMeta = await pxe.getContractClassMetadata(
                             contractMeta.contractInstance.currentContractClassId,
                         );
                         if (classMeta.artifact) {
@@ -183,15 +185,14 @@ export class FpcService extends Service {
             throw new Error("Profile locked");
         }
         const network = await this.networks.getNetwork(networkId);
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
 
-        const fpcMetadata = await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(address));
+        const fpcMetadata = await pxe.getContractMetadata(AztecAddress.fromString(address));
         if (!fpcMetadata.contractInstance) {
             throw new Error("Contract instance not found");
         }
 
-        const fpcClassMetadata = await this.pxeService.getContractClassMetadata(
-            network.chainId,
+        const fpcClassMetadata = await pxe.getContractClassMetadata(
             fpcMetadata.contractInstance.currentContractClassId,
         );
         if (!fpcClassMetadata.artifact) {

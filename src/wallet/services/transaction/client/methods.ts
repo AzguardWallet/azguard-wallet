@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Tx, TRANSACTION_SERVICE_NAME } from ".";
 
 export enum TransactionServiceMethod {
@@ -20,7 +20,7 @@ export class GetTransactionsResponse extends ResponseMessage {
         result?: Tx[],
         error?: string,
     ) {
-        super(TRANSACTION_SERVICE_NAME, request.id, result, error);
+        super(TRANSACTION_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -38,6 +38,6 @@ export class GetTransactionResponse extends ResponseMessage {
         result?: Tx,
         error?: string,
     ) {
-        super(TRANSACTION_SERVICE_NAME, request.id, result, error);
+        super(TRANSACTION_SERVICE_NAME, request.requestId, result, error);
     }
 }

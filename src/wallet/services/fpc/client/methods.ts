@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { type FpcInfo, FPC_SERVICE_NAME, type FpcType } from ".";
 
 export enum FpcServiceMethod {
@@ -23,7 +23,7 @@ export class GetFpcsResponse extends ResponseMessage {
         result?: FpcInfo[],
         error?: string,
     ) {
-        super(FPC_SERVICE_NAME, request.id, result, error);
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -41,7 +41,7 @@ export class GetFpcResponse extends ResponseMessage {
         result?: FpcInfo,
         error?: string,
     ) {
-        super(FPC_SERVICE_NAME, request.id, result, error);
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -62,7 +62,7 @@ export class AddFpcResponse extends ResponseMessage {
         result?: FpcInfo,
         error?: string,
     ) {
-        super(FPC_SERVICE_NAME, request.id, result, error);
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -81,7 +81,7 @@ export class UpdateFpcResponse extends ResponseMessage {
         result?: FpcInfo,
         error?: string,
     ) {
-        super(FPC_SERVICE_NAME, request.id, result, error);
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -99,6 +99,6 @@ export class DeleteFpcResponse extends ResponseMessage {
         result?: FpcInfo,
         error?: string,
     ) {
-        super(FPC_SERVICE_NAME, request.id, result, error);
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
     }
 }

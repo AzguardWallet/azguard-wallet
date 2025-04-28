@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import {
     ConnectionPayload,
     ConnectionResult,
@@ -27,7 +27,7 @@ export class GetInteractionPayloadResponse extends ResponseMessage {
         result?: ConnectionPayload | ExecutionPayload,
         error?: string,
     ) {
-        super(DAPP_INTERACTION_SERVICE_NAME, request.id, result, error);
+        super(DAPP_INTERACTION_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -45,7 +45,7 @@ export class ResolveInteractionResponse extends ResponseMessage {
         request: ResolveInteractionRequest,
         error?: string,
     ) {
-        super(DAPP_INTERACTION_SERVICE_NAME, request.id, undefined, error);
+        super(DAPP_INTERACTION_SERVICE_NAME, request.requestId, undefined, error);
     }
 }
 
@@ -63,6 +63,6 @@ export class RejectInteractionResponse extends ResponseMessage {
         request: RejectInteractionRequest,
         error?: string,
     ) {
-        super(DAPP_INTERACTION_SERVICE_NAME, request.id, undefined, error);
+        super(DAPP_INTERACTION_SERVICE_NAME, request.requestId, undefined, error);
     }
 }

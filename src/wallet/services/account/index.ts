@@ -4,8 +4,8 @@ import type {
 	RequestMessage,
 	ResponseMessage,
 	EventMessage,
-} from "@/wallet/base/messages"
-import { Service } from "@/wallet/base/service"
+} from "@/wallet/base/port-service/messages"
+import { Service } from "@/wallet/base/port-service/service"
 import type { NetworkService } from "@/wallet/services/network"
 import type { ProfileService } from "@/wallet/services/profile"
 import { EntityStorage, StorageType } from "@/wallet/storage"

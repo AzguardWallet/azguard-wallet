@@ -3,12 +3,12 @@ import type {
 	EventMessage,
 	RequestMessage,
 	ResponseMessage,
-} from "@/wallet/base/messages"
-import { Service } from "@/wallet/base/service"
+} from "@/wallet/base/port-service/messages"
+import { Service } from "@/wallet/base/port-service/service"
 import type { NetworkService } from "@/wallet/services/network"
 import type { ProfileService } from "@/wallet/services/profile"
 import type { AccountService } from "@/wallet/services/account"
-import type { PxeService } from "@/wallet/services/pxe"
+import { PxeServiceClient } from "@/wallet/services/pxe/client"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max } from "@/wallet/utils"
 import {
@@ -74,6 +74,8 @@ export type Token = {
 }
 
 export class TokenService extends Service {
+	private readonly pxeService: PxeServiceClient;
+
 	public readonly onTokenAdded: ((token: Token) => void)[] = []
 	public readonly onTokenUpdated: ((token: Token) => void)[] = []
 	public readonly onTokenDeleted: ((token: Token) => void)[] = []
@@ -83,11 +85,11 @@ export class TokenService extends Service {
 	constructor(
 		private readonly profiles: ProfileService,
 		private readonly networks: NetworkService,
-		private readonly pxeService: PxeService,
 		private readonly accounts: AccountService,
 		emit: (event: EventMessage) => void
 	) {
 		super(TOKEN_SERVICE_NAME, emit)
+		this.pxeService = new PxeServiceClient();
 		this.tokens = new EntityStorage(
 			"azguard:core:tokens",
 			StorageType.Local
@@ -337,19 +339,20 @@ export class TokenService extends Service {
 			throw new Error("unknown network id")
 		}
 
-		const contractMetadata = await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(token.contract));
+		const pxe = this.pxeService.getPXE(network);
+
+		const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(token.contract));
 		if (!contractMetadata.contractInstance) {
 			throw new Error("contract instance not found")
 		}
 		const instance = contractMetadata.contractInstance;
 
-		const classMetadata = await this.pxeService.getContractClassMetadata(network.chainId, instance.currentContractClassId);
+		const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId);
 		if (!classMetadata.artifact) {
 			throw new Error("contract artifact not found")
 		}
 		const artifact = classMetadata.artifact;
 
-		const pxe = await this.pxeService.getPXEClient(network.chainId);
         const registeredContracts = await pxe.getContracts();
         if (!registeredContracts.find(x => x.toString() === token.contract)) {
             await pxe.registerContract({
@@ -424,19 +427,20 @@ export class TokenService extends Service {
 			throw new Error("unknown network id")
 		}
 
-		const contractMetadata = await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(contract));
+		const pxe = this.pxeService.getPXE(network);
+
+		const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(contract));
 		if (!contractMetadata.contractInstance) {
 			throw new Error("contract instance not found")
 		}
 		const instance = contractMetadata.contractInstance;
 
-		const classMetadata = await this.pxeService.getContractClassMetadata(network.chainId, instance.currentContractClassId);
+		const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId);
 		if (!classMetadata.artifact) {
 			throw new Error("contract artifact not found")
 		}
 		const artifact = classMetadata.artifact;
 
-		const pxe = await this.pxeService.getPXEClient(network.chainId);
         const registeredContracts = await pxe.getContracts();
         if (!registeredContracts.find(x => x.toString() === contract)) {
             await pxe.registerContract({
@@ -531,7 +535,7 @@ export class TokenService extends Service {
 			address
 		)
 
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
 
 		const getNameFn = ti.getNameFn ? GetNameFn.new(ti.getNameFn.name, ti.getNameFn.impl) : undefined;
 		const getSymbolFn = ti.getSymbolFn ? GetSymbolFn.new(ti.getSymbolFn.name, ti.getSymbolFn.impl) : undefined;

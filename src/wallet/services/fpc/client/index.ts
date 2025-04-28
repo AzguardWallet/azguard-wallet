@@ -1,5 +1,5 @@
-import type { EventMessage } from "@/wallet/base/messages";
-import { ServiceClient } from "@/wallet/base/service-client";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
+import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import { FpcServiceEvent, type FpcServiceEventMessage } from "./events";
 import type { FpcInfo, FpcType } from "./models";
 import { GetFpcRequest, GetFpcsRequest, AddFpcRequest, UpdateFpcRequest, DeleteFpcRequest } from "./methods";

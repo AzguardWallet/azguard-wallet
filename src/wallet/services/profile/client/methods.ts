@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Profile, PROFILE_SERVICE_NAME } from ".";
 
 export enum ProfileServiceMethod {
@@ -31,7 +31,7 @@ export class GetActiveProfileResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -47,7 +47,7 @@ export class GetProfilesResponse extends ResponseMessage {
         result?: Profile[],
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -66,7 +66,7 @@ export class CreateProfileResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -85,7 +85,7 @@ export class UnlockProfileResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -99,7 +99,7 @@ export class LockActiveProfileResponse extends ResponseMessage {
     constructor(
         request: LockActiveProfileRequest,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id);
+        super(PROFILE_SERVICE_NAME, request.requestId);
     }
 }
 
@@ -113,7 +113,7 @@ export class RefreshSessionResponse extends ResponseMessage {
     constructor(
         request: RefreshSessionRequest,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id);
+        super(PROFILE_SERVICE_NAME, request.requestId);
     }
 }
 
@@ -132,7 +132,7 @@ export class ChangeProfileNameResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -152,7 +152,7 @@ export class ChangeProfilePasswordResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -170,7 +170,7 @@ export class DeleteProfileResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -190,7 +190,7 @@ export class ImportEncryptedResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -210,7 +210,7 @@ export class ImportPlainResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -230,7 +230,7 @@ export class ImportMnemonicResponse extends ResponseMessage {
         result?: Profile,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -248,7 +248,7 @@ export class ExportEncryptedResponse extends ResponseMessage {
         result?: string,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -267,7 +267,7 @@ export class ExportPlainResponse extends ResponseMessage {
         result?: string,
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -286,6 +286,6 @@ export class ExportMnemonicResponse extends ResponseMessage {
         result?: string[],
         error?: string,
     ) {
-        super(PROFILE_SERVICE_NAME, request.id, result, error);
+        super(PROFILE_SERVICE_NAME, request.requestId, result, error);
     }
 }

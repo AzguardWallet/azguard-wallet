@@ -9,69 +9,204 @@ import { FeeJuiceContractArtifact } from "@aztec/noir-contracts.js/FeeJuice";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
+import { ContractArtifact, ContractArtifactSchema } from "@aztec/stdlib/abi";
+import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { ContractArtifact } from "@aztec/stdlib/abi";
 import {
     ContractClassWithId,
     ContractInstanceWithAddress,
+    ContractInstanceWithAddressSchema,
     getContractClassFromArtifact,
     getContractInstanceFromDeployParams,
 } from "@aztec/stdlib/contract";
-import { ContractClassMetadata, ContractMetadata, createAztecNodeClient, PXE } from "@aztec/stdlib/interfaces/client";
-import { Service } from "@/wallet/base/service";
-import { EventMessage, ResponseMessage } from "@/wallet/base/messages";
-import { ProfileService } from "@/wallet/services/profile";
-import { NetworkService } from "@/wallet/services/network";
+import { AztecNode, ContractClassMetadata, ContractMetadata, createAztecNodeClient, PXE } from "@aztec/stdlib/interfaces/client";
+import { NotesFilterSchema } from "@aztec/stdlib/note";
+import { PrivateExecutionResult, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
+import { z } from "zod";
+import { Service } from "@/wallet/base/message-service/service.ts";
+import { Profile, ProfileServiceClient } from "@/wallet/services/profile/client";
 import { Network } from "@/wallet/services/network/client";
 import { Lock } from "@/wallet/utils";
-import { Logger } from "./logger";
+import {
+    GetContractClassMetadataParams,
+    GetContractMetadataParams, 
+    GetContractsParams,
+    GetCurrentBaseFeesParams,
+    GetNodeInfoParams,
+    GetNotesParams,
+    GetPXEInfoParams,
+    GetSendersParams,
+    GetRegisteredAccountsParams,
+    ProveTxParams,
+    RegisterAccountParams,
+    RegisterContractParams,
+    RegisterSenderParams,
+    RemoveSenderParams,
+    SendTxParams,
+    SimulateTxParams,
+    SimulateUtilityParams,
+    PXE_SERVICE_NAME,
+    PxeServiceMethod,
+} from "./client";
 
-const PXE_SERVICE_NAME = "pxe";
-
-export class PxeService extends Service {
-    private readonly lock = new Lock();
+export class PxeService extends Service<PxeServiceMethod, void> {
+    private readonly profileService: ProfileServiceClient;
+    private readonly nodes = new Map<number, AztecNode>();
     private readonly pxes = new Map<number, PXE>();
+    private readonly rpcs = new Map<number, string>();
+    private readonly lock = new Lock();
+
     private readonly knownArtifacts = new Map<string, ContractArtifact>();
     private readonly knownClasses = new Map<string, ContractClassWithId>();
     private readonly knownInstances = new Map<string, ContractInstanceWithAddress>();
 
-    constructor(
-        private readonly profileService: ProfileService,
-        private readonly networkService: NetworkService,
-        emit: (event: EventMessage) => void,
-    ) {
-        super(PXE_SERVICE_NAME, emit);
-		this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged);
-        this.profileService.onProfileDeleted.push(this.onProfileDeleted);
-        this.networkService.onDefaultNetworkChanged.push(this.onDefaultNetworkChanged);
+    public constructor() {
+        super(PXE_SERVICE_NAME);
+        this.profileService = new ProfileServiceClient(
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            this.onProfileDeleted,
+            this.onActiveProfileChanged,
+        );
     }
 
-    public async process(): Promise<ResponseMessage | undefined> {
-        return undefined;
-    }
-
-    public async getPXEClient(chainId: number): Promise<PXE> {
-        try {
-            await this.lock.enter();
-            let pxe = this.pxes.get(chainId);
-            if (!pxe) {
-                const networks = await this.networkService.getNetworks(chainId);
-                const network = networks.find(x => x.isDefault) ?? networks[0];
-                pxe = await this.createPXE(network);
-                this.pxes.set(chainId, pxe);
+    protected async onRequest(method: PxeServiceMethod, params: unknown): Promise<unknown> {
+        switch (method) {
+            case PxeServiceMethod.GetContractClassMetadata: {
+                const { network, id } = params as GetContractClassMetadataParams;
+                return await this.getContractClassMetadata(network, await Fr.schema.parseAsync(id));
             }
-            return pxe;
-        }
-        finally {
-            this.lock.leave();
+            case PxeServiceMethod.GetContractMetadata: {
+                const { network, address } = params as GetContractMetadataParams;
+                return await this.getContractMetadata(network, await AztecAddress.schema.parseAsync(address));
+            }
+            case PxeServiceMethod.GetContracts: {
+                const { network } = params as GetContractsParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getContracts();
+            }
+            case PxeServiceMethod.GetCurrentBaseFees: {
+                const { network } = params as GetCurrentBaseFeesParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getCurrentBaseFees();
+            }
+            case PxeServiceMethod.GetNodeInfo: {
+                const { network } = params as GetNodeInfoParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getNodeInfo();
+            }
+            case PxeServiceMethod.GetNotes: {
+                const { network, filter } = params as GetNotesParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getNotes(await NotesFilterSchema.parseAsync(filter));
+            }
+            case PxeServiceMethod.GetPXEInfo: {
+                const { network } = params as GetPXEInfoParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getPXEInfo();
+            }
+            case PxeServiceMethod.GetSenders: {
+                const { network } = params as GetSendersParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getSenders();
+            }
+            case PxeServiceMethod.GetRegisteredAccounts: {
+                const { network } = params as GetRegisteredAccountsParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getRegisteredAccounts();
+            }
+            case PxeServiceMethod.ProveTx: {
+                const { network, txRequest, privateExecutionResult } = params as ProveTxParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.proveTx(
+                    await TxExecutionRequest.schema.parseAsync(txRequest),
+                    await PrivateExecutionResult.schema.parseAsync(privateExecutionResult),
+                );
+            }
+            case PxeServiceMethod.RegisterAccount: {
+                const { network, secretKey, partialAddress } = params as RegisterAccountParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.registerAccount(
+                    await Fr.schema.parseAsync(secretKey),
+                    await Fr.schema.parseAsync(partialAddress),
+                );
+            }
+            case PxeServiceMethod.RegisterContract: {
+                const { network, contract } = params as RegisterContractParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.registerContract({
+                    instance: await ContractInstanceWithAddressSchema.parseAsync(contract.instance),
+                    artifact: await ContractArtifactSchema.optional().parseAsync(contract.artifact),
+                });
+            }
+            case PxeServiceMethod.RegisterSender: {
+                const { network, address } = params as RegisterSenderParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.registerSender(await AztecAddress.schema.parseAsync(address));
+            }
+            case PxeServiceMethod.RemoveSender: {
+                const { network, address } = params as RemoveSenderParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.removeSender(await AztecAddress.schema.parseAsync(address));
+            }
+            case PxeServiceMethod.SendTx: {
+                const { network, tx } = params as SendTxParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.sendTx(await Tx.schema.parseAsync(tx));
+            }
+            case PxeServiceMethod.SimulateTx: {
+                const {
+                    network,
+                    txRequest,
+                    simulatePublic,
+                    msgSender,
+                    skipTxValidation,
+                    skipFeeEnforcement,
+                    scopes,
+                } = params as SimulateTxParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.simulateTx(
+                    await TxExecutionRequest.schema.parseAsync(txRequest),
+                    simulatePublic,
+                    await AztecAddress.schema.optional().parseAsync(msgSender),
+                    skipTxValidation,
+                    skipFeeEnforcement,
+                    await z.array(AztecAddress.schema).optional().parseAsync(scopes),
+                );
+            }
+            case PxeServiceMethod.SimulateUtility: {
+                const {
+                    network,
+                    functionName,
+                    args,
+                    to,
+                    authwits,
+                    from,
+                    scopes,
+                } = params as SimulateUtilityParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.simulateUtility(
+                    functionName,
+                    args,
+                    await AztecAddress.schema.parseAsync(to),
+                    await z.array(AuthWitness.schema).optional().parseAsync(authwits),
+                    await AztecAddress.schema.optional().parseAsync(from),
+                    await z.array(AztecAddress.schema).optional().parseAsync(scopes),
+                );
+            }
+            default: {
+                throw new Error("Unknown method");
+            }
         }
     }
 
-    public async getContractMetadata(chainId: number, address: AztecAddress): Promise<ContractMetadata> {
-        const pxe = await this.getPXEClient(chainId);
+    private async getContractMetadata(network: Network, address: AztecAddress): Promise<ContractMetadata> {
+        const pxe = await this.getPxeClient(network);
         const metadata = await pxe.getContractMetadata(address);
         if (!metadata.contractInstance) {
-            const node = await this.networkService.getNode(chainId);
+            const node = await this.getNodeClient(network);
             metadata.contractInstance = await node.getContract(address);
             if (!metadata.contractInstance) {
                 if (!this.knownInstances.size) {
@@ -83,8 +218,8 @@ export class PxeService extends Service {
         return metadata;
     }
 
-    public async getContractClassMetadata(chainId: number, classId: Fr): Promise<ContractClassMetadata> {
-        const pxe = await this.getPXEClient(chainId);
+    private async getContractClassMetadata(network: Network, classId: Fr): Promise<ContractClassMetadata> {
+        const pxe = await this.getPxeClient(network);
         const metadata = await pxe.getContractClassMetadata(classId, true);
         if (!metadata.artifact) {
             if (!this.knownArtifacts.size) {
@@ -129,44 +264,60 @@ export class PxeService extends Service {
         this.knownInstances.set(sponsoredFpcInstace.address.toString(), sponsoredFpcInstace);
     }
 
-    private async createPXE(network: Network) {
-        //return createPXEClient(network.rpcUrl);
-        const node = createAztecNodeClient(network.rpcUrl);
-
-        const l1Contracts = await node.getL1ContractAddresses();
-        const config = {
-            ...getPXEServiceConfig(),
-            l1Contracts,
-        } as PXEServiceConfig;
-
-        config.dataDirectory = `pxe/${network.profileId}/${network.chainId}`;
-        config.proverEnabled = false;
-
-        return await createPXEService(node, config, {
-            loggers: {
-                store: new Logger('pxe:data:indexeddb', 'trace'),
-                pxe: new Logger('pxe:service', 'trace'),
-                prover: new Logger('bb:wasm:lazy', 'trace'),
-            }
-        });
-    }
-    
-    private readonly onActiveProfileChanged = async () => {
+	private async getNodeClient(network: Network): Promise<AztecNode> {
         try {
             await this.lock.enter();
-            this.pxes.clear();
+            if (!this.hasChain(network)) {
+                await this.initChain(network);
+            }
+            return this.nodes.get(network.chainId)!;
         }
         finally {
             this.lock.leave();
         }
-    };
-    
-    private readonly onProfileDeleted = async (profileId: string) => {
+	}
+
+    private async getPxeClient(network: Network): Promise<PXE> {
         try {
             await this.lock.enter();
+            if (!this.hasChain(network)) {
+                await this.initChain(network);
+            }
+            return this.pxes.get(network.chainId)!;
+        }
+        finally {
+            this.lock.leave();
+        }
+    }
+
+    private hasChain(network: Network): boolean {
+        return this.rpcs.get(network.chainId) === network.rpcUrl;
+    }
+
+    private async initChain(network: Network): Promise<void> {
+        const node = createAztecNodeClient(network.rpcUrl);
+        const l1Contracts = await node.getL1ContractAddresses();
+        const config = {
+            ...getPXEServiceConfig(),
+            l1Contracts,
+            dataDirectory: `pxe/${network.profileId}/${network.chainId}`,
+            proverEnabled: true,
+        } as PXEServiceConfig;
+        const pxe = await createPXEService(node, config);
+
+        this.nodes.set(network.chainId, node);
+        this.pxes.set(network.chainId, pxe);
+        this.rpcs.set(network.chainId, network.rpcUrl);
+    }
+
+    private readonly onProfileDeleted = async (profile: Profile): Promise<void> => {
+        try {
+            await this.lock.enter();
+            this.nodes.clear();
             this.pxes.clear();
+            this.rpcs.clear();
             for (const db of await indexedDB.databases()) {
-                if (db.name?.startsWith(`pxe/${profileId}`)) {
+                if (db.name?.startsWith(`pxe/${profile.id}/`)) {
                     const _ = indexedDB.deleteDatabase(db.name);
                 }
             }
@@ -174,15 +325,17 @@ export class PxeService extends Service {
         finally {
             this.lock.leave();
         }
-    };
+    }
 
-    private readonly onDefaultNetworkChanged = async (network: Network) => {
+    private readonly onActiveProfileChanged = async (): Promise<void> => {
         try {
             await this.lock.enter();
-            this.pxes.delete(network.chainId);
+            this.nodes.clear();
+            this.pxes.clear();
+            this.rpcs.clear();
         }
         finally {
             this.lock.leave();
         }
-    };
+    }
 }

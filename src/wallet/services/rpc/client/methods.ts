@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { RPC_SERVICE_NAME } from ".";
 
 export enum RpcServiceMethod {
@@ -20,6 +20,6 @@ export class InvokeResponse extends ResponseMessage {
         result?: [string, unknown],
         error?: string,
     ) {
-        super(RPC_SERVICE_NAME, request.id, result, error);
+        super(RPC_SERVICE_NAME, request.requestId, result, error);
     }
 }

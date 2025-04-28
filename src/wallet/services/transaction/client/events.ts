@@ -1,4 +1,4 @@
-import { EventMessage } from "@/wallet/base/messages";
+import { EventMessage } from "@/wallet/base/port-service/messages";
 import { Tx, TRANSACTION_SERVICE_NAME } from ".";
 
 export enum TransactionServiceEvent {

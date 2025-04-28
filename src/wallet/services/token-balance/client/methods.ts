@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { TokenBalanceInfo, TOKEN_BALANCE_SERVICE_NAME } from ".";
 
 export enum TokenBalanceServiceMethod {
@@ -21,7 +21,7 @@ export class GetTokenBalancesResponse extends ResponseMessage {
         result?: TokenBalanceInfo[],
         error?: string,
     ) {
-        super(TOKEN_BALANCE_SERVICE_NAME, request.id, result, error);
+        super(TOKEN_BALANCE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -38,6 +38,6 @@ export class RefreshTokenBalanceResponse extends ResponseMessage {
         request: RefreshTokenBalanceRequest,
         error?: string,
     ) {
-        super(TOKEN_BALANCE_SERVICE_NAME, request.id, undefined, error);
+        super(TOKEN_BALANCE_SERVICE_NAME, request.requestId, undefined, error);
     }
 }

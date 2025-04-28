@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Authwit, Note, NoteStatus, ACCOUNT_STATE_SERVICE_NAME } from ".";
 
 export enum AccountStateServiceMethod {
@@ -28,7 +28,7 @@ export class GetAuthwitsResponse extends ResponseMessage {
         result?: Authwit[],
         error?: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -46,7 +46,7 @@ export class GetAccountsResponse extends ResponseMessage {
         result?: string[],
         error?: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -64,7 +64,7 @@ export class GetSendersResponse extends ResponseMessage {
         result?: string[],
         error?: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -83,7 +83,7 @@ export class AddSenderResponse extends ResponseMessage {
         result?: string,
         error?: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -102,7 +102,7 @@ export class DeleteSenderResponse extends ResponseMessage {
         result?: string,
         error?: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -120,7 +120,7 @@ export class GetContractsResponse extends ResponseMessage {
         result?: string[],
         error?: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -142,7 +142,7 @@ export class GetNotesResponse extends ResponseMessage {
         result?: Note[],
         error?: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -160,6 +160,6 @@ export class GetVersionResponse extends ResponseMessage {
         result?: string,
         error?: string,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
     }
 }
