@@ -285,16 +285,16 @@ export class TokenBalanceService extends Service {
 		while (true) {
 			if (this.profile) {
 				try {
-					if (Date.now() >= nextSync) {
-						const balancesToUpdate = (await this.balances.getValues())
-							.toSorted((a, b) => a.account.localeCompare(b.account));
+					// if (Date.now() >= nextSync) {
+					// 	const balancesToUpdate = (await this.balances.getValues())
+					// 		.toSorted((a, b) => a.account.localeCompare(b.account));
 						
-						for (const tb of balancesToUpdate) {
-							this.queue.enqueue(tb)
-						}
+					// 	for (const tb of balancesToUpdate) {
+					// 		this.queue.enqueue(tb)
+					// 	}
 
-						nextSync = Date.now() + 60_000 // TODO: settings
-					}
+					// 	nextSync = Date.now() + 60_000 // TODO: settings
+					// }
 					if (this.queue.length) {
 						console.debug(
 							`Syncing ${this.queue.length} token balances`
