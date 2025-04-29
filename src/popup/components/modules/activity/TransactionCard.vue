@@ -4,7 +4,7 @@ import BN from "bignumber.js"
 import { DateTime } from "luxon"
 
 /** Services */
-import { OriginType } from "@/wallet/services/transaction/client/models"
+import { OriginType, TxStatus } from "@/wallet/services/transaction/client/models"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
@@ -50,6 +50,18 @@ const icon = computed(() => {
 	return "zap"
 })
 
+const statusIcon = computed(() => {
+	if (props.tx.status === TxStatus.Pending) return "clock-circle"
+	if (props.tx.status === TxStatus.Success) return "check-circle"
+	return "close-circle"
+})
+
+const statusColor = computed(() => {
+	if (props.tx.status === TxStatus.Pending) return "gray"
+	if (props.tx.status === TxStatus.Success) return "green"
+	return "red"
+})
+
 const title = computed(() => {
 	if (type.value === "transfer") return "Transfer"
 	if (type.value === "mint") return "Mint"
@@ -63,7 +75,7 @@ const title = computed(() => {
 			<Flex align="center" justify="center" :class="$style.activity_icon">
 				<Icon :name="icon" size="16" color="primary" />
 
-				<Icon name="check-circle" size="14" color="green" :class="$style.check_icon" />
+				<Icon :name="statusIcon" size="14" :color="statusColor" :class="$style.check_icon" />
 			</Flex>
 
 			<Flex direction="column" gap="6">
