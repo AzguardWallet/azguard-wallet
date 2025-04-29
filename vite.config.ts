@@ -131,7 +131,7 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		include: ["vue", "webextension-polyfill"],
-		exclude: ["vue-demi", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi"],
+		exclude: ["vue-demi", "@aztec/bb.js", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi"],
 		esbuildOptions: {
 			target: "esnext",
 		},
