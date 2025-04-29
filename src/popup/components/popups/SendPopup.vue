@@ -12,7 +12,7 @@ import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 
 /** Utils */
 import { managers } from "@/utils/core.js"
-import { capitalize } from "@/utils/string"
+import { capitalize, isValidHex } from "@/utils/string"
 import { TransferType } from "@/wallet/services/transaction/client"
 import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
 
@@ -39,13 +39,12 @@ const props = defineProps({
 const feeSettings = ref()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.send
+	return popupStore.len - popupStore.popups.send?.order
 })
 
 const awaitingNewToken = ref(false)
 
 const activeToken = computed(() =>
-	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 	appStore.tokens.find(t => t.id == cacheStore.activeTokenIdx),
 )
 const isBlockedTranfer = computed(
@@ -53,7 +52,6 @@ const isBlockedTranfer = computed(
 )
 const tokenBalance = computed(() => {
 	return appStore.balances.find(
-		// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
 		b => b?.token.id == cacheStore.activeTokenIdx,
 	)
 })
@@ -114,8 +112,7 @@ const isAllowedToSend = computed(() => {
 	if (Number.isNaN(amountToSend)) return
 	if (amountToSend < 0.00000001) return
 	if (!amountToSend) return
-	if (!destinationAddressTerm.value.length || destinationAddressTerm.value.length !== 66) return
-	if (!destinationAddressTerm.value.startsWith("0x")) return
+	if (!isValidHex(destinationAddressTerm.value)) return
 	if (amountToSend > tokenBalanceByType.value) return
 	if (!feeSettings.value) return
 
@@ -210,7 +207,7 @@ watch(
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.send">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.send?.order">
 		<PopupCard large :displaceIdx>
 			<Flex wide direction="column" justify="between" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="16" :class="$style.top">

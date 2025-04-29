@@ -1,10 +1,13 @@
 <script setup>
 /** Vendor */
-import { DateTime } from "luxon"
 import BN from "bignumber.js"
+import { DateTime } from "luxon"
+
+/** Services */
+import { OriginType, TxStatus } from "@/wallet/services/transaction/client/models"
 
 /** Utils */
-import { comma } from "@/utils/amount.js"
+import { balanceFormatted } from "@/utils/amount.js"
 
 const props = defineProps({
 	tx: {
@@ -19,14 +22,44 @@ const type = computed(() => {
 	return "tx"
 })
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
-const transferAmount = computed(() => new BN((transfer.value?.amount ?? 0) / 10 ** 8).toFixed())
-const mintAmount = computed(() => new BN((call.value.args[2] ?? 0) / 10 ** 8).toFixed() * 2) /** refactor */
 const token = computed(() => transfer.value?.token)
+const transferAmount = computed(() => {
+	if (transfer.value) {
+		const decimals = new BN(10).pow(token.value?.decimals || 0)
+		return balanceFormatted(new BN((transfer.value.amount || 0)).dividedBy(decimals), 8).value
+	}
+	
+	return 0
+})
+
+const mintAmount = computed(() => {
+	if (type.value !== "mint") return 0
+
+	const decimals = new BN(10).pow(props.tx?.origin?.type === OriginType.UI ? 8 : 0)
+	let amount = new BN(0)
+	for (const c of props.tx.calls) {
+		amount = amount.plus(new BN(c.args.at(-1) || 0))
+	}
+
+	return balanceFormatted(amount.dividedBy(decimals), 8).value
+})
 
 const icon = computed(() => {
 	if (type.value === "transfer") return "arrow-narrow-up-right"
 	if (type.value === "mint") return "faucet"
 	return "zap"
+})
+
+const statusIcon = computed(() => {
+	if (props.tx.status === TxStatus.Pending) return "clock-circle"
+	if (props.tx.status === TxStatus.Success) return "check-circle"
+	return "close-circle"
+})
+
+const statusColor = computed(() => {
+	if (props.tx.status === TxStatus.Pending) return "gray"
+	if (props.tx.status === TxStatus.Success) return "green"
+	return "red"
 })
 
 const title = computed(() => {
@@ -42,7 +75,7 @@ const title = computed(() => {
 			<Flex align="center" justify="center" :class="$style.activity_icon">
 				<Icon :name="icon" size="16" color="primary" />
 
-				<Icon name="check-circle" size="14" color="green" :class="$style.check_icon" />
+				<Icon :name="statusIcon" size="14" :color="statusColor" :class="$style.check_icon" />
 			</Flex>
 
 			<Flex direction="column" gap="6">
@@ -57,19 +90,13 @@ const title = computed(() => {
 
 		<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
-				<template v-if="transferAmount > 0.01">
-					{{ comma(transferAmount) }}
-				</template>
-				<template v-else> <Text color="tertiary"><</Text> 0.01 </template>
+				{{ transferAmount }}
 				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
 			</Text>
 		</Flex>
 		<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
-				<template v-if="mintAmount > 0.01">
-					{{ comma(mintAmount) }}
-				</template>
-				<template v-else> <Text color="tertiary"><</Text> 0.01 </template>
+				{{ mintAmount }}
 			</Text>
 		</Flex>
 	</Flex>

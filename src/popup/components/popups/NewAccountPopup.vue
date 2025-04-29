@@ -20,7 +20,7 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.new_account
+	return popupStore.len - popupStore.popups.new_account?.order
 })
 
 const inputEl = useTemplateRef("inputEl")
@@ -75,7 +75,7 @@ const onKeydown = e => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_account">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_account?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
@@ -84,7 +84,13 @@ const onKeydown = e => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<Input ref="inputEl" v-model="name" label="Account name" placeholder="My Account">
+				<Input
+					ref="inputEl"
+					label="Account name"
+					placeholder="My Account"
+					:maxLength="64"
+					v-model="name"
+				>
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">

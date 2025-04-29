@@ -18,6 +18,7 @@ import ForgotPasswordPopup from "./ForgotPasswordPopup.vue"
 import ImportPopup from "./ImportPopup.vue"
 import ConfirmPopup from "./ConfirmPopup.vue"
 import SelectTokenPopup from "./SelectTokenPopup.vue"
+import EditProfilePopup from "./EditProfilePopup.vue"
 import SelectProfilePopup from "./SelectProfilePopup.vue"
 import TokensPopup from "./TokensPopup.vue"
 import TokenMetadataPopup from "./TokenMetadataPopup.vue"
@@ -25,6 +26,11 @@ import NewTokenPopup from "./NewTokenPopup/NewTokenPopup.vue"
 import EditTokenPopup from "./EditTokenPopup.vue"
 import TransactionPopup from "./TransactionPopup.vue"
 import SelectBalanceTypePopup from "./SelectBalanceTypePopup.vue"
+import NewFpcPopup from "./NewFpcPopup.vue"
+import EditFpcPopup from "./EditFpcPopup.vue"
+import SelectFpcPopup from "./SelectFpcPopup.vue"
+import EditClaimParametersPopup from "./EditClaimParametersPopup.vue"
+import NewSenderPopup from "./NewSenderPopup.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -53,6 +59,7 @@ const popupStore = usePopupStore()
 	<ImportPopup :show="popupStore.isOpened('import')" @onClose="popupStore.close('import')" />
 	<ConfirmPopup :show="popupStore.isOpened('confirm')" @onClose="popupStore.close('confirm')" />
 	<SelectTokenPopup :show="popupStore.isOpened('select_token')" @onClose="popupStore.close('select_token')" />
+	<EditProfilePopup :show="popupStore.isOpened('edit_profile')" @onClose="popupStore.close('edit_profile')" />
 	<SelectProfilePopup :show="popupStore.isOpened('select_profile')" @onClose="popupStore.close('select_profile')" />
 	<TokensPopup :show="popupStore.isOpened('tokens')" @onClose="popupStore.close('tokens')" />
 	<TokenMetadataPopup :show="popupStore.isOpened('token_metadata')" @onClose="popupStore.close('token_metadata')" />
@@ -63,4 +70,9 @@ const popupStore = usePopupStore()
 		:show="popupStore.isOpened('select_balance_type')"
 		@onClose="popupStore.close('select_balance_type')"
 	/>
+	<NewFpcPopup :show="popupStore.isOpened('new_fpc')" @onClose="popupStore.close('new_fpc')" />
+	<EditFpcPopup :show="popupStore.isOpened('edit_fpc')" @onClose="popupStore.close('edit_fpc')" />
+	<SelectFpcPopup :show="popupStore.isOpened('select_fpc')" :payload="popupStore.getPayload('select_fpc')" @onClose="popupStore.close('select_fpc')" />
+	<EditClaimParametersPopup :show="popupStore.isOpened('edit_claim_parameters')" :payload="popupStore.getPayload('edit_claim_parameters')" @onClose="popupStore.close('edit_claim_parameters')" />
+	<NewSenderPopup :show="popupStore.isOpened('new_sender')" @onClose="popupStore.close('new_sender')" />
 </template>

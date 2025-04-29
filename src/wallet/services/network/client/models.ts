@@ -16,7 +16,6 @@ export class Network {
         public readonly name: string,
         public readonly rpcUrl: string,
         public readonly chainId: number,
-        public readonly rollupVersion: number,
         public readonly isDefault: boolean,
     ) {}
 }

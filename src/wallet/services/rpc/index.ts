@@ -1,5 +1,5 @@
-import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
 import { DappSessionService } from "@/wallet/services/dapp-session";
 import { DappSession } from "@/wallet/services/dapp-session/client";
 import { DappInteractionService } from "@/wallet/services/dapp-interaction";

@@ -1,136 +1,151 @@
-<script setup lang="ts">
+<script setup>
 /** Vendor */
 import BigNumber from "bignumber.js"
 
 /** Components */
-import { Dropdown, DropdownDivider, DropdownItem } from "../../../../components/ui/Dropdown"
+import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
+
+/** Utils */
+import { trimAddress } from "@/utils/string"
+import { getRandomHex } from "@/wallet/utils"
 
 /** Services */
-import { Profile } from "../../../../wallet/services/profile/client"
-import { Network } from "../../../../wallet/services/network/client"
-import { Account } from "../../../../wallet/services/account/client"
 import {
 	FeeJuicePaymentMethod,
 	FeeJuiceWithClaimPaymentMethod,
 	FeePaymentMethodType,
 	FeeSettings,
 	FpcPaymentMethod,
-} from "../../../../wallet/services/execution/client"
-import { FpcInfo, FpcServiceClient, FpcType } from "../../../../wallet/services/fpc/client"
-import { TokenBalanceInfo, TokenBalanceServiceClient } from "../../../../wallet/services/token-balance/client"
+} from "@/wallet/services/execution/client"
+import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
-const props = defineProps<{
-	profile: Profile
-	network: Network
-	account: Account
-}>()
+/** Composables */
+import { useToast } from "@/composables/toast"
+const { openToast } = useToast()
 
-const settings = defineModel<FeeSettings | undefined>()
+/** Stores */
+import { useCacheStore } from "@/stores/cache.store"
+import { usePopupStore } from "@/stores/popup.store"
+const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
+
+const props = defineProps({
+	profile: {
+		type: Object,
+	},
+	network: {
+		type: Object,
+	},
+	account: {
+		type: Object,
+	},
+})
+
+const settings = defineModel()
+
+const methodId = getRandomHex(6)
+const methods = ref([
+	{
+		type: "fj",
+		title: "Fee Juice",
+		inPublic: true,
+	},
+	{
+		type: "fjwc",
+		title: "Fee Juice with claim",
+		inPublic: true,
+	},
+	{
+		type: "fpc",
+		title: "FPC",
+	},
+])
 const isCustomMethod = computed(() => settings.value?.paymentMethod.type === FeePaymentMethodType.Custom)
+const selectedMethod = ref()
+const isMethodsDropdownOpen = ref(false)
 
-const onFpcAdded = async (fpc: FpcInfo) => {
-	if (fpc.profileId !== props.profile?.id || fpc.chainId !== props.network?.chainId) {
-		return
-	}
-	const method =
-		fpc.type === FpcType.DefaultSponsoredFpc
-			? methods.value.find(x => x.type === "sfpc")
-			: methods.value.find(x => x.type === "fpc" && x.balance?.token.contract === fpc.asset)
+const balances = ref([])
+const feeJuiceBalance = computed(() => balances.value?.find(isFeeJuice))
+const isLoading = ref(false)
+const error = ref("")
 
-	if (method) {
-		method.fpcs!.push(fpc)
-		method.fpc ??= fpc
-	} else if (fpc.type === FpcType.DefaultSponsoredFpc) {
-		addSponsoredFpcMethod([fpc])
-	} else if (fpc.type === FpcType.DefaultFpc && !!fpc.asset) {
-		const allBalances = await tokenBalanceService.getTokenBalances(undefined, props.account.address)
-		const balance = allBalances.find(x => x.token.contract === fpc.asset)
-		if (balance) {
-			addFpcMethod([fpc], balance)
-		}
-	}
-}
-const onFpcUpdated = (fpc: FpcInfo) => {
-	if (fpc.profileId !== props.profile?.id || fpc.chainId !== props.network?.chainId) {
-		return
-	}
-	const method = methods.value.find(x => x.fpcs!.find(f => f.id === fpc.id))
-	if (method) {
-		const index = method.fpcs!.findIndex(x => x.id === fpc.id)
-		if (method.fpcs![index].asset !== fpc.asset) {
-			onFpcDeleted(method.fpcs![index])
-			onFpcAdded(fpc)
-		} else {
-			method.fpcs![index] = fpc
-			if (method.fpc?.id === fpc.id) {
-				method.fpc = fpc
-			}
-		}
-	}
-}
-const onFpcDeleted = (fpc: FpcInfo) => {
-	if (fpc.profileId !== props.profile?.id || fpc.chainId !== props.network?.chainId) {
-		return
-	}
-	const method =
-		fpc.type === FpcType.DefaultSponsoredFpc
-			? methods.value.find(x => x.type === "sfpc")
-			: methods.value.find(x => x.type === "fpc" && x.balance?.token.contract === fpc.asset)
+const selectedFpc = computed(() => cacheStore.feePaymentMethods.find(m => m.id === methodId)?.fpc)
+const claimParameters = computed(() => cacheStore.feePaymentMethods.find(m => m.id === methodId)?.claimParameters)
+const isClaimParametersFilled = computed(() => !!(selectedMethod.value?.claimAmount && selectedMethod.value?.claimSecret && selectedMethod.value?.messageLeafIndex))
 
-	if (method) {
-		method.fpcs = method.fpcs!.filter(x => x.id !== fpc.id)
-		if (method.fpc?.id === fpc.id) {
-			method.fpc = method.fpcs.at(0)
-		}
-		if (!method.fpcs.length) {
-			methods.value = methods.value.filter(x => x !== method)
-			if (selectedMethod.value === method) {
-				selectedMethod.value = undefined
-			}
-		}
-	}
+const handleFillClaimParameters = () => {
+	popupStore.open("edit_claim_parameters", { id: methodId })
 }
-const onBalanceAdded = async (balance: TokenBalanceInfo) => {
+const handleSelectFPC = () => {
+	popupStore.open("select_fpc", { id: methodId })
+}
+
+const isFeeJuice = (tb) => {
+	return tb.token.contract === "0x0000000000000000000000000000000000000000000000000000000000000005"
+}
+
+const isZeroBalance = (method) => {
+	return ((method.inPublic ? method.balance?.publicBalance : method.balance?.privateBalance) ?? "0") === "0"
+}
+
+const formatBalance = (tb, inPublic) => {
+	let amount = new BigNumber((inPublic ? tb.publicBalance : tb.privateBalance) ?? "0")
+	amount = amount.div(new BigNumber(`1${"0".repeat(tb.token.decimals)}`))
+	return amount.toFormat()
+}
+
+const onBalanceAdded = async (balance) => {
 	if (balance.account !== props.account?.address) {
 		return
 	}
-	if (isFeeJuice(balance)) {
-		methods.value[0].balance = balance
-		methods.value[1].balance = balance
-	} else {
-		const fpcs = (await fpcService.getFpcs(props.account.chainId)).filter(x => x.asset === balance.token.contract)
-		if (fpcs.length) {
-			addFpcMethod(fpcs, balance)
+
+	balances.value.push(balance)
+	if (selectedMethod.value.fpc?.type === FpcType.DefaultFpc) {
+		if (selectedMethod.value.fpc?.balance.id === balance.id) {
+			selectedMethod.value.balance = balance
 		}
 	}
 }
-const onBalanceUpdated = (balance: TokenBalanceInfo) => {
+const onBalanceUpdated = (balance) => {
 	if (balance.account !== props.account?.address) {
 		return
 	}
-	const method = methods.value.find(x => x.balance?.id === balance.id)
-	if (method) {
-		method.balance = balance
+
+	const idx = balances.value?.findIndex(b => b.id === balance.id)
+	if (idx !== -1) {
+		balances.value[idx] = balance
+	}
+	if (selectedMethod.value?.balance?.id === balance.id) {
+		selectedMethod.value.balance = balance
 	}
 }
-const onBalanceDeleted = (balance: TokenBalanceInfo) => {
+const onBalanceDeleted = (balance) => {
 	if (balance.account !== props.account?.address) {
 		return
 	}
-	if (isFeeJuice(balance)) {
-		methods.value[0].balance = undefined
-		methods.value[1].balance = undefined
-	} else {
-		const index = methods.value.findIndex(x => x.balance?.id === balance.id)
-		if (index !== -1) {
-			methods.value.splice(index, 1)
-			if (selectedMethod.value?.balance?.id === balance.id) {
-				selectedMethod.value = undefined
-			}
-		}
+
+	const idx = balances.value?.findIndex(b => b.id === balance.id)
+	if (idx !== -1) {
+		balances.value?.splice(idx, 1)
+	}
+	if (selectedMethod.value?.balance?.id === balance.id) {
+		selectedMethod.value = undefined
+		openToast({ label: "Balance updated, reselect payment method" })
 	}
 }
-const fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
+const onFpcUpdated = (fpc) => {
+	if (selectedMethod.value?.fpc?.id === fpc.id) {
+		selectedMethod.value.fpc.name = fpc.name
+	}
+}
+const onFpcDeleted = (fpc) => {
+	if (selectedMethod.value?.fpc?.id === fpc.id) {
+		selectedMethod.value = undefined
+		openToast({ label: "Selected FPC was deleted" })
+	}
+}
+const fpcService = new FpcServiceClient(undefined, undefined, undefined, onFpcUpdated, onFpcDeleted)
 const tokenBalanceService = new TokenBalanceServiceClient(
 	undefined,
 	undefined,
@@ -139,135 +154,123 @@ const tokenBalanceService = new TokenBalanceServiceClient(
 	onBalanceDeleted,
 )
 
-const loading = ref<boolean>(false)
-const error = ref<string | undefined>()
-
-type FeeMethod = {
-	type: "fj" | "fjwc" | "sfpc" | "fpc"
-	title: string
-	balance?: TokenBalanceInfo
-	fpcs?: FpcInfo[]
-	// inputs
-	fpc?: FpcInfo
-	inPublic?: boolean
-	claimAmount?: string
-	claimSecret?: string
-	messageLeafIndex?: string
-}
-const methods = ref<Array<FeeMethod>>([])
-const selectedMethod = ref<FeeMethod | undefined>()
-
-const addSponsoredFpcMethod = (fpcs: FpcInfo[]) => {
-	methods.value.splice(2, 0, {
-		type: "sfpc",
-		title: "Sponsored FPC",
-		fpcs: fpcs,
-		fpc: fpcs.at(0),
-	})
-}
-const addFpcMethod = (fpcs: FpcInfo[], balance: TokenBalanceInfo) => {
-	methods.value.push({
-		type: "fpc",
-		title: `$${balance.token.symbol}`,
-		balance,
-		fpcs,
-		fpc: fpcs.at(0),
-		inPublic: balance.privateBalance === "0" && balance.publicBalance !== "0",
-	})
-}
-
 const init = async () => {
 	try {
-		loading.value = true
-		methods.value = [
-			{
-				type: "fj",
-				title: "Fee Juice",
-			},
-			{
-				type: "fjwc",
-				title: "Fee Juice with claim",
-			},
-		]
+		isLoading.value = true
 
 		if (props.network && props.account) {
-			const allFpcs = await fpcService.getFpcs(props.network.chainId)
-			const allBalances = await tokenBalanceService.getTokenBalances(undefined, props.account.address)
+			balances.value = await tokenBalanceService.getTokenBalances(undefined, props.account.address)
+			methods.value[0].balance = feeJuiceBalance.value
+			methods.value[1].balance = feeJuiceBalance.value
 
-			const feeJuiceBalance = allBalances.find(isFeeJuice)
-			methods.value[0].balance = feeJuiceBalance
-			methods.value[1].balance = feeJuiceBalance
-
-			const sponsoredFpcs = allFpcs.filter(x => x.type === FpcType.DefaultSponsoredFpc)
-			if (sponsoredFpcs.length) {
-				addSponsoredFpcMethod(sponsoredFpcs)
-			}
-
-			const fpcAssets = new Set(
-				allFpcs.filter(x => x.type === FpcType.DefaultFpc && !!x.asset).map(x => x.asset!),
-			)
-			for (const balance of allBalances.filter(x => fpcAssets.has(x.token.contract))) {
-				const fpcs = allFpcs.filter(fpc => fpc.asset === balance.token.contract)
-				addFpcMethod(fpcs, balance)
+			const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+			if (fpms[props.account.address]) {
+				selectedMethod.value = fpms[props.account.address]
 			}
 		}
 	} catch (e) {
-		console.error("Failed to init FPCs", e)
-		error.value = (e as Error)?.message ?? e
+		console.error("Failed to init", e)
+		error.value = (e)?.message || e
 	} finally {
-		loading.value = false
+		isLoading.value = false
 	}
 }
 
-watchEffect(() => {
-	const method = selectedMethod.value
-	switch (method?.type) {
-		case "fj": {
-			if (isZeroBalance(method)) {
-				settings.value = undefined
-				break
-			}
-			settings.value = new FeeSettings(new FeeJuicePaymentMethod())
-			break
+watch(
+	() => selectedMethod.value,
+	() => {
+		switch (selectedMethod.value?.type) {
+			case "fj":
+				if (isZeroBalance(selectedMethod.value)) {
+					settings.value = undefined
+					break;
+				}
+				settings.value = new FeeSettings(new FeeJuicePaymentMethod())
+				break;
+			case "fjwc":
+				if (!selectedMethod.value.claimAmount && claimParameters.value) {
+					selectedMethod.value = {
+						...selectedMethod.value,
+						claimAmount: claimParameters.value.claimAmount,
+						claimSecret: claimParameters.value.claimSecret,
+						messageLeafIndex: claimParameters.value.messageLeafIndex,
+					}
+					break;
+				}
+				if (!selectedMethod.value.claimAmount || !selectedMethod.value.claimSecret || !selectedMethod.value.messageLeafIndex) {
+					settings.value = undefined
+					break;
+				}
+				settings.value = new FeeSettings(
+					new FeeJuiceWithClaimPaymentMethod(
+						selectedMethod.value.claimAmount,
+						selectedMethod.value.claimSecret,
+						selectedMethod.value.messageLeafIndex,
+					),
+				)
+				break;
+			case "fpc":
+				if (!selectedMethod.value.fpc && selectedFpc.value) {
+					selectedMethod.value = {
+						...selectedMethod.value,
+						fpc: selectedFpc.value,
+						balance: selectedFpc.value.balance,
+						inPublic: selectedFpc.value.balance?.privateBalance === "0" && selectedFpc.value.balance?.publicBalance !== "0",
+					}
+					break;
+				}
+				if (!selectedMethod.value.fpc) {
+					settings.value = undefined
+					break;
+				}
+				switch (selectedMethod.value.fpc.type) {
+					case FpcType.DefaultSponsoredFpc:
+						settings.value = new FeeSettings(new FpcPaymentMethod(selectedMethod.value.fpc.id))
+						break;
+					case FpcType.DefaultFpc:
+						if (isZeroBalance(selectedMethod.value)) {
+							settings.value = undefined
+							break;
+						}
+
+						settings.value = new FeeSettings(new FpcPaymentMethod(selectedMethod.value.fpc.id, selectedMethod.value.inPublic))
+						break;
+					default:
+						break;
+				}
+				break;
+			default:
+				break;
 		}
-		case "fjwc": {
-			if (!method.claimAmount || !method.claimSecret || !method.messageLeafIndex) {
-				settings.value = undefined
-				break
+	},
+	{ deep: true },
+)
+watch(
+	() => selectedFpc.value,
+	() => {
+		if (selectedMethod.value?.type === "fpc") {
+			selectedMethod.value = {
+				...selectedMethod.value,
+				fpc: selectedFpc.value,
+				balance: selectedFpc.value.balance,
+				inPublic: selectedFpc.value.balance?.privateBalance === "0" && selectedFpc.value.balance?.publicBalance !== "0",
 			}
-			settings.value = new FeeSettings(
-				new FeeJuiceWithClaimPaymentMethod(method.claimAmount, method.claimSecret, method.messageLeafIndex),
-			)
-			break
-		}
-		case "sfpc": {
-			if (!method.fpc) {
-				settings.value = undefined
-				break
-			}
-			settings.value = new FeeSettings(new FpcPaymentMethod(method.fpc.id))
-			break
-		}
-		case "fpc": {
-			if (!method.fpc || isZeroBalance(method)) {
-				settings.value = undefined
-				break
-			}
-			settings.value = new FeeSettings(new FpcPaymentMethod(method.fpc.id, method.inPublic))
-			break
 		}
 	}
-})
-
-onBeforeMount(async () => {
-	await init()
-})
-
-onBeforeUnmount(() => {
-	fpcService.dispose()
-	tokenBalanceService.dispose()
-})
-
+)
+watch(
+	() => claimParameters.value,
+	() => {
+		if (selectedMethod.value?.type === "fjwc") {
+			selectedMethod.value = {
+				...selectedMethod.value,
+				claimAmount: claimParameters.value.claimAmount,
+				claimSecret: claimParameters.value.claimSecret,
+				messageLeafIndex: claimParameters.value.messageLeafIndex,
+			}
+		}
+	},
+)
 watch(
 	() => [props.profile, props.network, props.account],
 	async () => {
@@ -275,23 +278,24 @@ watch(
 	},
 )
 
-const isFeeJuice = (tb: TokenBalanceInfo) => {
-	return tb.token.contract === "0x0000000000000000000000000000000000000000000000000000000000000005"
-}
+onBeforeMount(async () => {
+	await init()
+})
+onBeforeUnmount(async () => {
+	const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+	let method
+	if (selectedMethod.value?.type === "fjwc") {
+		method = methods.value[0]
+	} else {
+		method = selectedMethod.value
+	}
+	fpms[props.account.address] = method
+	chrome.storage.local.set({ "azguard:ui:feePaymentMethods": fpms })
 
-const isZeroBalance = (method: FeeMethod) => {
-	return ((method.inPublic ? method.balance?.publicBalance : method.balance?.privateBalance) ?? "0") === "0"
-}
-
-const formatBalance = (tb: TokenBalanceInfo, inPublic?: boolean) => {
-	let amount = new BigNumber((inPublic ? tb.publicBalance : tb.privateBalance) ?? "0")
-	amount = amount.div(new BigNumber("1" + "0".repeat(tb.token.decimals)))
-	return amount.toFormat()
-}
-
-const trimAddress = (address: string) => {
-	return `${address.substring(0, 8)}..${address.substring(62)}`
-}
+	cacheStore.feePaymentMethods = cacheStore.feePaymentMethods.filter(m => m.id !== methodId)
+	fpcService.dispose()
+	tokenBalanceService.dispose()
+})
 </script>
 
 <template>
@@ -300,9 +304,9 @@ const trimAddress = (address: string) => {
 			<Text size="13" weight="600" color="primary">Pay fee with</Text>
 
 			<Text v-if="isCustomMethod" size="13" weight="600" color="primary"> Custom method </Text>
-			<Dropdown v-else :disabled="loading || error">
+			<Dropdown v-else @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false">
 				<template #trigger>
-					<Spinner v-if="loading" color="--txt-primary" />
+					<Spinner v-if="isLoading" color="--txt-primary" />
 					<Flex v-else align="center" gap="8" class="clickable">
 						<template v-if="selectedMethod">
 							<Icon name="discount" size="16" color="purple" />
@@ -310,10 +314,16 @@ const trimAddress = (address: string) => {
 								{{ selectedMethod.title }}
 							</Text>
 						</template>
-						<template v-else>
-							<Text size="13" weight="600" color="red" style="padding: 2px 0"> Select method </Text>
-						</template>
-						<Icon name="chevron" size="12" color="secondary" />
+						<Text v-else size="13" weight="600" color="red" style="padding: 2px 0"> Select method </Text>
+						<Icon
+							name="chevron"
+							size="12"
+							color="secondary"
+							:style="{
+								transform: `rotate(${isMethodsDropdownOpen ? '180' : '0'}deg)`,
+								transition: 'all 0.2s ease'
+							}"
+						/>
 					</Flex>
 				</template>
 
@@ -329,135 +339,103 @@ const trimAddress = (address: string) => {
 							</Text>
 						</Flex>
 					</DropdownItem>
-
-					<DropdownDivider />
-
-					<DropdownItem @click="">
-						<Flex align="center" gap="8">
-							<Icon name="plus-circle" size="16" color="primary" />
-							<Text size="13" weight="600" color="primary"> Add FPC </Text>
-						</Flex>
-					</DropdownItem>
 				</template>
 			</Dropdown>
 		</Flex>
 
 		<template v-if="error">
-			<Flex align="center" justify="between" :class="$style.card">
-				<Text size="12" weight="600" color="red">{{ error }}</Text>
+			<Flex align="start" gap="6" wide :class="$style.card">
+				<Icon
+					name="info"
+					size="14"
+					color="red"
+				/>
+
+				<Text size="12" weight="600" color="secondary" :style="{ paddingTop: '1px' }">
+					{{ error }}
+				</Text>
 			</Flex>
 		</template>
 		<template v-else-if="selectedMethod?.type === 'fj'">
 			<Flex align="center" justify="between" :class="$style.fjc_price">
 				<Text size="12" weight="600" color="secondary"> Available </Text>
 				<Text size="12" weight="600" :color="isZeroBalance(selectedMethod) ? 'red' : 'primary'">
-					{{ selectedMethod.balance?.publicBalance ?? "0" }} Fee Juice
+					{{ feeJuiceBalance?.publicBalance ?? "0" }} Fee Juice
 				</Text>
 			</Flex>
 		</template>
 		<template v-else-if="selectedMethod?.type === 'fjwc'">
-			<Flex wide direction="column" gap="20" :class="$style.card">
-				<Input label="Claim amount" placeholder="Enter claim amount" v-model="selectedMethod.claimAmount" />
-				<Input label="Claim secret" placeholder="Enter claim secret" v-model="selectedMethod.claimSecret" />
-				<Input
-					label="Message leaf index"
-					placeholder="Enter message leaf index"
-					v-model="selectedMethod.messageLeafIndex"
-				/>
+			<Flex v-if="isClaimParametersFilled" direction="column" gap="12" :class="$style.fjc_price">
+				<Flex align="center" justify="between" wide>
+					<Text size="12" weight="600" color="secondary"> Claim amount </Text>
+					<Text size="12" weight="600" color="primary"> {{ selectedMethod.claimAmount }} </Text>
+				</Flex>
+				<Flex align="center" justify="between" wide>
+					<Text size="12" weight="600" color="secondary"> Claim secret </Text>
+					<Text size="12" weight="600" color="primary"> {{ trimAddress(selectedMethod.claimSecret) }} </Text>
+				</Flex>
+				<Flex align="center" justify="between" wide>
+					<Text size="12" weight="600" color="secondary"> Message leaf index </Text>
+					<Text size="12" weight="600" color="primary"> {{ trimAddress(selectedMethod.messageLeafIndex) }} </Text>
+				</Flex>
+			</Flex>
+			<Flex align="center" justify="end" :class="$style.fjc_price" :style="{paddingTop: `${isClaimParametersFilled ? '0px' : '12px'}` }">
+				<Flex @click="handleFillClaimParameters" :style="{ cursor: 'pointer'}">
+					<Flex align="center" gap="6">
+						<Text
+							size="12"
+							weight="600"
+							:color="isClaimParametersFilled ? 'green' : 'red'"
+						>
+							Edit parameters
+						</Text>
+						<Icon
+							name="edit"
+							size="12"
+							:color="isClaimParametersFilled ? 'green' : 'red'"
+							:class="$style.icon_btn"
+						/>
+					</Flex>
+				</Flex>
 			</Flex>
 		</template>
-		<template v-else-if="selectedMethod?.type === 'sfpc'">
+		<template v-else-if="selectedMethod?.type ==='fpc'">
 			<Flex align="center" justify="between" :class="$style.fjc_price">
 				<Text size="12" weight="600" color="secondary"> FPC </Text>
-				<Dropdown>
-					<template #trigger>
-						<Flex align="center" gap="8" class="clickable">
-							<Text v-if="selectedMethod!.fpc" size="13" weight="600" color="primary">
-								{{ selectedMethod.fpc.name ?? trimAddress(selectedMethod.fpc.address) }}
-							</Text>
-							<Text v-else size="13" weight="600" color="red"> Select FPC </Text>
-							<Icon name="chevron" size="12" color="secondary" />
-						</Flex>
-					</template>
 
-					<template #popup>
-						<DropdownItem
-							v-for="fpc in selectedMethod!.fpcs ?? []"
-							:key="fpc.id"
-							@click="selectedMethod.fpc = fpc"
-						>
-							<Flex align="center" gap="8">
-								<Text size="13" weight="600" color="primary">
-									{{ fpc.name ?? trimAddress(fpc.address) }}
-								</Text>
-							</Flex>
-						</DropdownItem>
-					</template>
-				</Dropdown>
+				<Flex @click="handleSelectFPC" :style="{ cursor: 'pointer'}">
+					<Text v-if="!selectedMethod.fpc" size="13" weight="600" color="red" :style="{paddingRight: '8px'}"> Select FPC </Text>
+					<Text v-else size="12" weight="600" color="primary"> {{ selectedMethod.fpc.name || trimAddress(selectedMethod.fpc.address) }} </Text>
+				</Flex>
 			</Flex>
-		</template>
-		<template v-else-if="selectedMethod?.type === 'fpc'">
-			<Flex align="center" justify="between" :class="$style.fjc_price">
-				<Text size="12" weight="600" color="secondary"> FPC </Text>
-				<Dropdown>
-					<template #trigger>
-						<Flex align="center" gap="8" class="clickable">
-							<Text v-if="selectedMethod!.fpc" size="13" weight="600" color="primary">
-								{{ selectedMethod.fpc.name ?? trimAddress(selectedMethod.fpc.address) }}
-							</Text>
-							<Text v-else size="13" weight="600" color="red"> Select FPC </Text>
-							<Icon name="chevron" size="12" color="secondary" />
-						</Flex>
-					</template>
+			<template v-if="selectedMethod.fpc && selectedMethod.fpc?.type === FpcType.DefaultFpc">
+				<Flex align="center" justify="between" :class="$style.fjc_price" :style="{padding: '6px 12px'}">
+					<Text size="12" weight="600" color="secondary"> Visibility </Text>
 
-					<template #popup>
-						<DropdownItem
-							v-for="fpc in selectedMethod!.fpcs ?? []"
-							:key="fpc.id"
-							@click="selectedMethod.fpc = fpc"
-						>
-							<Flex align="center" gap="8">
-								<Text size="13" weight="600" color="primary">
-									{{ fpc.name ?? trimAddress(fpc.address) }}
-								</Text>
-							</Flex>
-						</DropdownItem>
-					</template>
-				</Dropdown>
-			</Flex>
-			<Flex align="center" justify="between" :class="$style.fjc_price">
-				<Text size="12" weight="600" color="secondary"> Visibility </Text>
-				<Dropdown>
-					<template #trigger>
-						<Flex align="center" gap="8" class="clickable">
-							<Text size="13" weight="600" color="primary">
-								{{ selectedMethod!.inPublic ? "Public" : "Private" }}
-							</Text>
-							<Icon name="chevron" size="12" color="secondary" />
-						</Flex>
-					</template>
-
-					<template #popup>
-						<DropdownItem @click="selectedMethod.inPublic = false">
-							<Flex align="center" gap="8">
-								<Text size="13" weight="600" color="primary"> Private </Text>
-							</Flex>
-						</DropdownItem>
-						<DropdownItem @click="selectedMethod.inPublic = true">
-							<Flex align="center" gap="8">
-								<Text size="13" weight="600" color="primary"> Public </Text>
-							</Flex>
-						</DropdownItem>
-					</template>
-				</Dropdown>
-			</Flex>
-			<Flex align="center" justify="between" :class="$style.fjc_price">
-				<Text size="12" weight="600" color="secondary"> Available </Text>
-				<Text size="12" weight="600" :color="isZeroBalance(selectedMethod) ? 'red' : 'primary'">
-					{{ formatBalance(selectedMethod!.balance!, selectedMethod.inPublic) }}
-					{{ selectedMethod.balance!.token.symbol }}
-				</Text>
-			</Flex>
+					<Flex
+						@click="selectedMethod.inPublic ? selectedMethod.inPublic = false : selectedMethod.inPublic = true"
+						align="center"
+						gap="6"
+						:class="$style.type"
+					>
+						<Icon
+							:name="selectedMethod.inPublic  ? 'face' : 'key-square'"
+							size="16"
+							:color="selectedMethod.inPublic ? 'orange' : 'green'"
+						/>
+						<Text size="13" weight="600" color="primary" class="capitalize">
+							{{ selectedMethod.inPublic ? 'Public' : 'Private' }}
+						</Text>
+					</Flex>
+				</Flex>
+				<Flex align="center" justify="between" :class="$style.fjc_price">
+					<Text size="12" weight="600" color="secondary"> Available </Text>
+					<Text size="12" weight="600" :color="isZeroBalance(selectedMethod) ? 'red' : 'primary'">
+						{{ formatBalance(selectedMethod.fpc.balance, selectedMethod.inPublic) }}
+						{{ selectedMethod.fpc.balance.token.symbol }}
+					</Text>
+				</Flex>
+			</template>
 		</template>
 	</Flex>
 </template>
@@ -482,5 +460,15 @@ const trimAddress = (address: string) => {
 	overflow: hidden;
 
 	padding: 12px;
+}
+
+.type {
+	cursor: pointer;
+	background: var(--gray-5);
+	box-shadow: inset 0 0 0 1px var(--border);
+
+	border-radius: 6px;
+
+	padding: 4px;
 }
 </style>

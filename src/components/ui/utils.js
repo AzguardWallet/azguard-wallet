@@ -7,7 +7,7 @@ export function getNetworkColor(chainId) {
 		case 41337:
 			return 'blue'
 		case 11155111:
-			return 'green'
+			return 'neutral-mint'
 		default:
 			return 'purple'
 	}

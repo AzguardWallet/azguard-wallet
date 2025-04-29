@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Network, NETWORK_SERVICE_NAME, NodeStatus } from ".";
 
 export enum NetworkServiceMethod {
@@ -24,7 +24,7 @@ export class GetOrInitNetworksResponse extends ResponseMessage {
         result?: Network[],
         error?: string,
     ) {
-        super(NETWORK_SERVICE_NAME, request.id, result, error);
+        super(NETWORK_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -42,7 +42,7 @@ export class GetNetworksResponse extends ResponseMessage {
         result?: Network[],
         error?: string,
     ) {
-        super(NETWORK_SERVICE_NAME, request.id, result, error);
+        super(NETWORK_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -60,7 +60,7 @@ export class GetNetworkResponse extends ResponseMessage {
         result?: Network,
         error?: string,
     ) {
-        super(NETWORK_SERVICE_NAME, request.id, result, error);
+        super(NETWORK_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -79,7 +79,7 @@ export class AddNetworkResponse extends ResponseMessage {
         result?: Network,
         error?: string,
     ) {
-        super(NETWORK_SERVICE_NAME, request.id, result, error);
+        super(NETWORK_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -99,7 +99,7 @@ export class UpdateNetworkResponse extends ResponseMessage {
         result?: Network,
         error?: string,
     ) {
-        super(NETWORK_SERVICE_NAME, request.id, result, error);
+        super(NETWORK_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -117,7 +117,7 @@ export class DeleteNetworkResponse extends ResponseMessage {
         result?: Network,
         error?: string,
     ) {
-        super(NETWORK_SERVICE_NAME, request.id, result, error);
+        super(NETWORK_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -135,7 +135,7 @@ export class SetDefaultResponse extends ResponseMessage {
         result?: Network,
         error?: string,
     ) {
-        super(NETWORK_SERVICE_NAME, request.id, result, error);
+        super(NETWORK_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -153,6 +153,6 @@ export class GetNodeStatusResponse extends ResponseMessage {
         result?: NodeStatus,
         error?: string,
     ) {
-        super(NETWORK_SERVICE_NAME, request.id, result, error);
+        super(NETWORK_SERVICE_NAME, request.requestId, result, error);
     }
 }

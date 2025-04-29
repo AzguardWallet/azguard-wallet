@@ -18,5 +18,5 @@ export function jsonStringify(obj: any): string {
 }
 
 export function jsonSanitize(obj: any): any {
-    return JSON.parse(jsonStringify(obj));
+    return obj !== undefined ? JSON.parse(jsonStringify(obj)) : undefined;
 }

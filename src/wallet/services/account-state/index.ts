@@ -1,47 +1,50 @@
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
-import { PXE } from '@aztec/stdlib/interfaces/client';
+import type { PXE } from '@aztec/stdlib/interfaces/client';
 import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
 import { TxHash } from "@aztec/stdlib/tx";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
-import { NetworkService } from "@/wallet/services/network";
-import { PxeService } from "@/wallet/services/pxe";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
+import type { NetworkService } from "@/wallet/services/network";
+import { PxeServiceClient } from '@/wallet/services/pxe/client';
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { isPublicAuthwitConsumable } from "@/wallet/utils/auth-registry";
 import {
-    Authwit,
-    GetAccountsRequest,
+    type Authwit,
+    type GetAccountsRequest,
     GetAccountsResponse,
-    GetAuthwitsRequest,
+    type GetAuthwitsRequest,
     GetAuthwitsResponse,
-    GetSendersRequest,
+    type GetSendersRequest,
     GetSendersResponse,
-    AddSenderRequest,
+    type AddSenderRequest,
     AddSenderResponse,
-    DeleteSenderRequest,
+    type DeleteSenderRequest,
     DeleteSenderResponse,
-    GetContractsRequest,
+    type GetContractsRequest,
     GetContractsResponse,
-    GetNotesRequest,
+    type GetNotesRequest,
     GetNotesResponse,
-    GetVersionRequest,
+    type GetVersionRequest,
     GetVersionResponse,
     Note,
     NoteStatus,
     ACCOUNT_STATE_SERVICE_NAME,
     AccountStateServiceMethod,
+    AccountStateServiceEvent,
+    AccountStateServiceEventMessage,
 } from "./client";
 
 export class AccountStateService extends Service {
     private readonly authwits: EntityStorage<Authwit>;
+    private readonly pxeService: PxeServiceClient;
 
     constructor(
         private readonly networks: NetworkService,
-        private readonly pxeService: PxeService,
         emit: (event: EventMessage) => void
     ) {
         super(ACCOUNT_STATE_SERVICE_NAME, emit);
         this.authwits = new EntityStorage("azguard:core:authwits", StorageType.Local);
+        this.pxeService = new PxeServiceClient();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -185,8 +188,8 @@ export class AccountStateService extends Service {
     public async getAccounts(networkId: string): Promise<string[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = await this.pxeService.getPXEClient(network.chainId);
-            return (await pxe.getRegisteredAccounts()).map(x => x.address.toString());
+            const accounts = await this.pxeService.getRegisteredAccounts(network);
+            return accounts.map(x => x.address.toString());
         }
         catch (error) {
             console.error("Failed to fetch registered accounts", error);
@@ -197,8 +200,8 @@ export class AccountStateService extends Service {
     public async getSenders(networkId: string): Promise<string[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = await this.pxeService.getPXEClient(network.chainId);
-            return (await pxe.getSenders()).map(x => x.toString());
+            const senders = await this.pxeService.getSenders(network);
+            return senders.map(x => x.toString());
         }
         catch (error) {
             console.error("Failed to fetch registered senders", error);
@@ -209,8 +212,9 @@ export class AccountStateService extends Service {
     public async addSender(networkId: string, address: string): Promise<string> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
-            return (await pxe.registerSender(AztecAddress.fromString(address))).toString();
+            const sender = (await this.pxeService.registerSender(network, AztecAddress.fromString(address))).toString();
+            this.emit(new AccountStateServiceEventMessage(AccountStateServiceEvent.SenderAdded, sender));
+            return sender;
         }
         catch (error) {
             console.error("Failed to register sender", error);
@@ -221,8 +225,8 @@ export class AccountStateService extends Service {
     public async deleteSender(networkId: string, address: string): Promise<string> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = createPXEClient(network.rpcUrl);
-            await pxe.removeSender(AztecAddress.fromString(address));
+            await this.pxeService.removeSender(network, AztecAddress.fromString(address));
+            this.emit(new AccountStateServiceEventMessage(AccountStateServiceEvent.SenderDeleted, address));
             return address;
         }
         catch (error) {
@@ -234,8 +238,8 @@ export class AccountStateService extends Service {
     public async getContracts(networkId: string): Promise<string[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = await this.pxeService.getPXEClient(network.chainId);
-            return (await pxe.getContracts()).map(x => x.toString());
+            const contracts = await this.pxeService.getContracts(network);
+            return contracts.map(x => x.toString());
         }
         catch (error) {
             console.error("Failed to fetch registered contracts", error);
@@ -252,8 +256,7 @@ export class AccountStateService extends Service {
     ): Promise<Note[]> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = await this.pxeService.getPXEClient(network.chainId);
-            const notes = await pxe.getNotes({
+            const notes = await this.pxeService.getNotes(network, {
                 recipient: owner ? AztecAddress.fromString(owner) : undefined,
                 status: status === NoteStatus.All ? _NoteStatus.ACTIVE_OR_NULLIFIED : undefined,
                 contractAddress: contract ? AztecAddress.fromString(contract) : undefined,
@@ -277,8 +280,8 @@ export class AccountStateService extends Service {
     public async getVersion(networkId: string): Promise<string> {
         const network = await this.networks.getNetwork(networkId);
         try {
-            const pxe = await this.pxeService.getPXEClient(network.chainId);
-            return (await pxe.getPXEInfo()).pxeVersion;
+            const pxeInfo = await this.pxeService.getPXEInfo(network);
+            return pxeInfo.pxeVersion;
         }
         catch (error) {
             console.error("Failed to fetch PXE info", error);
@@ -288,7 +291,7 @@ export class AccountStateService extends Service {
 
     private async syncAuthwits(networkId: string, owner: string) {
         const network = await this.networks.getNetwork(networkId);
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         const active = (await this.authwits.getValues()).filter(x => x.owner === owner);
         await Promise.allSettled(
             active.map(x => x.isPublic ? this.syncPublicAuthwit(pxe, x) : this.syncPrivateAuthwit(pxe, x))

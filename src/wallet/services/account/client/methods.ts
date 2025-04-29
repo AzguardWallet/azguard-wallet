@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Account, ACCOUNT_SERVICE_NAME, AccountType } from ".";
 
 export enum AccountServiceMethod {
@@ -25,7 +25,7 @@ export class GetAccountsResponse extends ResponseMessage {
         result?: Account[],
         error?: string,
     ) {
-        super(ACCOUNT_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -45,7 +45,7 @@ export class GetAccountResponse extends ResponseMessage {
         result?: Account,
         error?: string,
     ) {
-        super(ACCOUNT_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -66,7 +66,7 @@ export class CreateAccountResponse extends ResponseMessage {
         result?: Account,
         error?: string,
     ) {
-        super(ACCOUNT_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -87,7 +87,7 @@ export class ChangeAccountNameResponse extends ResponseMessage {
         result?: Account,
         error?: string,
     ) {
-        super(ACCOUNT_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -108,6 +108,6 @@ export class ChangeAccountVisibilityResponse extends ResponseMessage {
         result?: Account,
         error?: string,
     ) {
-        super(ACCOUNT_SERVICE_NAME, request.id, result, error);
+        super(ACCOUNT_SERVICE_NAME, request.requestId, result, error);
     }
 }

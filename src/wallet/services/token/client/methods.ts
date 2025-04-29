@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { TokenInfo, TokenInterface, TOKEN_SERVICE_NAME } from ".";
 
 export enum TokenServiceMethod {
@@ -26,7 +26,7 @@ export class GetTokensResponse extends ResponseMessage {
         result?: TokenInfo[],
         error?: string,
     ) {
-        super(TOKEN_SERVICE_NAME, request.id, result, error);
+        super(TOKEN_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -44,7 +44,7 @@ export class GetTokenResponse extends ResponseMessage {
         result?: TokenInfo,
         error?: string,
     ) {
-        super(TOKEN_SERVICE_NAME, request.id, result, error);
+        super(TOKEN_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -65,7 +65,7 @@ export class AddTokenResponse extends ResponseMessage {
         result?: TokenInfo,
         error?: string,
     ) {
-        super(TOKEN_SERVICE_NAME, request.id, result, error);
+        super(TOKEN_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -87,7 +87,7 @@ export class UpdateTokenResponse extends ResponseMessage {
         result?: TokenInfo,
         error?: string,
     ) {
-        super(TOKEN_SERVICE_NAME, request.id, result, error);
+        super(TOKEN_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -105,7 +105,7 @@ export class DeleteTokenResponse extends ResponseMessage {
         result?: TokenInfo,
         error?: string,
     ) {
-        super(TOKEN_SERVICE_NAME, request.id, result, error);
+        super(TOKEN_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -124,7 +124,7 @@ export class GetInterfaceResponse extends ResponseMessage {
         result?: TokenInterface,
         error?: string,
     ) {
-        super(TOKEN_SERVICE_NAME, request.id, result, error);
+        super(TOKEN_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -143,6 +143,6 @@ export class ParseInterfaceResponse extends ResponseMessage {
         result?: TokenInterface,
         error?: string,
     ) {
-        super(TOKEN_SERVICE_NAME, request.id, result, error);
+        super(TOKEN_SERVICE_NAME, request.requestId, result, error);
     }
 }

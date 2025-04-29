@@ -25,7 +25,7 @@ const popupStore = usePopupStore()
 const route = useRoute()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.faucet
+	return popupStore.len - popupStore.popups.faucet?.order
 })
 
 const emit = defineEmits(["onClose"])
@@ -35,15 +35,18 @@ const props = defineProps({
 
 const feeSettings = ref()
 
+const tokens = computed(() => appStore.tokens)
 const token = computed(() =>
-	// biome-ignore lint/suspicious/noDoubleEquals: <explanation>
-	appStore.tokens.find(t => t.id == route.params.id),
+	tokens.value.find(t => t.id == route.params.id || (t.symbol === tokenSymbolTerm.value && t.name === tokenNameTerm.value)),
 )
+const mintingTokenId = ref()
 
 const isPreselected = ref(false)
 const tokenNameTerm = ref("")
 const tokenSymbolTerm = ref("")
 const amountTerm = ref("")
+
+const isLoading = ref(false)
 
 const handleAmountInput = e => {
 	if (amountTerm.value.length >= 32) {
@@ -82,13 +85,13 @@ const handleSymbolInput = () => {
 
 const isAllowedToMint = computed(() => {
 	if (!tokenNameTerm.value.length) return
-	if (tokenNameTerm.value.length > 32) return
 	if (!tokenSymbolTerm.value.length) return
-	if (tokenSymbolTerm.value.length > 32) return
-	if (!amountTerm.value || new BN(amountTerm.value) <= 0) return
-	if (new BN(amountTerm.value) > 100_000) return
-	if (new BN(amountTerm.value) < 0.0000001) return
 	if (!feeSettings.value) return
+
+	const bnAmount = new BN(amountTerm.value)
+	if (!amountTerm.value || bnAmount <= 0) return
+	if (bnAmount > 100_000) return
+	if (bnAmount < 0.0000001) return
 
 	return true
 })
@@ -98,30 +101,58 @@ const isErrorOccurred = computed(() => !!error.value)
 const handleMint = async () => {
 	if (!isAllowedToMint.value) return
 
+	isLoading.value = true
+	error.value = null
 	try {
-		appStore.dummyTokens.push({
-			id: -1,
-			symbol: tokenSymbolTerm.value.trim(),
-			name: "Minting in progress...",
-		})
+		const name = tokenNameTerm.value.trim()
+		const symbol = tokenSymbolTerm.value.trim()
+		
+		if (!token.value) {
+			appStore.dummyTokens.push({
+				id: -1,
+				symbol,
+				name: "Minting in progress...",
+			})
+		} else {
+			mintingTokenId.value = token.value.id
+			appStore.mintingTokens.push(mintingTokenId.value)
+		}
 
 		emit("onClose")
 
 		await managers.faucet.mint(
 			appStore.network.id,
 			appStore.account.address,
-			tokenNameTerm.value.trim(),
-			tokenSymbolTerm.value.trim(),
+			name,
+			symbol,
 			8,
 			new BN(amountTerm.value).times(10 ** 8).dividedBy(2),
 			feeSettings.value,
 		)
+		
+		if (mintingTokenId.value) {
+			appStore.mintingTokens.pop()
+			appStore.tokensAwaitingBalanceRefresh.push(mintingTokenId.value)
+		} else {
+			const allTokens = await managers.token?.getTokens()
+			const newToken = allTokens.find(t => t.symbol === symbol && t.name === name)
+			
+			if (newToken) {
+				appStore.tokensAwaitingBalanceRefresh.push(newToken.id)
+			}
+		}
 	} catch (err) {
 		error.value = err
 
 		openToast({ label: "Failed to mint", icon: "warning" })
 
-		appStore.dummyTokens.pop()
+		if (!mintingTokenId.value) {
+			appStore.dummyTokens.pop()
+		} else {
+			appStore.mintingTokens.pop()
+		}
+	} finally {
+		isLoading.value = false
 	}
 }
 
@@ -138,6 +169,7 @@ watch(
 		} else {
 			document.addEventListener("keydown", onKeydown)
 
+			mintingTokenId.value = null
 			if (token.value) {
 				isPreselected.value = true
 				tokenNameTerm.value = token.value.name
@@ -153,7 +185,7 @@ const onKeydown = e => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.faucet">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.faucet?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
@@ -171,6 +203,7 @@ const onKeydown = e => {
 					label="Token Name"
 					placeholder="Name"
 					v-model="tokenNameTerm"
+					:maxLength="32"
 					:disabled="isPreselected"
 					@focus="error = null"
 					@input="handleNameInput"
@@ -180,6 +213,7 @@ const onKeydown = e => {
 					label="Token Symbol"
 					placeholder="Symbol"
 					v-model="tokenSymbolTerm"
+					:maxLength="32"
 					:disabled="isPreselected"
 					@focus="error = null"
 					@input="handleSymbolInput"
@@ -247,7 +281,14 @@ const onKeydown = e => {
 				/>
 
 				<Flex align="center" direction="column" gap="12">
-					<Button @click="handleMint" wide type="primary" size="medium" :disabled="!isAllowedToMint">
+					<Button
+						@click="handleMint"
+						type="primary"
+						size="medium"
+						wide
+						:loading="isLoading"
+						:disabled="!isAllowedToMint"
+					>
 						Mint
 					</Button>
 

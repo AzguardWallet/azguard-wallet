@@ -28,12 +28,20 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 				title="Authwits"
 				description="View all authwits"
 				chevron
+				disabled
 			/>
 			<SettingItem
 				size="large"
 				to="/popup/settings/account/state/contracts"
 				title="Contracts"
 				description="View all contracts"
+				chevron
+			/>
+			<SettingItem
+				size="large"
+				to="/popup/settings/account/state/senders"
+				title="Senders"
+				description="View all senders"
 				chevron
 			/>
 		</ItemsContainer>

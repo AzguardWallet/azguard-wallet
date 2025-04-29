@@ -1,3 +1,16 @@
+/** Vendor */
+import BN from 'bignumber.js'
+
+export const getDecimalSeparator = () => {
+    const s = (1.1).toLocaleString()
+    return s.substring(1, s.length - 1)
+}
+
+export const getThousandSeparator = () => {
+    const s = (1111).toLocaleString()
+    return s.substring(1, s.length - 3)
+}
+
 export const comma = (target, symbol = ",", fixed = 2) => {
 	if (!target) return 0
 
@@ -37,9 +50,9 @@ export const normalizeAmount = target => {
 	if (target === ".") return "0."
 
 	let dotCounter = 0
-	target.split("").forEach(char => {
+	for (const char of target) {
 		if (char === ".") dotCounter++
-	})
+	}
 
 	if (dotCounter > 1) return target.slice(0, target.length - 1)
 
@@ -47,4 +60,38 @@ export const normalizeAmount = target => {
 	if (!target.length) return ""
 	if (target.length === 1 && !/^(0|[1-9]\d*)(\.\d+)?$/.test(target)) return ""
 	if (Number.parseFloat(purgeNumber(target)) >= 9_999_999_999_999) return "9999999999999"
+}
+
+export const balanceFormatted = (balance, length) => {
+	let slashed = false
+	if (!balance || balance.isZero()) return { value: '0', slashed }
+
+	let str = balance.toFormat()
+	if (!length) {
+		return { value: str, slashed }
+	}
+
+	if (balance.lt(new BN(10).pow(-(length - 2)))) {
+		return {
+			value: `<0${getDecimalSeparator()}${'0'.repeat(length - 3)}1`,
+			slashed: true,
+		}
+	}
+
+	if (str.length > length) {
+		str = `${str.slice(0, length)}...`
+		slashed = true
+	}
+
+	return { value: str, slashed }
+}
+
+export const isValidAmount = (value) => {
+	try {
+		const amount = new BN(value)
+
+		return amount.isFinite() && !amount.isNaN() && amount.gt(0)
+	} catch (err) {
+		return false
+	}
 }

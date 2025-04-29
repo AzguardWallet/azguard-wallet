@@ -1,9 +1,11 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { FpcInfo, FPC_SERVICE_NAME, FpcType } from ".";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { type FpcInfo, FPC_SERVICE_NAME, type FpcType } from ".";
 
 export enum FpcServiceMethod {
+    GetFpc,
     GetFpcs,
     AddFpc,
+    UpdateFpc,
     DeleteFpc,
 }
 
@@ -21,7 +23,25 @@ export class GetFpcsResponse extends ResponseMessage {
         result?: FpcInfo[],
         error?: string,
     ) {
-        super(FPC_SERVICE_NAME, request.id, result, error);
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
+    }
+}
+
+export class GetFpcRequest extends RequestMessage {
+    constructor(
+        public readonly fpcId: string,
+    ) {
+        super(FPC_SERVICE_NAME, FpcServiceMethod.GetFpc);
+    }
+}
+
+export class GetFpcResponse extends ResponseMessage {
+    constructor(
+        request: GetFpcRequest,
+        result?: FpcInfo,
+        error?: string,
+    ) {
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -42,7 +62,26 @@ export class AddFpcResponse extends ResponseMessage {
         result?: FpcInfo,
         error?: string,
     ) {
-        super(FPC_SERVICE_NAME, request.id, result, error);
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
+    }
+}
+
+export class UpdateFpcRequest extends RequestMessage {
+    constructor(
+        public readonly fpcId: string,
+        public readonly name: string,
+    ) {
+        super(FPC_SERVICE_NAME, FpcServiceMethod.UpdateFpc);
+    }
+}
+
+export class UpdateFpcResponse extends ResponseMessage {
+    constructor(
+        request: UpdateFpcRequest,
+        result?: FpcInfo,
+        error?: string,
+    ) {
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -60,6 +99,6 @@ export class DeleteFpcResponse extends ResponseMessage {
         result?: FpcInfo,
         error?: string,
     ) {
-        super(FPC_SERVICE_NAME, request.id, result, error);
+        super(FPC_SERVICE_NAME, request.requestId, result, error);
     }
 }

@@ -22,10 +22,15 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.receive
+	return popupStore.len - popupStore.popups.receive?.order
 })
 
 const account = computed(() => appStore.account)
+
+const handleCopyAddress = () => {
+	window.navigator.clipboard.writeText(appStore.account.address)
+	openToast({ label: "Address is copied", icon: "copy" })
+}
 
 watch(
 	() => props.show,
@@ -38,15 +43,10 @@ watch(
 		})
 	},
 )
-
-const handleCopyAddress = () => {
-	window.navigator.clipboard.writeText(appStore.account.address)
-	openToast({ label: "Address is copied", icon: "copy" })
-}
 </script>
 
 <template>
-	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.receive">
+	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.receive?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide align="center" direction="column" gap="24" :class="$style.wrapper">
 				<Flex align="center" gap="6">

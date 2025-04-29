@@ -18,7 +18,7 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.new_network
+	return popupStore.len - popupStore.popups.new_network?.order
 })
 
 const emit = defineEmits(["onClose"])
@@ -93,7 +93,7 @@ const onKeydown = e => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_network">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_network?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
@@ -102,7 +102,13 @@ const onKeydown = e => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<Input label="Name" placeholder="My node" v-model="nameTerm" autofocus>
+				<Input
+					label="Name"
+					placeholder="My node"
+					autofocus
+					:maxLength="64"
+					v-model="nameTerm"
+				>
 					<template #right>
 						<Transition name="fade">
 							<Flex v-if="isAlreadyExist" align="center" gap="6">

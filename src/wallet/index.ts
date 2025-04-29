@@ -1,11 +1,10 @@
 import { BarretenbergSync } from "@aztec/bb.js"
-import { EventMessage, IMessage, MessageType, RequestMessage } from "./base/messages";
-import { Service } from "./base/service";
+import { EventMessage, IMessage, MessageType, RequestMessage } from "./base/port-service/messages";
+import { Service } from "./base/port-service/service";
 import { AccountService } from "./services/account";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
 import { WalletConnectService } from "./services/wallet-connect";
-import { PxeService } from "./services/pxe";
 import { TokenService } from "./services/token";
 import { TokenBalanceService } from "./services/token-balance";
 import { TransactionService } from "./services/transaction";
@@ -51,21 +50,19 @@ export async function stop() {
 // services
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(profileService, broadcast);
-const pxeService = new PxeService(profileService, networkService, broadcast);
 const accountService = new AccountService(profileService, networkService, broadcast);
-const tokenService = new TokenService(profileService, networkService, pxeService,accountService, broadcast);
-const fpcService = new FpcService(profileService, networkService, pxeService,broadcast);
+const tokenService = new TokenService(profileService, networkService,accountService, broadcast);
+const fpcService = new FpcService(profileService, networkService,broadcast);
 const transactionService = new TransactionService(
     profileService,
     accountService,
     networkService,
     broadcast,
 );
-const accountStateService = new AccountStateService(networkService, pxeService, broadcast);
+const accountStateService = new AccountStateService(networkService, broadcast);
 const executionService = new ExecutionService(
     profileService,
     networkService,
-    pxeService,
     accountService,
     tokenService,
     fpcService,
@@ -85,7 +82,6 @@ const tokenBalanceService = new TokenBalanceService(
 const faucetService = new FaucetService(
     profileService,
     networkService,
-    pxeService,
     accountService,
     executionService,
     transactionService,
@@ -108,7 +104,6 @@ const walletConnectService = new WalletConnectService(
 const services = new Map<string, Service>([
     [profileService.name, profileService],
     [networkService.name, networkService],
-    [pxeService.name, pxeService],
     [accountService.name, accountService],
     [tokenService.name, tokenService],
     [tokenBalanceService.name, tokenBalanceService],
@@ -150,27 +145,31 @@ function onDisconnect(port: chrome.runtime.Port) {
 
 async function onMessage(message: IMessage, client: chrome.runtime.Port) {
     if (typeof message.type !== 'number') return; // crutch for crx
-    console.debug("onMessage...");
+    console.debug("Message received", message);
     if (message.type !== MessageType.Request) {
-        console.error(`Message type ${message.type} is not allowed. Drop client.`);
+        console.error("Invalid message");
         client.disconnect();
         return;
     }
     const request = message as RequestMessage;
     const service = services.get(request.service);
     if (!service) {
-        console.error(`Service ${request.service} is not registered. Drop client.`);
+        console.error("Service is not registered", request.service);
         client.disconnect();
         return;
     }
-    console.debug(`Request ${request.service}:${request.id} received.`);
     const response = await service.process(request);
     if (!response) {
-        console.error(`Service ${request.service} doesn't have method ${request.method}. Drop client.`);
+        console.error(`Service ${request.service} doesn't have method ${request.method}`);
         client.disconnect();
         return;
     }
-    console.debug(`Request ${request.service}:${request.id} processed. Send response...`);
+    if (response.error === undefined) {
+        console.debug("Request processed", request.requestId, response.result);
+    }
+    else {
+        console.debug("Request failed", request.requestId, response.error);
+    }
     send(client, response);
 }
 
@@ -196,16 +195,16 @@ function broadcast(event: EventMessage) {
         console.debug("Event broadcasted.", event);
     }
     catch (error) {
-        console.error("Failed to broadcast event.", error);
+        console.error("Failed to broadcast event", error);
     }
 }
 
 function send(port: chrome.runtime.Port, message: IMessage) {
     try {
         port.postMessage(jsonSanitize(message));
-        console.debug("Message sent.", message);
+        console.debug("Message sent", message);
     }
     catch (error) {
-        console.error("Failed to send message.", error);
+        console.error("Failed to send message", error);
     }
 }

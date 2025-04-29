@@ -1,20 +1,20 @@
-import { WalletKit, WalletKitTypes } from '@reown/walletkit';
+import { WalletKit, type WalletKitTypes } from '@reown/walletkit';
 import { Core } from '@walletconnect/core';
-import { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import { getSdkError } from "@walletconnect/utils";
 
-import { Service } from "@/wallet/base/service";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { DappSessionService } from "@/wallet/services/dapp-session";
-import { DappMetadata, DappPermissions, DappSession } from "@/wallet/services/dapp-session/client";
-import { DappInteractionService } from '@/wallet/services/dapp-interaction';
-import { ConnectionParams, DappSessionInfo, ExecutionParams } from "@/wallet/services/dapp-interaction/types";
+import { Service } from "@/wallet/base/port-service/service";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import type { DappSessionService } from "@/wallet/services/dapp-session";
+import type { DappMetadata, DappPermissions, DappSession } from "@/wallet/services/dapp-session/client";
+import type { DappInteractionService } from '@/wallet/services/dapp-interaction';
+import type { ConnectionParams, DappSessionInfo, ExecutionParams } from "@/wallet/services/dapp-interaction/types";
 import { AzguardWalletInfo, RpcMethod } from '@/wallet/services/rpc/types';
 import { parseExecutionParams, parseConnectionParams } from '@/wallet/services/rpc/utils';
 import { sleep } from "@/wallet/utils/sleep";
 import {
     WALLET_CONNECT_SERVICE_NAME,
-    ConnectByURIRequest,
+    type ConnectByURIRequest,
     ConnectByURIResponse,
     WalletConnectServiceMethod,
 } from "./client";
@@ -428,10 +428,13 @@ export class WalletConnectService extends Service {
                     }
                 }
                 else {
-                    namespaces[k] = {
-                        methods,
-                        events,
-                        accounts: (v.chains ?? [k]).flatMap(c => accounts.filter(a => a.startsWith(c))),
+                    const approvedAccounts = (v.chains ?? [k]).flatMap(c => accounts.filter(a => a.startsWith(c)))
+                    if (approvedAccounts.length) {
+                        namespaces[k] = {
+                            methods,
+                            events,
+                            accounts: approvedAccounts,
+                        }
                     }
                 }
             }

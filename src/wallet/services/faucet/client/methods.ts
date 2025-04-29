@@ -1,5 +1,5 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { FeeSettings } from "@/wallet/services/execution/client";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import type { FeeSettings } from "@/wallet/services/execution/client";
 import { FAUCET_SERVICE_NAME } from ".";
 
 export enum FaucetServiceMethod {
@@ -26,6 +26,6 @@ export class MintResponse extends ResponseMessage {
         request: MintRequest,
         error?: string,
     ) {
-        super(FAUCET_SERVICE_NAME, request.id, undefined, error);
+        super(FAUCET_SERVICE_NAME, request.requestId, undefined, error);
     }
 }

@@ -319,6 +319,16 @@
     "CAIP": true,
     "AZTEC_EVENTS": true,
     "AZTEC_METHODS": true,
-    "createNotification": true
+    "createNotification": true,
+    "isValidHex": true,
+    "trimAddress": true,
+    "debounce": true,
+    "isValidAmount": true,
+    "balanceFormatted": true,
+    "formatNumberWithSpaces": true,
+    "amount copy": true,
+    "bn": true,
+    "getDecimalSeparator": true,
+    "getThousandSeparator": true
   }
 }

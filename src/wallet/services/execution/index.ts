@@ -23,16 +23,17 @@ import {
     ContractInstanceWithAddress,
     ContractInstanceWithAddressSchema,
     getContractClassFromArtifact,
+    NodeInfo,
 } from "@aztec/stdlib/contract";
 import { PXE } from '@aztec/stdlib/interfaces/client';
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import { Capsule, HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
 import { z } from "zod";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
+import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
 import { NetworkService } from "@/wallet/services/network";
 import { Network } from "@/wallet/services/network/client";
-import { PxeService } from "@/wallet/services/pxe";
+import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { AccountService } from "@/wallet/services/account";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
 import { ProfileService } from "@/wallet/services/profile";
@@ -99,10 +100,11 @@ import {
 } from "./client";
 
 export class ExecutionService extends Service {
+    private readonly pxeService: PxeServiceClient;
+
     constructor(
         private readonly profileService: ProfileService,
         private readonly networkService: NetworkService,
-        private readonly pxeService: PxeService,
         private readonly accountService: AccountService,
         private readonly tokenService: TokenService,
         private readonly fpcService: FpcService,
@@ -111,6 +113,7 @@ export class ExecutionService extends Service {
         emit: (event: EventMessage) => void,
     ) {
         super(EXECUTION_SERVICE_NAME, emit);
+        this.pxeService = new PxeServiceClient();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -251,9 +254,9 @@ export class ExecutionService extends Service {
             ],
         );
 
-        const [_op, _gasSettings] = await this.withFeePayment(op);
+        const [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op);
 
-        const [txRequest, pxe, account, network, nonce] = await this.processTx(_op);
+        const [txRequest, pxe, account, network, nonce, _, txSetup] = await this.processTx(_op, _isFeePayer);
         txRequest.txContext.gasSettings = _gasSettings;
 
         const simulatedTx = await pxe.simulateTx(
@@ -271,7 +274,8 @@ export class ExecutionService extends Service {
             new TxOrigin(OriginType.UI),
             network.chainId,
             accountAddress,
-            [],
+            txSetup,
+            _isFeePayer,
             [
                 new TxCall(
                     token.contract,
@@ -295,7 +299,7 @@ export class ExecutionService extends Service {
         return tx.hash;
     }
 
-    public async executeOperations(operations: IOperation[], origin: string): Promise<IOperationResult[]> {
+    public async executeOperations(operations: IOperation[], origin: TxOrigin): Promise<IOperationResult[]> {
         const results: IOperationResult[] = [];
         for (const operation of operations) {
             if (results.length && results.at(-1)!.status !== OperationStatus.Ok) {
@@ -368,18 +372,17 @@ export class ExecutionService extends Service {
 
     async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
 
-        const providedInstance = op.instance ? ContractInstanceWithAddressSchema.parse(op.instance) : undefined;
+        const providedInstance = await ContractInstanceWithAddressSchema.optional().parseAsync(op.instance);
         const instance = providedInstance ??
-            (await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(op.address))).contractInstance;
+            (await this.pxeService.getContractMetadata(network, AztecAddress.fromString(op.address))).contractInstance;
         if (!instance) {
             throw new Error("Contract instance not found");
         }
 
-        const providedArtifact = op.artifact ? ContractArtifactSchema.parse(op.artifact) : undefined;
+        const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
         const artifact = providedArtifact
-            ?? (await this.pxeService.getContractClassMetadata(network.chainId, instance.currentContractClassId)).artifact;
+            ?? (await this.pxeService.getContractClassMetadata(network, instance.currentContractClassId)).artifact;
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
@@ -394,16 +397,15 @@ export class ExecutionService extends Service {
             throw new Error("Contract address doesn't match instance address");
         }
 
-        await pxe.registerContract({instance, artifact});
+        await this.pxeService.registerContract(network, {instance, artifact});
     }
 
     async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
-        await pxe.registerSender(AztecAddress.fromString(op.address));
+        await this.pxeService.registerSender(network, AztecAddress.fromString(op.address));
     }
 
-    async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings]> {
+    async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings, boolean]> {
         switch (op.feeSettings.paymentMethod.type) {
             case FeePaymentMethodType.FeeJuice: {
                 if (op.setup?.length) {
@@ -422,22 +424,22 @@ export class ExecutionService extends Service {
                 const gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                     simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
-                return [op, gasSettings];
+                return [op, gasSettings, true];
             }
             case FeePaymentMethodType.FeeJuiceWithClaim: {
                 if (op.setup?.length) {
                     throw new Error("Custom setup payload is not allowed with this fee payment method");
                 }
                 const method = op.feeSettings.paymentMethod as FeeJuiceWithClaimPaymentMethod;
-                op.actions.push(...getFeeJuiceClaimPayload(
+                op.setup = getFeeJuiceClaimPayload(
                     op.accountAddress,
                     method.claimAmount,
                     method.claimSecret,
                     method.messageLeafIndex,
-                ));
+                );
                 let [txRequest, pxe, account] = await this.processTx(op);
                 const simulatedTx = await pxe.simulateTx(
                     txRequest, // txRequest
@@ -451,10 +453,10 @@ export class ExecutionService extends Service {
                 const gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                     simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
-                return [op, gasSettings];
+                return [op, gasSettings, true];
             }
             case FeePaymentMethodType.Fpc: {
                 if (op.setup?.length) {
@@ -480,7 +482,7 @@ export class ExecutionService extends Service {
                 txRequest.txContext.gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)),
                     simulatedTx.gasUsed.teardownGas.add(fpc.getTeardownGas(inPublic)),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
                 simulatedTx = await pxe.simulateTx(
@@ -496,10 +498,10 @@ export class ExecutionService extends Service {
                 const gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                     simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
-                return [op, gasSettings];
+                return [op, gasSettings, false];
             }
             case FeePaymentMethodType.Custom: {
                 if (!op.setup?.length) {
@@ -511,7 +513,7 @@ export class ExecutionService extends Service {
                 txRequest.txContext.gasSettings = new GasSettings(
                     txRequest.txContext.gasSettings.gasLimits,
                     new Gas(teardownDaGas, teardownL2Gas),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
                 const simulatedTx = await pxe.simulateTx(
@@ -525,10 +527,15 @@ export class ExecutionService extends Service {
                 const gasSettings = new GasSettings(
                     simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                     simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                    baseFees,
+                    baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
                     new GasFees(0, 0),
                 );
-                return [op, gasSettings];
+                const isFeePayer =
+                    simulatedTx.publicInputs.feePayer.isZero() ||
+                    simulatedTx.publicInputs.feePayer.equals(account.address) ||
+                    // see [previous_kernel_public_inputs.fee_payer] at Prover.toml
+                    simulatedTx.publicInputs.feePayer.equals(AztecAddress.fromString("0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000"));
+                return [op, gasSettings, isFeePayer];
             }
             default: {
                 throw new Error("Invalid fee payment method");
@@ -536,10 +543,10 @@ export class ExecutionService extends Service {
         }
     }
 
-    async executeSendTransaction(op: SendTransactionOperation, origin: string): Promise<string> {
-        const [_op, _gasSettings] = await this.withFeePayment(op);
+    async executeSendTransaction(op: SendTransactionOperation, origin: TxOrigin): Promise<string> {
+        const [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op);
 
-        const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(_op);
+        const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(_op, _isFeePayer);
         txRequest.txContext.gasSettings = _gasSettings;
 
         const simulatedTx = await pxe.simulateTx(
@@ -554,10 +561,11 @@ export class ExecutionService extends Service {
         const txHash = await pxe.sendTx(provedTx.toTx());
 
         const tx = await this.transactionService.addTransaction(
-            new TxOrigin(OriginType.DAPP, origin),
+            origin,
             network.chainId,
             account.address.toString(),
             txSetup,
+            _isFeePayer,
             txCalls,
             nonce.toString(),
             txHash.toString(),
@@ -591,12 +599,12 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         if (!registeredContracts.has(op.contract)) {
-            const [_, instance] = await this.getInstance(network.chainId, op.contract);
-            const [__, artifact] = await this.getArtifact(network.chainId, instance.currentContractClassId.toString());
+            const [_, instance] = await this.getInstance(pxe, op.contract);
+            const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
             console.debug("Register contract");
             await pxe.registerContract({instance, artifact});
         }
@@ -619,10 +627,10 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         const contracts = this.getContracts(op.calls);
-        const instances = await this.getInstances(network.chainId, contracts);
-        const artifacts = await this.getArtifacts(network.chainId, instances);
+        const instances = await this.getInstances(pxe, contracts);
+        const artifacts = await this.getArtifacts(pxe, instances);
 
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
@@ -779,7 +787,7 @@ export class ExecutionService extends Service {
             }
         }
 
-        const txRequest = await account.buildTxExecutionRequest(pxe, [], calls.map(x => x[0]), args, Fr.zero());
+        const txRequest = await account.buildTxExecutionRequest(pxe, [], false, calls.map(x => x[0]), args, Fr.zero());
         const simulatedTx = await pxe.simulateTx(
             txRequest, // txRequest
             true, // simulatePublic
@@ -828,12 +836,15 @@ export class ExecutionService extends Service {
         return result;
     }
     
-    async processTx(op: {
-        networkId: string,
-        accountAddress: string,
-        actions: IAction[],
-        setup?: IAction[],
-    }): Promise<[TxExecutionRequest, PXE, IAccountContract, Network, Fr, TxCall[], TxCall[]]> {
+    async processTx(
+        op: {
+            networkId: string,
+            accountAddress: string,
+            actions: IAction[],
+            setup?: IAction[],
+        },
+        isFeePayer = false,
+): Promise<[TxExecutionRequest, PXE, IAccountContract, Network, Fr, TxCall[], TxCall[]]> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -841,10 +852,11 @@ export class ExecutionService extends Service {
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
 
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
+        const nodeInfo = await pxe.getNodeInfo();
         const contracts = this.getContracts(op.actions.concat(op.setup ?? []));
-        const instances = await this.getInstances(network.chainId, contracts);
-        const artifacts = await this.getArtifacts(network.chainId, instances);
+        const instances = await this.getInstances(pxe, contracts);
+        const artifacts = await this.getArtifacts(pxe, instances);
 
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
@@ -871,8 +883,7 @@ export class ExecutionService extends Service {
                 capsules,
                 authwits,
                 account,
-                network,
-                pxe,
+                nodeInfo,
                 instances,
                 artifacts,
                 args,
@@ -887,8 +898,7 @@ export class ExecutionService extends Service {
                 capsules,
                 authwits,
                 account,
-                network,
-                pxe,
+                nodeInfo,
                 instances,
                 artifacts,
                 args,
@@ -898,7 +908,7 @@ export class ExecutionService extends Service {
         }
 
         const nonce = Fr.random();
-        const txRequest = await account.buildTxExecutionRequest(pxe, setup, calls, args, nonce);
+        const txRequest = await account.buildTxExecutionRequest(pxe, setup, isFeePayer, calls, args, nonce);
 
         return [txRequest, pxe, account, network, nonce, txCalls, txSetup];
     }
@@ -908,8 +918,7 @@ export class ExecutionService extends Service {
         capsules: Capsule[],
         authwits: AuthWitness[],
         account: IAccountContract,
-        network: Network,
-        pxe: PXE,
+        nodeInfo: NodeInfo,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
         args: HashedValues[],
@@ -937,34 +946,34 @@ export class ExecutionService extends Service {
                     switch (_action.content.kind) {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
-                            messageHash = await this.getCallMessageHash(_content, network, instances, artifacts);
-                            await this.accountStateService.addCallAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, false,
-                            );
+                            messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
+                            // await this.accountStateService.addCallAuthwit(
+                            //     account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, false,
+                            // );
                             break;
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
-                            messageHash = await this.getEncodedCallMessageHash(_content, network, instances, artifacts);
-                            await this.accountStateService.addCallAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
-                            );
+                            messageHash = await this.getEncodedCallMessageHash(_content, nodeInfo, instances, artifacts);
+                            // await this.accountStateService.addCallAuthwit(
+                            //     account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
+                            // );
                             break;
                         }
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
-                            messageHash = await this.getIntentMessageHash(_content, network);
-                            await this.accountStateService.addIntentAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, false,
-                            );
+                            messageHash = await this.getIntentMessageHash(_content, nodeInfo);
+                            // await this.accountStateService.addIntentAuthwit(
+                            //     account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, false,
+                            // );
                             break;
                         }
                         case AuthwitContentKind.MessageHash: {
                             const _content = _action.content as MessageHashAuthwitContent;
                             messageHash = Fr.fromString(_content.messageHash);
-                            await this.accountStateService.addAuthwit(
-                                account.address.toString(), messageHash.toString(), false,
-                            );
+                            // await this.accountStateService.addAuthwit(
+                            //     account.address.toString(), messageHash.toString(), false,
+                            // );
                             break;
                         }
                         default: {
@@ -989,7 +998,7 @@ export class ExecutionService extends Service {
                     switch (_action.content.kind) {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
-                            messageHash = await this.getCallMessageHash(_content, network, instances, artifacts);
+                            messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
                             await this.accountStateService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, true,
                             );
@@ -997,7 +1006,7 @@ export class ExecutionService extends Service {
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
-                            messageHash = await this.getEncodedCallMessageHash(_content, network, instances, artifacts);
+                            messageHash = await this.getEncodedCallMessageHash(_content, nodeInfo, instances, artifacts);
                             await this.accountStateService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, true,
                             );
@@ -1005,7 +1014,7 @@ export class ExecutionService extends Service {
                         }
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
-                            messageHash = await this.getIntentMessageHash(_content, network);
+                            messageHash = await this.getIntentMessageHash(_content, nodeInfo);
                             await this.accountStateService.addIntentAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, true,
                             );
@@ -1139,7 +1148,7 @@ export class ExecutionService extends Service {
 
     async getCallMessageHash(
         content: CallAuthwitContent,
-        network: Network,
+        nodeInfo: NodeInfo,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
     ): Promise<Fr> {
@@ -1170,15 +1179,15 @@ export class ExecutionService extends Service {
                 ),
             },
             {
-                chainId: new Fr(network.chainId),
-                version: new Fr(network.rollupVersion),
+                chainId: new Fr(nodeInfo.l1ChainId),
+                version: new Fr(nodeInfo.rollupVersion),
             },
         );
     }
 
     async getEncodedCallMessageHash(
         content: EncodedCallAuthwitContent,
-        network: Network,
+        nodeInfo: NodeInfo,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
     ): Promise<Fr> {
@@ -1230,19 +1239,19 @@ export class ExecutionService extends Service {
                     content.type as FunctionType,
                     content.isStatic,
                     content.args.map(x => Fr.fromString(x)),
-                    z.array(AbiTypeSchema).parse(content.returnTypes),
+                    await z.array(AbiTypeSchema).parseAsync(content.returnTypes),
                 ),
             },
             {
-                chainId: new Fr(network.chainId),
-                version: new Fr(network.rollupVersion),
+                chainId: new Fr(nodeInfo.l1ChainId),
+                version: new Fr(nodeInfo.rollupVersion),
             },
         );
     }
 
     async getIntentMessageHash(
         content: IntentAuthwitContent,
-        network: Network,
+        nodeInfo: NodeInfo,
     ): Promise<Fr> {
         return await computeAuthWitMessageHash(
             {
@@ -1250,8 +1259,8 @@ export class ExecutionService extends Service {
                 innerHash: await computeInnerAuthWitHash(content.intent.map(x => Fr.fromString(x))),
             },
             {
-                chainId: new Fr(network.chainId),
-                version: new Fr(network.rollupVersion),
+                chainId: new Fr(nodeInfo.l1ChainId),
+                version: new Fr(nodeInfo.rollupVersion),
             },
         );
     }
@@ -1281,12 +1290,12 @@ export class ExecutionService extends Service {
         )];
     }
 
-    private async getInstances(chainId: number, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
+    private async getInstances(pxe: PXE, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
         console.debug("Get instances...");
         const instances = new Map<string, ContractInstanceWithAddress>();
         console.debug(`Fetching ${contracts.length} instances...`);
         const fetched = await Promise.all(
-            contracts.map(x => this.getInstance(chainId, x)),
+            contracts.map(x => this.getInstance(pxe, x)),
         );
         console.debug(`${fetched.length} instances fetched`);
         for (const [address, instance] of fetched) {
@@ -1295,15 +1304,15 @@ export class ExecutionService extends Service {
         return instances;
     }
 
-    private async getInstance(chainId: number, contract: string): Promise<[string, ContractInstanceWithAddress]> {
-        const metadata = await this.pxeService.getContractMetadata(chainId, AztecAddress.fromString(contract))
+    private async getInstance(pxe: PXE, contract: string): Promise<[string, ContractInstanceWithAddress]> {
+        const metadata = await pxe.getContractMetadata(AztecAddress.fromString(contract))
         if (!metadata.contractInstance) {
             throw new Error("Contract instance not found");
         }
         return [contract, metadata.contractInstance];
     }
 
-    private async getArtifacts(chainId: number, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
+    private async getArtifacts(pxe: PXE, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
         console.debug("Get artifacts...");
         const artifacts = new Map<string, ContractArtifact>();
         const classIds = new Set(
@@ -1314,7 +1323,7 @@ export class ExecutionService extends Service {
         );
         console.debug(`Fetching ${classIds.size} artifacts...`);
         const fetched = await Promise.all(
-            classIds.values().map(x => this.getArtifact(chainId, x))
+            classIds.values().map(x => this.getArtifact(pxe, x))
         );
         console.debug(`${fetched.length} artifacts fetched`);
         for (const [classId, artifact] of fetched) {
@@ -1323,11 +1332,8 @@ export class ExecutionService extends Service {
         return artifacts;
     }
 
-    private async getArtifact(
-        chainId: number,
-        classId: string,
-    ): Promise<[string, ContractArtifact]> {
-        const metadata = await this.pxeService.getContractClassMetadata(chainId, Fr.fromString(classId))
+    private async getArtifact(pxe: PXE, classId: string): Promise<[string, ContractArtifact]> {
+        const metadata = await pxe.getContractClassMetadata(Fr.fromString(classId))
         if (!metadata.artifact) {
             throw new Error("Contract artifact not found");
         }

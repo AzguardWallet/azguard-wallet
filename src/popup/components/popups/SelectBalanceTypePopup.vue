@@ -18,7 +18,7 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.select_balance_type
+	return popupStore.len - popupStore.popups.select_balance_type?.order
 })
 
 const defaultDisplayOptions = [
@@ -87,7 +87,7 @@ watch(
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_balance_type">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_balance_type?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Flex direction="column" gap="6">

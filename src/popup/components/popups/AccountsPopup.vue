@@ -19,7 +19,7 @@ const popupStore = usePopupStore()
 const router = useRouter()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.accounts
+	return popupStore.len - popupStore.popups.accounts?.order
 })
 
 const emit = defineEmits(["onClose"])
@@ -57,7 +57,7 @@ const handleManageAccounts = () => {
 </script>
 
 <template>
-	<Popup @onClose="emit('onClose')" :displaceIdx="popupStore.popups.accounts">
+	<Popup @onClose="emit('onClose')" :displaceIdx="popupStore.popups.accounts?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

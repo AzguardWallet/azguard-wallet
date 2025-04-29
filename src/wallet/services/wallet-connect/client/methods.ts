@@ -1,7 +1,6 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { WALLET_CONNECT_SERVICE_NAME } from ".";
 
-// biome-ignore lint/style/useEnumInitializers: <explanation>
 export enum WalletConnectServiceMethod {
     ConnectByURI,
 }
@@ -19,6 +18,6 @@ export class ConnectByURIResponse extends ResponseMessage {
         request: ConnectByURIRequest,
         error?: string,
     ) {
-        super(WALLET_CONNECT_SERVICE_NAME, request.id, undefined, error);
+        super(WALLET_CONNECT_SERVICE_NAME, request.requestId, undefined, error);
     }
 }

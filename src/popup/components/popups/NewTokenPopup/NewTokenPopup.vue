@@ -7,6 +7,7 @@ import CandidatesForm from "./CandidatesForm.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
+import { isValidHex } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -14,12 +15,14 @@ const { openToast } = useToast()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.new_token
+	return popupStore.len - popupStore.popups.new_token?.order
 })
 
 const props = defineProps({
@@ -33,10 +36,10 @@ const contractAddressTerm = ref("")
 const isLoadingParseResult = ref(false)
 const isAddingNewToken = ref(false)
 
-const isAlreadyExist = computed(() => appStore.tokens.findLast(t => t.contract === contractAddressTerm.value))
+const tokens = ref([])
+const isAlreadyExist = computed(() => tokens.value?.findLast(t => t.contract === contractAddressTerm.value))
 const isAvailableToCreateToken = computed(() => {
-	if (!contractAddressTerm.value.length || contractAddressTerm.value.length !== 66) return
-	if (!contractAddressTerm.value.startsWith("0x")) return
+	if (!isValidHex(contractAddressTerm.value)) return
 	if (isLoadingParseResult.value) return
 	if (isAlreadyExist.value) return
 
@@ -135,18 +138,17 @@ const handleSaveToken = async () => {
 		openToast({ label: "New token has been added" })
 	} catch (err) {
 		error.value = err
-
-		isSavingToken.value = false
 	} finally {
 		isSavingToken.value = false
 	}
 
+	cacheStore.preselectedTokenAddressToAdd = ""
 	emit("onClose")
 }
 
 watch(
 	() => props.show,
-	() => {
+	async () => {
 		if (!props.show) {
 			contractAddressTerm.value = ""
 
@@ -155,13 +157,20 @@ watch(
 			selectedFields.value = {}
 
 			error.value = null
+		} else {
+			const rawTokens = await managers.token?.getTokens()
+			tokens.value = rawTokens?.length ? rawTokens.filter(t => t.chainId === appStore.network.chainId) : []
+
+			if (cacheStore.preselectedTokenAddressToAdd) {
+				contractAddressTerm.value = cacheStore.preselectedTokenAddressToAdd
+			}
 		}
 	},
 )
 </script>
 
 <template>
-	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_token">
+	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.new_token?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

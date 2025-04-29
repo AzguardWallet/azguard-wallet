@@ -1,6 +1,7 @@
-import { EventMessage } from "@/wallet/base/messages";
-import { ServiceClient } from "@/wallet/base/service-client";
-import { Authwit, Note, NoteStatus } from "./models";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
+import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { AccountStateServiceEvent, type AccountStateServiceEventMessage } from "./events";
+import type { Authwit, Note, NoteStatus } from "./models";
 import {
     GetAccountsRequest,
     GetAuthwitsRequest,
@@ -12,6 +13,7 @@ import {
     GetVersionRequest,
 } from "./methods";
 
+export * from "./events";
 export * from './methods';
 export * from './models';
 
@@ -25,16 +27,34 @@ export class AccountStateServiceClient extends ServiceClient {
      * Creates AccountStateServiceClient instace.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
+     * @param onSenderAdded Callback, called when a new sender was added.
+     * @param onSenderDeleted Callback, called when an existing sender was deleted.
      */
     constructor(
         onConnected?: () => void,
         onDisconnected?: () => void,
+        private readonly onSenderAdded?: (sender: string) => void,
+        private readonly onSenderDeleted?: (sender: string) => void,
     ) {
         super(ACCOUNT_STATE_SERVICE_NAME, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
         switch (message.event) {
+            case AccountStateServiceEvent.SenderAdded:
+                if (this.onSenderAdded) {
+                    try {
+                        this.onSenderAdded((message as AccountStateServiceEventMessage).sender);
+                    } catch {}
+                }
+                break;
+            case AccountStateServiceEvent.SenderDeleted:
+                if (this.onSenderDeleted) {
+                    try {
+                        this.onSenderDeleted((message as AccountStateServiceEventMessage).sender);
+                    } catch {}
+                }
+                break;
             default:
                 console.error(`Unexpected event type ${message.event}.`);
                 break;
@@ -80,6 +100,7 @@ export class AccountStateServiceClient extends ServiceClient {
      * Adds a sender.
      * @param networkId Network id.
      * @param address Sender address.
+     * @emits `SenderAdded` event.
      * @throws "Profile locked" if profile is locked.
      * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
      * @throws "PXE request failed" if request failed.
@@ -92,6 +113,7 @@ export class AccountStateServiceClient extends ServiceClient {
      * Deletes a sender.
      * @param networkId Network id.
      * @param address Sender address.
+     * @emits `SenderDeleted` event.
      * @throws "Profile locked" if profile is locked.
      * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
      * @throws "PXE request failed" if request failed.

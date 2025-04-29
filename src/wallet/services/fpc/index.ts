@@ -1,17 +1,21 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
-import { ProfileService } from "@/wallet/services/profile";
-import { NetworkService } from "@/wallet/services/network";
-import { PxeService } from "@/wallet/services/pxe";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
+import type { ProfileService } from "@/wallet/services/profile";
+import type { NetworkService } from "@/wallet/services/network";
+import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
-    GetFpcsRequest,
+    type GetFpcsRequest,
     GetFpcsResponse,
-    AddFpcRequest,
+    type GetFpcRequest,
+    GetFpcResponse,
+    type AddFpcRequest,
     AddFpcResponse,
-    DeleteFpcRequest,
+    type UpdateFpcRequest,
+    UpdateFpcResponse,
+    type DeleteFpcRequest,
     DeleteFpcResponse,
     FpcInfo,
     FpcType,
@@ -24,16 +28,17 @@ import { Fpc } from "./fpc";
 import { getFpcHandler } from "./handlers";
 
 export class FpcService extends Service {
+    private readonly pxeService: PxeServiceClient;
     private readonly storage: EntityStorage<FpcInfo>;
     private readonly lock = new Lock();
 
     constructor(
         private readonly profiles: ProfileService,
         private readonly networks: NetworkService,
-        private readonly pxeService: PxeService,
         emit: (event: EventMessage) => void,
     ) {
         super(FPC_SERVICE_NAME, emit);
+        this.pxeService = new PxeServiceClient();
         this.storage = new EntityStorage("azguard:core:fpcs", StorageType.Local);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
     }
@@ -47,6 +52,15 @@ export class FpcService extends Service {
                     return new GetFpcsResponse(_request, result);
                 } catch (error: any) {
                     return new GetFpcsResponse(_request, undefined, error.message);
+                }
+            }
+            case FpcServiceMethod.GetFpc: {
+                const _request = request as GetFpcRequest;
+                try {
+                    const result = await this.getFpc(_request.fpcId);
+                    return new GetFpcResponse(_request, result.infoData);
+                } catch (error: any) {
+                    return new GetFpcResponse(_request, undefined, error.message);
                 }
             }
             case FpcServiceMethod.AddFpc: {
@@ -63,7 +77,18 @@ export class FpcService extends Service {
                     return new AddFpcResponse(_request, undefined, error.message);
                 }
             }
-            case FpcServiceMethod.DeleteFpc: {
+            case FpcServiceMethod.UpdateFpc: {
+                const _request = request as UpdateFpcRequest;
+                try {
+                    const result = await this.updateFpc(
+                        _request.fpcId,
+                        _request.name,
+                    );
+                    return new UpdateFpcResponse(_request, result);
+                } catch (error: any) {
+                    return new UpdateFpcResponse(_request, undefined, error.message);
+                }
+            }            case FpcServiceMethod.DeleteFpc: {
                 const _request = request as DeleteFpcRequest;
                 try {
                     const result = await this.deleteFpc(_request.fpcId);
@@ -92,17 +117,18 @@ export class FpcService extends Service {
             console.log("Discovering FPCs...");
             try {
                 await this.lock.enter();
-                const pxe = await this.pxeService.getPXEClient(chainId);
+                const networks = await this.networks.getNetworks(chainId);
+                const network = networks.find(x => x.isDefault) ?? networks[0];
+                const pxe = this.pxeService.getPXE(network);
 
                 for (const contract of [
                     AztecAddress.fromString("0x097d86b77f924ecf8c7c6e058db2268b21615bf860ca4e87f0254fad6dee7dde"),
                     AztecAddress.fromString("0x0b27e30667202907fc700d50e9bc816be42f8141fae8b9f2281873dbdb9fc2e5"),
                     AztecAddress.fromString("0x28c18c0fc136706445df221b4d80d72a4464ef278b62c5de196dd3bd0527c938"),
                 ]) {
-                    const contractMeta = await this.pxeService.getContractMetadata(chainId, contract);
+                    const contractMeta = await pxe.getContractMetadata(contract);
                     if (contractMeta.contractInstance) {
-                        const classMeta = await this.pxeService.getContractClassMetadata(
-                            chainId,
+                        const classMeta = await pxe.getContractClassMetadata(
                             contractMeta.contractInstance.currentContractClassId,
                         );
                         if (classMeta.artifact) {
@@ -159,15 +185,14 @@ export class FpcService extends Service {
             throw new Error("Profile locked");
         }
         const network = await this.networks.getNetwork(networkId);
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
 
-        const fpcMetadata = await this.pxeService.getContractMetadata(network.chainId, AztecAddress.fromString(address));
+        const fpcMetadata = await pxe.getContractMetadata(AztecAddress.fromString(address));
         if (!fpcMetadata.contractInstance) {
             throw new Error("Contract instance not found");
         }
 
-        const fpcClassMetadata = await this.pxeService.getContractClassMetadata(
-            network.chainId,
+        const fpcClassMetadata = await pxe.getContractClassMetadata(
             fpcMetadata.contractInstance.currentContractClassId,
         );
         if (!fpcClassMetadata.artifact) {
@@ -214,6 +239,30 @@ export class FpcService extends Service {
         }
     }
 
+    public async updateFpc(fpcId: string, name: string): Promise<FpcInfo> {
+        const profile = await this.profiles.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+        try {
+            await this.lock.enter();
+            const fpc = await this.storage.get(fpcId);
+            if (fpc?.profileId !== profile.id) {
+                throw new Error("Invalid id");
+            }
+
+            const newFpc = {
+                ...fpc,
+                name,
+            };
+            await this.storage.set(fpcId, newFpc);
+            this.emit(new FpcServiceEventMessage(FpcServiceEvent.FpcUpdated, newFpc));
+            return newFpc;
+        } finally {
+            this.lock.leave();
+        }
+    }
+        
     public async deleteFpc(id: string): Promise<FpcInfo> {
         const profile = await this.profiles.getActiveProfile();
         if (!profile) {

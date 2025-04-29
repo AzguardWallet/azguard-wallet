@@ -50,7 +50,7 @@ export const useAppStore = defineStore("app", () => {
 	const changeAccountVisibility = async (acc: Account, value: boolean) => {
 		const accIdx = accounts.value.findIndex(a => acc.address === a.address)
 
-		managers.account.changeAccountVisibility(acc.address, value)
+		await managers.account.changeAccountVisibility(acc.address, value)
 		accounts.value[accIdx] = { ...acc, visible: value }
 
 		if (!value) {
@@ -75,11 +75,14 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const tokens = ref([])
+	const mintingTokens	= ref([])
 	const dummyTokens = ref([])
 	const onTokenAdded = token => {
 		const dummyTokenIdx = dummyTokens.value.findLastIndex(t => t.id === -1)
 		if (dummyTokenIdx !== -1) dummyTokens.value.splice(dummyTokenIdx, 1)
-		tokens.value.push(token)
+		
+		const tokenIdx = tokens.value.findIndex(t => t.id ===  token.id)
+		if (tokenIdx === -1) tokens.value.push(token)
 	}
 	const syncLocalTokens = async () => {
 		const rawTokens = await managers.token?.getTokens()
@@ -152,6 +155,12 @@ export const useAppStore = defineStore("app", () => {
 		transactions.value.unshift(tx)
 		isAwaitingTransaction.value = false
 	}
+	const onTxUpdated = tx => {
+		const ind = transactions.value.findIndex(x => x.hash === tx.hash);
+		if (ind !== -1) {
+			transactions.value.splice(ind, 1, tx);
+		}
+	}
 	const syncTransactions = async () => {
 		transactions.value = (await managers.transaction.getTransactions(account.value))
 			.filter(t => t.account === account.value?.address)
@@ -183,6 +192,7 @@ export const useAppStore = defineStore("app", () => {
 		changeAccountVisibility,
 		updateAccount,
 		tokens,
+		mintingTokens,
 		dummyTokens,
 		onTokenAdded,
 		syncLocalTokens,
@@ -201,6 +211,7 @@ export const useAppStore = defineStore("app", () => {
 		removeNetwork,
 		transactions,
 		onTxAdded,
+		onTxUpdated,
 		syncTransactions,
 		showSendPopup,
 		showRegisterPopup,

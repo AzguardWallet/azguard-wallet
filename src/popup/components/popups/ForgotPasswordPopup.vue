@@ -14,7 +14,7 @@ const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.forgot_password
+	return popupStore.len - popupStore.popups.forgot_password?.order
 })
 
 const emit = defineEmits(["onClose"])
@@ -29,7 +29,7 @@ const handleImport = () => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.forgot_password">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.forgot_password?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">

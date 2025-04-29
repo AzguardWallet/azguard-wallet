@@ -1,6 +1,6 @@
 import { TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages";
-import { Service } from "@/wallet/base/service";
+import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
 import { AccountService } from "@/wallet/services/account";
 import { Account } from "@/wallet/services/account/client";
 import { NetworkService } from "@/wallet/services/network";
@@ -90,6 +90,7 @@ export class TransactionService extends Service {
         chainId: number,
         account: string,
         setup: TxCall[],
+        isFeePayer: boolean,
         calls: TxCall[],
         nonce: string,
         hash: string,
@@ -103,6 +104,7 @@ export class TransactionService extends Service {
             chainId,
             account,
             setup,
+            isFeePayer,
             calls,
             nonce,
             hash,

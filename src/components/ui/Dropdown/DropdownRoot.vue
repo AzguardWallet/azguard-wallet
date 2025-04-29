@@ -55,7 +55,7 @@ const props = defineProps({
 	},
 })
 
-const emit = defineEmits(["onClose"])
+const emit = defineEmits(["onClose", "onOpen"])
 
 const trigger = ref(null)
 const dropdown = ref(null)
@@ -78,8 +78,6 @@ const close = event => {
 	if (event) event.stopPropagation()
 
 	isOpen.value = false
-
-	emit("onClose")
 }
 
 const dropdownStyles = ref({})
@@ -106,6 +104,8 @@ watch(isOpen, () => {
 			dropdownStyles.value.bottom = undefined
 		}
 
+		emit("onClose")
+		
 		document.removeEventListener("keydown", onKeydown)
 	} else {
 		document.addEventListener("keydown", onKeydown)
@@ -169,6 +169,8 @@ watch(isOpen, () => {
 
 			if (props.height) dropdownStyles.value.maxHeight = props.height
 			if (props.verticalOverflow) dropdownStyles.value.overflowY = "auto"
+
+			emit("onOpen")
 
 			removeOutside = useOutside(dropdown.value.wrapper, handleOutside)
 		})

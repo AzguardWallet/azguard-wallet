@@ -5,9 +5,11 @@
 	"version": "0.2.2",
 	"scripts": {
 		"build:full": "npm run build:chrome && npm run build:firefox",
+		"build": "cross-env NODE_OPTIONS=--max-old-space-size=16000 vite build -c vite.chrome.config.mts",
 		"build:chrome": "cross-env NODE_OPTIONS=--max-old-space-size=16000 vite build -c vite.chrome.config.mts",
 		"build:firefox": "cross-env NODE_OPTIONS=--max-old-space-size=16000 vite build -c vite.firefox.config.mts",
 		"dev:full": "concurrently \"npm run dev:chrome\" \"npm run dev:firefox\"",
+		"dev": "vite -c vite.chrome.config.mts",
 		"dev:chrome": "vite -c vite.chrome.config.mts",
 		"dev:firefox": "vite build --mode development --watch -c vite.firefox.config.mts",
 		"preview": "vite preview",
@@ -36,7 +38,7 @@
 		"vue": "^3.5.12",
 		"vue-router": "^4.4.5",
 		"webextension-polyfill": "^0.12.0",
-        "zod": "^3.23.8"
+		"zod": "^3.23.8"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
@@ -57,7 +59,7 @@
 		"unplugin-vue-components": "^0.27.4",
 		"unplugin-vue-router": "^0.10.9",
 		"vite": "^5.4.9",
-		"vite-plugin-node-polyfills": "^0.22.0",
+		"vite-plugin-node-polyfills": "^0.23.0",
 		"vite-plugin-pages": "^0.32.3",
     	"vite-plugin-static-copy": "^2.2.0",
 		"vite-plugin-vue-devtools": "^7.5.3",
@@ -75,5 +77,6 @@
 			"allowedVersions": {},
 			"ignoreMissing": []
 		}
-	}
+	},
+	"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

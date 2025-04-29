@@ -1,29 +1,29 @@
 import { FunctionType } from "@aztec/stdlib/abi"
-import {
+import type {
 	EventMessage,
 	RequestMessage,
 	ResponseMessage,
-} from "@/wallet/base/messages"
-import { Service } from "@/wallet/base/service"
+} from "@/wallet/base/port-service/messages"
+import { Service } from "@/wallet/base/port-service/service"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, sleep } from "@/wallet/utils"
 import { Queue } from "@/wallet/utils/queue"
-import { AccountService } from "@/wallet/services/account"
-import { Account } from "@/wallet/services/account/client"
-import { NetworkService } from "@/wallet/services/network"
-import { ProfileService } from "@/wallet/services/profile"
-import { Token, TokenService } from "@/wallet/services/token"
+import type { AccountService } from "@/wallet/services/account"
+import type { Account } from "@/wallet/services/account/client"
+import type { NetworkService } from "@/wallet/services/network"
+import type { ProfileService } from "@/wallet/services/profile"
+import type { Token, TokenService } from "@/wallet/services/token"
 import { BalanceOfPrivateFn, BalanceOfPublicFn } from "@/wallet/services/token/functions"
 import { TokenInfo } from "@/wallet/services/token/client"
-import { ExecutionService } from "@/wallet/services/execution"
+import type { ExecutionService } from "@/wallet/services/execution"
 import { CallAction, EncodedCallAction, SimulateViewsOperation } from "@/wallet/services/execution/client"
-import { TransactionService } from "@/wallet/services/transaction"
-import { Tx, TxStatus } from "@/wallet/services/transaction/client"
-import { ViewFn } from "@/wallet/utils/fn"
+import type { TransactionService } from "@/wallet/services/transaction"
+import { type Tx, TxStatus } from "@/wallet/services/transaction/client"
+import type { ViewFn } from "@/wallet/utils/fn"
 import {
-	GetTokenBalancesRequest,
+	type GetTokenBalancesRequest,
 	GetTokenBalancesResponse,
-	RefreshTokenBalanceRequest,
+	type RefreshTokenBalanceRequest,
 	RefreshTokenBalanceResponse,
 	TOKEN_BALANCE_SERVICE_NAME,
 	TokenBalanceInfo,
@@ -285,16 +285,16 @@ export class TokenBalanceService extends Service {
 		while (true) {
 			if (this.profile) {
 				try {
-					if (Date.now() >= nextSync) {
-						const balancesToUpdate = (await this.balances.getValues())
-							.toSorted((a, b) => a.account.localeCompare(b.account));
+					// if (Date.now() >= nextSync) {
+					// 	const balancesToUpdate = (await this.balances.getValues())
+					// 		.toSorted((a, b) => a.account.localeCompare(b.account));
 						
-						for (const tb of balancesToUpdate) {
-							this.queue.enqueue(tb)
-						}
+					// 	for (const tb of balancesToUpdate) {
+					// 		this.queue.enqueue(tb)
+					// 	}
 
-						nextSync = Date.now() + 60_000 // TODO: settings
-					}
+					// 	nextSync = Date.now() + 60_000 // TODO: settings
+					// }
 					if (this.queue.length) {
 						console.debug(
 							`Syncing ${this.queue.length} token balances`
@@ -337,82 +337,84 @@ export class TokenBalanceService extends Service {
 				}
 				chainId = token.chainId;
 				// sync private balance
-				if (!token.balanceOfPrivateFn) {
-					tb.privateBalance = "0";
-					continue;
-				}
-				const balanceOfPrivateFn = BalanceOfPrivateFn.new(
-					token.balanceOfPrivateFn.name,
-					token.balanceOfPrivateFn.impl
-				)
-				if (balanceOfPrivateFn.type === FunctionType.UTILITY) {
-					calls.push([
-						new CallAction(
-							token.contract,
-							balanceOfPrivateFn.name,
-							balanceOfPrivateFn.buildArgs(account),
-						),
-						i,
-						true,
-						balanceOfPrivateFn,
-					]);
+				if (token.balanceOfPrivateFn) {
+					const balanceOfPrivateFn = BalanceOfPrivateFn.new(
+						token.balanceOfPrivateFn.name,
+						token.balanceOfPrivateFn.impl
+					)
+					if (balanceOfPrivateFn.type === FunctionType.UTILITY) {
+						calls.push([
+							new CallAction(
+								token.contract,
+								balanceOfPrivateFn.name,
+								balanceOfPrivateFn.buildArgs(account),
+							),
+							i,
+							true,
+							balanceOfPrivateFn,
+						]);
+					}
+					else {
+						const selector = await balanceOfPrivateFn.getSelector();
+						const packedArgs = await balanceOfPrivateFn.packArgs(balanceOfPrivateFn.buildArgs(account))
+						calls.push([
+							new EncodedCallAction(
+								token.contract,
+								selector.toString(),
+								packedArgs.values.map(x => x.toString()),
+								balanceOfPrivateFn.name,
+								balanceOfPrivateFn.type,
+								balanceOfPrivateFn.isStatic,
+								balanceOfPrivateFn.getReturnTypes(),
+							),
+							i,
+							true,
+							balanceOfPrivateFn,
+						]);
+					}
 				}
 				else {
-					const selector = await balanceOfPrivateFn.getSelector();
-					const packedArgs = await balanceOfPrivateFn.packArgs(balanceOfPrivateFn.buildArgs(account))
-					calls.push([
-						new EncodedCallAction(
-							token.contract,
-							selector.toString(),
-							packedArgs.values.map(x => x.toString()),
-							balanceOfPrivateFn.name,
-							balanceOfPrivateFn.type,
-							balanceOfPrivateFn.isStatic,
-							balanceOfPrivateFn.getReturnTypes(),
-						),
-						i,
-						true,
-						balanceOfPrivateFn,
-					]);
+					tb.privateBalance = "0";
 				}
 				// sync public balance
-				if (!token.balanceOfPublicFn) {
-					tb.publicBalance = "0";
-					continue;
-				}
-				const balanceOfPublicFn = BalanceOfPublicFn.new(
-					token.balanceOfPublicFn.name,
-					token.balanceOfPublicFn.impl
-				)
-				if (balanceOfPublicFn.type === FunctionType.UTILITY) {
-					calls.push([
-						new CallAction(
-							token.contract,
-							balanceOfPublicFn.name,
-							balanceOfPublicFn.buildArgs(account),
-						),
-						i,
-						false,
-						balanceOfPublicFn,
-					]);
+				if (token.balanceOfPublicFn) {
+					const balanceOfPublicFn = BalanceOfPublicFn.new(
+						token.balanceOfPublicFn.name,
+						token.balanceOfPublicFn.impl
+					)
+					if (balanceOfPublicFn.type === FunctionType.UTILITY) {
+						calls.push([
+							new CallAction(
+								token.contract,
+								balanceOfPublicFn.name,
+								balanceOfPublicFn.buildArgs(account),
+							),
+							i,
+							false,
+							balanceOfPublicFn,
+						]);
+					}
+					else {
+						const selector = await balanceOfPublicFn.getSelector();
+						const packedArgs = await balanceOfPublicFn.packArgs(balanceOfPublicFn.buildArgs(account))
+						calls.push([
+							new EncodedCallAction(
+								token.contract,
+								selector.toString(),
+								packedArgs.values.map(x => x.toString()),
+								balanceOfPublicFn.name,
+								balanceOfPublicFn.type,
+								balanceOfPublicFn.isStatic,
+								balanceOfPublicFn.getReturnTypes(),
+							),
+							i,
+							false,
+							balanceOfPublicFn,
+						]);
+					}
 				}
 				else {
-					const selector = await balanceOfPublicFn.getSelector();
-					const packedArgs = await balanceOfPublicFn.packArgs(balanceOfPublicFn.buildArgs(account))
-					calls.push([
-						new EncodedCallAction(
-							token.contract,
-							selector.toString(),
-							packedArgs.values.map(x => x.toString()),
-							balanceOfPublicFn.name,
-							balanceOfPublicFn.type,
-							balanceOfPublicFn.isStatic,
-							balanceOfPublicFn.getReturnTypes(),
-						),
-						i,
-						false,
-						balanceOfPublicFn,
-					]);
+					tb.publicBalance = "0";
 				}
 			}
 			if (chainId) {
@@ -445,21 +447,25 @@ export class TokenBalanceService extends Service {
 				}
 			}
 			const now = Date.now();
+			const balances = await this.balances.getValues()
 			for (const tb of tbs) {
 				tb.updatedAt = now;
-				await this.balances.set(`${tb.id}`, tb);
-				this.emit(
-					new TokenBalanceServiceEventMessage(
-						TokenBalanceServiceEvent.TokenBalanceUpdated,
-						this.getTokenBalanceInfo(tb)
+				const balance = balances.find(x => x.token === tb.token && x.account === tb.account);
+				if (balance) {
+					await this.balances.set(`${tb.id}`, tb);
+					this.emit(
+						new TokenBalanceServiceEventMessage(
+							TokenBalanceServiceEvent.TokenBalanceUpdated,
+							this.getTokenBalanceInfo(tb)
+						)
 					)
-				)
+				}
 			}
 
 			const stop = Date.now()
 			console.debug(`Synced in ${stop - start}ms`)
 		} catch (error) {
-			console.error(`Failed to sync`, error)
+			console.error("Failed to sync", error)
 		}
 	}
 }

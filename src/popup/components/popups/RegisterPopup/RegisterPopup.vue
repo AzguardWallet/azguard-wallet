@@ -55,24 +55,23 @@ const handleCreateProfile = async () => {
 	appStore.profile = profile
 	appStore.accounts = await managers.account.getAccounts(true)
 
-	isCreatingProfile.value = false
-
 	initTokenService({
 		profile: appStore.profile,
 		network: appStore.network,
 		account: appStore.account,
 		onTokenAdded: appStore.onTokenAdded,
 	})
-	initTransactionService(appStore.onTxAdded)
+	initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
 
 	appStore.initBalanceListeners()
 
 	await chrome.storage.local.set({
-		"azguard:ui:activeAccount": appStore.account.address,
+		"azguard:ui:activeAccount": appStore.account?.address,
 	})
 
 	router.push("/popup/general")
 
+	isCreatingProfile.value = false
 	appStore.showRegisterPopup = false
 }
 

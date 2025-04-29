@@ -105,7 +105,7 @@ onMounted(() => {
 <template>
 	<div :class="$style.wrapper">
 		<Icon
-			v-if="!fullscreen"
+			v-if="!fullscreen && requestId"
 			@click="handleFullscreenView"
 			name="expand"
 			size="16"

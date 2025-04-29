@@ -24,7 +24,7 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.tokens
+	return popupStore.len - popupStore.popups.tokens?.order
 })
 
 const handleEditToken = target => {
@@ -48,7 +48,7 @@ const handleDeleteToken = target => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.tokens">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.tokens?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="16" :class="$style.wrapper">
 				<Flex direction="column" gap="16">

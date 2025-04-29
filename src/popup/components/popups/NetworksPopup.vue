@@ -22,7 +22,7 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.networks
+	return popupStore.len - popupStore.popups.networks?.order
 })
 
 const router = useRouter()
@@ -43,7 +43,7 @@ const handleManageNetworks = () => {
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.networks">
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.networks?.order">
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>

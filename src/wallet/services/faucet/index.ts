@@ -13,40 +13,44 @@ import {
     getContractClassFromArtifact,
 } from "@aztec/stdlib/contract"
 import { PublicKeys } from "@aztec/stdlib/keys"
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/messages"
-import { Service } from "@/wallet/base/service"
-import { TokenService } from "@/wallet/services/token"
-import { TransactionService } from "@/wallet/services/transaction"
-import { NetworkService } from "@/wallet/services/network"
-import { AccountService } from "@/wallet/services/account"
-import { ProfileService } from "@/wallet/services/profile"
-import { PxeService } from "@/wallet/services/pxe";
-import { ExecutionService } from "@/wallet/services/execution"
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages"
+import { Service } from "@/wallet/base/port-service/service"
+import type { TokenService } from "@/wallet/services/token"
+import type { TransactionService } from "@/wallet/services/transaction"
+import { TxOrigin, OriginType } from "@/wallet/services/transaction/client"
+import type { NetworkService } from "@/wallet/services/network"
+import type { AccountService } from "@/wallet/services/account"
+import type { ProfileService } from "@/wallet/services/profile"
+import { PxeServiceClient } from "@/wallet/services/pxe/client";
+import type { ExecutionService } from "@/wallet/services/execution"
 import {
-    IOperation,
+    type IOperation,
     RegisterContractOperation,
     SendTransactionOperation,
-    IAction,
+    type IAction,
     AddCapsuleAction,
     CallAction,
     OperationStatus,
-    OkOperationResult,
-    FailedOperationResult,
-    FeeSettings,
+    type OkOperationResult,
+    type FailedOperationResult,
+    type FeeSettings,
+    FeePaymentMethodType,
+    FeeJuicePaymentMethod,
 } from "@/wallet/services/execution/client"
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
 	FaucetServiceMethod,
     FAUCET_SERVICE_NAME,
-    MintRequest,
+    type MintRequest,
     MintResponse,
 } from "./client"
 
 export class FaucetService extends Service {
+    private readonly pxeService: PxeServiceClient;
+
 	constructor(
         private readonly profileService: ProfileService,
         private readonly networkService: NetworkService,
-        private readonly pxeService: PxeService,
         private readonly accountService: AccountService,
         private readonly executionService: ExecutionService,
         private readonly transactionService: TransactionService,
@@ -54,6 +58,7 @@ export class FaucetService extends Service {
         emit: (event: EventMessage) => void
     ) {
 		super(FAUCET_SERVICE_NAME, emit)
+        this.pxeService = new PxeServiceClient();
 	}
 
 	public async process(
@@ -98,7 +103,7 @@ export class FaucetService extends Service {
     ) {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
-            throw new Error("unauthorized")
+            throw new Error("Profile locked")
         }
         const network = await this.networkService.getNetwork(networkId);
         if (!network) {
@@ -108,7 +113,7 @@ export class FaucetService extends Service {
         if (!account) {
             throw new Error("unknown account")
         }
-        const pxe = await this.pxeService.getPXEClient(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         
         const deployActions: IAction[] = [];
         const deployOps: IOperation[] = [
@@ -198,8 +203,9 @@ export class FaucetService extends Service {
             );
         }
         
+        const origin = new TxOrigin(OriginType.UI, "Faucet")
         if (deployActions.length) {
-            const deployResults = await this.executionService.executeOperations(deployOps, "Faucet");
+            const deployResults = await this.executionService.executeOperations(deployOps, origin);
             if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
                 throw new Error(`Token deployment failed: ${
                     (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)?.error
@@ -209,6 +215,12 @@ export class FaucetService extends Service {
             console.debug("faucet deploy tx:", deployTx);
             await this.transactionService.waitForTx(deployTx);
             console.debug("faucet deploy tx mined");
+            if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
+                feeSettings = {
+                    ...feeSettings,
+                    paymentMethod: new FeeJuicePaymentMethod(),
+                };
+            }
         }
 
         const [mintResult] = await this.executionService.executeOperations(
@@ -226,7 +238,7 @@ export class FaucetService extends Service {
                     ),
                 ]),
             ],
-            "Faucet"
+            origin
         );
         if (mintResult.status !== OperationStatus.Ok) {
             throw new Error(`Token mint failed: ${

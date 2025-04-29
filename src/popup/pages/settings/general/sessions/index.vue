@@ -66,22 +66,24 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 			<PageHeader title="Sessions" icon="plug-circle" iconColor="sand" />
 
 			<Flex direction="column" gap="16">
-				<Tooltip v-if="dappSessions.length" position="end">
-					<Icon
-						@click="handleDropAllSessions"
-						name="log-out"
-						size="16"
-						color="tertiary"
-						:class="$style.disconnect_all"
-					>
-						Disconnect All
-					</Icon>
+				<Flex align="center" justify="end" wide>
+					<Tooltip v-if="dappSessions.length" position="end">
+						<Icon
+							@click="handleDropAllSessions"
+							name="log-out"
+							size="16"
+							color="tertiary"
+							:class="$style.disconnect_all"
+						>
+							Disconnect All
+						</Icon>
 
-					<template #content>
-						<Text size="12" color="secondary">Disconnect all dApps</Text>
-					</template>
-				</Tooltip>
-
+						<template #content>
+							<Text size="12" color="secondary">Disconnect all dApps</Text>
+						</template>
+					</Tooltip>
+				</Flex>
+				
 				<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
 					<Flex
 						v-for="ds in dappSessions"

@@ -1,5 +1,5 @@
-import { EventMessage } from "@/wallet/base/messages";
-import { ServiceClient } from "@/wallet/base/service-client";
+import { EventMessage } from "@/wallet/base/port-service/messages";
+import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import { Account } from "@/wallet/services/account/client";
 import { Profile } from "@/wallet/services/profile/client";
 import { Network } from "@/wallet/services/network/client";

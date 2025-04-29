@@ -1,4 +1,4 @@
-import { RequestMessage, ResponseMessage } from "@/wallet/base/messages";
+import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import {
     DappMetadata,
     DappPermissions,
@@ -26,7 +26,7 @@ export class GetDappSessionsResponse extends ResponseMessage {
         result?: DappSession[],
         error?: string,
     ) {
-        super(DAPP_SESSION_SERVICE_NAME, request.id, result, error);
+        super(DAPP_SESSION_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -44,7 +44,7 @@ export class GetDappSessionResponse extends ResponseMessage {
         result?: DappSession,
         error?: string,
     ) {
-        super(DAPP_SESSION_SERVICE_NAME, request.id, result, error);
+        super(DAPP_SESSION_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -64,7 +64,7 @@ export class AddDappSessionResponse extends ResponseMessage {
         result?: DappSession,
         error?: string,
     ) {
-        super(DAPP_SESSION_SERVICE_NAME, request.id, result, error);
+        super(DAPP_SESSION_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -84,7 +84,7 @@ export class UpdateDappSessionResponse extends ResponseMessage {
         result?: DappSession,
         error?: string,
     ) {
-        super(DAPP_SESSION_SERVICE_NAME, request.id, result, error);
+        super(DAPP_SESSION_SERVICE_NAME, request.requestId, result, error);
     }
 }
 
@@ -102,6 +102,6 @@ export class DeleteDappSessionResponse extends ResponseMessage {
         result?: DappSession,
         error?: string,
     ) {
-        super(DAPP_SESSION_SERVICE_NAME, request.id, result, error);
+        super(DAPP_SESSION_SERVICE_NAME, request.requestId, result, error);
     }
 }

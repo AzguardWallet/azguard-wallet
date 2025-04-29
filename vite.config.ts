@@ -28,10 +28,6 @@ export default defineConfig({
 			"~": fileURLToPath(new URL("./src", import.meta.url)),
 			src: fileURLToPath(new URL("./src", import.meta.url)),
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
-			// "fs/promises": "node-stdlib-browser/mock/empty",
-			"@aztec/bb.js": fileURLToPath(
-				new URL("./libs/@aztec/bb.js@0.85.0-alpha-testnet.2/dest/browser/index.js", import.meta.url),
-			),
 			comlink: "comlink",
 			debug: "debug",
 		},
@@ -113,30 +109,21 @@ export default defineConfig({
 		viteStaticCopy({
 			targets: [
 				{
-					src: "./node_modules/@aztec/bb.js/dest/node/barretenberg_wasm/*.gz",
+					src: "./libs/@aztec/bb.js/*.wasm.gz",
 					dest: "assets/",
 				},
 			],
 		}),
 
-		{
-			...nodePolyfills({
-				include: ["buffer", "crypto", "net", "path", "stream", "tty", "vm", "util"],
-			}),
-			// Unfortunate, but needed due to https://github.com/davidmyersdev/vite-plugin-node-polyfills/issues/81
-			// Suspected to be because of the yarn workspace setup, but not sure
-			resolveId(source: string) {
-				const m = /^vite-plugin-node-polyfills\/shims\/(buffer|global|process)$/.exec(source)
-				if (m) {
-					return `./node_modules/vite-plugin-node-polyfills/shims/${m[1]}/dist/index.cjs`
-				}
-			},
-		},
+		nodePolyfills({
+			include: ["buffer", /*"crypto",*/ "net", "path", "stream", "tty", "vm", "util"],
+		}),
 	],
 	build: {
 		target: "esnext",
 		rollupOptions: {
 			input: {
+				offscreen: "src/offscreen/index.html",
 				popup: "src/popup/index.html",
 				setup: "src/setup/index.html",
 			},

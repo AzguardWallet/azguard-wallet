@@ -21,13 +21,19 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
-			"style": { "noParameterAssign": "off" },
+			"style": {
+				"noNonNullAssertion": "off",
+				"noParameterAssign": "off",
+				"useEnumInitializers": "off"
+			},
 			"performance": {
 				"noDelete": "info"
 			},
 			"suspicious": {
 				"noAsyncPromiseExecutor": "off",
-				"noGlobalAssign": "off"
+				"noDoubleEquals": "off",
+				"noGlobalAssign": "off",
+				"noExplicitAny": "off"
 			},
 			"complexity": { "noExtraBooleanCast": "off" }
 		}

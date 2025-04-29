@@ -1,8 +1,8 @@
-import { EventMessage } from "@/wallet/base/messages";
-import { ServiceClient } from "@/wallet/base/service-client";
-import { FpcServiceEvent, FpcServiceEventMessage } from "./events";
-import { FpcInfo, FpcType } from "./models";
-import { GetFpcsRequest, AddFpcRequest, DeleteFpcRequest } from "./methods";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
+import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { FpcServiceEvent, type FpcServiceEventMessage } from "./events";
+import type { FpcInfo, FpcType } from "./models";
+import { GetFpcRequest, GetFpcsRequest, AddFpcRequest, UpdateFpcRequest, DeleteFpcRequest } from "./methods";
 
 export * from "./events";
 export * from "./methods";
@@ -20,7 +20,7 @@ export class FpcServiceClient extends ServiceClient {
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onFpcAdded Callback, called when a new transaction was created.
      * @param onFpcUpdated Callback, called when an existing transaction was updated.
-     * @param onFpcDeleted Callback, called when an existing transaction was updated.
+     * @param onFpcDeleted Callback, called when an existing transaction was deleted.
      */
     constructor(
         onConnected?: () => void,
@@ -70,6 +70,16 @@ export class FpcServiceClient extends ServiceClient {
     }
 
     /**
+     * Returns a FPC with the specified id.
+     * @param fpcId FPC id.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the fpc with the specified id doesn't exist within the active profile.
+     */
+    public getFpc(fpcId: string): Promise<FpcInfo> {
+        return this.request(new GetFpcRequest(fpcId));
+    }
+
+    /**
      * Adds a new FPC
      * @param networkId network id
      * @param type FPC type
@@ -78,6 +88,18 @@ export class FpcServiceClient extends ServiceClient {
      */
     public addFpc(networkId: string, type: FpcType, address: string, name?: string): Promise<FpcInfo> {
         return this.request(new AddFpcRequest(networkId, type, address, name));
+    }
+
+    /**
+     * Changes fpc display name and returns the updated fpc.
+     * @param fpcId FPC id.
+     * @param name New display name.
+     * @emits `FpcUpdated` event.
+     * @throws "Profile locked" if profile is locked.
+     * @throws "Invalid id" if the FPC with the specified id doesn't exist within the active profile.
+     */
+    public updateFpc(fpcId: string, name: string): Promise<FpcInfo> {
+        return this.request(new UpdateFpcRequest(fpcId, name));
     }
 
     /**
