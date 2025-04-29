@@ -23,6 +23,7 @@ import {
     ContractInstanceWithAddress,
     ContractInstanceWithAddressSchema,
     getContractClassFromArtifact,
+    NodeInfo,
 } from "@aztec/stdlib/contract";
 import { PXE } from '@aztec/stdlib/interfaces/client';
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
@@ -852,6 +853,7 @@ export class ExecutionService extends Service {
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
 
         const pxe = this.pxeService.getPXE(network);
+        const nodeInfo = await pxe.getNodeInfo();
         const contracts = this.getContracts(op.actions.concat(op.setup ?? []));
         const instances = await this.getInstances(pxe, contracts);
         const artifacts = await this.getArtifacts(pxe, instances);
@@ -881,7 +883,7 @@ export class ExecutionService extends Service {
                 capsules,
                 authwits,
                 account,
-                network,
+                nodeInfo,
                 instances,
                 artifacts,
                 args,
@@ -896,7 +898,7 @@ export class ExecutionService extends Service {
                 capsules,
                 authwits,
                 account,
-                network,
+                nodeInfo,
                 instances,
                 artifacts,
                 args,
@@ -916,7 +918,7 @@ export class ExecutionService extends Service {
         capsules: Capsule[],
         authwits: AuthWitness[],
         account: IAccountContract,
-        network: Network,
+        nodeInfo: NodeInfo,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
         args: HashedValues[],
@@ -944,7 +946,7 @@ export class ExecutionService extends Service {
                     switch (_action.content.kind) {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
-                            messageHash = await this.getCallMessageHash(_content, network, instances, artifacts);
+                            messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
                             // await this.accountStateService.addCallAuthwit(
                             //     account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, false,
                             // );
@@ -952,7 +954,7 @@ export class ExecutionService extends Service {
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
-                            messageHash = await this.getEncodedCallMessageHash(_content, network, instances, artifacts);
+                            messageHash = await this.getEncodedCallMessageHash(_content, nodeInfo, instances, artifacts);
                             // await this.accountStateService.addCallAuthwit(
                             //     account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
                             // );
@@ -960,7 +962,7 @@ export class ExecutionService extends Service {
                         }
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
-                            messageHash = await this.getIntentMessageHash(_content, network);
+                            messageHash = await this.getIntentMessageHash(_content, nodeInfo);
                             // await this.accountStateService.addIntentAuthwit(
                             //     account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, false,
                             // );
@@ -996,7 +998,7 @@ export class ExecutionService extends Service {
                     switch (_action.content.kind) {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
-                            messageHash = await this.getCallMessageHash(_content, network, instances, artifacts);
+                            messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
                             await this.accountStateService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, true,
                             );
@@ -1004,7 +1006,7 @@ export class ExecutionService extends Service {
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
-                            messageHash = await this.getEncodedCallMessageHash(_content, network, instances, artifacts);
+                            messageHash = await this.getEncodedCallMessageHash(_content, nodeInfo, instances, artifacts);
                             await this.accountStateService.addCallAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, true,
                             );
@@ -1012,7 +1014,7 @@ export class ExecutionService extends Service {
                         }
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
-                            messageHash = await this.getIntentMessageHash(_content, network);
+                            messageHash = await this.getIntentMessageHash(_content, nodeInfo);
                             await this.accountStateService.addIntentAuthwit(
                                 account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, true,
                             );
@@ -1146,7 +1148,7 @@ export class ExecutionService extends Service {
 
     async getCallMessageHash(
         content: CallAuthwitContent,
-        network: Network,
+        nodeInfo: NodeInfo,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
     ): Promise<Fr> {
@@ -1177,15 +1179,15 @@ export class ExecutionService extends Service {
                 ),
             },
             {
-                chainId: new Fr(network.chainId),
-                version: new Fr(network.rollupVersion),
+                chainId: new Fr(nodeInfo.l1ChainId),
+                version: new Fr(nodeInfo.rollupVersion),
             },
         );
     }
 
     async getEncodedCallMessageHash(
         content: EncodedCallAuthwitContent,
-        network: Network,
+        nodeInfo: NodeInfo,
         instances: Map<string, ContractInstanceWithAddress>,
         artifacts: Map<string, ContractArtifact>,
     ): Promise<Fr> {
@@ -1241,15 +1243,15 @@ export class ExecutionService extends Service {
                 ),
             },
             {
-                chainId: new Fr(network.chainId),
-                version: new Fr(network.rollupVersion),
+                chainId: new Fr(nodeInfo.l1ChainId),
+                version: new Fr(nodeInfo.rollupVersion),
             },
         );
     }
 
     async getIntentMessageHash(
         content: IntentAuthwitContent,
-        network: Network,
+        nodeInfo: NodeInfo,
     ): Promise<Fr> {
         return await computeAuthWitMessageHash(
             {
@@ -1257,8 +1259,8 @@ export class ExecutionService extends Service {
                 innerHash: await computeInnerAuthWitHash(content.intent.map(x => Fr.fromString(x))),
             },
             {
-                chainId: new Fr(network.chainId),
-                version: new Fr(network.rollupVersion),
+                chainId: new Fr(nodeInfo.l1ChainId),
+                version: new Fr(nodeInfo.rollupVersion),
             },
         );
     }
