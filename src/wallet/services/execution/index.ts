@@ -67,7 +67,6 @@ import {
     ExecuteOperationsResponse,
     OperationKind,
     IOperation,
-    AddNoteOperation,
     GetCompleteAddressOperation,
     RegisterSenderOperation,
     RegisterContractOperation,
@@ -309,10 +308,6 @@ export class ExecutionService extends Service {
             try {
                 let result;
                 switch (operation.kind) {
-                    case OperationKind.AddNote: {
-                        result = await this.executeAddNote(operation as AddNoteOperation);
-                        break;
-                    }
                     case OperationKind.GetCompleteAddress: {
                         result = await this.executeGetCompleteAddress(operation as GetCompleteAddressOperation);
                         break;
@@ -352,12 +347,6 @@ export class ExecutionService extends Service {
             }
         }
         return results;
-    }
-
-    async executeAddNote(op: AddNoteOperation): Promise<void> {
-        // const network = await this.networkService.getNetwork(op.networkId);
-        // const pxe = createPXEClient(network.rpcUrl);
-        // await pxe.addNote(ExtendedNote.schema.parse(op.note), AztecAddress.fromString(op.accountAddress));
     }
 
     async executeGetCompleteAddress(op: GetCompleteAddressOperation): Promise<CompleteAddress> {

@@ -8,7 +8,6 @@ import {
     ConnectionParams,
     ExecutionParams,
     Operation,
-    AddNoteOperation,
     GetCompleteAddressOperation,
     RegisterContractOperation,
     RegisterSenderOperation,
@@ -80,7 +79,6 @@ export function parseMethod(data: any): string {
         // case RpcMethod.close_session:
         // case RpcMethod.connect:
         // case RpcMethod.execute:
-        case OperationKind.AddNote:
         case OperationKind.GetCompleteAddress:
         case OperationKind.RegisterSender:
         case OperationKind.RegisterContract:
@@ -121,9 +119,6 @@ export function parseExecutionParams(data: any): ExecutionParams {
 
 function parseOperation(data: any): Operation {
     switch (data?.kind) {
-        case OperationKind.AddNote: {
-            return parseAddNoteOperation(data);
-        }
         case OperationKind.GetCompleteAddress: {
             return parseGetCompleteAddressOperation(data);
         }
@@ -149,14 +144,6 @@ function parseOperation(data: any): Operation {
             throw new Error("Invalid operation");
         }
     }
-}
-
-function parseAddNoteOperation(data: any): AddNoteOperation {
-    return {
-        kind: OperationKind.AddNote,
-        account: parseAccountProp(data, "account"),
-        note: parseRequiredProp(data, "note"),
-    };
 }
 
 function parseGetCompleteAddressOperation(data: any): GetCompleteAddressOperation {

@@ -92,7 +92,6 @@ const init = async () => {
 					})
 					break
 				}
-				case OperationKind.AddNote:
 				case OperationKind.GetCompleteAddress:
 				case OperationKind.SendTransaction:
 				case OperationKind.SimulateTransaction:
@@ -378,8 +377,7 @@ const showJson = () => {
 							<Text size="14" color="primary">{{ humanize(op.kind) }}</Text>
 							<NetworkBadge :chainId="op.network.chainId" />
 						</Flex>
-						<template v-if="op.kind === OperationKind.AddNote"> </template>
-						<template v-else-if="op.kind === OperationKind.GetCompleteAddress">
+						<template v-if="op.kind === OperationKind.GetCompleteAddress">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Requested account:</Text>
 								<Text size="12" color="primary">

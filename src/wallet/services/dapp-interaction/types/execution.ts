@@ -22,7 +22,6 @@ export type ExecutionParams = {
 }
 
 export type Operation = 
-    AddNoteOperation |
     GetCompleteAddressOperation |
     RegisterContractOperation |
     RegisterSenderOperation |
@@ -30,12 +29,6 @@ export type Operation =
     SimulateTransactionOperation | 
     SimulateUtilityOperation |
     SimulateViewsOperation;
-
-export type AddNoteOperation = {
-    kind: OperationKind.AddNote,
-    account: CaipAccount,
-    note: unknown,
-}
 
 export type GetCompleteAddressOperation = {
     kind: OperationKind.GetCompleteAddress,

@@ -1,7 +1,6 @@
 import { CallAction, EncodedCallAction, FeeSettings, IAction } from ".";
 
 export enum OperationKind {
-    AddNote = "add_note",
     GetCompleteAddress = "get_complete_address",
     RegisterContract = "register_contract",
     RegisterSender = "register_sender",
@@ -13,15 +12,6 @@ export enum OperationKind {
 
 export interface IOperation {
     readonly kind: OperationKind;
-}
-
-export class AddNoteOperation implements IOperation {
-    public readonly kind = OperationKind.AddNote;
-    public constructor(
-        public readonly networkId: string,
-        public readonly accountAddress: string,
-        public readonly note: unknown,
-    ) {}
 }
 
 export class GetCompleteAddressOperation implements IOperation {

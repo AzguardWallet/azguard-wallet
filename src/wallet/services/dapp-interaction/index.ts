@@ -23,7 +23,6 @@ import {
     ConnectionParams,
     ExecutionParams,
     OperationKind,
-    AddNoteOperation,
     GetCompleteAddressOperation,
     RegisterContractOperation,
     RegisterSenderOperation,
@@ -183,13 +182,6 @@ export class DappInteractionService extends Service {
         }
         for (const operation of operations) {
             switch (operation.kind) {
-                case OperationKind.AddNote: {
-                    const _operation = operation as AddNoteOperation;
-                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
-                    this.checkAccountPermission(session, _operation.account);
-                    this.checkMethodPermission(session, _operation.kind, chain);
-                    break;
-                }
                 case OperationKind.GetCompleteAddress: {
                     const _operation = operation as GetCompleteAddressOperation;
                     const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
