@@ -155,6 +155,12 @@ export const useAppStore = defineStore("app", () => {
 		transactions.value.unshift(tx)
 		isAwaitingTransaction.value = false
 	}
+	const onTxUpdated = tx => {
+		const ind = transactions.value.findIndex(x => x.hash === tx.hash);
+		if (ind !== -1) {
+			transactions.value.splice(ind, 1, tx);
+		}
+	}
 	const syncTransactions = async () => {
 		transactions.value = (await managers.transaction.getTransactions(account.value))
 			.filter(t => t.account === account.value?.address)
@@ -205,6 +211,7 @@ export const useAppStore = defineStore("app", () => {
 		removeNetwork,
 		transactions,
 		onTxAdded,
+		onTxUpdated,
 		syncTransactions,
 		showSendPopup,
 		showRegisterPopup,

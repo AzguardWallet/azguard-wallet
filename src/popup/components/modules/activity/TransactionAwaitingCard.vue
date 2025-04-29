@@ -7,8 +7,8 @@
 		</Flex>
 
 		<Flex direction="column" gap="6">
-			<Text size="13" weight="600" color="primary"> Transaction in progress </Text>
-			<Text size="12" weight="500" color="tertiary"> Awaiting confirmation </Text>
+			<Text size="13" weight="600" color="primary"> Creating transaction </Text>
+			<Text size="12" weight="500" color="tertiary"> Estimating fees, generating proofs... </Text>
 		</Flex>
 	</Flex>
 </template>

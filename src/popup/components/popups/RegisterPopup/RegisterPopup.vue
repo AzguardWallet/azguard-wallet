@@ -61,7 +61,7 @@ const handleCreateProfile = async () => {
 		account: appStore.account,
 		onTokenAdded: appStore.onTokenAdded,
 	})
-	initTransactionService(appStore.onTxAdded)
+	initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
 
 	appStore.initBalanceListeners()
 
