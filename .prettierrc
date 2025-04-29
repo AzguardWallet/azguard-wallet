@@ -12,6 +12,7 @@
 			"files": [
 				"src/background/**/*",
 				"src/content-script/**/*",
+				"src/offscreen/**/*",
 				"src/wallet/**/*"
 			],
 			"options": {

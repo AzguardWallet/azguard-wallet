@@ -3,7 +3,7 @@ import { inject } from "./utils";
 
 const azguardProp = "azguard";
 const azguardObject = {
-    version: "0.3.1",
+    version: "0.4.0",
     createClient: () => new ProxyClient(),
 }
 
