@@ -9,7 +9,6 @@ import {
     AbiTypeSchema,
     ContractArtifact,
     ContractArtifactSchema,
-    decodeFromAbi,
     encodeArguments,
     FunctionSelector,
     FunctionType,
@@ -56,6 +55,7 @@ import {
     TxTransfer,
 } from "@/wallet/services/transaction/client";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
+import { decodeFromAbiPatched } from "@/wallet/utils/abi-decoder";
 import { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import {
@@ -733,10 +733,10 @@ export class ExecutionService extends Service {
                     if (fn.functionType === FunctionType.UTILITY) {
                         let decodedArgs;
                         try {
-                            decodedArgs = ensureArray(decodeFromAbi(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
+                            decodedArgs = ensureArray(decodeFromAbiPatched(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
                         }
                         catch (error) {
-                            console.error("Failed to decode utility call args", fn.parameters, _call.args);
+                            console.error("Failed to decode utility call args", fn.parameters, _call.args, error);
                             throw new Error(`Failed to decode utility "encoded_call" args: ${(error as Error)?.message}. Try to use "call" instead.`);
                         }
                         utility.push([
@@ -795,7 +795,7 @@ export class ExecutionService extends Service {
             const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? [];
             result.encoded[i] = values;
             try {
-                result.decoded[i] = decodeFromAbi(types, values);
+                result.decoded[i] = decodeFromAbiPatched(types, values);
             }
             catch (error) {
                 console.error("Failed to decode simulation results", types, values, error);
