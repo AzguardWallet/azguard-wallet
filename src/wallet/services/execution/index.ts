@@ -897,7 +897,7 @@ export class ExecutionService extends Service {
         }
 
         const nonce = Fr.random();
-        const txRequest = await account.buildTxExecutionRequest(pxe, setup, isFeePayer, calls, args, nonce);
+        const txRequest = await account.buildTxExecutionRequest(pxe, setup, isFeePayer, calls, args, nonce, authwits, capsules);
 
         return [txRequest, pxe, account, network, nonce, txCalls, txSetup];
     }
