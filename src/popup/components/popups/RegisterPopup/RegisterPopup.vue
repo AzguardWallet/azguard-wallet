@@ -16,18 +16,6 @@ const router = useRouter()
 const walletPassword = ref<string>("")
 const repeatedPassword = ref<string>("")
 
-const handlePasswordInput = () => {
-	if (walletPassword.value.length > 64) {
-		walletPassword.value = walletPassword.value.slice(0, 64)
-	}
-}
-
-const handleRepeatedPasswordInput = () => {
-	if (repeatedPassword.value.length > 64) {
-		repeatedPassword.value = repeatedPassword.value.slice(0, 64)
-	}
-}
-
 const isCreatingProfile = ref(false)
 const isAllowedToContinue = computed(() => {
 	if (!walletPassword.value.length || walletPassword.value.length < 8) {

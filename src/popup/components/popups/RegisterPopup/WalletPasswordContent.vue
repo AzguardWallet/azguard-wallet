@@ -8,6 +8,12 @@ const inputElement = useTemplateRef("inputElement")
 
 const isPasswordType = ref(true)
 
+const maxPasswordLength = 64
+const maxLengthReached = ref(false)
+const handleMaxLengthReached = (event) => {
+	maxLengthReached.value = event
+}
+
 onMounted(() => {
 	inputElement.value.inputEl.focus()
 })
@@ -25,7 +31,9 @@ onMounted(() => {
 				ref="inputElement"
 				v-model="password"
 				@input="emit('onPasswordInput')"
+				@maxLengthReached="handleMaxLengthReached"
 				:type="isPasswordType ? 'password' : 'text'"
+				:maxLength="maxPasswordLength"
 				placeholder="Strong password"
 			>
 				<template #suffix>
@@ -42,9 +50,25 @@ onMounted(() => {
 			<Input
 				v-model="repeatedPassword"
 				:type="isPasswordType ? 'password' : 'text'"
+				:maxLength="maxPasswordLength"
 				@input="emit('onRepeatedPasswordInput')"
 				placeholder="Repeat password"
 			/>
+		</Flex>
+
+		<Flex v-if="maxLengthReached" align="center" gap="6">
+			<Transition name="fade">
+				<Tooltip position="start">
+					<Flex align="center" gap="6">
+						<Icon name="warning" size="12" color="yellow" />
+						<Text size="12" color="primary"> Maximum length reached </Text>
+					</Flex>
+
+					<template #content>
+						{{ `Maximum password length is ${maxPasswordLength} characters` }}
+					</template>
+				</Tooltip>
+			</Transition>
 		</Flex>
 
 		<Flex align="center" gap="6">

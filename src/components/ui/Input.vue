@@ -4,7 +4,7 @@
  */
 import { ref, watch, computed } from "vue"
 
-const emit = defineEmits(["update:modelValue", "focus", "blur"])
+const emit = defineEmits(["update:modelValue", "focus", "blur", "maxLengthReached"])
 const props = defineProps({
 	size: {
 		type: String,
@@ -74,6 +74,8 @@ const fillWarning = (text) => {
 			show: true,
 			text
 		}
+
+		
 	} else {
 		warning.value.show = false
 	}
@@ -99,14 +101,19 @@ const getInputType = computed(() => {
 
 const handleInput = () => {
 	if (props.disabled) return
-	fillWarning()
 
-	if (!!props.maxLength && text.value.length > props.maxLength) {
-		text.value = text.value.slice(0, props.maxLength)
-	}
+	if (!!props.maxLength) {
+		fillWarning()
+		emit("maxLengthReached", false)
 
-	if (!!props.maxLength && text.value.length == props.maxLength) {
-		fillWarning(`You can’t enter more than ${props.maxLength} characters`)
+		if (text.value.length > props.maxLength) {
+			text.value = text.value.slice(0, props.maxLength)
+		}
+
+		if (text.value.length == props.maxLength) {
+			fillWarning(`You can’t enter more than ${props.maxLength} characters`)
+			emit("maxLengthReached", true)
+		}
 	}
 
 	if (props.type === "number") {
