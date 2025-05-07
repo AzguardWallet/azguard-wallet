@@ -657,7 +657,7 @@ export class ExecutionService extends Service {
                     }
                     const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
-                        throw new Error("Contract not found");
+                        throw new Error("Contract artifact not found");
                     }
                     const fn = artifact.functions.find(x => x.name === _call.method)
                         ?? artifact.nonDispatchPublicFunctions.find(x => x.name === _call.method);
@@ -708,7 +708,7 @@ export class ExecutionService extends Service {
                     }
                     const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
-                        throw new Error("Contract not found");
+                        throw new Error("Contract artifact not found");
                     }
                     let fn;
                     for (const _fn of artifact.functions) {
@@ -1051,7 +1051,7 @@ export class ExecutionService extends Service {
                     }
                     const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
-                        throw new Error("Contract not found");
+                        throw new Error("Contract artifact not found");
                     }
                     const fn = artifact.functions.find(x => x.name === _action.method)
                         ?? artifact.nonDispatchPublicFunctions.find(x => x.name === _action.method);
@@ -1087,7 +1087,7 @@ export class ExecutionService extends Service {
                         }
                         const artifact = artifacts.get(instance.currentContractClassId.toString());
                         if (!artifact) {
-                            throw new Error("Contract not found");
+                            throw new Error("Contract artifact not found");
                         }
                         let fn;
                         for (const _fn of artifact.functions) {
@@ -1147,7 +1147,7 @@ export class ExecutionService extends Service {
         }
         const artifact = artifacts.get(instance.currentContractClassId.toString());
         if (!artifact) {
-            throw new Error("Contract not found");
+            throw new Error("Contract artifact not found");
         }
         const fn = artifact.functions.find(x => x.name === content.method)
             ?? artifact.nonDispatchPublicFunctions.find(x => x.name === content.method);
@@ -1191,7 +1191,7 @@ export class ExecutionService extends Service {
             }
             const artifact = artifacts.get(instance.currentContractClassId.toString());
             if (!artifact) {
-                throw new Error("Contract not found");
+                throw new Error("Contract artifact not found");
             }
             let fn;
             for (const _fn of artifact.functions) {
@@ -1263,8 +1263,18 @@ export class ExecutionService extends Service {
             )
             .concat(
                 actions
+                    .filter(x => x.kind === ActionKind.AddPrivateAuthwit && (x as AddPrivateAuthwitAction).content.kind === AuthwitContentKind.EncodedCall)
+                    .map(x => ((x as AddPrivateAuthwitAction).content as EncodedCallAuthwitContent).to)
+            )
+            .concat(
+                actions
                     .filter(x => x.kind === ActionKind.AddPublicAuthwit && (x as AddPublicAuthwitAction).content.kind === AuthwitContentKind.Call)
                     .map(x => ((x as AddPublicAuthwitAction).content as CallAuthwitContent).contract)
+            )
+            .concat(
+                actions
+                    .filter(x => x.kind === ActionKind.AddPublicAuthwit && (x as AddPublicAuthwitAction).content.kind === AuthwitContentKind.EncodedCall)
+                    .map(x => ((x as AddPublicAuthwitAction).content as EncodedCallAuthwitContent).to)
             )
             .concat(
                 actions
