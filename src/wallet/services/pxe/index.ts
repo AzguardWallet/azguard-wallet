@@ -4,11 +4,14 @@ import { Fr } from "@aztec/foundation/fields";
 import { AuthRegistryContractArtifact } from "@aztec/noir-contracts.js/AuthRegistry";
 import { ContractInstanceDeployerContractArtifact } from "@aztec/noir-contracts.js/ContractInstanceDeployer";
 import { ContractClassRegistererContractArtifact } from "@aztec/noir-contracts.js/ContractClassRegisterer";
+import { EasyPrivateTokenContractArtifact } from "@aztec/noir-contracts.js/EasyPrivateToken";
 import { MultiCallEntrypointContractArtifact } from "@aztec/noir-contracts.js/MultiCallEntrypoint";
 import { FeeJuiceContractArtifact } from "@aztec/noir-contracts.js/FeeJuice";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
+import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
+import { TokenBlacklistContractArtifact } from "@aztec/noir-contracts.js/TokenBlacklist";
 import { ContractArtifact, ContractArtifactSchema } from "@aztec/stdlib/abi";
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -248,6 +251,9 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             FPCContractArtifact,
             SponsoredFPCContractArtifact,
             TokenContractArtifact,
+            NFTContractArtifact,
+            EasyPrivateTokenContractArtifact,
+            TokenBlacklistContractArtifact,
         ]) {
             const contractClass = await getContractClassFromArtifact(artifact);
             this.knownArtifacts.set(contractClass.id.toString(), artifact);
