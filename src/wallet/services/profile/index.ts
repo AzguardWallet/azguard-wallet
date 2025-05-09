@@ -472,8 +472,12 @@ export class ProfileService extends Service {
         const key = await EncryptionKey.fromPasshash(passhash);
         const guard = await key.encrypt(encryptionGuard);
         const _secret = Buffer.from(secret, "base64");
-        if (!await this.tryDecrypt(_secret, key)) {
+        const _plainSecret = await this.tryDecrypt(_secret, key);
+        if (!_plainSecret) {
             throw new Error("Invalid password");
+        }
+        if (_plainSecret.byteLength !== 32) {
+            throw new Error("Invalid secret length");
         }
         return await this.importProfile(name, guard, _secret, key, passhash);
     }
@@ -482,7 +486,11 @@ export class ProfileService extends Service {
         const passhash = await EncryptionKey.getPasshash(password);
         const key = await EncryptionKey.fromPasshash(passhash);
         const guard = await key.encrypt(encryptionGuard);
-        const _secret = await key.encrypt(Buffer.from(secret, "base64"));
+        const _plainSecret = Buffer.from(secret, "base64");
+        if (_plainSecret.byteLength !== 32) {
+            throw new Error("Invalid secret length");
+        }
+        const _secret = await key.encrypt(_plainSecret);
         return await this.importProfile(name, guard, _secret, key, passhash);
     }
 
