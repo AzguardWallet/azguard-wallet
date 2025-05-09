@@ -62,7 +62,7 @@ type ActiveSession = {
 }
 
 const encryptionGuard = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
-const sessionTtl = 600_000; // 10 minutes. TODO: configure it in settings
+const sessionTtl = 1800_000; // 30 minutes. TODO: configure it in settings
 
 export class ProfileService extends Service {
     public readonly onProfileDeleted: ((profileId: string) => void)[] = [];
