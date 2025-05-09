@@ -9,6 +9,15 @@ export class EntityStorage<T> {
         this.storage = type === StorageType.Local ? storage.local : storage.session;
     }
 
+    public async getVersion(): Promise<number> {
+        const res = await this.storage.get(this.root);
+        return this.root in res ? JSON.parse(res[this.root]) : 0;
+    }
+
+    public setVersion(version: number): Promise<void> {
+        return this.storage.set({[this.root]: JSON.stringify(version)});
+    }
+
     public async contains(id: string): Promise<boolean> {
         const key = `${this.root}@${id}`;
         const res = await this.storage.get(key);

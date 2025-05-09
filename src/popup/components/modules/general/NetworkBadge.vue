@@ -4,7 +4,7 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 /** Utils */
-import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
+import { getChainColor, getChainName } from "@/components/ui/utils.js"
 
 const props = defineProps({
 	chainId: {
@@ -16,12 +16,11 @@ const props = defineProps({
 const node = computed(() => appStore.networks.find(n => n.chainId === props.chainId))
 
 const chain = computed(() => {
-	const chainType = getNetworkType(props.chainId)
-	if (chainType.toLowerCase().includes("custom")) {
+	const chainName = getChainName(props.chainId)
+	if (chainName.startsWith("Aztec:")) {
 		return "Custom"
 	}
-
-	return chainType
+	return chainName
 })
 </script>
 
@@ -31,7 +30,7 @@ const chain = computed(() => {
 			align="center"
 			gap="6"
 			:class="$style.wrapper"
-			:style="{ background: `var(--${getNetworkColor(chainId)})` }"
+			:style="{ background: `var(--${getChainColor(chainId)})` }"
 		>
 			<Flex v-if="chain === 'Custom'" align="center" gap="2">
 				<Text size="11" weight="700"> {{ chain }} </Text>

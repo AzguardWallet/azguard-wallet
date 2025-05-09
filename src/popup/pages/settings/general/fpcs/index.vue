@@ -19,7 +19,7 @@ import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
 /** Utils */
-import { getNetworkColor } from "@/components/ui/utils.js"
+import { getChainColor } from "@/components/ui/utils.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -80,7 +80,7 @@ const prepareFpc = (fpc) => {
 		? {
 			...fpc,
 			typeName: "sponsored",
-			color: getNetworkColor(appStore.network.chainId),
+			color: getChainColor(appStore.network.chainId),
 		}
 		: {
 			...fpc,

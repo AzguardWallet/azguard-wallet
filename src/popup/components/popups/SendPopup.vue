@@ -14,7 +14,7 @@ import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 import { managers } from "@/utils/core.js"
 import { capitalize, isValidHex } from "@/utils/string"
 import { TransferType } from "@/wallet/services/transaction/client"
-import { getNetworkColor, getNetworkType } from "@/components/ui/utils.js"
+import { getChainColor, getChainName } from "@/components/ui/utils.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -218,7 +218,7 @@ watch(
 							<Icon
 								name="globe"
 								size="12"
-								:color="getNetworkColor(appStore.network?.chainId)"
+								:color="getChainColor(appStore.network?.chainId)"
 								:class="$style.warning_icon"
 							/>
 						</Flex>
@@ -227,7 +227,7 @@ watch(
 						</Text>
 
 						<Text size="16" weight="600" color="tertiary">
-							in {{ getNetworkType(appStore.network.chainId) }}
+							in {{ getChainName(appStore.network.chainId) }}
 						</Text>
 					</Flex>
 

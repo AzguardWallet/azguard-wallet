@@ -101,6 +101,6 @@ class AbiDecoderPatched {
         if (this.flattened.length) {
             throw new Error("Failed to decode from ABI: not all values were consumed");
         }
-        return values;
+        return values.length === 1 ? values[0] : values;
     }
 }

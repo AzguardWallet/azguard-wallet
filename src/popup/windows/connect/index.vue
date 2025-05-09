@@ -6,7 +6,7 @@ import { onBeforeMount, onMounted, onUnmounted } from "vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
-import { getNetworkType } from "@/components/ui/utils.js"
+import { getChainName } from "@/components/ui/utils.js"
 
 /** Services */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
@@ -382,7 +382,7 @@ const packPermissions = permissions => {
 					<Icon name="check-circle" :color="p.required ? 'green' : 'sand'" size="11" />
 					<Text size="13" color="secondary">
 						{{ p.method ?? p.event }} on
-						{{ p.chains.map(c => getNetworkType(+c.split(":")[1]).toLowerCase()).join(", ") }}
+						{{ p.chains.map(c => getChainName(+c.split(":")[1]).toLowerCase()).join(", ") }}
 					</Text>
 				</Flex>
 			</Flex>

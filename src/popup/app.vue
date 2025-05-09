@@ -5,6 +5,7 @@ import LogoStar from "@/components/LogoStar.vue"
 import PopupManager from "./components/popups/PopupManager.vue"
 
 /** Utils */
+import { getChainPosition } from "@/components/ui/utils"
 import { managers, initTokenService, initTransactionService } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
@@ -54,16 +55,18 @@ const router = useRouter()
 
 const initNetworks = async () => {
 	managers.network = new NetworkServiceClient()
-	appStore.networks = (await managers.network.getOrInitNetworks()).sort((a, b) =>
-		a.chainId === b.chainId ? a.name.localeCompare(b.name) : a.chainId - b.chainId,
-	)
+	appStore.networks = (await managers.network.getOrInitNetworks()).sort((a, b) => {
+		const aPos = getChainPosition(a.chainId)
+		const bPos = getChainPosition(b.chainId)
+		return aPos === bPos ? a.name.localeCompare(b.name) : aPos - bPos
+	})
 
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
 	if ("azguard:ui:activeNetwork" in activeNetworkResult) {
 		const localActiveNetworkId = activeNetworkResult["azguard:ui:activeNetwork"]
 		appStore.network = appStore.networks.find(n => n.id === localActiveNetworkId)
 	}
-	appStore.network ??= appStore.networks.findLast(n => n.isDefault) // TODO: change to .find() after dropping shared pxe
+	appStore.network ??= appStore.networks.find(n => n.isDefault)
 	managers.network.setDefault(appStore.network.id)
 	appStore.syncNetworkStatus()
 }
