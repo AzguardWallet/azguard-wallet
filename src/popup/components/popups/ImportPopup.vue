@@ -51,13 +51,13 @@ const handleProfileNameInput = () => {
 }
 const handlePasswordInput = () => {
 	if (isWrongPassword.value) isWrongPassword.value = false
-	if (password.value.length > 64) {
-		password.value = password.value.slice(0, 64)
+	if (password.value.length > 128) {
+		password.value = password.value.slice(0, 128)
 	}
 }
 const handleRepeatedPasswordInput = () => {
-	if (repeatedPassword.value.length > 64) {
-		repeatedPassword.value = repeatedPassword.value.slice(0, 64)
+	if (repeatedPassword.value.length > 128) {
+		repeatedPassword.value = repeatedPassword.value.slice(0, 128)
 	}
 }
 
