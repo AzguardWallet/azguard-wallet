@@ -154,6 +154,12 @@ const tokenBalanceService = new TokenBalanceServiceClient(
 	onBalanceDeleted,
 )
 
+const saveSelectedMethod = async (method) => {
+	const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+	fpms[props.account.address] = method
+	chrome.storage.local.set({ "azguard:ui:feePaymentMethods": fpms })
+}
+
 const init = async () => {
 	try {
 		isLoading.value = true
@@ -186,6 +192,7 @@ watch(
 					break;
 				}
 				settings.value = new FeeSettings(new FeeJuicePaymentMethod())
+				saveSelectedMethod(selectedMethod.value);
 				break;
 			case "fjwc":
 				if (!selectedMethod.value.claimAmount && claimParameters.value) {
@@ -208,6 +215,7 @@ watch(
 						selectedMethod.value.messageLeafIndex,
 					),
 				)
+				saveSelectedMethod(methods.value[0]);
 				break;
 			case "fpc":
 				if (!selectedMethod.value.fpc && selectedFpc.value) {
@@ -226,6 +234,7 @@ watch(
 				switch (selectedMethod.value.fpc.type) {
 					case FpcType.DefaultSponsoredFpc:
 						settings.value = new FeeSettings(new FpcPaymentMethod(selectedMethod.value.fpc.id))
+						saveSelectedMethod(selectedMethod.value);
 						break;
 					case FpcType.DefaultFpc:
 						if (isZeroBalance(selectedMethod.value)) {
@@ -234,6 +243,7 @@ watch(
 						}
 
 						settings.value = new FeeSettings(new FpcPaymentMethod(selectedMethod.value.fpc.id, selectedMethod.value.inPublic))
+						saveSelectedMethod(selectedMethod.value);
 						break;
 					default:
 						break;
@@ -281,17 +291,7 @@ watch(
 onBeforeMount(async () => {
 	await init()
 })
-onBeforeUnmount(async () => {
-	const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
-	let method
-	if (selectedMethod.value?.type === "fjwc") {
-		method = methods.value[0]
-	} else {
-		method = selectedMethod.value
-	}
-	fpms[props.account.address] = method
-	chrome.storage.local.set({ "azguard:ui:feePaymentMethods": fpms })
-
+onBeforeUnmount(() => {
 	cacheStore.feePaymentMethods = cacheStore.feePaymentMethods.filter(m => m.id !== methodId)
 	fpcService.dispose()
 	tokenBalanceService.dispose()
