@@ -110,11 +110,11 @@ export class TokenService extends Service {
 						_request,
 						tokens.map(this.getTokenInfo, this)
 					)
-				} catch (error: any) {
+				} catch (error: unknown) {
 					return new GetTokensResponse(
 						_request,
 						undefined,
-						error.message
+						(error as Error)?.message ?? error as string ?? "Unknown error"
 					)
 				}
 			}
@@ -123,11 +123,11 @@ export class TokenService extends Service {
 				try {
 					const token = await this.getToken(_request.tokenId)
 					return new GetTokenResponse(_request, token)
-				} catch (error: any) {
+				} catch (error: unknown) {
 					return new GetTokenResponse(
 						_request,
 						undefined,
-						error.message
+						(error as Error)?.message ?? error as string ?? "Unknown error"
 					)
 				}
 			}
@@ -141,11 +141,11 @@ export class TokenService extends Service {
 						_request.tokenInterface
 					)
 					return new AddTokenResponse(_request, token)
-				} catch (error: any) {
+				} catch (error: unknown) {
 					return new AddTokenResponse(
 						_request,
 						undefined,
-						error.message
+						(error as Error)?.message ?? error as string ?? "Unknown error"
 					)
 				}
 			}
@@ -160,11 +160,11 @@ export class TokenService extends Service {
 						_request.tokenInterface
 					)
 					return new UpdateTokenResponse(_request, token)
-				} catch (error: any) {
+				} catch (error: unknown) {
 					return new UpdateTokenResponse(
 						_request,
 						undefined,
-						error.message
+						(error as Error)?.message ?? error as string ?? "Unknown error"
 					)
 				}
 			}
@@ -173,11 +173,11 @@ export class TokenService extends Service {
 				try {
 					const token = await this.deleteToken(_request.tokenId)
 					return new DeleteTokenResponse(_request, token)
-				} catch (error: any) {
+				} catch (error: unknown) {
 					return new DeleteTokenResponse(
 						_request,
 						undefined,
-						error.message
+						(error as Error)?.message ?? error as string ?? "Unknown error"
 					)
 				}
 			}
@@ -189,11 +189,11 @@ export class TokenService extends Service {
 						_request.tokenId
 					)
 					return new GetInterfaceResponse(_request, tokenInterface)
-				} catch (error: any) {
+				} catch (error: unknown) {
 					return new GetInterfaceResponse(
 						_request,
 						undefined,
-						error.message
+						(error as Error)?.message ?? error as string ?? "Unknown error"
 					)
 				}
 			}
@@ -205,11 +205,11 @@ export class TokenService extends Service {
 						_request.contract
 					)
 					return new ParseInterfaceResponse(_request, tokenInterface)
-				} catch (error: any) {
+				} catch (error: unknown) {
 					return new ParseInterfaceResponse(
 						_request,
 						undefined,
-						error.message
+						(error as Error)?.message ?? error as string ?? "Unknown error"
 					)
 				}
 			}

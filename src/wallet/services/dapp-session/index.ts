@@ -52,7 +52,7 @@ export class DappSessionService extends Service {
                     return new GetDappSessionsResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new GetDappSessionsResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new GetDappSessionsResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappSessionServiceMethod.GetDappSession: {
@@ -62,7 +62,7 @@ export class DappSessionService extends Service {
                     return new GetDappSessionResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new GetDappSessionResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new GetDappSessionResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappSessionServiceMethod.AddDappSession: {
@@ -77,7 +77,7 @@ export class DappSessionService extends Service {
                     return new AddDappSessionResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new AddDappSessionResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new AddDappSessionResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappSessionServiceMethod.UpdateDappSession: {
@@ -92,7 +92,7 @@ export class DappSessionService extends Service {
                     return new UpdateDappSessionResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new UpdateDappSessionResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new UpdateDappSessionResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappSessionServiceMethod.DeleteDappSession: {
@@ -102,7 +102,7 @@ export class DappSessionService extends Service {
                     return new DeleteDappSessionResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new DeleteDappSessionResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new DeleteDappSessionResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             default: {

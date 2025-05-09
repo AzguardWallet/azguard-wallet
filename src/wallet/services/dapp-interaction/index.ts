@@ -88,7 +88,7 @@ export class DappInteractionService extends Service {
                     return new GetInteractionPayloadResponse(_request, this.getInteractionPayload(_request.interactionId));
                 }
                 catch (error: unknown) {
-                    return new GetInteractionPayloadResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new GetInteractionPayloadResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappInteractionServiceMethod.ResolveInteraction: {
@@ -98,7 +98,7 @@ export class DappInteractionService extends Service {
                     return new ResolveInteractionResponse(_request);
                 }
                 catch (error: unknown) {
-                    return new ResolveInteractionResponse(_request, (error as Error)?.message ?? "Unknown error");
+                    return new ResolveInteractionResponse(_request, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappInteractionServiceMethod.RejectInteraction: {
@@ -108,7 +108,7 @@ export class DappInteractionService extends Service {
                     return new RejectInteractionResponse(_request);
                 }
                 catch (error: unknown) {
-                    return new RejectInteractionResponse(_request, (error as Error)?.message ?? "Unknown error");
+                    return new RejectInteractionResponse(_request, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             default: {

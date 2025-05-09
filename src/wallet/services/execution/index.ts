@@ -133,7 +133,7 @@ export class ExecutionService extends Service {
                     return new ExecuteTransferResponse(_request, txHash);
                 }
                 catch (error: any) {
-                    return new ExecuteTransferResponse(_request, undefined, error.message);
+                    return new ExecuteTransferResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case ExecutionServiceMethod.ExecuteOperations: {
@@ -143,7 +143,7 @@ export class ExecutionService extends Service {
                     return new ExecuteOperationsResponse(_request, results);
                 }
                 catch (error: any) {
-                    return new ExecuteOperationsResponse(_request, undefined, error.message);
+                    return new ExecuteOperationsResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             default: {
