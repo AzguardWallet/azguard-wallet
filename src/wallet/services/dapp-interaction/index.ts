@@ -15,6 +15,7 @@ import {
     GetCompleteAddressOperation as ExecGetCompleteAddressOperation,
     RegisterContractOperation as ExecRegisterContractOperation,
     RegisterSenderOperation as ExecRegisterSenderOperation,
+    RegisterTokenOperation as ExecRegisterTokenOperation,
     SimulateTransactionOperation as ExecSimulateTransactionOperation,
     SimulateUtilityOperation as ExecSimulateUtilityOperation,
     SimulateViewsOperation as ExecSimulateViewsOperation,
@@ -45,6 +46,7 @@ import {
     GetCompleteAddressOperation,
     RegisterContractOperation,
     RegisterSenderOperation,
+    RegisterTokenOperation,
     SendTransactionOperation,
     SimulateTransactionOperation,
     SimulateUtilityOperation,
@@ -210,7 +212,6 @@ export class DappInteractionService extends Service {
         if (profile?.id !== payload.session.profileId) {
             throw new Error("Wallet locked");
         }
-        await this.profileService.refreshSession();
         const getNetwork = async (caipChain: CaipChain): Promise<Network> => {
             const [_, chainId] = caipChain.split(":");
             const networks = await this.networkService.getNetworks(+chainId);
@@ -249,6 +250,15 @@ export class DappInteractionService extends Service {
 					const network = await getNetwork(op.chain);
                     operations.push(new ExecRegisterSenderOperation(
                         network.id,
+                        op.address,
+                    ));
+					break;
+				}
+				case OperationKind.RegisterToken: {
+					const [network, account] = await getNetworkAndAccount(op.account);
+                    operations.push(new ExecRegisterTokenOperation(
+                        network.id,
+                        account.address,
                         op.address,
                     ));
 					break;
@@ -308,6 +318,7 @@ export class DappInteractionService extends Service {
 				}
 			}
 		}
+        await this.profileService.refreshSession();
         const results = await this.executionService.executeOperations(
             operations,
             new TxOrigin(OriginType.DAPP, payload.session.dappMetadata.name ?? "Unknown dapp"),
@@ -338,6 +349,13 @@ export class DappInteractionService extends Service {
                 case OperationKind.RegisterSender: {
                     const _operation = operation as RegisterSenderOperation;
                     this.checkMethodPermission(session, _operation.kind, _operation.chain);
+                    break;
+                }
+                case OperationKind.RegisterToken: {
+                    const _operation = operation as RegisterTokenOperation;
+                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
+                    this.checkAccountPermission(session, _operation.account);
+                    this.checkMethodPermission(session, _operation.kind, chain);
                     break;
                 }
                 case OperationKind.SendTransaction: {
@@ -415,6 +433,7 @@ export class DappInteractionService extends Service {
 
     private getOperationAccessLevel(kind: OperationKind): AccessLevel {
         switch (kind) {
+            case OperationKind.RegisterToken: return AccessLevel.AppState;
             case OperationKind.GetCompleteAddress: return AccessLevel.PublicData;
             case OperationKind.RegisterContract: return AccessLevel.PxeState;
             case OperationKind.RegisterSender: return AccessLevel.PxeState;

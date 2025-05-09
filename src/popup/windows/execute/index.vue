@@ -92,6 +92,7 @@ const init = async () => {
 					})
 					break
 				}
+				case OperationKind.RegisterToken:
 				case OperationKind.GetCompleteAddress:
 				case OperationKind.SendTransaction:
 				case OperationKind.SimulateTransaction:
@@ -159,6 +160,7 @@ const approve = async () => {
 	}
 	try {
 		isLoading.value = true
+		await profileService.refreshSession();
 		const results = await executionService.executeOperations(
 			operations.value,
 			new TxOrigin(OriginType.DAPP, session.value.dappMetadata.name ?? "Unknown dapp"),
@@ -395,6 +397,12 @@ const showJson = () => {
 						<template v-else-if="op.kind === OperationKind.RegisterSender">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Sender address:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === OperationKind.RegisterToken">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Token address:</Text>
 								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
 							</Flex>
 						</template>

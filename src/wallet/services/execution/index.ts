@@ -69,6 +69,7 @@ import {
     IOperation,
     GetCompleteAddressOperation,
     RegisterSenderOperation,
+    RegisterTokenOperation,
     RegisterContractOperation,
     SendTransactionOperation,
     SimulateTransactionOperation,
@@ -320,6 +321,10 @@ export class ExecutionService extends Service {
                         result = await this.executeRegisterSender(operation as RegisterSenderOperation);
                         break;
                     }
+                    case OperationKind.RegisterToken: {
+                        result = await this.executeRegisterToken(operation as RegisterTokenOperation);
+                        break;
+                    }
                     case OperationKind.SendTransaction: {
                         result = await this.executeSendTransaction(operation as SendTransactionOperation, origin);
                         break;
@@ -401,6 +406,23 @@ export class ExecutionService extends Service {
         await this.pxeService.registerSender(network, AztecAddress.fromString(op.address));
     }
 
+    async executeRegisterToken(op: RegisterTokenOperation): Promise<void> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const ti = await this.tokenService.parseTokenInterface(op.networkId, op.address);
+        if (ti.getNameFn === undefined ||
+            ti.getSymbolFn === undefined ||
+            ti.getDecimalsFn === undefined ||
+            ti.balanceOfPrivateFn === undefined &&
+            ti.balanceOfPublicFn === undefined
+        ) {
+            throw new Error("Couldn't find necessary methods in the contract interface. Try to add token manually.");
+        }
+        await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti);
+    }
+    
     async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings, boolean]> {
         switch (op.feeSettings.paymentMethod.type) {
             case FeePaymentMethodType.FeeJuice: {

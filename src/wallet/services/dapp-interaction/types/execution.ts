@@ -25,6 +25,7 @@ export type Operation =
     GetCompleteAddressOperation |
     RegisterContractOperation |
     RegisterSenderOperation |
+    RegisterTokenOperation |
     SendTransactionOperation | 
     SimulateTransactionOperation | 
     SimulateUtilityOperation |
@@ -46,6 +47,12 @@ export type RegisterContractOperation = {
 export type RegisterSenderOperation = {
     kind: OperationKind.RegisterSender,
     chain: CaipChain,
+    address: string,
+}
+
+export type RegisterTokenOperation = {
+    kind: OperationKind.RegisterToken,
+    account: CaipAccount,
     address: string,
 }
 

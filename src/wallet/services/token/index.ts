@@ -10,7 +10,7 @@ import type { ProfileService } from "@/wallet/services/profile"
 import type { AccountService } from "@/wallet/services/account"
 import { PxeServiceClient } from "@/wallet/services/pxe/client"
 import { EntityStorage, StorageType } from "@/wallet/storage"
-import { array_max } from "@/wallet/utils"
+import { array_max, Lock } from "@/wallet/utils"
 import {
 	feeJuiceAddress,
 	feeJuiceName,
@@ -81,6 +81,7 @@ export class TokenService extends Service {
 	public readonly onTokenDeleted: ((token: Token) => void)[] = []
 
 	private readonly tokens: EntityStorage<Token>
+	private readonly lock = new Lock();
 
 	constructor(
 		private readonly profiles: ProfileService,
@@ -250,14 +251,61 @@ export class TokenService extends Service {
 		address: string,
 		ti: TokenInterface
 	): Promise<TokenInfo> {
-		let token = await this.findToken(profileId, ti.chainId, ti.contract)
-		if (!token) {
-			const [name, symbol, decimals] = await this.getTokenMetadata(profileId, networkId, address, ti);
-			token = {
-				id: array_max((await this.tokens.getKeys()).map((x) => +x)) + 1,
-				profileId,
-				chainId: ti.chainId,
-				contract: ti.contract,
+		try {
+			await this.lock.enter();
+			let token = await this.findToken(profileId, ti.chainId, ti.contract)
+			if (!token) {
+				const [name, symbol, decimals] = await this.fetchTokenMetadata(profileId, networkId, address, ti);
+				token = {
+					id: array_max((await this.tokens.getKeys()).map((x) => +x)) + 1,
+					profileId,
+					chainId: ti.chainId,
+					contract: ti.contract,
+					name: name,
+					symbol: symbol,
+					decimals: decimals,
+					getNameFn: ti.getNameFn,
+					getSymbolFn: ti.getSymbolFn,
+					getDecimalsFn: ti.getDecimalsFn,
+					balanceOfPublicFn: ti.balanceOfPublicFn,
+					balanceOfPrivateFn: ti.balanceOfPrivateFn,
+					transferPublicFn: ti.transferPublicFn,
+					transferPrivateFn: ti.transferPrivateFn,
+					transferPublicToPrivateFn: ti.transferPublicToPrivateFn,
+					transferPrivateToPublicFn: ti.transferPrivateToPublicFn,
+				}
+				await this.tokens.set(`${token.id}`, token)
+				this.emitTokenAdded(token)
+			}
+			return this.getTokenInfo(token)
+		}
+		finally {
+			this.lock.leave();
+		}
+	}
+
+	public async updateToken(
+		profileId: string,
+		networkId: string,
+		address: string,
+		id: number,
+		ti: TokenInterface
+	): Promise<TokenInfo> {
+		try {
+			await this.lock.enter();
+			const _token = await this.tokens.get(`${id}`)
+			if (!_token) {
+				throw new Error("unknown token id")
+			}
+			if (_token.profileId !== profileId || _token.chainId !== ti.chainId || _token.contract !== ti.contract) {
+				throw new Error("token profile id, chain id and contract cannot change")
+			}
+			const [name, symbol, decimals] = await this.fetchTokenMetadata(profileId, networkId, address, ti);
+			const token: Token = {
+				id: _token.id,
+				profileId: _token.profileId,
+				chainId: _token.chainId,
+				contract: _token.contract,
 				name: name,
 				symbol: symbol,
 				decimals: decimals,
@@ -272,57 +320,28 @@ export class TokenService extends Service {
 				transferPrivateToPublicFn: ti.transferPrivateToPublicFn,
 			}
 			await this.tokens.set(`${token.id}`, token)
-			this.emitTokenAdded(token)
+			this.emitTokenUpdated(token)
+			return this.getTokenInfo(token)
 		}
-		return this.getTokenInfo(token)
-	}
-
-	public async updateToken(
-		profileId: string,
-		networkId: string,
-		address: string,
-		id: number,
-		ti: TokenInterface
-	): Promise<TokenInfo> {
-		const _token = await this.tokens.get(`${id}`)
-		if (!_token) {
-			throw new Error("unknown token id")
+		finally {
+			this.lock.leave();
 		}
-		if (_token.profileId !== profileId || _token.chainId !== ti.chainId || _token.contract !== ti.contract) {
-			throw new Error("token profile id, chain id and contract cannot change")
-		}
-		const [name, symbol, decimals] = await this.getTokenMetadata(profileId, networkId, address, ti);
-		const token: Token = {
-			id: _token.id,
-			profileId: _token.profileId,
-			chainId: _token.chainId,
-			contract: _token.contract,
-			name: name,
-			symbol: symbol,
-			decimals: decimals,
-			getNameFn: ti.getNameFn,
-			getSymbolFn: ti.getSymbolFn,
-			getDecimalsFn: ti.getDecimalsFn,
-			balanceOfPublicFn: ti.balanceOfPublicFn,
-			balanceOfPrivateFn: ti.balanceOfPrivateFn,
-			transferPublicFn: ti.transferPublicFn,
-			transferPrivateFn: ti.transferPrivateFn,
-			transferPublicToPrivateFn: ti.transferPublicToPrivateFn,
-			transferPrivateToPublicFn: ti.transferPrivateToPublicFn,
-		}
-		await this.tokens.set(`${token.id}`, token)
-		this.emitTokenUpdated(token)
-		return this.getTokenInfo(token)
 	}
 
 	public async deleteToken(id: number): Promise<TokenInfo> {
-		const token = await this.tokens.get(`${id}`)
-		if (!token) {
-			throw new Error("unknown token id")
+		try {
+			await this.lock.enter();
+			const token = await this.tokens.get(`${id}`)
+			if (!token) {
+				throw new Error("unknown token id")
+			}
+			await this.tokens.delete(`${id}`)
+			this.emitTokenDeleted(token)
+			return this.getTokenInfo(token)
 		}
-		await this.tokens.delete(`${id}`)
-		this.emitTokenDeleted(token)
-		return this.getTokenInfo(token)
+		finally {
+			this.lock.leave();
+		}
 	}
 
 	public async getTokenInterface(
@@ -518,7 +537,7 @@ export class TokenService extends Service {
 		)
 	}
 
-	private async getTokenMetadata(
+	private async fetchTokenMetadata(
 		profileId: string,
 		networkId: string,
 		address: string,
@@ -544,29 +563,29 @@ export class TokenService extends Service {
 		return [
 			getNameFn
 				? await simulate(
-						pxe,
-						account,
-						ti.contract,
-						getNameFn,
-						getNameFn.buildArgs()
+					pxe,
+					account,
+					ti.contract,
+					getNameFn,
+					getNameFn.buildArgs()
 				)
 				: ti.contract === feeJuiceAddress ? feeJuiceName : "<name>",
 			getSymbolFn
 				? await simulate(
-						pxe,
-						account,
-						ti.contract,
-						getSymbolFn,
-						getSymbolFn.buildArgs()
+					pxe,
+					account,
+					ti.contract,
+					getSymbolFn,
+					getSymbolFn.buildArgs()
 				)
 				: ti.contract === feeJuiceAddress ? feeJuiceSymbol : "<symbol>",
 			getDecimalsFn
 				? await simulate(
-						pxe,
-						account,
-						ti.contract,
-						getDecimalsFn,
-						getDecimalsFn.buildArgs()
+					pxe,
+					account,
+					ti.contract,
+					getDecimalsFn,
+					getDecimalsFn.buildArgs()
 				)
 				: 0,
 		];
