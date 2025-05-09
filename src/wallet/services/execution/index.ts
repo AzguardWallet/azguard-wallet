@@ -360,6 +360,13 @@ export class ExecutionService extends Service {
     }
 
     async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
+        const addressNum = AztecAddress.fromString(op.address).toBigInt();
+        if (addressNum >= 0 && addressNum <= 6) {
+            // ignore protocol contracts registration,
+            // because we cannot validate it due to hardcoded addresses
+            return;
+        }
+
         const network = await this.networkService.getNetwork(op.networkId);
 
         const providedInstance = await ContractInstanceWithAddressSchema.optional().parseAsync(op.instance);
@@ -378,7 +385,7 @@ export class ExecutionService extends Service {
 
         const contractClass = await getContractClassFromArtifact(artifact);
         if (contractClass.id.toString() !== instance.currentContractClassId.toString()) {
-            throw new Error("Contract artifact doesn't match instance class id");
+            throw new Error("Contract artifact doesn't match instance's current class id");
         }
 
         const contractAddress = await computeContractAddressFromInstance(instance);

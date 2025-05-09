@@ -9,6 +9,7 @@ import { MultiCallEntrypointContractArtifact } from "@aztec/noir-contracts.js/Mu
 import { FeeJuiceContractArtifact } from "@aztec/noir-contracts.js/FeeJuice";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
+import { RouterContractArtifact } from "@aztec/noir-contracts.js/Router";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
 import { TokenBlacklistContractArtifact } from "@aztec/noir-contracts.js/TokenBlacklist";
@@ -247,6 +248,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             ContractClassRegistererContractArtifact,
             MultiCallEntrypointContractArtifact,
             FeeJuiceContractArtifact,
+            RouterContractArtifact,
             // other
             FPCContractArtifact,
             SponsoredFPCContractArtifact,
