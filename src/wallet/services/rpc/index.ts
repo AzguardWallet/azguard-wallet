@@ -29,7 +29,7 @@ export class RpcService extends Service {
         private readonly dappSessions: DappSessionService,
         private readonly dappInteractions: DappInteractionService,
         emit: (event: EventMessage) => void
-    ) {        
+    ) {
         super(RPC_SERVICE_NAME, emit);
         this.dappSessions.onDappSessionUpdated.push(this.onDappSessionUpdated);
         this.dappSessions.onDappSessionDeleted.push(this.onDappSessionDeleted);

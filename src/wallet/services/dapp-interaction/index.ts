@@ -1,7 +1,26 @@
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
+import { ProfileService } from "@/wallet/services/profile";
+import { NetworkService } from "@/wallet/services/network";
+import { Network } from "@/wallet/services/network/client";
+import { AccountService } from "@/wallet/services/account";
+import { Account } from "@/wallet/services/account/client";
 import { DappSessionService } from "@/wallet/services/dapp-session";
-import { DappSession } from "@/wallet/services/dapp-session/client";
+import { AccessLevel, DappSession } from "@/wallet/services/dapp-session/client";
+import { ExecutionService } from "@/wallet/services/execution";
+import {
+    IOperation,
+    FeeSettings,
+    CustomPaymentMethod,
+    GetCompleteAddressOperation as ExecGetCompleteAddressOperation,
+    RegisterContractOperation as ExecRegisterContractOperation,
+    RegisterSenderOperation as ExecRegisterSenderOperation,
+    SimulateTransactionOperation as ExecSimulateTransactionOperation,
+    SimulateUtilityOperation as ExecSimulateUtilityOperation,
+    SimulateViewsOperation as ExecSimulateViewsOperation,
+    SendTransactionOperation as ExecSendTransactionOperation,
+} from "@/wallet/services/execution/client";
+import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
     DAPP_INTERACTION_SERVICE_NAME, 
@@ -30,6 +49,10 @@ import {
     SimulateTransactionOperation,
     SimulateUtilityOperation,
     SimulateViewsOperation,
+    CaipChain,
+    CaipAccount,
+    OperationResult,
+    Operation,
 } from "./types";
 
 type DappInteraction = {
@@ -45,7 +68,11 @@ export class DappInteractionService extends Service {
     private readonly lock = new Lock();
 
     public constructor(
+        private readonly profileService: ProfileService,
+        private readonly networkService: NetworkService,
+        private readonly accountService: AccountService,
         private readonly dappSessions: DappSessionService,
+        private readonly executionService: ExecutionService,
         emit: (event: EventMessage) => void
     ) {        
         super(DAPP_INTERACTION_SERVICE_NAME, emit);
@@ -128,6 +155,9 @@ export class DappInteractionService extends Service {
     public async execute(params: ExecutionParams, cancellationToken?: string): Promise<ExecutionResult> {
         const session = await this.validateSession(params);
         const payload: ExecutionPayload = {params, session};
+        if (!await this.isConfirmationNeeded(payload)) {
+            return await this.silentInteraction(payload);
+        }
         return await this.interaction("execute", payload, cancellationToken) as ExecutionResult;
     }
 
@@ -173,6 +203,117 @@ export class DappInteractionService extends Service {
         });
 
         return promise;
+    }
+
+    private async silentInteraction(payload: ExecutionPayload): Promise<ExecutionResult> {
+        const profile = await this.profileService.getActiveProfile();
+        if (profile?.id !== payload.session.profileId) {
+            throw new Error("Wallet locked");
+        }
+        await this.profileService.refreshSession();
+        const getNetwork = async (caipChain: CaipChain): Promise<Network> => {
+            const [_, chainId] = caipChain.split(":");
+            const networks = await this.networkService.getNetworks(+chainId);
+            if (networks.length === 0) {
+                throw new Error("Network no longer exists");
+            }
+            return networks.find(x => x.isDefault) ?? networks[0];
+        }
+        const getNetworkAndAccount = async (caipAccount: CaipAccount): Promise<[Network, Account]> => {
+            const [_, chainId, address] = caipAccount.split(":");
+            const networks = await this.networkService.getNetworks(+chainId);
+            if (networks.length === 0) {
+                throw new Error("Network no longer exists");
+            }
+            const network = networks.find(x => x.isDefault) ?? networks[0];
+            const account = await this.accountService.getAccount(profile.id, network.chainId, address);
+            if (!account) {
+                throw new Error("Account no longer exists");
+            }
+            return [network, account];
+        }
+		const operations: IOperation[] = [];
+		for (const op of payload.params.operations) {
+			switch (op.kind) {
+				case OperationKind.RegisterContract:{
+					const network = await getNetwork(op.chain);
+                    operations.push(new ExecRegisterContractOperation(
+                        network.id,
+                        op.address,
+                        op.instance,
+                        op.artifact,
+                    ));
+                    break;
+                }
+				case OperationKind.RegisterSender: {
+					const network = await getNetwork(op.chain);
+                    operations.push(new ExecRegisterSenderOperation(
+                        network.id,
+                        op.address,
+                    ));
+					break;
+				}
+				case OperationKind.GetCompleteAddress:{
+					const [network, account] = await getNetworkAndAccount(op.account);
+                    operations.push(new ExecGetCompleteAddressOperation(
+                        network.id,
+                        account.address,
+                    ));
+					break;
+				}
+				case OperationKind.SendTransaction: {
+					const [network, account] = await getNetworkAndAccount(op.account);
+                    operations.push(new ExecSendTransactionOperation(
+                        network.id,
+                        account.address,
+                        new FeeSettings(new CustomPaymentMethod()),
+                        op.actions,
+                        op.setup,
+                    ));
+					break;
+				}
+				case OperationKind.SimulateTransaction: {
+					const [network, account] = await getNetworkAndAccount(op.account);
+                    operations.push(new ExecSimulateTransactionOperation(
+                        network.id,
+                        account.address,
+                        op.actions,
+                        op.setup,
+                        op.simulatePublic,
+                    ));
+					break;
+				}
+				case OperationKind.SimulateUtility: {
+					const [network, account] = await getNetworkAndAccount(op.account);
+                    operations.push(new ExecSimulateUtilityOperation(
+                        network.id,
+                        account.address,
+                        op.contract,
+                        op.method,
+                        op.args,
+                    ));
+					break;
+				}
+				case OperationKind.SimulateViews: {
+					const [network, account] = await getNetworkAndAccount(op.account);
+                    operations.push(new ExecSimulateViewsOperation(
+                        network.id,
+                        account.address,
+                        op.calls,
+                    ));
+					break;
+				}
+				default: {
+					throw new Error("Invalid operation kind");
+				}
+			}
+		}
+        const results = await this.executionService.executeOperations(
+            operations,
+            new TxOrigin(OriginType.DAPP, payload.session.dappMetadata.name ?? "Unknown dapp"),
+        );
+        // TODO: refactor types
+        return results.map(x => x as unknown as OperationResult);
     }
 
     private async validateSession({sessionId, operations}: ExecutionParams): Promise<DappSession> {
@@ -246,6 +387,42 @@ export class DappInteractionService extends Service {
     private checkMethodPermission(session: DappSession, method: string, chain: string) {
         if (!session.permissions.find(x => x.methods?.includes(method) && x.chains?.includes(chain))) {
             throw new Error("Unauthorized method/chain");
+        }
+    }
+
+    private async isConfirmationNeeded(payload: ExecutionPayload): Promise<boolean> {
+        const profile = await this.profileService.getActiveProfile();
+        if (profile?.id !== payload.session.profileId) {
+            return true;
+        }
+        const accessLevel = this.getAccessLevel(payload.params.operations);
+        if (accessLevel >= payload.session.confirmationLevel) {
+            return true;
+        }
+        if (payload.params.operations.find(x => x.kind === OperationKind.SendTransaction && !x.setup?.length)) {
+            return true;
+        }
+        return false;
+    }
+
+    private getAccessLevel(ops: Operation[]): AccessLevel {
+        let level = AccessLevel.None;
+        for (const op of ops) {
+            level = Math.max(level, this.getOperationAccessLevel(op.kind));
+        }
+        return level;
+    }
+
+    private getOperationAccessLevel(kind: OperationKind): AccessLevel {
+        switch (kind) {
+            case OperationKind.GetCompleteAddress: return AccessLevel.PublicData;
+            case OperationKind.RegisterContract: return AccessLevel.PxeState;
+            case OperationKind.RegisterSender: return AccessLevel.PxeState;
+            case OperationKind.SimulateTransaction: return AccessLevel.PrivateData;
+            case OperationKind.SimulateUtility: return AccessLevel.PrivateData;
+            case OperationKind.SimulateViews: return AccessLevel.PrivateData;
+            case OperationKind.SendTransaction: return AccessLevel.Transactions;
+            default: return AccessLevel.None;
         }
     }
 }

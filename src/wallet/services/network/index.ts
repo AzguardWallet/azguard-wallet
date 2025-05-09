@@ -555,7 +555,7 @@ export class NetworkService extends Service {
 				);
 			}
 		}
-		console.log("Set storage version to 1");
+		console.debug("Set storage version to 1");
 		await this.storage.setVersion(1);
 		console.debug("Storage migrated");
 	}

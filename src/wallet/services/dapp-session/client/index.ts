@@ -1,7 +1,7 @@
 import { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import { DappSessionServiceEvent, DappSessionServiceEventMessage } from "./events";
-import { DappMetadata, DappPermissions, DappSession } from "./models";
+import { AccessLevel, DappMetadata, DappPermissions, DappSession } from "./models";
 import {
     GetDappSessionsRequest,
     GetDappSessionRequest,
@@ -72,12 +72,22 @@ export class DappSessionServiceClient extends ServiceClient {
         return this.request(new GetDappSessionRequest(sessionId));
     }
 
-    public addDappSession(dappMetadata: DappMetadata, permissions: DappPermissions[], accounts: string[]): Promise<DappSession> {
-        return this.request(new AddDappSessionRequest(dappMetadata, permissions, accounts));
+    public addDappSession(
+        dappMetadata: DappMetadata,
+        permissions: DappPermissions[],
+        accounts: string[],
+        confirmationLevel: AccessLevel,
+    ): Promise<DappSession> {
+        return this.request(new AddDappSessionRequest(dappMetadata, permissions, accounts, confirmationLevel));
     }
 
-    public updateDappSession(sessionId: string, permissions: DappPermissions[], accounts: string[]): Promise<DappSession> {
-        return this.request(new UpdateDappSessionRequest(sessionId, permissions, accounts));
+    public updateDappSession(
+        sessionId: string,
+        permissions: DappPermissions[],
+        accounts: string[],
+        confirmationLevel: AccessLevel,
+    ): Promise<DappSession> {
+        return this.request(new UpdateDappSessionRequest(sessionId, permissions, accounts, confirmationLevel));
     }
 
     public deleteDappSession(sessionId: string): Promise<DappSession> {

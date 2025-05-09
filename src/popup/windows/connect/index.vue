@@ -3,10 +3,12 @@
 import { onBeforeMount, onMounted, onUnmounted } from "vue"
 
 /** Components */
+import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
 import { getChainName } from "@/components/ui/utils.js"
+import { AccessLevel, confirmationPolicies } from "@/utils/confirmation-policies"
 
 /** Services */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
@@ -30,6 +32,7 @@ const permissions = ref([])
 
 const accounts = ref([])
 const selectedAccounts = ref([])
+const selectedConfirmationPolicy = ref(confirmationPolicies.at(-1))
 
 const isLoading = ref(false)
 const isInteractionCancelled = ref(false)
@@ -96,6 +99,10 @@ function fillError(title, tooltip, type) {
 	}
 }
 
+const selectConfirmationPolicy = policy => {
+	selectedConfirmationPolicy.value = policy
+}
+
 const selectAccount = account => {
 	if (processingError.value.show && processingError.value.type === "warning") {
 		fillError()
@@ -143,6 +150,7 @@ const approve = async () => {
 			dapp.value,
 			packPermissions(permissions.value.filter(x => x.selected)),
 			selectedAccounts.value.map(acc => `aztec:${acc.chainId}:${acc.address}`),
+			selectedConfirmationPolicy.value?.confirmationLevel ?? AccessLevel.None,
 		)
 		const sessionInfo = {
 			id: session.id,
@@ -336,7 +344,7 @@ const packPermissions = permissions => {
 
 <template>
 	<Flex direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="14">
+		<Flex direction="column" gap="16">
 			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
 				<Text size="16" weight="600" color="primary">Connection request</Text>
 			</Flex>
@@ -385,6 +393,39 @@ const packPermissions = permissions => {
 						{{ p.chains.map(c => getChainName(+c.split(":")[1]).toLowerCase()).join(", ") }}
 					</Text>
 				</Flex>
+			</Flex>
+
+			<Flex direction="column" align="start" justify="start" gap="4">
+				<Text size="15" weight="600" color="primary">Confirmation policy</Text>
+				<Dropdown style="width: 100%">
+					<template #trigger>
+						<Flex align="center" gap="8" class="clickable" :class="$style.account">
+							<Text size="13" color="secondary" style="flex: 1; line-height: 1.2">
+								{{ selectedConfirmationPolicy.description }}
+							</Text>
+							<Icon name="chevron" size="12" color="secondary" />
+						</Flex>
+					</template>
+
+					<template #popup>
+						<DropdownItem
+							v-for="policy in confirmationPolicies"
+							:key="policy.level"
+							@click="selectConfirmationPolicy(policy)"
+						>
+							<Flex align="center" gap="8">
+								<Text
+									size="13"
+									weight="600"
+									color="primary"
+									style="max-width: 290px; white-space: normal; line-height: 1.2"
+								>
+									{{ policy.title }}
+								</Text>
+							</Flex>
+						</DropdownItem>
+					</template>
+				</Dropdown>
 			</Flex>
 
 			<Flex

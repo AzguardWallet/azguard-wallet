@@ -161,7 +161,7 @@ const approve = async () => {
 		isLoading.value = true
 		const results = await executionService.executeOperations(
 			operations.value,
-			new TxOrigin(OriginType.DAPP, session.value.dappMetadata.name ?? "Unknown dapp")
+			new TxOrigin(OriginType.DAPP, session.value.dappMetadata.name ?? "Unknown dapp"),
 		)
 		interactionService.resolveInteraction(requestId.value, results)
 		closeWindow(true)
@@ -230,7 +230,7 @@ const showJson = () => {
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="14">
+		<Flex direction="column" gap="16">
 			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
 				<Text size="16" weight="600" color="primary">Operation request</Text>
 			</Flex>
@@ -524,7 +524,7 @@ const showJson = () => {
 					:loading="isLoading"
 					:disabled="processingError.show"
 				>
-					<Text size="13" color="inverse"> {{ `${isLoading ? 'Executing' : 'Confirm'}` }} </Text>
+					<Text size="13" color="inverse"> {{ `${isLoading ? "Executing" : "Confirm"}` }} </Text>
 				</Button>
 			</Flex>
 		</Flex>
