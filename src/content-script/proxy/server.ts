@@ -74,7 +74,7 @@ export class ProxyServer {
             response = new ProxyResponseMessage(requestId, _result);
         }
         catch (error) {
-            response = new ProxyResponseMessage(requestId, undefined, error as string ?? "Unknown error");
+            response = new ProxyResponseMessage(requestId, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
         }
         await this.#messenger.send(client, response);
     }

@@ -9,7 +9,6 @@ import {
     AbiTypeSchema,
     ContractArtifact,
     ContractArtifactSchema,
-    decodeFromAbi,
     encodeArguments,
     FunctionSelector,
     FunctionType,
@@ -56,6 +55,7 @@ import {
     TxTransfer,
 } from "@/wallet/services/transaction/client";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
+import { decodeFromAbiPatched } from "@/wallet/utils/abi-decoder";
 import { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import {
@@ -69,6 +69,7 @@ import {
     IOperation,
     GetCompleteAddressOperation,
     RegisterSenderOperation,
+    RegisterTokenOperation,
     RegisterContractOperation,
     SendTransactionOperation,
     SimulateTransactionOperation,
@@ -132,7 +133,7 @@ export class ExecutionService extends Service {
                     return new ExecuteTransferResponse(_request, txHash);
                 }
                 catch (error: any) {
-                    return new ExecuteTransferResponse(_request, undefined, error.message);
+                    return new ExecuteTransferResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case ExecutionServiceMethod.ExecuteOperations: {
@@ -142,7 +143,7 @@ export class ExecutionService extends Service {
                     return new ExecuteOperationsResponse(_request, results);
                 }
                 catch (error: any) {
-                    return new ExecuteOperationsResponse(_request, undefined, error.message);
+                    return new ExecuteOperationsResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             default: {
@@ -320,6 +321,10 @@ export class ExecutionService extends Service {
                         result = await this.executeRegisterSender(operation as RegisterSenderOperation);
                         break;
                     }
+                    case OperationKind.RegisterToken: {
+                        result = await this.executeRegisterToken(operation as RegisterTokenOperation);
+                        break;
+                    }
                     case OperationKind.SendTransaction: {
                         result = await this.executeSendTransaction(operation as SendTransactionOperation, origin);
                         break;
@@ -360,6 +365,13 @@ export class ExecutionService extends Service {
     }
 
     async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
+        const addressNum = AztecAddress.fromString(op.address).toBigInt();
+        if (addressNum >= 0 && addressNum <= 6) {
+            // ignore protocol contracts registration,
+            // because we cannot validate it due to hardcoded addresses
+            return;
+        }
+
         const network = await this.networkService.getNetwork(op.networkId);
 
         const providedInstance = await ContractInstanceWithAddressSchema.optional().parseAsync(op.instance);
@@ -378,7 +390,7 @@ export class ExecutionService extends Service {
 
         const contractClass = await getContractClassFromArtifact(artifact);
         if (contractClass.id.toString() !== instance.currentContractClassId.toString()) {
-            throw new Error("Contract artifact doesn't match instance class id");
+            throw new Error("Contract artifact doesn't match instance's current class id");
         }
 
         const contractAddress = await computeContractAddressFromInstance(instance);
@@ -394,6 +406,23 @@ export class ExecutionService extends Service {
         await this.pxeService.registerSender(network, AztecAddress.fromString(op.address));
     }
 
+    async executeRegisterToken(op: RegisterTokenOperation): Promise<void> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const ti = await this.tokenService.parseTokenInterface(op.networkId, op.address);
+        if (ti.getNameFn === undefined ||
+            ti.getSymbolFn === undefined ||
+            ti.getDecimalsFn === undefined ||
+            ti.balanceOfPrivateFn === undefined &&
+            ti.balanceOfPublicFn === undefined
+        ) {
+            throw new Error("Couldn't find necessary methods in the contract interface. Try to add token manually.");
+        }
+        await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti);
+    }
+    
     async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings, boolean]> {
         switch (op.feeSettings.paymentMethod.type) {
             case FeePaymentMethodType.FeeJuice: {
@@ -657,7 +686,7 @@ export class ExecutionService extends Service {
                     }
                     const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
-                        throw new Error("Contract not found");
+                        throw new Error("Contract artifact not found");
                     }
                     const fn = artifact.functions.find(x => x.name === _call.method)
                         ?? artifact.nonDispatchPublicFunctions.find(x => x.name === _call.method);
@@ -708,7 +737,7 @@ export class ExecutionService extends Service {
                     }
                     const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
-                        throw new Error("Contract not found");
+                        throw new Error("Contract artifact not found");
                     }
                     let fn;
                     for (const _fn of artifact.functions) {
@@ -733,10 +762,10 @@ export class ExecutionService extends Service {
                     if (fn.functionType === FunctionType.UTILITY) {
                         let decodedArgs;
                         try {
-                            decodedArgs = ensureArray(decodeFromAbi(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
+                            decodedArgs = ensureArray(decodeFromAbiPatched(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
                         }
                         catch (error) {
-                            console.error("Failed to decode utility call args", fn.parameters, _call.args);
+                            console.error("Failed to decode utility call args", fn.parameters, _call.args, error);
                             throw new Error(`Failed to decode utility "encoded_call" args: ${(error as Error)?.message}. Try to use "call" instead.`);
                         }
                         utility.push([
@@ -795,7 +824,7 @@ export class ExecutionService extends Service {
             const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? [];
             result.encoded[i] = values;
             try {
-                result.decoded[i] = decodeFromAbi(types, values);
+                result.decoded[i] = decodeFromAbiPatched(types, values);
             }
             catch (error) {
                 console.error("Failed to decode simulation results", types, values, error);
@@ -897,7 +926,7 @@ export class ExecutionService extends Service {
         }
 
         const nonce = Fr.random();
-        const txRequest = await account.buildTxExecutionRequest(pxe, setup, isFeePayer, calls, args, nonce);
+        const txRequest = await account.buildTxExecutionRequest(pxe, setup, isFeePayer, calls, args, nonce, authwits, capsules);
 
         return [txRequest, pxe, account, network, nonce, txCalls, txSetup];
     }
@@ -1051,7 +1080,7 @@ export class ExecutionService extends Service {
                     }
                     const artifact = artifacts.get(instance.currentContractClassId.toString());
                     if (!artifact) {
-                        throw new Error("Contract not found");
+                        throw new Error("Contract artifact not found");
                     }
                     const fn = artifact.functions.find(x => x.name === _action.method)
                         ?? artifact.nonDispatchPublicFunctions.find(x => x.name === _action.method);
@@ -1087,7 +1116,7 @@ export class ExecutionService extends Service {
                         }
                         const artifact = artifacts.get(instance.currentContractClassId.toString());
                         if (!artifact) {
-                            throw new Error("Contract not found");
+                            throw new Error("Contract artifact not found");
                         }
                         let fn;
                         for (const _fn of artifact.functions) {
@@ -1147,7 +1176,7 @@ export class ExecutionService extends Service {
         }
         const artifact = artifacts.get(instance.currentContractClassId.toString());
         if (!artifact) {
-            throw new Error("Contract not found");
+            throw new Error("Contract artifact not found");
         }
         const fn = artifact.functions.find(x => x.name === content.method)
             ?? artifact.nonDispatchPublicFunctions.find(x => x.name === content.method);
@@ -1191,7 +1220,7 @@ export class ExecutionService extends Service {
             }
             const artifact = artifacts.get(instance.currentContractClassId.toString());
             if (!artifact) {
-                throw new Error("Contract not found");
+                throw new Error("Contract artifact not found");
             }
             let fn;
             for (const _fn of artifact.functions) {
@@ -1263,8 +1292,18 @@ export class ExecutionService extends Service {
             )
             .concat(
                 actions
+                    .filter(x => x.kind === ActionKind.AddPrivateAuthwit && (x as AddPrivateAuthwitAction).content.kind === AuthwitContentKind.EncodedCall)
+                    .map(x => ((x as AddPrivateAuthwitAction).content as EncodedCallAuthwitContent).to)
+            )
+            .concat(
+                actions
                     .filter(x => x.kind === ActionKind.AddPublicAuthwit && (x as AddPublicAuthwitAction).content.kind === AuthwitContentKind.Call)
                     .map(x => ((x as AddPublicAuthwitAction).content as CallAuthwitContent).contract)
+            )
+            .concat(
+                actions
+                    .filter(x => x.kind === ActionKind.AddPublicAuthwit && (x as AddPublicAuthwitAction).content.kind === AuthwitContentKind.EncodedCall)
+                    .map(x => ((x as AddPublicAuthwitAction).content as EncodedCallAuthwitContent).to)
             )
             .concat(
                 actions

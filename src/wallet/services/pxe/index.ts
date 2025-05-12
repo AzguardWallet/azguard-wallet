@@ -4,11 +4,15 @@ import { Fr } from "@aztec/foundation/fields";
 import { AuthRegistryContractArtifact } from "@aztec/noir-contracts.js/AuthRegistry";
 import { ContractInstanceDeployerContractArtifact } from "@aztec/noir-contracts.js/ContractInstanceDeployer";
 import { ContractClassRegistererContractArtifact } from "@aztec/noir-contracts.js/ContractClassRegisterer";
+import { EasyPrivateTokenContractArtifact } from "@aztec/noir-contracts.js/EasyPrivateToken";
 import { MultiCallEntrypointContractArtifact } from "@aztec/noir-contracts.js/MultiCallEntrypoint";
 import { FeeJuiceContractArtifact } from "@aztec/noir-contracts.js/FeeJuice";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
+import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
+import { RouterContractArtifact } from "@aztec/noir-contracts.js/Router";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
+import { TokenBlacklistContractArtifact } from "@aztec/noir-contracts.js/TokenBlacklist";
 import { ContractArtifact, ContractArtifactSchema } from "@aztec/stdlib/abi";
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -206,13 +210,19 @@ export class PxeService extends Service<PxeServiceMethod, void> {
         const pxe = await this.getPxeClient(network);
         const metadata = await pxe.getContractMetadata(address);
         if (!metadata.contractInstance) {
+            // check node
             const node = await this.getNodeClient(network);
             metadata.contractInstance = await node.getContract(address);
             if (!metadata.contractInstance) {
+                // check known
                 if (!this.knownInstances.size) {
                     await this.initKnown();
                 }
                 metadata.contractInstance = this.knownInstances.get(address.toString());
+                if (!metadata.contractInstance) {
+                    // check registry
+                    metadata.contractInstance = await this.fetchInstanceFromRegistry(network, address);
+                }
             }
         }
         return metadata;
@@ -222,16 +232,25 @@ export class PxeService extends Service<PxeServiceMethod, void> {
         const pxe = await this.getPxeClient(network);
         const metadata = await pxe.getContractClassMetadata(classId, true);
         if (!metadata.artifact) {
+            // check known
             if (!this.knownArtifacts.size) {
                 await this.initKnown();
             }
             metadata.artifact = this.knownArtifacts.get(classId.toString());
+            if (!metadata.artifact) {
+                // check registry
+                metadata.artifact = await this.fetchArtifactFromRegistry(network, classId);
+            }
         }
         if (!metadata.contractClass) {
             if (!this.knownClasses.size) {
                 await this.initKnown();
             }
             metadata.contractClass = this.knownClasses.get(classId.toString());
+            // compute manually
+            if (!metadata.contractClass && metadata.artifact) {
+                metadata.contractClass = await getContractClassFromArtifact(metadata.artifact);
+            }
         }
         return metadata;
     }
@@ -244,10 +263,14 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             ContractClassRegistererContractArtifact,
             MultiCallEntrypointContractArtifact,
             FeeJuiceContractArtifact,
+            RouterContractArtifact,
             // other
             FPCContractArtifact,
             SponsoredFPCContractArtifact,
             TokenContractArtifact,
+            NFTContractArtifact,
+            EasyPrivateTokenContractArtifact,
+            TokenBlacklistContractArtifact,
         ]) {
             const contractClass = await getContractClassFromArtifact(artifact);
             this.knownArtifacts.set(contractClass.id.toString(), artifact);
@@ -336,6 +359,64 @@ export class PxeService extends Service<PxeServiceMethod, void> {
         }
         finally {
             this.lock.leave();
+        }
+    }
+
+    private async fetchArtifactFromRegistry(network: Network, classId: Fr): Promise<ContractArtifact | undefined> {
+        try {
+            const artifact = await this.fetchFromRegistry(network, `/artifacts/${classId.toString()}`);
+            if (!artifact) {
+                return undefined;
+            }
+            return await ContractArtifactSchema.parseAsync(artifact);
+        }
+        catch (error: unknown) {
+            console.error("Failed to parse artifact from registry", error);
+            return undefined;
+        }
+    }
+
+    private async fetchInstanceFromRegistry(network: Network, address: AztecAddress): Promise<ContractInstanceWithAddress | undefined> {
+        try {
+            const instance = await this.fetchFromRegistry(network, `/instances/${address.toString()}`);
+            if (!instance) {
+                return undefined;
+            }
+            return await ContractInstanceWithAddressSchema.parseAsync(instance);
+        }
+        catch (error: unknown) {
+            console.error("Failed to parse instance from registry", error);
+            return undefined;
+        }
+    }
+
+    private async fetchFromRegistry(network: Network, path: string): Promise<unknown | undefined> {
+        const registryUrl = this.getRegistryUrl(network);
+        if (!registryUrl) {
+            return undefined;
+        }
+        try {
+            const data = await fetch(`${registryUrl}${path}`);
+            if (!data.ok) {
+                console.debug("Failed to get artifact from public registry", data.status, data.statusText);
+                return undefined;
+            }
+            return await data.json();
+        }
+        catch (error: unknown) {
+            console.error("Failed to get artifact from public registry", error);
+            return undefined;
+        }
+    }
+
+    private getRegistryUrl(network: Network): string | undefined {
+        switch (network.chainId) {
+            case 11155111:
+                return "https://registry.testnet.azguardwallet.io";
+            case 1337:
+                return "https://registry.devnet.azguardwallet.io";
+            default:
+                return undefined;
         }
     }
 }

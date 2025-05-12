@@ -89,7 +89,14 @@ const faucetService = new FaucetService(
     broadcast,
 );
 const dappSessionService = new DappSessionService(profileService, broadcast);
-const dappInteractionService = new DappInteractionService(dappSessionService, broadcast);
+const dappInteractionService = new DappInteractionService(
+    profileService,
+    networkService,
+    accountService,
+    dappSessionService,
+    executionService,
+    broadcast,
+);
 const rpcService = new RpcService(
     dappSessionService,
     dappInteractionService,

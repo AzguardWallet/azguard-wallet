@@ -92,6 +92,7 @@ const init = async () => {
 					})
 					break
 				}
+				case OperationKind.RegisterToken:
 				case OperationKind.GetCompleteAddress:
 				case OperationKind.SendTransaction:
 				case OperationKind.SimulateTransaction:
@@ -159,9 +160,10 @@ const approve = async () => {
 	}
 	try {
 		isLoading.value = true
+		await profileService.refreshSession();
 		const results = await executionService.executeOperations(
 			operations.value,
-			new TxOrigin(OriginType.DAPP, session.value.dappMetadata.name ?? "Unknown dapp")
+			new TxOrigin(OriginType.DAPP, session.value.dappMetadata.name ?? "Unknown dapp"),
 		)
 		interactionService.resolveInteraction(requestId.value, results)
 		closeWindow(true)
@@ -230,7 +232,7 @@ const showJson = () => {
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="14">
+		<Flex direction="column" gap="16">
 			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
 				<Text size="16" weight="600" color="primary">Operation request</Text>
 			</Flex>
@@ -398,6 +400,12 @@ const showJson = () => {
 								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
 							</Flex>
 						</template>
+						<template v-else-if="op.kind === OperationKind.RegisterToken">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Token address:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+							</Flex>
+						</template>
 						<template v-else-if="op.kind === OperationKind.SimulateTransaction">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">From account:</Text>
@@ -524,7 +532,7 @@ const showJson = () => {
 					:loading="isLoading"
 					:disabled="processingError.show"
 				>
-					<Text size="13" color="inverse"> {{ `${isLoading ? 'Executing' : 'Confirm'}` }} </Text>
+					<Text size="13" color="inverse"> {{ `${isLoading ? "Executing" : "Confirm"}` }} </Text>
 				</Button>
 			</Flex>
 		</Flex>

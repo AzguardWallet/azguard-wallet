@@ -4,6 +4,7 @@ export enum OperationKind {
     GetCompleteAddress = "get_complete_address",
     RegisterContract = "register_contract",
     RegisterSender = "register_sender",
+    RegisterToken = "register_token",
     SendTransaction = "send_transaction",
     SimulateTransaction = "simulate_transaction",
     SimulateUtility = "simulate_utility",
@@ -36,6 +37,15 @@ export class RegisterSenderOperation implements IOperation {
     public readonly kind = OperationKind.RegisterSender;
     public constructor(
         public readonly networkId: string,
+        public readonly address: string,
+    ) {}
+}
+
+export class RegisterTokenOperation implements IOperation {
+    public readonly kind = OperationKind.RegisterToken;
+    public constructor(
+        public readonly networkId: string,
+        public readonly accountAddress: string,
         public readonly address: string,
     ) {}
 }

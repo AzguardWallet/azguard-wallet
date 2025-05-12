@@ -21,6 +21,7 @@ import {
     DappSessionServiceEvent,
     DappSessionServiceEventMessage,
     DappSessionServiceMethod,
+    AccessLevel,
 } from "./client";
 
 export class DappSessionService extends Service {
@@ -29,6 +30,7 @@ export class DappSessionService extends Service {
 
     private readonly storage: EntityStorage<DappSession>;
     private readonly lock = new Lock();
+	private init: Promise<void> | null;
 
     public constructor(
         private readonly profiles: ProfileService,
@@ -37,9 +39,11 @@ export class DappSessionService extends Service {
         super(DAPP_SESSION_SERVICE_NAME, emit);
         this.storage = new EntityStorage("azguard:core:dappSessions", StorageType.Local);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
+		this.init = this.initialize();
     }
     
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
+		await this.ensureInitialized();
         switch(request.method) {
             case DappSessionServiceMethod.GetDappSessions: {
                 const _request = request as GetDappSessionsRequest;
@@ -48,7 +52,7 @@ export class DappSessionService extends Service {
                     return new GetDappSessionsResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new GetDappSessionsResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new GetDappSessionsResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappSessionServiceMethod.GetDappSession: {
@@ -58,7 +62,7 @@ export class DappSessionService extends Service {
                     return new GetDappSessionResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new GetDappSessionResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new GetDappSessionResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappSessionServiceMethod.AddDappSession: {
@@ -67,12 +71,13 @@ export class DappSessionService extends Service {
                     const res = await this.addDappSession(
                         _request.dappMetadata,
                         _request.permissions,
-                        _request.accounts
+                        _request.accounts,
+                        _request.confirmationLevel,
                     );
                     return new AddDappSessionResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new AddDappSessionResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new AddDappSessionResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappSessionServiceMethod.UpdateDappSession: {
@@ -82,11 +87,12 @@ export class DappSessionService extends Service {
                         _request.sessionId,
                         _request.permissions,
                         _request.accounts,
+                        _request.confirmationLevel,
                     );
                     return new UpdateDappSessionResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new UpdateDappSessionResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new UpdateDappSessionResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             case DappSessionServiceMethod.DeleteDappSession: {
@@ -96,7 +102,7 @@ export class DappSessionService extends Service {
                     return new DeleteDappSessionResponse(_request, res);
                 }
                 catch (error: unknown) {
-                    return new DeleteDappSessionResponse(_request, undefined, (error as Error)?.message ?? "Unknown error");
+                    return new DeleteDappSessionResponse(_request, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
                 }
             }
             default: {
@@ -107,6 +113,7 @@ export class DappSessionService extends Service {
     }
 
     public  async getDappSessions(): Promise<DappSession[]> {
+		await this.ensureInitialized();
         const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -116,6 +123,7 @@ export class DappSessionService extends Service {
     }
     
     public async getDappSession(sessionId: string): Promise<DappSession> {
+		await this.ensureInitialized();
         const session = await this.storage.get(sessionId);
         if (!session) {
 			throw new Error("Invalid id");
@@ -127,6 +135,7 @@ export class DappSessionService extends Service {
     }
     
     public async tryGetDappSession(sessionId: string): Promise<DappSession | undefined> {
+		await this.ensureInitialized();
         const session = await this.storage.get(sessionId);
         if (session && await this.isExpired(session)) {
             return undefined;
@@ -134,7 +143,13 @@ export class DappSessionService extends Service {
         return session;
     }
     
-    public async addDappSession(dappMetadata: DappMetadata, permissions: DappPermissions[], accounts: string[]): Promise<DappSession> {
+    public async addDappSession(
+        dappMetadata: DappMetadata,
+        permissions: DappPermissions[],
+        accounts: string[],
+        confirmationLevel: AccessLevel,
+    ): Promise<DappSession> {
+		await this.ensureInitialized();
         const profile = await this.profiles.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet is locked");
@@ -153,6 +168,7 @@ export class DappSessionService extends Service {
                 dappMetadata: dappMetadata,
                 permissions: permissions,
                 accounts: accounts,
+                confirmationLevel: confirmationLevel,
                 expiry: Date.now() + 7 * 24 * 60 * 60 * 1000,
             }
             await this.storage.set(session.id, session);
@@ -165,7 +181,13 @@ export class DappSessionService extends Service {
         }
     }
     
-    public async updateDappSession(sessionId: string, permissions: DappPermissions[], accounts: string[]): Promise<DappSession> {
+    public async updateDappSession(
+        sessionId: string,
+        permissions: DappPermissions[],
+        accounts: string[],
+        confirmationLevel: AccessLevel,
+    ): Promise<DappSession> {
+		await this.ensureInitialized();
         try {
             await this.lock.enter();
                 
@@ -175,6 +197,7 @@ export class DappSessionService extends Service {
             }
             session.permissions = permissions;
             session.accounts = accounts;
+            session.confirmationLevel = confirmationLevel;
             await this.storage.set(sessionId, session);
             this.emit(new DappSessionServiceEventMessage(DappSessionServiceEvent.DappSessionUpdated, session));
             for (const emit of this.onDappSessionUpdated) {
@@ -189,6 +212,7 @@ export class DappSessionService extends Service {
     }
     
     public async upgradeDappSession(sessionId: string, newSessionId: string, newExpiry: number): Promise<DappSession> {
+		await this.ensureInitialized();
         try {
             await this.lock.enter();
             
@@ -215,6 +239,7 @@ export class DappSessionService extends Service {
     }
     
     public async deleteDappSession(sessionId: string): Promise<DappSession> {
+		await this.ensureInitialized();
         try {
             await this.lock.enter();
                
@@ -236,6 +261,7 @@ export class DappSessionService extends Service {
     }
 
     public async isExpired(session: DappSession): Promise<boolean> {
+		await this.ensureInitialized();
         if (session.expiry < Date.now()) {
             try {
                 await this.lock.enter();
@@ -258,6 +284,7 @@ export class DappSessionService extends Service {
     }
 
     public async deleteExpired(): Promise<void> {
+		await this.ensureInitialized();
         try {
             await this.lock.enter();
 
@@ -278,6 +305,7 @@ export class DappSessionService extends Service {
     }
     
     private readonly onProfileDeleted = async (profileId: string) => {
+		await this.ensureInitialized();
         console.debug(`profile ${profileId} deleted, remove related dapp sessions`);
         try {
             await this.lock.enter();
@@ -293,5 +321,50 @@ export class DappSessionService extends Service {
         } finally {
             this.lock.leave();
         }
+    }
+
+	private async initialize(): Promise<void> {
+		console.debug("Initialize");
+		await this.checkMigrations();
+		console.debug("Initialized");
+		this.init = null;
+	}
+
+	private async ensureInitialized(): Promise<void> {
+		if (this.init) {
+			await this.init;
+		}
+	}
+
+	private async checkMigrations(): Promise<void> {
+		try {
+			console.debug("Check storage migrations");
+			switch (await this.storage.getVersion()) {
+				case 1: {
+					console.debug("No migrations needed");
+					break;
+				}
+				default: {
+					await this.migrate_0_1();
+					break;
+				}
+			}
+		}
+		catch (error: unknown) {
+			console.error("Failed to migrate storage", error);
+		}
+	}
+    
+	private async migrate_0_1(): Promise<void> {
+		console.debug("Migrating storage");
+        const sessions = await this.storage.getAll();
+		console.debug("Set confirmation level");
+        for (const [id, session] of sessions) {
+            session.confirmationLevel = AccessLevel.Transactions;
+            await this.storage.set(id, session);
+        }
+		console.debug("Set storage version to 1");
+		await this.storage.setVersion(1);
+		console.debug("Storage migrated");
     }
 }

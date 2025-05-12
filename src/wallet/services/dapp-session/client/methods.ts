@@ -4,6 +4,7 @@ import {
     DappPermissions,
     DappSession,
     DAPP_SESSION_SERVICE_NAME,
+    AccessLevel,
 } from ".";
 
 export enum DappSessionServiceMethod {
@@ -53,6 +54,7 @@ export class AddDappSessionRequest extends RequestMessage {
         public readonly dappMetadata: DappMetadata,
         public readonly permissions: DappPermissions[],
         public readonly accounts: string[],
+        public readonly confirmationLevel: AccessLevel,
     ) {
         super(DAPP_SESSION_SERVICE_NAME, DappSessionServiceMethod.AddDappSession);
     }
@@ -73,6 +75,7 @@ export class UpdateDappSessionRequest extends RequestMessage {
         public readonly sessionId: string,
         public readonly permissions: DappPermissions[],
         public readonly accounts: string[],
+        public readonly confirmationLevel: AccessLevel,
     ) {
         super(DAPP_SESSION_SERVICE_NAME, DappSessionServiceMethod.UpdateDappSession);
     }

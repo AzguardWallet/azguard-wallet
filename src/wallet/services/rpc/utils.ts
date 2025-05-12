@@ -11,6 +11,7 @@ import {
     GetCompleteAddressOperation,
     RegisterContractOperation,
     RegisterSenderOperation,
+    RegisterTokenOperation,
     SendTransactionOperation,
     SimulateTransactionOperation,
     SimulateUtilityOperation,
@@ -81,6 +82,7 @@ export function parseMethod(data: any): string {
         // case RpcMethod.execute:
         case OperationKind.GetCompleteAddress:
         case OperationKind.RegisterSender:
+        case OperationKind.RegisterToken:
         case OperationKind.RegisterContract:
         case OperationKind.SendTransaction:
         case OperationKind.SimulateTransaction:
@@ -128,6 +130,9 @@ function parseOperation(data: any): Operation {
         case OperationKind.RegisterSender: {
             return parseRegisterSenderOperation(data);
         }
+        case OperationKind.RegisterToken: {
+            return parseRegisterTokenOperation(data);
+        }
         case OperationKind.SendTransaction: {
             return parseSendTransactionOperation(data);
         }
@@ -167,6 +172,14 @@ function parseRegisterSenderOperation(data: any): RegisterSenderOperation {
     return {
         kind: OperationKind.RegisterSender,
         chain: parseChainProp(data, "chain"),
+        address: parseStringProp(data, "address"),
+    };
+}
+
+function parseRegisterTokenOperation(data: any): RegisterTokenOperation {
+    return {
+        kind: OperationKind.RegisterToken,
+        account: parseAccountProp(data, "account"),
         address: parseStringProp(data, "address"),
     };
 }

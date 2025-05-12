@@ -38,7 +38,7 @@ import SettingField from "@/components/ui/Settings/SettingField.vue"
 		</ItemsContainer>
 
 		<ItemsContainer>
-			<SettingField label="Session Time" value="10 min" icon="edit" disabled />
+			<SettingField label="Session Time" value="30 min" icon="edit" disabled />
 		</ItemsContainer>
 
 		<Navigation />

@@ -18,10 +18,11 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
-import { getNetworkType } from "@/components/ui/utils.js"
+import { getChainName } from "@/components/ui/utils.js"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
+import { confirmationPolicies } from "@/utils/confirmation-policies"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -190,23 +191,35 @@ onMounted(async () => {
 			<Flex direction="column" align="start" justify="start" gap="8">
 				<Text size="15" weight="600" color="primary">Session allowances:</Text>
 
-				<Flex align="start" gap="4" :style="{ paddingLeft: '4px' }">
+				<Flex align="start" gap="4">
 					<Text size="13" weight="600" color="secondary">Networks:</Text>
 					<Text size="13" color="secondary" :style="{ lineHeight: '1.2' }">
-						{{ chains.map(ch => getNetworkType(Number(ch.split(":").pop()))).join(", ") }}
+						{{ chains.map(ch => getChainName(Number(ch.split(":").pop()))).join(", ") }}
 					</Text>
 				</Flex>
 
-				<Flex align="start" gap="4" :style="{ paddingLeft: '4px' }">
+				<Flex align="start" gap="4">
 					<Text size="13" weight="600" color="secondary">Methods:</Text>
 					<Text size="13" color="secondary" :style="{ lineHeight: '1.2' }"> {{ methods.join(", ") }} </Text>
 				</Flex>
 
-				<Flex align="start" gap="4" :style="{ paddingLeft: '4px' }">
+				<Flex align="start" gap="4">
 					<Text size="13" weight="600" color="secondary">Events:</Text>
-					<Text v-if="events.length" size="13" color="secondary" :style="{ lineHeight: '1.2' }"> {{ events.join(", ") }} </Text>
+					<Text v-if="events.length" size="13" color="secondary" :style="{ lineHeight: '1.2' }">
+						{{ events.join(", ") }}
+					</Text>
 					<Text v-else size="13" color="tertiary" :style="{ lineHeight: '1.2' }"> no allowances given </Text>
 				</Flex>
+			</Flex>
+
+			<Flex direction="column" align="start" justify="start" gap="8">
+				<Text size="15" weight="600" color="primary">Confirmation policy:</Text>
+				<Text size="13" color="secondary" :style="{ lineHeight: '1.2' }">
+					{{
+						confirmationPolicies.find(x => x.confirmationLevel === session?.confirmationLevel)
+							?.description ?? "Unknown"
+					}}
+				</Text>
 			</Flex>
 		</Flex>
 

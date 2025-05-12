@@ -17,5 +17,15 @@ export type DappSession = {
     dappMetadata: DappMetadata,
     permissions: DappPermissions[],
     accounts: string[],
+    confirmationLevel: AccessLevel,
     expiry: number,
 };
+
+export enum AccessLevel {
+    None = 0,
+    AppState = 1,
+    PublicData = 2,
+    PxeState = 3,
+    PrivateData = 4,
+    Transactions = 5,
+}

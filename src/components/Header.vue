@@ -1,6 +1,6 @@
 <script setup>
 /** Utils */
-import { getNetworkType } from "@/components/ui/utils.js"
+import { getChainName } from "@/components/ui/utils.js"
 
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
@@ -51,7 +51,7 @@ const handleOpenPopup = target => {
 					color="tertiary"
 					:class="$style.network_type"
 				>
-					• &nbsp;{{ getNetworkType(appStore.network.chainId) }}
+					• &nbsp;{{ getChainName(appStore.network.chainId) }}
 				</Text>
 
 				<Icon name="chevron" size="12" color="secondary" />

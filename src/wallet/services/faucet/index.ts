@@ -78,11 +78,8 @@ export class FaucetService extends Service {
                         _request.feeSettings,
                     );
 					return new MintResponse(_request);
-				} catch (error: any) {
-					return new MintResponse(
-						_request,
-						error.message
-					)
+				} catch (error: unknown) {
+					return new MintResponse(_request, (error as Error)?.message ?? error as string ?? "Unknown error");
 				}
 			}
 			default: {

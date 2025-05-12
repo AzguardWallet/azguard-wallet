@@ -329,6 +329,8 @@
     "amount copy": true,
     "bn": true,
     "getDecimalSeparator": true,
-    "getThousandSeparator": true
+    "getThousandSeparator": true,
+    "confirmationPolicies": true,
+    "AccessLevel": true
   }
 }

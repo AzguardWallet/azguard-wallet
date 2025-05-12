@@ -38,13 +38,12 @@ type NetworkDto = {
 };
 
 export class NetworkService extends Service {
-	public readonly onDefaultNetworkChanged: ((network: Network) => void)[] = [];
-
 	private readonly storage: EntityStorage<NetworkDto>;
 	private readonly lock = new Lock();
 	private readonly nodes = new Map<number, AztecNode>();
+	private init: Promise<void> | null;
 
-	constructor(
+	public constructor(
 		private readonly profiles: ProfileService,
 		emit: (event: EventMessage) => void
 	) {
@@ -52,9 +51,11 @@ export class NetworkService extends Service {
 		this.storage = new EntityStorage("azguard:core:networks", StorageType.Local);
 		this.profiles.onActiveProfileChanged.push(this.onActiveProfileChanged);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
+		this.init = this.initialize();
 	}
 
 	public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
+		await this.ensureInitialized();
 		switch (request.method) {
 			case NetworkServiceMethod.GetOrInitNetworks: {
 				const _request = request as GetOrInitNetworksRequest;
@@ -136,6 +137,7 @@ export class NetworkService extends Service {
 	}
 
 	public async getOrInitNetworks(): Promise<Array<Network>> {
+		await this.ensureInitialized();
 		const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -149,17 +151,35 @@ export class NetworkService extends Service {
 			
 			let defaultNetworks = [];
 			try {
-				const name = "Testnet";
-				const rpcUrl = "http://34.107.66.170";
+				const name = "Azguard Node";
+				const rpcUrl = "https://node.testnet.azguardwallet.io";
 				const chainId = 11155111;
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
 			}
 			catch (error) {
-				console.error("Failed to add 'Testnet'", error);
+				console.error("Failed to add 'Azguard Node'", error);
+			}
+			try {
+				const name = "Aztec Node 1";
+				const rpcUrl = "https://full-node.alpha-testnet.aztec.network";
+				const chainId = 11155111;
+				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
+			}
+			catch (error) {
+				console.error("Failed to add 'Aztec Node 1'", error);
+			}
+			try {
+				const name = "Aztec Node 2";
+				const rpcUrl = "https://aztec-alpha-testnet-fullnode.zkv.xyz";
+				const chainId = 11155111;
+				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
+			}
+			catch (error) {
+				console.error("Failed to add 'Aztec Node 2'", error);
 			}
 			try {
 				const name = "Devnet";
-				const rpcUrl = "http://34.169.170.55:8080";
+				const rpcUrl = "https://node.devnet.azguardwallet.io";
 				const chainId = 1337;
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
 			}
@@ -173,13 +193,10 @@ export class NetworkService extends Service {
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
 			}
 			catch (error) {
-				console.error("Failed to add 'Local Sandbox'", error);
+				console.error("Failed to add 'Sandbox'", error);
 			}
 			for (const network of defaultNetworks) {
 				this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, network));
-				for (const emit of this.onDefaultNetworkChanged) {
-					try {emit(network)} catch {}
-				}
 				this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl));
 			}
 			return defaultNetworks;
@@ -189,6 +206,7 @@ export class NetworkService extends Service {
 	}
 
 	public async getNetworks(chainId?: number): Promise<Array<Network>> {
+		await this.ensureInitialized();
 		const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -203,6 +221,7 @@ export class NetworkService extends Service {
 	}
 
 	public async getNetwork(id: string): Promise<Network> {
+		await this.ensureInitialized();
 		const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -215,6 +234,7 @@ export class NetworkService extends Service {
 	}
 
 	public async addNetwork(name: string, rpcUrl: string): Promise<Network> {
+		await this.ensureInitialized();
 		const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -231,6 +251,7 @@ export class NetworkService extends Service {
 	}
 
 	public async updateNetwork(id: string, name: string, rpcUrl: string): Promise<Network> {
+		await this.ensureInitialized();
 		const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -256,6 +277,7 @@ export class NetworkService extends Service {
 	}
 
 	public async deleteNetwork(id: string): Promise<Network> {
+		await this.ensureInitialized();
 		const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -276,6 +298,7 @@ export class NetworkService extends Service {
 	}
 
 	public async setDefault(id: string): Promise<Network> {
+		await this.ensureInitialized();
 		const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -300,9 +323,6 @@ export class NetworkService extends Service {
 			await this.storage.set(id, network);
 			const res = this.makeNetwork(id, network);
 			this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, res));
-			for (const emit of this.onDefaultNetworkChanged) {
-				try {emit(res)} catch {}
-			}
 			this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl));
 			return res;
 		} finally {
@@ -311,6 +331,7 @@ export class NetworkService extends Service {
 	}
 
 	public async getNodeStatus(id: string): Promise<NodeStatus> {
+		await this.ensureInitialized();
 		const profile = await this.profiles.getActiveProfile();
 		if (!profile) {
 			throw new Error("Profile locked");
@@ -332,6 +353,7 @@ export class NetworkService extends Service {
 	}
 
 	public async getNode(chainId: number): Promise<AztecNode> {
+		await this.ensureInitialized();
         try {
             await this.lock.enter();
             let node = this.nodes.get(chainId);
@@ -396,6 +418,7 @@ export class NetworkService extends Service {
 	}
     
     private readonly onActiveProfileChanged = async () => {
+		await this.ensureInitialized();
         try {
             await this.lock.enter();
             this.nodes.clear();
@@ -406,6 +429,7 @@ export class NetworkService extends Service {
     };
 
     private readonly onProfileDeleted = async (profileId: string) => {
+		await this.ensureInitialized();
         console.debug(`profile ${profileId} deleted, remove related networks`);
         try {
 			await this.lock.enter();
@@ -420,4 +444,119 @@ export class NetworkService extends Service {
 			this.lock.leave();
 		}
     }
+
+	private async initialize(): Promise<void> {
+		console.debug("Initialize");
+		await this.checkMigrations();
+		console.debug("Initialized");
+		this.init = null;
+	}
+
+	private async ensureInitialized(): Promise<void> {
+		if (this.init) {
+			await this.init;
+		}
+	}
+
+	private async checkMigrations(): Promise<void> {
+		try {
+			console.debug("Check storage migrations");
+			switch (await this.storage.getVersion()) {
+				case 1: {
+					console.debug("No migrations needed");
+					break;
+				}
+				default: {
+					await this.migrate_0_1();
+					break;
+				}
+			}
+		}
+		catch (error: unknown) {
+			console.error("Failed to migrate storage", error);
+		}
+	}
+	
+	private async migrate_0_1(): Promise<void> {
+		console.debug("Migrating storage");
+		const networks = await this.storage.getAll();
+		console.debug("Replace legacy nodes");
+		for (const [id, network] of networks) {
+			if (network.rpcUrl === "http://34.107.66.170") {
+				network.name = "Azguard Node";
+				network.rpcUrl = "https://node.testnet.azguardwallet.io";
+				network.chainId = 11155111;
+				await this.storage.set(id, network);
+			}
+			else if (network.rpcUrl === "http://34.169.170.55:8080") {
+				network.name = "Devnet";
+				network.rpcUrl = "https://node.devnet.azguardwallet.io";
+				network.chainId = 1337;
+				await this.storage.set(id, network);
+			}
+		}
+		console.debug("Remove azguardbox");
+		for (let i = networks.length - 1; i >= 0; i--) {
+			const [id, network] = networks[i];
+			if (network.chainId === 41337) {
+				await this.storage.delete(id);
+				networks.splice(i);
+			}
+		}
+		console.debug("Add default nodes if missed");
+		const profiles = new Set(networks.map(([_, network]) => network.profileId));
+		for (const profileId of profiles) {
+			if (!networks.find(([_, network]) =>
+				network.profileId === profileId &&
+				network.rpcUrl === "https://node.testnet.azguardwallet.io")
+			) {
+				await this._addNetwork(
+					profileId,
+					"Azguard Node",
+					"https://node.testnet.azguardwallet.io",
+					11155111,
+					true,
+				);
+			}
+			if (!networks.find(([_, network]) =>
+				network.profileId === profileId &&
+				network.rpcUrl === "https://full-node.alpha-testnet.aztec.network")
+			) {
+				await this._addNetwork(
+					profileId,
+					"Aztec Node 1",
+					"https://full-node.alpha-testnet.aztec.network",
+					11155111,
+					false,
+				);
+			}
+			if (!networks.find(([_, network]) =>
+				network.profileId === profileId &&
+				network.rpcUrl === "https://aztec-alpha-testnet-fullnode.zkv.xyz")
+			) {
+				await this._addNetwork(
+					profileId,
+					"Aztec Node 2",
+					"https://aztec-alpha-testnet-fullnode.zkv.xyz",
+					11155111,
+					false,
+				);
+			}
+			if (!networks.find(([_, network]) =>
+				network.profileId === profileId &&
+				network.rpcUrl === "https://node.devnet.azguardwallet.io")
+			) {
+				await this._addNetwork(
+					profileId,
+					"Devnet",
+					"https://node.devnet.azguardwallet.io",
+					1337,
+					true,
+				);
+			}
+		}
+		console.debug("Set storage version to 1");
+		await this.storage.setVersion(1);
+		console.debug("Storage migrated");
+	}
 }
