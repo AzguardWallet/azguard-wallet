@@ -4,7 +4,7 @@ import WalletPasswordContent from "./WalletPasswordContent.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
-import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
+import { AccountServiceClient } from "@/wallet/services/account/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -112,8 +112,6 @@ onUnmounted(() => {
 				<WalletPasswordContent
 					v-model:password="walletPassword"
 					v-model:repeatedPassword="repeatedPassword"
-					@onPasswordInput="handlePasswordInput"
-					@onRepeatedPasswordInput="handleRepeatedPasswordInput"
 				/>
 
 				<Flex direction="column" gap="8">

@@ -8,7 +8,7 @@ const inputElement = useTemplateRef("inputElement")
 
 const isPasswordType = ref(true)
 
-const maxPasswordLength = 64
+const maxPasswordLength = 128
 const maxLengthReached = ref(false)
 const handleMaxLengthReached = (event) => {
 	maxLengthReached.value = event

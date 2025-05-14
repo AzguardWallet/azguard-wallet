@@ -4,7 +4,6 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
 /** Services */
 import { managers } from "@/utils/core"
@@ -41,24 +40,11 @@ const profileName = ref("My Profile")
 const password = ref()
 const repeatedPassword = ref()
 const isPasswordType = ref(true)
-
+const maxPasswordLength = 128
 const isWrongPassword = ref(false)
 
-const handleProfileNameInput = () => {
-	if (profileName.value.length > 64) {
-		profileName.value = profileName.value.slice(0, 64)
-	}
-}
 const handlePasswordInput = () => {
 	if (isWrongPassword.value) isWrongPassword.value = false
-	if (password.value.length > 128) {
-		password.value = password.value.slice(0, 128)
-	}
-}
-const handleRepeatedPasswordInput = () => {
-	if (repeatedPassword.value.length > 128) {
-		repeatedPassword.value = repeatedPassword.value.slice(0, 128)
-	}
 }
 
 const isAllowedToContinue = computed(() => {
@@ -265,7 +251,7 @@ watch(
 
 						<Input
 							v-model="profileName"
-							@input="handleProfileNameInput"
+							:maxLength="64"
 							type="text"
 							label="Profile Name"
 							placeholder="Profile name"
@@ -276,6 +262,7 @@ watch(
 								v-model="password"
 								:type="isPasswordType ? 'password' : 'text'"
 								@input="handlePasswordInput"
+								:maxLength="maxPasswordLength"
 								type="password"
 								label="New password"
 								placeholder="Enter new password"
@@ -294,7 +281,8 @@ watch(
 							<Input
 								v-model="repeatedPassword"
 								:type="isPasswordType ? 'password' : 'text'"
-								@input="handleRepeatedPasswordInput"
+								@input="handlePasswordInput"
+								:maxLength="maxPasswordLength"
 								placeholder="Repeat password"
 							/>
 
@@ -308,6 +296,7 @@ watch(
 							v-model="password"
 							:type="isPasswordType ? 'password' : 'text'"
 							@input="handlePasswordInput"
+							:maxLength="maxPasswordLength"
 							type="password"
 							label="Password"
 							placeholder="Enter profile password"
