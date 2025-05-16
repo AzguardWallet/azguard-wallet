@@ -37,9 +37,10 @@ const publicKey = ref()
 
 const profileName = ref("My Profile")
 
-const password = ref()
-const repeatedPassword = ref()
+const password = ref('')
+const repeatedPassword = ref('')
 const isPasswordType = ref(true)
+const hideCredentials = ref(true)
 const maxPasswordLength = 128
 const isWrongPassword = ref(false)
 
@@ -141,6 +142,7 @@ const handleBack = () => {
 	password.value = null
 	repeatedPassword.value = null
 	isPasswordType.value = true
+	hideCredentials.value = true
 }
 
 watch(
@@ -212,24 +214,42 @@ watch(
 						<Input
 							v-if="selectedImportOption === 'private_key'"
 							v-model="privateKey"
-							type="password"
+							:type="hideCredentials ? 'password' : 'text'"
 							label="Plain Key"
 							placeholder="Enter plain key"
 						>
+							<template #suffix>
+								<Icon
+									@click.stop="hideCredentials = !hideCredentials"
+									:name="hideCredentials ? 'password' : 'text'"
+									size="16"
+									color="secondary"
+									class="clickable"
+								/>
+							</template>
 						</Input>
 						<Input
 							v-if="selectedImportOption === 'public_key'"
 							v-model="publicKey"
-							type="password"
+							:type="hideCredentials ? 'password' : 'text'"
 							label="Encrypted Key"
 							placeholder="Enter encrypted key"
 						>
+						<template #suffix>
+								<Icon
+									@click.stop="hideCredentials = !hideCredentials"
+									:name="hideCredentials ? 'password' : 'text'"
+									size="16"
+									color="secondary"
+									class="clickable"
+								/>
+							</template>
 						</Input>
 
 						<Input
 							v-if="selectedImportOption === 'seed'"
 							v-model="seedPhrase"
-							type="password"
+							:type="hideCredentials ? 'password' : 'text'"
 							label="Seed Phrase"
 							placeholder="Enter seed phrase "
 						>
@@ -239,6 +259,16 @@ watch(
 
 									<template #content> Words should be separated by spaces </template>
 								</Tooltip>
+							</template>
+
+							<template #suffix>
+								<Icon
+									@click.stop="hideCredentials = !hideCredentials"
+									:name="hideCredentials ? 'password' : 'text'"
+									size="16"
+									color="secondary"
+									class="clickable"
+								/>
 							</template>
 
 							<template v-if="seedPhrase?.split(' ').length === 24" #right>
@@ -275,6 +305,20 @@ watch(
 										color="secondary"
 										class="clickable"
 									/>
+								</template>
+
+								<template #right>
+									<Flex align="center" gap="6">
+										<Icon name="password" size="12" color="tertiary" />
+										<Text size="12" weight="600" color="tertiary">
+											{{
+												(password.length < 8 && "At least 8 characters") ||
+												(password !== repeatedPassword && "Not repeated") ||
+												(password.length > 24 && "I hope you remember it") ||
+												"Looks.. strong?"
+											}}
+										</Text>
+									</Flex>
 								</template>
 							</Input>
 

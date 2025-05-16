@@ -35,8 +35,11 @@ export default defineConfig({
 	css: {
 		preprocessorOptions: {
 			scss: {
-				api: "modern",
+				includePaths: [
+					fileURLToPath(new URL("./src/assets/styles", import.meta.url))
+				]
 			},
+			quietDeps: true,
 		},
 	},
 	plugins: [

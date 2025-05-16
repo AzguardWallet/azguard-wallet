@@ -3,7 +3,7 @@ import { createApp } from "vue"
 import { createRouter, createWebHashHistory } from "vue-router/auto"
 import App from "./app.vue"
 import routes from "~pages"
-import "@/assets/styles/base.scss"
+import "@/assets/styles/_base.scss"
 import "./index.scss"
 
 /** Configure BigNumber format */
