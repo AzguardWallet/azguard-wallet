@@ -33,7 +33,6 @@ import SettingField from "@/components/ui/Settings/SettingField.vue"
 				title="Wallet"
 				description="Edit or reset your wallet"
 				icon="wallet"
-				to="/popup/settings/security/wallet"
 				disabled
 			/>
 		</ItemsContainer>

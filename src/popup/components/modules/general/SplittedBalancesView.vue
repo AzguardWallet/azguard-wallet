@@ -81,7 +81,7 @@ const handleOpenSendPopup = target => {
 
 		<Flex direction="column" gap="4">
 			<Flex
-				@click="handleTokenBalanceClick('private')"
+				@click="handleOpenSendPopup('private')"
 				wide
 				align="center"
 				gap="12"
@@ -95,16 +95,16 @@ const handleOpenSendPopup = target => {
 				</Flex>
 
 				<Icon
-					@click.stop="handleOpenSendPopup('private')"
-					name="arrow-top-right-circle"
-					size="20"
+					@click.stop="handleTokenBalanceClick('private')"
+					name="copy"
+					size="14"
 					color="tertiary"
 					:class="$style.right_icon"
 				/>
 			</Flex>
 
 			<Flex
-				@click="handleTokenBalanceClick('public')"
+				@click="handleOpenSendPopup('public')"
 				wide
 				align="center"
 				gap="12"
@@ -118,9 +118,9 @@ const handleOpenSendPopup = target => {
 				</Flex>
 
 				<Icon
-					@click.stop="handleOpenSendPopup('public')"
-					name="arrow-top-right-circle"
-					size="20"
+					@click.stop="handleTokenBalanceClick('public')"
+					name="copy"
+					size="14"
 					color="tertiary"
 					:class="$style.right_icon"
 				/>
