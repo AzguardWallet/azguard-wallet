@@ -182,7 +182,7 @@ onMounted(async () => {
 					<Text size="12" weight="600" color="secondary" :class="$style.middle">{{ token.name }}</Text>
 
 					<Flex align="center" gap="4">
-						<Tooltip position="end" :disabled="isRefreshingBalance">
+						<Tooltip position="end" :disabled="isRefreshingBalance || !tokenBalance?.updatedAt">
 							<Button
 								@click="handleRefreshBalance"
 								type="secondary"
@@ -196,7 +196,7 @@ onMounted(async () => {
 								<Text color="secondary">Latest balance refresh - </Text>
 								<Text>
 									{{
-										DateTime.fromSeconds(tokenBalance.updatedAt / 1_000).toRelative({
+										DateTime.fromSeconds(tokenBalance?.updatedAt / 1_000).toRelative({
 											locale: "en",
 										})
 									}}

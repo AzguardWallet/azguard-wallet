@@ -149,11 +149,23 @@ export const useAppStore = defineStore("app", () => {
 		networks.value = networks.value.filter(n => n.id !== target.id)
 	}
 
-	const isAwaitingTransaction = ref(false)
+	const awaitingTransactions = ref([])
 	const transactions = ref([])
-	const onTxAdded = tx => {
+	const onTxAdded = async (tx) => {
 		transactions.value.unshift(tx)
-		isAwaitingTransaction.value = false
+		const call = tx.calls[0]
+		const awaitingTxIdx = awaitingTransactions.value.findIndex(t => t.account === tx.account && t.contract === call?.contract && t.destination === call?.args[1])
+		if (awaitingTxIdx > -1) {
+			awaitingTransactions.value.splice(awaitingTxIdx, 1)
+			const token = tokens.value.find(t => t.contract === call?.contract)
+			if (token?.id) {
+				const balance = await managers.balance.getTokenBalances(token.id, account.value.address)
+				if (balance?.id && !tokensAwaitingBalanceRefresh.value.includes(token.id)) {
+					tokensAwaitingBalanceRefresh.value.push(token.id)
+					managers.balance.refreshTokenBalance(balance.id)
+				}
+			}
+		}
 	}
 	const onTxUpdated = tx => {
 		const ind = transactions.value.findIndex(x => x.hash === tx.hash);
@@ -177,7 +189,7 @@ export const useAppStore = defineStore("app", () => {
 	return {
 		_isHomeScreenOpened,
 		isLoading,
-		isAwaitingTransaction,
+		awaitingTransactions,
 		displayOption,
 		profile,
 		profiles,
