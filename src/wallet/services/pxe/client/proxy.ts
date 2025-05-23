@@ -1,7 +1,7 @@
 import { L1_TO_L2_MSG_TREE_HEIGHT } from "@aztec/constants";
 import type { Fr } from "@aztec/foundation/fields";
 import { SiblingPath } from "@aztec/foundation/trees";
-import { type AbiDecoded, type ContractArtifact } from "@aztec/stdlib/abi";
+import type { ContractArtifact } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
@@ -33,6 +33,7 @@ import {
     TxProvingResult,
     TxReceipt,
     TxSimulationResult,
+    UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
 import { Network } from "@/wallet/services/network/client";
 import { PxeServiceClient } from ".";
@@ -97,6 +98,7 @@ export class PXEProxy implements PXE {
     profileTx(
         txRequest: TxExecutionRequest,
         profileMode: "gates" | "execution-steps" | "full",
+        skipProofGeneration?: boolean,
         msgSender?: AztecAddress,
     ): Promise<TxProfileResult> {
         throw new Error("Method not implemented.");
@@ -139,7 +141,7 @@ export class PXEProxy implements PXE {
         authwits?: AuthWitness[],
         from?: AztecAddress,
         scopes?: AztecAddress[],
-    ): Promise<AbiDecoded> {
+    ): Promise<UtilitySimulationResult> {
         return this.pxeService.simulateUtility(this.network, functionName, args, to, authwits, from, scopes);
     }
     getPublicLogs(filter: LogFilter): Promise<GetPublicLogsResponse> {

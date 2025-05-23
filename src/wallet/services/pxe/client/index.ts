@@ -1,5 +1,5 @@
 import type { Fr } from "@aztec/foundation/fields";
-import { type AbiDecoded, type ContractArtifact } from "@aztec/stdlib/abi";
+import type { ContractArtifact } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
@@ -12,7 +12,6 @@ import {
 import { GasFees } from "@aztec/stdlib/gas";
 import { ContractClassMetadata, ContractMetadata, PXE, PXEInfo } from "@aztec/stdlib/interfaces/client";
 import { NotesFilter, UniqueNote } from "@aztec/stdlib/note";
-import { AbiDecodedSchema } from "@aztec/stdlib/schemas";
 import {
     PrivateExecutionResult,
     Tx,
@@ -20,12 +19,13 @@ import {
     TxHash,
     TxProvingResult,
     TxSimulationResult,
+    UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
 import { z } from "zod";
 import { ServiceClient } from "@/wallet/base/message-service/service-client";
 import { Network } from "@/wallet/services/network/client";
 import { ensureOffscreenRunning } from "@/wallet/utils/offscreen";
-import { ContractClassMetadataSchema, ContractMetadataSchema, PXEInfoSchema } from "@/wallet/utils/schemas";
+import { ContractClassMetadataSchema, ContractMetadataSchema, PXEInfoSchema, TxProvingResultSchema } from "@/wallet/utils/schemas";
 import { PxeServiceMethod as PxeServiceMethod } from "./methods";
 import { PXEProxy } from "./proxy";
 
@@ -109,7 +109,9 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
     ): Promise<TxProvingResult> {
         await ensureOffscreenRunning();
         const result = await this.request(PxeServiceMethod.ProveTx, { network, txRequest, privateExecutionResult });
-        return await TxProvingResult.schema.parseAsync(result);
+        // TODO: uncomment when https://github.com/AztecProtocol/aztec-packages/pull/14498 merged
+        //return await TxProvingResult.schema.parseAsync(result);
+        return await TxProvingResultSchema.parseAsync(result);
     }
 
     public async registerAccount(
@@ -180,7 +182,7 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
         authwits?: AuthWitness[],
         from?: AztecAddress,
         scopes?: AztecAddress[],
-    ): Promise<AbiDecoded> {
+    ): Promise<UtilitySimulationResult> {
         await ensureOffscreenRunning();
         const result = await this.request(PxeServiceMethod.SimulateUtility, {
             network,
@@ -191,6 +193,6 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
             from,
             scopes,
         });
-        return await AbiDecodedSchema.parseAsync(result);
+        return await UtilitySimulationResult.schema.parseAsync(result);
     }
 }
