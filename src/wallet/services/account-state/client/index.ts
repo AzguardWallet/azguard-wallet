@@ -24,7 +24,7 @@ export const ACCOUNT_STATE_SERVICE_NAME = "account-state";
  */
 export class AccountStateServiceClient extends ServiceClient {
     /**
-     * Creates AccountStateServiceClient instace.
+     * Creates AccountStateServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onSenderAdded Callback, called when a new sender was added.

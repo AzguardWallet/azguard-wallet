@@ -26,7 +26,7 @@ export const TOKEN_SERVICE_NAME = "token";
  */
 export class TokenServiceClient extends ServiceClient {
     /**
-     * Creates TokenServiceClient instace.
+     * Creates TokenServiceClient instance.
      * @param profile Current profile.
      * @param network Current network.
      * @param account Current account.

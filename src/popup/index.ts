@@ -1,3 +1,6 @@
+import { ConsoleSnifferService } from "@/wallet/services/console-sniffer";
+const consoleSnifferService = new ConsoleSnifferService("popup");
+
 import { createPinia } from "pinia"
 import { createApp } from "vue"
 import { createRouter, createWebHashHistory } from "vue-router/auto"

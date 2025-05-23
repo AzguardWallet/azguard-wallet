@@ -1,4 +1,36 @@
 import { init, start } from "@/wallet"
+// import { initLogger, LogEntry, LOG_TTL_MS, MAX_LOG_ENTRIES } from '../logger';
+
+// let memoryLogs: LogEntry[] = [];
+
+// chrome.runtime.onMessage.addListener((
+// 	msg: any,
+// 	sender: chrome.runtime.MessageSender,
+// 	sendResponse: (response?: any) => void
+// ): boolean | undefined => {
+// 	if (msg.type === 'LOG_ENTRY') {
+// 		const now = Date.now();
+// 		memoryLogs = memoryLogs.filter(e => now - e.ts <= LOG_TTL_MS);
+// 		memoryLogs.push(msg.entry);
+// 		if (memoryLogs.length > MAX_LOG_ENTRIES) {
+// 			memoryLogs = memoryLogs.slice(-MAX_LOG_ENTRIES);
+// 		}
+
+// 		return false;
+// 	}
+
+// 	if (msg.type === 'GET_LOGS') {
+// 		const count = (msg.count as number) || undefined;
+// 		const out = count ? memoryLogs.slice(-count) : memoryLogs;
+
+// 		sendResponse({ logs: out });
+
+// 		return true;
+// 	}
+
+// 	return false;
+// });
+// initLogger('service_worker');
 
 chrome.runtime.onInstalled.addListener(async (opt) => {
 	// if (opt.reason === "install") {

@@ -24,7 +24,7 @@ export const NETWORK_SERVICE_NAME = "network";
  */
 export class NetworkServiceClient extends ServiceClient {
     /**
-     * Creates NetworkServiceClient instace.
+     * Creates NetworkServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onNetworkAdded Callback, called when a new network was created.

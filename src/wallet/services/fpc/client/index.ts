@@ -15,7 +15,7 @@ export const FPC_SERVICE_NAME = "fpc";
  */
 export class FpcServiceClient extends ServiceClient {
     /**
-     * Creates FpcServiceClient instace.
+     * Creates FpcServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onFpcAdded Callback, called when a new transaction was created.

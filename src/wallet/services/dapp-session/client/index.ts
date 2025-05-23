@@ -21,7 +21,7 @@ export const DAPP_SESSION_SERVICE_NAME = "dapp-session";
  */
 export class DappSessionServiceClient extends ServiceClient {
     /**
-     * Creates DappSessionServiceClient instace.
+     * Creates DappSessionServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onDappSessionAdded Callback, called when a new dapp session was created.

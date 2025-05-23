@@ -112,7 +112,7 @@ export class DappSessionService extends Service {
         }
     }
 
-    public  async getDappSessions(): Promise<DappSession[]> {
+    public async getDappSessions(): Promise<DappSession[]> {
 		await this.ensureInitialized();
         const profile = await this.profiles.getActiveProfile();
 		if (!profile) {

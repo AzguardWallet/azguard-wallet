@@ -277,14 +277,14 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             this.knownClasses.set(contractClass.id.toString(), contractClass);
         }
 
-        const sponsoredFpcInstace = await getContractInstanceFromDeployParams(
+        const sponsoredFpcInstance = await getContractInstanceFromDeployParams(
             SponsoredFPCContractArtifact,
             {
                 constructorArgs: [],
                 salt: Fr.zero()
             }
         );
-        this.knownInstances.set(sponsoredFpcInstace.address.toString(), sponsoredFpcInstace);
+        this.knownInstances.set(sponsoredFpcInstance.address.toString(), sponsoredFpcInstance);
     }
 
 	private async getNodeClient(network: Network): Promise<AztecNode> {

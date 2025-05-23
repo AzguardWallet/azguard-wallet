@@ -18,7 +18,7 @@ export const TRANSACTION_SERVICE_NAME = "transaction";
  */
 export class TransactionServiceClient extends ServiceClient {
     /**
-     * Creates TransactionServiceClient instace.
+     * Creates TransactionServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onTransactionAdded Callback, called when a new transaction was created.

@@ -31,7 +31,7 @@ export const PROFILE_SERVICE_NAME = "profile";
  */
 export class ProfileServiceClient extends ServiceClient {
     /**
-     * Creates ProfileServiceClient instace.
+     * Creates ProfileServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onProfileAdded Callback, called when a new profile was created.

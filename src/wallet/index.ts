@@ -15,39 +15,48 @@ import { AccountStateService } from "./services/account-state";
 import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
+import { LoggerService } from "./services/logger";
+import { LogLevel } from "./services/logger/client";
 import { sleep } from "./utils";
 import { jsonSanitize } from "./utils/serialization";
+import { ensureOffscreenRunning } from "./utils/offscreen";
 
+// logger ?
+const loggerService = new LoggerService(broadcast);
 export async function init() {
-    console.debug("Init BarretenbergSync...");
+    loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
+    // console.debug("Init BarretenbergSync...");
     await BarretenbergSync.initSingleton(process.env.BB_WASM_PATH);
-    console.debug("BarretenbergSync inited.");
+    loggerService.addLog(LogLevel.Debug, "BarretenbergSync inited.")
+    // console.debug("BarretenbergSync inited.");
+    // await ensureOffscreenRunning();
 }
 
 export function start() {
     if (isRunning) return;
-    console.debug("Start wallet...");
+    // console.debug("Start wallet...");
     chrome.runtime.onConnect.addListener(onConnect);
     isRunning = true;
     worker = runWorker();
-    console.debug("Wallet started.");
+    // console.debug("Wallet started.");
 }
 
 export async function stop() {
     if (!isRunning) return;
-    console.warn("Stop wallet...");
+    // console.warn("Stop wallet...");
     isRunning = false;
     chrome.runtime.onConnect.removeListener(onConnect);
     while (ports.length) {
-        console.debug("Drop client...");
+        // console.debug("Drop client...");
         ports.pop()!.disconnect();
-        console.debug(`Client dropped. Total: ${ports.length}.`);
+        // console.debug(`Client dropped. Total: ${ports.length}.`);
     }
     await worker;
-    console.warn("Wallet stopped.");
+    // console.warn("Wallet stopped.");
 }
 
 // services
+// logger
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(profileService, broadcast);
 const accountService = new AccountService(profileService, networkService, broadcast);
@@ -109,6 +118,7 @@ const walletConnectService = new WalletConnectService(
 );
 
 const services = new Map<string, Service>([
+    [loggerService.name, loggerService],
     [profileService.name, profileService],
     [networkService.name, networkService],
     [accountService.name, accountService],
@@ -131,51 +141,52 @@ let worker = Promise.resolve();
 let isRunning = false;
 
 function onConnect(port: chrome.runtime.Port) {
-    console.debug("onConnect...");
+    // console.debug("onConnect...");
     port.onDisconnect.addListener(onDisconnect);
     port.onMessage.addListener(onMessage);
     ports.push(port);
-    console.debug(`Client connected. Total: ${ports.length}.`);
+    // console.debug(`Client connected. Total: ${ports.length}.`);
 }
 
 function onDisconnect(port: chrome.runtime.Port) {
-    console.debug("onDisconnect...");
+    // console.debug("onDisconnect...");
     for (let i = ports.length - 1; i >= 0; i--) {
         if (ports[i] === port) {
             port.onDisconnect.removeListener(onDisconnect);
             port.onMessage.removeListener(onMessage);
             ports.splice(i, 1);
-            console.debug(`Client disconnected. Total: ${ports.length}.`);
+            // console.debug(`Client disconnected. Total: ${ports.length}.`);
         }
     }
 }
 
 async function onMessage(message: IMessage, client: chrome.runtime.Port) {
     if (typeof message.type !== 'number') return; // crutch for crx
-    console.debug("Message received", message);
+    // loggerService.addLog(LogLevel.Debug, ["Message received", message])
+    // console.debug("Message received", message);
     if (message.type !== MessageType.Request) {
-        console.error("Invalid message");
+        // console.error("Invalid message");
         client.disconnect();
         return;
     }
     const request = message as RequestMessage;
     const service = services.get(request.service);
     if (!service) {
-        console.error("Service is not registered", request.service);
+        // console.error("Service is not registered", request.service);
         client.disconnect();
         return;
     }
     const response = await service.process(request);
     if (!response) {
-        console.error(`Service ${request.service} doesn't have method ${request.method}`);
+        // console.error(`Service ${request.service} doesn't have method ${request.method}`);
         client.disconnect();
         return;
     }
     if (response.error === undefined) {
-        console.debug("Request processed", request.requestId, response.result);
+        // console.debug("Request processed", request.requestId, response.result);
     }
     else {
-        console.debug("Request failed", request.requestId, response.error);
+        // console.debug("Request failed", request.requestId, response.error);
     }
     send(client, response);
 }
@@ -186,7 +197,7 @@ async function runWorker() {
             await chrome.storage.session.set({"azguard:core:liveness": Date.now()});
         }
         catch (error) {
-            console.error("Wallet worker failed", error);
+            // console.error("Wallet worker failed", error);
         }
         await sleep(10000);
     }
@@ -199,19 +210,19 @@ function broadcast(event: EventMessage) {
                 send(port, event);
             }
         }
-        console.debug("Event broadcasted.", event);
+        // console.debug("Event broadcasted.", event);
     }
     catch (error) {
-        console.error("Failed to broadcast event", error);
+        // console.error("Failed to broadcast event", error);
     }
 }
 
 function send(port: chrome.runtime.Port, message: IMessage) {
     try {
         port.postMessage(jsonSanitize(message));
-        console.debug("Message sent", message);
+        // console.debug("Message sent", message);
     }
     catch (error) {
-        console.error("Failed to send message", error);
+        // console.error("Failed to send message", error);
     }
 }

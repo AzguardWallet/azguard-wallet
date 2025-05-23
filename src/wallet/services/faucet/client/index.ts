@@ -12,7 +12,7 @@ export const FAUCET_SERVICE_NAME = "faucet";
  */
 export class FaucetServiceClient extends ServiceClient {
     /**
-     * Creates FaucetServiceClient instace.
+     * Creates FaucetServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      */

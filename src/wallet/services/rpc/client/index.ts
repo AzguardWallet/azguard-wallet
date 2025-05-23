@@ -13,7 +13,7 @@ export const RPC_SERVICE_NAME = "rpc";
  */
 export class RpcServiceClient extends ServiceClient {
     /**
-     * Creates RpcServiceClient instace.
+     * Creates RpcServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onGenericEvent Callback, called on external RPC events.

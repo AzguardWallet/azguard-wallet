@@ -23,7 +23,7 @@ export const ACCOUNT_SERVICE_NAME = "account";
  */
 export class AccountServiceClient extends ServiceClient {
     /**
-     * Creates AccountServiceClient instace.
+     * Creates AccountServiceClient instance.
      * @param profile Profile, determining accounts scope (each profile + network has its own set of accounts).
      * @param network Network, determining accounts scope (each profile + network has its own set of accounts).
      * @param onConnected Callback, called when the client is connected to the background service.

@@ -24,7 +24,7 @@ export const DAPP_INTERACTION_SERVICE_NAME = "dapp-interaction";
  */
 export class DappInteractionServiceClient extends ServiceClient {
     /**
-     * Creates DappInteractionServiceClient instace.
+     * Creates DappInteractionServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onInteractionCancelled Callback, called when a dapp interaction was cancelled.

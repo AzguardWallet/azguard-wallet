@@ -15,7 +15,7 @@ export const EXECUTION_SERVICE_NAME = "execution";
  */
 export class ExecutionServiceClient extends ServiceClient {
     /**
-     * Creates ExecutionServiceClient instace.
+     * Creates ExecutionServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      */

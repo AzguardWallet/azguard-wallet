@@ -18,7 +18,7 @@ export const TOKEN_BALANCE_SERVICE_NAME = "token-balance"
  */
 export class TokenBalanceServiceClient extends ServiceClient {
 	/**
-	 * Creates TokenBalanceServiceClient instace.
+	 * Creates TokenBalanceServiceClient instance.
 	 * @param onConnected Callback, called when the client is connected to the background service.
 	 * @param onDisconnected Callback, called when the client is disconnected from the background service.
 	 * @param onTokenBalanceAdded Callback, called when a new token balance was created.
