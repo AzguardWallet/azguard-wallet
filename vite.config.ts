@@ -9,6 +9,9 @@ import { nodePolyfills } from "vite-plugin-node-polyfills"
 import packageJson from "./package.json"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 
+const fullAztecVersion = packageJson.dependencies["@aztec/bb.js"] || ""
+const aztecVersion = fullAztecVersion.match(/^(\d+\.\d+\.\d+)/)?.[1] || "unknown"
+
 export default defineConfig({
 	server: {
 		port: 8088,
@@ -141,7 +144,7 @@ export default defineConfig({
 	},
 	define: {
 		__VERSION__: JSON.stringify(packageJson.version),
-		__AZTEC_VERSION__: JSON.stringify(packageJson.aztecVesion),
+		__AZTEC_VERSION__: JSON.stringify(aztecVersion),
 		__NAME__: JSON.stringify(packageJson.name),
 		__DISPLAY_NAME__: JSON.stringify(packageJson.displayName),
 		"import.meta.env.HTML_TITLE": JSON.stringify(packageJson.displayName),

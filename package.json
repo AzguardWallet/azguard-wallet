@@ -3,7 +3,6 @@
 	"displayName": "Azguard Wallet",
 	"description": "User-friendly self-custody wallet for Aztec network, preserving your privacy and revealing the power of account abstraction.",
 	"version": "0.3.2",
-	"aztecVesion": "0.85.0",
 	"scripts": {
 		"build:full": "npm run build:chrome && npm run build:firefox",
 		"build": "cross-env NODE_OPTIONS=--max-old-space-size=16000 vite build -c vite.chrome.config.mts",
