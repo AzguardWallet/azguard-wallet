@@ -1,9 +1,12 @@
+import packageJson from "../../../../package.json"
+const { version } = packageJson
+
 export const AzguardWalletInfo: WalletInfo = {
     name: "Azguard",
     description: "User-friendly self-custody wallet for Aztec network, preserving your privacy and revealing the power of account abstraction.",
     logo: chrome.runtime.getURL("/src/assets/logo.png"),
     url: "https://azguardwallet.io",
-    version: "0.3.2",
+    version,
     capabilities: [
         "batch_execution",
     ],

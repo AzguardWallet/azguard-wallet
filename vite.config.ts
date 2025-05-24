@@ -141,6 +141,7 @@ export default defineConfig({
 	},
 	define: {
 		__VERSION__: JSON.stringify(packageJson.version),
+		__AZTEC_VERSION__: JSON.stringify(packageJson.aztecVesion),
 		__NAME__: JSON.stringify(packageJson.name),
 		__DISPLAY_NAME__: JSON.stringify(packageJson.displayName),
 		"import.meta.env.HTML_TITLE": JSON.stringify(packageJson.displayName),
