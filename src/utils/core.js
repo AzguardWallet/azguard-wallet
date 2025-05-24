@@ -63,7 +63,11 @@ export const initTransactionService = (onTransactionAdded, onTransactionUpdated)
 }
 
 export const setAztecVersion = async (version) => {
-	chrome.storage.local.set({ "azguard:ui:aztecVersion": version })
+	if (version) {
+		chrome.storage.local.set({ "azguard:ui:aztecVersion": version })
+	} else {
+		chrome.storage.local.set({ "azguard:ui:aztecVersion": __AZTEC_VERSION__ })
+	}
 }
 
 export const checkAztecVersion = async () => {

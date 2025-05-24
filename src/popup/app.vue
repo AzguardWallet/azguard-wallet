@@ -296,6 +296,7 @@ onBeforeUnmount(() => {
 		<div>
 			<PopupManager />
 			<ToastManager />
+			<NotificationManager />
 		</div>
 
 		<Header />
