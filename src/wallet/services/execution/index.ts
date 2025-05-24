@@ -26,7 +26,7 @@ import {
 } from "@aztec/stdlib/contract";
 import { PXE } from '@aztec/stdlib/interfaces/client';
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
-import { Capsule, HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
+import { Capsule, HashedValues, TxExecutionRequest, UtilitySimulationResult } from '@aztec/stdlib/tx';
 import { z } from "zod";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
@@ -627,7 +627,7 @@ export class ExecutionService extends Service {
             await pxe.registerContract({instance, artifact});
         }
 
-        return await pxe.simulateUtility(
+        const { result } = await pxe.simulateUtility(
             op.method, // functionName
             op.args, // args
             AztecAddress.fromString(op.contract), // to
@@ -635,6 +635,8 @@ export class ExecutionService extends Service {
             undefined, // from
             [account.address], // scopes
         );
+
+        return result;
     }
     
     async executeSimulateViews(op: SimulateViewsOperation): Promise<{encoded: Fr[][], decoded: AbiDecoded[]}> {
@@ -671,7 +673,7 @@ export class ExecutionService extends Service {
         
         const args: HashedValues[] = [];
         const calls: [AzguardFunctionCall, number, number, AbiType[]][] = [];
-        const utility: [Promise<AbiDecoded>, number, AbiType[]][] = [];
+        const utility: [Promise<UtilitySimulationResult>, number, AbiType[]][] = [];
         const ensureArray = (value: any): any[] => Array.isArray(value) ? value : [value];
         let privateCalls = 0;
         let publicCalls = 0;
@@ -832,7 +834,7 @@ export class ExecutionService extends Service {
         }
 
         for (const [promise, i, types] of utility) {
-            const values = await promise;
+            const { result: values } = await promise;
             try {
                 result.encoded[i] = encodeArguments(
                     {

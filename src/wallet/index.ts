@@ -16,6 +16,7 @@ import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
 import { sleep } from "./utils";
+import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
 
 export async function init() {
@@ -28,6 +29,7 @@ export function start() {
     if (isRunning) return;
     console.debug("Start wallet...");
     chrome.runtime.onConnect.addListener(onConnect);
+    ensureOffscreenRunning(); // ff
     isRunning = true;
     worker = runWorker();
     console.debug("Wallet started.");

@@ -1,3 +1,4 @@
+import { SPONSORED_FPC_SALT } from "@aztec/constants";
 import { getPXEServiceConfig, PXEServiceConfig } from "@aztec/pxe/config";
 import { createPXEService } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/fields";
@@ -279,10 +280,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
 
         const sponsoredFpcInstace = await getContractInstanceFromDeployParams(
             SponsoredFPCContractArtifact,
-            {
-                constructorArgs: [],
-                salt: Fr.zero()
-            }
+            { salt: new Fr(SPONSORED_FPC_SALT) },
         );
         this.knownInstances.set(sponsoredFpcInstace.address.toString(), sponsoredFpcInstace);
     }
