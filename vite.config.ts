@@ -9,7 +9,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills"
 import packageJson from "./package.json"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 
-const fullAztecVersion = packageJson.dependencies["@aztec/bb.js"] || ""
+const fullAztecVersion = packageJson.dependencies["@aztec/pxe"] || ""
 const aztecVersion = fullAztecVersion.match(/^(\d+\.\d+\.\d+)/)?.[1] || "unknown"
 
 export default defineConfig({
