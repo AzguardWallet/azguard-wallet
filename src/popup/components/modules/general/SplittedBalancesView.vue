@@ -41,7 +41,7 @@ const privateBalance = computed(() => {
 	
 	return balanceFormatted(balance, showFullBalance.value.private ? undefined : 30)
 })
-const pubicBalance = computed(() => {
+const publicBalance = computed(() => {
 	if (!tokenBalance.value) return 0
 
 	const decimals = new BN(10).pow(tokenBalance.value?.token?.decimals || 0)
@@ -51,24 +51,22 @@ const pubicBalance = computed(() => {
 })
 
 const isCopied = ref(false)
-const handleCopy = (value, label) => {
+const handleCopyBalance = (target) => {
+	const balance = target === 'private' ? privateBalance.value : publicBalance.value
+	
 	isCopied.value = true
-	window.navigator.clipboard.writeText(value)
-	openToast({ label: `${label} is copied`, icon: "copy" })
+	window.navigator.clipboard.writeText(balance.value)
+	openToast({ label: `${capitalize(target)} balance is copied`, icon: "copy" })
 	setTimeout(() => {
 		isCopied.value = false
 	}, 2500)
 }
-const handleTokenBalanceClick = async (target) => {
-	const balance = target === 'private' ? privateBalance.value : pubicBalance.value
-	if (balance?.slashed || showFullBalance.value[target]) {
-		showFullBalance.value[target] = !showFullBalance.value[target]
-		await nextTick()
-	}
-	
-	handleCopy(balance.value, `${capitalize(target)} balance`)
-}
 
+const handleShowFullBalances = async () => {
+	showFullBalance.value.private = !showFullBalance.value.private
+	showFullBalance.value.public = !showFullBalance.value.public
+	await nextTick()
+}
 const handleOpenSendPopup = target => {
 	cacheStore.preselectedBalanceType = target
 	popupStore.open("send")
@@ -77,7 +75,20 @@ const handleOpenSendPopup = target => {
 
 <template>
 	<Flex direction="column" gap="12" :class="$style.wrapper">
-		<Text size="13" weight="600" color="secondary">Balances</Text>
+		<Flex align="end" justify="between" gap="20">
+			<Text size="13" weight="600" color="secondary">Balances</Text>
+
+			<Text
+				v-if="privateBalance.slashed || publicBalance.slashed || showFullBalance.public"
+				@click="handleShowFullBalances"
+				size="12"
+				weight="600"
+				color="tertiary"
+				:class="['clickable', $style.txt_button]"
+			>
+				Show full
+			</Text>
+		</Flex>
 
 		<Flex direction="column" gap="4">
 			<Flex
@@ -95,7 +106,7 @@ const handleOpenSendPopup = target => {
 				</Flex>
 
 				<Icon
-					@click.stop="handleTokenBalanceClick('private')"
+					@click.stop="handleCopyBalance('private')"
 					name="copy"
 					size="14"
 					color="tertiary"
@@ -112,13 +123,13 @@ const handleOpenSendPopup = target => {
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary" :class="$style.balance_text">
-						{{ pubicBalance.value }}
+						{{ publicBalance.value }}
 					</Text>
 					<Text size="11" weight="500" color="tertiary"> Public Balance </Text>
 				</Flex>
 
 				<Icon
-					@click.stop="handleTokenBalanceClick('public')"
+					@click.stop="handleCopyBalance('public')"
 					name="copy"
 					size="14"
 					color="tertiary"
@@ -161,6 +172,14 @@ const handleOpenSendPopup = target => {
 	&.disabled {
 		opacity: 0.5;
 		pointer-events: none;
+	}
+}
+
+.txt_button {
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		color: var(--txt-secondary);
 	}
 }
 
