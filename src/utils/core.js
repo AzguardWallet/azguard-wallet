@@ -66,21 +66,17 @@ export const setAztecVersion = async (version) => {
 	if (version) {
 		chrome.storage.local.set({ "azguard:ui:aztecVersion": version })
 	} else {
-		chrome.storage.local.set({ "azguard:ui:aztecVersion": __AZTEC_VERSION__ })
+		chrome.storage.local.set({ "azguard:ui:aztecVersion": __AZTEC_SHORT_VERSION__ })
 	}
 }
 
 export const checkAztecVersion = async () => {
 	const currentVersion = (await chrome.storage.local.get("azguard:ui:aztecVersion"))["azguard:ui:aztecVersion"] || ""
 
-	if (!currentVersion) {
-		return false
-	}
-
 	switch (currentVersion) {
-		case "0.85.0":
-			return false
-		default:
+		case __AZTEC_SHORT_VERSION__:
 			return true
+		default:
+			return false
 	}
 }
