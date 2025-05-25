@@ -10,19 +10,17 @@
 /** Components */
 import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
 
-/** Store */
-import { useCacheStore } from "@/stores/cache.store"
-import { usePopupStore } from "@/stores/popup.store"
-const cacheStore = useCacheStore()
-const popupStore = usePopupStore()
-
 /** Composabled */
 import { useSettings } from "@/composables/settings.js"
 const { settings, updateSettings } = useSettings()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
 
 const theme = computed(() => settings.value.appearance?.theme)
 

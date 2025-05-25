@@ -40,7 +40,7 @@ const tokens = ref([])
 const isAlreadyExist = computed(() => tokens.value?.findLast(t => t.contract === contractAddressTerm.value))
 const isAvailableToCreateToken = computed(() => {
 	if (!isValidHex(contractAddressTerm.value)) return
-	if (isLoadingParseResult.value) return
+	// if (isLoadingParseResult.value) return
 	if (isAlreadyExist.value) return
 
 	return true
@@ -185,7 +185,7 @@ watch(
 					label="Contract address"
 					placeholder="0x"
 					autofocus
-					:disabled="isLoadingParseResult || !isCompleted"
+					:disabled="isLoadingParseResult || !isCompleted || isAddingNewToken"
 				>
 					<template #suffix>
 						<Icon v-if="isAvailableToCreateToken" name="check-circle" size="14" color="green" />

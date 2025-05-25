@@ -4,7 +4,6 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
 /** Services */
 import { managers } from "@/utils/core"
@@ -38,27 +37,15 @@ const publicKey = ref()
 
 const profileName = ref("My Profile")
 
-const password = ref()
-const repeatedPassword = ref()
+const password = ref('')
+const repeatedPassword = ref('')
 const isPasswordType = ref(true)
-
+const hideCredentials = ref(true)
+const maxPasswordLength = 128
 const isWrongPassword = ref(false)
 
-const handleProfileNameInput = () => {
-	if (profileName.value.length > 64) {
-		profileName.value = profileName.value.slice(0, 64)
-	}
-}
 const handlePasswordInput = () => {
 	if (isWrongPassword.value) isWrongPassword.value = false
-	if (password.value.length > 128) {
-		password.value = password.value.slice(0, 128)
-	}
-}
-const handleRepeatedPasswordInput = () => {
-	if (repeatedPassword.value.length > 128) {
-		repeatedPassword.value = repeatedPassword.value.slice(0, 128)
-	}
 }
 
 const isAllowedToContinue = computed(() => {
@@ -155,6 +142,7 @@ const handleBack = () => {
 	password.value = null
 	repeatedPassword.value = null
 	isPasswordType.value = true
+	hideCredentials.value = true
 }
 
 watch(
@@ -226,24 +214,42 @@ watch(
 						<Input
 							v-if="selectedImportOption === 'private_key'"
 							v-model="privateKey"
-							type="password"
+							:type="hideCredentials ? 'password' : 'text'"
 							label="Plain Key"
 							placeholder="Enter plain key"
 						>
+							<template #suffix>
+								<Icon
+									@click.stop="hideCredentials = !hideCredentials"
+									:name="hideCredentials ? 'password' : 'text'"
+									size="16"
+									color="secondary"
+									class="clickable"
+								/>
+							</template>
 						</Input>
 						<Input
 							v-if="selectedImportOption === 'public_key'"
 							v-model="publicKey"
-							type="password"
+							:type="hideCredentials ? 'password' : 'text'"
 							label="Encrypted Key"
 							placeholder="Enter encrypted key"
 						>
+						<template #suffix>
+								<Icon
+									@click.stop="hideCredentials = !hideCredentials"
+									:name="hideCredentials ? 'password' : 'text'"
+									size="16"
+									color="secondary"
+									class="clickable"
+								/>
+							</template>
 						</Input>
 
 						<Input
 							v-if="selectedImportOption === 'seed'"
 							v-model="seedPhrase"
-							type="password"
+							:type="hideCredentials ? 'password' : 'text'"
 							label="Seed Phrase"
 							placeholder="Enter seed phrase "
 						>
@@ -255,6 +261,16 @@ watch(
 								</Tooltip>
 							</template>
 
+							<template #suffix>
+								<Icon
+									@click.stop="hideCredentials = !hideCredentials"
+									:name="hideCredentials ? 'password' : 'text'"
+									size="16"
+									color="secondary"
+									class="clickable"
+								/>
+							</template>
+
 							<template v-if="seedPhrase?.split(' ').length === 24" #right>
 								<Flex align="center" gap="4">
 									<Icon name="check-circle" size="12" color="green" />
@@ -263,19 +279,20 @@ watch(
 							</template>
 						</Input>
 
-						<Input
+						<!-- <Input
 							v-model="profileName"
-							@input="handleProfileNameInput"
+							:maxLength="64"
 							type="text"
 							label="Profile Name"
 							placeholder="Profile name"
-						/>
+						/> -->
 
 						<Flex v-if="['private_key', 'seed'].includes(selectedImportOption)" direction="column" gap="8">
 							<Input
 								v-model="password"
 								:type="isPasswordType ? 'password' : 'text'"
 								@input="handlePasswordInput"
+								:maxLength="maxPasswordLength"
 								type="password"
 								label="New password"
 								placeholder="Enter new password"
@@ -289,12 +306,27 @@ watch(
 										class="clickable"
 									/>
 								</template>
+
+								<template #right>
+									<Flex align="center" gap="6">
+										<Icon name="password" size="12" color="tertiary" />
+										<Text size="12" weight="600" color="tertiary">
+											{{
+												((!password || password?.length < 8) && "At least 8 characters") ||
+												(password !== repeatedPassword && "Not repeated") ||
+												(password?.length > 24 && "I hope you remember it") ||
+												"Looks.. strong?"
+											}}
+										</Text>
+									</Flex>
+								</template>
 							</Input>
 
 							<Input
 								v-model="repeatedPassword"
 								:type="isPasswordType ? 'password' : 'text'"
-								@input="handleRepeatedPasswordInput"
+								@input="handlePasswordInput"
+								:maxLength="maxPasswordLength"
 								placeholder="Repeat password"
 							/>
 
@@ -308,6 +340,7 @@ watch(
 							v-model="password"
 							:type="isPasswordType ? 'password' : 'text'"
 							@input="handlePasswordInput"
+							:maxLength="maxPasswordLength"
 							type="password"
 							label="Password"
 							placeholder="Enter profile password"

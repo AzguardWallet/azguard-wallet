@@ -19,12 +19,16 @@ const props = defineProps({
 
 const router = useRouter()
 
-const latestTransaction = computed(() =>
-	props.token
+const latestTransaction = computed(() => {
+	return props.token
 		? appStore.transactions.filter(t => t.calls[0]?.contract === props.token?.contract)[0]
-		: appStore.transactions[0],
-)
-
+		: appStore.transactions[0]
+})
+const isTokenAwaitingTx = computed(() => {
+	return props.token
+		? appStore.awaitingTransactions.findIndex(t => t.contract === props.token.contract) > -1
+		: false
+})
 const handleSelectTx = () => {
 	cacheStore.activeTxHash = latestTransaction.value.hash
 	popupStore.open("tx")
@@ -47,8 +51,8 @@ const handleSelectTx = () => {
 		</Flex>
 
 		<div :class="$style.list">
-			<TransactionCard v-if="!appStore.isAwaitingTransaction" :tx="latestTransaction" @click="handleSelectTx" />
-			<TransactionAwaitingCard v-else />
+			<TransactionAwaitingCard v-if="!token && appStore.awaitingTransactions.length || isTokenAwaitingTx" />
+			<TransactionCard v-else-if="!appStore.awaitingTransactions.length || token" :tx="latestTransaction" @click="handleSelectTx" />
 		</div>
 	</Flex>
 </template>

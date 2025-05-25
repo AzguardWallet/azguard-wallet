@@ -6,6 +6,12 @@ import BN from "bignumber.js"
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
+/** Services */
+import { OriginType } from "@/wallet/services/transaction/client/models"
+
+/** Utils */
+import { balanceFormatted } from "@/utils/amount.js"
+
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
@@ -29,13 +35,40 @@ const props = defineProps({
 
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
 const call = computed(() => tx.value.calls[0])
+const type = computed(() => {
+	if (call.value?.method.startsWith("transfer")) return "transfer"
+	if (call.value?.method.startsWith("mint_to_")) return "mint"
+	return "tx"
+})
+
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
 const token = computed(() => appStore.tokens.find(t => call.value?.contract === t.contract))
+
+const transferAmount = computed(() => {
+	if (transfer.value) {
+		const decimals = new BN(10).pow(token.value?.decimals || 0)
+		return balanceFormatted(new BN((transfer.value.amount || 0)).dividedBy(decimals), 8).value
+	}
+	
+	return 0
+})
+
+const mintAmount = computed(() => {
+	if (type.value !== "mint") return 0
+	
+	const decimals = new BN(10).pow(tx.value?.origin?.type === OriginType.UI ? 8 : 0)
+	let amount = new BN(0)
+	for (const c of tx.value.calls) {
+		amount = amount.plus(new BN(c.args.at(-1) || 0))
+	}
+
+	return balanceFormatted(amount.dividedBy(decimals), 8).value
+})
 
 watch(
 	() => props.show,
 	() => {
-		// console.log(tx.value)
+		// console.log('tx', tx.value);
 	},
 )
 
@@ -67,12 +100,20 @@ const handleCopy = target => {
 					</Flex>
 				</Flex>
 
-				<Flex v-if="transfer" align="center" direction="column" gap="8">
+				<Flex v-if="transferAmount" align="center" direction="column" gap="8">
 					<Text size="24" weight="500" color="primary">
-						{{ new BN(transfer.amount / 10 ** 8).toFixed() }}
+						{{ transferAmount }}
 						<Text color="tertiary">{{ transfer.token.symbol }}</Text>
 					</Text>
 					<Text size="12" weight="500" color="tertiary"> Transfer Amount </Text>
+				</Flex>
+
+				<Flex v-else-if="mintAmount" align="center" direction="column" gap="8">
+					<Text size="24" weight="500" color="primary">
+						{{ mintAmount }}
+						<Text color="tertiary">{{ token.symbol }}</Text>
+					</Text>
+					<Text size="12" weight="500" color="tertiary"> Mint Amount </Text>
 				</Flex>
 
 				<Banner

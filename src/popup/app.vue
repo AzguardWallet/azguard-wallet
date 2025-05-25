@@ -52,6 +52,7 @@ import LogoIcon from "@/assets/logo.svg?raw"
 
 const route = useRoute()
 const router = useRouter()
+const intervalId = ref(null)
 
 const initNetworks = async () => {
 	managers.network = new NetworkServiceClient()
@@ -238,14 +239,14 @@ onMounted(async () => {
 	console.log(
 		"%c ",
 		`
-  background-image: url(${svgDataUrl});
-  padding-bottom: 100px;
-  padding-left: 100px;
-  margin: 20px;
-  background-size: contain;
-  background-position: center center;
-  background-repeat: no-repeat;
-`,
+			background-image: url(${svgDataUrl});
+			padding-bottom: 100px;
+			padding-left: 100px;
+			margin: 20px;
+			background-size: contain;
+			background-position: center center;
+			background-repeat: no-repeat;
+		`,
 	)
 
 	const styleTitle = "color: #fff; font-family: sans-serif; font-size: 10em;"
@@ -258,6 +259,12 @@ onMounted(async () => {
 	)
 	console.log("%cYou can report a scam through the form: https://azguardwallet.io/forms/report-scam", styleText)
 	/****************** */
+
+	intervalId.value = window.setInterval(() => {
+		if (!appStore.isLogined) return
+
+		const _ = managers.profile?.getActiveProfile()
+	}, 10_000)
 })
 
 watch(
@@ -270,6 +277,10 @@ watch(
 		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name?.includes("windows-")
 	},
 )
+
+onBeforeUnmount(() => {
+	clearInterval(intervalId)
+})
 </script>
 
 <template>
@@ -285,6 +296,7 @@ watch(
 		<div>
 			<PopupManager />
 			<ToastManager />
+			<NotificationManager />
 		</div>
 
 		<Header />

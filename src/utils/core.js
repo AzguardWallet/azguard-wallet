@@ -61,3 +61,22 @@ export const initTransactionService = (onTransactionAdded, onTransactionUpdated)
 	if (managers.transaction) managers.transaction.dispose()
 	managers.transaction = new TransactionServiceClient(null, null, onTransactionAdded, onTransactionUpdated)
 }
+
+export const setAztecVersion = async (version) => {
+	if (version) {
+		chrome.storage.local.set({ "azguard:ui:aztecVersion": version })
+	} else {
+		chrome.storage.local.set({ "azguard:ui:aztecVersion": __AZTEC_SHORT_VERSION__ })
+	}
+}
+
+export const checkAztecVersion = async () => {
+	const currentVersion = (await chrome.storage.local.get("azguard:ui:aztecVersion"))["azguard:ui:aztecVersion"] || ""
+
+	switch (currentVersion) {
+		case __AZTEC_SHORT_VERSION__:
+			return true
+		default:
+			return false
+	}
+}

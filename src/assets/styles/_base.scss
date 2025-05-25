@@ -1,8 +1,8 @@
+@use "./flex" as *;
+@use "./text" as *;
+
 // required for vue-devtools
 @import "/node_modules/vite-plugin-vue-devtools/src//overlay/devtools-overlay.css";
-
-@import "./flex.scss";
-@import "./text.scss";
 
 $grayscale: (
 	03: 0.03,

@@ -158,12 +158,19 @@ const saveSelectedMethod = async (method) => {
 	const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
 	fpms[props.account.address] = method
 	chrome.storage.local.set({ "azguard:ui:feePaymentMethods": fpms })
+
+	if (method.type === "fpc") {
+		cacheStore.feePaymentMethods.push({
+			id: methodId,
+			fpc: method.fpc,
+		})
+	}
 }
 
 const init = async () => {
 	try {
 		isLoading.value = true
-
+		
 		if (props.network && props.account) {
 			balances.value = await tokenBalanceService.getTokenBalances(undefined, props.account.address)
 			methods.value[0].balance = feeJuiceBalance.value
@@ -172,6 +179,16 @@ const init = async () => {
 			const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
 			if (fpms[props.account.address]) {
 				selectedMethod.value = fpms[props.account.address]
+			} else {
+				const fpcs = (await fpcService.getFpcs(props.network.chainId))?.filter(f => f.type === FpcType.DefaultSponsoredFpc)
+				if (fpcs.length) {
+					selectedMethod.value = {
+						...methods.value[2],
+						fpc: fpcs[0],
+						balance: undefined,
+						inPublic: undefined,
+					}
+				}
 			}
 		}
 	} catch (e) {

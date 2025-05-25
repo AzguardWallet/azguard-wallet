@@ -9,6 +9,13 @@ import { nodePolyfills } from "vite-plugin-node-polyfills"
 import packageJson from "./package.json"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 
+const aztecVersion = packageJson.dependencies["@aztec/pxe"]
+if (!aztecVersion) {
+	throw new Error("Couldn't detect Aztec version")
+}
+const [major, minor] = aztecVersion.split(".")
+const aztecShortVersion = `${major}.${minor}`
+
 export default defineConfig({
 	server: {
 		port: 8088,
@@ -35,8 +42,9 @@ export default defineConfig({
 	css: {
 		preprocessorOptions: {
 			scss: {
-				api: "modern",
+				includePaths: [fileURLToPath(new URL("./src/assets/styles", import.meta.url))],
 			},
+			quietDeps: true,
 		},
 	},
 	plugins: [
@@ -138,6 +146,8 @@ export default defineConfig({
 	},
 	define: {
 		__VERSION__: JSON.stringify(packageJson.version),
+		__AZTEC_VERSION__: JSON.stringify(aztecVersion),
+		__AZTEC_SHORT_VERSION__: JSON.stringify(aztecShortVersion),
 		__NAME__: JSON.stringify(packageJson.name),
 		__DISPLAY_NAME__: JSON.stringify(packageJson.displayName),
 		"import.meta.env.HTML_TITLE": JSON.stringify(packageJson.displayName),

@@ -23,17 +23,17 @@ import SettingField from "@/components/ui/Settings/SettingField.vue"
 		<ItemsContainer>
 			<SettingItem
 				size="large"
-				title="Wallet"
-				description="Edit or reset your wallet"
-				icon="wallet"
-				to="/popup/settings/security/wallet"
-			/>
-			<SettingItem
-				size="large"
-				title="Backup"
+				title="Backup profile"
 				description="Get the seed phrase or secret key"
 				icon="download"
 				to="/popup/settings/security/export"
+			/>
+			<SettingItem
+				size="large"
+				title="Wallet"
+				description="Edit or reset your wallet"
+				icon="wallet"
+				disabled
 			/>
 		</ItemsContainer>
 

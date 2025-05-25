@@ -26,6 +26,7 @@ declare module 'vue' {
     ItemsContainer: typeof import('./../components/ui/Settings/ItemsContainer.vue')['default']
     JsonViewer: typeof import('./../components/ui/JsonViewer/JsonViewer.vue')['default']
     LogoStar: typeof import('./../components/LogoStar.vue')['default']
+    NotificationManager: typeof import('./../components/ui/NotificationManager.vue')['default']
     PageHeader: typeof import('./../components/ui/Settings/PageHeader.vue')['default']
     Popup: typeof import('./../components/ui/Popup/Popup.vue')['default']
     PopupCard: typeof import('./../components/ui/Popup/PopupCard.vue')['default']

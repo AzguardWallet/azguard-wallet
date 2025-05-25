@@ -10,14 +10,17 @@
 /** UI */
 import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
 
+/** Composables */
+import { checkNotificationsForShow } from "@/composables/notification"
+
 /** Utils */
 import { AccountServiceClient } from "@/wallet/services/account/client"
-import { managers, initTokenService, initTransactionService } from "@/utils/core"
+import { initTokenService, initTransactionService, managers } from "@/utils/core"
+import { sleep } from "@/wallet/utils"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store.ts"
-import { sleep } from "@/wallet/utils"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
@@ -85,6 +88,8 @@ const handleUnlockWallet = async () => {
 		appStore.initBalanceListeners()
 
 		router.push(appStore.pageAwaitingAuth || "/popup/general")
+
+		await checkNotificationsForShow(router)
 	} catch (err) {
 		console.error(err)
 	}

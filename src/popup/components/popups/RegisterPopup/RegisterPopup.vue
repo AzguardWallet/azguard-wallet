@@ -3,8 +3,8 @@
 import WalletPasswordContent from "./WalletPasswordContent.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
-import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
+import { managers, setAztecVersion } from "@/utils/core"
+import { AccountServiceClient } from "@/wallet/services/account/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -15,18 +15,6 @@ const router = useRouter()
 
 const walletPassword = ref<string>("")
 const repeatedPassword = ref<string>("")
-
-const handlePasswordInput = () => {
-	if (walletPassword.value.length > 128) {
-		walletPassword.value = walletPassword.value.slice(0, 128)
-	}
-}
-
-const handleRepeatedPasswordInput = () => {
-	if (repeatedPassword.value.length > 128) {
-		repeatedPassword.value = repeatedPassword.value.slice(0, 128)
-	}
-}
 
 const isCreatingProfile = ref(false)
 const isAllowedToContinue = computed(() => {
@@ -68,6 +56,8 @@ const handleCreateProfile = async () => {
 	await chrome.storage.local.set({
 		"azguard:ui:activeAccount": appStore.account?.address,
 	})
+	
+	await setAztecVersion()
 
 	router.push("/popup/general")
 
@@ -124,8 +114,6 @@ onUnmounted(() => {
 				<WalletPasswordContent
 					v-model:password="walletPassword"
 					v-model:repeatedPassword="repeatedPassword"
-					@onPasswordInput="handlePasswordInput"
-					@onRepeatedPasswordInput="handleRepeatedPasswordInput"
 				/>
 
 				<Flex direction="column" gap="8">

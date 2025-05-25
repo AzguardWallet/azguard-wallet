@@ -139,7 +139,12 @@ const handleSend = async () => {
 		type = TransferType.Public
 	}
 
-	appStore.isAwaitingTransaction = true
+	appStore.awaitingTransactions.push({
+		account: appStore.account.address,
+		destination: destinationAddressTerm.value,
+		contract: activeToken.value.contract,
+	})
+
 	managers.execution.executeTransfer(
 		appStore.network.id,
 		appStore.account.address,
