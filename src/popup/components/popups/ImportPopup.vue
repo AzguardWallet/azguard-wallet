@@ -279,13 +279,13 @@ watch(
 							</template>
 						</Input>
 
-						<Input
+						<!-- <Input
 							v-model="profileName"
 							:maxLength="64"
 							type="text"
 							label="Profile Name"
 							placeholder="Profile name"
-						/>
+						/> -->
 
 						<Flex v-if="['private_key', 'seed'].includes(selectedImportOption)" direction="column" gap="8">
 							<Input
@@ -312,9 +312,9 @@ watch(
 										<Icon name="password" size="12" color="tertiary" />
 										<Text size="12" weight="600" color="tertiary">
 											{{
-												(password.length < 8 && "At least 8 characters") ||
+												((!password || password?.length < 8) && "At least 8 characters") ||
 												(password !== repeatedPassword && "Not repeated") ||
-												(password.length > 24 && "I hope you remember it") ||
+												(password?.length > 24 && "I hope you remember it") ||
 												"Looks.. strong?"
 											}}
 										</Text>

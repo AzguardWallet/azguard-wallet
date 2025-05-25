@@ -3,7 +3,7 @@
 import WalletPasswordContent from "./WalletPasswordContent.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
+import { managers, setAztecVersion } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 
 /** Store */
@@ -56,6 +56,8 @@ const handleCreateProfile = async () => {
 	await chrome.storage.local.set({
 		"azguard:ui:activeAccount": appStore.account?.address,
 	})
+	
+	await setAztecVersion()
 
 	router.push("/popup/general")
 

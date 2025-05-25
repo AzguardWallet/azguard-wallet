@@ -18,6 +18,7 @@ import { DappInteractionService } from "./services/dapp-interaction";
 import { LoggerService } from "./services/logger";
 import { LogLevel } from "./services/logger/client";
 import { sleep } from "./utils";
+import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 
@@ -36,6 +37,7 @@ export function start() {
     if (isRunning) return;
     // console.debug("Start wallet...");
     chrome.runtime.onConnect.addListener(onConnect);
+    ensureOffscreenRunning(); // ff
     isRunning = true;
     worker = runWorker();
     // console.debug("Wallet started.");

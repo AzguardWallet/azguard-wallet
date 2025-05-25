@@ -67,7 +67,8 @@ export async function simulate(
     args: any[],
 ): Promise<any> {
     if (viewFn.type === FunctionType.UTILITY) {
-        return await pxe.simulateUtility(viewFn.name, args, AztecAddress.fromString(contract));
+        const { result } = await pxe.simulateUtility(viewFn.name, args, AztecAddress.fromString(contract));
+        return result;
     }
 
     const packedArgs = await viewFn.packArgs(args);

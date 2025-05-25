@@ -19,9 +19,10 @@ import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
 
 const version = __VERSION__
+const aztecVersion = __AZTEC_VERSION__
 
-const handleCopyVersion = () => {
-	window.navigator.clipboard.writeText(version)
+const handleCopy = (target) => {
+	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Version is copied", icon: "copy" })
 }
 
@@ -42,9 +43,14 @@ const handleOpen = target => {
 
 			<Flex wide align="start" direction="column" gap="8">
 				<Text size="13" weight="600" color="primary"> Azguard Wallet </Text>
-				<Text @click="handleCopyVersion" size="12" weight="500" color="support" class="copyable">
-					Version {{ version }} - Alpha Testing
-				</Text>
+				<Flex align="start" direction="column" gap="4" wide>
+					<Text @click="handleCopy(version)" size="12" weight="500" color="support" class="copyable">
+						Wallet version - {{ version }} - Alpha Testing
+					</Text>
+					<Text @click="handleCopy(aztecVersion)" size="12" weight="500" color="support" class="copyable">
+						Aztec version - {{ aztecVersion }}
+					</Text>
+				</Flex>
 			</Flex>
 
 			<ItemsContainer wide>

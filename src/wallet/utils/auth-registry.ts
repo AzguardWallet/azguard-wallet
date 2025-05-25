@@ -50,5 +50,6 @@ export const getSetAuthorizedSelector = async () => {
 }
 
 export const isPublicAuthwitConsumable = async (pxe: PXE, owner: string, message_hash: string) => {
-    return await pxe.simulateUtility("unconstrained_is_consumable", [owner, message_hash], getAuthRegistryAddress()) === true;
+    const { result } = await pxe.simulateUtility("utility_is_consumable", [owner, message_hash], getAuthRegistryAddress());
+    return result == true;
 }

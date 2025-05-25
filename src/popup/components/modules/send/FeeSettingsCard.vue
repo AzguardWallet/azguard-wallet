@@ -181,7 +181,7 @@ const init = async () => {
 				selectedMethod.value = fpms[props.account.address]
 			} else {
 				const fpcs = (await fpcService.getFpcs(props.network.chainId))?.filter(f => f.type === FpcType.DefaultSponsoredFpc)
-				if (fpcs?.length) {
+				if (fpcs.length) {
 					selectedMethod.value = {
 						...methods.value[2],
 						fpc: fpcs[0],
