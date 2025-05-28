@@ -11,7 +11,11 @@ export abstract class ServiceClient {
     private connection: Promise<void>;
     private disposed: boolean = false;
     
-    protected constructor(serviceName: string, onConnected?: () => void, onDisconnected?: () => void) {
+    protected constructor(
+        serviceName: string,
+        onConnected?: () => void,
+        onDisconnected?: () => void
+    ) {
         this.serviceName = serviceName;
         this.onConnected = onConnected;
         this.onDisconnected = onDisconnected;

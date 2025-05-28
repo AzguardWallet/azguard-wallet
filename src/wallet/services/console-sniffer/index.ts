@@ -21,7 +21,7 @@ export class ConsoleSnifferService extends Service<void, ConsoleSnifferServiceEv
 
     private patchConsoleMethods() {
         for (const level of Object.values(LogLevel)) {
-            const cbName = "on" + level[0].toUpperCase() + level.slice(1);
+            const cbName = `on${level}`;
 
             (window as any)[cbName] = (...args: any[]) => {
                 const newLogEntity = {

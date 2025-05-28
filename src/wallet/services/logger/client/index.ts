@@ -54,9 +54,10 @@ export class LoggerServiceClient extends ServiceClient {
      * Adds a new log entity.
      * @param level log level
      * @param args log arguments
+     * @param message log message
      * @param source log source
      */
-    public addLog(level: LogLevel, args: any, source?: string): Promise<LogEntity> {
-        return this.request(new AddLogRequest(level, args, source));
+    public addLog(level: LogLevel, args: any, message?: string, source?: string): Promise<LogEntity> {
+        return this.request(new AddLogRequest(level, args, message, source));
     }
 }

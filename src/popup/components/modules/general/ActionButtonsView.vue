@@ -11,6 +11,8 @@ const props = defineProps({
 })
 
 const handleOpenPopup = target => {
+	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logs"))
+	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 900 })
 	popupStore.open(target)
 }
 </script>

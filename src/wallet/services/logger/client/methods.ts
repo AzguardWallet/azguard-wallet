@@ -28,6 +28,7 @@ export class AddLogRequest extends RequestMessage {
     constructor(
         public readonly level: LogLevel,
         public readonly args: any,
+        public readonly message?: string,
         public readonly source?: string,
     ) {
         super(LOGGER_SERVICE_NAME, LoggerServiceMethod.AddLog);

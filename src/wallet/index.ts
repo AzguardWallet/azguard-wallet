@@ -16,44 +16,50 @@ import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
 import { LoggerService } from "./services/logger";
-import { LogLevel } from "./services/logger/client";
+import { InMemoryLogs, LogLevel } from "./services/logger/client";
 import { sleep } from "./utils";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 
-// logger ?
-const loggerService = new LoggerService(broadcast);
+const logs = new InMemoryLogs();
+const loggerService = new LoggerService(logs, broadcast);
 export async function init() {
     loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
     // console.debug("Init BarretenbergSync...");
     await BarretenbergSync.initSingleton(process.env.BB_WASM_PATH);
     loggerService.addLog(LogLevel.Debug, "BarretenbergSync inited.")
     // console.debug("BarretenbergSync inited.");
-    // await ensureOffscreenRunning();
+    await ensureOffscreenRunning();
 }
 
 export function start() {
     if (isRunning) return;
+    loggerService.addLog(LogLevel.Debug, "Start wallet...")
     // console.debug("Start wallet...");
     chrome.runtime.onConnect.addListener(onConnect);
     ensureOffscreenRunning(); // ff
     isRunning = true;
     worker = runWorker();
+    loggerService.addLog(LogLevel.Debug, "Wallet started.")
     // console.debug("Wallet started.");
 }
 
 export async function stop() {
     if (!isRunning) return;
+    loggerService.addLog(LogLevel.Warning, "Stop wallet...")
     // console.warn("Stop wallet...");
     isRunning = false;
     chrome.runtime.onConnect.removeListener(onConnect);
     while (ports.length) {
+        loggerService.addLog(LogLevel.Debug, "Drop client...")
         // console.debug("Drop client...");
         ports.pop()!.disconnect();
+        loggerService.addLog(LogLevel.Debug, `Client dropped. Total: ${ports.length}.`)
         // console.debug(`Client dropped. Total: ${ports.length}.`);
     }
     await worker;
+    loggerService.addLog(LogLevel.Warning, "Wallet stopped.")
     // console.warn("Wallet stopped.");
 }
 

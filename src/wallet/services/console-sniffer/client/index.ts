@@ -1,6 +1,6 @@
 import { ServiceClient } from "@/wallet/base/message-service/service-client";
 import { ConsoleSnifferServiceEvent } from "./events";
-import { LogEntity } from "@/wallet/services/logger/client";
+import type { LogEntity } from "@/wallet/services/logger/client";
 
 export * from "./events";
 
