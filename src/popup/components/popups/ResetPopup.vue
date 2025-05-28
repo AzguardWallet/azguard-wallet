@@ -60,6 +60,7 @@ const handleReset = () => {
 		appStore.tokensAwaitingBalanceRefresh = []
 		appStore.tokens = []
 		appStore.transactions = []
+		chrome.storage.local.remove("azguard:ui:feePaymentMethods")
 
 		appStore.isLogined = false
 		appStore.isSessionChecked = false
