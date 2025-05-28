@@ -154,7 +154,7 @@ export const useAppStore = defineStore("app", () => {
 	const onTxAdded = async (tx) => {
 		transactions.value.unshift(tx)
 		const call = tx.calls[0]
-		const awaitingTxIdx = awaitingTransactions.value.findIndex(t => t.account === tx.account && t.contract === call?.contract && t.destination === call?.args[1])
+		const awaitingTxIdx = awaitingTransactions.value.findIndex(t => t.account === tx.account && t.contract === call?.contract && t.destination === (call?.transfers[0]?.to || call?.args[1]))
 		if (awaitingTxIdx > -1) {
 			awaitingTransactions.value.splice(awaitingTxIdx, 1)
 			const token = tokens.value.find(t => t.contract === call?.contract)
