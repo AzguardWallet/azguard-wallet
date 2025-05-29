@@ -42,10 +42,27 @@ const repeatedPassword = ref('')
 const isPasswordType = ref(true)
 const hideCredentials = ref(true)
 const maxPasswordLength = 128
-const isWrongPassword = ref(false)
+
+const error = ref({ type: "", title: "", tooltip: ""})
+const fillError = (type, title, tooltip) => {
+	if (!title) {
+		error.value = { type: "", title: "", tooltip: "" }
+		return
+	}
+
+	error.value = { type, title, tooltip }
+}
 
 const handlePasswordInput = () => {
-	if (isWrongPassword.value) isWrongPassword.value = false
+	if (error.value.type === "password") {
+		fillError()
+	}
+}
+
+const handleSecretInput = () => {
+	if (error.value.type === "secret") {
+		fillError()
+	}
 }
 
 const isAllowedToContinue = computed(() => {
@@ -92,7 +109,7 @@ const handleImportSeed = async () => {
 
 		router.push("/popup/general")
 	} catch (error) {
-		console.error(error)
+		fillError("unknown", error);
 	} finally {
 		popupStore.closeAll()
 	}
@@ -108,7 +125,11 @@ const handleImportPrivateKey = async () => {
 
 		router.push("/popup/general")
 	} catch (error) {
-		console.error(error)
+		if (error === "Invalid secret length") {
+			fillError("secret", error.replace("secret", "key"));
+		} else {
+			fillError("unknown", error);
+		}
 	}
 }
 
@@ -127,7 +148,9 @@ const handleImportPublicKey = async () => {
 		router.push("/popup/general")
 	} catch (error) {
 		if (error === "Invalid password") {
-			isWrongPassword.value = true
+			fillError("unknown", "Invalid key or password")
+		} else {
+			fillError("unknown", error)
 		}
 	}
 }
@@ -143,6 +166,8 @@ const handleBack = () => {
 	repeatedPassword.value = null
 	isPasswordType.value = true
 	hideCredentials.value = true
+	
+	fillError()
 }
 
 watch(
@@ -158,6 +183,9 @@ watch(
 			password.value = null
 			repeatedPassword.value = null
 			isPasswordType.value = true
+			hideCredentials.value = true
+			
+			fillError()
 		}
 	},
 )
@@ -214,6 +242,7 @@ watch(
 						<Input
 							v-if="selectedImportOption === 'private_key'"
 							v-model="privateKey"
+							@input="handleSecretInput"
 							:type="hideCredentials ? 'password' : 'text'"
 							label="Plain Key"
 							placeholder="Enter plain key"
@@ -227,15 +256,25 @@ watch(
 									class="clickable"
 								/>
 							</template>
+
+							<template #right>
+								<Transition v-if="error.type === 'secret'" name="fade">
+									<Flex align="center" gap="4">
+										<Icon name="warning" size="12" color="red" />
+										<Text size="12" weight="600" color="primary">{{ error.title }}</Text>
+									</Flex>
+								</Transition>
+							</template>
 						</Input>
 						<Input
 							v-if="selectedImportOption === 'public_key'"
 							v-model="publicKey"
+							@input="handleSecretInput"
 							:type="hideCredentials ? 'password' : 'text'"
 							label="Encrypted Key"
 							placeholder="Enter encrypted key"
 						>
-						<template #suffix>
+							<template #suffix>
 								<Icon
 									@click.stop="hideCredentials = !hideCredentials"
 									:name="hideCredentials ? 'password' : 'text'"
@@ -244,11 +283,21 @@ watch(
 									class="clickable"
 								/>
 							</template>
+
+							<template #right>
+								<Transition v-if="error.type === 'secret'" name="fade">
+									<Flex align="center" gap="4">
+										<Icon name="warning" size="12" color="red" />
+										<Text size="12" weight="600" color="primary">{{ error.title }}</Text>
+									</Flex>
+								</Transition>
+							</template>
 						</Input>
 
 						<Input
 							v-if="selectedImportOption === 'seed'"
 							v-model="seedPhrase"
+							@input="handleSecretInput"
 							:type="hideCredentials ? 'password' : 'text'"
 							label="Seed Phrase"
 							placeholder="Enter seed phrase "
@@ -356,8 +405,14 @@ watch(
 							</template>
 
 							<template #right>
-								<Transition name="fade">
-									<Flex v-if="isWrongPassword" align="center" gap="4">
+								<Flex v-if="!error.type && (!password || password?.length < 8)" align="center" gap="6">
+									<Icon name="password" size="12" color="tertiary" />
+									<Text size="12" weight="600" color="tertiary">
+										At least 8 characters
+									</Text>
+								</Flex>
+								<Transition v-else-if="error.type === 'password'" name="fade">
+									<Flex align="center" gap="4">
 										<Icon name="warning" size="12" color="red" />
 										<Text size="12" weight="600" color="primary">Wrong password</Text>
 									</Flex>
@@ -367,6 +422,32 @@ watch(
 					</Flex>
 
 					<Flex direction="column" gap="8">
+						<Tooltip
+							v-if="error.type === 'unknown'"
+							side="top"
+							position="start"
+							wide
+							:disabled="!error.tooltip"
+						>
+							<Flex align="center" wide>
+								<Icon
+									name="info"
+									size="14"
+									color="red"
+								/>
+
+								<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
+									{{ error.title }}
+								</Text>
+							</Flex>
+
+							<template #content>
+								<Text size="12" color="secondary">
+									{{ error.tooltip }}
+								</Text>
+							</template>
+						</Tooltip>
+
 						<Button
 							v-if="selectedImportOption === 'seed'"
 							@click="handleImportSeed"

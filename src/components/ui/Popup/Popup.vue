@@ -28,6 +28,7 @@ watch(
 			await nextTick()
 			trap = focusTrap.createFocusTrap(popupEl.value?.wrapper, {
 				initialFocus: false,
+				allowOutsideClick: true,
 			})
 			trap.activate()
 		} else {
