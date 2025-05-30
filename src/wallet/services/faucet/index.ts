@@ -23,6 +23,7 @@ import type { AccountService } from "@/wallet/services/account"
 import type { ProfileService } from "@/wallet/services/profile"
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import type { ExecutionService } from "@/wallet/services/execution"
+import { TaskTrackerService } from "@/wallet/services/task-tracker";
 import {
     type IOperation,
     RegisterContractOperation,
@@ -44,6 +45,7 @@ import {
     type MintRequest,
     MintResponse,
 } from "./client"
+import { StepTask, TaskStatus } from "../task-tracker/client/models";
 
 export class FaucetService extends Service {
     private readonly pxeService: PxeServiceClient;
@@ -55,6 +57,7 @@ export class FaucetService extends Service {
         private readonly executionService: ExecutionService,
         private readonly transactionService: TransactionService,
         private readonly tokenService: TokenService,
+        private readonly taskTrackerService: TaskTrackerService,
         emit: (event: EventMessage) => void
     ) {
 		super(FAUCET_SERVICE_NAME, emit)
@@ -111,7 +114,12 @@ export class FaucetService extends Service {
             throw new Error("unknown account")
         }
         const pxe = this.pxeService.getPXE(network);
+        const rootTask = this.taskTrackerService.createTask(new StepTask({ label: "Mint token" }));
         
+        const checkTask = this.taskTrackerService.createTask(new StepTask(
+            { label: "Check if need to deploy token" },
+        ), rootTask.id);
+
         const deployActions: IAction[] = [];
         const deployOps: IOperation[] = [
             new SendTransactionOperation(networkId, accountAddress, feeSettings, deployActions)
@@ -199,9 +207,14 @@ export class FaucetService extends Service {
                 )
             );
         }
+        this.taskTrackerService.completeTask(checkTask.id);
         
         const origin = new TxOrigin(OriginType.UI, "Faucet")
         if (deployActions.length) {
+            const deployTask = this.taskTrackerService.createTask(new StepTask(
+                { label: "Deploying token" },
+            ), rootTask.id);
+
             const deployResults = await this.executionService.executeOperations(deployOps, origin);
             if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
                 throw new Error(`Token deployment failed: ${
@@ -218,7 +231,12 @@ export class FaucetService extends Service {
                     paymentMethod: new FeeJuicePaymentMethod(),
                 };
             }
+            this.taskTrackerService.completeTask(deployTask.id);
         }
+
+        const mintTask = this.taskTrackerService.createTask(new StepTask(
+            { label: "Minting token" },
+        ), rootTask.id);
 
         const [mintResult] = await this.executionService.executeOperations(
             [
@@ -238,6 +256,8 @@ export class FaucetService extends Service {
             origin
         );
         if (mintResult.status !== OperationStatus.Ok) {
+            this.taskTrackerService.completeTask(mintTask.id, undefined, "Mint failed");
+            this.taskTrackerService.completeTask(rootTask.id, undefined, "Mint failed");
             throw new Error(`Token mint failed: ${
                 (mintResult as FailedOperationResult)?.error
             }`);
@@ -246,6 +266,11 @@ export class FaucetService extends Service {
         console.debug("faucet mint tx:", mintTx);
         await this.transactionService.waitForTx(mintTx);
         console.debug("faucet mint tx mined");
+        this.taskTrackerService.completeTask(mintTask.id);
+
+        const registerTask = this.taskTrackerService.createTask(new StepTask(
+            { label: "Registering token" },
+        ), rootTask.id);
 
         const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
         if (!tokens.some(x => x.contract === instance.address.toString())) {
@@ -257,5 +282,7 @@ export class FaucetService extends Service {
             const token = await this.tokenService.addToken(profile.id, networkId, accountAddress, ti);
             console.debug("faucet token:", token);
         }
+        this.taskTrackerService.completeTask(registerTask.id);
+        this.taskTrackerService.completeTask(rootTask.id);
     }
 }
