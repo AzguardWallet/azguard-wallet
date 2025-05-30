@@ -6,7 +6,7 @@ import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Services */
-import { managers } from "@/utils/core"
+import { managers, setAztecVersion } from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
@@ -96,6 +96,17 @@ const isAllowedToImportByPublicKey = computed(() => {
 	return !!publicKey.value
 })
 
+const completeImport = async (profile) => {
+		appStore.profiles.push(profile)
+		appStore.profile = profile
+
+		await setAztecVersion()
+
+		popupStore.closeAll()
+
+		router.push("/popup/general")
+}
+
 const handleImportSeed = async () => {
 	if (!isAllowedToImportBySeedPhrase.value) return
 
@@ -105,13 +116,10 @@ const handleImportSeed = async () => {
 			seedPhrase.value.split(" "),
 			password.value,
 		)
-		appStore.profiles.push(profile)
 
-		router.push("/popup/general")
+		await completeImport(profile)
 	} catch (error) {
 		fillError("unknown", error);
-	} finally {
-		popupStore.closeAll()
 	}
 }
 
@@ -120,10 +128,8 @@ const handleImportPrivateKey = async () => {
 
 	try {
 		const profile = await managers.profile.importPlain(profileName.value.trim(), privateKey.value, password.value)
-		appStore.profiles.push(profile)
-		popupStore.closeAll()
 
-		router.push("/popup/general")
+		await completeImport(profile)
 	} catch (error) {
 		if (error === "Invalid secret length") {
 			fillError("secret", error.replace("secret", "key"));
@@ -142,10 +148,8 @@ const handleImportPublicKey = async () => {
 			publicKey.value,
 			password.value,
 		)
-		appStore.profiles.push(profile)
-		popupStore.closeAll()
 
-		router.push("/popup/general")
+		await completeImport(profile)
 	} catch (error) {
 		if (error === "Invalid password") {
 			fillError("unknown", "Invalid key or password")

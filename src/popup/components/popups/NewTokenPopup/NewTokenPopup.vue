@@ -40,7 +40,6 @@ const tokens = ref([])
 const isAlreadyExist = computed(() => tokens.value?.findLast(t => t.contract === contractAddressTerm.value))
 const isAvailableToCreateToken = computed(() => {
 	if (!isValidHex(contractAddressTerm.value)) return
-	// if (isLoadingParseResult.value) return
 	if (isAlreadyExist.value) return
 
 	return true
@@ -195,6 +194,10 @@ watch(
 							<Flex v-if="isAlreadyExist" align="center" gap="4">
 								<Icon name="warning" size="12" color="orange" />
 								<Text size="12" weight="600" color="primary"> Already exist </Text>
+							</Flex>
+							<Flex v-else-if="contractAddressTerm && !isValidHex(contractAddressTerm)" align="center" gap="4">
+								<Icon name="close-circle" size="12" color="red" />
+								<Text size="12" weight="600" color="primary"> Invalid address </Text>
 							</Flex>
 						</Transition>
 					</template>

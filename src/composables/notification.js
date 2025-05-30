@@ -28,7 +28,10 @@ export const getTemplate = (name, params) => {
         
                         appStore.profiles = appStore.profiles.filter(p => p.id !== appStore.profile.id)
                         appStore.profile = appStore.profiles.length && appStore.profiles[0]
+                        appStore.networks = []
+                        appStore.network = null
                         appStore.accounts = []
+                        appStore.account = null
                         appStore.balances = []
                         appStore.tokensAwaitingBalanceRefresh = []
                         appStore.tokens = []
