@@ -36,7 +36,7 @@ const handleSelectTx = () => {
 </script>
 
 <template>
-	<Flex v-if="latestTransaction" direction="column" gap="16">
+	<Flex v-if="latestTransaction || appStore.awaitingTransactions.length" direction="column" gap="16">
 		<Flex align="center" justify="between">
 			<Text size="13" weight="600" color="secondary"> Latest transaction </Text>
 			<Text

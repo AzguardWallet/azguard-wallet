@@ -108,7 +108,8 @@ const handleCreateToken = async () => {
 			return
 		}
 
-		await managers.token.addToken(parsingResult)
+		const newToken = await managers.token.addToken(parsingResult)
+		appStore.tokensAwaitingBalanceRefresh.add(appStore.account.address, newToken?.id)
 
 		isAddingNewToken.value = false
 
@@ -130,8 +131,9 @@ const handleSaveToken = async () => {
 	isSavingToken.value = true
 
 	try {
-		await managers.token.addToken(rawToken.value)
-
+		const newToken = await managers.token.addToken(rawToken.value)
+		
+		appStore.tokensAwaitingBalanceRefresh.add(appStore.account.address, newToken?.id)
 		await appStore.syncBalances()
 
 		openToast({ label: "New token has been added" })

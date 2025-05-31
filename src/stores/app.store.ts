@@ -7,6 +7,34 @@ type WalletMetadata = {
 	created_at: number
 }
 
+class AccountTokenMap {
+	private map: Map<string, true> = new Map();
+
+	private makeKey(account: string, tokenId: string): string {
+		return `${account}|${tokenId}`;
+	}
+
+	add(account: string, tokenId: string): void {
+		this.map.set(this.makeKey(account, tokenId), true);
+	}
+
+	has(account: string, tokenId: string): boolean {
+		return this.map.has(this.makeKey(account, tokenId));
+	}
+
+	remove(account: string, tokenId: string): void {
+		this.map.delete(this.makeKey(account, tokenId));
+	}
+
+	clear(): void {
+		this.map.clear();
+	}
+
+	size(): number {
+		return this.map.size;
+	}
+}
+
 export const useAppStore = defineStore("app", () => {
 	const _isHomeScreenOpened = ref(false)
 
@@ -75,7 +103,8 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const tokens = ref([])
-	const mintingTokens	= ref([])
+	const tokensAwaitingBalanceRefresh = ref(new AccountTokenMap())
+	const mintingTokens	= ref(new AccountTokenMap())
 	const dummyTokens = ref([])
 	const onTokenAdded = token => {
 		const dummyTokenIdx = dummyTokens.value.findLastIndex(t => t.id === -1)
@@ -91,7 +120,7 @@ export const useAppStore = defineStore("app", () => {
 
 	const isBalancesSynced = ref(false)
 	const balances = ref([])
-	const tokensAwaitingBalanceRefresh = ref([])
+
 	const accountTotalBalance = computed(() => {
 		if (!balances.value.length) return 0
 
@@ -115,11 +144,8 @@ export const useAppStore = defineStore("app", () => {
 	}
 	const initBalanceListeners = () => {
 		managers.balance.onTokenBalanceUpdated = newBalance => {
-			if (tokensAwaitingBalanceRefresh.value.includes(newBalance.token.id)) {
-				tokensAwaitingBalanceRefresh.value.splice(
-					tokensAwaitingBalanceRefresh.value.findIndex(tId => tId === newBalance.token.id),
-					1,
-				)
+			if (tokensAwaitingBalanceRefresh.value.has(newBalance.account, newBalance.token.id)) {
+				tokensAwaitingBalanceRefresh.value.remove(newBalance.account, newBalance.token.id)
 			}
 
 			const oldBalanceIdx = balances.value.findIndex(b => b.id === newBalance.id)
@@ -160,8 +186,8 @@ export const useAppStore = defineStore("app", () => {
 			const token = tokens.value.find(t => t.contract === call?.contract)
 			if (token?.id) {
 				const balance = await managers.balance.getTokenBalances(token.id, account.value.address)
-				if (balance?.id && !tokensAwaitingBalanceRefresh.value.includes(token.id)) {
-					tokensAwaitingBalanceRefresh.value.push(token.id)
+				if (balance?.id && !tokensAwaitingBalanceRefresh.value.has(balance?.account, token.id)) {
+					tokensAwaitingBalanceRefresh.value.add(balance?.account, token.id)
 					managers.balance.refreshTokenBalance(balance.id)
 				}
 			}
@@ -174,6 +200,8 @@ export const useAppStore = defineStore("app", () => {
 		}
 	}
 	const syncTransactions = async () => {
+		if (!account.value || !managers.transaction) return
+		
 		transactions.value = (await managers.transaction.getTransactions(account.value))
 			.filter(t => t.account === account.value?.address)
 			.sort((a, b) => b.updatedAt - a.updatedAt)

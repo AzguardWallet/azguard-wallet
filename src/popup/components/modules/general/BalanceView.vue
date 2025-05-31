@@ -71,10 +71,10 @@ const handleCopy = (value, label) => {
 	}, 2500)
 }
 const handleRefreshBalance = () => {
-	appStore.tokensAwaitingBalanceRefresh.push(props.token.id)
+	appStore.tokensAwaitingBalanceRefresh.add(tokenBalance.value?.account, props.token.id)
 	managers.balance.refreshTokenBalance(tokenBalance.value.id)
 }
-const isRefreshingBalance = computed(() => appStore.tokensAwaitingBalanceRefresh.includes(props.token?.id))
+const isRefreshingBalance = computed(() => appStore.tokensAwaitingBalanceRefresh.has(tokenBalance.value?.account, props.token?.id))
 
 const handleEditToken = () => {
 	cacheStore.tokenToEditIdx = props.token.id
