@@ -86,6 +86,7 @@ const handleUnlockWallet = async () => {
 		appStore.syncBalances()
 		await appStore.syncTransactions()
 		appStore.initBalanceListeners()
+		appStore.refreshBalances(10)
 
 		router.push(appStore.pageAwaitingAuth || "/popup/general")
 

@@ -22,25 +22,6 @@ const router = useRouter()
 const dummyAccountTokens = computed(() => {
 	return appStore.dummyTokens.filter(dt => dt.account === appStore.account.address)
 })
-
-const handleRefreshBalances = async () => {
-	let balances = []
-	for (const token of appStore.tokens) {
-		if (appStore.tokensAwaitingBalanceRefresh.has(appStore.account.address, token.id)) continue
-
-		const balance = await managers.balance.getTokenBalances(token.id, appStore.account.address)
-		if (balance.length) {
-			balances = [...balances, ...balance]
-			appStore.tokensAwaitingBalanceRefresh.add(appStore.account.address, token.id)
-		}
-	}
-
-	if (balances.length) {
-		for (const balance of balances) {
-			managers.balance.refreshTokenBalance(balance.id)
-		}
-	}
-}
 </script>
 
 <template>
@@ -75,7 +56,7 @@ const handleRefreshBalances = async () => {
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
-						<DropdownItem @click="handleRefreshBalances">
+						<DropdownItem @click="appStore.refreshBalances()">
 							<Flex align="center" gap="8">
 								<Icon name="refresh" size="14" color="primary" />
 								Refresh balances

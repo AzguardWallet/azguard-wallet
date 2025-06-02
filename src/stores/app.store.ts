@@ -1,7 +1,9 @@
+/** Vendor */
+import { defineStore } from "pinia"
+
+
 import type { Account } from "@/wallet/services/account/client"
 import { NodeStatus } from "@/wallet/services/network/client"
-
-import { defineStore } from "pinia"
 
 type WalletMetadata = {
 	created_at: number
@@ -121,6 +123,14 @@ export const useAppStore = defineStore("app", () => {
 	const isBalancesSynced = ref(false)
 	const balances = ref([])
 
+	function checkAge(updatedAt: number, minutes?: number): boolean {
+		if (!minutes) return true;
+
+		const now = Date.now();
+		const diff = now - updatedAt;
+		return diff >= minutes * 60 * 1000;
+	}
+
 	const accountTotalBalance = computed(() => {
 		if (!balances.value.length) return 0
 
@@ -141,6 +151,24 @@ export const useAppStore = defineStore("app", () => {
 		}
 
 		isBalancesSynced.value = true
+	}
+	const refreshBalances = async (minutes) => {
+		let balances_ = []
+		for (const tkn of tokens.value) {
+			if (tokensAwaitingBalanceRefresh.value.has(account.value.address, tkn.id)) continue
+
+			const balance = await managers.balance.getTokenBalances(tkn.id, account.value.address)
+			if (balance.length && checkAge(balance[0]?.updatedAt, minutes)) {
+				balances_ = [...balances_, ...balance]
+				tokensAwaitingBalanceRefresh.value.add(account.value.address, tkn.id)
+			}
+		}
+
+		if (balances_.length) {
+			for (const balance of balances_) {
+				managers.balance.refreshTokenBalance(balance.id)
+			}
+		}
 	}
 	const initBalanceListeners = () => {
 		managers.balance.onTokenBalanceUpdated = newBalance => {
@@ -249,6 +277,7 @@ export const useAppStore = defineStore("app", () => {
 		balances,
 		accountTotalBalance,
 		syncBalances,
+		refreshBalances,
 		initBalanceListeners,
 		network,
 		networkStatus,

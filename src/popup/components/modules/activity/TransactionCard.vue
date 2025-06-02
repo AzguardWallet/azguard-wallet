@@ -83,7 +83,7 @@ const title = computed(() => {
 					{{ title }}
 				</Text>
 				<Text size="12" weight="500" color="tertiary">
-					{{ DateTime.fromSeconds(tx.updatedAt / 1_000).toFormat("LLL dd, hh:mm") }}
+					{{ DateTime.fromSeconds(tx.updatedAt / 1_000).toFormat("LLL dd, HH:mm") }}
 				</Text>
 			</Flex>
 		</Flex>
