@@ -136,6 +136,12 @@ export class TaskTrackerService extends Service {
         }
     }
 
+    private validateNotPending(task: Task): void {
+        if (task.status === TaskStatus.Pending) {
+            throw new Error(`Cannot finish pending task ${task.id} since it is not started`);
+        }
+    }
+
     /**
      * Completes task with result.
      * @param taskId - Task ID to complete
@@ -143,6 +149,7 @@ export class TaskTrackerService extends Service {
      */
     public completeTask(taskId: string, result: ITaskResult = new EmptyResult()): void {
         const task = this.getTaskById(taskId);
+        this.validateNotPending(task);
         this.validateTaskBeforeFinish(task);
 
         task.finishedAt = Date.now();
@@ -158,11 +165,25 @@ export class TaskTrackerService extends Service {
      */
     public failTask(taskId: string, error: string = "Unknown error"): void {
         const task = this.getTaskById(taskId);
+        this.validateNotPending(task);
         this.validateTaskBeforeFinish(task);
 
         task.error = error;
         task.finishedAt = Date.now();
         task.status = TaskStatus.Failed;
+        this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
+    }
+
+    /**
+     * Cancels task.
+     * @param taskId - Task ID to cancel
+     */
+    public cancelTask(taskId: string): void {
+        const task = this.getTaskById(taskId);
+        this.validateTaskBeforeFinish(task);
+
+        task.finishedAt = Date.now();
+        task.status = TaskStatus.Cancelled;
         this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
     }
 

@@ -92,7 +92,7 @@ describe("Task Tree Implementation", () => {
 
         test("should handle creation errors", () => {
             const { service, rootStepContent, stepOne } = createTestSetup();
-            const parentTaskId = service.createNewTask(rootStepContent);
+            const parentTaskId = service.startNewTask(rootStepContent);
 
             service.completeTask(parentTaskId);
 
@@ -200,6 +200,9 @@ describe("Task Tree Implementation", () => {
             expect(() => service.failTask(parentTaskId, "error")).toThrow(
                 `Cannot finish task ${parentTaskId} with unfinished subtasks: ${childTaskId}`,
             );
+            expect(() => service.cancelTask(parentTaskId)).toThrow(
+                `Cannot finish task ${parentTaskId} with unfinished subtasks: ${childTaskId}`,
+            );
         });
 
         test("should throw error when completing non-existent task", () => {
@@ -207,6 +210,7 @@ describe("Task Tree Implementation", () => {
 
             expect(() => service.completeTask("non-existent")).toThrow("Invalid task id: non-existent");
             expect(() => service.failTask("non-existent", "error")).toThrow("Invalid task id: non-existent");
+            expect(() => service.cancelTask("non-existent")).toThrow("Invalid task id: non-existent");
         });
 
         test("should throw error when completing already finished task", () => {
@@ -216,6 +220,40 @@ describe("Task Tree Implementation", () => {
             service.completeTask(taskId);
             expect(() => service.completeTask(taskId)).toThrow(`Cannot finish already finished task ${taskId}`);
             expect(() => service.failTask(taskId, "error")).toThrow(`Cannot finish already finished task ${taskId}`);
+            expect(() => service.cancelTask(taskId)).toThrow(`Cannot finish already finished task ${taskId}`);
+        });
+
+        test("should cancel pending and processing tasks", () => {
+            const { service, rootStepContent, stepOne, expectEvent } = createTestSetup();
+
+            const pendingTaskId = service.createNewTask(rootStepContent);
+            const processingTaskId = service.startNewTask(stepOne);
+
+            service.cancelTask(pendingTaskId);
+            service.cancelTask(processingTaskId);
+
+            const cancelledPendingTask = service.getTask(pendingTaskId);
+            const cancelledProcessingTask = service.getTask(processingTaskId);
+
+            expect(cancelledPendingTask.status).toBe(TaskStatus.Cancelled);
+            expect(cancelledPendingTask.finishedAt).toBeDefined();
+            expect(cancelledProcessingTask.status).toBe(TaskStatus.Cancelled);
+            expect(cancelledProcessingTask.finishedAt).toBeDefined();
+
+            expectEvent(TaskTrackerServiceEvent.TaskUpdated, cancelledPendingTask);
+            expectEvent(TaskTrackerServiceEvent.TaskUpdated, cancelledProcessingTask);
+        });
+
+        test("should throw error when completing or failing pending tasks", () => {
+            const { service, rootStepContent } = createTestSetup();
+            const taskId = service.createNewTask(rootStepContent);
+
+            expect(() => service.completeTask(taskId)).toThrow(
+                `Cannot finish pending task ${taskId} since it is not started`,
+            );
+            expect(() => service.failTask(taskId, "error")).toThrow(
+                `Cannot finish pending task ${taskId} since it is not started`,
+            );
         });
     });
 
@@ -223,22 +261,23 @@ describe("Task Tree Implementation", () => {
         test("should cleanup expired tasks and keep active tasks", () => {
             const { service, rootStepContent, stepOne, expectEvent } = createTestSetup();
             const completedRootId = service.startNewTask(rootStepContent);
-            const completedChildId = service.createNewTask(stepOne, completedRootId);
-            service.completeTask(completedChildId);
+            const cancelledChildId = service.startNewTask(stepOne, completedRootId);
+            service.cancelTask(cancelledChildId);
             service.completeTask(completedRootId);
+
             const activeRootId = service.startNewTask(new StepContent("Active Task"));
             const completedRoot = service.getTask(completedRootId);
-            const completedChild = service.getTask(completedChildId);
+            const cancelledChild = service.getTask(cancelledChildId);
 
             vi.setSystemTime(Date.now() + TASK_RETENTION_PERIOD_MS + 1000);
 
             service.getTasks();
 
             expect(() => service.getTask(completedRootId)).toThrow("Invalid task id");
-            expect(() => service.getTask(completedChildId)).toThrow("Invalid task id");
+            expect(() => service.getTask(cancelledChildId)).toThrow("Invalid task id");
             expect(service.getTask(activeRootId)).toBeDefined();
             expectEvent(TaskTrackerServiceEvent.TaskDeleted, completedRoot);
-            expectEvent(TaskTrackerServiceEvent.TaskDeleted, completedChild);
+            expectEvent(TaskTrackerServiceEvent.TaskDeleted, cancelledChild);
         });
     });
 });

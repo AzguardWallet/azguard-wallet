@@ -2,6 +2,7 @@ export enum TaskStatus {
     Pending,
     Processing,
     Completed,
+    Cancelled,
     Failed,
 }
 
