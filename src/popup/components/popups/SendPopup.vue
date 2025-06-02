@@ -145,19 +145,23 @@ const handleSend = async () => {
 		contract: activeToken.value.contract,
 	})
 
-	managers.execution.executeTransfer(
-		appStore.network.id,
-		appStore.account.address,
-		activeToken.value.id,
-		type,
-		destinationAddressTerm.value,
-		amountToSend,
-		feeSettings.value,
-	)
+	try {
+		managers.execution.executeTransfer(
+			appStore.network.id,
+			appStore.account.address,
+			activeToken.value.id,
+			type,
+			destinationAddressTerm.value,
+			amountToSend,
+			feeSettings.value,
+		)
+	} catch (err) {
+		console.error('err', err);
+	} finally {
+		openToast({ label: "Transaction is sent" })
 
-	openToast({ label: "Transaction is sent" })
-
-	emit("onClose")
+		emit("onClose")
+	}
 }
 
 watch(

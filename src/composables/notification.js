@@ -47,9 +47,7 @@ export const getTemplate = (name, params) => {
         
                         openToast({ label: "Profile deleted", icon: "check-circle" })
                     },
-                    onCancel: async () => {
-                        await setAztecVersion()
-                    },
+                    onCancel: async () => {},
                     confirmText: "Delete Profile",
                     cancelText: "Later",
                 }

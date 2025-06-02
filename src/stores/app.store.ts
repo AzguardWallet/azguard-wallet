@@ -144,9 +144,10 @@ export const useAppStore = defineStore("app", () => {
 	}
 	const initBalanceListeners = () => {
 		managers.balance.onTokenBalanceUpdated = newBalance => {
-			if (tokensAwaitingBalanceRefresh.value.has(newBalance.account, newBalance.token.id)) {
-				tokensAwaitingBalanceRefresh.value.remove(newBalance.account, newBalance.token.id)
-			}
+			const tokens_ = tokens.value.filter(t => t.name === newBalance.token.name && t.symbol === newBalance.token.symbol && t.chainId === newBalance.token.chainId)
+			tokens_.forEach(t => {
+				tokensAwaitingBalanceRefresh.value.remove(newBalance.account, t.id)
+			})
 
 			const oldBalanceIdx = balances.value.findIndex(b => b.id === newBalance.id)
 			if (oldBalanceIdx === -1) {
@@ -180,15 +181,22 @@ export const useAppStore = defineStore("app", () => {
 	const onTxAdded = async (tx) => {
 		transactions.value.unshift(tx)
 		const call = tx.calls[0]
-		const awaitingTxIdx = awaitingTransactions.value.findIndex(t => t.account === tx.account && t.contract === call?.contract && t.destination === (call?.transfers[0]?.to || call?.args[1]))
+		const destination = call?.transfers[0]?.to || call?.args[1]
+		const awaitingTxIdx = awaitingTransactions.value.findIndex(t => t.account === tx.account && t.contract === call?.contract && t.destination === destination)
 		if (awaitingTxIdx > -1) {
 			awaitingTransactions.value.splice(awaitingTxIdx, 1)
 			const token = tokens.value.find(t => t.contract === call?.contract)
 			if (token?.id) {
-				const balance = await managers.balance.getTokenBalances(token.id, account.value.address)
-				if (balance?.id && !tokensAwaitingBalanceRefresh.value.has(balance?.account, token.id)) {
-					tokensAwaitingBalanceRefresh.value.add(balance?.account, token.id)
-					managers.balance.refreshTokenBalance(balance.id)
+				const balanceFrom = await managers.balance.getTokenBalances(token.id, tx.account)
+				if (balanceFrom[0]?.id && !tokensAwaitingBalanceRefresh.value.has(balanceFrom[0]?.account, token.id)) {
+					tokensAwaitingBalanceRefresh.value.add(balanceFrom[0]?.account, token.id)
+					managers.balance.refreshTokenBalance(balanceFrom[0].id)
+				}
+				
+				const balanceTo = await managers.balance.getTokenBalances(token.id, destination)
+				if (balanceTo[0]?.id && !tokensAwaitingBalanceRefresh.value.has(balanceTo[0]?.account, token.id)) {
+					tokensAwaitingBalanceRefresh.value.add(balanceTo[0]?.account, token.id)
+					managers.balance.refreshTokenBalance(balanceTo[0].id)
 				}
 			}
 		}
