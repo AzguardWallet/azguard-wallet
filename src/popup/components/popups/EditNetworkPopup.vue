@@ -29,24 +29,31 @@ const props = defineProps({
 
 const networkToEdit = computed(() => appStore.networks.find(n => n.id === cacheStore.networkToEditIdx))
 
-const notAllowedNetworkNames = computed(() => appStore.networks.map(n => n.name))
+const notAllowedNetworkNames = computed(() => appStore.networks.filter(n => n.id !== networkToEdit.value.id).map(n => n.name))
+const notAllowedNetworkUrls = computed(() => appStore.networks.filter(n => n.id !== networkToEdit.value.id).map(n => n.rpcUrl))
 
-const isStartedEditing = ref(false)
+const isStartedEditingName = ref(false)
+const isStartedEditingUrl = ref(false)
+
 const nameTerm = ref("")
 const urlTerm = ref("")
 const handleFillFieldsWithDefaultValues = () => {
 	nameTerm.value = networkToEdit.value.name
 	urlTerm.value = networkToEdit.value.rpcUrl
 
-	isStartedEditing.value = false
+	isStartedEditingName.value = false
+	isStartedEditingUrl.value = false
 }
 
-const isAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value) && isStartedEditing.value)
+const isNameAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value) && isStartedEditingName.value)
+const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value) && isStartedEditingUrl.value)
+
 const isAvailableToUpdateNetwork = computed(() => {
 	if (!nameTerm.value.length) return
 	if (!urlTerm.value.length) return
 	if (urlTerm.value.length < 5) return
-	if (isAlreadyExist.value) return
+	if (nameTerm.value === networkToEdit.value.name && urlTerm.value === networkToEdit.value.rpcUrl) return
+	if (isNameAlreadyExist.value || isUrlAlreadyExist.value) return
 
 	return true
 })
@@ -110,19 +117,33 @@ const onKeydown = e => {
 					v-model="nameTerm"
 					autofocus
 					:maxLength="64"
-					@input="isStartedEditing = true"
+					@input="isStartedEditingName = true"
 				>
 					<template #right>
 						<Transition name="fade">
-							<Flex v-if="isAlreadyExist" align="center" gap="6">
+							<Flex v-if="isNameAlreadyExist" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary"> Already exist </Text>
+								<Text size="12" weight="600" color="primary"> Already exists </Text>
 							</Flex>
 						</Transition>
 					</template>
 				</Input>
 
-				<Input label="New RPC Link" placeholder="http://localhost:1337" v-model="urlTerm" />
+				<Input
+					label="New RPC Link"
+					placeholder="http://localhost:1337"
+					v-model="urlTerm"
+					@input="isStartedEditingUrl = true"
+				>
+					<template #right>
+						<Transition name="fade">
+							<Flex v-if="isUrlAlreadyExist" align="center" gap="6">
+								<Icon name="warning" size="12" color="red" />
+								<Text size="12" weight="600" color="primary"> Already exists </Text>
+							</Flex>
+						</Transition>
+					</template>
+				</Input>
 
 				<Flex direction="column" gap="12">
 					<Flex direction="column" gap="12">
@@ -131,7 +152,7 @@ const onKeydown = e => {
 							wide
 							type="primary"
 							size="medium"
-							:disabled="!isAvailableToUpdateNetwork || !isStartedEditing"
+							:disabled="!isAvailableToUpdateNetwork || (!isStartedEditingName && !isStartedEditingUrl)"
 							:loading="isNetworkUpdateInProgress"
 						>
 							Update
