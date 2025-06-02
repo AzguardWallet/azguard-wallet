@@ -1,49 +1,50 @@
 export enum TaskStatus {
-    Completed = "completed",
-    Processing = "processing",
-    Failed = "failed",
-    Pending = "pending",
+    Pending,
+    Processing,
+    Completed,
+    Failed,
 }
 
-export enum TaskKind {
-    Step = "step",
-}
-
-export interface ITask {
+export type Task = {
     id: string;
-    kind: TaskKind;
-    content: unknown;
+    content: ITaskContent;
     status: TaskStatus;
     createdAt: number;
-    subtasks: ITask[];
+    startedAt?: number;
+    subtasks: Task[];
     source?: string;
-    parentId?: string;
+    parent?: Task;
     finishedAt?: number;
-    result?: unknown;
+    result?: ITaskResult;
     error?: string;
-}
-
-export abstract class Task<TContent, TResult> {
-    constructor(
-        public readonly content: TContent,
-        public status: TaskStatus = TaskStatus.Processing,
-        public readonly source?: string,
-        public readonly createdAt: number = Date.now(),
-        public finishedAt?: number,
-        public result?: TResult,
-        public error?: string,
-    ) {}
-
-    abstract readonly kind: TaskKind;
-}
-
-export type StepContent = {
-    label: string;
-    estimatedTime?: number;
 };
 
-export type StepResult = undefined;
+export enum ContentKind {
+    Step,
+}
 
-export class StepTask extends Task<StepContent, StepResult> {
-    public readonly kind = TaskKind.Step;
+export interface ITaskContent {
+    kind: ContentKind;
+    label: string;
+    estimatedTime?: number;
+}
+
+export class StepContent implements ITaskContent {
+    public readonly kind = ContentKind.Step;
+    constructor(
+        public readonly label: string,
+        public readonly estimatedTime?: number,
+    ) {}
+}
+
+export enum ResultKind {
+    Empty,
+}
+
+export interface ITaskResult {
+    kind: ResultKind;
+}
+
+export class EmptyResult implements ITaskResult {
+    public readonly kind = ResultKind.Empty;
 }

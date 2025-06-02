@@ -1,5 +1,5 @@
 import { EventMessage } from "@/wallet/base/port-service/messages";
-import { ITask } from "./models";
+import { Task } from "./models";
 import { TASK_TRACKER_SERVICE_NAME } from ".";
 
 export enum TaskTrackerServiceEvent {
@@ -11,7 +11,7 @@ export enum TaskTrackerServiceEvent {
 export class TaskTrackerServiceEventMessage extends EventMessage {
     constructor(
         event: TaskTrackerServiceEvent,
-        public readonly task: ITask,
+        public readonly task: Task,
     ) {
         super(TASK_TRACKER_SERVICE_NAME, event);
     }

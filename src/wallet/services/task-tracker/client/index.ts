@@ -1,6 +1,6 @@
 import { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { ITask } from "./models";
+import { Task } from "./models";
 import { TaskTrackerServiceEvent, TaskTrackerServiceEventMessage } from "./events";
 import { GetAllTasksRequest, GetTaskRequest } from "./methods";
 
@@ -25,9 +25,9 @@ export class TaskTrackerServiceClient extends ServiceClient {
     constructor(
         onConnected?: () => void,
         onDisconnected?: () => void,
-        private readonly onTaskCreated?: (task: ITask) => void,
-        private readonly onTaskUpdated?: (task: ITask) => void,
-        private readonly onTaskDeleted?: (task: ITask) => void,
+        private readonly onTaskCreated?: (task: Task) => void,
+        private readonly onTaskUpdated?: (task: Task) => void,
+        private readonly onTaskDeleted?: (task: Task) => void,
     ) {
         super(TASK_TRACKER_SERVICE_NAME, onConnected, onDisconnected);
     }
@@ -73,15 +73,15 @@ export class TaskTrackerServiceClient extends ServiceClient {
      * @param taskId The ID of the task to retrieve.
      * @returns Promise resolving to the requested task.
      */
-    public getTask(taskId: string): Promise<ITask> {
+    public getTask(taskId: string): Promise<Task> {
         return this.request(new GetTaskRequest(taskId));
     }
 
     /**
      * Gets all tasks.
-     * @returns Promise resolving to an array of all tasks.
+     * @returns Promise resolving to a tree of all tasks.
      */
-    public getAllTasks(): Promise<ITask[]> {
+    public getAllTasks(): Promise<Task[]> {
         return this.request(new GetAllTasksRequest());
     }
 }

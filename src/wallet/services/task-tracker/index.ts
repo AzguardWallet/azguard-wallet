@@ -3,22 +3,24 @@ import { Service } from "@/wallet/base/port-service/service";
 import { getRandomHex } from "@/wallet/utils";
 import {
     TASK_TRACKER_SERVICE_NAME,
-    Task,
     TaskTrackerServiceMethod,
     GetAllTasksRequest,
     GetAllTasksResponse,
     GetTaskRequest,
     GetTaskResponse,
-    ITask,
+    Task,
     TaskTrackerServiceEvent,
     TaskTrackerServiceEventMessage,
     TaskStatus,
+    ITaskContent,
+    EmptyResult,
+    ITaskResult,
 } from "./client";
 
 export const TASK_RETENTION_PERIOD_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
 
 export class TaskTrackerService extends Service {
-    private readonly tasks: Map<string, ITask> = new Map();
+    private readonly tasks: Map<string, Task> = new Map();
 
     constructor(emit: (event: EventMessage) => void) {
         super(TASK_TRACKER_SERVICE_NAME, emit);
@@ -57,119 +59,149 @@ export class TaskTrackerService extends Service {
         }
     }
 
-    /**
-     * Creates a task of any level.
-     * @param task - Task to create
-     * @param parentId - Optional parent task ID
-     * @returns Created ITask instance
-     */
-    public createTask<TContent, TResult>(task: Task<TContent, TResult>, parentId?: string): ITask {
+    private createTask(
+        content: ITaskContent,
+        parentId?: string,
+        source?: string,
+        status: TaskStatus = TaskStatus.Pending,
+    ): string {
         let taskId: string;
         do {
             taskId = getRandomHex(8);
         } while (this.tasks.has(taskId));
 
-        const newTask: ITask = {
+        const newTask: Task = {
             id: taskId,
-            kind: task.kind,
-            content: task.content,
-            source: task.source,
-            createdAt: task.createdAt,
-            parentId,
-            finishedAt: task.finishedAt,
-            result: task.result,
-            error: task.error,
-            status: task.status,
+            content,
+            status,
+            createdAt: Date.now(),
+            startedAt: undefined,
             subtasks: [],
+            source,
+            parent: undefined,
+            finishedAt: undefined,
+            result: undefined,
+            error: undefined,
         };
 
+        if (status !== TaskStatus.Pending) {
+            newTask.startedAt = Date.now();
+        }
+
         if (parentId) {
-            const parent = this.tasks.get(parentId);
-            if (!parent) {
-                throw new Error(`Parent task ${parentId} does not exist`);
-            }
+            const parent = this.getTaskById(parentId);
             if (parent.finishedAt) {
                 throw new Error(`Cannot add task to finished parent ${parentId}`);
             }
+            newTask.parent = parent;
             parent.subtasks.push(newTask);
             this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, parent));
         }
 
         this.tasks.set(newTask.id, newTask);
         this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskCreated, newTask));
-        return newTask;
+        return newTask.id;
     }
 
     /**
-     * Completes task and follows active child chain.
-     * - Completes specified task with result/error
-     * - Automatically completes active children in chain
-     * - Propagates errors down the chain
-     * @param taskId - Task ID to complete
-     * @param result - Optional completion result
-     * @param error - Optional error message
+     * Creates a new pending task of any level.
+     * @param content - Task content
+     * @param parentId - Optional parent task ID
+     * @param source - Optional source of the task
+     * @returns Created task ID
      */
-    public completeTask(taskId: string, result?: unknown, error?: string): void {
-        const task = this.tasks.get(taskId);
-        if (!task) {
-            throw new Error(`Task ${taskId} does not exist`);
-        }
+    public createNewTask(content: ITaskContent, parentId?: string, source?: string): string {
+        return this.createTask(content, parentId, source, TaskStatus.Pending);
+    }
 
-        if (result !== undefined && error !== undefined) {
-            throw new Error("Cannot complete task with both result and error");
-        }
+    /**
+     * Creates a new processing task of any level.
+     * @param content - Task content
+     * @param parentId - Optional parent task ID
+     * @param source - Optional source of the task
+     * @returns Created task ID
+     */
+    public startNewTask(content: ITaskContent, parentId?: string, source?: string): string {
+        return this.createTask(content, parentId, source, TaskStatus.Processing);
+    }
 
+    private validateTaskBeforeFinish(task: Task): void {
+        if (task.finishedAt) {
+            throw new Error(`Cannot finish already finished task ${task.id}`);
+        }
         const unfinishedSubtasks = task.subtasks.filter(t => !t.finishedAt);
         if (unfinishedSubtasks.length > 0) {
             const unfinishedIds = unfinishedSubtasks.map(t => t.id).join(", ");
-            throw new Error(`Cannot complete task ${taskId} with unfinished subtasks: ${unfinishedIds}`);
+            throw new Error(`Cannot finish task ${task.id} with unfinished subtasks: ${unfinishedIds}`);
         }
+    }
+
+    /**
+     * Completes task with result.
+     * @param taskId - Task ID to complete
+     * @param result - Completion result (default: EmptyResult)
+     */
+    public completeTask(taskId: string, result: ITaskResult = new EmptyResult()): void {
+        const task = this.getTaskById(taskId);
+        this.validateTaskBeforeFinish(task);
 
         task.finishedAt = Date.now();
-        if (error) {
-            task.error = error;
-            task.status = TaskStatus.Failed;
-        } else {
-            task.result = result;
-            task.status = TaskStatus.Completed;
-        }
+        task.result = result;
+        task.status = TaskStatus.Completed;
+        this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
+    }
+
+    /**
+     * Fails task with error.
+     * @param taskId - Task ID to fail
+     * @param error - Error message
+     */
+    public failTask(taskId: string, error: string = "Unknown error"): void {
+        const task = this.getTaskById(taskId);
+        this.validateTaskBeforeFinish(task);
+
+        task.error = error;
+        task.finishedAt = Date.now();
+        task.status = TaskStatus.Failed;
         this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
     }
 
     public startTask(taskId: string): void {
-        const task = this.tasks.get(taskId);
-        if (!task) {
-            throw new Error(`Task ${taskId} does not exist`);
-        }
+        const task = this.getTaskById(taskId);
         if (task.status !== TaskStatus.Pending) {
             throw new Error(`Cannot start task ${taskId} that is not pending`);
         }
         task.status = TaskStatus.Processing;
+        task.startedAt = Date.now();
         this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
     }
 
-    public getTask(taskId: string): ITask {
-        // NOTE: there is a chance of requested task being deleted during the task request
-        this.cleanupStaleTasks();
+    private getTaskById(taskId: string): Task {
         const task = this.tasks.get(taskId);
         if (!task) {
-            throw new Error("Invalid task id");
+            throw new Error(`Invalid task id: ${taskId}`);
         }
         return task;
     }
 
-    public getTasks(): ITask[] {
+    public getTask(taskId: string): Task {
+        // NOTE: there is a chance of requested task being deleted during the task request
+        this.cleanupStaleTasks();
+        return this.getTaskById(taskId);
+    }
+
+    public getTasks(): Task[] {
         this.cleanupStaleTasks();
         return this.getRootTasks();
     }
 
-    private getRootTasks(): ITask[] {
-        return Array.from(this.tasks.values()).filter(t => !t.parentId);
+    private getRootTasks(): Task[] {
+        return Array.from(this.tasks.values()).filter(t => !t.parent);
     }
 
     private cleanupStaleTasks(): void {
         const now = Date.now();
-        const isStale = (task: ITask) => task.finishedAt && now - task.finishedAt > TASK_RETENTION_PERIOD_MS;
+        const isStale = (task: Task) => task.finishedAt && now - task.finishedAt > TASK_RETENTION_PERIOD_MS;
         const staleRoots = this.getRootTasks().filter(task => isStale(task));
 
         for (const root of staleRoots) {

@@ -1,7 +1,7 @@
 import { expect, test, vi, beforeEach, afterEach } from "vitest";
 import { TASK_TRACKER_SERVICE_NAME, TaskTrackerServiceClient, TaskTrackerServiceMethod } from "../";
 import { TaskTrackerServiceEvent, TaskTrackerServiceEventMessage } from "../events";
-import { TaskKind, TaskStatus } from "../models";
+import { TaskStatus, StepContent } from "../models";
 import { createChromePortFixture, ChromePortFixture } from "./chrome-port.fixture";
 
 let portFixture: ChromePortFixture;
@@ -16,12 +16,16 @@ afterEach(() => {
 
 const createMockTask = () => ({
     id: "12345678",
-    kind: TaskKind.Step,
-    content: { label: "Test Step" },
-    source: "test_source",
-    createdAt: Date.now(),
+    content: new StepContent("Test Step"),
     status: TaskStatus.Processing,
+    createdAt: Date.now(),
+    startedAt: Date.now(),
     subtasks: [],
+    source: "test_source",
+    parent: undefined,
+    finishedAt: undefined,
+    result: undefined,
+    error: undefined,
 });
 
 test("handles task created event", () => {

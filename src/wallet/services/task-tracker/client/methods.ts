@@ -1,5 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
-import { TASK_TRACKER_SERVICE_NAME, ITask } from ".";
+import { TASK_TRACKER_SERVICE_NAME, Task } from ".";
 
 export enum TaskTrackerServiceMethod {
     GetAllTasks,
@@ -13,7 +13,7 @@ export class GetAllTasksRequest extends RequestMessage {
 }
 
 export class GetAllTasksResponse extends ResponseMessage {
-    constructor(request: GetAllTasksRequest, result?: ITask[], error?: string) {
+    constructor(request: GetAllTasksRequest, result?: Task[], error?: string) {
         super(TASK_TRACKER_SERVICE_NAME, request.requestId, result, error);
     }
 }
@@ -25,7 +25,7 @@ export class GetTaskRequest extends RequestMessage {
 }
 
 export class GetTaskResponse extends ResponseMessage {
-    constructor(request: GetTaskRequest, result?: ITask, error?: string) {
+    constructor(request: GetTaskRequest, result?: Task, error?: string) {
         super(TASK_TRACKER_SERVICE_NAME, request.requestId, result, error);
     }
 }
