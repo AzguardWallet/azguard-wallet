@@ -336,6 +336,7 @@
     "setAztecVersion": true,
     "useNotificationStore": true,
     "checkNotificationsForShow": true,
-    "getTemplate": true
+    "getTemplate": true,
+    "isBackgroundConnected": true
   }
 }

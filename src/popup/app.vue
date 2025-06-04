@@ -3,6 +3,7 @@
 import Header from "@/components/Header.vue"
 import LogoStar from "@/components/LogoStar.vue"
 import PopupManager from "./components/popups/PopupManager.vue"
+import GlobalLoader from "@/components/ui/GlobalLoader.vue"
 
 /** Utils */
 import { getChainPosition } from "@/components/ui/utils"
@@ -297,6 +298,7 @@ onBeforeUnmount(() => {
 			<PopupManager />
 			<ToastManager />
 			<NotificationManager />
+			<GlobalLoader />
 		</div>
 
 		<Header />

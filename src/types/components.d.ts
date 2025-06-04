@@ -19,6 +19,7 @@ declare module 'vue' {
     DropdownTitle: typeof import('./../components/ui/Dropdown/DropdownTitle.vue')['default']
     DropdownTrigger: typeof import('./../components/ui/Dropdown/DropdownTrigger.vue')['default']
     Flex: typeof import('./../components/core/Flex.vue')['default']
+    GlobalLoader: typeof import('./../components/ui/GlobalLoader.vue')['default']
     Header: typeof import('./../components/Header.vue')['default']
     Icon: typeof import('./../components/core/Icon.vue')['default']
     Input: typeof import('./../components/ui/Input.vue')['default']
