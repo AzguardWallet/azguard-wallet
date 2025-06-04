@@ -11,7 +11,7 @@ const message = computed(() =>
         }
         : {
             title: "Initializing connection to services...",
-            description: "(We're setting things up. This should only take a moment.)",
+            description: "We're setting things up. This should only take a moment.",
         }
 )
 </script>
