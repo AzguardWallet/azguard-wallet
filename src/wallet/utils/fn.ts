@@ -43,7 +43,9 @@ export abstract class Fn extends FnImpl {
     }
 
     public async packArgs(args: any[]): Promise<HashedValues> {
-        return await HashedValues.fromArgs(encodeArguments(this.abi(), args));
+        return this.type === FunctionType.PUBLIC
+            ? await HashedValues.fromCalldata([(await this.getSelector()).toField(), ...encodeArguments(this.abi(), args)])
+            : await HashedValues.fromArgs(encodeArguments(this.abi(), args));
     }
 
     public getReturnTypes(): AbiType[] {
