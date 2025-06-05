@@ -60,6 +60,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
     private readonly pxes = new Map<number, PXE>();
     private readonly rpcs = new Map<number, string>();
     private readonly lock = new Lock();
+	private init: Promise<void> | null;
 
     private readonly knownArtifacts = new Map<string, ContractArtifact>();
     private readonly knownClasses = new Map<string, ContractClassWithId>();
@@ -75,9 +76,11 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             this.onProfileDeleted,
             this.onActiveProfileChanged,
         );
+		this.init = this.initialize();
     }
 
     protected async onRequest(method: PxeServiceMethod, params: unknown): Promise<unknown> {
+		await this.ensureInitialized();
         switch (method) {
             case PxeServiceMethod.GetContractClassMetadata: {
                 const { network, id } = params as GetContractClassMetadataParams;
@@ -338,7 +341,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             this.pxes.clear();
             this.rpcs.clear();
             for (const db of await indexedDB.databases()) {
-                if (db.name?.startsWith(`pxe/${profile.id}/`)) {
+                if (db.name?.startsWith(`pxe/${profile.id}/`) || db.name === "keyval-store") {
                     const _ = indexedDB.deleteDatabase(db.name);
                 }
             }
@@ -416,5 +419,49 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             default:
                 return undefined;
         }
+    }
+
+	private async initialize(): Promise<void> {
+		console.debug("Initialize pxe service");
+		await this.checkMigrations();
+		console.debug("Pxe service initialized");
+		this.init = null;
+	}
+
+	private async ensureInitialized(): Promise<void> {
+		if (this.init) {
+			await this.init;
+		}
+	}
+
+	private async checkMigrations(): Promise<void> {
+		try {
+			console.debug("Check pxe service migrations");
+			switch (localStorage.getItem("v")) {
+				case "1": {
+					console.debug("No migrations needed");
+					break;
+				}
+				default: {
+					await this.migrate_0_1();
+					break;
+				}
+			}
+		}
+		catch (error: unknown) {
+			console.error("Failed to migrate pxe service", error);
+		}
+	}
+	
+	private async migrate_0_1(): Promise<void> {
+		console.debug("Migrating pxe service");
+        const keyvalDb = (await indexedDB.databases()).find(x => x.name === "keyval-store");
+        if (keyvalDb) {
+            console.debug("Drop 'keyval-store' db")
+            const _ = indexedDB.deleteDatabase(keyvalDb.name!);
+        }
+		console.debug("Set pxe service version to 1");
+		localStorage.setItem("v", "1");
+		console.debug("Pxe service migrated");
     }
 }
