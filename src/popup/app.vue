@@ -7,7 +7,7 @@ import GlobalLoader from "@/components/ui/GlobalLoader.vue"
 
 /** Utils */
 import { getChainPosition } from "@/components/ui/utils"
-import { managers, initTokenService, initTransactionService } from "@/utils/core.js"
+import { managers, initTokenService, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
@@ -277,6 +277,15 @@ watch(
 
 		appStore._isHomeScreenOpened = route.name === "popup-register" || route.name?.includes("windows-")
 	},
+)
+
+watch(
+	() => isBackgroundConnected.value,
+	() => {
+		if (isBackgroundConnected.value) {
+			loadProfile()
+		}
+	}
 )
 
 onBeforeUnmount(() => {
