@@ -16,6 +16,7 @@ import {
     EmptyResult,
     ITaskResult,
 } from "./client";
+import { WrappedTask } from "./wrapped-task";
 
 export const TASK_RETENTION_PERIOD_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
 
@@ -64,7 +65,7 @@ export class TaskTrackerService extends Service {
         parentId?: string,
         source?: string,
         status: TaskStatus = TaskStatus.Pending,
-    ): string {
+    ): WrappedTask {
         let taskId: string;
         do {
             taskId = getRandomHex(8);
@@ -100,7 +101,7 @@ export class TaskTrackerService extends Service {
 
         this.tasks.set(newTask.id, newTask);
         this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskCreated, newTask));
-        return newTask.id;
+        return new WrappedTask(newTask.id, this, source);
     }
 
     /**
@@ -108,9 +109,9 @@ export class TaskTrackerService extends Service {
      * @param content - Task content
      * @param parentId - Optional parent task ID
      * @param source - Optional source of the task
-     * @returns Created task ID
+     * @returns Created task wrapper
      */
-    public createNewTask(content: ITaskContent, parentId?: string, source?: string): string {
+    public createNewTask(content: ITaskContent, parentId?: string, source?: string): WrappedTask {
         return this.createTask(content, parentId, source, TaskStatus.Pending);
     }
 
@@ -119,9 +120,9 @@ export class TaskTrackerService extends Service {
      * @param content - Task content
      * @param parentId - Optional parent task ID
      * @param source - Optional source of the task
-     * @returns Created task ID
+     * @returns Created task wrapper
      */
-    public startNewTask(content: ITaskContent, parentId?: string, source?: string): string {
+    public startNewTask(content: ITaskContent, parentId?: string, source?: string): WrappedTask {
         return this.createTask(content, parentId, source, TaskStatus.Processing);
     }
 
@@ -239,3 +240,4 @@ export class TaskTrackerService extends Service {
         this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskDeleted, task));
     }
 }
+export { WrappedTask } from "./wrapped-task";
