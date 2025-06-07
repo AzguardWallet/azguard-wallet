@@ -109,11 +109,12 @@ watch(
 		}
 	},
 )
+
 /** todo: ref */
 watch(
 	() => appStore.network,
 	async () => {
-		if (!appStore.isLogined) return
+		if (!appStore.network) return
 
 		appStore.syncNetworkStatus()
 
@@ -172,7 +173,6 @@ const loadProfile = async () => {
 	}
 
 	appStore.profiles = await managers.profile.getProfiles()
-
 	const activeProfile = await managers.profile.getActiveProfile()
 	if (activeProfile) {
 		appStore.profile = activeProfile
