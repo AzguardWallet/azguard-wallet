@@ -19,6 +19,8 @@ export abstract class TransferPublicToPrivateFn extends Fn {
         switch (impl) {
             case TransferPublicToPrivateImpl.Default:
                 return new DefaultTransferPublicToPrivateFn(name);
+            case TransferPublicToPrivateImpl.DefiWonderland:
+                return new DefiWonderlandTransferPublicToPrivateFn(name);
             default:
                 throw new Error("Invalid TransferPublicToPrivateImpl");
         }
