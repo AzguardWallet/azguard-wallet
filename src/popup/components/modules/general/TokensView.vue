@@ -69,7 +69,7 @@ const dummyAccountTokens = computed(() => {
 
 		<template v-if="appStore.tokens.length || dummyAccountTokens.length">
 			<ItemsContainer>
-				<TokenCard v-for="token in [...appStore.tokens, ...dummyAccountTokens]" :token />
+				<TokenCard v-for="token in [...dummyAccountTokens, ...appStore.tokens]" :token />
 			</ItemsContainer>
 		</template>
 		<template v-else>
