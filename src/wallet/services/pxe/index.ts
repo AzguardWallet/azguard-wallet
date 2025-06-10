@@ -52,6 +52,7 @@ import {
     SimulateUtilityParams,
     PXE_SERVICE_NAME,
     PxeServiceMethod,
+    UpdateContractParams,
 } from "./client";
 
 export class PxeService extends Service<PxeServiceMethod, void> {
@@ -202,6 +203,14 @@ export class PxeService extends Service<PxeServiceMethod, void> {
                     await z.array(AuthWitness.schema).optional().parseAsync(authwits),
                     await AztecAddress.schema.optional().parseAsync(from),
                     await z.array(AztecAddress.schema).optional().parseAsync(scopes),
+                );
+            }
+            case PxeServiceMethod.UpdateContract: {
+                const { network, address, artifact } = params as UpdateContractParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.updateContract(
+                    await AztecAddress.schema.parseAsync(address),
+                    await ContractArtifactSchema.parseAsync(artifact),
                 );
             }
             default: {

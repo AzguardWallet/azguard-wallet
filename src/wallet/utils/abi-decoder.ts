@@ -58,11 +58,12 @@ class AbiDecoderPatched {
                 return struct;
             }
             case "string": {
-                const array = [];
+                let str = "";
                 for (let i = 0; i < abiType.length; i += 1) {
-                    array.push(this.getNextField().toBigInt());
+                    const charCode = Number(this.getNextField().toBigInt());
+                    str += String.fromCharCode(charCode);
                 }
-                return array;
+                return str;
             }
             case "tuple": {
                 const array = [];
