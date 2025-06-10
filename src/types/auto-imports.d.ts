@@ -25,8 +25,8 @@ declare global {
   const browser: typeof import('webextension-polyfill')
   const capitalize: typeof import('../utils/string.js')['capitalize']
   const capitilize: typeof import('../utils/string.js')['capitilize']
-  const checkAztecVersion: typeof import('../utils/core.js')['checkAztecVersion']
   const checkNotificationsForShow: typeof import('../composables/notification.js')['checkNotificationsForShow']
+  const checkSentinel: typeof import('../utils/core.js')['checkSentinel']
   const comma: typeof import('../utils/amount.js')['comma']
   const computed: typeof import('vue')['computed']
   const computedAsync: typeof import("@vueuse/core")["computedAsync"]
@@ -125,7 +125,7 @@ declare global {
   const resolveRef: typeof import("@vueuse/core")["resolveRef"]
   const resolveUnref: typeof import("@vueuse/core")["resolveUnref"]
   const sendMessage: typeof import("webext-bridge")["sendMessage"]
-  const setAztecVersion: typeof import('../utils/core.js')['setAztecVersion']
+  const setSentinel: typeof import('../utils/core.js')['setSentinel']
   const shallowReactive: typeof import('vue')['shallowReactive']
   const shallowReadonly: typeof import('vue')['shallowReadonly']
   const shallowRef: typeof import('vue')['shallowRef']

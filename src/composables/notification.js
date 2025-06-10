@@ -1,5 +1,5 @@
 /** Utils */
-import { checkAztecVersion,	managers, setAztecVersion } from "@/utils/core"
+import { checkSentinel,	managers, setSentinel } from "@/utils/core"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -20,8 +20,8 @@ export const getTemplate = (name, params) => {
                 type: "warning",
                 autoDestroy: false,
                 payload: {
-                    title: "Testnet Update",
-                    description: "Aztec testnet was reset. Please delete your profile and create a new one to ensure compatibility with the new version.",
+                    title: "Profile Reset Needed",
+                    description: "Due to breaking changes in the new version, please, delete your profile and create a new one to ensure compatibility with the new version.",
                     onConfirm: async () => {
                         await managers.profile.deleteProfile(appStore.profile.id)
                         popupStore.closeAll()
@@ -44,7 +44,7 @@ export const getTemplate = (name, params) => {
                         openToast({ label: "Profile deleted", icon: "check-circle" })
                     },
                     onCancel: async () => {
-                        await setAztecVersion()
+                        await setSentinel()
                     },
                     confirmText: "Delete Profile",
                     cancelText: "Later",
@@ -56,8 +56,8 @@ export const getTemplate = (name, params) => {
 }
 
 export async function checkNotificationsForShow(router) {
-    const isCurrentAztecVersionSupported = await checkAztecVersion()
-    if (!isCurrentAztecVersionSupported) {
+    const isSentinelValid = await checkSentinel()
+    if (!isSentinelValid) {
         const template = getTemplate("aztecReset", { router })
         notificationStore.create({ ...template })
     }
