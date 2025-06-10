@@ -234,9 +234,9 @@ export class ExecutionService extends Service {
             default:
                 throw new Error("Invalid transfer type");
         }
-        const packedArgs = await fn.packArgs(args);
         const selector = await fn.getSelector();
-
+        const encodedArgs = fn.encodeArgs(args);
+        
         const op = new SendTransactionOperation(
             networkId,
             accountAddress,
@@ -245,7 +245,7 @@ export class ExecutionService extends Service {
                 new EncodedCallAction(
                     token.contract,
                     selector.toString(),
-                    packedArgs.values.map(x => x.toString()),
+                    encodedArgs.map(x => x.toString()),
                     fn.name,
                     fn.type,
                     fn.isStatic,

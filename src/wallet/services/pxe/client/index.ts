@@ -195,4 +195,17 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
         });
         return await UtilitySimulationResult.schema.parseAsync(result);
     }
+
+    public async updateContract(
+        network: Network,
+        address: AztecAddress,
+        artifact: ContractArtifact,
+    ): Promise<void> {
+        await ensureOffscreenRunning();
+        await this.request(PxeServiceMethod.UpdateContract, {
+            network,
+            address,
+            artifact
+        });
+    }
 }

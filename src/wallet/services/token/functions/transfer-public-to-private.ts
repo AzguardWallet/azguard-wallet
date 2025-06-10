@@ -1,160 +1,215 @@
+import { Fr } from "@aztec/foundation/fields";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import {
-	ContractArtifact,
-	FunctionAbi,
-	FunctionType,
-	StructType,
-} from "@aztec/stdlib/abi";
+import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi";
 import { Fn } from "@/wallet/utils/fn";
 
 export enum TransferPublicToPrivateImpl {
-	Default,
+    Default,
+    DefiWonderland,
 }
 
 export abstract class TransferPublicToPrivateFn extends Fn {
-	public override buildArgs(
-		from: string | AztecAddress,
-		to: string | AztecAddress,
-		amount: number | bigint | string,
-	): any[] {
-		return [to, amount];
-	}
+    public abstract override buildArgs(
+        from: string | AztecAddress,
+        to: string | AztecAddress,
+        amount: number | bigint | string,
+    ): any[];
 
-	public static new(name: string, impl: TransferPublicToPrivateImpl): TransferPublicToPrivateFn {
-		switch (impl) {
-			case TransferPublicToPrivateImpl.Default:
-				return new DefaultTransferPublicToPrivateFn(name);
-			default:
-				throw new Error("Invalid TransferPublicToPrivateImpl");
-		}
-	}
+    public static new(name: string, impl: TransferPublicToPrivateImpl): TransferPublicToPrivateFn {
+        switch (impl) {
+            case TransferPublicToPrivateImpl.Default:
+                return new DefaultTransferPublicToPrivateFn(name);
+            case TransferPublicToPrivateImpl.DefiWonderland:
+                return new DefiWonderlandTransferPublicToPrivateFn(name);
+            default:
+                throw new Error("Invalid TransferPublicToPrivateImpl");
+        }
+    }
 
-	public static getCandidates(artifact: ContractArtifact): TransferPublicToPrivateFn[] {
-		const res = [...DefaultTransferPublicToPrivateFn.getCandidates(artifact)];
-		const points = (n: string) => {
-			let p = 0;
-			if (n.includes("transfer")) {
-				p += 1;
-				if (n.includes("private")) {
-					p += 2;
-					if (n === "transfer_to_private") {
-						p += 4;
-					}
-				}
-			}
-			return p;
-		};
-		res.sort((a, b) => points(b.name) - points(a.name));
-		return res;
-	}
+    public static getCandidates(artifact: ContractArtifact): TransferPublicToPrivateFn[] {
+        const res = [
+            ...DefaultTransferPublicToPrivateFn.getCandidates(artifact),
+            ...DefiWonderlandTransferPublicToPrivateFn.getCandidates(artifact),
+        ];
+        const points = (fn: TransferPublicToPrivateFn) => {
+            switch (fn.name) {
+                case "transfer_public_to_private":
+                    return 101;
+                case "transfer_to_private":
+                    return 100;
+                default: {
+                    let p = 0;
+                    if (fn.name.includes("transfer")) {
+                        p += 1;
+                        if (fn.name.includes("to_private")) {
+                            p += 2;
+                            if (fn.name.includes("public_to_private")) {
+                                p += 4;
+                            }
+                        }
+                    }
+                    return p;
+                }
+            }
+        };
+        res.sort((a, b) => points(b) - points(a));
+        return res;
+    }
 
-	public static getDefault(candidates: TransferPublicToPrivateFn[]): TransferPublicToPrivateFn | undefined {
-		if (!candidates.length) return undefined;
-		return candidates[0].name === "transfer_to_private" ? candidates[0] : undefined;
-	}
+    public static getDefault(candidates: TransferPublicToPrivateFn[]): TransferPublicToPrivateFn | undefined {
+        switch (candidates.at(0)?.name) {
+            case "transfer_public_to_private":
+            case "transfer_to_private":
+                return candidates[0];
+            default:
+                return undefined;
+        }
+    }
 }
 
 export class DefaultTransferPublicToPrivateFn extends TransferPublicToPrivateFn {
-	constructor(name: string) {
-		super(name, TransferPublicToPrivateImpl.Default);
-	}
+    constructor(name: string) {
+        super(name, TransferPublicToPrivateImpl.Default);
+    }
 
-	protected override abi(): FunctionAbi {
-		return {
-			name: this.name,
-			isInitializer: false,
-			functionType: FunctionType.PRIVATE,
-			isInternal: false,
-			isStatic: false,
-			parameters: [
-				{
-					name: "to",
-					type: {
-						fields: [{ name: "inner", type: { kind: "field" } }],
-						kind: "struct",
-						path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress",
-					},
-					visibility: "private",
-				},
-				{
-					name: "amount",
-					type: {
-						kind: "integer",
-						sign: "unsigned",
-						width: 128,
-					},
-					visibility: "private",
-				},
-			],
-			returnTypes: [],
-			errorTypes: {
-				"14514982005979867414": {
-					error_kind: "string",
-					string: "attempt to bit-shift with overflow",
-				},
-				"16761564377371454734": {
-					error_kind: "string",
-					string: "Array index out of bounds",
-				},
-				"17843811134343075018": {
-					error_kind: "string",
-					string: "Stack too deep",
-				},
-				"206160798890201757": {
-					error_kind: "string",
-					string: "Storage slot 0 not allowed. Storage slots must start from 1.",
-				},
-				"2709101749560550278": {
-					error_kind: "string",
-					string: "Cannot serialize point at infinity as bytes.",
-				},
-				"2920182694213909827": {
-					error_kind: "string",
-					string: "attempt to subtract with overflow",
-				},
-				"5019202896831570965": {
-					error_kind: "string",
-					string: "attempt to add with overflow",
-				},
-				"6485997221020871071": {
-					error_kind: "string",
-					string: "call to assert_max_bit_size",
-				},
-				"7233212735005103307": {
-					error_kind: "string",
-					string: "attempt to multiply with overflow",
-				},
-				"8193989641828211937": {
-					error_kind: "string",
-					string: "ciphertext length mismatch",
-				},
-				"8270195893599566439": {
-					error_kind: "string",
-					string: "Invalid public keys hint for address",
-				},
-			},
-		};
-	}
+    public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): any[] {
+        return [to, amount];
+    }
 
-	public static getCandidates(artifact: ContractArtifact): TransferPublicToPrivateFn[] {
-		const res = [];
-		for (const fn of artifact.functions) {
-			if (
-				!fn.isInitializer &&
-				!fn.isInternal &&
-				!fn.isStatic &&
-				fn.functionType === FunctionType.PRIVATE &&
-				fn.parameters.length === 2 &&
-				fn.parameters[0].name === "to" &&
-				(fn.parameters[0].type as StructType)?.path ===
-					"authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
-				fn.parameters[1].name === "amount" &&
-				fn.parameters[1].type.kind === "integer" &&
-				fn.returnTypes.length === 0
-			) {
-				res.push(new DefaultTransferPublicToPrivateFn(fn.name));
-			}
-		}
-		return res;
-	}
+    protected override abi(): FunctionAbi {
+        return {
+            name: this.name,
+            isInitializer: false,
+            functionType: FunctionType.PRIVATE,
+            isInternal: false,
+            isStatic: false,
+            parameters: [
+                {
+                    name: "to",
+                    type: {
+                        fields: [{ name: "inner", type: { kind: "field" } }],
+                        kind: "struct",
+                        path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress",
+                    },
+                    visibility: "private",
+                },
+                {
+                    name: "amount",
+                    type: {
+                        kind: "integer",
+                        sign: "unsigned",
+                        width: 128,
+                    },
+                    visibility: "private",
+                },
+            ],
+            returnTypes: [],
+            errorTypes: {},
+        };
+    }
+
+    public static getCandidates(artifact: ContractArtifact): TransferPublicToPrivateFn[] {
+        const res = [];
+        for (const fn of artifact.functions) {
+            if (
+                !fn.isInitializer &&
+                !fn.isInternal &&
+                !fn.isStatic &&
+                fn.functionType === FunctionType.PRIVATE &&
+                fn.parameters.length === 2 &&
+                fn.parameters[0].name === "to" &&
+                (fn.parameters[0].type as StructType)?.path ===
+                    "authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                fn.parameters[1].name === "amount" &&
+                fn.parameters[1].type.kind === "integer" &&
+                fn.returnTypes.length === 0
+            ) {
+                res.push(new DefaultTransferPublicToPrivateFn(fn.name));
+            }
+        }
+        return res;
+    }
+}
+
+export class DefiWonderlandTransferPublicToPrivateFn extends TransferPublicToPrivateFn {
+    constructor(name: string) {
+        super(name, TransferPublicToPrivateImpl.DefiWonderland);
+    }
+
+    public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): any[] {
+        return [from, to, amount, Fr.zero()];
+    }
+
+    protected override abi(): FunctionAbi {
+        return {
+            name: this.name,
+            isInitializer: false,
+            functionType: FunctionType.PRIVATE,
+            isInternal: false,
+            isStatic: false,
+            parameters: [
+                {
+                    name: "from",
+                    type: {
+                        fields: [{ name: "inner", type: { kind: "field" } }],
+                        kind: "struct",
+                        path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress",
+                    },
+                    visibility: "private",
+                },
+                {
+                    name: "to",
+                    type: {
+                        fields: [{ name: "inner", type: { kind: "field" } }],
+                        kind: "struct",
+                        path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress",
+                    },
+                    visibility: "private",
+                },
+                {
+                    name: "amount",
+                    type: {
+                        kind: "integer",
+                        sign: "unsigned",
+                        width: 128,
+                    },
+                    visibility: "private",
+                },
+                {
+                    name: "nonce",
+                    type: { kind: "field" },
+                    visibility: "private",
+                },
+            ],
+            returnTypes: [],
+            errorTypes: {},
+        };
+    }
+
+    public static getCandidates(artifact: ContractArtifact): TransferPublicToPrivateFn[] {
+        const res = [];
+        for (const fn of artifact.functions) {
+            if (
+                !fn.isInitializer &&
+                !fn.isInternal &&
+                !fn.isStatic &&
+                fn.functionType === FunctionType.PRIVATE &&
+                fn.parameters.length === 4 &&
+                fn.parameters[0].name === "from" &&
+                (fn.parameters[0].type as StructType)?.path ===
+                    "authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                fn.parameters[1].name === "to" &&
+                (fn.parameters[1].type as StructType)?.path ===
+                    "authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                fn.parameters[2].name === "amount" &&
+                fn.parameters[2].type.kind === "integer" &&
+                fn.parameters[3].name === "nonce" &&
+                fn.parameters[3].type.kind === "field" &&
+                fn.returnTypes.length === 0
+            ) {
+                res.push(new DefiWonderlandTransferPublicToPrivateFn(fn.name));
+            }
+        }
+        return res;
+    }
 }
