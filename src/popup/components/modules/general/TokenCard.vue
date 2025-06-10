@@ -29,8 +29,8 @@ const totalBalance = computed(() => {
 	return balanceFormatted(total, 10).value
 })
 const description = computed(() => {
-	if (appStore.mintingTokens.includes(props.token?.id)) return "Minting more tokens..."
-	if (appStore.tokensAwaitingBalanceRefresh.includes(props.token?.id)) return "Refreshing balance..."
+	if (appStore.mintingTokens.has(balance.value?.account, props.token?.id)) return "Minting more tokens..."
+	if (appStore.tokensAwaitingBalanceRefresh.has(balance.value?.account, props.token?.id)) return "Refreshing balance..."
 
 	return props.token?.name || 'unknown'
 })
@@ -39,8 +39,8 @@ const isHovered = ref(false)
 const handleRefreshBalance = async () => {
 	if (!balance.value) return
 
-	appStore.tokensAwaitingBalanceRefresh.push(props.token?.id)
-	managers.balance.refreshTokenBalance(balance.value.id)
+	appStore.tokensAwaitingBalanceRefresh.add(balance.value?.account, props.token?.id)
+	managers.balance.refreshTokenBalance(balance.value?.id)
 }
 </script>
 
@@ -58,7 +58,7 @@ const handleRefreshBalance = async () => {
 		<template #icon>
 			<Tooltip position="start" :disabled="!balance?.updatedAt">
 				<Icon
-					v-if="token?.id !== -1 && !appStore.tokensAwaitingBalanceRefresh.includes(token?.id) && !appStore.mintingTokens.includes(token?.id)"
+					v-if="token?.id !== -1 && !appStore.tokensAwaitingBalanceRefresh.has(balance?.account, token?.id) && !appStore.mintingTokens.has(balance?.account, token?.id)"
 					@click.stop="handleRefreshBalance"
 					:name="!isHovered ? 'banknote' : 'refresh'"
 					size="16"

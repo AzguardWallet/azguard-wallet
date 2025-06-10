@@ -8,7 +8,15 @@ import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { FaucetServiceClient } from "@/wallet/services/faucet/client"
 import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
 
-const profileService = new ProfileServiceClient()
+export const isBackgroundConnected = ref(false)
+const onConnected = () => {
+	isBackgroundConnected.value = true
+}
+const onDisconnected = () => {
+	isBackgroundConnected.value = false
+}
+
+const profileService = new ProfileServiceClient(onConnected, onDisconnected)
 const walletConnectService = new WalletConnectServiceClient()
 const dappSessionSevice = new DappSessionServiceClient()
 const balanceService = new TokenBalanceServiceClient()

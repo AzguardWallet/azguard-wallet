@@ -125,6 +125,17 @@ const handleDelete = (fpc) => {
 	cacheStore.confirm.callback = async () => {
 		await fpcService.deleteFpc(fpc.id)
 
+		const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+		if (Object.keys(fpms).length) {
+			for (const [account, data] of Object.entries(fpms)) {
+				if (data.fpc?.id === fpc.id) {
+					delete fpms[account]
+				}
+			}
+
+			await chrome.storage.local.set({ "azguard:ui:feePaymentMethods": fpms })
+		}
+
 		openToast({ label: "FPC is deleted" })
 	}
 

@@ -70,6 +70,7 @@ declare global {
   const initTransactionService: typeof import('../utils/core.js')['initTransactionService']
   const inject: typeof import('vue')['inject']
   const injectLocal: typeof import("@vueuse/core")["injectLocal"]
+  const isBackgroundConnected: typeof import('../utils/core.js')['isBackgroundConnected']
   const isDefined: typeof import("@vueuse/core")["isDefined"]
   const isPrefersDarkScheme: typeof import('../utils/general.js')['isPrefersDarkScheme']
   const isProxy: typeof import('vue')['isProxy']

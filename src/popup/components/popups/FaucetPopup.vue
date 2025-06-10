@@ -103,6 +103,8 @@ const handleMint = async () => {
 
 	isLoading.value = true
 	error.value = null
+	const mintingAddress = appStore.account.address
+
 	try {
 		const name = tokenNameTerm.value.trim()
 		const symbol = tokenSymbolTerm.value.trim()
@@ -110,19 +112,20 @@ const handleMint = async () => {
 		if (!token.value) {
 			appStore.dummyTokens.push({
 				id: -1,
+				account: mintingAddress,
 				symbol,
 				name: "Minting in progress...",
 			})
 		} else {
 			mintingTokenId.value = token.value.id
-			appStore.mintingTokens.push(mintingTokenId.value)
+			appStore.mintingTokens.add(mintingAddress, mintingTokenId.value)
 		}
 
 		emit("onClose")
 
 		await managers.faucet.mint(
 			appStore.network.id,
-			appStore.account.address,
+			mintingAddress,
 			name,
 			symbol,
 			8,
@@ -131,14 +134,14 @@ const handleMint = async () => {
 		)
 		
 		if (mintingTokenId.value) {
-			appStore.mintingTokens.pop()
-			appStore.tokensAwaitingBalanceRefresh.push(mintingTokenId.value)
+			appStore.mintingTokens.remove(mintingAddress, mintingTokenId.value)
+			appStore.tokensAwaitingBalanceRefresh.add(mintingAddress, mintingTokenId.value)
 		} else {
 			const allTokens = await managers.token?.getTokens()
 			const newToken = allTokens.find(t => t.symbol === symbol && t.name === name)
 			
 			if (newToken) {
-				appStore.tokensAwaitingBalanceRefresh.push(newToken.id)
+				appStore.tokensAwaitingBalanceRefresh.add(mintingAddress, newToken.id)
 			}
 		}
 	} catch (err) {
@@ -147,9 +150,9 @@ const handleMint = async () => {
 		openToast({ label: "Failed to mint", icon: "warning" })
 
 		if (!mintingTokenId.value) {
-			appStore.dummyTokens.pop()
+			appStore.dummyTokens = appStore.dummyTokens.filter(dt => dt.account !== mintingAddress && dt.symbol !== tokenSymbolTerm.value && dt.name !== tokenNameTerm.value)
 		} else {
-			appStore.mintingTokens.pop()
+			appStore.mintingTokens.remove(mintingAddress, mintingTokenId.value)
 		}
 	} finally {
 		isLoading.value = false

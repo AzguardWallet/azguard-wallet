@@ -26,9 +26,13 @@ const latestTransaction = computed(() => {
 })
 const isTokenAwaitingTx = computed(() => {
 	return props.token
-		? appStore.awaitingTransactions.findIndex(t => t.contract === props.token.contract) > -1
+		? appStore.awaitingTransactions.findIndex(t => t.account === appStore.account.address && t.contract === props.token.contract) > -1
 		: false
 })
+const awaitingAccountTxs = computed(() => {
+	return appStore.awaitingTransactions.filter(t => t.account === appStore.account?.address)
+})
+
 const handleSelectTx = () => {
 	cacheStore.activeTxHash = latestTransaction.value.hash
 	popupStore.open("tx")
@@ -36,7 +40,7 @@ const handleSelectTx = () => {
 </script>
 
 <template>
-	<Flex v-if="latestTransaction" direction="column" gap="16">
+	<Flex v-if="token && (isTokenAwaitingTx || latestTransaction)" direction="column" gap="16">
 		<Flex align="center" justify="between">
 			<Text size="13" weight="600" color="secondary"> Latest transaction </Text>
 			<Text
@@ -51,8 +55,27 @@ const handleSelectTx = () => {
 		</Flex>
 
 		<div :class="$style.list">
-			<TransactionAwaitingCard v-if="!token && appStore.awaitingTransactions.length || isTokenAwaitingTx" />
-			<TransactionCard v-else-if="!appStore.awaitingTransactions.length || token" :tx="latestTransaction" @click="handleSelectTx" />
+			<TransactionAwaitingCard v-if="isTokenAwaitingTx" />
+			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
+		</div>
+	</Flex>
+	<Flex v-else-if="!token && (latestTransaction || awaitingAccountTxs.length)" direction="column" gap="16">
+		<Flex align="center" justify="between">
+			<Text size="13" weight="600" color="secondary"> Latest transaction </Text>
+			<Text
+				@click="router.push('/popup/activity')"
+				size="12"
+				weight="600"
+				color="tertiary"
+				:class="['clickable', $style.txt_button]"
+			>
+				View all
+			</Text>
+		</Flex>
+
+		<div :class="$style.list">
+			<TransactionAwaitingCard v-if="awaitingAccountTxs.length" />
+			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
 		</div>
 	</Flex>
 </template>

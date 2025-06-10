@@ -19,24 +19,9 @@ const popupStore = usePopupStore()
 
 const router = useRouter()
 
-const handleRefreshBalances = async () => {
-	let balances = []
-	for (const token of appStore.tokens) {
-		if (appStore.tokensAwaitingBalanceRefresh.includes(token.id)) continue
-
-		const balance = await managers.balance.getTokenBalances(token.id, appStore.account.address)
-		if (balance.length) {
-			balances = [...balances, ...balance]
-			appStore.tokensAwaitingBalanceRefresh.push(token.id)
-		}
-	}
-
-	if (balances.length) {
-		for (const balance of balances) {
-			managers.balance.refreshTokenBalance(balance.id)
-		}
-	}
-}
+const dummyAccountTokens = computed(() => {
+	return appStore.dummyTokens.filter(dt => dt.account === appStore.account.address)
+})
 </script>
 
 <template>
@@ -71,7 +56,7 @@ const handleRefreshBalances = async () => {
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
-						<DropdownItem @click="handleRefreshBalances">
+						<DropdownItem @click="appStore.refreshBalances()">
 							<Flex align="center" gap="8">
 								<Icon name="refresh" size="14" color="primary" />
 								Refresh balances
@@ -82,9 +67,9 @@ const handleRefreshBalances = async () => {
 			</Flex>
 		</Flex>
 
-		<template v-if="appStore.tokens.length || appStore.dummyTokens.length">
+		<template v-if="appStore.tokens.length || dummyAccountTokens.length">
 			<ItemsContainer>
-				<TokenCard v-for="token in [...appStore.tokens, ...appStore.dummyTokens]" :token />
+				<TokenCard v-for="token in [...dummyAccountTokens, ...appStore.tokens]" :token />
 			</ItemsContainer>
 		</template>
 		<template v-else>
