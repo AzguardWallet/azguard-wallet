@@ -206,7 +206,7 @@ export class DefaultFromTransferPrivateFn extends TransferPrivateFn {
                     "authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
                 fn.parameters[2].name === "amount" &&
                 fn.parameters[2].type.kind === "integer" &&
-                fn.parameters[3].name === "nonce" &&
+                (fn.parameters[3].name === "nonce" || fn.parameters[3].name === "_nonce") &&
                 fn.parameters[3].type.kind === "field" &&
                 fn.returnTypes.length === 0
             ) {
