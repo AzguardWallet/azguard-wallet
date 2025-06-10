@@ -6,7 +6,7 @@ import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Services */
-import { managers, setAztecVersion } from "@/utils/core"
+import { managers, setSentinel } from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
@@ -100,7 +100,7 @@ const completeImport = async (profile) => {
 		appStore.profiles.push(profile)
 		appStore.profile = profile
 
-		await setAztecVersion()
+		await setSentinel()
 
 		popupStore.closeAll()
 
