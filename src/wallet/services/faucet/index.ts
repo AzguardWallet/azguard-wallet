@@ -23,6 +23,7 @@ import type { AccountService } from "@/wallet/services/account"
 import type { ProfileService } from "@/wallet/services/profile"
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import type { ExecutionService } from "@/wallet/services/execution"
+import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import {
     type IOperation,
     RegisterContractOperation,
@@ -55,9 +56,10 @@ export class FaucetService extends Service {
         private readonly executionService: ExecutionService,
         private readonly transactionService: TransactionService,
         private readonly tokenService: TokenService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {
-		super(FAUCET_SERVICE_NAME, emit)
+		super(FAUCET_SERVICE_NAME, logger, emit)
         this.pxeService = new PxeServiceClient();
 	}
 
@@ -83,7 +85,8 @@ export class FaucetService extends Service {
 				}
 			}
 			default: {
-				console.error(`Invalid request method ${request.method}.`)
+                this.log(LogLevel.Error, `Invalid request method ${request.method}.`)
+				// console.error(`Invalid request method ${request.method}.`)
 				return undefined
 			}
 		}
@@ -135,7 +138,8 @@ export class FaucetService extends Service {
 
         const classMetadata = await pxe.getContractClassMetadata(contractClass.id);
         if (!classMetadata.isContractClassPubliclyRegistered) {
-            console.debug("register faucet token class id");
+            this.log(LogLevel.Debug, "register faucet token class id");
+            // console.debug("register faucet token class id");
             const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
             const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
             deployActions.push(
@@ -159,7 +163,8 @@ export class FaucetService extends Service {
 
         const contractMetadata = await pxe.getContractMetadata(instance.address);
         if (!contractMetadata.isContractPubliclyDeployed) {
-            console.debug("deploy faucet token");
+            this.log(LogLevel.Debug, "deploy faucet token");
+            // console.debug("deploy faucet token");
             const {salt, currentContractClassId, initializationHash, publicKeys} = instance;
             deployActions.push(
                 new CallAction(
@@ -177,7 +182,8 @@ export class FaucetService extends Service {
         }
 
         if (!contractMetadata.isContractInitialized) {
-            console.debug("initialize faucet token");
+            this.log(LogLevel.Debug, "initialize faucet token");
+            // console.debug("initialize faucet token");
             deployOps.unshift(
                 new RegisterContractOperation(
                     networkId,
@@ -209,9 +215,11 @@ export class FaucetService extends Service {
                 }`);
             }
             const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
-            console.debug("faucet deploy tx:", deployTx);
+            this.log(LogLevel.Debug, ["faucet deploy tx:", deployTx]);
+            // console.debug("faucet deploy tx:", deployTx);
             await this.transactionService.waitForTx(deployTx);
-            console.debug("faucet deploy tx mined");
+            this.log(LogLevel.Debug, "faucet deploy tx mined");
+            // console.debug("faucet deploy tx mined");
             if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
                 feeSettings = {
                     ...feeSettings,
@@ -243,19 +251,23 @@ export class FaucetService extends Service {
             }`);
         }
         const mintTx = (mintResult as OkOperationResult<string>).result;
-        console.debug("faucet mint tx:", mintTx);
+        this.log(LogLevel.Debug, ["faucet mint tx:", mintTx]);
+        // console.debug("faucet mint tx:", mintTx);
         await this.transactionService.waitForTx(mintTx);
-        console.debug("faucet mint tx mined");
+        this.log(LogLevel.Debug, "faucet mint tx mined");
+        // console.debug("faucet mint tx mined");
 
         const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
         if (!tokens.some(x => x.contract === instance.address.toString())) {
-            console.debug("adding faucet token...");
+            this.log(LogLevel.Debug, "adding faucet token...");
+            // console.debug("adding faucet token...");
             const ti = await this.tokenService.parseTokenInterface(
                 networkId,
                 instance.address.toString(),
             );
             const token = await this.tokenService.addToken(profile.id, networkId, accountAddress, ti);
-            console.debug("faucet token:", token);
+            this.log(LogLevel.Debug, ["faucet token:", token]);
+            // console.debug("faucet token:", token);
         }
     }
 }

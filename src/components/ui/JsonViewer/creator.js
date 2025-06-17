@@ -117,6 +117,20 @@ export const createTheme = ({ styles }) => {
 			".cm-line": {
 				padding: "0 12px 0 6px",
 			},
+			".log-line-info": {
+				// color: "var(--txt-secondary)",
+				color: "var(--json-string)",
+			},
+			".log-line-debug": {
+				// color: "var(--txt-tertiary)",
+				color: "var(--json-property-name)",
+			},
+			".log-line-warn": {
+				color: "var(--json-property-name)",
+			},
+			".log-line-error": {
+				// color: "var(--json-string)",
+			},
 			".cm-tooltip.cm-tooltip-autocomplete": {
 				background: "#18181A",
 				border: "1px solid var(--op-5)",
@@ -230,4 +244,80 @@ export const createTheme = ({ styles }) => {
 	const extension = [theme, syntaxHighlighting(highlightStyle)]
 
 	return extension
+}
+
+export const createLoggerTheme = () => {
+	const theme = EditorView.theme(
+		{
+			"&": {
+				backgroundColor: "#1e1e1e",
+				color: "var(--txt-secondary)",
+
+				fontFamily: "monospace",
+				fontSize: "13px",
+				width: "100%",
+				height: "100%",
+			},
+			".cm-scroller": {
+				width: "100%",
+				height: "100%",
+				overflow: "auto",
+			},
+			".cm-content": {
+				minHeight: "max-content",
+				caretColor: "#d4d4d4",
+			},
+			".cm-line": {
+				padding: "0 12px 0 6px",
+				whiteSpace: "pre",
+			},
+
+			// Log levels
+			".log-line-info": {
+				color: "var(--txt-secondary)",
+			},
+			".log-line-debug": {
+				color: "var(--txt-tertiary)",
+			},
+			".log-line-warn": {
+				color: "var(--json-property-name)",
+				backgroundColor: "rgba(255, 167, 38, 0.1)",
+			},
+			".log-line-error": {
+				color: "var(--json-string)",
+				backgroundColor: "rgba(239, 83, 80, 0.1)",
+			},
+
+			// Active line & selection
+			".cm-activeLine": {
+				background: "rgba(255, 255, 255, 0.05) !important",
+			},
+			".cm-selectionBackground": {
+				background: "rgba(255, 255, 255, 0.1)",
+			},
+			"&.cm-focused .cm-selectionBackground": {
+				background: "rgba(255, 255, 255, 0.15)",
+			},
+			".cm-selectionMatch": {
+				outline: "none",
+			},
+			".cm-searchMatch": {
+				background: "rgba(255, 255, 0, 0.1)",
+				outline: "none",
+			},
+
+			// Row numbers
+			".cm-gutters": {
+				backgroundColor: "transparent",
+				color: "#888",
+			},
+		},
+		{
+			dark: true,
+		},
+	)
+
+	const highlightStyle = HighlightStyle.define([])
+
+	return [theme, syntaxHighlighting(highlightStyle)]
 }

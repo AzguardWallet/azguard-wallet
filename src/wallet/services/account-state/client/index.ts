@@ -1,5 +1,6 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { AccountStateServiceEvent, type AccountStateServiceEventMessage } from "./events";
 import type { Authwit, Note, NoteStatus } from "./models";
 import {
@@ -36,7 +37,7 @@ export class AccountStateServiceClient extends ServiceClient {
         private readonly onSenderAdded?: (sender: string) => void,
         private readonly onSenderDeleted?: (sender: string) => void,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, onConnected, onDisconnected);
+        super(ACCOUNT_STATE_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

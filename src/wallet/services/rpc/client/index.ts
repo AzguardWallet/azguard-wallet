@@ -1,6 +1,7 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { RpcServiceEvent, RpcServiceEventMessage } from "./events";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { RpcServiceEvent, type RpcServiceEventMessage } from "./events";
 import { InvokeRequest } from "./methods";
 
 export * from './events';
@@ -23,7 +24,7 @@ export class RpcServiceClient extends ServiceClient {
         onDisconnected?: () => void,
         private readonly onGenericEvent?: (name: string, payload: [string, unknown]) => void,
     ) {
-        super(RPC_SERVICE_NAME, onConnected, onDisconnected);
+        super(RPC_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

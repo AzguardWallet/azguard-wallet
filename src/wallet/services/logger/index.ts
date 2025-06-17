@@ -5,19 +5,14 @@ import {
     AddLogResponse,
     type GetLogsRequest,
     GetLogsResponse,
-    ILogs,
+    type ILogs,
     LOGGER_SERVICE_NAME,
     type LogEntity,
-    type LogLevel,
+    LogLevel,
     LoggerServiceMethod
 } from "./client";
 import { LoggerServiceEvent, LoggerServiceEventMessage } from "./client/events";
 import { ConsoleSnifferServiceClient } from "@/wallet/services/console-sniffer/client";
-
-
-
-const LOG_TTL_MS = 1 * 60 * 60 * 1_000; // 1 Hour
-const MAX_LOG_ENTRIES = 1_000; // 1_000 entries
 
 export class LoggerService extends Service {
     private readonly consoleSnifferService: ConsoleSnifferServiceClient;
@@ -26,7 +21,7 @@ export class LoggerService extends Service {
         private readonly logs: ILogs,
         emit: (event: EventMessage) => void
     ) {        
-        super(LOGGER_SERVICE_NAME, emit);
+        super(LOGGER_SERVICE_NAME, logs, emit);
         this.consoleSnifferService = new ConsoleSnifferServiceClient(undefined, this.onSnifferLogAdded)
     }
     
@@ -47,6 +42,7 @@ export class LoggerService extends Service {
                     this.addLog(
                         _request.level,
                         _request.args,
+                        _request.message,
                         _request.source,
                     );
                     return new AddLogResponse(_request);
@@ -55,7 +51,7 @@ export class LoggerService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.addLog(LogLevel.Error, [`Invalid request method ${request.method}`]);
                 return undefined;
             }                
         }
@@ -95,8 +91,6 @@ export class LoggerService extends Service {
     }
 
     private onSnifferLogAdded = (logEntity: LogEntity) => {
-        // console.log('onSnifferLogAdded', logEntity);
-        
-        this.addLog(logEntity.level, logEntity.args, logEntity.source);
+        this.addLog(logEntity.level, logEntity.args, undefined, logEntity.source);
     }
 }

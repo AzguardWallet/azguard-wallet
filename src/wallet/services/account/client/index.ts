@@ -1,9 +1,10 @@
-import { EventMessage } from '@/wallet/base/port-service/messages';
+import type { EventMessage } from '@/wallet/base/port-service/messages';
 import { ServiceClient } from '@/wallet/base/port-service/service-client';
-import { Profile } from '@/wallet/services/profile/client';
-import { Network } from '@/wallet/services/network/client';
-import { Account, AccountType } from './models';
-import { AccountServiceEvent, AccountServiceEventMessage } from './events';
+import type { Profile } from '@/wallet/services/profile/client';
+import type { Network } from '@/wallet/services/network/client';
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import type { Account, AccountType } from './models';
+import { AccountServiceEvent, type AccountServiceEventMessage } from './events';
 import {
     ChangeAccountNameRequest,
     ChangeAccountVisibilityRequest,
@@ -41,7 +42,7 @@ export class AccountServiceClient extends ServiceClient {
         private readonly onAccountUpdated?: (account: Account) => void,
         private readonly onAccountDeleted?: (account: Account) => void,
     ) {
-        super(ACCOUNT_SERVICE_NAME, onConnected, onDisconnected);
+        super(ACCOUNT_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

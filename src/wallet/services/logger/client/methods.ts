@@ -1,5 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
-import { LogEntity, LogLevel, LOGGER_SERVICE_NAME } from ".";
+import { type LogEntity, type LogLevel, LOGGER_SERVICE_NAME } from ".";
 
 export enum LoggerServiceMethod {
     AddLog,

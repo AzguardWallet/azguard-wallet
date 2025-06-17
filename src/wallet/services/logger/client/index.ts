@@ -1,8 +1,8 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { LoggerServiceEvent, LoggerServiceEventMessage } from "./events";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
+import { LoggerServiceEvent, type LoggerServiceEventMessage } from "./events";
 import { AddLogRequest, GetLogsRequest } from "./methods";
-import { LogLevel, LogEntity } from "./models";
+import { DummyLogger, type ILogsAsync, LogLevel, type LogEntity } from "./models";
 
 export * from './events';
 export * from './methods';
@@ -13,7 +13,7 @@ export const LOGGER_SERVICE_NAME = "logger";
 /**
  * Client for collecting logs via messaging API
  */
-export class LoggerServiceClient extends ServiceClient {
+export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
     /**
      * Creates LoggerServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
@@ -25,7 +25,7 @@ export class LoggerServiceClient extends ServiceClient {
         onDisconnected?: () => void,
         private readonly onLogAdded?: (logEntity: LogEntity) => void,
     ) {
-        super(LOGGER_SERVICE_NAME, onConnected, onDisconnected);
+        super(LOGGER_SERVICE_NAME, new DummyLogger, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -37,7 +37,8 @@ export class LoggerServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.log(LogLevel.Error, [`Unexpected event type ${message.event}`]);
+                // console.error(`Unexpected event type ${message.event}.`);
                 break;
         }
     }
@@ -49,7 +50,7 @@ export class LoggerServiceClient extends ServiceClient {
     public getLogs(count?: number): Promise<LogEntity[]> {
         return this.request(new GetLogsRequest(count));
     }
-    
+
     /**
      * Adds a new log entity.
      * @param level log level
@@ -57,7 +58,11 @@ export class LoggerServiceClient extends ServiceClient {
      * @param message log message
      * @param source log source
      */
-    public addLog(level: LogLevel, args: any, message?: string, source?: string): Promise<LogEntity> {
+    public async addLog(log: LogEntity): Promise<void> {
+        await this.request(new AddLogRequest(log.level, log.args, log.message, log.source));
+    }
+
+    public addLogFull(level: LogLevel, args: any, message?: string, source?: string): Promise<LogEntity> {
         return this.request(new AddLogRequest(level, args, message, source));
     }
 }

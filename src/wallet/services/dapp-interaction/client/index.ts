@@ -1,7 +1,8 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { DappInteractionServiceEvent, DappInteractionServiceEventMessage } from "./events";
-import {
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { DappInteractionServiceEvent, type DappInteractionServiceEventMessage } from "./events";
+import type {
     ConnectionPayload,
     ConnectionResult,
     ExecutionPayload,
@@ -34,7 +35,7 @@ export class DappInteractionServiceClient extends ServiceClient {
         onDisconnected?: () => void,
         private readonly onInteractionCancelled?: (interactionId: string) => void,
     ) {
-        super(DAPP_INTERACTION_SERVICE_NAME, onConnected, onDisconnected);
+        super(DAPP_INTERACTION_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

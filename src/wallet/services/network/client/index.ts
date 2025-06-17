@@ -1,7 +1,8 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { NetworkServiceEvent, NetworkServiceEventMessage } from "./events";
-import { Network, NodeStatus } from "./models";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { NetworkServiceEvent, type NetworkServiceEventMessage } from "./events";
+import type { Network, NodeStatus } from "./models";
 import {
     AddNetworkRequest,
     DeleteNetworkRequest,
@@ -40,7 +41,7 @@ export class NetworkServiceClient extends ServiceClient {
         private readonly onNetworkDeleted?: (network: Network) => void,
         private readonly onDefaultNetworkChanged?: (network: Network) => void,
     ) {
-        super(NETWORK_SERVICE_NAME, onConnected, onDisconnected);
+        super(NETWORK_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

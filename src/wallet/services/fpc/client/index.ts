@@ -1,5 +1,6 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { FpcServiceEvent, type FpcServiceEventMessage } from "./events";
 import type { FpcInfo, FpcType } from "./models";
 import { GetFpcRequest, GetFpcsRequest, AddFpcRequest, UpdateFpcRequest, DeleteFpcRequest } from "./methods";
@@ -29,7 +30,7 @@ export class FpcServiceClient extends ServiceClient {
         private readonly onFpcUpdated?: (fpc: FpcInfo) => void,
         private readonly onFpcDeleted?: (fpc: FpcInfo) => void,
     ) {
-        super(FPC_SERVICE_NAME, onConnected, onDisconnected);
+        super(FPC_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

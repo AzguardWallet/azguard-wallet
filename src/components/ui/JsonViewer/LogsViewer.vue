@@ -2,247 +2,201 @@
 /** Vendor */
 import { onMounted, ref, watch } from "vue"
 import { EditorView } from "codemirror"
-import { EditorState } from "@codemirror/state"
+import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state"
 import {
 	keymap,
-	lineNumbers,
 	highlightActiveLine,
-	highlightActiveLineGutter,
-	highlightSpecialChars,
-	drawSelection,
+	Decoration,
 } from "@codemirror/view"
-import { bracketMatching, foldGutter } from "@codemirror/language"
-// import { defaultHighlightStyle } from "@codemirror/highlight";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
-import { searchKeymap, highlightSelectionMatches } from "@codemirror/search"
-import { json } from "@codemirror/lang-json"
-import { indentationMarkers } from "@replit/codemirror-indentation-markers"
+import { defaultKeymap } from "@codemirror/commands"
+import { searchKeymap } from "@codemirror/search"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
 
 /** Services */
-import { customViewerTheme } from "./theme.js"
+import { createLoggerTheme } from "./creator.js"
 
 const props = defineProps({
 	logs: {
 		type: Array,
 		required: true,
 	},
-	// requestId: {
-	// 	type: [Number, String],
-	// 	required: false,
-	// },
-	// fullscreen: {
-	// 	type: Boolean,
-	// 	default: false,
-	// },
 })
 
 const editorRef = ref(null)
+let view = null
 
-// const fullscreenSettings = [
-// 	lineNumbers(),
-// 	foldGutter(),
-// 	indentationMarkers({
-// 		markerType: "codeOnly",
-// 		thickness: 1,
-// 	}),
-// ]
-// const initViewer = () => {
-// 	const state = EditorState.create({
-// 		doc: JSON.stringify(props.data, null, 2),
-// 		extensions: [
-// 			highlightActiveLine(),
-// 			highlightActiveLineGutter(),
-// 			highlightSpecialChars(),
-// 			// drawSelection(),
-// 			bracketMatching(),
-// 			highlightSelectionMatches(),
-// 			props.fullscreen ? [...fullscreenSettings] : [],
-// 			keymap.of([...defaultKeymap, ...searchKeymap]),
-// 			customViewerTheme,
-// 			EditorState.readOnly.of(true),
-// 			// EditorView.lineWrapping,
-// 			json(),
-// 		],
-// 	})
+const AUTO_SCROLL_TIMEOUT_MS = 30_000
+const shouldAutoScroll = ref(true)
+let scrollTimeout = null
+function enableAutoScroll() {
+	clearTimeout(scrollTimeout);
+	shouldAutoScroll.value = true;
+}
+function disableAutoScroll() {
+	clearTimeout(scrollTimeout);
+	shouldAutoScroll.value = false;
 
-// 	const editorView = new EditorView({
-// 		state,
-// 		parent: editorRef.value,
-// 	})
-// }
+	scrollTimeout = setTimeout(() => {
+		shouldAutoScroll.value = true;
+	}, AUTO_SCROLL_TIMEOUT_MS);
+}
+function updateShouldAutoScroll() {
+	const el = view?.scrollDOM;
+	if (!el) return;
+	const threshold = 20;
 
-// const isCopied = ref(false)
+	const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+	// shouldAutoScroll.value = isAtBottom;
 
-// const handleCopy = () => {
-// 	isCopied.value = true
+	if (isAtBottom) {
+		enableAutoScroll();
+	} else {
+		disableAutoScroll();
+	}
+}
+function scrollToBottom(smooth = true) {
+	const el = view?.scrollDOM
+	if (!el) return
 
-// 	window.navigator.clipboard.writeText(JSON.stringify(props.data))
+	el.scrollTo({
+		top: el.scrollHeight,
+		behavior: smooth ? "smooth" : "auto"
+	});
+}
 
-// 	openToast({ label: "Data is copied", icon: "copy" }, 2_000)
+function formatSingleLog(log) {
+	const time = new Date(log.ts).toLocaleTimeString();
+	const level = log.level.toUpperCase();
+	const args = (log.args || []).map(String).join(" ");
+	return `[${time}] [${log.source}] ${level}: ${log.message ? `${log.message} ` : ""}${args}`;
+}
+function formatLogs(logs) {
+	return logs
+		.map(log => formatSingleLog(log))
+		.join("\n");
+}
+function buildLogDecorations(doc) {
+	const builder = new RangeSetBuilder()
+	const lines = doc.toString().split("\n")
+	let pos = 0
 
-// 	setTimeout(() => {
-// 		isCopied.value = false
-// 	}, 1_500)
-// }
+	for (const line of lines) {
+		const levelMatch = line.match(/\] (DEBUG|INFO|WARN|ERROR):/)
+		const level = levelMatch ? levelMatch[1] : "INFO"
 
-// const handleFullscreenView = () => {
-// 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/json"))
-// 	url.searchParams.set("requestId", props.requestId)
+		let levelClass = "log-line-info"
+		if (level === "ERROR") levelClass = "log-line-error"
+		else if (level === "WARN") levelClass = "log-line-warn"
+		else if (level === "DEBUG") levelClass = "log-line-debug"
+		else if (level === "INFO") levelClass = "log-line-info"
 
-// 	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 900 })
-// }
+		builder.add(pos, pos, Decoration.line({ class: levelClass }))
 
- let view = null;
+		pos += line.length + 1
+	}
 
-    function formatLogs(logs) {
-      return logs
-        .map(log => {
-          const time = new Date(log.ts).toLocaleTimeString();
-          const level = log.level.toUpperCase();
-          const args = (log.args || []).map(String).join(" ");
-          return `[${time}] [${log.source}] ${level}: ${log.message ? `${log.message} ` : ""}${args}`;
-        })
-        .join("\n");
-    }
-function scrollToBottom() {
-      if (view) {
-        view.scrollDOM.scrollTop = view.scrollDOM.scrollHeight;
-      }
-    }
+	return builder.finish()
+}
+
+const logDecorationsField = StateField.define({
+    create(state) {
+        return buildLogDecorations(state.doc)
+    },
+
+    update(decorations, transaction) {
+        if (transaction.docChanged) {
+            return buildLogDecorations(transaction.newDoc)
+        }
+
+        return decorations
+    },
+
+    provide: f => EditorView.decorations.from(f)
+})
+
 watch(() => props.logs, (newLogs) => {
-      if (view) {
-        view.dispatch({
-          changes: {
-            from: 0,
-            to: view.state.doc.length,
-            insert: formatLogs(newLogs)
-          }
-        });
+	if (view) {
+		const newLog = newLogs[newLogs.length - 1];
+		if (!newLog) return;
 
-		scrollToBottom()
-      }
-    }, { deep: true });
+		const newLine = `${formatSingleLog(newLog)}\n`;
+		view.dispatch({
+			changes: {
+				from: view.state.doc.length,
+				insert: newLine
+			}
+		});
+
+		if (shouldAutoScroll.value) {
+			scrollToBottom()
+		}
+	}
+}, { deep: true })
 
 onMounted(() => {
 	nextTick(() => {
-      view = new EditorView({
-        parent: editorRef.value,
-        state: EditorState.create({
-          doc: formatLogs(props.logs),
-          extensions: [
-            lineNumbers(),
-            history(),
-            keymap.of([...defaultKeymap, ...historyKeymap]),
-            highlightActiveLine(),
-            // defaultHighlightStyle,
-            EditorView.theme({
-              "&": {
-                backgroundColor: "#1e1e1e",
-                color: "#d4d4d4",
-                fontFamily: "monospace",
-                fontSize: "13px",
-                padding: "8px",
-                height: "300px",
-                overflow: "auto",
-              }
-            })
-          ]
-        })
-      });
+		view = new EditorView({
+			parent: editorRef.value,
+			state: EditorState.create({
+				doc: formatLogs(props.logs),
+				extensions: [
+					keymap.of([...defaultKeymap, ...searchKeymap]),
+					...createLoggerTheme(),
+					highlightActiveLine(),
+					EditorState.readOnly.of(true),
+					logDecorationsField,
+				]
+			})
+		})
 
-	  scrollToBottom()
+		scrollToBottom()
+
+		view.scrollDOM?.addEventListener("scroll", updateShouldAutoScroll);
+
+		document.addEventListener("selectionchange", () => {
+		const selection = document.getSelection();
+			if (!selection) return;
+			if (!selection.isCollapsed) {
+				disableAutoScroll();
+			}
+		});
+
+		document.addEventListener("focusin", e => {
+			if ((e.target)?.closest(".cm-panel.cm-search")) {
+				disableAutoScroll();
+			}
+		});
 	})
 })
+
+onBeforeUnmount(() => {
+	clearTimeout(scrollTimeout);
+	view?.scrollDOM?.removeEventListener("scroll", updateShouldAutoScroll);
+});
 </script>
 
 <template>
 	<div :class="$style.wrapper">
-		<!-- <Icon
-			v-if="!fullscreen && requestId"
-			@click="handleFullscreenView"
-			name="expand"
-			size="16"
-			color="tertiary"
-			:class="$style.fullscreen_icon"
-		/>
-
-		<Icon
-			@click="handleCopy"
-			:name="isCopied ? 'check-circle' : 'copy'"
-			size="16"
-			:color="isCopied ? 'green' : 'tertiary'"
-			:class="$style.copy_icon"
-		/> -->
-
-		<!-- <div ref="editorRef" :class="$style.editor" /> -->
 		<div ref="editorRef" :class="$style.console_viewer" />
 	</div>
 </template>
 
 <style module>
 .wrapper {
-	width: 100%;
-	height: 100%;
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
 }
 
 .console_viewer {
+	display: flex;
+	flex: 1 1 auto;
 	border: 1px solid #444;
 	border-radius: 4px;
 	overflow: hidden;
-}
-
-/* .editor {
-	padding: 0 8px;
-	width: 100%;
-	height: 100%;
-	overflow: auto;
-}
-
-.copy_icon {
-	position: absolute;
-	right: 30px;
-	transform: translateY(5px);
-	z-index: 1;
-
-	background: transparent;
-	box-sizing: content-box;
-	cursor: pointer;
-	border-radius: 5px;
-
-	padding: 4px;
-
-	transition: all 0.5s ease;
-
-	&:hover {
-		background: var(--op-10);
-	}
-}
-
-.fullscreen_icon {
-	position: absolute;
-	right: 54px;
-	transform: translateY(5px);
-	z-index: 1;
-
-	background: transparent;
-	box-sizing: content-box;
-	cursor: pointer;
-	border-radius: 5px;
-
-	padding: 4px;
-
-	transition: all 0.5s ease;
-
-	&:hover {
-		background: var(--op-10);
-	}
-} */
-
-::selection {
-	background-color: var(--gray-10);
 }
 </style>

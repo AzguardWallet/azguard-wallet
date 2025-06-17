@@ -19,6 +19,7 @@ import type { ExecutionService } from "@/wallet/services/execution"
 import { CallAction, EncodedCallAction, SimulateViewsOperation } from "@/wallet/services/execution/client"
 import type { TransactionService } from "@/wallet/services/transaction"
 import { type Tx, TxStatus } from "@/wallet/services/transaction/client"
+import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import type { ViewFn } from "@/wallet/utils/fn"
 import {
 	type GetTokenBalancesRequest,
@@ -58,9 +59,10 @@ export class TokenBalanceService extends Service {
 		private readonly tokenService: TokenService,
 		private readonly transactionService: TransactionService,
 		private readonly executionService: ExecutionService,
+		public readonly logger: ILogs,
 		emit: (event: EventMessage) => void
 	) {
-		super(TOKEN_BALANCE_SERVICE_NAME, emit)
+		super(TOKEN_BALANCE_SERVICE_NAME, logger, emit)
 		this.balances = new EntityStorage(
 			"azguard:core:token-balances",
 			StorageType.Local
@@ -109,7 +111,8 @@ export class TokenBalanceService extends Service {
 				}
 			}
 			default: {
-				console.error(`Invalid request method ${request.method}.`)
+				this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+				// console.error(`Invalid request method ${request.method}.`)
 				return undefined
 			}
 		}
@@ -268,12 +271,12 @@ export class TokenBalanceService extends Service {
 					}
 				}
 
-				console.debug("Token balance service initialized")
+				this.log(LogLevel.Debug, "Token balance service initialized");
+				// console.debug("Token balance service initialized")
 				break
 			} catch (error) {
-				console.error(
-					"Failed to initialize token balance service. Retry..."
-				)
+				this.log(LogLevel.Error, "Failed to initialize token balance service. Retry...");
+				// console.error("Failed to initialize token balance service. Retry...")
 				await sleep(1000)
 			}
 		}
@@ -296,9 +299,10 @@ export class TokenBalanceService extends Service {
 					// 	nextSync = Date.now() + 60_000 // TODO: settings
 					// }
 					if (this.queue.length) {
-						console.debug(
-							`Syncing ${this.queue.length} token balances`
-						)
+						this.log(LogLevel.Debug, `Syncing ${this.queue.length} token balances`);
+						// console.debug(
+						// 	`Syncing ${this.queue.length} token balances`
+						// )
 						const start = Date.now()
 						while (this.queue.length) {
 							const firstAccount = this.queue.peek()!.account;
@@ -309,12 +313,14 @@ export class TokenBalanceService extends Service {
 							await this.syncBatch(firstAccount, tbs);
 						}
 						const end = Date.now()
-						console.debug(
-							`Token balances synced in ${end - start}ms`
-						)
+						this.log(LogLevel.Debug, `Token balances synced in ${end - start}ms`);
+						// console.debug(
+						// 	`Token balances synced in ${end - start}ms`
+						// )
 					}
 				} catch (error) {
-					console.error("Failed to sync token balances.", error)
+					this.log(LogLevel.Error, ["Failed to sync token balances.", error]);
+					// console.error("Failed to sync token balances.", error)
 				}
 			}
 			await sleep(1000)
@@ -323,7 +329,8 @@ export class TokenBalanceService extends Service {
 	
 	private async syncBatch(account: string, tbs: TokenBalanceRaw[]) {
 		try {
-			console.debug(`Syncing ${tbs.length} balances for ${account}`)
+			this.log(LogLevel.Debug, `Syncing ${tbs.length} balances for ${account}`);
+			// console.debug(`Syncing ${tbs.length} balances for ${account}`)
 			const start = Date.now()
 
 			const calls: [CallAction | EncodedCallAction, number, boolean, ViewFn][] = [];
@@ -332,7 +339,8 @@ export class TokenBalanceService extends Service {
 				const tb = tbs[i];
 				const token = this.tokens.get(tb.token)
 				if (!token) {
-					console.error(`Unknown token #${tb.token}`)
+					this.log(LogLevel.Error, `Unknown token #${tb.token}`);
+					// console.error(`Unknown token #${tb.token}`)
 					continue;
 				}
 				chainId = token.chainId;
@@ -434,13 +442,15 @@ export class TokenBalanceService extends Service {
 					const balance = (viewFn.unpackResult(results.encoded[i]) as bigint).toString();
 					if (isPrivate) {
 						if (tbs[tbIndex].privateBalance !== balance) {
-							console.debug(`Private balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].privateBalance} -> ${balance}`);
+							this.log(LogLevel.Debug, `Private balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].privateBalance} -> ${balance}`);
+							// console.debug(`Private balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].privateBalance} -> ${balance}`);
 							tbs[tbIndex].privateBalance = balance;
 						}
 					}
 					else {
 						if (tbs[tbIndex].publicBalance !== balance) {
-							console.debug(`Public balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].publicBalance} -> ${balance}`);
+							this.log(LogLevel.Debug, `Public balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].publicBalance} -> ${balance}`);
+							// console.debug(`Public balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].publicBalance} -> ${balance}`);
 							tbs[tbIndex].publicBalance = balance;
 						}
 					}
@@ -463,9 +473,11 @@ export class TokenBalanceService extends Service {
 			}
 
 			const stop = Date.now()
-			console.debug(`Synced in ${stop - start}ms`)
+			this.log(LogLevel.Debug, `Synced in ${stop - start}ms`);
+			// console.debug(`Synced in ${stop - start}ms`)
 		} catch (error) {
-			console.error("Failed to sync", error)
+			this.log(LogLevel.Error, ["Failed to sync", error]);
+			// console.error("Failed to sync", error)
 		}
 	}
 }

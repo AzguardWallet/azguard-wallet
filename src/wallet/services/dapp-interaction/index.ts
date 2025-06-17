@@ -1,15 +1,16 @@
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
-import { ProfileService } from "@/wallet/services/profile";
-import { NetworkService } from "@/wallet/services/network";
-import { Network } from "@/wallet/services/network/client";
-import { AccountService } from "@/wallet/services/account";
-import { Account } from "@/wallet/services/account/client";
-import { DappSessionService } from "@/wallet/services/dapp-session";
-import { AccessLevel, DappSession } from "@/wallet/services/dapp-session/client";
-import { ExecutionService } from "@/wallet/services/execution";
+import type { ProfileService } from "@/wallet/services/profile";
+import type { NetworkService } from "@/wallet/services/network";
+import type { Network } from "@/wallet/services/network/client";
+import type { AccountService } from "@/wallet/services/account";
+import type { Account } from "@/wallet/services/account/client";
+import type { DappSessionService } from "@/wallet/services/dapp-session";
+import { AccessLevel, type DappSession } from "@/wallet/services/dapp-session/client";
+import type { ExecutionService } from "@/wallet/services/execution";
+import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import {
-    IOperation,
+    type IOperation,
     FeeSettings,
     CustomPaymentMethod,
     GetCompleteAddressOperation as ExecGetCompleteAddressOperation,
@@ -25,36 +26,36 @@ import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
     DAPP_INTERACTION_SERVICE_NAME, 
-    GetInteractionPayloadRequest,
-    ResolveInteractionRequest,
-    RejectInteractionRequest,
+    type GetInteractionPayloadRequest,
+    type ResolveInteractionRequest,
+    type RejectInteractionRequest,
     GetInteractionPayloadResponse,
     ResolveInteractionResponse,
     RejectInteractionResponse,
     DappInteractionServiceEvent,
     DappInteractionServiceEventMessage,
     DappInteractionServiceMethod,
-    ConnectionPayload,
-    ConnectionResult,  
-    ExecutionPayload,
-    ExecutionResult,
+    type ConnectionPayload,
+    type ConnectionResult,  
+    type ExecutionPayload,
+    type ExecutionResult,
 } from "./client";
 import {
-    ConnectionParams,
-    ExecutionParams,
+    type ConnectionParams,
+    type ExecutionParams,
     OperationKind,
-    GetCompleteAddressOperation,
-    RegisterContractOperation,
-    RegisterSenderOperation,
-    RegisterTokenOperation,
-    SendTransactionOperation,
-    SimulateTransactionOperation,
-    SimulateUtilityOperation,
-    SimulateViewsOperation,
-    CaipChain,
-    CaipAccount,
-    OperationResult,
-    Operation,
+    type GetCompleteAddressOperation,
+    type RegisterContractOperation,
+    type RegisterSenderOperation,
+    type RegisterTokenOperation,
+    type SendTransactionOperation,
+    type SimulateTransactionOperation,
+    type SimulateUtilityOperation,
+    type SimulateViewsOperation,
+    type CaipChain,
+    type CaipAccount,
+    type OperationResult,
+    type Operation,
 } from "./types";
 
 type DappInteraction = {
@@ -75,9 +76,10 @@ export class DappInteractionService extends Service {
         private readonly accountService: AccountService,
         private readonly dappSessions: DappSessionService,
         private readonly executionService: ExecutionService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {        
-        super(DAPP_INTERACTION_SERVICE_NAME, emit);
+        super(DAPP_INTERACTION_SERVICE_NAME, logger, emit);
     }
     
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -112,7 +114,8 @@ export class DappInteractionService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.log(LogLevel.Error, `Invalid request method ${request.method}.`)
+                // console.error(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }

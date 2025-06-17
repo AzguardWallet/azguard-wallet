@@ -1,5 +1,6 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import {
     ConnectByURIRequest,
 } from "./methods";
@@ -21,7 +22,7 @@ export class WalletConnectServiceClient extends ServiceClient {
         onConnected?: () => void,
         onDisconnected?: () => void,
     ) {
-        super(WALLET_CONNECT_SERVICE_NAME, onConnected, onDisconnected);
+        super(WALLET_CONNECT_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

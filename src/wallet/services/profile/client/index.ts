@@ -1,5 +1,6 @@
 import type { EventMessage } from '@/wallet/base/port-service/messages';
 import { ServiceClient } from '@/wallet/base/port-service/service-client';
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { ProfileServiceEvent, type ProfileServiceEventMessage } from './events';
 import {
     ChangeProfileNameRequest,
@@ -47,7 +48,7 @@ export class ProfileServiceClient extends ServiceClient {
         private readonly onProfileDeleted?: (profile: Profile) => void,
         private readonly onActiveProfileChanged?: (profile?: Profile) => void,
     ) {
-        super(PROFILE_SERVICE_NAME, onConnected, onDisconnected);
+        super(PROFILE_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

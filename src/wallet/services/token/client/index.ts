@@ -1,10 +1,11 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { Account } from "@/wallet/services/account/client";
-import { Profile } from "@/wallet/services/profile/client";
-import { Network } from "@/wallet/services/network/client";
-import { TokenServiceEvent, TokenServiceEventMessage } from "./events";
-import { TokenInfo, TokenInterface } from "./models";
+import type { Account } from "@/wallet/services/account/client";
+import type { Profile } from "@/wallet/services/profile/client";
+import type { Network } from "@/wallet/services/network/client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { TokenServiceEvent, type TokenServiceEventMessage } from "./events";
+import type { TokenInfo, TokenInterface } from "./models";
 import {
     AddTokenRequest,
     DeleteTokenRequest,
@@ -46,7 +47,7 @@ export class TokenServiceClient extends ServiceClient {
         private readonly onTokenUpdated?: (token: TokenInfo) => void,
         private readonly onTokenDeleted?: (token: TokenInfo) => void,
     ) {
-        super(TOKEN_SERVICE_NAME, onConnected, onDisconnected);
+        super(TOKEN_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
         if (profile.id !== account.profileId || network.chainId !== account.chainId) {
             throw new Error("account doesn't match profile and network");
         }

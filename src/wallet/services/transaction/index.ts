@@ -1,24 +1,25 @@
 import { TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
-import { AccountService } from "@/wallet/services/account";
-import { Account } from "@/wallet/services/account/client";
-import { NetworkService } from "@/wallet/services/network";
-import { ProfileService } from "@/wallet/services/profile"
+import type { AccountService } from "@/wallet/services/account";
+import type { Account } from "@/wallet/services/account/client";
+import type { NetworkService } from "@/wallet/services/network";
+import type { ProfileService } from "@/wallet/services/profile"
+import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
 import {
-    GetTransactionRequest,
+    type GetTransactionRequest,
     GetTransactionResponse,
-    GetTransactionsRequest,
+    type GetTransactionsRequest,
     GetTransactionsResponse,
     Tx,
     TRANSACTION_SERVICE_NAME,
     TransactionServiceEvent,
     TransactionServiceEventMessage,
     TransactionServiceMethod,
-    TxOrigin,
-    TxCall,
+    type TxOrigin,
+    type TxCall,
     TxStatus,
     TxBlock,
 } from "./client";
@@ -35,9 +36,10 @@ export class TransactionService extends Service {
         private readonly profileService: ProfileService,
         private readonly accountService: AccountService,
         private readonly networkService: NetworkService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void,
     ) {
-        super(TRANSACTION_SERVICE_NAME, emit);
+        super(TRANSACTION_SERVICE_NAME, logger, emit);
         this.txs = new EntityStorage("azguard:core:txs", StorageType.Local);
         this.accountService.onAccountDeleted.push(this.onAccountDeleted);
 
@@ -67,7 +69,8 @@ export class TransactionService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+                // console.error(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }
@@ -128,9 +131,11 @@ export class TransactionService extends Service {
     }
 
     private readonly onAccountDeleted = async (account: Account) => {
-        console.debug(`account ${account.address} deleted, remove related txs`);
+        this.log(LogLevel.Debug, `account ${account.address} deleted, remove related txs`);
+        // console.debug(`account ${account.address} deleted, remove related txs`);
         for (const tx of (await this.txs.getValues()).filter(x => x.account === account.address)) {
-            console.debug(`remove tx ${tx.hash}`);
+            this.log(LogLevel.Debug, `remove tx ${tx.hash}`);
+            // console.debug(`remove tx ${tx.hash}`);
             this.pending.delete(tx.hash);
             await this.txs.delete(tx.hash);
             this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionDeleted, tx));
@@ -143,11 +148,13 @@ export class TransactionService extends Service {
                 for (const tx of (await this.txs.getValues()).filter(x => x.status === TxStatus.Pending)) {
                     this.pending.set(tx.hash, tx);
                 }
-                console.debug("Transaction service initialized");
+                this.log(LogLevel.Debug, "Transaction service initialized");
+                // console.debug("Transaction service initialized");
                 break;
             }
             catch (error) {
-                console.error("Failed to initialize transaction service. Retry...");
+                this.log(LogLevel.Error, "Failed to initialize transaction service. Retry...");
+                // console.error("Failed to initialize transaction service. Retry...");
                 await sleep(1000);
             }
         }
@@ -160,16 +167,19 @@ export class TransactionService extends Service {
                 const activeProfile = await this.profileService.getActiveProfile();
                 if (activeProfile) {
                     try {
-                        console.debug(`Sync ${this.pending.size} transactions...`);
+                        this.log(LogLevel.Debug, `Sync ${this.pending.size} transactions...`);
+                        // console.debug(`Sync ${this.pending.size} transactions...`);
                         const start = Date.now();
                         await Promise.allSettled(
                             this.pending.values().map(x => this.updateTx(x)),
                         );
                         const end = Date.now();
-                        console.debug(`Transactions synced in ${end - start}ms`);
+                        this.log(LogLevel.Debug, `Transactions synced in ${end - start}ms`);
+                        // console.debug(`Transactions synced in ${end - start}ms`);
                     }
                     catch (error) {
-                        console.error("Failed to sync transaction status.", error);
+                        this.log(LogLevel.Error, ["Failed to sync transaction status.", error]);
+                        // console.error("Failed to sync transaction status.", error);
                     }
                 }
             }
@@ -178,17 +188,20 @@ export class TransactionService extends Service {
     }
 
     private async updateTx(tx: Tx) {
-        console.debug(`Sync tx ${tx.hash.slice(0, 8)}`);
+        this.log(LogLevel.Debug, `Sync tx ${tx.hash.slice(0, 8)}`);
+        // console.debug(`Sync tx ${tx.hash.slice(0, 8)}`);
         const node = await this.networkService.getNode(tx.chainId);
         if (!node) {
-            console.error("Unknown network");
+            this.log(LogLevel.Error, "Unknown network");
+            // console.error("Unknown network");
             return;
         }
 
         const receipt = await node.getTxReceipt(TxHash.fromString(tx.hash));
         const status = this.getTxStatus(receipt.status);
         if (status === tx.status) {
-            console.debug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
+            this.log(LogLevel.Debug, `Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
+            // console.debug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
             return;
         }
         
@@ -208,7 +221,8 @@ export class TransactionService extends Service {
         if (tx.status != TxStatus.Pending) {
             this.pending.delete(tx.hash);
         }
-        console.debug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
+        this.log(LogLevel.Debug, `Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
+        // console.debug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
     }
 
     private getTxStatus(status: AztecTxStatus): TxStatus {

@@ -1,7 +1,8 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { TransactionServiceEvent, TransactionServiceEventMessage } from "./events";
-import { Tx } from "./models";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { TransactionServiceEvent, type TransactionServiceEventMessage } from "./events";
+import type { Tx } from "./models";
 import {
     GetTransactionRequest,
     GetTransactionsRequest,
@@ -32,7 +33,7 @@ export class TransactionServiceClient extends ServiceClient {
         private readonly onTransactionUpdated?: (tx: Tx) => void,
         private readonly onTransactionDeleted?: (tx: Tx) => void,
     ) {
-        super(TRANSACTION_SERVICE_NAME, onConnected, onDisconnected);
+        super(TRANSACTION_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

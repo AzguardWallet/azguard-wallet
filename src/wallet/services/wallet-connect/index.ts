@@ -2,7 +2,6 @@ import { WalletKit, type WalletKitTypes } from '@reown/walletkit';
 import { Core } from '@walletconnect/core';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import { getSdkError } from "@walletconnect/utils";
-
 import { Service } from "@/wallet/base/port-service/service";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import type { DappSessionService } from "@/wallet/services/dapp-session";
@@ -10,6 +9,7 @@ import type { DappMetadata, DappPermissions, DappSession } from "@/wallet/servic
 import type { DappInteractionService } from '@/wallet/services/dapp-interaction';
 import type { ConnectionParams, DappSessionInfo, ExecutionParams } from "@/wallet/services/dapp-interaction/types";
 import { AzguardWalletInfo, RpcMethod } from '@/wallet/services/rpc/types';
+import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import { parseExecutionParams, parseConnectionParams } from '@/wallet/services/rpc/utils';
 import { sleep } from "@/wallet/utils/sleep";
 import {
@@ -26,9 +26,10 @@ export class WalletConnectService extends Service {
     public constructor(
         private readonly dappSessions: DappSessionService,
         private readonly dappInteractions: DappInteractionService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {
-        super(WALLET_CONNECT_SERVICE_NAME, emit);
+        super(WALLET_CONNECT_SERVICE_NAME, logger, emit);
         this.init();
     }
 
@@ -72,10 +73,12 @@ export class WalletConnectService extends Service {
                     }
                 }
 
-                console.debug("Wallet connect service initialized");
+                this.log(LogLevel.Debug, "Wallet connect service initialized");
+                // console.debug("Wallet connect service initialized");
                 break;
             } catch (error) {
-                console.error("Failed to initialize wallet connect service. Retry...", error);
+                this.log(LogLevel.Error, ["Failed to initialize wallet connect service. Retry...", error]);
+                // console.error("Failed to initialize wallet connect service. Retry...", error);
                 await sleep(1000);
             }
         }
@@ -122,7 +125,8 @@ export class WalletConnectService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+                // console.error(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }
@@ -136,7 +140,8 @@ export class WalletConnectService extends Service {
     }
 
     private readonly onSessionProposal = async (payload: WalletKitTypes.SessionProposal) => {
-        console.debug('WC: session proposal received', payload);
+        this.log(LogLevel.Debug, ["WC: session proposal received", payload]);
+        // console.debug('WC: session proposal received', payload);
         // approve proposal
         let dappSession: DappSessionInfo;
         try {
@@ -160,7 +165,8 @@ export class WalletConnectService extends Service {
             dappSession = await this.dappInteractions.connect(params, payload.params.id.toString());
         }
         catch (error) {
-            console.debug("WC: session proposal rejected", error);
+            this.log(LogLevel.Debug, ["WC: session proposal rejected", error]);
+            // console.debug("WC: session proposal rejected", error);
             this.rejectSession(payload.id);
             return;
         }
@@ -178,7 +184,8 @@ export class WalletConnectService extends Service {
             });
         }
         catch (error) {
-            console.debug("WC: session approval failed", error);
+            this.log(LogLevel.Debug, ["WC: session approval failed", error]);
+            // console.debug("WC: session approval failed", error);
             this.dappSessions.deleteDappSession(dappSession.id);
             this.rejectSession(payload.id);
             return;
@@ -188,7 +195,8 @@ export class WalletConnectService extends Service {
             await this.dappSessions.upgradeDappSession(dappSession.id, wcSession.topic, wcSession.expiry * 1000);
         }
         catch (error) {
-            console.debug("WC: session upgrade failed", error);
+            this.log(LogLevel.Debug, ["WC: session upgrade failed", error]);
+            // console.debug("WC: session upgrade failed", error);
             this.dappSessions.deleteDappSession(dappSession.id);
             this.disconnectSession(wcSession.topic);
             return;
@@ -196,12 +204,14 @@ export class WalletConnectService extends Service {
     }
 
     private readonly onProposalExpire = async (payload: WalletKitTypes.ProposalExpire) => {
-        console.debug('WC: proposal expire received', payload);
+        this.log(LogLevel.Debug, ["WC: proposal expire received", payload]);
+        // console.debug('WC: proposal expire received', payload);
         this.dappInteractions.cancelInteraction(payload.id.toString());
     }
 
     private readonly onSessionRequest = async (payload: WalletKitTypes.SessionRequest) => {
-        console.debug('WC: session request received', payload);
+        this.log(LogLevel.Debug, ["WC: session request received", payload]);
+        // console.debug('WC: session request received', payload);
         try {
             switch (payload.params.request.method) {
                 case RpcMethod.get_wallet_info: {
@@ -232,23 +242,27 @@ export class WalletConnectService extends Service {
             }
         }
         catch (error) {
-            console.debug("WC: session request failed", error);
+            this.log(LogLevel.Debug, ["WC: session request failed", error]);
+            // console.debug("WC: session request failed", error);
             this.rejectRequest(payload, (error as Error)?.message ?? error as string ?? "Unknown error");
         }
     }
 
     private readonly onSessionRequestExpire = async (payload: WalletKitTypes.SessionRequestExpire) => {
-        console.debug('WC: session request expire received', payload);
+        this.log(LogLevel.Debug, ["WC: session request expire received", payload]);
+        // console.debug('WC: session request expire received', payload);
         this.dappInteractions.cancelInteraction(payload.id.toString());
     }
 
     private readonly onSessionDelete = async (payload: WalletKitTypes.SessionDelete) => {
-        console.debug('WC: session delete received', payload);
+        this.log(LogLevel.Debug, ["WC: session delete received", payload]);
+        // console.debug('WC: session delete received', payload);
         this.dappSessions.deleteDappSession(payload.topic)
     }
 
     private readonly onSessionAuthenticate = async (payload: WalletKitTypes.SessionAuthenticate) => {
-        console.debug('Session authenticate received', payload);
+        this.log(LogLevel.Debug, ["Session authenticate received", payload]);
+        // console.debug('Session authenticate received', payload);
 
         // const accounts = await this.accounts.getAccounts("9181ab0c", 31337)
         // const account = accounts[0]
@@ -304,7 +318,8 @@ export class WalletConnectService extends Service {
     
     private readonly onDappSessionUpdated = async (dappSession: DappSession) => {
         if (!this.walletKit) {
-            console.warn("WC session wasn't updated");
+            this.log(LogLevel.Warning, "WC session wasn't updated");
+            // console.warn("WC session wasn't updated");
             return;
         }
         try {
@@ -322,13 +337,15 @@ export class WalletConnectService extends Service {
             }
         }
         catch (error) {
-            console.error("Failed to update WC session", error);
+            this.log(LogLevel.Error, ["Failed to update WC session", error]);
+            // console.error("Failed to update WC session", error);
         }
     }
     
     private readonly onDappSessionDeleted = async (dappSession: DappSession) => {
         if (!this.walletKit) {
-            console.warn("WC session wasn't disconnected");
+            this.log(LogLevel.Warning, "WC session wasn't disconnected");
+            // console.warn("WC session wasn't disconnected");
             return;
         }
         try {
@@ -341,7 +358,8 @@ export class WalletConnectService extends Service {
             }
         }
         catch (error) {
-            console.error("Failed to disconnect WC session", error);
+            this.log(LogLevel.Error, ["Failed to disconnect WC session", error]);
+            // console.error("Failed to disconnect WC session", error);
         }
     }
 

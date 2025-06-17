@@ -18,6 +18,21 @@ export interface ILogs {
     get(count?: number): LogEntity[];
 }
 
+export interface ILogsAsync {
+    addLog(log: LogEntity): Promise<void>;
+    getLogs(count?: number): Promise<LogEntity[]>;
+}
+
+export class DummyLogger implements ILogsAsync {
+    async addLog(log: LogEntity): Promise<void> {
+        return;
+    }
+
+    async getLogs(count?: number): Promise<LogEntity[]> {
+        return [];
+    }
+}
+
 export class InMemoryLogs implements ILogs {
     private logs: LogEntity[] = [];
 
@@ -37,18 +52,4 @@ export class InMemoryLogs implements ILogs {
     get(count?: number): LogEntity[] {
         return count ? this.logs.slice(-count) : this.logs;
     }
-}
-
-export interface ILogger {
-    error(message: string, ...args: any[]): void;
-    warn(message: string, ...args: any[]): void;
-    info(message: string, ...args: any[]): void;
-    debug(message: string, ...args: any[]): void;
-}
-
-export class DummyLogger implements ILogger {
-    public error(message: string, ...args: any[]): void {}
-    public warn(message: string, ...args: any[]): void {}
-    public info(message: string, ...args: any[]): void {}
-    public debug(message: string, ...args: any[]): void {}
 }
