@@ -17,6 +17,9 @@ import {
 	feeJuiceSymbol,
 } from "@/wallet/utils/fee-juice"
 import { type FnImpl, simulate } from "@/wallet/utils/fn"
+import { WrappedTask } from "@/wallet/services/task-tracker/wrapped-task"
+import { StepContent } from "@/wallet/services/task-tracker/client"
+import { TaskTrackerService } from "@/wallet/services/task-tracker"
 import {
 	type AddTokenRequest,
 	AddTokenResponse,
@@ -87,6 +90,7 @@ export class TokenService extends Service {
 		private readonly profiles: ProfileService,
 		private readonly networks: NetworkService,
 		private readonly accounts: AccountService,
+		private readonly taskTracker: TaskTrackerService,
 		emit: (event: EventMessage) => void
 	) {
 		super(TOKEN_SERVICE_NAME, emit)
@@ -249,8 +253,14 @@ export class TokenService extends Service {
 		profileId: string,
 		networkId: string,
 		address: string,
-		ti: TokenInterface
+		ti: TokenInterface,
+		parentTask?: WrappedTask
 	): Promise<TokenInfo> {
+		const stepContent = new StepContent("Adding token");
+		const task = parentTask
+			? parentTask.startSubtask(stepContent)
+			: this.taskTracker.startNewTask(stepContent);
+
 		try {
 			await this.lock.enter();
 			let token = await this.findToken(profileId, ti.chainId, ti.contract)
@@ -277,7 +287,12 @@ export class TokenService extends Service {
 				await this.tokens.set(`${token.id}`, token)
 				this.emitTokenAdded(token)
 			}
-			return this.getTokenInfo(token)
+			const result = this.getTokenInfo(token);
+			task.complete();
+			return result;
+		} catch (error) {
+			task.fail((error as Error)?.message ?? error as string ?? "Failed to add token");
+			throw error;
 		}
 		finally {
 			this.lock.leave();

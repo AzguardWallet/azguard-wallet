@@ -11,6 +11,7 @@ import {
 import {
     getContractInstanceFromDeployParams,
     getContractClassFromArtifact,
+    type ContractInstanceWithAddress,
 } from "@aztec/stdlib/contract"
 import { PublicKeys } from "@aztec/stdlib/keys"
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages"
@@ -116,95 +117,103 @@ export class FaucetService extends Service {
         const pxe = this.pxeService.getPXE(network);
         const rootTask = this.taskTrackerService.startNewTask(new StepContent("Mint token"));
         const checkTask = rootTask.startSubtask(new StepContent("Check if need to deploy token"));
+        let deployActions: IAction[];
+        let deployOps: IOperation[];
+        let instance: ContractInstanceWithAddress;
+        try {
+            deployActions = [];
+            deployOps = [
+                new SendTransactionOperation(networkId, accountAddress, feeSettings, deployActions)
+            ];
 
-        const deployActions: IAction[] = [];
-        const deployOps: IOperation[] = [
-            new SendTransactionOperation(networkId, accountAddress, feeSettings, deployActions)
-        ];
-
-        const artifact = TokenContract.artifact;
-        const contractClass = await getContractClassFromArtifact(artifact);
-        const instance = await getContractInstanceFromDeployParams(
-            artifact,
-            {
-                constructorArgs: [
-                    accountAddress,
-                    name,
-                    symbol,
-                    decimals,
-                ],
-                publicKeys: PublicKeys.default(),
-                salt: Fr.zero(),
-            },
-        );
-
-        const classMetadata = await pxe.getContractClassMetadata(contractClass.id);
-        if (!classMetadata.isContractClassPubliclyRegistered) {
-            console.debug("register faucet token class id");
-            const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
-            const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
-            deployActions.push(
-                new AddCapsuleAction(
-                    AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(),
-                    new Fr(REGISTERER_CONTRACT_BYTECODE_CAPSULE_SLOT).toString(),
-                    encodedBytecode.map(x => x.toString()),
-                ),
-                new CallAction(
-                    AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(),
-                    "register",
-                    [
-                        artifactHash,
-                        privateFunctionsRoot,
-                        publicBytecodeCommitment,
-                        true,
-                    ],
-                )
-            );
-        }
-
-        const contractMetadata = await pxe.getContractMetadata(instance.address);
-        if (!contractMetadata.isContractPubliclyDeployed) {
-            console.debug("deploy faucet token");
-            const {salt, currentContractClassId, initializationHash, publicKeys} = instance;
-            deployActions.push(
-                new CallAction(
-                    AztecAddress.fromNumber(DEPLOYER_CONTRACT_ADDRESS).toString(), // ContractInstanceDeployer
-                    "deploy",
-                    [
-                        salt,
-                        currentContractClassId,
-                        initializationHash,
-                        publicKeys,
-                        true,
-                    ],
-                )
-            );
-        }
-
-        if (!contractMetadata.isContractInitialized) {
-            console.debug("initialize faucet token");
-            deployOps.unshift(
-                new RegisterContractOperation(
-                    networkId,
-                    instance.address.toString(),
-                    jsonSanitize(instance),
-                    jsonSanitize(artifact),
-                )
-            );
-            deployActions.push(
-                new CallAction(
-                    instance.address.toString(),
-                    "constructor",
-                    [
+            const artifact = TokenContract.artifact;
+            const contractClass = await getContractClassFromArtifact(artifact);
+            instance = await getContractInstanceFromDeployParams(
+                artifact,
+                {
+                    constructorArgs: [
                         accountAddress,
                         name,
                         symbol,
                         decimals,
                     ],
-                )
+                    publicKeys: PublicKeys.default(),
+                    salt: Fr.zero(),
+                },
             );
+
+            const classMetadata = await pxe.getContractClassMetadata(contractClass.id);
+            if (!classMetadata.isContractClassPubliclyRegistered) {
+                console.debug("register faucet token class id");
+                const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
+                const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
+                deployActions.push(
+                    new AddCapsuleAction(
+                        AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(),
+                        new Fr(REGISTERER_CONTRACT_BYTECODE_CAPSULE_SLOT).toString(),
+                        encodedBytecode.map(x => x.toString()),
+                    ),
+                    new CallAction(
+                        AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(),
+                        "register",
+                        [
+                            artifactHash,
+                            privateFunctionsRoot,
+                            publicBytecodeCommitment,
+                            true,
+                        ],
+                    )
+                );
+            }
+
+            const contractMetadata = await pxe.getContractMetadata(instance.address);
+            if (!contractMetadata.isContractPubliclyDeployed) {
+                console.debug("deploy faucet token");
+                const {salt, currentContractClassId, initializationHash, publicKeys} = instance;
+                deployActions.push(
+                    new CallAction(
+                        AztecAddress.fromNumber(DEPLOYER_CONTRACT_ADDRESS).toString(), // ContractInstanceDeployer
+                        "deploy",
+                        [
+                            salt,
+                            currentContractClassId,
+                            initializationHash,
+                            publicKeys,
+                            true,
+                        ],
+                    )
+                );
+            }
+
+            if (!contractMetadata.isContractInitialized) {
+                console.debug("initialize faucet token");
+                deployOps.unshift(
+                    new RegisterContractOperation(
+                        networkId,
+                        instance.address.toString(),
+                        jsonSanitize(instance),
+                        jsonSanitize(artifact),
+                    )
+                );
+                deployActions.push(
+                    new CallAction(
+                        instance.address.toString(),
+                        "constructor",
+                        [
+                            accountAddress,
+                            name,
+                            symbol,
+                            decimals,
+                        ],
+                    )
+                );
+            }
+            checkTask.complete();
+        } catch (error) {
+            checkTask.fail((error as Error)?.message ?? error as string ?? "Check failed");
+            rootTask.fail("Failed to check deployment requirements");
+            throw error;
         }
-        checkTask.complete();
 
         const origin = new TxOrigin(OriginType.UI, "Faucet")
         if (deployActions.length) {
@@ -212,9 +221,10 @@ export class FaucetService extends Service {
 
             const deployResults = await this.executionService.executeOperations(deployOps, origin);
             if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
-                throw new Error(`Token deployment failed: ${
-                    (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)?.error
-                }`);
+                const error = (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)?.error;
+                deployTask.fail("Deploy failed");
+                rootTask.fail(`Token deployment failed: ${error}`);
+                throw new Error(`Token deployment failed: ${error}`);
             }
             const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
             console.debug("faucet deploy tx:", deployTx);
@@ -261,8 +271,6 @@ export class FaucetService extends Service {
         console.debug("faucet mint tx mined");
         mintTask.complete();
 
-        const registerTask = rootTask.startSubtask(new StepContent("Registering token"));
-
         const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
         if (!tokens.some(x => x.contract === instance.address.toString())) {
             console.debug("adding faucet token...");
@@ -270,10 +278,16 @@ export class FaucetService extends Service {
                 networkId,
                 instance.address.toString(),
             );
-            const token = await this.tokenService.addToken(profile.id, networkId, accountAddress, ti);
+            const token = await this.tokenService.addToken(
+                profile.id,
+                networkId,
+                accountAddress,
+                ti,
+                rootTask,
+            );
             console.debug("faucet token:", token);
         }
-        registerTask.complete();
+
         rootTask.complete();
     }
 }

@@ -55,7 +55,13 @@ const taskTrackerService = new TaskTrackerService(broadcast);
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(profileService, broadcast);
 const accountService = new AccountService(profileService, networkService, broadcast);
-const tokenService = new TokenService(profileService, networkService,accountService, broadcast);
+const tokenService = new TokenService(
+    profileService,
+    networkService,
+    accountService,
+    taskTrackerService,
+    broadcast,
+);
 const fpcService = new FpcService(profileService, networkService,broadcast);
 const transactionService = new TransactionService(
     profileService,
