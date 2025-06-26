@@ -115,11 +115,13 @@ export class FaucetService extends Service {
             throw new Error("unknown account")
         }
         const pxe = this.pxeService.getPXE(network);
-        const rootTask = this.taskTrackerService.startNewTask(new StepContent("Mint token"));
-        const checkTask = rootTask.startSubtask(new StepContent("Check if need to deploy token"));
         let deployActions: IAction[];
         let deployOps: IOperation[];
         let instance: ContractInstanceWithAddress;
+        const origin = new TxOrigin(OriginType.UI, "Faucet")
+
+        const rootTask = this.taskTrackerService.startNewTask(new StepContent("Mint token"));
+        const checkTask = rootTask.startSubtask(new StepContent("Check if need to deploy token"));
         try {
             deployActions = [];
             deployOps = [
@@ -210,84 +212,102 @@ export class FaucetService extends Service {
             }
             checkTask.complete();
         } catch (error) {
-            checkTask.fail((error as Error)?.message ?? error as string ?? "Check failed");
-            rootTask.fail("Failed to check deployment requirements");
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Check failed";
+            checkTask.fail(errorMessage);
+            rootTask.fail(errorMessage);
             throw error;
         }
 
-        const origin = new TxOrigin(OriginType.UI, "Faucet")
         if (deployActions.length) {
             const deployTask = rootTask.startSubtask(new StepContent("Deploying token"));
 
-            const deployResults = await this.executionService.executeOperations(deployOps, origin);
-            if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
-                const error = (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)?.error;
-                deployTask.fail("Deploy failed");
-                rootTask.fail(`Token deployment failed: ${error}`);
-                throw new Error(`Token deployment failed: ${error}`);
+            try {
+                const deployResults = await this.executionService.executeOperations(deployOps, origin);
+                if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
+                    throw new Error(`Token deployment failed: ${
+                        (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)?.error
+                    }`);
+                }
+                const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
+                console.debug("faucet deploy tx:", deployTx);
+                await this.transactionService.waitForTx(deployTx);
+                console.debug("faucet deploy tx mined");
+                if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
+                    feeSettings = {
+                        ...feeSettings,
+                        paymentMethod: new FeeJuicePaymentMethod(),
+                    };
+                }
+                deployTask.complete();
+            } catch (error) {
+                const errorMessage = (error as Error)?.message ?? error as string ?? "Deploy failed";
+                deployTask.fail(errorMessage);
+                rootTask.fail(errorMessage);
+                throw error;
             }
-            const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
-            console.debug("faucet deploy tx:", deployTx);
-            await this.transactionService.waitForTx(deployTx);
-            console.debug("faucet deploy tx mined");
-            if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
-                feeSettings = {
-                    ...feeSettings,
-                    paymentMethod: new FeeJuicePaymentMethod(),
-                };
-            }
-            deployTask.complete();
         }
 
         const mintTask = rootTask.startSubtask(new StepContent("Minting token"));
-
-        const [mintResult] = await this.executionService.executeOperations(
-            [
-                new SendTransactionOperation(networkId, accountAddress, feeSettings, [
-                    new CallAction(
-                        instance.address.toString(),
-                        "mint_to_private",
-                        [accountAddress, accountAddress, amount],
-                    ),
-                    new CallAction(
-                        instance.address.toString(),
-                        "mint_to_public",
-                        [accountAddress, amount],
-                    ),
-                ]),
-            ],
-            origin
-        );
-        if (mintResult.status !== OperationStatus.Ok) {
-            mintTask.fail("Mint failed");
-            rootTask.fail("Mint failed");
-            throw new Error(`Token mint failed: ${
-                (mintResult as FailedOperationResult)?.error
-            }`);
-        }
-        const mintTx = (mintResult as OkOperationResult<string>).result;
-        console.debug("faucet mint tx:", mintTx);
-        await this.transactionService.waitForTx(mintTx);
-        console.debug("faucet mint tx mined");
-        mintTask.complete();
-
-        const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
-        if (!tokens.some(x => x.contract === instance.address.toString())) {
-            console.debug("adding faucet token...");
-            const ti = await this.tokenService.parseTokenInterface(
-                networkId,
-                instance.address.toString(),
+        try {
+            const [mintResult] = await this.executionService.executeOperations(
+                [
+                    new SendTransactionOperation(networkId, accountAddress, feeSettings, [
+                        new CallAction(
+                            instance.address.toString(),
+                            "mint_to_private",
+                            [accountAddress, accountAddress, amount],
+                        ),
+                        new CallAction(
+                            instance.address.toString(),
+                            "mint_to_public",
+                            [accountAddress, amount],
+                        ),
+                    ]),
+                ],
+                origin
             );
-            const token = await this.tokenService.addToken(
-                profile.id,
-                networkId,
-                accountAddress,
-                ti,
-                rootTask,
-            );
-            console.debug("faucet token:", token);
+            if (mintResult.status !== OperationStatus.Ok) {
+                throw new Error(`Token mint failed: ${
+                    (mintResult as FailedOperationResult)?.error
+                }`);
+            }
+            const mintTx = (mintResult as OkOperationResult<string>).result;
+            console.debug("faucet mint tx:", mintTx);
+            await this.transactionService.waitForTx(mintTx);
+            console.debug("faucet mint tx mined");
+            mintTask.complete();
+        } catch (error) {
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Mint failed";
+            mintTask.fail(errorMessage);
+            rootTask.fail(errorMessage);
+            throw error;
         }
 
+        const registerTask = rootTask.startSubtask(new StepContent("Registering token"));
+        try {
+            const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
+            if (!tokens.some(x => x.contract === instance.address.toString())) {
+                console.debug("adding faucet token...");
+                const ti = await this.tokenService.parseTokenInterface(
+                    networkId,
+                    instance.address.toString(),
+                );
+                const token = await this.tokenService.addToken(
+                    profile.id,
+                    networkId,
+                    accountAddress,
+                    ti,
+                    registerTask,
+                );
+                console.debug("faucet token:", token);
+            }
+            registerTask.complete();
+        } catch (error) {
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Register failed";
+            registerTask.fail(errorMessage);
+            rootTask.fail(errorMessage);
+            throw error;
+        }
         rootTask.complete();
     }
 }
