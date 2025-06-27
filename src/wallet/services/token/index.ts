@@ -304,8 +304,11 @@ export class TokenService extends Service {
 		networkId: string,
 		address: string,
 		id: number,
-		ti: TokenInterface
+		ti: TokenInterface,
 	): Promise<TokenInfo> {
+		const stepContent = new StepContent("Updating token");
+		const task = this.taskTracker.startNewTask(stepContent);
+
 		try {
 			await this.lock.enter();
 			const _token = await this.tokens.get(`${id}`)
@@ -336,7 +339,12 @@ export class TokenService extends Service {
 			}
 			await this.tokens.set(`${token.id}`, token)
 			this.emitTokenUpdated(token)
-			return this.getTokenInfo(token)
+			const result = this.getTokenInfo(token);
+			task.complete();
+			return result;
+		} catch (error) {
+			task.fail((error as Error)?.message ?? error as string ?? "Failed to update token");
+			throw error;
 		}
 		finally {
 			this.lock.leave();
