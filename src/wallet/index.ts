@@ -87,6 +87,7 @@ const tokenBalanceService = new TokenBalanceService(
     tokenService,
     transactionService,
     executionService,
+    taskTrackerService,
     broadcast,
 );
 const faucetService = new FaucetService(

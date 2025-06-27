@@ -20,6 +20,8 @@ import { CallAction, EncodedCallAction, SimulateViewsOperation } from "@/wallet/
 import type { TransactionService } from "@/wallet/services/transaction"
 import { type Tx, TxStatus } from "@/wallet/services/transaction/client"
 import type { ViewFn } from "@/wallet/utils/fn"
+import type { TaskTrackerService } from "@/wallet/services/task-tracker"
+import { StepContent, TaskStatus } from "@/wallet/services/task-tracker/client"
 import {
 	type GetTokenBalancesRequest,
 	GetTokenBalancesResponse,
@@ -39,6 +41,7 @@ type TokenBalanceRaw = {
 	publicBalance: string | undefined
 	privateBalance: string | undefined
 	updatedAt: number
+	refreshTaskId?: string
 }
 
 export class TokenBalanceService extends Service {
@@ -58,6 +61,7 @@ export class TokenBalanceService extends Service {
 		private readonly tokenService: TokenService,
 		private readonly transactionService: TransactionService,
 		private readonly executionService: ExecutionService,
+		private readonly taskTrackerService: TaskTrackerService,
 		emit: (event: EventMessage) => void
 	) {
 		super(TOKEN_BALANCE_SERVICE_NAME, emit)
@@ -132,8 +136,17 @@ export class TokenBalanceService extends Service {
 		for (const balance of (await this.balances.getValues()).filter(
 			(x) => x.account === account
 		)) {
-			this.queue.priorityPass(balance)
+			await this.addBalanceToRefreshQueue(balance)
 		}
+	}
+
+	private async addBalanceToRefreshQueue(balance: TokenBalanceRaw): Promise<void> {
+		if (!balance.refreshTaskId) {
+			const task = this.taskTrackerService.createNewTask(new StepContent("Refresh token balance"))
+			balance.refreshTaskId = task.id
+			await this.balances.set(`${balance.id}`, balance)
+		}
+		this.queue.priorityPass(balance)
 	}
 
 	public async refreshBalance(id: number): Promise<void> {
@@ -141,7 +154,7 @@ export class TokenBalanceService extends Service {
 		if (!balance) {
 			throw new Error("unknown token balance id")
 		}
-		this.queue.priorityPass(balance)
+		await this.addBalanceToRefreshQueue(balance)
 	}
 
 	private getTokenInfo(token: Token): TokenInfo {
@@ -195,7 +208,7 @@ export class TokenBalanceService extends Service {
 				this.getTokenBalanceInfo(tb)
 			)
 		)
-		this.queue.priorityPass(tb)
+		await this.addBalanceToRefreshQueue(tb)
 	}
 
 	private readonly onActiveProfileChanged = async (profileId?: string) => {
@@ -288,7 +301,7 @@ export class TokenBalanceService extends Service {
 					// if (Date.now() >= nextSync) {
 					// 	const balancesToUpdate = (await this.balances.getValues())
 					// 		.toSorted((a, b) => a.account.localeCompare(b.account));
-						
+
 					// 	for (const tb of balancesToUpdate) {
 					// 		this.queue.enqueue(tb)
 					// 	}
@@ -320,8 +333,21 @@ export class TokenBalanceService extends Service {
 			await sleep(1000)
 		}
 	}
-	
+
 	private async syncBatch(account: string, tbs: TokenBalanceRaw[]) {
+		for (const tb of tbs) {
+			if (tb.refreshTaskId) {
+				const task = this.taskTrackerService.getTask(tb.refreshTaskId);
+				if (task.status === TaskStatus.Pending) {
+					this.taskTrackerService.startTask(tb.refreshTaskId);
+				}
+			} else {
+				const task = this.taskTrackerService.startNewTask(new StepContent("Refresh token balance"));
+				tb.refreshTaskId = task.id;
+				await this.balances.set(`${tb.id}`, tb);
+			}
+		}
+
 		try {
 			console.debug(`Syncing ${tbs.length} balances for ${account}`)
 			const start = Date.now()
@@ -333,6 +359,11 @@ export class TokenBalanceService extends Service {
 				const token = this.tokens.get(tb.token)
 				if (!token) {
 					console.error(`Unknown token #${tb.token}`)
+					if (tb.refreshTaskId) {
+						this.taskTrackerService.failTask(tb.refreshTaskId, `Unknown token #${tb.token}`);
+						tb.refreshTaskId = undefined;
+						await this.balances.set(`${tb.id}`, tb);
+					}
 					continue;
 				}
 				chainId = token.chainId;
@@ -452,6 +483,10 @@ export class TokenBalanceService extends Service {
 				tb.updatedAt = now;
 				const balance = balances.find(x => x.token === tb.token && x.account === tb.account);
 				if (balance) {
+					if (tb.refreshTaskId) {
+						this.taskTrackerService.completeTask(tb.refreshTaskId);
+						tb.refreshTaskId = undefined;
+					}
 					await this.balances.set(`${tb.id}`, tb);
 					this.emit(
 						new TokenBalanceServiceEventMessage(
@@ -459,6 +494,12 @@ export class TokenBalanceService extends Service {
 							this.getTokenBalanceInfo(tb)
 						)
 					)
+				} else {
+					if (tb.refreshTaskId) {
+						this.taskTrackerService.failTask(tb.refreshTaskId, "Balance record not found");
+						tb.refreshTaskId = undefined;
+						await this.balances.set(`${tb.id}`, tb);
+					}
 				}
 			}
 
@@ -466,6 +507,22 @@ export class TokenBalanceService extends Service {
 			console.debug(`Synced in ${stop - start}ms`)
 		} catch (error) {
 			console.error("Failed to sync", error)
+
+			const errorMessage = (error as Error)?.message ?? error as string ?? "Sync failed";
+			for (const tb of tbs) {
+				if (tb.refreshTaskId) {
+					try {
+						const task = this.taskTrackerService.getTask(tb.refreshTaskId);
+						if (!task.finishedAt) {
+							this.taskTrackerService.failTask(tb.refreshTaskId, errorMessage);
+						}
+					} catch {
+						// Task might already be finished or not found, ignore
+					}
+					tb.refreshTaskId = undefined;
+					await this.balances.set(`${tb.id}`, tb);
+				}
+			}
 		}
 	}
 }
