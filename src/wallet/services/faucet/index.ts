@@ -291,6 +291,7 @@ export class FaucetService extends Service {
                 const ti = await this.tokenService.parseTokenInterface(
                     networkId,
                     instance.address.toString(),
+                    registerTask,
                 );
                 const token = await this.tokenService.addToken(
                     profile.id,

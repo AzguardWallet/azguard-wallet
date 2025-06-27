@@ -462,102 +462,115 @@ export class TokenService extends Service {
 
 	public async parseTokenInterface(
 		networkId: string,
-		contract: string
+		contract: string,
+		parentTask?: WrappedTask
 	): Promise<TokenInterface> {
-		const network = await this.networks.getNetwork(networkId)
-		if (!network) {
-			throw new Error("unknown network id")
+		const stepContent = new StepContent("Parsing token interface");
+		const task = parentTask
+			? parentTask.startSubtask(stepContent)
+			: this.taskTracker.startNewTask(stepContent);
+
+		try {
+			const network = await this.networks.getNetwork(networkId)
+			if (!network) {
+				throw new Error("unknown network id")
+			}
+
+			const pxe = this.pxeService.getPXE(network);
+
+			const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(contract));
+			if (!contractMetadata.contractInstance) {
+				throw new Error("contract instance not found")
+			}
+			const instance = contractMetadata.contractInstance;
+
+			const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId);
+			if (!classMetadata.artifact) {
+				throw new Error("contract artifact not found")
+			}
+			const artifact = classMetadata.artifact;
+
+			const registeredContracts = await pxe.getContracts();
+			if (!registeredContracts.find(x => x.toString() === contract)) {
+				await pxe.registerContract({
+					instance,
+					artifact,
+				});
+			}
+
+			const getNameFnCandidates = GetNameFn.getCandidates(artifact)
+			const getNameFn = GetNameFn.getDefault(getNameFnCandidates)
+
+			const getSymbolFnCandidates = GetSymbolFn.getCandidates(artifact)
+			const getSymbolFn = GetSymbolFn.getDefault(getSymbolFnCandidates)
+
+			const getDecimalsFnCandidates = GetDecimalsFn.getCandidates(artifact)
+			const getDecimalsFn = GetDecimalsFn.getDefault(getDecimalsFnCandidates)
+
+			const balanceOfPrivateFnCandidates =
+				BalanceOfPrivateFn.getCandidates(artifact)
+			const balanceOfPrivateFn = BalanceOfPrivateFn.getDefault(
+				balanceOfPrivateFnCandidates
+			)
+
+			const balanceOfPublicFnCandidates =
+				BalanceOfPublicFn.getCandidates(artifact)
+			const balanceOfPublicFn = BalanceOfPublicFn.getDefault(
+				balanceOfPublicFnCandidates
+			)
+
+			const transferPublicFnCandidates =
+				TransferPublicFn.getCandidates(artifact)
+			const transferPublicFn = TransferPublicFn.getDefault(
+				transferPublicFnCandidates
+			)
+
+			const transferPrivateFnCandidates =
+				TransferPrivateFn.getCandidates(artifact)
+			const transferPrivateFn = TransferPrivateFn.getDefault(
+				transferPrivateFnCandidates
+			)
+
+			const transferPrivateToPublicFnCandidates =
+				TransferPrivateToPublicFn.getCandidates(artifact)
+			const transferPrivateToPublicFn = TransferPrivateToPublicFn.getDefault(
+				transferPrivateToPublicFnCandidates
+			)
+
+			const transferPublicToPrivateFnCandidates =
+				TransferPublicToPrivateFn.getCandidates(artifact)
+			const transferPublicToPrivateFn = TransferPublicToPrivateFn.getDefault(
+				transferPublicToPrivateFnCandidates
+			)
+
+			const result = new TokenInterface(
+				network.chainId,
+				contract,
+				getNameFn?.getImpl(),
+				getNameFnCandidates.map((x) => x.getImpl()),
+				getSymbolFn?.getImpl(),
+				getSymbolFnCandidates.map((x) => x.getImpl()),
+				getDecimalsFn?.getImpl(),
+				getDecimalsFnCandidates.map((x) => x.getImpl()),
+				balanceOfPublicFn?.getImpl(),
+				balanceOfPublicFnCandidates.map((x) => x.getImpl()),
+				balanceOfPrivateFn?.getImpl(),
+				balanceOfPrivateFnCandidates.map((x) => x.getImpl()),
+				transferPublicFn?.getImpl(),
+				transferPublicFnCandidates.map((x) => x.getImpl()),
+				transferPrivateFn?.getImpl(),
+				transferPrivateFnCandidates.map((x) => x.getImpl()),
+				transferPublicToPrivateFn?.getImpl(),
+				transferPublicToPrivateFnCandidates.map((x) => x.getImpl()),
+				transferPrivateToPublicFn?.getImpl(),
+				transferPrivateToPublicFnCandidates.map((x) => x.getImpl())
+			)
+			task.complete();
+			return result;
+		} catch (error) {
+			task.fail((error as Error)?.message ?? error as string ?? "Failed to parse token interface");
+			throw error;
 		}
-
-		const pxe = this.pxeService.getPXE(network);
-
-		const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(contract));
-		if (!contractMetadata.contractInstance) {
-			throw new Error("contract instance not found")
-		}
-		const instance = contractMetadata.contractInstance;
-
-		const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId);
-		if (!classMetadata.artifact) {
-			throw new Error("contract artifact not found")
-		}
-		const artifact = classMetadata.artifact;
-
-        const registeredContracts = await pxe.getContracts();
-        if (!registeredContracts.find(x => x.toString() === contract)) {
-            await pxe.registerContract({
-                instance,
-                artifact,
-            });
-        }
-
-		const getNameFnCandidates = GetNameFn.getCandidates(artifact)
-		const getNameFn = GetNameFn.getDefault(getNameFnCandidates)
-
-		const getSymbolFnCandidates = GetSymbolFn.getCandidates(artifact)
-		const getSymbolFn = GetSymbolFn.getDefault(getSymbolFnCandidates)
-
-		const getDecimalsFnCandidates = GetDecimalsFn.getCandidates(artifact)
-		const getDecimalsFn = GetDecimalsFn.getDefault(getDecimalsFnCandidates)
-
-		const balanceOfPrivateFnCandidates =
-			BalanceOfPrivateFn.getCandidates(artifact)
-		const balanceOfPrivateFn = BalanceOfPrivateFn.getDefault(
-			balanceOfPrivateFnCandidates
-		)
-
-		const balanceOfPublicFnCandidates =
-			BalanceOfPublicFn.getCandidates(artifact)
-		const balanceOfPublicFn = BalanceOfPublicFn.getDefault(
-			balanceOfPublicFnCandidates
-		)
-
-		const transferPublicFnCandidates =
-			TransferPublicFn.getCandidates(artifact)
-		const transferPublicFn = TransferPublicFn.getDefault(
-			transferPublicFnCandidates
-		)
-
-		const transferPrivateFnCandidates =
-			TransferPrivateFn.getCandidates(artifact)
-		const transferPrivateFn = TransferPrivateFn.getDefault(
-			transferPrivateFnCandidates
-		)
-
-		const transferPrivateToPublicFnCandidates =
-			TransferPrivateToPublicFn.getCandidates(artifact)
-		const transferPrivateToPublicFn = TransferPrivateToPublicFn.getDefault(
-			transferPrivateToPublicFnCandidates
-		)
-
-		const transferPublicToPrivateFnCandidates =
-			TransferPublicToPrivateFn.getCandidates(artifact)
-		const transferPublicToPrivateFn = TransferPublicToPrivateFn.getDefault(
-			transferPublicToPrivateFnCandidates
-		)
-
-		return new TokenInterface(
-			network.chainId,
-			contract,
-			getNameFn?.getImpl(),
-			getNameFnCandidates.map((x) => x.getImpl()),
-			getSymbolFn?.getImpl(),
-			getSymbolFnCandidates.map((x) => x.getImpl()),
-			getDecimalsFn?.getImpl(),
-			getDecimalsFnCandidates.map((x) => x.getImpl()),
-			balanceOfPublicFn?.getImpl(),
-			balanceOfPublicFnCandidates.map((x) => x.getImpl()),
-			balanceOfPrivateFn?.getImpl(),
-			balanceOfPrivateFnCandidates.map((x) => x.getImpl()),
-			transferPublicFn?.getImpl(),
-			transferPublicFnCandidates.map((x) => x.getImpl()),
-			transferPrivateFn?.getImpl(),
-			transferPrivateFnCandidates.map((x) => x.getImpl()),
-			transferPublicToPrivateFn?.getImpl(),
-			transferPublicToPrivateFnCandidates.map((x) => x.getImpl()),
-			transferPrivateToPublicFn?.getImpl(),
-			transferPrivateToPublicFnCandidates.map((x) => x.getImpl())
-		)
 	}
 
 	private async fetchTokenMetadata(
