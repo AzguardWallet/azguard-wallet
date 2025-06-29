@@ -34,13 +34,8 @@ const cacheStore = useCacheStore()
 
 const router = useRouter()
 
-const isDeveloperModeEnabled = ref(settings.value.developer.advancedMode)
-watch(
-	() => isDeveloperModeEnabled.value,
-	async () => {
-		updateSettings("developer", "advancedMode", isDeveloperModeEnabled.value)
-	},
-)
+const isDeveloperModeEnabled = ref(settings.value?.developer?.advancedMode)
+const indicateWalletActivity = ref(settings.value?.developer?.indicateWalletActivity)
 
 const handleFullReset = () => {
 	cacheStore.confirm.description = "You want to completely delete all local data - settings and so on"
@@ -57,10 +52,23 @@ const handleFullReset = () => {
 
 	popupStore.open("confirm")
 }
+
+watch(
+	() => isDeveloperModeEnabled.value,
+	async () => {
+		updateSettings("developer", "advancedMode", isDeveloperModeEnabled.value)
+	},
+)
+watch(
+	() => indicateWalletActivity.value,
+	async () => {
+		updateSettings("developer", "indicateWalletActivity", indicateWalletActivity.value)
+	},
+)
 </script>
 
 <template>
-	<Flex direction="column" gap="24" :class="$style.wrapper">
+	<Flex direction="column" gap="32" :class="$style.wrapper">
 		<Breadcrumbs />
 
 		<Flex justify="between">
@@ -72,13 +80,28 @@ const handleFullReset = () => {
 			<Toggle v-model="isDeveloperModeEnabled" />
 		</Flex>
 
-		<Flex v-if="isDeveloperModeEnabled" direction="column" gap="12">
-			<Flex direction="column" gap="6">
-				<Text size="13" weight="600" color="primary"> Full storage reset </Text>
-				<Text size="12" weight="500" height="140" color="tertiary"> All local data will be deleted </Text>
+		<Flex
+			v-if="isDeveloperModeEnabled"
+			direction="column"
+			gap="24"
+		>
+			<Flex justify="between">
+				<Flex direction="column" gap="6">
+					<Text size="13" weight="600" color="primary"> Indicate wallet activity </Text>
+					<Text size="12" weight="500" color="tertiary"> Highlight errors and warnings in header </Text>
+				</Flex>
+
+				<Toggle v-model="indicateWalletActivity" />
 			</Flex>
 
-			<Button @click="handleFullReset" type="red" size="small" disabled> Full Reset </Button>
+			<Flex direction="column" gap="12">
+				<Flex direction="column" gap="6">
+					<Text size="13" weight="600" color="primary"> Full storage reset </Text>
+					<Text size="12" weight="500" height="140" color="tertiary"> All local data will be deleted </Text>
+				</Flex>
+
+				<Button @click="handleFullReset" type="red" size="small" disabled> Full Reset </Button>
+			</Flex>
 		</Flex>
 
 		<Navigation />

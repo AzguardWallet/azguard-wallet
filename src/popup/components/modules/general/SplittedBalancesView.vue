@@ -52,17 +52,14 @@ const publicBalance = computed(() => {
 
 const isCopied = ref(false)
 const handleCopyBalance = (target) => {
-	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
-	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
-
-	// const balance = target === 'private' ? privateBalance.value : publicBalance.value
+	const balance = target === 'private' ? privateBalance.value : publicBalance.value
 	
-	// isCopied.value = true
-	// window.navigator.clipboard.writeText(balance.value)
-	// openToast({ label: `${capitalize(target)} balance is copied`, icon: "copy" })
-	// setTimeout(() => {
-	// 	isCopied.value = false
-	// }, 2500)
+	isCopied.value = true
+	window.navigator.clipboard.writeText(balance.value)
+	openToast({ label: `${capitalize(target)} balance is copied`, icon: "copy" })
+	setTimeout(() => {
+		isCopied.value = false
+	}, 2500)
 }
 
 const handleShowFullBalances = async () => {

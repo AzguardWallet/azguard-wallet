@@ -250,7 +250,7 @@ export const createLoggerTheme = () => {
 	const theme = EditorView.theme(
 		{
 			"&": {
-				backgroundColor: "#1e1e1e",
+				backgroundColor: "var(--log-background)",
 				color: "var(--txt-secondary)",
 
 				fontFamily: "monospace",
@@ -280,12 +280,12 @@ export const createLoggerTheme = () => {
 				color: "var(--txt-tertiary)",
 			},
 			".log-line-warn": {
-				color: "var(--json-property-name)",
-				backgroundColor: "rgba(255, 167, 38, 0.1)",
+				color: "var(--log-warn-color)",
+				backgroundColor: "var(--log-warn-background)",
 			},
 			".log-line-error": {
-				color: "var(--json-string)",
-				backgroundColor: "rgba(239, 83, 80, 0.1)",
+				color: "var(--log-error-color)",
+				backgroundColor: "var(--log-error-background)",
 			},
 
 			// Active line & selection

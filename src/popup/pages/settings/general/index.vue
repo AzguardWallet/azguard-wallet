@@ -11,9 +11,13 @@
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
+
+const handleOpenLogs = () => {
+	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
+	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
+}
 </script>
 
 <template>
@@ -27,6 +31,17 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 			<SettingItem title="Contacts" icon="contacts" iconBgColor="blue" disabled />
 			<SettingItem to="/popup/settings/general/networks" title="Nodes" icon="globe" iconBgColor="blue" />
 			<SettingItem to="/popup/settings/general/sessions" title="Sessions" icon="plug-circle" iconBgColor="sand" />
+		</ItemsContainer>
+
+		<ItemsContainer title="Activity">
+			<SettingItem title="Task tracker" icon="task-tracker" iconBgColor="var(--green)" chevron disabled />
+			<SettingItem
+				@click="handleOpenLogs"
+				title="Logs"
+				icon="logs"
+				iconBgColor="var(--gray)"
+				chevron
+			/>
 		</ItemsContainer>
 
 		<ItemsContainer title="Interface">

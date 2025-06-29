@@ -8,22 +8,21 @@ import LogsViewer from "@/components/ui/JsonViewer/LogsViewer.vue"
 /** Utils */
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
 
-// const params = new URLSearchParams(window.location.search)
-// const requestId = params.get("requestId")
-// const payload = ref()
-// const data = computed(() => payload.value?.params.operations)
-const logs = ref([])
-const onLogAdded = (log) => {
-    logs.value.push(log)
-}
-
+// const logs = ref([])
+// const onLogAdded = (log) => {
+//     logs.value.push(log)
+// }
+// let loggerService = null
 onBeforeMount(async () => {
-    const loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
-	logs.value = await loggerService.getLogs()
+    // loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
+	// logs.value = await loggerService.getLogs()
 })
 onMounted(async () => {
     // const loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
 	// logs.value = await loggerService.getLogs()
+})
+onBeforeUnmount(() => {
+    // loggerService.dispose()
 })
 </script>
 
@@ -35,7 +34,8 @@ onMounted(async () => {
 		gap="12"
 		:class="[$style.wrapper, $style.json_viewer]"
 	>
-		<LogsViewer v-if="logs.length > 10" :logs=logs />
+		<!-- <LogsViewer :logs=logs /> -->
+         <LogsViewer />
 	</Flex>
 </template>
 

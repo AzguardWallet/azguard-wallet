@@ -9,6 +9,7 @@ const defaultSettings = {
 	},
 	developer: {
 		advancedMode: false,
+		indicateWalletActivity: false,
 	},
 }
 
