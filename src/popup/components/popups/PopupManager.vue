@@ -12,6 +12,7 @@ import SendPopup from "./SendPopup.vue"
 import NotePopup from "./NotePopup.vue"
 import ConnectByURIPopup from "./ConnectByURIPopup.vue"
 import FaucetPopup from "./FaucetPopup.vue"
+import SelectDepositPopup from "./SelectDepositPopup.vue"
 import ReceivePopup from "./ReceivePopup.vue"
 import ResetPopup from "./ResetPopup.vue"
 import ForgotPasswordPopup from "./ForgotPasswordPopup.vue"
@@ -39,6 +40,7 @@ const popupStore = usePopupStore()
 
 <template>
 	<MenuPopup :show="popupStore.isOpened('menu')" @onClose="popupStore.close('menu')" />
+	<SelectDepositPopup :show="popupStore.isOpened('select_deposit')" @onClose="popupStore.close('select_deposit')" />
 	<FaucetPopup :show="popupStore.isOpened('faucet')" @onClose="popupStore.close('faucet')" />
 	<NetworksPopup :show="popupStore.isOpened('networks')" @onClose="popupStore.close('networks')" />
 	<NewNetworkPopup :show="popupStore.isOpened('new_network')" @onClose="popupStore.close('new_network')" />

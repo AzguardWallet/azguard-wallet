@@ -69,7 +69,7 @@ export class PXEProxy implements PXE {
         return this.pxeService.registerContract(this.network, contract);
     }
     updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void> {
-        throw new Error("Method not implemented.");
+        return this.pxeService.updateContract(this.network, contractAddress, artifact);
     }
     getContracts(): Promise<AztecAddress[]> {
         return this.pxeService.getContracts(this.network);

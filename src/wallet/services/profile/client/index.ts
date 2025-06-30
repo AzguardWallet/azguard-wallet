@@ -1,6 +1,6 @@
-import { EventMessage } from '@/wallet/base/port-service/messages';
+import type { EventMessage } from '@/wallet/base/port-service/messages';
 import { ServiceClient } from '@/wallet/base/port-service/service-client';
-import { ProfileServiceEvent, ProfileServiceEventMessage } from './events';
+import { ProfileServiceEvent, type ProfileServiceEventMessage } from './events';
 import {
     ChangeProfileNameRequest,
     ChangeProfilePasswordRequest,
@@ -18,7 +18,7 @@ import {
     RefreshSessionRequest,
     UnlockProfileRequest
 } from './methods';
-import { Profile } from './models';
+import type { Profile } from './models';
 
 export * from './events';
 export * from './methods';

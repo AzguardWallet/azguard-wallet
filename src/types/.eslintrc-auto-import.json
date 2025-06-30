@@ -332,10 +332,11 @@
     "getThousandSeparator": true,
     "confirmationPolicies": true,
     "AccessLevel": true,
-    "checkAztecVersion": true,
-    "setAztecVersion": true,
+    "checkSentinel": true,
+    "setSentinel": true,
     "useNotificationStore": true,
     "checkNotificationsForShow": true,
-    "getTemplate": true
+    "getTemplate": true,
+    "isBackgroundConnected": true
   }
 }

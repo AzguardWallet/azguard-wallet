@@ -8,7 +8,15 @@ import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { FaucetServiceClient } from "@/wallet/services/faucet/client"
 import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
 
-const profileService = new ProfileServiceClient()
+export const isBackgroundConnected = ref(false)
+const onConnected = () => {
+	isBackgroundConnected.value = true
+}
+const onDisconnected = () => {
+	isBackgroundConnected.value = false
+}
+
+const profileService = new ProfileServiceClient(onConnected, onDisconnected)
 const walletConnectService = new WalletConnectServiceClient()
 const dappSessionSevice = new DappSessionServiceClient()
 const balanceService = new TokenBalanceServiceClient()
@@ -62,21 +70,13 @@ export const initTransactionService = (onTransactionAdded, onTransactionUpdated)
 	managers.transaction = new TransactionServiceClient(null, null, onTransactionAdded, onTransactionUpdated)
 }
 
-export const setAztecVersion = async (version) => {
-	if (version) {
-		chrome.storage.local.set({ "azguard:ui:aztecVersion": version })
-	} else {
-		chrome.storage.local.set({ "azguard:ui:aztecVersion": __AZTEC_SHORT_VERSION__ })
-	}
+const sentinelPath = "azguard:ui:sentinel"
+
+export const setSentinel = async () => {
+	await chrome.storage.local.set({ [sentinelPath]: __SENTINEL__ })
+	chrome.storage.local.remove("azguard:ui:aztecVersion") // TODO: delete me at some point
 }
 
-export const checkAztecVersion = async () => {
-	const currentVersion = (await chrome.storage.local.get("azguard:ui:aztecVersion"))["azguard:ui:aztecVersion"] || ""
-
-	switch (currentVersion) {
-		case __AZTEC_SHORT_VERSION__:
-			return true
-		default:
-			return false
-	}
+export const checkSentinel = async () => {
+	return (await chrome.storage.local.get(sentinelPath))[sentinelPath] === __SENTINEL__
 }

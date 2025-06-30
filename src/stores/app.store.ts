@@ -192,7 +192,11 @@ export const useAppStore = defineStore("app", () => {
 
 	const syncNetworkStatus = async () => {
 		networkStatus.value = "sync"
+		const oldNetworkId = network.value?.id
 		const status = await managers.network.getNodeStatus(network.value.id)
+		
+		if (oldNetworkId !== network.value?.id) return
+		
 		networkStatus.value = NodeStatus[status]
 	}
 	const updateNetwork = async (id, name, url) => {

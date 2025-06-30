@@ -27,18 +27,21 @@ const props = defineProps({
 })
 
 const notAllowedNetworkNames = computed(() => appStore.networks.map(n => n.name))
+const notAllowedNetworkUrls = computed(() => appStore.networks.map(n => n.rpcUrl))
 
 const nameTerm = ref("")
 const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
 
 const isUrlHasError = ref(false)
 
-const isAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value))
+const isNameAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value))
+const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value))
+
 const isAvailableToCreateNetwork = computed(() => {
 	if (!nameTerm.value.length) return
 	if (!urlTerm.value.length) return
 	if (urlTerm.value.length < 5) return
-	if (isAlreadyExist.value) return
+	if (isNameAlreadyExist.value || isUrlAlreadyExist.value) return
 
 	return true
 })
@@ -111,9 +114,9 @@ const onKeydown = e => {
 				>
 					<template #right>
 						<Transition name="fade">
-							<Flex v-if="isAlreadyExist" align="center" gap="6">
+							<Flex v-if="isNameAlreadyExist" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary"> Already exist </Text>
+								<Text size="12" weight="600" color="primary"> Already exists </Text>
 							</Flex>
 						</Transition>
 					</template>
@@ -130,6 +133,10 @@ const onKeydown = e => {
 							<Flex v-if="isUrlHasError" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
 								<Text size="12" weight="600" color="primary"> Failed to fetch node info </Text>
+							</Flex>
+							<Flex v-else-if="isUrlAlreadyExist" align="center" gap="6">
+								<Icon name="warning" size="12" color="red" />
+								<Text size="12" weight="600" color="primary"> Already exists </Text>
 							</Flex>
 						</Transition>
 					</template>

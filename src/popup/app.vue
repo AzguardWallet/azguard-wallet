@@ -3,10 +3,11 @@
 import Header from "@/components/Header.vue"
 import LogoStar from "@/components/LogoStar.vue"
 import PopupManager from "./components/popups/PopupManager.vue"
+import GlobalLoader from "@/components/ui/GlobalLoader.vue"
 
 /** Utils */
 import { getChainPosition } from "@/components/ui/utils"
-import { managers, initTokenService, initTransactionService } from "@/utils/core.js"
+import { managers, initTokenService, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
@@ -278,6 +279,15 @@ watch(
 	},
 )
 
+watch(
+	() => isBackgroundConnected.value,
+	() => {
+		if (isBackgroundConnected.value) {
+			loadProfile()
+		}
+	}
+)
+
 onBeforeUnmount(() => {
 	clearInterval(intervalId)
 })
@@ -297,6 +307,7 @@ onBeforeUnmount(() => {
 			<PopupManager />
 			<ToastManager />
 			<NotificationManager />
+			<GlobalLoader />
 		</div>
 
 		<Header />
