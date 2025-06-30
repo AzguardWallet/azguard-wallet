@@ -117,20 +117,6 @@ export const createTheme = ({ styles }) => {
 			".cm-line": {
 				padding: "0 12px 0 6px",
 			},
-			".log-line-info": {
-				// color: "var(--txt-secondary)",
-				color: "var(--json-string)",
-			},
-			".log-line-debug": {
-				// color: "var(--txt-tertiary)",
-				color: "var(--json-property-name)",
-			},
-			".log-line-warn": {
-				color: "var(--json-property-name)",
-			},
-			".log-line-error": {
-				// color: "var(--json-string)",
-			},
 			".cm-tooltip.cm-tooltip-autocomplete": {
 				background: "#18181A",
 				border: "1px solid var(--op-5)",

@@ -1,7 +1,4 @@
 import { init, start } from "@/wallet"
-// import { initLogger, LogEntry, LOG_TTL_MS, MAX_LOG_ENTRIES } from '../logger';
-
-// let memoryLogs: LogEntry[] = [];
 
 // chrome.runtime.onMessage.addListener((
 // 	msg: any,
@@ -30,7 +27,6 @@ import { init, start } from "@/wallet"
 
 // 	return false;
 // });
-// initLogger('service_worker');
 
 chrome.runtime.onInstalled.addListener(async (opt) => {
 	// if (opt.reason === "install") {
