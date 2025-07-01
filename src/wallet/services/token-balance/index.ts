@@ -284,7 +284,7 @@ export class TokenBalanceService extends Service {
 
 	private async startWorker() {
 		await this.init()
-		let nextSync = 0
+		// let nextSync = 0
 		while (true) {
 			if (this.profile) {
 				try {

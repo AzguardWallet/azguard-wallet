@@ -1,6 +1,6 @@
 export class Lock {
 	private readonly queue: ((value: void) => void)[] = [];
-	private locked: boolean = false;
+	private locked = false;
 
 	public async enter() {
 		return new Promise((resolve, _) => {
