@@ -1,17 +1,18 @@
 import { Service } from "@/wallet/base/message-service/service.ts";
-import { LogLevel } from "../logger/client";
+import { LogLevel, type LogOrigin } from "../logger/client";
 import { CONSOLE_SNIFFER_SERVICE_NAME, ConsoleSnifferServiceEvent } from "./client";
 
 export class ConsoleSnifferService extends Service<void, ConsoleSnifferServiceEvent> {
     public constructor(
-        private readonly source: string,
+        private readonly origin: LogOrigin,
+        private readonly source?: string,
     ) {
         super(CONSOLE_SNIFFER_SERVICE_NAME);
 
         this.patchConsoleMethods()
     }
     
-    protected async onRequest(method: unknown, params: unknown): Promise<unknown> {
+    protected async onRequest(method: unknown): Promise<unknown> {
         switch (method) {
             default: {
                 throw new Error("Unknown method");
@@ -25,6 +26,7 @@ export class ConsoleSnifferService extends Service<void, ConsoleSnifferServiceEv
 
             (window as any)[cbName] = (...args: any[]) => {
                 const newLogEntity = {
+                    origin: this.origin,
                     level,
                     args,
                     source: this.source,

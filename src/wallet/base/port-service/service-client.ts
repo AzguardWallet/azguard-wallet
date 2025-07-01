@@ -1,7 +1,7 @@
 import { sleep } from "@/wallet/utils";
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import { type IMessage, MessageType, type EventMessage, type RequestMessage, type ResponseMessage } from "./messages";
-import { type ILogsAsync, type LogEntity, LogLevel } from "@/wallet/services/logger/client/models";
+import { type ILogsAsync, type LogEntity, LogLevel, LogOrigin } from "@/wallet/services/logger/client/models";
 
 export abstract class ServiceClient {
     private readonly serviceName: string;
@@ -11,7 +11,7 @@ export abstract class ServiceClient {
     private readonly requests: Map<number, [(result: any) => void, (error: string) => void]>;
     private port?: chrome.runtime.Port;
     private connection: Promise<void>;
-    private disposed: boolean = false;
+    private disposed = false;
 
     protected constructor(
         serviceName: string,
@@ -45,11 +45,12 @@ export abstract class ServiceClient {
         })
 
         const newLogEntity: LogEntity = {
+            origin: LogOrigin.BG,
             level,
             ts: Date.now(),
             args: stringArgs,
             message,
-            source: `background-${this.serviceName}`,
+            source: this.serviceName,
         };
 
         this.logger.addLog(newLogEntity);

@@ -86,6 +86,7 @@ const handleCopyAddress = () => {
 	flex: 1;
 
 	overflow: auto;
+	
 	background: var(--card-bg);
 	border-top: 2px solid var(--gray-8);
 	box-shadow: inset 0 10px 8px -2px var(--gray-3);

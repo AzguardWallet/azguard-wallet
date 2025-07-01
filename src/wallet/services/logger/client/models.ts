@@ -1,3 +1,9 @@
+export enum LogOrigin {
+    BG = "BG",
+    UI = "UI",
+    OF = "OF",
+}
+
 export enum LogLevel {
     Debug = "debug",
     Info = "log",
@@ -6,6 +12,7 @@ export enum LogLevel {
 }
 
 export type LogEntity = {
+    origin: LogOrigin;
     level: LogLevel;
     ts: number;
     args: string[];

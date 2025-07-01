@@ -1,6 +1,6 @@
 import { EventMessage } from "@/wallet/base/message-service/messages";
 import { CONSOLE_SNIFFER_SERVICE_NAME } from "./index";
-import { LogEntity } from "@/wallet/services/logger/client";
+import type { LogEntity } from "@/wallet/services/logger/client";
 
 export enum ConsoleSnifferServiceEvent {
     LogAdded,

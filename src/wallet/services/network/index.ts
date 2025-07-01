@@ -152,7 +152,7 @@ export class NetworkService extends Service {
 				return networks.map(([id, network]) => this.makeNetwork(id, network));
 			}
 			
-			let defaultNetworks = [];
+			const defaultNetworks = [];
 			try {
 				const name = "Azguard Node";
 				const rpcUrl = "https://node.testnet.azguardwallet.io";

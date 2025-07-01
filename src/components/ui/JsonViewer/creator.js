@@ -247,7 +247,20 @@ export const createLoggerTheme = () => {
 			".cm-scroller": {
 				width: "100%",
 				height: "100%",
-				overflow: "auto",
+				overflow: "scroll",
+				scrollbarWidth: "thin",
+				scrollbarColor: "var(--txt-tertiary) transparent",
+			},
+			".cm-scroller::-webkit-scrollbar": {
+				width: "4px",
+				height: "4px",
+			},
+			".cm-scroller::-webkit-scrollbar-track": {
+				background: "transparent",
+			},
+			".cm-scroller::-webkit-scrollbar-thumb": {
+				backgroundColor: "var(--txt-tertiary)",
+				borderRadius: "4px",
 			},
 			".cm-content": {
 				minHeight: "max-content",

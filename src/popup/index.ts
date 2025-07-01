@@ -1,5 +1,6 @@
 import { ConsoleSnifferService } from "@/wallet/services/console-sniffer";
-const consoleSnifferService = new ConsoleSnifferService("popup");
+import { LogOrigin } from "@/wallet/services/logger/client/models"
+const consoleSnifferService = new ConsoleSnifferService(LogOrigin.UI);
 
 import { createPinia } from "pinia"
 import { createApp } from "vue"

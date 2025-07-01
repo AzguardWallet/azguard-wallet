@@ -9,6 +9,7 @@ import {
     LOGGER_SERVICE_NAME,
     type LogEntity,
     LogLevel,
+    LogOrigin,
     LoggerServiceMethod
 } from "./client";
 import { LoggerServiceEvent, LoggerServiceEventMessage } from "./client/events";
@@ -51,7 +52,7 @@ export class LoggerService extends Service {
                 }
             }
             default: {
-                this.addLog(LogLevel.Error, [`Invalid request method ${request.method}`]);
+                this.addLog(LogLevel.Error, `Invalid request method ${request.method}`);
                 return undefined;
             }                
         }
@@ -61,7 +62,7 @@ export class LoggerService extends Service {
         return this.logs.get(count);
     }
 
-    public addLog(level: LogLevel, args: any, message?: string, source?: string): void {
+    public addLog(level: LogLevel, args: any, message?: string, source?: string, origin?: LogOrigin): void {
         const rawArgs = Array.isArray(args) ? args : [args];
         const stringArgs = rawArgs.map(a => {
             if (!a) return String(a)
@@ -78,11 +79,12 @@ export class LoggerService extends Service {
         })
 
         const newLogEntity: LogEntity = {
-            level,
+            origin: origin ?? LogOrigin.BG,
             ts: Date.now(),
+            level,
             args: stringArgs,
             message,
-            source: source ?? "background",
+            source,
         };
 
         this.logs.add(newLogEntity);
@@ -91,6 +93,6 @@ export class LoggerService extends Service {
     }
 
     private onSnifferLogAdded = (logEntity: LogEntity) => {
-        this.addLog(logEntity.level, logEntity.args, undefined, logEntity.source);
+        this.addLog(logEntity.level, logEntity.args, undefined, logEntity.source, logEntity.origin);
     }
 }

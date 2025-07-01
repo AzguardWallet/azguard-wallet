@@ -1,5 +1,5 @@
 import type { EventMessage, RequestMessage, ResponseMessage } from "./messages";
-import type { ILogs, LogEntity, LogLevel } from "@/wallet/services/logger/client";
+import { type ILogs, type LogEntity, type LogLevel, LogOrigin } from "@/wallet/services/logger/client";
 
 export abstract class Service {
     constructor(
@@ -27,11 +27,12 @@ export abstract class Service {
         })
 
         const newLogEntity: LogEntity = {
+            origin: LogOrigin.BG,
             level,
             ts: Date.now(),
             args: stringArgs,
             message,
-            source: `background-${this.name}`,
+            source: this.name,
         };
 
         this.logger.add(newLogEntity);

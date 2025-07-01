@@ -54,6 +54,7 @@ const MAX_LOGS_COUNT = 2_000
 const MAX_LOGS_DIFF = 100
 
 const shouldAutoScroll = ref(true)
+const showScrollBtn = ref(false)
 let scrollTimeout = null
 
 const handleSelectlevel = (level) => {
@@ -71,7 +72,7 @@ const onLogAdded = (log) => {
 		logs.value.splice(0, MAX_LOGS_DIFF)
 	}
 
-	if (!selectedLevels.value.includes(log.level.toUpperCase())) {
+	if (!selectedLevels.value.includes(getLogLevelName(log.level).toUpperCase())) {
 		return
 	}
 
@@ -98,6 +99,8 @@ const onLogAdded = (log) => {
 
 		if (shouldAutoScroll.value) {
 			scrollToBottom()
+		} else {
+			showScrollBtn.value = true
 		}
 	}
 }
@@ -121,8 +124,10 @@ function updateShouldAutoScroll() {
 	const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_DISABLE_THRESHOLD
 
 	if (isAtBottom) {
+		showScrollBtn.value = false
 		enableAutoScroll()
 	} else {
+		showScrollBtn.value = true
 		disableAutoScroll()
 	}
 }
@@ -138,6 +143,8 @@ function scrollToBottom() {
 			y: "end",
 		})
 	})
+
+	showScrollBtn.value = false
 }
 
 function formatSingleLog(log) {
@@ -145,7 +152,7 @@ function formatSingleLog(log) {
 	const level = log.level.toUpperCase()
 	const args = (log.args || []).map(String).join(" ")
 
-	return `[${time}] [${log.source}] ${getLogLevelName(level)}: ${log.message ? `${log.message} ` : ""}${args}`
+	return `[${time}] [${log.origin}]${log.source ? ` [${log.source}]` : ""} ${getLogLevelName(level)}: ${log.message ? `${log.message} ` : ""}${args}`
 }
 function formatLogs(logs) {
 	return logs
@@ -192,32 +199,37 @@ const logDecorationsField = StateField.define({
 
 function updateEditorContent() {
 	if (!view) return
-	
-	view.setState(EditorState.create({
-		doc: `${formatLogs(filteredLogs.value)}\n`,
-		extensions: [
-			keymap.of([...defaultKeymap, ...searchKeymap]),
-			...createLoggerTheme(),
-			highlightActiveLine(),
-			EditorState.readOnly.of(true),
-			logDecorationsField,
-		]
-	}))
 
-	requestAnimationFrame(() => { scrollToBottom() })
+	const newDoc = `${formatLogs(filteredLogs.value)}\n`
+	const currentDoc = view.state.doc.toString()
+
+	if (currentDoc === newDoc) return
+
+	view.dispatch({
+		changes: {
+			from: 0,
+			to: currentDoc.length,
+			insert: newDoc,
+		}
+	})
+
+	requestAnimationFrame(() => {
+		if (shouldAutoScroll.value) scrollToBottom()
+	})
 }
 
 function exportLogsToCSV() {
 	const rows = logs.value.map(log => {
 		const time = new Date(log.ts).toISOString()
+		const origin = log.origin || ""
 		const source = log.source || ""
 		const level = log.level || ""
 		const args = (log.args || []).join(" ").replace(/\n/g, " ")
-		return [time, source, level, args]
+		return [time, origin, source, level, args]
 	})
 
 	const csvContent = [
-		["time", "source", "level", "args"],
+		["time", "origin", "source", "level", "args"],
 		...rows
 	].map(row =>
 		row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
@@ -274,7 +286,7 @@ onMounted(async () => {
 	view.scrollDOM?.addEventListener("scroll", updateShouldAutoScroll)
 
 	document.addEventListener("selectionchange", () => {
-	const selection = document.getSelection()
+		const selection = document.getSelection()
 		if (!selection) return
 		if (!selection.isCollapsed) {
 			disableAutoScroll()
@@ -336,7 +348,21 @@ onBeforeUnmount(() => {
 			</Flex>
 		</Flex>
 
-		<div ref="editorRef" :class="$style.console_viewer" />
+		<Flex
+			v-if="showScrollBtn"
+			@click="scrollToBottom"
+			align="center"
+			:class="$style.scroll_btn"
+		>
+			<Icon
+				name="arrow-right"
+				size="24"
+				rotate="90"
+				color="tertiary"
+			/>
+		</Flex>
+
+		<div ref="editorRef" :class="$style.logs_viewer" />
 	</div>
 </template>
 
@@ -348,7 +374,7 @@ onBeforeUnmount(() => {
 	flex-direction: column;
 }
 
-.console_viewer {
+.logs_viewer {
 	display: flex;
 	flex: 1 1 auto;
 	overflow: hidden;
@@ -356,7 +382,7 @@ onBeforeUnmount(() => {
 
 .actions {
 	position: absolute;
-	right: 12px;
+	right: 18px;
 	transform: translateY(10px);
 	z-index: 1;
 }
@@ -457,6 +483,33 @@ onBeforeUnmount(() => {
 		* {
 			fill: var(--txt-primary);
 		}
+	}
+}
+
+.scroll_btn {
+	position: absolute;
+	right: 18px;
+	bottom: 18px;
+	z-index: 1;
+
+	padding: 4px 4px;
+	background-color: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 50%;
+	box-shadow: 0 1px 2px var(--shadow-5);
+
+	cursor: pointer;
+
+	&:hover {
+		background: var(--dropdown-bg);
+		border-color: var(--border-hovered);
+		* {
+			fill: var(--txt-secondary);
+		}
+	}
+
+	&:active {
+		transform: scale(0.9);
 	}
 }
 </style>
