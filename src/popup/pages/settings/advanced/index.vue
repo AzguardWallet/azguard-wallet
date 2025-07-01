@@ -9,7 +9,7 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
+import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
@@ -31,8 +31,6 @@ import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
-
-const router = useRouter()
 
 const isDeveloperModeEnabled = ref(settings.value?.developer?.advancedMode)
 const indicateWalletActivity = ref(settings.value?.developer?.indicateWalletActivity)
@@ -57,6 +55,9 @@ watch(
 	() => isDeveloperModeEnabled.value,
 	async () => {
 		updateSettings("developer", "advancedMode", isDeveloperModeEnabled.value)
+		if (!indicateWalletActivity.value) {
+			indicateWalletActivity.value = true
+		}
 	},
 )
 watch(
@@ -87,21 +88,21 @@ watch(
 		>
 			<Flex justify="between">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Indicate wallet activity </Text>
+					<Text size="13" weight="600" color="primary"> Indicate failures </Text>
 					<Text size="12" weight="500" color="tertiary"> Highlight errors and warnings in header </Text>
 				</Flex>
 
 				<Toggle v-model="indicateWalletActivity" />
 			</Flex>
 
-			<Flex direction="column" gap="12">
+			<!-- <Flex direction="column" gap="12">
 				<Flex direction="column" gap="6">
 					<Text size="13" weight="600" color="primary"> Full storage reset </Text>
 					<Text size="12" weight="500" height="140" color="tertiary"> All local data will be deleted </Text>
 				</Flex>
 
 				<Button @click="handleFullReset" type="red" size="small" disabled> Full Reset </Button>
-			</Flex>
+			</Flex> -->
 		</Flex>
 
 		<Navigation />
@@ -112,6 +113,8 @@ watch(
 .wrapper {
 	flex: 1;
 
+	overflow: auto;
+
 	background: var(--card-bg);
 	border-top: 2px solid var(--gray-8);
 	box-shadow: inset 0 10px 8px -2px var(--gray-3);
@@ -119,7 +122,7 @@ watch(
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
 
-	padding: 20px 24px 24px 24px;
+	padding: 20px 24px 80px 24px;
 }
 
 .item {
