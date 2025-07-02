@@ -222,6 +222,7 @@ export class FaucetService extends Service {
             const deployTask = rootTask.startSubtask(new StepContent("Deploying token"));
 
             try {
+                // TODO: here we would provide deployTask to the execution service:
                 const deployResults = await this.executionService.executeOperations(deployOps, origin);
                 if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
                     throw new Error(`Token deployment failed: ${
@@ -230,7 +231,7 @@ export class FaucetService extends Service {
                 }
                 const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
                 console.debug("faucet deploy tx:", deployTx);
-                await this.transactionService.waitForTx(deployTx);
+                await this.transactionService.waitForTx(deployTx, deployTask);
                 console.debug("faucet deploy tx mined");
                 if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
                     feeSettings = {
@@ -249,6 +250,7 @@ export class FaucetService extends Service {
 
         const mintTask = rootTask.startSubtask(new StepContent("Minting token"));
         try {
+            // TODO: here we would provide mintTask to the execution service:
             const [mintResult] = await this.executionService.executeOperations(
                 [
                     new SendTransactionOperation(networkId, accountAddress, feeSettings, [
@@ -273,7 +275,7 @@ export class FaucetService extends Service {
             }
             const mintTx = (mintResult as OkOperationResult<string>).result;
             console.debug("faucet mint tx:", mintTx);
-            await this.transactionService.waitForTx(mintTx);
+            await this.transactionService.waitForTx(mintTx, mintTask);
             console.debug("faucet mint tx mined");
             mintTask.complete();
         } catch (error) {
@@ -283,7 +285,6 @@ export class FaucetService extends Service {
             throw error;
         }
 
-        const registerTask = rootTask.startSubtask(new StepContent("Registering token"));
         try {
             const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
             if (!tokens.some(x => x.contract === instance.address.toString())) {
@@ -291,21 +292,19 @@ export class FaucetService extends Service {
                 const ti = await this.tokenService.parseTokenInterface(
                     networkId,
                     instance.address.toString(),
-                    registerTask,
+                    rootTask,
                 );
                 const token = await this.tokenService.addToken(
                     profile.id,
                     networkId,
                     accountAddress,
                     ti,
-                    registerTask,
+                    rootTask,
                 );
                 console.debug("faucet token:", token);
             }
-            registerTask.complete();
         } catch (error) {
             const errorMessage = (error as Error)?.message ?? error as string ?? "Register failed";
-            registerTask.fail(errorMessage);
             rootTask.fail(errorMessage);
             throw error;
         }
