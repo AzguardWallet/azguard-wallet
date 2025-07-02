@@ -21,7 +21,7 @@ import type { TransactionService } from "@/wallet/services/transaction"
 import { type Tx, TxStatus } from "@/wallet/services/transaction/client"
 import type { ViewFn } from "@/wallet/utils/fn"
 import type { TaskTrackerService } from "@/wallet/services/task-tracker"
-import { StepContent, TaskStatus } from "@/wallet/services/task-tracker/client"
+import { StepContent } from "@/wallet/services/task-tracker/client"
 import {
 	type GetTokenBalancesRequest,
 	GetTokenBalancesResponse,
@@ -356,10 +356,8 @@ export class TokenBalanceService extends Service {
 				const token = this.tokens.get(tb.token)
 				if (!token) {
 					console.error(`Unknown token #${tb.token}`)
-					const taskId = this.pendingTasks.get(tb.id)
-					if (taskId) {
-						this.taskTrackerService.failTask(taskId, `Unknown token #${tb.token}`)
-					}
+					const taskId = this.pendingTasks.get(tb.id)!
+					this.taskTrackerService.failTask(taskId, `Unknown token #${tb.token}`)
 					continue;
 				}
 				chainId = token.chainId;
@@ -479,12 +477,10 @@ export class TokenBalanceService extends Service {
 				tb.updatedAt = now;
 				const balance = balances.find(x => x.token === tb.token && x.account === tb.account);
 
-				const taskId = this.pendingTasks.get(tb.id);
+				const taskId = this.pendingTasks.get(tb.id)!;
 				if (balance) {
 					await this.balances.set(`${tb.id}`, tb);
-					if (taskId) {
-						this.taskTrackerService.completeTask(taskId)
-					}
+					this.taskTrackerService.completeTask(taskId)
 					this.emit(
 						new TokenBalanceServiceEventMessage(
 							TokenBalanceServiceEvent.TokenBalanceUpdated,
@@ -492,9 +488,7 @@ export class TokenBalanceService extends Service {
 						)
 					)
 				} else {
-					if (taskId) {
-						this.taskTrackerService.failTask(taskId, "Balance record not found");
-					}
+					this.taskTrackerService.failTask(taskId, "Balance record not found");
 				}
 			}
 
@@ -505,16 +499,10 @@ export class TokenBalanceService extends Service {
 
 			const errorMessage = (error as Error)?.message ?? error as string ?? "Sync failed";
 			for (const tb of tbs) {
-				const taskId = this.pendingTasks.get(tb.id)
-				if (taskId) {
-					try {
-						const task = this.taskTrackerService.getTask(taskId);
-						if (!task.finishedAt) {
-							this.taskTrackerService.failTask(taskId, errorMessage);
-						}
-					} catch {
-						// Task might not exist, ignore
-					}
+				const taskId = this.pendingTasks.get(tb.id)!
+				const task = this.taskTrackerService.getTask(taskId);
+				if (!task.finishedAt) {
+					this.taskTrackerService.failTask(taskId, errorMessage);
 				}
 			}
 		} finally {
