@@ -26,7 +26,7 @@ import {
 } from "@aztec/stdlib/contract";
 import { AztecNode, ContractClassMetadata, ContractMetadata, createAztecNodeClient, PXE } from "@aztec/stdlib/interfaces/client";
 import { NotesFilterSchema } from "@aztec/stdlib/note";
-import { PrivateExecutionResult, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
+import { PrivateExecutionResult, SimulationOverrides, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
 import { z } from "zod";
 import { Service } from "@/wallet/base/message-service/service.ts";
 import { Profile, ProfileServiceClient } from "@/wallet/services/profile/client";
@@ -170,18 +170,18 @@ export class PxeService extends Service<PxeServiceMethod, void> {
                     network,
                     txRequest,
                     simulatePublic,
-                    msgSender,
                     skipTxValidation,
                     skipFeeEnforcement,
+                    overrides,
                     scopes,
                 } = params as SimulateTxParams;
                 const pxe = await this.getPxeClient(network);
                 return await pxe.simulateTx(
                     await TxExecutionRequest.schema.parseAsync(txRequest),
                     simulatePublic,
-                    await AztecAddress.schema.optional().parseAsync(msgSender),
                     skipTxValidation,
                     skipFeeEnforcement,
+                    await SimulationOverrides.schema.optional().parseAsync(overrides),
                     await z.array(AztecAddress.schema).optional().parseAsync(scopes),
                 );
             }

@@ -14,6 +14,7 @@ import { ContractClassMetadata, ContractMetadata, PXE, PXEInfo } from "@aztec/st
 import { NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
     PrivateExecutionResult,
+    SimulationOverrides,
     Tx,
     TxExecutionRequest,
     TxHash,
@@ -156,9 +157,9 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
         network: Network,
         txRequest: TxExecutionRequest,
         simulatePublic: boolean,
-        msgSender?: AztecAddress,
         skipTxValidation?: boolean,
         skipFeeEnforcement?: boolean,
+        overrides?: SimulationOverrides,
         scopes?: AztecAddress[],
     ): Promise<TxSimulationResult> {
         await ensureOffscreenRunning();
@@ -166,9 +167,9 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
             network,
             txRequest,
             simulatePublic,
-            msgSender,
             skipTxValidation,
             skipFeeEnforcement,
+            overrides,
             scopes,
         });
         return await TxSimulationResult.schema.parseAsync(result);

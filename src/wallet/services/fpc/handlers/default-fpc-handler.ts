@@ -38,9 +38,9 @@ export class DefaultFpcHandler implements IFpcHandler {
         const simulatedTx = await pxe.simulateTx(
             txRequest, // txRequest
             true, // simulatePublic
-            undefined, // msgSender
             undefined, // skipTxValidation
             true, // skipFeeEnforcement
+            undefined, // overrides
             undefined, // scopes
         );
         const returnValues = simulatedTx.getPrivateReturnValues();
@@ -67,7 +67,7 @@ export class DefaultFpcHandler implements IFpcHandler {
             fn.parameters.length !== 0 ||
             fn.returnTypes.length !== 1 ||
             (fn.returnTypes[0] as StructType)?.path !==
-                "authwit::aztec::protocol_types::address::aztec_address::AztecAddress"
+                "aztec::protocol_types::address::aztec_address::AztecAddress"
         ) {
             throw new Error("Function `get_accepted_asset` has unsupported signature");
         }

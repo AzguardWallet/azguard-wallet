@@ -262,9 +262,9 @@ export class ExecutionService extends Service {
         const simulatedTx = await pxe.simulateTx(
             txRequest, // txRequest
             true, // simulatePublic
-            undefined, // msgSender
             undefined, // skipTxValidation
             undefined, // skipFeeEnforcement
+            undefined, // overrides
             [account.address], // scopes
         );
         const provedTx = await pxe.proveTx(txRequest, simulatedTx.privateExecutionResult);
@@ -433,9 +433,9 @@ export class ExecutionService extends Service {
                 const simulatedTx = await pxe.simulateTx(
                     txRequest, // txRequest
                     true, // simulatePublic
-                    undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
+                    undefined, // overrides
                     [account.address], // scopes
                 );
                 const baseFees = await pxe.getCurrentBaseFees();
@@ -462,9 +462,9 @@ export class ExecutionService extends Service {
                 const simulatedTx = await pxe.simulateTx(
                     txRequest, // txRequest
                     true, // simulatePublic
-                    undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
+                    undefined, // overrides
                     [account.address], // scopes
                 );
                 const baseFees = await pxe.getCurrentBaseFees();
@@ -487,9 +487,9 @@ export class ExecutionService extends Service {
                 let simulatedTx = await pxe.simulateTx(
                     txRequest, // txRequest
                     true, // simulatePublic
-                    undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
+                    undefined, // overrides
                     [account.address], // scopes
                 );
                 const baseFees = await pxe.getCurrentBaseFees();
@@ -506,9 +506,9 @@ export class ExecutionService extends Service {
                 simulatedTx = await pxe.simulateTx(
                     txRequest, // txRequest
                     true, // simulatePublic
-                    undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
+                    undefined, // overrides
                     [account.address], // scopes
                 );
                 maxFee = simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding).computeFee(baseFees);
@@ -537,9 +537,9 @@ export class ExecutionService extends Service {
                 const simulatedTx = await pxe.simulateTx(
                     txRequest, // txRequest
                     true, // simulatePublic
-                    undefined, // msgSender
                     undefined, // skipTxValidation
                     true, // skipFeeEnforcement
+                    undefined, // overrides
                     [account.address], // scopes
                 );
                 const gasSettings = new GasSettings(
@@ -570,9 +570,9 @@ export class ExecutionService extends Service {
         const simulatedTx = await pxe.simulateTx(
             txRequest, // txRequest
             true, // simulatePublic
-            undefined, // msgSender
             undefined, // skipTxValidation
             undefined, // skipFeeEnforcement
+            undefined, // overrides
             [account.address], // scopes
         );
         const provedTx = await pxe.proveTx(txRequest, simulatedTx.privateExecutionResult);
@@ -597,9 +597,9 @@ export class ExecutionService extends Service {
         const simulatedTx = await pxe.simulateTx(
             txRequest, // txRequest
             op.simulatePublic ?? false, // simulatePublic
-            undefined, // msgSender
             undefined, // skipTxValidation
             true, // skipFeeEnforcement
+            undefined, // overrides
             [account.address], // scopes
         );
         return {
@@ -815,9 +815,9 @@ export class ExecutionService extends Service {
             const simulatedTx = await pxe.simulateTx(
                 txRequest, // txRequest
                 true, // simulatePublic
-                undefined, // msgSender
                 undefined, // skipTxValidation
                 true, // skipFeeEnforcement
+                undefined, // overrides
                 [account.address], // scopes
             );
 
