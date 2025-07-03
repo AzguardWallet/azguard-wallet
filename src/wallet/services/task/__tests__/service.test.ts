@@ -307,5 +307,15 @@ describe("Task Tree Implementation", () => {
             expectEvent(TaskServiceEvent.TaskDeleted, completedRootTask);
             expectEvent(TaskServiceEvent.TaskDeleted, cancelledChildTask);
         });
+
+        test("should throw error when requesting task that has been deleted", () => {
+            const { service, rootStepContent } = createTestSetup();
+
+            const task = service.startNewTask(rootStepContent);
+            task.complete();
+            vi.setSystemTime(Date.now() + TASK_RETENTION_PERIOD_MS + 1000);
+
+            expect(() => service.getTask(task.id)).toThrow(`Task ${task.id} has been expired`);
+        });
     });
 });

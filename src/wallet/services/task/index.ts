@@ -207,9 +207,12 @@ export class TaskService extends Service {
     }
 
     public getTask(taskId: string): Task {
-        // NOTE: there is a chance of requested task being deleted during the task request
+        const task = this.getTaskById(taskId);
         this.cleanupStaleTasks();
-        return this.getTaskById(taskId);
+        if (!this.tasks.has(taskId)) {
+            throw new Error(`Task ${taskId} has been expired`);
+        }
+        return task;
     }
 
     public getTasks(): Task[] {
