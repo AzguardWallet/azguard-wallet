@@ -71,6 +71,11 @@ export class TaskService extends Service {
             taskId = getRandomHex(8);
         } while (this.tasks.has(taskId));
 
+        const parent = parentId ? this.getTaskById(parentId) : undefined;
+        if (parent && parent.finishedAt) {
+            throw new Error(`Cannot add task to finished parent ${parentId}`);
+        }
+
         const newTask: Task = {
             id: taskId,
             content,
@@ -79,7 +84,7 @@ export class TaskService extends Service {
             startedAt: undefined,
             subtasks: [],
             source,
-            parent: undefined,
+            parent,
             finishedAt: undefined,
             result: undefined,
             error: undefined,
@@ -89,18 +94,13 @@ export class TaskService extends Service {
             newTask.startedAt = Date.now();
         }
 
-        if (parentId) {
-            const parent = this.getTaskById(parentId);
-            if (parent.finishedAt) {
-                throw new Error(`Cannot add task to finished parent ${parentId}`);
-            }
-            newTask.parent = parent;
+        this.tasks.set(newTask.id, newTask);
+        this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskCreated, newTask));
+
+        if (parent) {
             parent.subtasks.push(newTask);
             this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, parent));
         }
-
-        this.tasks.set(newTask.id, newTask);
-        this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskCreated, newTask));
         return new WrappedTask(newTask.id, this, source);
     }
 
