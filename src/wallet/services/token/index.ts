@@ -17,9 +17,9 @@ import {
 	feeJuiceSymbol,
 } from "@/wallet/utils/fee-juice"
 import { type FnImpl, simulate } from "@/wallet/utils/fn"
-import { WrappedTask } from "@/wallet/services/task-tracker/wrapped-task"
-import { StepContent } from "@/wallet/services/task-tracker/client"
-import { TaskTrackerService } from "@/wallet/services/task-tracker"
+import { WrappedTask } from "@/wallet/services/task/wrapped-task"
+import { StepContent } from "@/wallet/services/task/client"
+import { TaskService } from "@/wallet/services/task"
 import {
 	type AddTokenRequest,
 	AddTokenResponse,
@@ -90,7 +90,7 @@ export class TokenService extends Service {
 		private readonly profiles: ProfileService,
 		private readonly networks: NetworkService,
 		private readonly accounts: AccountService,
-		private readonly taskTracker: TaskTrackerService,
+		private readonly tasks: TaskService,
 		emit: (event: EventMessage) => void
 	) {
 		super(TOKEN_SERVICE_NAME, emit)
@@ -259,7 +259,7 @@ export class TokenService extends Service {
 		const stepContent = new StepContent("Adding token");
 		const task = parentTask
 			? parentTask.startSubtask(stepContent)
-			: this.taskTracker.startNewTask(stepContent);
+			: this.tasks.startNewTask(stepContent);
 
 		try {
 			await this.lock.enter();
@@ -307,7 +307,7 @@ export class TokenService extends Service {
 		ti: TokenInterface,
 	): Promise<TokenInfo> {
 		const stepContent = new StepContent("Updating token");
-		const task = this.taskTracker.startNewTask(stepContent);
+		const task = this.tasks.startNewTask(stepContent);
 
 		try {
 			await this.lock.enter();
@@ -468,7 +468,7 @@ export class TokenService extends Service {
 		const stepContent = new StepContent("Parsing token interface");
 		const task = parentTask
 			? parentTask.startSubtask(stepContent)
-			: this.taskTracker.startNewTask(stepContent);
+			: this.tasks.startNewTask(stepContent);
 
 		try {
 			const network = await this.networks.getNetwork(networkId)

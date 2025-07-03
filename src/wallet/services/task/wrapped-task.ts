@@ -1,10 +1,10 @@
-import { TaskTrackerService } from "./index";
+import { TaskService } from "./index";
 import { ITaskContent, ITaskResult, EmptyResult, TaskStatus, Task } from "./client/models";
 
 export class WrappedTask {
     constructor(
         public readonly id: string,
-        private readonly taskService: TaskTrackerService,
+        private readonly taskService: TaskService,
         public readonly source?: string,
     ) {}
 

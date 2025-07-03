@@ -24,7 +24,7 @@ import type { AccountService } from "@/wallet/services/account"
 import type { ProfileService } from "@/wallet/services/profile"
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import type { ExecutionService } from "@/wallet/services/execution"
-import { TaskTrackerService } from "@/wallet/services/task-tracker";
+import { TaskService } from "@/wallet/services/task";
 import {
     type IOperation,
     RegisterContractOperation,
@@ -46,7 +46,7 @@ import {
     type MintRequest,
     MintResponse,
 } from "./client"
-import { StepContent } from "../task-tracker/client/models";
+import { StepContent } from "../task/client/models";
 
 export class FaucetService extends Service {
     private readonly pxeService: PxeServiceClient;
@@ -58,7 +58,7 @@ export class FaucetService extends Service {
         private readonly executionService: ExecutionService,
         private readonly transactionService: TransactionService,
         private readonly tokenService: TokenService,
-        private readonly taskTrackerService: TaskTrackerService,
+        private readonly taskService: TaskService,
         emit: (event: EventMessage) => void
     ) {
 		super(FAUCET_SERVICE_NAME, emit)
@@ -120,7 +120,7 @@ export class FaucetService extends Service {
         let instance: ContractInstanceWithAddress;
         const origin = new TxOrigin(OriginType.UI, "Faucet")
 
-        const rootTask = this.taskTrackerService.startNewTask(new StepContent("Mint token"));
+        const rootTask = this.taskService.startNewTask(new StepContent("Mint token"));
         const checkTask = rootTask.startSubtask(new StepContent("Check if need to deploy token"));
         try {
             deployActions = [];

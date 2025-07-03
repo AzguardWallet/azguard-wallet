@@ -22,8 +22,8 @@ import {
     TxStatus,
     TxBlock,
 } from "./client";
-import { WrappedTask } from "../task-tracker";
-import { StepContent } from "../task-tracker/client";
+import { WrappedTask } from "../task";
+import { StepContent } from "../task/client";
 
 export class TransactionService extends Service {
     public readonly onTransactionAdded: ((tx: Tx) => void)[] = [];

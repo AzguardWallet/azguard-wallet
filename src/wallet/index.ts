@@ -18,7 +18,7 @@ import { DappInteractionService } from "./services/dapp-interaction";
 import { sleep } from "./utils";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
-import { TaskTrackerService } from "./services/task-tracker";
+import { TaskService } from "./services/task";
 
 export async function init() {
     console.debug("Init BarretenbergSync...");
@@ -51,7 +51,7 @@ export async function stop() {
 }
 
 // services
-const taskTrackerService = new TaskTrackerService(broadcast);
+const taskService = new TaskService(broadcast);
 const profileService = new ProfileService(broadcast);
 const networkService = new NetworkService(profileService, broadcast);
 const accountService = new AccountService(profileService, networkService, broadcast);
@@ -59,7 +59,7 @@ const tokenService = new TokenService(
     profileService,
     networkService,
     accountService,
-    taskTrackerService,
+    taskService,
     broadcast,
 );
 const fpcService = new FpcService(profileService, networkService,broadcast);
@@ -87,7 +87,7 @@ const tokenBalanceService = new TokenBalanceService(
     tokenService,
     transactionService,
     executionService,
-    taskTrackerService,
+    taskService,
     broadcast,
 );
 const faucetService = new FaucetService(
@@ -97,7 +97,7 @@ const faucetService = new FaucetService(
     executionService,
     transactionService,
     tokenService,
-    taskTrackerService,
+    taskService,
     broadcast,
 );
 const dappSessionService = new DappSessionService(profileService, broadcast);
@@ -135,7 +135,7 @@ const services = new Map<string, Service>([
     [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
     [accountStateService.name, accountStateService],
-    [taskTrackerService.name, taskTrackerService],
+    [taskService.name, taskService],
 ]);
 
 // state

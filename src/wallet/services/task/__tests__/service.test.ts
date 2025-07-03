@@ -1,8 +1,8 @@
 import { expect, test, vi, beforeEach, afterEach, describe } from "vitest";
-import { TaskTrackerService, TASK_RETENTION_PERIOD_MS } from "../index";
+import { TaskService, TASK_RETENTION_PERIOD_MS } from "../index";
 import { StepContent, TaskStatus, ContentKind, Task, EmptyResult, ITaskResult, ResultKind } from "../client/models";
 import { WrappedTask } from "../wrapped-task";
-import { TaskTrackerServiceEvent } from "../client/events";
+import { TaskServiceEvent } from "../client/events";
 
 class TestResult implements ITaskResult {
     public readonly kind = ResultKind.Empty;
@@ -11,13 +11,13 @@ class TestResult implements ITaskResult {
 
 const createTestSetup = () => {
     const emitMock = vi.fn();
-    const service = new TaskTrackerService(emitMock);
+    const service = new TaskService(emitMock);
 
     const rootStepContent = new StepContent("Root Task");
     const stepOne = new StepContent("Step One", 1000);
     const stepTwo = new StepContent("Step Two", 2000);
 
-    const expectEvent = (event: TaskTrackerServiceEvent, task: Task) => {
+    const expectEvent = (event: TaskServiceEvent, task: Task) => {
         expect(emitMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 event,
@@ -54,7 +54,7 @@ describe("Task Tree Implementation", () => {
             expect(pendingTask.task.content.kind).toBe(ContentKind.Step);
             expect(pendingTask.task.status).toBe(TaskStatus.Pending);
             expect(pendingTask.task.startedAt).toBeUndefined();
-            expectEvent(TaskTrackerServiceEvent.TaskCreated, pendingTask.task);
+            expectEvent(TaskServiceEvent.TaskCreated, pendingTask.task);
         });
 
         test("should create processing root task", () => {
@@ -65,7 +65,7 @@ describe("Task Tree Implementation", () => {
             expect(processingTask.task.status).toBe(TaskStatus.Processing);
             expect(processingTask.task.startedAt).toBeDefined();
             expect(processingTask.task.startedAt).toBeGreaterThanOrEqual(processingTask.task.createdAt);
-            expectEvent(TaskTrackerServiceEvent.TaskCreated, processingTask.task);
+            expectEvent(TaskServiceEvent.TaskCreated, processingTask.task);
         });
 
         test("should create subtasks and maintain parent-child relationships", () => {
@@ -81,9 +81,9 @@ describe("Task Tree Implementation", () => {
             expect(parentTask.task.subtasks).toContainEqual(childOne.task);
             expect(parentTask.task.subtasks).toContainEqual(childTwo.task);
 
-            expectEvent(TaskTrackerServiceEvent.TaskCreated, childOne.task);
-            expectEvent(TaskTrackerServiceEvent.TaskCreated, childTwo.task);
-            expectEvent(TaskTrackerServiceEvent.TaskUpdated, parentTask.task);
+            expectEvent(TaskServiceEvent.TaskCreated, childOne.task);
+            expectEvent(TaskServiceEvent.TaskCreated, childTwo.task);
+            expectEvent(TaskServiceEvent.TaskUpdated, parentTask.task);
         });
 
         test("should handle creation errors", () => {
@@ -145,7 +145,7 @@ describe("Task Tree Implementation", () => {
 
             expect(pendingTask.task.status).toBe(TaskStatus.Processing);
             expect(pendingTask.task.startedAt).toBeDefined();
-            expectEvent(TaskTrackerServiceEvent.TaskUpdated, pendingTask.task);
+            expectEvent(TaskServiceEvent.TaskUpdated, pendingTask.task);
         });
 
         test("should throw error when starting non-pending task", () => {
@@ -185,7 +185,7 @@ describe("Task Tree Implementation", () => {
             expect(rootTask.task.finishedAt).toBeDefined();
             expect(rootTask.task.result).toBeInstanceOf(EmptyResult);
             expect(rootTask.task.status).toBe(TaskStatus.Completed);
-            expectEvent(TaskTrackerServiceEvent.TaskUpdated, rootTask.task);
+            expectEvent(TaskServiceEvent.TaskUpdated, rootTask.task);
         });
 
         test("should complete task with custom result", () => {
@@ -209,7 +209,7 @@ describe("Task Tree Implementation", () => {
             expect(task.task.error).toBe(error);
             expect(task.task.result).toBeUndefined();
             expect(task.task.status).toBe(TaskStatus.Failed);
-            expectEvent(TaskTrackerServiceEvent.TaskUpdated, task.task);
+            expectEvent(TaskServiceEvent.TaskUpdated, task.task);
         });
 
         test("should throw error when completing task with unfinished subtasks", () => {
@@ -264,8 +264,8 @@ describe("Task Tree Implementation", () => {
             expect(processingTask.task.status).toBe(TaskStatus.Cancelled);
             expect(processingTask.task.finishedAt).toBeDefined();
 
-            expectEvent(TaskTrackerServiceEvent.TaskUpdated, pendingTask.task);
-            expectEvent(TaskTrackerServiceEvent.TaskUpdated, processingTask.task);
+            expectEvent(TaskServiceEvent.TaskUpdated, pendingTask.task);
+            expectEvent(TaskServiceEvent.TaskUpdated, processingTask.task);
         });
 
         test("should throw error when completing or failing pending tasks", () => {
@@ -304,8 +304,8 @@ describe("Task Tree Implementation", () => {
             expect(() => service.getTask(completedRoot.id)).toThrow("Invalid task id");
             expect(() => service.getTask(cancelledChild.id)).toThrow("Invalid task id");
             expect(service.getTask(activeRoot.id)).toBeDefined();
-            expectEvent(TaskTrackerServiceEvent.TaskDeleted, completedRootTask);
-            expectEvent(TaskTrackerServiceEvent.TaskDeleted, cancelledChildTask);
+            expectEvent(TaskServiceEvent.TaskDeleted, completedRootTask);
+            expectEvent(TaskServiceEvent.TaskDeleted, cancelledChildTask);
         });
     });
 });
