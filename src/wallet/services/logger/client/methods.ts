@@ -1,5 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
-import { type LogEntity, type LogLevel, LOGGER_SERVICE_NAME } from ".";
+import { type LogEntity, type LogLevel, LOGGER_SERVICE_NAME, type LogOrigin } from ".";
 
 export enum LoggerServiceMethod {
     AddLog,
@@ -30,6 +30,7 @@ export class AddLogRequest extends RequestMessage {
         public readonly args: any,
         public readonly message?: string,
         public readonly source?: string,
+        public readonly origin?: LogOrigin,
     ) {
         super(LOGGER_SERVICE_NAME, LoggerServiceMethod.AddLog);
     }

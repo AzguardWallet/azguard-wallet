@@ -1,4 +1,4 @@
-import { IMessage, MessageType } from ".";
+import { type IMessage, MessageType } from ".";
 
 export abstract class ResponseMessage implements IMessage {
     public readonly type = MessageType.Response;

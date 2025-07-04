@@ -1,3 +1,5 @@
+import { CircularBuffer } from "@/wallet/utils/arrays";
+
 export enum LogOrigin {
     BG = "BG",
     UI = "UI",
@@ -22,41 +24,106 @@ export type LogEntity = {
 
 export interface ILogs {
     add(log: LogEntity): void;
+    add(
+		level: LogLevel,
+		args: any,
+		message?: string,
+		source?: string,
+		origin?: LogOrigin
+	): void;
     get(count?: number): LogEntity[];
 }
 
 export interface ILogsAsync {
     addLog(log: LogEntity): Promise<void>;
+    addLog(
+		level: LogLevel,
+		args: any,
+		message?: string,
+		source?: string,
+		origin?: LogOrigin
+	): Promise<void>;
     getLogs(count?: number): Promise<LogEntity[]>;
 }
 
 export class DummyLogger implements ILogsAsync {
-    async addLog(log: LogEntity): Promise<void> {
+    async addLog(..._args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): Promise<void> {
         return;
     }
 
-    async getLogs(count?: number): Promise<LogEntity[]> {
+    async getLogs(_count?: number): Promise<LogEntity[]> {
         return [];
     }
 }
 
 export class InMemoryLogs implements ILogs {
-    private logs: LogEntity[] = [];
+	private logs: CircularBuffer<LogEntity>;
 
-    private readonly TTL_MS = 1 * 60 * 60 * 1_000; // 1 Hour
-    private readonly MAX_ENTRIES = 1_000; // 1_000 entries
+	constructor(
+        private isDebugMode = true
+    ) {
+		this.logs = new CircularBuffer<LogEntity>(this.getMaxEntries());
+	}
 
-    add(log: LogEntity): void {
-        this.logs = this.logs.filter(l => log.ts - l.ts <= this.TTL_MS);
+	private getMaxEntries(): number {
+		return this.isDebugMode ? 10_000 : 1_000;
+	}
 
-        this.logs.push(log);
+    add(...args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): void {
+		let log: LogEntity;
 
-        if (this.logs.length > this.MAX_ENTRIES) {
-            this.logs = this.logs.slice(-this.MAX_ENTRIES);
-        }
-    }
+		if (typeof args[0] === "object" && "level" in args[0]) {
+			log = args[0] as LogEntity;
+		} else {
+			const [level, inputArgs, message, source, origin] = args as [
+				LogLevel,
+				any,
+				string?,
+				string?,
+				LogOrigin?
+			];
 
-    get(count?: number): LogEntity[] {
-        return count ? this.logs.slice(-count) : this.logs;
-    }
+			if (!this.isDebugMode && level === LogLevel.Debug) return;
+
+			const rawArgs = Array.isArray(inputArgs) ? inputArgs : [inputArgs];
+			const stringArgs = rawArgs.map(a => {
+				if (!a) return String(a);
+
+				if (typeof a === "object") {
+					try {
+						return JSON.stringify(a);
+					} catch {
+						return String(a);
+					}
+				}
+
+				return String(a);
+			});
+
+			log = {
+				origin: origin ?? LogOrigin.BG,
+				level,
+				ts: Date.now(),
+				args: stringArgs,
+				message,
+				source,
+			};
+		}
+
+		if (!this.isDebugMode && log.level === LogLevel.Debug) return;
+
+		this.logs.add(log);
+	}
+
+	get(count?: number): LogEntity[] {
+		const logs = this.logs.get();
+		return count ? logs.slice(-count) : logs;
+	}
+
+	setDebugMode(isDebug: boolean): void {
+		if (isDebug !== this.isDebugMode) {
+			this.isDebugMode = isDebug;
+			this.logs.resize(this.getMaxEntries());
+		}
+	}
 }

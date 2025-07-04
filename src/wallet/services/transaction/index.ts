@@ -70,7 +70,6 @@ export class TransactionService extends Service {
             }
             default: {
                 this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
-                // console.error(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }
@@ -131,11 +130,9 @@ export class TransactionService extends Service {
     }
 
     private readonly onAccountDeleted = async (account: Account) => {
-        this.log(LogLevel.Debug, `account ${account.address} deleted, remove related txs`);
-        // console.debug(`account ${account.address} deleted, remove related txs`);
+        this.log(LogLevel.Debug, `Account ${account.address} deleted, remove related txs`);
         for (const tx of (await this.txs.getValues()).filter(x => x.account === account.address)) {
-            this.log(LogLevel.Debug, `remove tx ${tx.hash}`);
-            // console.debug(`remove tx ${tx.hash}`);
+            this.log(LogLevel.Debug, `Remove tx ${tx.hash}`);
             this.pending.delete(tx.hash);
             await this.txs.delete(tx.hash);
             this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionDeleted, tx));
@@ -149,12 +146,10 @@ export class TransactionService extends Service {
                     this.pending.set(tx.hash, tx);
                 }
                 this.log(LogLevel.Debug, "Transaction service initialized");
-                // console.debug("Transaction service initialized");
                 break;
             }
             catch (error) {
                 this.log(LogLevel.Error, "Failed to initialize transaction service. Retry...");
-                // console.error("Failed to initialize transaction service. Retry...");
                 await sleep(1000);
             }
         }
@@ -168,18 +163,15 @@ export class TransactionService extends Service {
                 if (activeProfile) {
                     try {
                         this.log(LogLevel.Debug, `Sync ${this.pending.size} transactions...`);
-                        // console.debug(`Sync ${this.pending.size} transactions...`);
                         const start = Date.now();
                         await Promise.allSettled(
                             this.pending.values().map(x => this.updateTx(x)),
                         );
                         const end = Date.now();
                         this.log(LogLevel.Debug, `Transactions synced in ${end - start}ms`);
-                        // console.debug(`Transactions synced in ${end - start}ms`);
                     }
                     catch (error) {
                         this.log(LogLevel.Error, ["Failed to sync transaction status.", error]);
-                        // console.error("Failed to sync transaction status.", error);
                     }
                 }
             }
@@ -189,11 +181,9 @@ export class TransactionService extends Service {
 
     private async updateTx(tx: Tx) {
         this.log(LogLevel.Debug, `Sync tx ${tx.hash.slice(0, 8)}`);
-        // console.debug(`Sync tx ${tx.hash.slice(0, 8)}`);
         const node = await this.networkService.getNode(tx.chainId);
         if (!node) {
             this.log(LogLevel.Error, "Unknown network");
-            // console.error("Unknown network");
             return;
         }
 
@@ -201,7 +191,6 @@ export class TransactionService extends Service {
         const status = this.getTxStatus(receipt.status);
         if (status === tx.status) {
             this.log(LogLevel.Debug, `Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
-            // console.debug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
             return;
         }
         
@@ -222,7 +211,6 @@ export class TransactionService extends Service {
             this.pending.delete(tx.hash);
         }
         this.log(LogLevel.Debug, `Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
-        // console.debug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
     }
 
     private getTxStatus(status: AztecTxStatus): TxStatus {

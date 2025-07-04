@@ -51,7 +51,6 @@ export class RpcService extends Service {
             }
             default: {
                 this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
-                // console.error(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }
