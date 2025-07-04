@@ -23,7 +23,6 @@ export type LogEntity = {
 }
 
 export interface ILogs {
-    setDebugMode(enabled: boolean): void;
     add(log: LogEntity): void;
     add(
 		level: LogLevel,
