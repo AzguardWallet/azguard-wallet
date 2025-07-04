@@ -40,6 +40,27 @@ export class StepContent implements ITaskContent {
     ) {}
 }
 
+export class BalanceUpdateContent implements ITaskContent {
+    public readonly kind = ContentKind.BalanceUpdate;
+    public readonly label = "Refresh token balance";
+    constructor(
+        public readonly tbId: number,
+        public readonly estimatedTime?: number,
+    ) {}
+}
+
+export class TokenMintContent implements ITaskContent {
+    public readonly kind = ContentKind.TokenMint;
+    public readonly label = "Mint token";
+    constructor(
+        public readonly name: string,
+        public readonly symbol: string,
+        public readonly decimals: number,
+        public readonly amount: string,
+        public readonly estimatedTime?: number,
+    ) {}
+}
+
 export enum ResultKind {
     Empty,
 }

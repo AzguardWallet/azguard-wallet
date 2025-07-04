@@ -46,19 +46,7 @@ import {
     type MintRequest,
     MintResponse,
 } from "./client"
-import { ContentKind, ITaskContent, StepContent } from "../task/client/models";
-
-export class TokenMintContent implements ITaskContent {
-    public readonly kind = ContentKind.TokenMint;
-    public readonly label = "Mint token";
-    constructor(
-        public readonly name: string,
-        public readonly symbol: string,
-        public readonly decimals: number,
-        public readonly amount: string,
-        public readonly estimatedTime?: number,
-    ) {}
-}
+import { StepContent, TokenMintContent } from "../task/client/models";
 
 export class FaucetService extends Service {
     private readonly pxeService: PxeServiceClient;

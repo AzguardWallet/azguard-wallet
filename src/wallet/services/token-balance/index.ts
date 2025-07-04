@@ -21,7 +21,7 @@ import type { TransactionService } from "@/wallet/services/transaction"
 import { type Tx, TxStatus } from "@/wallet/services/transaction/client"
 import type { ViewFn } from "@/wallet/utils/fn"
 import type { TaskService } from "@/wallet/services/task"
-import { ContentKind, ITaskContent, StepContent } from "@/wallet/services/task/client"
+import { BalanceUpdateContent } from "@/wallet/services/task/client"
 import {
 	type GetTokenBalancesRequest,
 	GetTokenBalancesResponse,
@@ -41,15 +41,6 @@ type TokenBalanceRaw = {
 	publicBalance: string | undefined
 	privateBalance: string | undefined
 	updatedAt: number
-}
-
-export class BalanceUpdateContent implements ITaskContent {
-    public readonly kind = ContentKind.BalanceUpdate;
-    public readonly label = "Refresh token balance";
-    constructor(
-        public readonly tbId: number,
-        public readonly estimatedTime?: number,
-    ) {}
 }
 
 export class TokenBalanceService extends Service {
