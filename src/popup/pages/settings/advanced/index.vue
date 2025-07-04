@@ -19,9 +19,7 @@ import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
-import { useSettings } from "@/composables/settings.js"
 const { openToast } = useToast()
-const { settings, updateSettings } = useSettings()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -34,10 +32,10 @@ const cacheStore = useCacheStore()
 let settingService = null
 const isLoading = ref(true)
 const sessionTtl = ref(DEFAULT_SETTINGS?.session?.ttl)
-const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developer?.developerMode) // ref(settings.value?.developer?.advancedMode)
-const isIndicationFailuresEnabled = ref(DEFAULT_SETTINGS?.developer?.indicateFailures) // ref(settings.value?.developer?.isIndicationFailuresEnabled)
+const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developer?.developerMode)
+const isIndicationFailuresEnabled = ref(DEFAULT_SETTINGS?.developer?.indicateFailures)
 const isDebugModeEnabled = ref(DEFAULT_SETTINGS?.developer?.debugMode)
-const settings1 = {
+const settings = {
 	ttl: {
 		title: "Auto-lock Timeout",
 		description: "Time (in minutes) after which the app locks automatically",
@@ -65,8 +63,8 @@ const settings1 = {
 }
 
 async function updateSetting(key, value) {
-	if (!settings1[key]) return
-	if (settings1[key].model.value === value) return
+	if (!settings[key]) return
+	if (settings[key].model.value === value) return
 
 	try {
 		await settingService.updateSetting(key, value)
@@ -78,7 +76,7 @@ async function updateSetting(key, value) {
 }
 
 async function applySetting(key, value) {
-	settings1[key].model.value = value
+	settings[key].model.value = value
 
 	switch (key) {
 		case "developerMode":
@@ -95,8 +93,8 @@ async function applySetting(key, value) {
 }
 
 function onSettingUpdate(setting) {
-	if (settings1[setting.key]) {
-		if (settings1[setting.key].model.value !== setting.value) {
+	if (settings[setting.key]) {
+		if (settings[setting.key].model.value !== setting.value) {
 			applySetting(setting.key, setting.value)
 		}
 	}
@@ -118,28 +116,12 @@ const handleFullReset = () => {
 	popupStore.open("confirm")
 }
 
-// watch(
-// 	() => isDeveloperModeEnabled.value,
-// 	async () => {
-// 		updateSettings("developer", "advancedMode", isDeveloperModeEnabled.value)
-// 		if (!isIndicationFailuresEnabled.value) {
-// 			isIndicationFailuresEnabled.value = true
-// 		}
-// 	},
-// )
-// watch(
-// 	() => isIndicationFailuresEnabled.value,
-// 	async () => {
-// 		updateSettings("developer", "isIndicationFailuresEnabled", isIndicationFailuresEnabled.value)
-// 	},
-// )
-
 onMounted(async () => {
 	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
 	const _settings = await settingService.getSettings()
 	_settings.forEach(s => {
-		if (settings1[s.key]) {
-			settings1[s.key].model.value = s.value
+		if (settings[s.key]) {
+			settings[s.key].model.value = s.value
 		}
 	})
 
@@ -156,55 +138,21 @@ onBeforeUnmount(() => {
 		<Breadcrumbs />
 
 		<Flex
-			v-for="sk in Object.keys(settings1).filter(sk => sk !== 'ttl')"
+			v-for="sk in Object.keys(settings).filter(sk => sk !== 'ttl')"
 			justify="between"
 		>
-			<template v-if="settings1[sk].visible.value">
+			<template v-if="settings[sk].visible.value">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> {{ settings1[sk].title }} </Text>
-					<Text size="12" weight="500" color="tertiary"> {{ settings1[sk].description }} </Text>
+					<Text size="13" weight="600" color="primary"> {{ settings[sk].title }} </Text>
+					<Text size="12" weight="500" color="tertiary"> {{ settings[sk].description }} </Text>
 				</Flex>
 
 				<Toggle
 					@update:modelValue="updateSetting(sk, $event)"
-					:modelValue="settings1[sk].model.value"
+					:modelValue="settings[sk].model.value"
 				/>
 			</template>
 		</Flex>
-
-
-		<!-- <Flex justify="between">
-			<Flex direction="column" gap="6">
-				<Text size="13" weight="600" color="primary"> Developer Mode </Text>
-				<Text size="12" weight="500" color="tertiary"> Access to entity metadata, etc </Text>
-			</Flex>
-
-			<Toggle v-model="isDeveloperModeEnabled" />
-		</Flex>
-
-		<Flex
-			v-if="isDeveloperModeEnabled"
-			direction="column"
-			gap="24"
-		>
-			<Flex justify="between">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Indicate failures </Text>
-					<Text size="12" weight="500" color="tertiary"> Highlight errors and warnings in header </Text>
-				</Flex>
-
-				<Toggle v-model="isIndicationFailuresEnabled" />
-			</Flex> -->
-
-			<!-- <Flex direction="column" gap="12">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Full storage reset </Text>
-					<Text size="12" weight="500" height="140" color="tertiary"> All local data will be deleted </Text>
-				</Flex>
-
-				<Button @click="handleFullReset" type="red" size="small" disabled> Full Reset </Button>
-			</Flex> -->
-		<!-- </Flex> -->
 
 		<Navigation />
 	</Flex>
