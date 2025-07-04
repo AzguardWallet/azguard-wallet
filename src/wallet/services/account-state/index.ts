@@ -131,7 +131,6 @@ export class AccountStateService extends Service {
             }
             default: {
                 this.log(LogLevel.Error, `Invalid request method ${request.method}.`)
-                // console.error(`Invalid request method ${request.method}.`);
                 return undefined;
             }
         }
@@ -196,7 +195,6 @@ export class AccountStateService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to fetch registered accounts", error]);
-            // console.error("Failed to fetch registered accounts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -209,7 +207,6 @@ export class AccountStateService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to fetch registered senders", error]);
-            // console.error("Failed to fetch registered senders", error);
             throw new Error("PXE request failed");
         }
     }
@@ -223,7 +220,6 @@ export class AccountStateService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to register sender", error]);
-            // console.error("Failed to register sender", error);
             throw new Error("PXE request failed");
         }
     }
@@ -237,7 +233,6 @@ export class AccountStateService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to remove sender", error]);
-            // console.error("Failed to remove sender", error);
             throw new Error("PXE request failed");
         }
     }
@@ -250,7 +245,6 @@ export class AccountStateService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to fetch registered contracts", error]);
-            // console.error("Failed to fetch registered contracts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -281,7 +275,6 @@ export class AccountStateService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to fetch incoming notes", error]);
-            // console.error("Failed to fetch incoming notes", error);
             throw new Error("PXE request failed");
         }
     }
@@ -294,7 +287,6 @@ export class AccountStateService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to fetch PXE info", error]);
-            // console.error("Failed to fetch PXE info", error);
             throw new Error("PXE request failed");
         }
     }

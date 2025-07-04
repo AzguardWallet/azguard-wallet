@@ -1,6 +1,7 @@
 import { ServiceClient } from "@/wallet/base/message-service/service-client";
 import { ConsoleSnifferServiceEvent } from "./events";
 import type { LogEntity } from "@/wallet/services/logger/client";
+import { DummyLogger } from "@/wallet/services/logger/client";
 
 export * from "./events";
 
@@ -11,7 +12,7 @@ export class ConsoleSnifferServiceClient extends ServiceClient<void, ConsoleSnif
         name?: string,
         private readonly onLogAdded?: (log: LogEntity) => void,
     ) {
-        super(CONSOLE_SNIFFER_SERVICE_NAME, name);
+        super(CONSOLE_SNIFFER_SERVICE_NAME, new DummyLogger(), name);
     }
 
     protected onEvent(event: ConsoleSnifferServiceEvent, payload: unknown): void {

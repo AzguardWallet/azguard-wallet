@@ -74,11 +74,9 @@ export class WalletConnectService extends Service {
                 }
 
                 this.log(LogLevel.Debug, "Wallet connect service initialized");
-                // console.debug("Wallet connect service initialized");
                 break;
             } catch (error) {
                 this.log(LogLevel.Error, ["Failed to initialize wallet connect service. Retry...", error]);
-                // console.error("Failed to initialize wallet connect service. Retry...", error);
                 await sleep(1000);
             }
         }
@@ -104,7 +102,7 @@ export class WalletConnectService extends Service {
             "pairing.logger",
             "pairing.pairings.logger",
         ]
-        // biome-ignore lint/complexity/noForEach: <explanation>
+
         paths.forEach(path => {
             const keys = path.split('.');
             const target = keys.reduce((obj, key) => obj[key], core as any);
@@ -126,7 +124,6 @@ export class WalletConnectService extends Service {
             }
             default: {
                 this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
-                // console.error(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }
@@ -141,7 +138,7 @@ export class WalletConnectService extends Service {
 
     private readonly onSessionProposal = async (payload: WalletKitTypes.SessionProposal) => {
         this.log(LogLevel.Debug, ["WC: session proposal received", payload]);
-        // console.debug('WC: session proposal received', payload);
+
         // approve proposal
         let dappSession: DappSessionInfo;
         try {
@@ -166,7 +163,6 @@ export class WalletConnectService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Debug, ["WC: session proposal rejected", error]);
-            // console.debug("WC: session proposal rejected", error);
             this.rejectSession(payload.id);
             return;
         }
@@ -185,7 +181,6 @@ export class WalletConnectService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Debug, ["WC: session approval failed", error]);
-            // console.debug("WC: session approval failed", error);
             this.dappSessions.deleteDappSession(dappSession.id);
             this.rejectSession(payload.id);
             return;
@@ -196,7 +191,6 @@ export class WalletConnectService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Debug, ["WC: session upgrade failed", error]);
-            // console.debug("WC: session upgrade failed", error);
             this.dappSessions.deleteDappSession(dappSession.id);
             this.disconnectSession(wcSession.topic);
             return;
@@ -205,13 +199,11 @@ export class WalletConnectService extends Service {
 
     private readonly onProposalExpire = async (payload: WalletKitTypes.ProposalExpire) => {
         this.log(LogLevel.Debug, ["WC: proposal expire received", payload]);
-        // console.debug('WC: proposal expire received', payload);
         this.dappInteractions.cancelInteraction(payload.id.toString());
     }
 
     private readonly onSessionRequest = async (payload: WalletKitTypes.SessionRequest) => {
         this.log(LogLevel.Debug, ["WC: session request received", payload]);
-        // console.debug('WC: session request received', payload);
         try {
             switch (payload.params.request.method) {
                 case RpcMethod.get_wallet_info: {
@@ -243,26 +235,22 @@ export class WalletConnectService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Debug, ["WC: session request failed", error]);
-            // console.debug("WC: session request failed", error);
             this.rejectRequest(payload, (error as Error)?.message ?? error as string ?? "Unknown error");
         }
     }
 
     private readonly onSessionRequestExpire = async (payload: WalletKitTypes.SessionRequestExpire) => {
         this.log(LogLevel.Debug, ["WC: session request expire received", payload]);
-        // console.debug('WC: session request expire received', payload);
         this.dappInteractions.cancelInteraction(payload.id.toString());
     }
 
     private readonly onSessionDelete = async (payload: WalletKitTypes.SessionDelete) => {
         this.log(LogLevel.Debug, ["WC: session delete received", payload]);
-        // console.debug('WC: session delete received', payload);
         this.dappSessions.deleteDappSession(payload.topic)
     }
 
     private readonly onSessionAuthenticate = async (payload: WalletKitTypes.SessionAuthenticate) => {
         this.log(LogLevel.Debug, ["Session authenticate received", payload]);
-        // console.debug('Session authenticate received', payload);
 
         // const accounts = await this.accounts.getAccounts("9181ab0c", 31337)
         // const account = accounts[0]
@@ -319,7 +307,6 @@ export class WalletConnectService extends Service {
     private readonly onDappSessionUpdated = async (dappSession: DappSession) => {
         if (!this.walletKit) {
             this.log(LogLevel.Warning, "WC session wasn't updated");
-            // console.warn("WC session wasn't updated");
             return;
         }
         try {
@@ -338,14 +325,12 @@ export class WalletConnectService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to update WC session", error]);
-            // console.error("Failed to update WC session", error);
         }
     }
     
     private readonly onDappSessionDeleted = async (dappSession: DappSession) => {
         if (!this.walletKit) {
             this.log(LogLevel.Warning, "WC session wasn't disconnected");
-            // console.warn("WC session wasn't disconnected");
             return;
         }
         try {
@@ -359,7 +344,6 @@ export class WalletConnectService extends Service {
         }
         catch (error) {
             this.log(LogLevel.Error, ["Failed to disconnect WC session", error]);
-            // console.error("Failed to disconnect WC session", error);
         }
     }
 

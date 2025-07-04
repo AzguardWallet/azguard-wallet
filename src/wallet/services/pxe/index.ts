@@ -1,5 +1,5 @@
 import { SPONSORED_FPC_SALT } from "@aztec/constants";
-import { getPXEServiceConfig, PXEServiceConfig } from "@aztec/pxe/config";
+import { getPXEServiceConfig, type PXEServiceConfig } from "@aztec/pxe/config";
 import { createPXEService } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/fields";
 import { AuthRegistryContractArtifact } from "@aztec/noir-contracts.js/AuthRegistry";
@@ -14,42 +14,43 @@ import { RouterContractArtifact } from "@aztec/noir-contracts.js/Router";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
 import { TokenBlacklistContractArtifact } from "@aztec/noir-contracts.js/TokenBlacklist";
-import { ContractArtifact, ContractArtifactSchema } from "@aztec/stdlib/abi";
+import { type ContractArtifact, ContractArtifactSchema } from "@aztec/stdlib/abi";
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
-    ContractClassWithId,
-    ContractInstanceWithAddress,
+    type ContractClassWithId,
+    type ContractInstanceWithAddress,
     ContractInstanceWithAddressSchema,
     getContractClassFromArtifact,
     getContractInstanceFromDeployParams,
 } from "@aztec/stdlib/contract";
-import { AztecNode, ContractClassMetadata, ContractMetadata, createAztecNodeClient, PXE } from "@aztec/stdlib/interfaces/client";
+import { type AztecNode, type ContractClassMetadata, type ContractMetadata, createAztecNodeClient, type PXE } from "@aztec/stdlib/interfaces/client";
 import { NotesFilterSchema } from "@aztec/stdlib/note";
 import { PrivateExecutionResult, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
 import { z } from "zod";
 import { Service } from "@/wallet/base/message-service/service.ts";
-import { Profile, ProfileServiceClient } from "@/wallet/services/profile/client";
-import { Network } from "@/wallet/services/network/client";
+import { type Profile, ProfileServiceClient } from "@/wallet/services/profile/client";
+import type { Network } from "@/wallet/services/network/client";
+import { LoggerServiceClient, LogLevel } from "@/wallet/services/logger/client";
 import { Lock } from "@/wallet/utils";
 import {
-    GetContractClassMetadataParams,
-    GetContractMetadataParams, 
-    GetContractsParams,
-    GetCurrentBaseFeesParams,
-    GetNodeInfoParams,
-    GetNotesParams,
-    GetPXEInfoParams,
-    GetSendersParams,
-    GetRegisteredAccountsParams,
-    ProveTxParams,
-    RegisterAccountParams,
-    RegisterContractParams,
-    RegisterSenderParams,
-    RemoveSenderParams,
-    SendTxParams,
-    SimulateTxParams,
-    SimulateUtilityParams,
+    type GetContractClassMetadataParams,
+    type GetContractMetadataParams, 
+    type GetContractsParams,
+    type GetCurrentBaseFeesParams,
+    type GetNodeInfoParams,
+    type GetNotesParams,
+    type GetPXEInfoParams,
+    type GetSendersParams,
+    type GetRegisteredAccountsParams,
+    type ProveTxParams,
+    type RegisterAccountParams,
+    type RegisterContractParams,
+    type RegisterSenderParams,
+    type RemoveSenderParams,
+    type SendTxParams,
+    type SimulateTxParams,
+    type SimulateUtilityParams,
     PXE_SERVICE_NAME,
     PxeServiceMethod,
 } from "./client";
@@ -66,7 +67,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
     private readonly knownInstances = new Map<string, ContractInstanceWithAddress>();
 
     public constructor() {
-        super(PXE_SERVICE_NAME);
+        super(PXE_SERVICE_NAME, new LoggerServiceClient());
         this.profileService = new ProfileServiceClient(
             undefined,
             undefined,
@@ -369,7 +370,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             return await ContractArtifactSchema.parseAsync(artifact);
         }
         catch (error: unknown) {
-            console.error("Failed to parse artifact from registry", error);
+            this.log(LogLevel.Error, ["Failed to parse artifact from registry", error])
             return undefined;
         }
     }
@@ -383,7 +384,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             return await ContractInstanceWithAddressSchema.parseAsync(instance);
         }
         catch (error: unknown) {
-            console.error("Failed to parse instance from registry", error);
+            this.log(LogLevel.Error, ["Failed to parse instance from registry", error])
             return undefined;
         }
     }
@@ -396,13 +397,13 @@ export class PxeService extends Service<PxeServiceMethod, void> {
         try {
             const data = await fetch(`${registryUrl}${path}`);
             if (!data.ok) {
-                console.debug("Failed to get artifact from public registry", data.status, data.statusText);
+                this.log(LogLevel.Debug, ["Failed to get artifact from public registry", data.status, data.statusText])
                 return undefined;
             }
             return await data.json();
         }
         catch (error: unknown) {
-            console.error("Failed to get artifact from public registry", error);
+            this.log(LogLevel.Error, ["Failed to get artifact from public registry", error])
             return undefined;
         }
     }

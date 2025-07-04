@@ -1,25 +1,48 @@
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
+    type ILogsAsync,
+    type LogEntity,
+    LogLevel,
+    LogOrigin
+} from "@/wallet/services/logger/client/models";
+import {
     EventContent,
     EventMessage,
-    IMessage,
+    type IMessage,
     MessageType,
-    RequestMessage,
+    type RequestMessage,
     ResponseContent,
     ResponseMessage,
 } from "./messages";
 
 export abstract class Service<TMethod, TEvent> {
-    protected constructor(public readonly name: string) {}
+    private readonly logger: ILogsAsync;
+
+    protected constructor(
+        public readonly name: string,
+        logger: ILogsAsync,
+    ) {
+        this.logger = logger;
+    }
+
+    protected log(level: LogLevel, args: any, message?: string) {
+        this.logger.addLog(
+            level,
+            args,
+            message,
+            this.name,
+            LogOrigin.BG,
+        );
+    }
 
     public start() {
         chrome.runtime.onMessage.addListener(this.onMessageListener);
-        // console.debug("Service started", this.name);
+        this.log(LogLevel.Debug, `Service started ${this.name}`);
     }
 
     public stop() {
         chrome.runtime.onMessage.removeListener(this.onMessageListener);
-        // console.debug("Service stopped", this.name);
+        this.log(LogLevel.Debug, `Service stopped ${this.name}`);
     }
 
     private readonly onMessageListener = (message: IMessage<unknown>): boolean => {
@@ -30,24 +53,24 @@ export abstract class Service<TMethod, TEvent> {
     }
 
     private readonly onMessage = async (message: IMessage<unknown>) => {
-        // console.debug("Message received", message);
+        this.log(LogLevel.Debug, ["Message received", message]);
         if (message.type !== MessageType.Request || 
             message.from === undefined ||
             message.content === undefined
         ) {
-            // console.warn("Invalid message");
+            this.log(LogLevel.Warning, "Invalid message");
             return;
         }
         const { content: request } = message as RequestMessage<TMethod, unknown>;
-        // console.debug("Request received", request);
+        this.log(LogLevel.Debug, ["Request received", request]);
         if (!request.requestId || !request.method) {
-            // console.warn("Invalid request");
+            this.log(LogLevel.Warning, "Invalid request");
             return;
         }
         let responseContent: ResponseContent<unknown>;
         try {
             const result = await this.onRequest(request.method, request.params);
-            // console.debug("Request processed", request.requestId, result);
+            this.log(LogLevel.Debug, ["Request processed", request.requestId, result]);
             responseContent = new ResponseContent(
                 request.requestId,
                 jsonSanitize(result),
@@ -55,21 +78,21 @@ export abstract class Service<TMethod, TEvent> {
             );
         }
         catch (error: unknown) {
-            // console.debug("Request failed", request.requestId, error);
+            this.log(LogLevel.Debug, ["Request failed", request.requestId, error]);
             responseContent = new ResponseContent(
                 request.requestId,
                 undefined,
                 `${(error as Error)?.message ?? error ?? "Unknown error"}`,
             );
         }
-        // console.debug("Response created", responseContent);
+        this.log(LogLevel.Debug, ["Request created", responseContent]);
         const responseMessage = new ResponseMessage(
             responseContent,
             this.name,
             message.from,
         );
         chrome.runtime.sendMessage(responseMessage);
-        // console.debug("Message sent", responseMessage);
+        this.log(LogLevel.Debug, ["Message sent", responseMessage]);
     };
 
     protected emit(event: TEvent, payload?: unknown, to?: string) {
@@ -77,14 +100,14 @@ export abstract class Service<TMethod, TEvent> {
             event,
             jsonSanitize(payload),
         );
-        // console.debug("Event created", eventContent);
+        this.log(LogLevel.Debug, ["Event created", eventContent]);
         const eventMessage = new EventMessage(
             eventContent,
             this.name,
             to,
         );
         chrome.runtime.sendMessage(eventMessage);
-        // console.debug("Message sent", eventMessage);
+        this.log(LogLevel.Debug, ["Message sent", eventMessage]);
     }
 
     protected abstract onRequest(method: TMethod, params: unknown): Promise<unknown>;

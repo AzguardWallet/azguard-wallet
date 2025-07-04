@@ -1,5 +1,5 @@
 import type { EventMessage, RequestMessage, ResponseMessage } from "./messages";
-import { type ILogs, type LogEntity, type LogLevel, LogOrigin } from "@/wallet/services/logger/client";
+import { type ILogs, type LogLevel, LogOrigin } from "@/wallet/services/logger/client";
 
 export abstract class Service {
     constructor(
@@ -11,30 +11,12 @@ export abstract class Service {
     abstract process(request: RequestMessage): Promise<ResponseMessage | undefined>;
 
     protected log(level: LogLevel, args: any, message?: string) {
-        const rawArgs = Array.isArray(args) ? args : [args];
-        const stringArgs = rawArgs.map(a => {
-            if (!a) return String(a)
-            
-            if (typeof a === "object") {
-                try {
-                    return JSON.stringify(a);
-                } catch {
-                    return String(a)
-                }
-            }
-
-            return String(a)
-        })
-
-        const newLogEntity: LogEntity = {
-            origin: LogOrigin.BG,
+        this.logger.add(
             level,
-            ts: Date.now(),
-            args: stringArgs,
+            args,
             message,
-            source: this.name,
-        };
-
-        this.logger.add(newLogEntity);
+            this.name,
+            LogOrigin.BG,
+        );
     }
 }

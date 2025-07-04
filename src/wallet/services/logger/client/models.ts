@@ -1,3 +1,5 @@
+import { CircularBuffer } from "@/wallet/utils/arrays";
+
 export enum LogOrigin {
     BG = "BG",
     UI = "UI",
@@ -23,53 +25,106 @@ export type LogEntity = {
 export interface ILogs {
     setDebugLogging(enabled: boolean): void;
     add(log: LogEntity): void;
+    add(
+		level: LogLevel,
+		args: any,
+		message?: string,
+		source?: string,
+		origin?: LogOrigin
+	): void;
     get(count?: number): LogEntity[];
 }
 
 export interface ILogsAsync {
     addLog(log: LogEntity): Promise<void>;
+    addLog(
+		level: LogLevel,
+		args: any,
+		message?: string,
+		source?: string,
+		origin?: LogOrigin
+	): Promise<void>;
     getLogs(count?: number): Promise<LogEntity[]>;
 }
 
 export class DummyLogger implements ILogsAsync {
-    async addLog(log: LogEntity): Promise<void> {
+    async addLog(..._args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): Promise<void> {
         return;
     }
 
-    async getLogs(count?: number): Promise<LogEntity[]> {
+    async getLogs(_count?: number): Promise<LogEntity[]> {
         return [];
     }
 }
 
 export class InMemoryLogs implements ILogs {
-    private logs: LogEntity[] = [];
+	private logs: CircularBuffer<LogEntity>;
 
-    private readonly TTL_MS = 1 * 60 * 60 * 1_000; // 1 Hour
-    private maxEntries!: number;
-    private logDebug = false;
-
-    constructor(logDebug = false) {
-		this.setDebugLogging(logDebug);
+	constructor(
+        private isDebugMode = true
+    ) {
+		this.logs = new CircularBuffer<LogEntity>(this.getMaxEntries());
 	}
 
-    setDebugLogging(enabled: boolean): void {
-		this.logDebug = enabled;
-		this.maxEntries = this.logDebug ? 10_000 : 1_000;
+	private getMaxEntries(): number {
+		return this.isDebugMode ? 10_000 : 1_000;
 	}
 
-    add(log: LogEntity): void {
-        if (log.level === LogLevel.Debug && !this.logDebug) return;
+    add(...args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): void {
+		let log: LogEntity;
 
-        this.logs = this.logs.filter(l => log.ts - l.ts <= this.TTL_MS);
+		if (typeof args[0] === "object" && "level" in args[0]) {
+			log = args[0] as LogEntity;
+		} else {
+			const [level, inputArgs, message, source, origin] = args as [
+				LogLevel,
+				any,
+				string?,
+				string?,
+				LogOrigin?
+			];
 
-        this.logs.push(log);
+			if (!this.isDebugMode && level === LogLevel.Debug) return;
 
-        if (this.logs.length > this.maxEntries) {
-            this.logs = this.logs.slice(-this.maxEntries);
-        }
-    }
+			const rawArgs = Array.isArray(inputArgs) ? inputArgs : [inputArgs];
+			const stringArgs = rawArgs.map(a => {
+				if (!a) return String(a);
 
-    get(count?: number): LogEntity[] {
-        return count ? this.logs.slice(-count) : this.logs;
-    }
+				if (typeof a === "object") {
+					try {
+						return JSON.stringify(a);
+					} catch {
+						return String(a);
+					}
+				}
+
+				return String(a);
+			});
+
+			log = {
+				origin: origin ?? LogOrigin.BG,
+				level,
+				ts: Date.now(),
+				args: stringArgs,
+				message,
+				source,
+			};
+		}
+
+		if (!this.isDebugMode && log.level === LogLevel.Debug) return;
+
+		this.logs.add(log);
+	}
+
+	get(count?: number): LogEntity[] {
+		const logs = this.logs.get();
+		return count ? logs.slice(-count) : logs;
+	}
+
+	setDebugMode(isDebug: boolean): void {
+		if (isDebug !== this.isDebugMode) {
+			this.isDebugMode = isDebug;
+			this.logs.resize(this.getMaxEntries());
+		}
+	}
 }

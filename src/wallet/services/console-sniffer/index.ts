@@ -1,5 +1,5 @@
 import { Service } from "@/wallet/base/message-service/service.ts";
-import { LogLevel, type LogOrigin } from "../logger/client";
+import { DummyLogger, LogLevel, type LogOrigin } from "../logger/client";
 import { CONSOLE_SNIFFER_SERVICE_NAME, ConsoleSnifferServiceEvent } from "./client";
 
 export class ConsoleSnifferService extends Service<void, ConsoleSnifferServiceEvent> {
@@ -7,7 +7,7 @@ export class ConsoleSnifferService extends Service<void, ConsoleSnifferServiceEv
         private readonly origin: LogOrigin,
         private readonly source?: string,
     ) {
-        super(CONSOLE_SNIFFER_SERVICE_NAME);
+        super(CONSOLE_SNIFFER_SERVICE_NAME, new DummyLogger());
 
         this.patchConsoleMethods()
     }
