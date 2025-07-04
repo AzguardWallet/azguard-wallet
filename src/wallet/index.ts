@@ -16,6 +16,7 @@ import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
 import { LoggerService } from "./services/logger";
+import { SettingService } from "./services/settings";
 import { LOGGER_SERVICE_NAME } from "./services/logger/client";
 import { InMemoryLogs, LogLevel } from "./services/logger/client";
 import { sleep } from "./utils";
@@ -57,8 +58,9 @@ export async function stop() {
 const logs = new InMemoryLogs();
 
 // services
+const settingService = new SettingService(logs, broadcast)
 const loggerService = new LoggerService(logs, broadcast);
-const profileService = new ProfileService(logs, broadcast);
+const profileService = new ProfileService(settingService, logs, broadcast);
 const networkService = new NetworkService(profileService, logs, broadcast);
 const accountService = new AccountService(profileService, networkService, logs, broadcast);
 const tokenService = new TokenService(profileService, networkService,accountService, logs, broadcast);
@@ -141,6 +143,7 @@ const services = new Map<string, Service>([
     [walletConnectService.name, walletConnectService],
     [accountStateService.name, accountStateService],
     [loggerService.name, loggerService],
+    [settingService.name, settingService]
 ]);
 
 // state

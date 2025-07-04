@@ -10,9 +10,9 @@
 /** Components */
 import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
 
-/** Composabled */
-import { useSettings } from "@/composables/settings.js"
-const { settings, updateSettings } = useSettings()
+/** Utils */
+import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -22,7 +22,13 @@ const appStore = useAppStore()
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
-const theme = computed(() => settings.value.appearance?.theme)
+const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark") // computed(() => settings.value.appearance?.theme)
+let settingService = null
+function onSettingUpdate(setting) {
+	if (setting.key === "theme") {
+		theme.value = setting.value
+	}
+}
 
 const handleOpen = target => {
 	chrome.windows.create({
@@ -33,10 +39,27 @@ const handleOpen = target => {
 	})
 }
 
+const handleSelectTheme = (theme) => {
+	try {
+		settingService.updateSetting("theme", theme)
+	} catch (err) {
+		console.error(`Failed theme updating ${err}`);
+	}
+}
+
 const handleImport = () => {
 	cacheStore.importType = "default"
 	popupStore.open("import")
 }
+
+onMounted(async () => {
+	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
+	theme.value = (await settingService.getSetting("theme"))?.value
+})
+
+onBeforeUnmount(() => {
+	settingService.dispose()
+})
 </script>
 
 <template>
@@ -74,21 +97,21 @@ const handleImport = () => {
 
 			<Flex align="center" gap="4" :class="$style.theme_switcher">
 				<Icon
-					@click="updateSettings('appearance', 'theme', 'light')"
+					@click="handleSelectTheme('light')"
 					name="sun"
 					size="14"
 					color="tertiary"
 					:class="theme === 'light' && $style.active"
 				/>
 				<Icon
-					@click="updateSettings('appearance', 'theme', 'dark')"
+					@click="handleSelectTheme('dark')"
 					name="moon"
 					size="14"
 					color="tertiary"
 					:class="theme === 'dark' && $style.active"
 				/>
 				<Icon
-					@click="updateSettings('appearance', 'theme', 'system')"
+					@click="handleSelectTheme('system')"
 					name="settings"
 					size="14"
 					color="tertiary"

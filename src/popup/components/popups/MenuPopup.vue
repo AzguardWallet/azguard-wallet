@@ -8,10 +8,8 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { managers } from "@/utils/core.js"
-
-/** Composables */
-import { useSettings } from "@/composables/settings.js"
-const { settings } = useSettings()
+import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
@@ -27,7 +25,14 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.menu?.order
 })
 
-const isDeveloperModeEnabled = computed(() => settings.value?.developer?.advancedMode)
+let settingService = null
+const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developer?.developerMode)
+
+function onSettingUpdate(setting) {
+	if (setting.key === "developerMode") {
+		isDeveloperModeEnabled.value = setting.value
+	}
+}
 
 const handleNavigation = () => {
 	router.push("/popup/settings")
@@ -44,6 +49,15 @@ const handleOpenLogs = () => {
 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
 	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
 }
+
+onMounted(async () => {
+	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
+	isDeveloperModeEnabled.value = (await settingService.getSetting("developerMode"))?.value
+})
+
+onBeforeUnmount(() => {
+	settingService.dispose()
+})
 </script>
 
 <template>

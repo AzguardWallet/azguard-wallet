@@ -21,6 +21,7 @@ export type LogEntity = {
 }
 
 export interface ILogs {
+    setDebugLogging(enabled: boolean): void;
     add(log: LogEntity): void;
     get(count?: number): LogEntity[];
 }
@@ -44,15 +45,27 @@ export class InMemoryLogs implements ILogs {
     private logs: LogEntity[] = [];
 
     private readonly TTL_MS = 1 * 60 * 60 * 1_000; // 1 Hour
-    private readonly MAX_ENTRIES = 1_000; // 1_000 entries
+    private maxEntries!: number;
+    private logDebug = false;
+
+    constructor(logDebug = false) {
+		this.setDebugLogging(logDebug);
+	}
+
+    setDebugLogging(enabled: boolean): void {
+		this.logDebug = enabled;
+		this.maxEntries = this.logDebug ? 10_000 : 1_000;
+	}
 
     add(log: LogEntity): void {
+        if (log.level === LogLevel.Debug && !this.logDebug) return;
+
         this.logs = this.logs.filter(l => log.ts - l.ts <= this.TTL_MS);
 
         this.logs.push(log);
 
-        if (this.logs.length > this.MAX_ENTRIES) {
-            this.logs = this.logs.slice(-this.MAX_ENTRIES);
+        if (this.logs.length > this.maxEntries) {
+            this.logs = this.logs.slice(-this.maxEntries);
         }
     }
 
