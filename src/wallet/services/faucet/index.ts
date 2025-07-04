@@ -46,7 +46,19 @@ import {
     type MintRequest,
     MintResponse,
 } from "./client"
-import { StepContent } from "../task/client/models";
+import { ContentKind, ITaskContent, StepContent } from "../task/client/models";
+
+export class TokenMintContent implements ITaskContent {
+    public readonly kind = ContentKind.TokenMint;
+    public readonly label = "Mint token";
+    constructor(
+        public readonly name: string,
+        public readonly symbol: string,
+        public readonly decimals: number,
+        public readonly amount: string,
+        public readonly estimatedTime?: number,
+    ) {}
+}
 
 export class FaucetService extends Service {
     private readonly pxeService: PxeServiceClient;
@@ -120,7 +132,7 @@ export class FaucetService extends Service {
         let instance: ContractInstanceWithAddress;
         const origin = new TxOrigin(OriginType.UI, "Faucet")
 
-        const rootTask = this.taskService.startNewTask(new StepContent("Mint token"));
+        const rootTask = this.taskService.startNewTask(new TokenMintContent(name, symbol, decimals, amount));
         const checkTask = rootTask.startSubtask(new StepContent("Check if need to deploy token"));
         try {
             deployActions = [];

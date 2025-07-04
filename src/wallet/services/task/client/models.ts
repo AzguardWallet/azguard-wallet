@@ -22,6 +22,8 @@ export type Task = {
 
 export enum ContentKind {
     Step,
+    BalanceUpdate,
+    TokenMint,
 }
 
 export interface ITaskContent {

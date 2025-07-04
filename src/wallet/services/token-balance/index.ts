@@ -21,7 +21,7 @@ import type { TransactionService } from "@/wallet/services/transaction"
 import { type Tx, TxStatus } from "@/wallet/services/transaction/client"
 import type { ViewFn } from "@/wallet/utils/fn"
 import type { TaskService } from "@/wallet/services/task"
-import { StepContent } from "@/wallet/services/task/client"
+import { ContentKind, ITaskContent, StepContent } from "@/wallet/services/task/client"
 import {
 	type GetTokenBalancesRequest,
 	GetTokenBalancesResponse,
@@ -41,6 +41,15 @@ type TokenBalanceRaw = {
 	publicBalance: string | undefined
 	privateBalance: string | undefined
 	updatedAt: number
+}
+
+export class BalanceUpdateContent implements ITaskContent {
+    public readonly kind = ContentKind.BalanceUpdate;
+    public readonly label = "Refresh token balance";
+    constructor(
+        public readonly tbId: number,
+        public readonly estimatedTime?: number,
+    ) {}
 }
 
 export class TokenBalanceService extends Service {
@@ -143,7 +152,7 @@ export class TokenBalanceService extends Service {
 
 	private addBalanceToRefreshQueue(balance: TokenBalanceRaw): void {
 		if (!this.pendingTasks.has(balance.id)) {
-			const task = this.taskService.createNewTask(new StepContent("Refresh token balance"))
+			const task = this.taskService.createNewTask(new BalanceUpdateContent(balance.id))
 			this.pendingTasks.set(balance.id, task.id)
 		}
 		this.queue.priorityPass(balance)
@@ -338,7 +347,7 @@ export class TokenBalanceService extends Service {
 		for (const tb of tbs) {
 			let taskId = this.pendingTasks.get(tb.id)
 			if (!taskId) {
-				const task = this.taskService.startNewTask(new StepContent("Refresh token balance"))
+				const task = this.taskService.startNewTask(new BalanceUpdateContent(tb.id))
 				this.pendingTasks.set(tb.id, task.id)
 			} else {
 				this.taskService.startTask(taskId)
