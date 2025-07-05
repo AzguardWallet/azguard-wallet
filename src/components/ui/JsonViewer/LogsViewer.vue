@@ -1,6 +1,6 @@
 <script setup>
 /** Vendor */
-import { onMounted, ref, watch } from "vue"
+import { onMounted, ref, watch, withDirectives } from "vue"
 import { EditorView } from "codemirror"
 import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state"
 import {
@@ -13,6 +13,7 @@ import { searchKeymap } from "@codemirror/search"
 
 /** Utils */
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { capitalize } from "@/utils/string"
 
 /** Composables */
@@ -33,6 +34,7 @@ const editorRef = ref(null)
 let view = null
 
 let loggerService = null
+let profileService = null
 const logs = ref([])
 
 function getLogLevelName(level) {
@@ -255,6 +257,14 @@ function exportLogsToCSV() {
 	}, 1_500)
 }
 
+const onActiveProfileChanged = (profile) => {
+	if (!profile) {
+		chrome.windows.getCurrent(window => {
+			chrome.windows.remove(window.id)
+		})
+	}
+}
+
 watch(
 	() => selectedLevels.value,
 	() => {
@@ -265,6 +275,7 @@ watch(
 onMounted(async () => {
 	await nextTick()
 
+	profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, onActiveProfileChanged)
 	loggerService = new LoggerServiceClient(undefined, undefined)
 	logs.value = await loggerService.getLogs()
 	loggerService.onLogAdded = onLogAdded

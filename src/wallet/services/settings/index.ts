@@ -107,6 +107,23 @@ export class SettingService extends Service {
                 if (!exists) {
                     await this.settings.set(id, value);
                 }
+                switch (key) {
+                    case "ttl": {
+                        const setting = new Setting(key, value);
+                        for (const emit of this.onSettingUpdated) {
+                            try {emit(setting)} catch {}
+                        }
+                        break;
+                    }
+                    case "debugMode": {
+                        const value = await this.settings.get(id);
+                        this.logger.setDebugMode(value as boolean);
+                        break;
+                    }
+                
+                    default:
+                        break;
+                }
             }
         }
 
@@ -151,15 +168,15 @@ export class SettingService extends Service {
 
         try {
             const _setting = await this.getSetting(key);
-            if (_setting?.value === value) return
+            if (_setting?.value === value) return;
 
             const id = this.getSettingId(key);
             await this.settings.set(id, value)
 
             if (key === "debugMode") {
-                this.logger.setDebugLogging(value as boolean);
+                this.logger.setDebugMode(value as boolean);
             }
-            
+
             const setting = new Setting(key, value)
             this.emit(new SettingServiceEventMessage(
                 SettingServiceEvent.SettingUpdated,

@@ -23,15 +23,16 @@ export type LogEntity = {
 }
 
 export interface ILogs {
-    add(log: LogEntity): void;
+    add(log: LogEntity): LogEntity | undefined;
     add(
 		level: LogLevel,
 		args: any,
 		message?: string,
 		source?: string,
 		origin?: LogOrigin
-	): void;
+	): LogEntity | undefined;
     get(count?: number): LogEntity[];
+    setDebugMode(isDebug: boolean): void;
 }
 
 export interface ILogsAsync {
@@ -69,7 +70,7 @@ export class InMemoryLogs implements ILogs {
 		return this.isDebugMode ? 10_000 : 1_000;
 	}
 
-    add(...args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): void {
+    add(...args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): LogEntity | undefined {
 		let log: LogEntity;
 
 		if (typeof args[0] === "object" && "level" in args[0]) {
@@ -83,7 +84,7 @@ export class InMemoryLogs implements ILogs {
 				LogOrigin?
 			];
 
-			if (!this.isDebugMode && level === LogLevel.Debug) return;
+			if (!this.isDebugMode && level === LogLevel.Debug) return undefined;
 
 			const rawArgs = Array.isArray(inputArgs) ? inputArgs : [inputArgs];
 			const stringArgs = rawArgs.map(a => {
@@ -110,9 +111,11 @@ export class InMemoryLogs implements ILogs {
 			};
 		}
 
-		if (!this.isDebugMode && log.level === LogLevel.Debug) return;
+		if (!this.isDebugMode && log.level === LogLevel.Debug) return undefined;
 
 		this.logs.add(log);
+        
+        return log;
 	}
 
 	get(count?: number): LogEntity[] {
