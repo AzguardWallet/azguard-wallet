@@ -1,6 +1,6 @@
 import { expect, test, vi, beforeEach, afterEach } from "vitest";
-import { TASK_TRACKER_SERVICE_NAME, TaskTrackerServiceClient, TaskTrackerServiceMethod } from "../";
-import { TaskTrackerServiceEvent, TaskTrackerServiceEventMessage } from "../events";
+import { TASK_SERVICE_NAME, TaskServiceClient, TaskServiceMethod } from "..";
+import { TaskServiceEvent, TaskServiceEventMessage } from "../events";
 import { TaskStatus, StepContent } from "../models";
 import { createChromePortFixture, ChromePortFixture } from "./chrome-port.fixture";
 
@@ -30,36 +30,36 @@ const createMockTask = () => ({
 
 test("handles task created event", () => {
     const onTaskCreated = vi.fn();
-    new TaskTrackerServiceClient(undefined, undefined, onTaskCreated);
+    new TaskServiceClient(undefined, undefined, onTaskCreated);
     const task = createMockTask();
 
-    portFixture.emitMessage(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskCreated, task));
+    portFixture.emitMessage(new TaskServiceEventMessage(TaskServiceEvent.TaskCreated, task));
 
     expect(onTaskCreated).toHaveBeenCalledWith(task);
 });
 
 test("handles task updated event", () => {
     const onTaskUpdated = vi.fn();
-    new TaskTrackerServiceClient(undefined, undefined, undefined, onTaskUpdated);
+    new TaskServiceClient(undefined, undefined, undefined, onTaskUpdated);
     const task = createMockTask();
 
-    portFixture.emitMessage(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
+    portFixture.emitMessage(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, task));
 
     expect(onTaskUpdated).toHaveBeenCalledWith(task);
 });
 
 test("handles task deleted event", () => {
     const onTaskDeleted = vi.fn();
-    new TaskTrackerServiceClient(undefined, undefined, undefined, undefined, onTaskDeleted);
+    new TaskServiceClient(undefined, undefined, undefined, undefined, onTaskDeleted);
     const task = createMockTask();
 
-    portFixture.emitMessage(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskDeleted, task));
+    portFixture.emitMessage(new TaskServiceEventMessage(TaskServiceEvent.TaskDeleted, task));
 
     expect(onTaskDeleted).toHaveBeenCalledWith(task);
 });
 
 test("makes get task request", async () => {
-    const client = new TaskTrackerServiceClient();
+    const client = new TaskServiceClient();
     const taskId = "test-id";
 
     client.getTask(taskId);
@@ -67,21 +67,21 @@ test("makes get task request", async () => {
     expect(portFixture.captureMessage).toHaveBeenCalledWith(
         expect.objectContaining({
             taskId,
-            method: TaskTrackerServiceMethod.GetTask,
-            service: TASK_TRACKER_SERVICE_NAME,
+            method: TaskServiceMethod.GetTask,
+            service: TASK_SERVICE_NAME,
         }),
     );
 });
 
 test("makes get all tasks request", async () => {
-    const client = new TaskTrackerServiceClient();
+    const client = new TaskServiceClient();
 
     client.getAllTasks();
 
     expect(portFixture.captureMessage).toHaveBeenCalledWith(
         expect.objectContaining({
-            method: TaskTrackerServiceMethod.GetAllTasks,
-            service: TASK_TRACKER_SERVICE_NAME,
+            method: TaskServiceMethod.GetAllTasks,
+            service: TASK_SERVICE_NAME,
         }),
     );
 });
