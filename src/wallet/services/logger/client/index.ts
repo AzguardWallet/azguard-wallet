@@ -84,8 +84,4 @@ export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
             await this.request(new AddLogRequest(level, inputArgs, message, source, origin));
         }
     }
-
-    public addLogFull(level: LogLevel, args: any, message?: string, source?: string): Promise<LogEntity> {
-        return this.request(new AddLogRequest(level, args, message, source));
-    }
 }

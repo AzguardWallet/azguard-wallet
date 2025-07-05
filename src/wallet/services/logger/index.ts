@@ -9,7 +9,7 @@ import {
     LOGGER_SERVICE_NAME,
     type LogEntity,
     LogLevel,
-    LogOrigin,
+    type LogOrigin,
     LoggerServiceMethod
 } from "./client";
 import { LoggerServiceEvent, LoggerServiceEventMessage } from "./client/events";
@@ -63,33 +63,17 @@ export class LoggerService extends Service {
     }
 
     public addLog(level: LogLevel, args: any, message?: string, source?: string, origin?: LogOrigin): void {
-        const rawArgs = Array.isArray(args) ? args : [args];
-        const stringArgs = rawArgs.map(a => {
-            if (!a) return String(a)
-            
-            if (typeof a === "object") {
-                try {
-                    return JSON.stringify(a);
-                } catch {
-                    return String(a)
-                }
-            }
-
-            return String(a)
-        })
-
-        const newLogEntity: LogEntity = {
-            origin: origin ?? LogOrigin.BG,
-            ts: Date.now(),
+        const log = this.logs.add(
             level,
-            args: stringArgs,
+            args,
             message,
             source,
-        };
+            origin,
+        );
 
-        this.logs.add(newLogEntity);
-
-        this.emit(new LoggerServiceEventMessage(LoggerServiceEvent.LogAdded, newLogEntity));
+        if (log) {
+            this.emit(new LoggerServiceEventMessage(LoggerServiceEvent.LogAdded, log));
+        }
     }
 
     private onSnifferLogAdded = (logEntity: LogEntity) => {
