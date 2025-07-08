@@ -69,7 +69,7 @@ export class TransactionService extends Service {
                 }
             }
             default: {
-                this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }
@@ -130,9 +130,9 @@ export class TransactionService extends Service {
     }
 
     private readonly onAccountDeleted = async (account: Account) => {
-        this.log(LogLevel.Debug, `Account ${account.address} deleted, remove related txs`);
+        this.logDebug(`Account ${account.address} deleted, remove related txs`);
         for (const tx of (await this.txs.getValues()).filter(x => x.account === account.address)) {
-            this.log(LogLevel.Debug, `Remove tx ${tx.hash}`);
+            this.logDebug(`Remove tx ${tx.hash}`);
             this.pending.delete(tx.hash);
             await this.txs.delete(tx.hash);
             this.emit(new TransactionServiceEventMessage(TransactionServiceEvent.TransactionDeleted, tx));
@@ -145,11 +145,11 @@ export class TransactionService extends Service {
                 for (const tx of (await this.txs.getValues()).filter(x => x.status === TxStatus.Pending)) {
                     this.pending.set(tx.hash, tx);
                 }
-                this.log(LogLevel.Debug, "Transaction service initialized");
+                this.logDebug("Transaction service initialized");
                 break;
             }
             catch (error) {
-                this.log(LogLevel.Error, "Failed to initialize transaction service. Retry...");
+                this.logError("Failed to initialize transaction service. Retry...");
                 await sleep(1000);
             }
         }
@@ -162,16 +162,16 @@ export class TransactionService extends Service {
                 const activeProfile = await this.profileService.getActiveProfile();
                 if (activeProfile) {
                     try {
-                        this.log(LogLevel.Debug, `Sync ${this.pending.size} transactions...`);
+                        this.logDebug(`Sync ${this.pending.size} transactions...`);
                         const start = Date.now();
                         await Promise.allSettled(
                             this.pending.values().map(x => this.updateTx(x)),
                         );
                         const end = Date.now();
-                        this.log(LogLevel.Debug, `Transactions synced in ${end - start}ms`);
+                        this.logDebug(`Transactions synced in ${end - start}ms`);
                     }
                     catch (error) {
-                        this.log(LogLevel.Error, ["Failed to sync transaction status.", error]);
+                        this.logError(["Failed to sync transaction status.", error]);
                     }
                 }
             }
@@ -180,17 +180,17 @@ export class TransactionService extends Service {
     }
 
     private async updateTx(tx: Tx) {
-        this.log(LogLevel.Debug, `Sync tx ${tx.hash.slice(0, 8)}`);
+        this.logDebug(`Sync tx ${tx.hash.slice(0, 8)}`);
         const node = await this.networkService.getNode(tx.chainId);
         if (!node) {
-            this.log(LogLevel.Error, "Unknown network");
+            this.logError("Unknown network");
             return;
         }
 
         const receipt = await node.getTxReceipt(TxHash.fromString(tx.hash));
         const status = this.getTxStatus(receipt.status);
         if (status === tx.status) {
-            this.log(LogLevel.Debug, `Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
+            this.logDebug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
             return;
         }
         
@@ -210,7 +210,7 @@ export class TransactionService extends Service {
         if (tx.status != TxStatus.Pending) {
             this.pending.delete(tx.hash);
         }
-        this.log(LogLevel.Debug, `Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
+        this.logDebug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
     }
 
     private getTxStatus(status: AztecTxStatus): TxStatus {

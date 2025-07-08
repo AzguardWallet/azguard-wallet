@@ -180,7 +180,7 @@ export class AccountService extends Service {
 				}
 			}
 			default: {
-				this.log(LogLevel.Error, `Invalid request method ${request.method}.`)
+				this.logError(`Invalid request method ${request.method}.`)
 				return undefined
 			}
 		}
@@ -348,10 +348,10 @@ export class AccountService extends Service {
 	}
 
     private readonly onProfileDeleted = async (profileId: string) => {
-		this.log(LogLevel.Debug, `profile ${profileId} deleted, remove related accounts`)
+		this.logDebug(`profile ${profileId} deleted, remove related accounts`)
 		const accounts = (await this.storage.getAll()).filter(([_, v]) => v.profileId === profileId);
 		for (const [address, account] of accounts) {
-			this.log(LogLevel.Debug, `remove account ${address}`)
+			this.logDebug(`remove account ${address}`)
 			await this.deleteAccount(account.profileId, account.chainId, address);
 		}
     }

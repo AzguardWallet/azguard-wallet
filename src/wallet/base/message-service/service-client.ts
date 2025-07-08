@@ -2,7 +2,6 @@ import { getRandomHex } from "@/wallet/utils";
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
     type ILogsAsync,
-    type LogEntity,
     LogLevel,
     LogOrigin
 } from "@/wallet/services/logger/client/models";
@@ -46,6 +45,22 @@ export abstract class ServiceClient<TMethod, TEvent> {
         );
     }
 
+    protected logDebug(args: any, message?: string) {
+        this.log(LogLevel.Debug, args, message);
+    }
+
+    protected logInfo(args: any, message?: string) {
+        this.log(LogLevel.Info, args, message);
+    }
+
+    protected logWarn(args: any, message?: string) {
+        this.log(LogLevel.Warning, args, message);
+    }
+
+    protected logError(args: any, message?: string) {
+        this.log(LogLevel.Error, args, message);
+    }
+
     public dispose() {
         if (this.disposed) return;
         this.disposed = true;
@@ -62,37 +77,37 @@ export abstract class ServiceClient<TMethod, TEvent> {
     }
 
     private readonly onMessage = async (message: IMessage<unknown>) => {
-        this.log(LogLevel.Debug, ["Message received", message]);
+        this.logDebug(["Message received", message]);
         if (message.type !== MessageType.Response && message.type !== MessageType.Event || 
             message.from !== this.service ||
             message.content === undefined
         ) {
-            this.log(LogLevel.Warning, "Invalid message");
+            this.logWarn("Invalid message");
             return;
         }
         if (message.type === MessageType.Response) {
             const { content: response } = message as ResponseMessage<unknown>;
-            this.log(LogLevel.Debug, ["Response received", response]);
+            this.logDebug(["Response received", response]);
             const requestPromise = this.requests.get(response.requestId);
             if (!requestPromise) {
-                this.log(LogLevel.Warning, "Invalid response");
+                this.logWarn("Invalid response");
                 return;
             }
             const [resolve, reject] = requestPromise;
             if (response.error !== undefined) {
                 reject(response.error);
-                this.log(LogLevel.Debug, ["Request rejected", response.requestId, response.error]);
+                this.logDebug(["Request rejected", response.requestId, response.error]);
             }
             else {
                 resolve(response.result);
-                this.log(LogLevel.Debug, ["Request resolved", response.requestId, response.result]);
+                this.logDebug(["Request resolved", response.requestId, response.result]);
             }
             this.requests.delete(response.requestId);
-            this.log(LogLevel.Debug, ["Pending requests", this.requests.size]);
+            this.logDebug(["Pending requests", this.requests.size]);
         }
         else {
             const { content: event } = message as EventMessage<TEvent, unknown>;
-            this.log(LogLevel.Debug, ["Event received", event]);
+            this.logDebug(["Event received", event]);
             try { this.onEvent(event.event, event.payload); } catch {}
         }
     };
@@ -105,7 +120,7 @@ export abstract class ServiceClient<TMethod, TEvent> {
             method,
             jsonSanitize(params),
         );
-        this.log(LogLevel.Debug, ["Request created", requestContent.requestId, requestContent]);
+        this.logDebug(["Request created", requestContent.requestId, requestContent]);
 
         // just in case
         if (this.requests.has(requestContent.requestId)) {
@@ -114,14 +129,14 @@ export abstract class ServiceClient<TMethod, TEvent> {
         const promise = new Promise<T>((resolve, reject) => {
             this.requests.set(requestContent.requestId, [resolve, reject]);
         });
-        this.log(LogLevel.Debug, ["Pending requests", this.requests.size]);
+        this.logDebug(["Pending requests", this.requests.size]);
         const requestMessage = new RequestMessage(
             requestContent,
             this.name,
             this.service,
         );
         await chrome.runtime.sendMessage(requestMessage);
-        this.log(LogLevel.Debug, ["Message sent", requestMessage]);
+        this.logDebug(["Message sent", requestMessage]);
         return promise;
     }
 

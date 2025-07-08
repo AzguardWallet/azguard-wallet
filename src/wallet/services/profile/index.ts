@@ -244,7 +244,7 @@ export class ProfileService extends Service {
                 }
             }
             default: {
-                this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }
         }
@@ -568,7 +568,7 @@ export class ProfileService extends Service {
                         const key = await EncryptionKey.fromPasshash(passhash.buffer);
                         const guard = await this.tryDecrypt(Buffer.from(profile.guard, 'base64'), key);
                         if (guard && array_equals(guard, encryptionGuard)) {
-                            this.log(LogLevel.Debug, "Session restored");
+                            this.logDebug("Session restored");
                             this.activeSession = {profile, session, key};
                             this.emit(new ProfileServiceEventMessage(
                                 ProfileServiceEvent.ActiveProfileChanged,
@@ -579,17 +579,17 @@ export class ProfileService extends Service {
                             }
                         }
                         else {
-                            this.log(LogLevel.Debug, "Session contains wrong credentials");
+                            this.logDebug("Session contains wrong credentials");
                             await this._closeSession();
                         }
                     }
                     else {
-                        this.log(LogLevel.Debug, "Session refers wrong profile");
+                        this.logDebug("Session refers wrong profile");
                         await this._closeSession();
                     }
                 }
                 else {
-                    this.log(LogLevel.Debug, "Session expired");
+                    this.logDebug("Session expired");
                     await this._closeSession();
                 }
             }
@@ -598,7 +598,7 @@ export class ProfileService extends Service {
             this.sessionTtl = Number(setting.value);
         }
         catch (error) {
-            this.log(LogLevel.Error, ["Failed to initialize profile session", error]);
+            this.logError(["Failed to initialize profile session", error]);
         }
         finally {
             this.lock.leave();
@@ -617,7 +617,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.log(LogLevel.Error, ["Failed to close profile session", error]);
+            this.logError(["Failed to close profile session", error]);
         }
     }
 
@@ -627,7 +627,7 @@ export class ProfileService extends Service {
                 return this.activeSession;
             }
             else {
-                this.log(LogLevel.Debug, "Session expired");
+                this.logDebug("Session expired");
                 await this._closeSession();
             }
         }
@@ -643,7 +643,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.log(LogLevel.Error, ["Failed to refresh profile session", error]);
+            this.logError(["Failed to refresh profile session", error]);
         }
     }
 
@@ -670,7 +670,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.log(LogLevel.Error, ["Failed to open profile session", error]);
+            this.logError(["Failed to open profile session", error]);
         }
     }
 
@@ -713,7 +713,7 @@ export class ProfileService extends Service {
             return await key.decrypt(payload);
         }
         catch (error) {
-            this.log(LogLevel.Debug, ["Failed to decrypt payload", error]);
+            this.logDebug(["Failed to decrypt payload", error]);
             return undefined;
         }
     }

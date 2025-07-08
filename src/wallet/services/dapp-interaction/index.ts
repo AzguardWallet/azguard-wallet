@@ -114,9 +114,9 @@ export class DappInteractionService extends Service {
                 }
             }
             default: {
-                this.log(LogLevel.Error, `Invalid request method ${request.method}.`)
+                this.logError(`Invalid request method ${request.method}.`)
                 return undefined;
-            }                
+            }
         }
     }
 

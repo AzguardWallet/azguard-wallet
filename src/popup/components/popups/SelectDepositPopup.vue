@@ -19,18 +19,18 @@ const displaceIdx = computed(() => {
 
 const depositMethods = [
     {
-        title: "Faucet",
-        alias: "faucet",
-        description: "Azguard wallet faucet",
-        target: "faucet",
-        icon: "logo",
-    },
-    {
         title: "Human Tech",
         alias: "human_tech",
         description: "Bridge between Etherium and Aztec",
         target: "https://bridge.human.tech/",
         icon: "human_tech",
+    },
+    {
+        title: "Faucet",
+        alias: "faucet",
+        description: "Azguard wallet faucet",
+        target: "faucet",
+        icon: "logo",
     },
 ]
 
