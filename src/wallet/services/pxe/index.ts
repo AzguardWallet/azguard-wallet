@@ -370,7 +370,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             return await ContractArtifactSchema.parseAsync(artifact);
         }
         catch (error: unknown) {
-            this.log(LogLevel.Error, ["Failed to parse artifact from registry", error])
+            this.logError(["Failed to parse artifact from registry", error])
             return undefined;
         }
     }
@@ -384,7 +384,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             return await ContractInstanceWithAddressSchema.parseAsync(instance);
         }
         catch (error: unknown) {
-            this.log(LogLevel.Error, ["Failed to parse instance from registry", error])
+            this.logError(["Failed to parse instance from registry", error])
             return undefined;
         }
     }
@@ -397,13 +397,13 @@ export class PxeService extends Service<PxeServiceMethod, void> {
         try {
             const data = await fetch(`${registryUrl}${path}`);
             if (!data.ok) {
-                this.log(LogLevel.Debug, ["Failed to get artifact from public registry", data.status, data.statusText])
+                this.logDebug(["Failed to get artifact from public registry", data.status, data.statusText])
                 return undefined;
             }
             return await data.json();
         }
         catch (error: unknown) {
-            this.log(LogLevel.Error, ["Failed to get artifact from public registry", error])
+            this.logError(["Failed to get artifact from public registry", error])
             return undefined;
         }
     }

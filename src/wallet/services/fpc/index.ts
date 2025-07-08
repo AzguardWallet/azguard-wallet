@@ -100,7 +100,7 @@ export class FpcService extends Service {
                 }
             }
             default: {
-                this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }
         }
@@ -116,7 +116,7 @@ export class FpcService extends Service {
         );
         // TODO: remove it
         if (!result.length && chainId) {
-            this.log(LogLevel.Info, "Discovering FPCs...");
+            this.logInfo("Discovering FPCs...");
             try {
                 await this.lock.enter();
                 const networks = await this.networks.getNetworks(chainId);
@@ -133,7 +133,7 @@ export class FpcService extends Service {
                             contractMeta.contractInstance.currentContractClassId,
                         );
                         if (classMeta.artifact) {
-                            this.log(LogLevel.Info, `Found FPC: ${contract.toString()}`);
+                            this.logInfo(`Found FPC: ${contract.toString()}`);
 
                             const registeredContracts = await pxe.getContracts();
                             if (!registeredContracts.find(x => x.toString() === contract.toString())) {
@@ -297,12 +297,12 @@ export class FpcService extends Service {
     }
 
     private readonly onProfileDeleted = async (profileId: string) => {
-        this.log(LogLevel.Debug, `Profile ${profileId} deleted, remove related FPCs`);
+        this.logDebug(`Profile ${profileId} deleted, remove related FPCs`);
         try {
             await this.lock.enter();
             const fpcs = (await this.storage.getValues()).filter(fpc => fpc.profileId === profileId);
             for (const fpc of fpcs) {
-                this.log(LogLevel.Debug, `Remove fpc #${fpc.id}`);
+                this.logDebug(`Remove fpc #${fpc.id}`);
                 await this.storage.delete(fpc.id);
                 this.emit(new FpcServiceEventMessage(FpcServiceEvent.FpcDeleted, fpc));
             }

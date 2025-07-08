@@ -37,7 +37,7 @@ export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
                 }
                 break;
             default:
-                this.log(LogLevel.Error, [`Unexpected event type ${message.event}`]);
+                this.logError([`Unexpected event type ${message.event}`]);
                 break;
         }
     }

@@ -118,6 +118,22 @@ export class InMemoryLogs implements ILogs {
         return log;
 	}
 
+	addDebug(args: any, message?: string, source?: string, origin?: LogOrigin): LogEntity | undefined {
+		return this.add(LogLevel.Debug, args, message, source, origin);
+	}
+
+	addInfo(args: any, message?: string, source?: string, origin?: LogOrigin): LogEntity | undefined {
+		return this.add(LogLevel.Info, args, message, source, origin);
+	}
+
+	addWarn(args: any, message?: string, source?: string, origin?: LogOrigin): LogEntity | undefined {
+		return this.add(LogLevel.Warning, args, message, source, origin);
+	}
+
+	addError(args: any, message?: string, source?: string, origin?: LogOrigin): LogEntity | undefined {
+		return this.add(LogLevel.Error, args, message, source, origin);
+	}
+
 	get(count?: number): LogEntity[] {
 		const logs = this.logs.get();
 		return count ? logs.slice(-count) : logs;

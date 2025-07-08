@@ -149,7 +149,7 @@ export class ExecutionService extends Service {
                 }
             }
             default: {
-                this.log(LogLevel.Error, `Invalid request method ${request.method}.`)
+                this.logError(`Invalid request method ${request.method}.`)
                 return undefined;
             }                
         }
@@ -625,7 +625,7 @@ export class ExecutionService extends Service {
         if (!registeredContracts.has(op.contract)) {
             const [_, instance] = await this.getInstance(pxe, op.contract);
             const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
-            this.log(LogLevel.Debug, "Register contract");
+            this.logDebug("Register contract");
             await pxe.registerContract({instance, artifact});
         }
 
@@ -657,7 +657,7 @@ export class ExecutionService extends Service {
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
             if (!registeredContracts.has(contract)) {
-                this.log(LogLevel.Debug, "Register contract");
+                this.logDebug("Register contract");
                 await pxe.registerContract({
                     instance,
                     artifact: artifacts.get(instance.currentContractClassId.toString()),
@@ -730,7 +730,7 @@ export class ExecutionService extends Service {
                             fn.returnTypes,
                         ]);
                     }
-                    this.log(LogLevel.Debug, "Call enqueued.");
+                    this.logDebug("Call enqueued.");
                     break;
                 }
                 case ActionKind.EncodedCall: {
@@ -769,7 +769,7 @@ export class ExecutionService extends Service {
                             decodedArgs = ensureArray(decodeFromAbiPatched(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
                         }
                         catch (error) {
-                            this.log(LogLevel.Error, ["Failed to decode utility call args", fn.parameters, _call.args, error]);
+                            this.logError(["Failed to decode utility call args", fn.parameters, _call.args, error]);
                             throw new Error(`Failed to decode utility "encoded_call" args: ${(error as Error)?.message}. Try to use "call" instead.`);
                         }
                         utility.push([
@@ -803,7 +803,7 @@ export class ExecutionService extends Service {
                             fn.returnTypes,
                         ]);
                     }
-                    this.log(LogLevel.Debug, "EncodedCall enqueued.");
+                    this.logDebug("EncodedCall enqueued.");
                     break;
                 }
             }
@@ -831,7 +831,7 @@ export class ExecutionService extends Service {
                 result.decoded[i] = decodeFromAbiPatched(types, values);
             }
             catch (error) {
-                this.log(LogLevel.Error, ["Failed to decode simulation results", types, values, error]);
+                this.logError(["Failed to decode simulation results", types, values, error]);
             }
         }
 
@@ -850,7 +850,7 @@ export class ExecutionService extends Service {
                 );
             }
             catch (error) {
-                this.log(LogLevel.Error, ["Failed to encode utility simulation results", types, values, error]);
+                this.logError(["Failed to encode utility simulation results", types, values, error]);
             }
             result.decoded[i] = values;
         }
@@ -883,7 +883,7 @@ export class ExecutionService extends Service {
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
             if (!registeredContracts.has(contract)) {
-                this.log(LogLevel.Debug, "Register contract");
+                this.logDebug("Register contract");
                 await pxe.registerContract({
                     instance,
                     artifact: artifacts.get(instance.currentContractClassId.toString()),
@@ -951,18 +951,18 @@ export class ExecutionService extends Service {
             switch (action.kind) {
                 case ActionKind.AddCapsule: {
                     const _action = action as AddCapsuleAction;
-                    this.log(LogLevel.Debug, "Adding capsule...");
+                    this.logDebug("Adding capsule...");
                     capsules.push(new Capsule(
                         AztecAddress.fromString(_action.contract),
                         Fr.fromString(_action.storageSlot),
                         _action.capsule.map(Fr.fromString)
                     ));
-                    this.log(LogLevel.Debug, "Capsule added.");
+                    this.logDebug("Capsule added.");
                     break;
                 }
                 case ActionKind.AddPrivateAuthwit: {
                     const _action = action as AddPrivateAuthwitAction;
-                    this.log(LogLevel.Debug, "Adding private authwit...");
+                    this.logDebug("Adding private authwit...");
 
                     let messageHash: Fr;
                     switch (_action.content.kind) {
@@ -1009,12 +1009,12 @@ export class ExecutionService extends Service {
                     
                     authwits.push(authwit);
 
-                    this.log(LogLevel.Debug, "Private authwit added.");
+                    this.logDebug("Private authwit added.");
                     break;
                 }
                 case ActionKind.AddPublicAuthwit: {
                     const _action = action as AddPublicAuthwitAction;
-                    this.log(LogLevel.Debug, "Adding public authwit...");
+                    this.logDebug("Adding public authwit...");
                     
                     let messageHash: Fr;
                     switch (_action.content.kind) {
@@ -1073,7 +1073,7 @@ export class ExecutionService extends Service {
                         [messageHash, true],
                     ));
 
-                    this.log(LogLevel.Debug, "Public authwit added.");
+                    this.logDebug("Public authwit added.");
                     break;
                 }
                 case ActionKind.Call: {
@@ -1108,7 +1108,7 @@ export class ExecutionService extends Service {
                         _action.method,
                         _action.args,
                     ));
-                    this.log(LogLevel.Debug, "Call enqueued.");
+                    this.logDebug("Call enqueued.");
                     break;
                 }
                 case ActionKind.EncodedCall: {
@@ -1161,7 +1161,7 @@ export class ExecutionService extends Service {
                         _action.selector,
                         _action.args,
                     ));
-                    this.log(LogLevel.Debug, "EncodedCall enqueued.");
+                    this.logDebug("EncodedCall enqueued.");
                     break;
                 }
             }
@@ -1323,13 +1323,13 @@ export class ExecutionService extends Service {
     }
 
     private async getInstances(pxe: PXE, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
-        this.log(LogLevel.Debug, "Get instances...");
+        this.logDebug("Get instances...");
         const instances = new Map<string, ContractInstanceWithAddress>();
-        this.log(LogLevel.Debug, `Fetching ${contracts.length} instances...`);
+        this.logDebug(`Fetching ${contracts.length} instances...`);
         const fetched = await Promise.all(
             contracts.map(x => this.getInstance(pxe, x)),
         );
-        this.log(LogLevel.Debug, `${fetched.length} instances fetched`);
+        this.logDebug(`${fetched.length} instances fetched`);
         for (const [address, instance] of fetched) {
             instances.set(address, instance);
         }
@@ -1345,7 +1345,7 @@ export class ExecutionService extends Service {
     }
 
     private async getArtifacts(pxe: PXE, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
-        this.log(LogLevel.Debug, "Get artifacts...");
+        this.logDebug("Get artifacts...");
         const artifacts = new Map<string, ContractArtifact>();
         const classIds = new Set(
             instances
@@ -1353,11 +1353,11 @@ export class ExecutionService extends Service {
                 .filter(x => !artifacts.has(x.currentContractClassId.toString()))
                 .map(x => x.currentContractClassId.toString())
         );
-        this.log(LogLevel.Debug, `Fetching ${classIds.size} artifacts...`);
+        this.logDebug(`Fetching ${classIds.size} artifacts...`);
         const fetched = await Promise.all(
             classIds.values().map(x => this.getArtifact(pxe, x))
         );
-        this.log(LogLevel.Debug, `${fetched.length} artifacts fetched`);
+        this.logDebug(`${fetched.length} artifacts fetched`);
         for (const [classId, artifact] of fetched) {
             artifacts.set(classId, artifact);
         }

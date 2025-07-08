@@ -111,7 +111,7 @@ export class TokenBalanceService extends Service {
 				}
 			}
 			default: {
-				this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+				this.logError(`Invalid request method ${request.method}.`);
 				return undefined
 			}
 		}
@@ -270,10 +270,10 @@ export class TokenBalanceService extends Service {
 					}
 				}
 
-				this.log(LogLevel.Debug, "Token balance service initialized");
+				this.logDebug("Token balance service initialized");
 				break
 			} catch (error) {
-				this.log(LogLevel.Error, "Failed to initialize token balance service. Retry...");
+				this.logError("Failed to initialize token balance service. Retry...");
 				await sleep(1000)
 			}
 		}
@@ -296,7 +296,7 @@ export class TokenBalanceService extends Service {
 					// 	nextSync = Date.now() + 60_000 // TODO: settings
 					// }
 					if (this.queue.length) {
-						this.log(LogLevel.Debug, `Syncing ${this.queue.length} token balances`);
+						this.logDebug(`Syncing ${this.queue.length} token balances`);
 						const start = Date.now()
 						while (this.queue.length) {
 							const firstAccount = this.queue.peek()!.account;
@@ -307,10 +307,10 @@ export class TokenBalanceService extends Service {
 							await this.syncBatch(firstAccount, tbs);
 						}
 						const end = Date.now()
-						this.log(LogLevel.Debug, `Token balances synced in ${end - start}ms`);
+						this.logDebug(`Token balances synced in ${end - start}ms`);
 					}
 				} catch (error) {
-					this.log(LogLevel.Error, ["Failed to sync token balances.", error]);
+					this.logError(["Failed to sync token balances.", error]);
 				}
 			}
 			await sleep(1000)
@@ -319,7 +319,7 @@ export class TokenBalanceService extends Service {
 	
 	private async syncBatch(account: string, tbs: TokenBalanceRaw[]) {
 		try {
-			this.log(LogLevel.Debug, `Syncing ${tbs.length} balances for ${account}`);
+			this.logDebug(`Syncing ${tbs.length} balances for ${account}`);
 			const start = Date.now()
 
 			const calls: [CallAction | EncodedCallAction, number, boolean, ViewFn][] = [];
@@ -328,7 +328,7 @@ export class TokenBalanceService extends Service {
 				const tb = tbs[i];
 				const token = this.tokens.get(tb.token)
 				if (!token) {
-					this.log(LogLevel.Error, `Unknown token #${tb.token}`);
+					this.logError(`Unknown token #${tb.token}`);
 					continue;
 				}
 				chainId = token.chainId;
@@ -430,13 +430,13 @@ export class TokenBalanceService extends Service {
 					const balance = (viewFn.unpackResult(results.encoded[i]) as bigint).toString();
 					if (isPrivate) {
 						if (tbs[tbIndex].privateBalance !== balance) {
-							this.log(LogLevel.Debug, `Private balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].privateBalance} -> ${balance}`);
+							this.logDebug(`Private balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].privateBalance} -> ${balance}`);
 							tbs[tbIndex].privateBalance = balance;
 						}
 					}
 					else {
 						if (tbs[tbIndex].publicBalance !== balance) {
-							this.log(LogLevel.Debug, `Public balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].publicBalance} -> ${balance}`);
+							this.logDebug(`Public balance #${tbs[tbIndex].id} changed: ${tbs[tbIndex].publicBalance} -> ${balance}`);
 							tbs[tbIndex].publicBalance = balance;
 						}
 					}
@@ -459,9 +459,9 @@ export class TokenBalanceService extends Service {
 			}
 
 			const stop = Date.now()
-			this.log(LogLevel.Debug, `Synced in ${stop - start}ms`);
+			this.logDebug(`Synced in ${stop - start}ms`);
 		} catch (error) {
-			this.log(LogLevel.Error, ["Failed to sync", error]);
+			this.logError(["Failed to sync", error]);
 		}
 	}
 }

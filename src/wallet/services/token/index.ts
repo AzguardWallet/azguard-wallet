@@ -216,7 +216,7 @@ export class TokenService extends Service {
 				}
 			}
 			default: {
-				this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+				this.logError(`Invalid request method ${request.method}.`);
 				return undefined
 			}
 		}
@@ -664,9 +664,9 @@ export class TokenService extends Service {
 	}
 
     private readonly onProfileDeleted = async (profileId: string) => {
-		this.log(LogLevel.Debug, `Profile ${profileId} deleted, remove related tokens`);
+		this.logDebug(`Profile ${profileId} deleted, remove related tokens`);
 		for (const token of (await this.tokens.getValues()).filter(x => x.profileId === profileId)) {
-			this.log(LogLevel.Debug, `Remove token ${token.id}`);
+			this.logDebug(`Remove token ${token.id}`);
 			await this.deleteToken(token.id);
 		}
     }

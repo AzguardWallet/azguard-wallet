@@ -73,10 +73,10 @@ export class WalletConnectService extends Service {
                     }
                 }
 
-                this.log(LogLevel.Debug, "Wallet connect service initialized");
+                this.logDebug("Wallet connect service initialized");
                 break;
             } catch (error) {
-                this.log(LogLevel.Error, ["Failed to initialize wallet connect service. Retry...", error]);
+                this.logError(["Failed to initialize wallet connect service. Retry...", error]);
                 await sleep(1000);
             }
         }
@@ -123,7 +123,7 @@ export class WalletConnectService extends Service {
                 }
             }
             default: {
-                this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }
@@ -137,7 +137,7 @@ export class WalletConnectService extends Service {
     }
 
     private readonly onSessionProposal = async (payload: WalletKitTypes.SessionProposal) => {
-        this.log(LogLevel.Debug, ["WC: session proposal received", payload]);
+        this.logDebug(["WC: session proposal received", payload]);
 
         // approve proposal
         let dappSession: DappSessionInfo;
@@ -162,7 +162,7 @@ export class WalletConnectService extends Service {
             dappSession = await this.dappInteractions.connect(params, payload.params.id.toString());
         }
         catch (error) {
-            this.log(LogLevel.Debug, ["WC: session proposal rejected", error]);
+            this.logDebug(["WC: session proposal rejected", error]);
             this.rejectSession(payload.id);
             return;
         }
@@ -180,7 +180,7 @@ export class WalletConnectService extends Service {
             });
         }
         catch (error) {
-            this.log(LogLevel.Debug, ["WC: session approval failed", error]);
+            this.logDebug(["WC: session approval failed", error]);
             this.dappSessions.deleteDappSession(dappSession.id);
             this.rejectSession(payload.id);
             return;
@@ -190,7 +190,7 @@ export class WalletConnectService extends Service {
             await this.dappSessions.upgradeDappSession(dappSession.id, wcSession.topic, wcSession.expiry * 1000);
         }
         catch (error) {
-            this.log(LogLevel.Debug, ["WC: session upgrade failed", error]);
+            this.logDebug(["WC: session upgrade failed", error]);
             this.dappSessions.deleteDappSession(dappSession.id);
             this.disconnectSession(wcSession.topic);
             return;
@@ -198,12 +198,12 @@ export class WalletConnectService extends Service {
     }
 
     private readonly onProposalExpire = async (payload: WalletKitTypes.ProposalExpire) => {
-        this.log(LogLevel.Debug, ["WC: proposal expire received", payload]);
+        this.logDebug(["WC: proposal expire received", payload]);
         this.dappInteractions.cancelInteraction(payload.id.toString());
     }
 
     private readonly onSessionRequest = async (payload: WalletKitTypes.SessionRequest) => {
-        this.log(LogLevel.Debug, ["WC: session request received", payload]);
+        this.logDebug(["WC: session request received", payload]);
         try {
             switch (payload.params.request.method) {
                 case RpcMethod.get_wallet_info: {
@@ -234,23 +234,23 @@ export class WalletConnectService extends Service {
             }
         }
         catch (error) {
-            this.log(LogLevel.Debug, ["WC: session request failed", error]);
+            this.logDebug(["WC: session request failed", error]);
             this.rejectRequest(payload, (error as Error)?.message ?? error as string ?? "Unknown error");
         }
     }
 
     private readonly onSessionRequestExpire = async (payload: WalletKitTypes.SessionRequestExpire) => {
-        this.log(LogLevel.Debug, ["WC: session request expire received", payload]);
+        this.logDebug(["WC: session request expire received", payload]);
         this.dappInteractions.cancelInteraction(payload.id.toString());
     }
 
     private readonly onSessionDelete = async (payload: WalletKitTypes.SessionDelete) => {
-        this.log(LogLevel.Debug, ["WC: session delete received", payload]);
+        this.logDebug(["WC: session delete received", payload]);
         this.dappSessions.deleteDappSession(payload.topic)
     }
 
     private readonly onSessionAuthenticate = async (payload: WalletKitTypes.SessionAuthenticate) => {
-        this.log(LogLevel.Debug, ["Session authenticate received", payload]);
+        this.logDebug(["Session authenticate received", payload]);
 
         // const accounts = await this.accounts.getAccounts("9181ab0c", 31337)
         // const account = accounts[0]
@@ -306,7 +306,7 @@ export class WalletConnectService extends Service {
     
     private readonly onDappSessionUpdated = async (dappSession: DappSession) => {
         if (!this.walletKit) {
-            this.log(LogLevel.Warning, "WC session wasn't updated");
+            this.logWarn("WC session wasn't updated");
             return;
         }
         try {
@@ -324,13 +324,13 @@ export class WalletConnectService extends Service {
             }
         }
         catch (error) {
-            this.log(LogLevel.Error, ["Failed to update WC session", error]);
+            this.logError(["Failed to update WC session", error]);
         }
     }
     
     private readonly onDappSessionDeleted = async (dappSession: DappSession) => {
         if (!this.walletKit) {
-            this.log(LogLevel.Warning, "WC session wasn't disconnected");
+            this.logWarn("WC session wasn't disconnected");
             return;
         }
         try {
@@ -343,7 +343,7 @@ export class WalletConnectService extends Service {
             }
         }
         catch (error) {
-            this.log(LogLevel.Error, ["Failed to disconnect WC session", error]);
+            this.logError(["Failed to disconnect WC session", error]);
         }
     }
 

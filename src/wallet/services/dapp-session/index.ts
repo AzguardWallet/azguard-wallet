@@ -108,7 +108,7 @@ export class DappSessionService extends Service {
                 }
             }
             default: {
-                this.log(LogLevel.Error, `Invalid request method ${request.method}.`)
+                this.logError(`Invalid request method ${request.method}.`)
                 return undefined;
             }                
         }
@@ -269,7 +269,7 @@ export class DappSessionService extends Service {
                 await this.lock.enter();
 
                 if (await this.storage.contains(session.id)) {
-                    this.log(LogLevel.Debug, `Session ${session.id} has expired`);
+                    this.logDebug(`Session ${session.id} has expired`);
                     await this.storage.delete(session.id);
                     this.emit(new DappSessionServiceEventMessage(DappSessionServiceEvent.DappSessionDeleted, session));
                     for (const emit of this.onDappSessionDeleted) {
@@ -293,7 +293,7 @@ export class DappSessionService extends Service {
             const now = Date.now();
             const sessions = await this.storage.getValues();
             for (const session of sessions.filter(x => x.expiry < now)) {
-                this.log(LogLevel.Debug, `Session ${session.id} has expired`);
+                this.logDebug(`Session ${session.id} has expired`);
                 await this.storage.delete(session.id);
                 this.emit(new DappSessionServiceEventMessage(DappSessionServiceEvent.DappSessionDeleted, session));
                 for (const emit of this.onDappSessionDeleted) {
@@ -308,12 +308,12 @@ export class DappSessionService extends Service {
     
     private readonly onProfileDeleted = async (profileId: string) => {
 		await this.ensureInitialized();
-        this.log(LogLevel.Debug, `Profile ${profileId} deleted, remove related dapp sessions`);
+        this.logDebug(`Profile ${profileId} deleted, remove related dapp sessions`);
         try {
             await this.lock.enter();
             const sessions = (await this.storage.getValues()).filter(x => x.profileId === profileId);
             for (const session of sessions) {
-                this.log(LogLevel.Debug, `Remove session #${session.id}`);
+                this.logDebug(`Remove session #${session.id}`);
                 await this.storage.delete(session.id);
                 this.emit(new DappSessionServiceEventMessage(DappSessionServiceEvent.DappSessionDeleted, session));
                 for (const emit of this.onDappSessionDeleted) {
@@ -326,9 +326,9 @@ export class DappSessionService extends Service {
     }
 
 	private async initialize(): Promise<void> {
-        this.log(LogLevel.Debug, "Initialize");
+        this.logDebug("Initialize");
 		await this.checkMigrations();
-        this.log(LogLevel.Debug, "Initialized");
+        this.logDebug("Initialized");
 		this.init = null;
 	}
 
@@ -340,10 +340,10 @@ export class DappSessionService extends Service {
 
 	private async checkMigrations(): Promise<void> {
 		try {
-            this.log(LogLevel.Debug, "Check storage migrations");
+            this.logDebug("Check storage migrations");
 			switch (await this.storage.getVersion()) {
 				case 1: {
-                    this.log(LogLevel.Debug, "No migrations needed");
+                    this.logDebug("No migrations needed");
 					break;
 				}
 				default: {
@@ -353,20 +353,20 @@ export class DappSessionService extends Service {
 			}
 		}
 		catch (error: unknown) {
-            this.log(LogLevel.Error, ["Failed to migrate storage", error]);
+            this.logError(["Failed to migrate storage", error]);
 		}
 	}
     
 	private async migrate_0_1(): Promise<void> {
-        this.log(LogLevel.Debug, "Migrating storage");
+        this.logDebug("Migrating storage");
         const sessions = await this.storage.getAll();
-        this.log(LogLevel.Debug, "Set confirmation level");
+        this.logDebug("Set confirmation level");
         for (const [id, session] of sessions) {
             session.confirmationLevel = AccessLevel.Transactions;
             await this.storage.set(id, session);
         }
-        this.log(LogLevel.Debug, "Set storage version to 1");
+        this.logDebug("Set storage version to 1");
 		await this.storage.setVersion(1);
-        this.log(LogLevel.Debug, "Storage migrated");
+        this.logDebug("Storage migrated");
     }
 }
