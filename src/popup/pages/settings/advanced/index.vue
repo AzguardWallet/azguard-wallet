@@ -91,7 +91,11 @@ async function updateSetting(key, value) {
 	try {
 		await settingService.updateSetting(key, value)
 		applySetting(key, value)
-		await profileService.refreshSession()
+
+		if (key === "ttl") {
+			await profileService.refreshSession()
+			openToast({ label: "Auto-lock timeout updated", icon: "info" }, 1_500)
+		}
 	} catch (err) {
 		openToast({ label: "Failed to update setting", icon: "warning" })
 	}
@@ -167,7 +171,7 @@ onBeforeMount(async () => {
 		}
 	})
 
-	sessionTtlMinutes.value = sessionTtl.value / 1_000 / 60
+	sessionTtlMinutes.value = String(sessionTtl.value / 1_000 / 60)
 
 	isLoading.value = false
 })
