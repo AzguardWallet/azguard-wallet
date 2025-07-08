@@ -4,7 +4,7 @@ import { Service } from "@/wallet/base/port-service/service";
 import type { SettingService } from "@/wallet/services/settings";
 import type { Setting } from "@/wallet/services/settings/client";
 import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, SimpleStorage, StorageType } from "@/wallet/storage";
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
 import { getEntropy, getMnemonic } from "@/wallet/utils/mnemonic";
@@ -561,7 +561,7 @@ export class ProfileService extends Service {
             
             const session = await this.session.get('active_profile');
             if (session) {
-                if (session.since + this.sessionTtl > Date.now()) {
+                if (session.since + this.sessionTtl > Date.now() || !this.sessionTtl) {
                     const profile = await this.profiles.get(session.profile);
                     if (profile) {
                         const passhash = Buffer.from(session.passhash, 'base64');
@@ -623,7 +623,7 @@ export class ProfileService extends Service {
 
     private async _getSession(): Promise<ActiveSession | undefined> {
         if (this.activeSession) {
-            if (this.activeSession.session.since + this.sessionTtl > Date.now()) {
+            if (this.activeSession.session.since + this.sessionTtl > Date.now() || !this.sessionTtl) {
                 return this.activeSession;
             }
             else {

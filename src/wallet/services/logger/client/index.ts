@@ -2,7 +2,7 @@ import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { LoggerServiceEvent, type LoggerServiceEventMessage } from "./events";
 import { AddLogRequest, GetLogsRequest } from "./methods";
-import { DummyLogger, type ILogsAsync, LogLevel, type LogEntity, type LogOrigin } from "./models";
+import { DummyLogger, type ILogsAsync, type LogLevel, type LogEntity, type LogOrigin } from "./models";
 
 export * from './events';
 export * from './methods';
