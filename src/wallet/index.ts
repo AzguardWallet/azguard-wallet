@@ -22,6 +22,7 @@ import { InMemoryLogs, LogLevel } from "./services/logger/client";
 import { sleep } from "./utils";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
+import { TaskTrackerService } from "./services/task-tracker";
 
 export async function init() {
     loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
@@ -60,6 +61,7 @@ const logs = new InMemoryLogs();
 // services
 const settingService = new SettingService(logs, broadcast)
 const loggerService = new LoggerService(logs, broadcast);
+const taskTrackerService = new TaskTrackerService(broadcast);
 const profileService = new ProfileService(settingService, logs, broadcast);
 const networkService = new NetworkService(profileService, logs, broadcast);
 const accountService = new AccountService(profileService, networkService, logs, broadcast);
@@ -101,6 +103,7 @@ const faucetService = new FaucetService(
     executionService,
     transactionService,
     tokenService,
+    taskTrackerService,
     logs,
     broadcast,
 );
@@ -142,6 +145,7 @@ const services = new Map<string, Service>([
     [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
     [accountStateService.name, accountStateService],
+    [taskTrackerService.name, taskTrackerService],
     [loggerService.name, loggerService],
     [settingService.name, settingService]
 ]);

@@ -236,9 +236,9 @@ export class ExecutionService extends Service {
             default:
                 throw new Error("Invalid transfer type");
         }
-        const packedArgs = await fn.packArgs(args);
         const selector = await fn.getSelector();
-
+        const encodedArgs = fn.encodeArgs(args);
+        
         const op = new SendTransactionOperation(
             networkId,
             accountAddress,
@@ -247,7 +247,7 @@ export class ExecutionService extends Service {
                 new EncodedCallAction(
                     token.contract,
                     selector.toString(),
-                    packedArgs.values.map(x => x.toString()),
+                    encodedArgs.map(x => x.toString()),
                     fn.name,
                     fn.type,
                     fn.isStatic,
@@ -629,6 +629,7 @@ export class ExecutionService extends Service {
             await pxe.registerContract({instance, artifact});
         }
 
+        await account.ensureRegistered(pxe);
         const { result } = await pxe.simulateUtility(
             op.method, // functionName
             op.args, // args
@@ -679,6 +680,8 @@ export class ExecutionService extends Service {
         const ensureArray = (value: any): any[] => Array.isArray(value) ? value : [value];
         let privateCalls = 0;
         let publicCalls = 0;
+        
+        await account.ensureRegistered(pxe);
 
         for (let i = 0; i < op.calls.length; i++) {
             switch (op.calls[i].kind) {
@@ -809,15 +812,16 @@ export class ExecutionService extends Service {
             }
         }
 
-        const txRequest = await account.buildTxExecutionRequest(pxe, [], false, calls.map(x => x[0]), args, Fr.zero());
-        const simulatedTx = await pxe.simulateTx(
-            txRequest, // txRequest
-            true, // simulatePublic
-            undefined, // msgSender
-            undefined, // skipTxValidation
-            true, // skipFeeEnforcement
-            [account.address], // scopes
-        );
+        if (calls.length) {
+            const txRequest = await account.buildTxExecutionRequest(pxe, [], false, calls.map(x => x[0]), args, Fr.zero());
+            const simulatedTx = await pxe.simulateTx(
+                txRequest, // txRequest
+                true, // simulatePublic
+                undefined, // msgSender
+                undefined, // skipTxValidation
+                true, // skipFeeEnforcement
+                [account.address], // scopes
+            );
 
         const publicReturn = simulatedTx.getPublicReturnValues();
         const privateReturn = txRequest.origin.toString() === op.accountAddress

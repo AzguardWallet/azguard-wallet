@@ -5,7 +5,7 @@ import type { AccountService } from "@/wallet/services/account";
 import type { Account } from "@/wallet/services/account/client";
 import type { NetworkService } from "@/wallet/services/network";
 import type { ProfileService } from "@/wallet/services/profile"
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
 import {

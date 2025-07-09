@@ -25,6 +25,7 @@ export enum PxeServiceMethod {
     SendTx = 15,
     SimulateTx = 16,
     SimulateUtility = 17,
+    UpdateContract = 18,
 }
 
 type BaseParams = {
@@ -101,4 +102,9 @@ export type SimulateUtilityParams = BaseParams & {
     authwits?: AuthWitness[];
     from?: AztecAddress;
     scopes?: AztecAddress[];
+};
+
+export type UpdateContractParams = BaseParams & {
+    address: AztecAddress;
+    artifact: ContractArtifact;
 };

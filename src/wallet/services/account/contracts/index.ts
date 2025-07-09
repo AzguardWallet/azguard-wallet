@@ -11,6 +11,8 @@ export * from './azguard-v0';
 export interface IAccountContract {
     readonly address: AztecAddress,
 
+    ensureRegistered(pxe: PXE): Promise<void>;
+
     getCompleteAddress(): Promise<CompleteAddress>;
 
     buildAuthWitness(messageHash: Fr): Promise<AuthWitness>;

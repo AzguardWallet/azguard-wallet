@@ -352,12 +352,12 @@ export class TokenBalanceService extends Service {
 					}
 					else {
 						const selector = await balanceOfPrivateFn.getSelector();
-						const packedArgs = await balanceOfPrivateFn.packArgs(balanceOfPrivateFn.buildArgs(account))
+						const encodedArgs = balanceOfPrivateFn.encodeArgs(balanceOfPrivateFn.buildArgs(account))
 						calls.push([
 							new EncodedCallAction(
 								token.contract,
 								selector.toString(),
-								packedArgs.values.map(x => x.toString()),
+								encodedArgs.map(x => x.toString()),
 								balanceOfPrivateFn.name,
 								balanceOfPrivateFn.type,
 								balanceOfPrivateFn.isStatic,
@@ -392,12 +392,12 @@ export class TokenBalanceService extends Service {
 					}
 					else {
 						const selector = await balanceOfPublicFn.getSelector();
-						const packedArgs = await balanceOfPublicFn.packArgs(balanceOfPublicFn.buildArgs(account))
+						const encodedArgs = balanceOfPublicFn.encodeArgs(balanceOfPublicFn.buildArgs(account))
 						calls.push([
 							new EncodedCallAction(
 								token.contract,
 								selector.toString(),
-								packedArgs.values.map(x => x.toString()),
+								encodedArgs.map(x => x.toString()),
 								balanceOfPublicFn.name,
 								balanceOfPublicFn.type,
 								balanceOfPublicFn.isStatic,

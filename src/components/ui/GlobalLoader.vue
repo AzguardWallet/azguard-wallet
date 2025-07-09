@@ -6,11 +6,11 @@ const appStore = useAppStore()
 const message = computed(() =>
     appStore.isLogined
         ? {
-            title: "Reconnecting to background services...",
+            title: "Reconnecting to service worker...",
             description: "Hold on — we're restoring the connection.",
         }
         : {
-            title: "Initializing connection to services...",
+            title: "Connecting to service worker...",
             description: "We're setting things up. This should only take a moment.",
         }
 )
