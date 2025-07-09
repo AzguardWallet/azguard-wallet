@@ -19,7 +19,7 @@ import type { ExecutionService } from "@/wallet/services/execution"
 import { CallAction, EncodedCallAction, SimulateViewsOperation } from "@/wallet/services/execution/client"
 import type { TransactionService } from "@/wallet/services/transaction"
 import { type Tx, TxStatus } from "@/wallet/services/transaction/client"
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import type { ViewFn } from "@/wallet/utils/fn"
 import {
 	type GetTokenBalancesRequest,

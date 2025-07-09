@@ -1,9 +1,10 @@
 /** Vendor */
 import { defineStore } from "pinia"
 
-
 import type { Account } from "@/wallet/services/account/client"
 import { NodeStatus } from "@/wallet/services/network/client"
+
+import { useSyncedRef } from "@/composables/syncedRef.js"
 
 type WalletMetadata = {
 	created_at: number
@@ -254,6 +255,8 @@ export const useAppStore = defineStore("app", () => {
 
 	const isPrivacyModeEnabled = ref(false)
 
+	const loggerWindowId = useSyncedRef("loggerWindowId", null)
+
 	return {
 		_isHomeScreenOpened,
 		isLoading,
@@ -297,5 +300,6 @@ export const useAppStore = defineStore("app", () => {
 		showSendPopup,
 		showRegisterPopup,
 		isPrivacyModeEnabled,
+		loggerWindowId,
 	}
 })

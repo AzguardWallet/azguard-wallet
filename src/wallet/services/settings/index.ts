@@ -1,6 +1,6 @@
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { Lock, } from "@/wallet/utils";
 import {
@@ -83,7 +83,7 @@ export class SettingService extends Service {
                 }
             }
             default: {
-                this.log(LogLevel.Error, `Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }
@@ -92,7 +92,7 @@ export class SettingService extends Service {
     private getSettingId(key: string): string {
         const group = DEFAULT_SETTING_GROUPS[key];
         if (!group) {
-            this.log(LogLevel.Error, `Unknown setting key: ${key}`)
+            this.logError(`Unknown setting key: ${key}`);
             throw new Error(`Unknown setting key: ${key}`);
         }
 
@@ -186,7 +186,7 @@ export class SettingService extends Service {
                 try {emit(setting)} catch {}
             }
         } catch {
-            this.log(LogLevel.Error, `Failed to update setting ${key} to ${value}`)
+            this.logError(`Failed to update setting ${key} to ${value}`);
             throw new Error("Failed to update setting");
         } finally {
             this.lock.leave();
@@ -218,7 +218,7 @@ export class SettingService extends Service {
                 }
             }
         } catch (err) {
-            this.log(LogLevel.Error, ["Failed to reset settings", err])
+            this.logError(["Failed to reset settings", err]);
             throw new Error("Failed to reset settings");
         } finally {
             this.lock.leave();

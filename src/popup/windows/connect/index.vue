@@ -59,7 +59,7 @@ const initRequest = async () => {
 }
 
 const initAccounts = async () => {
-	let res = []
+	const res = []
 	if (profile.value && networks.value && permissions.value) {
 		const set = new Set()
 		for (const p of permissions.value) {

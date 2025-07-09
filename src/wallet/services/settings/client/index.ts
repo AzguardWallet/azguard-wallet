@@ -1,6 +1,6 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { LogLevel, LoggerServiceClient } from "@/wallet/services/logger/client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { SettingServiceEvent, type SettingServiceEventMessage } from "./events";
 import type { Setting, SettingValue } from "./models";
 import {
@@ -42,7 +42,7 @@ export class SettingServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                this.log(LogLevel.Error, `Unexpected event type ${message.event}.`)
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

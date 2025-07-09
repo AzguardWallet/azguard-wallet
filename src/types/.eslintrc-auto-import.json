@@ -337,6 +337,7 @@
     "useNotificationStore": true,
     "checkNotificationsForShow": true,
     "getTemplate": true,
-    "isBackgroundConnected": true
+    "isBackgroundConnected": true,
+    "useSyncedRef": true
   }
 }

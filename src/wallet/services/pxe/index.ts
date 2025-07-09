@@ -31,7 +31,7 @@ import { z } from "zod";
 import { Service } from "@/wallet/base/message-service/service.ts";
 import { type Profile, ProfileServiceClient } from "@/wallet/services/profile/client";
 import type { Network } from "@/wallet/services/network/client";
-import { LoggerServiceClient, LogLevel } from "@/wallet/services/logger/client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { Lock } from "@/wallet/utils";
 import {
     type GetContractClassMetadataParams,
@@ -53,7 +53,7 @@ import {
     type SimulateUtilityParams,
     PXE_SERVICE_NAME,
     PxeServiceMethod,
-    UpdateContractParams,
+    type UpdateContractParams,
 } from "./client";
 
 export class PxeService extends Service<PxeServiceMethod, void> {
@@ -432,9 +432,9 @@ export class PxeService extends Service<PxeServiceMethod, void> {
     }
 
 	private async initialize(): Promise<void> {
-		console.debug("Initialize pxe service");
+        this.logDebug("Initialize pxe service");
 		await this.checkMigrations();
-		console.debug("Pxe service initialized");
+        this.logDebug("Pxe service initialized");
 		this.init = null;
 	}
 
@@ -446,10 +446,10 @@ export class PxeService extends Service<PxeServiceMethod, void> {
 
 	private async checkMigrations(): Promise<void> {
 		try {
-			console.debug("Check pxe service migrations");
+            this.logDebug("Check pxe service migrations");
 			switch (localStorage.getItem("v")) {
 				case "1": {
-					console.debug("No migrations needed");
+                    this.logDebug("No migrations needed");
 					break;
 				}
 				default: {
@@ -459,19 +459,19 @@ export class PxeService extends Service<PxeServiceMethod, void> {
 			}
 		}
 		catch (error: unknown) {
-			console.error("Failed to migrate pxe service", error);
+            this.logError(["Failed to migrate pxe service", error]);
 		}
 	}
 	
 	private async migrate_0_1(): Promise<void> {
-		console.debug("Migrating pxe service");
+        this.logDebug("Migrating pxe service");
         const keyvalDb = (await indexedDB.databases()).find(x => x.name === "keyval-store");
         if (keyvalDb) {
-            console.debug("Drop 'keyval-store' db")
+            this.logDebug("Drop 'keyval-store' db");
             const _ = indexedDB.deleteDatabase(keyvalDb.name!);
         }
-		console.debug("Set pxe service version to 1");
+        this.logDebug("Set pxe service version to 1");
 		localStorage.setItem("v", "1");
-		console.debug("Pxe service migrated");
+        this.logDebug("Pxe service migrated");
     }
 }

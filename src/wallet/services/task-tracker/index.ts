@@ -1,20 +1,21 @@
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { getRandomHex } from "@/wallet/utils";
 import {
     TASK_TRACKER_SERVICE_NAME,
     TaskTrackerServiceMethod,
-    GetAllTasksRequest,
+    type GetAllTasksRequest,
     GetAllTasksResponse,
-    GetTaskRequest,
+    type GetTaskRequest,
     GetTaskResponse,
-    Task,
+    type Task,
     TaskTrackerServiceEvent,
     TaskTrackerServiceEventMessage,
     TaskStatus,
-    ITaskContent,
+    type ITaskContent,
     EmptyResult,
-    ITaskResult,
+    type ITaskResult,
 } from "./client";
 
 export const TASK_RETENTION_PERIOD_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
@@ -22,8 +23,11 @@ export const TASK_RETENTION_PERIOD_MS = 60 * 60 * 1000; // 60 minutes in millise
 export class TaskTrackerService extends Service {
     private readonly tasks: Map<string, Task> = new Map();
 
-    constructor(emit: (event: EventMessage) => void) {
-        super(TASK_TRACKER_SERVICE_NAME, emit);
+    constructor(
+        public readonly logger: ILogs,
+        emit: (event: EventMessage) => void
+    ) {
+        super(TASK_TRACKER_SERVICE_NAME, logger, emit);
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -53,7 +57,7 @@ export class TaskTrackerService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }
         }
@@ -163,7 +167,7 @@ export class TaskTrackerService extends Service {
      * @param taskId - Task ID to fail
      * @param error - Error message
      */
-    public failTask(taskId: string, error: string = "Unknown error"): void {
+    public failTask(taskId: string, error = "Unknown error"): void {
         const task = this.getTaskById(taskId);
         this.validateNotPending(task);
         this.validateTaskBeforeFinish(task);

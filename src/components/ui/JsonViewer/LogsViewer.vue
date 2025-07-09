@@ -23,13 +23,6 @@ const { openToast } = useToast()
 /** Services */
 import { createLoggerTheme } from "./creator.js"
 
-const props = defineProps({
-	// logs: {
-	// 	type: Array,
-	// 	required: true,
-	// },
-})
-
 const editorRef = ref(null)
 let view = null
 
@@ -314,6 +307,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+	profileService.dispose()
 	loggerService.dispose()
 
 	clearTimeout(scrollTimeout)

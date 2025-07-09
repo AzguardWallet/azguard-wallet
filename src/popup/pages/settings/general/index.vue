@@ -14,9 +14,24 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
-const handleOpenLogs = () => {
+/** Store */
+import { useAppStore } from "@/stores/app.store.ts"
+const appStore = useAppStore()
+
+const handleOpenLogs = async () => {
+	if (appStore.loggerWindowId) {
+		try {
+			const win = await chrome.windows.get(appStore.loggerWindowId)
+			chrome.windows.update(win.id, { focused: true })
+			return
+		} catch (error) {
+			appStore.loggerWindowId = null
+		}
+	}
+
 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
-	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
+	const window = await chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
+	appStore.loggerWindowId = window.id
 }
 </script>
 

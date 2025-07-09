@@ -2,7 +2,7 @@ import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
 import type { ProfileService } from "@/wallet/services/profile";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {

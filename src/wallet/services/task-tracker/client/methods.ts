@@ -1,5 +1,5 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
-import { TASK_TRACKER_SERVICE_NAME, Task } from ".";
+import { TASK_TRACKER_SERVICE_NAME, type Task } from ".";
 
 export enum TaskTrackerServiceMethod {
     GetAllTasks,

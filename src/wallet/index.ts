@@ -61,7 +61,7 @@ const logs = new InMemoryLogs();
 // services
 const settingService = new SettingService(logs, broadcast)
 const loggerService = new LoggerService(logs, broadcast);
-const taskTrackerService = new TaskTrackerService(broadcast);
+const taskTrackerService = new TaskTrackerService(logs, broadcast);
 const profileService = new ProfileService(settingService, logs, broadcast);
 const networkService = new NetworkService(profileService, logs, broadcast);
 const accountService = new AccountService(profileService, networkService, logs, broadcast);

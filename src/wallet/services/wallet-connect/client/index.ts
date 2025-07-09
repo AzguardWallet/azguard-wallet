@@ -26,7 +26,7 @@ export class WalletConnectServiceClient extends ServiceClient {
     }
 
     protected onEvent(message: EventMessage): void {
-        console.error(`Unexpected event type ${message.event}.`);
+        this.logError(`Unexpected event type ${message.event}.`);
     }
 
     /**

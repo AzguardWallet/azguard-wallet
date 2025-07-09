@@ -23,8 +23,8 @@ import type { AccountService } from "@/wallet/services/account"
 import type { ProfileService } from "@/wallet/services/profile"
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import type { ExecutionService } from "@/wallet/services/execution"
-import { TaskTrackerService } from "@/wallet/services/task-tracker";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import type { TaskTrackerService } from "@/wallet/services/task-tracker";
+import type { ILogs } from "@/wallet/services/logger/client";
 import {
     type IOperation,
     RegisterContractOperation,

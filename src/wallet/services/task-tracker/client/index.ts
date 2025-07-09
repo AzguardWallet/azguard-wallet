@@ -1,7 +1,8 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { Task } from "./models";
-import { TaskTrackerServiceEvent, TaskTrackerServiceEventMessage } from "./events";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import type { Task } from "./models";
+import { TaskTrackerServiceEvent, type TaskTrackerServiceEventMessage } from "./events";
 import { GetAllTasksRequest, GetTaskRequest } from "./methods";
 
 export const TASK_TRACKER_SERVICE_NAME = "task-tracker";
@@ -29,7 +30,7 @@ export class TaskTrackerServiceClient extends ServiceClient {
         private readonly onTaskUpdated?: (task: Task) => void,
         private readonly onTaskDeleted?: (task: Task) => void,
     ) {
-        super(TASK_TRACKER_SERVICE_NAME, onConnected, onDisconnected);
+        super(TASK_TRACKER_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -62,7 +63,7 @@ export class TaskTrackerServiceClient extends ServiceClient {
                 break;
             }
             default: {
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
             }
         }

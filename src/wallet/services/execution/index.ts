@@ -54,7 +54,7 @@ import {
     TxOrigin,
     TxTransfer,
 } from "@/wallet/services/transaction/client";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import { decodeFromAbiPatched } from "@/wallet/utils/abi-decoder";
 import type { Fn } from "@/wallet/utils/fn";
@@ -823,22 +823,23 @@ export class ExecutionService extends Service {
                 [account.address], // scopes
             );
 
-        const publicReturn = simulatedTx.getPublicReturnValues();
-        const privateReturn = txRequest.origin.toString() === op.accountAddress
-            ? simulatedTx.getPrivateReturnValues().nested
-            : simulatedTx.getPrivateReturnValues().nested[1].nested;
-        
-        for (const [call, i, j, types] of calls) {
-            const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? [];
-            result.encoded[i] = values;
-            try {
-                result.decoded[i] = decodeFromAbiPatched(types, values);
-            }
-            catch (error) {
-                this.logError(["Failed to decode simulation results", types, values, error]);
+            const publicReturn = simulatedTx.getPublicReturnValues();
+            const privateReturn = txRequest.origin.toString() === op.accountAddress
+                ? simulatedTx.getPrivateReturnValues().nested
+                : simulatedTx.getPrivateReturnValues().nested[1].nested;
+            
+            for (const [call, i, j, types] of calls) {
+                const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? [];
+                result.encoded[i] = values;
+                try {
+                    result.decoded[i] = decodeFromAbiPatched(types, values);
+                }
+                catch (error) {
+                    this.logError(["Failed to decode simulation results", types, values, error]);
+                }
             }
         }
-
+        
         for (const [promise, i, types] of utility) {
             const { result: values } = await promise;
             try {
@@ -869,7 +870,7 @@ export class ExecutionService extends Service {
             actions: IAction[],
             setup?: IAction[],
         },
-        isFeePayer = false,
+        isFeePayer = false
 ): Promise<[TxExecutionRequest, PXE, IAccountContract, Network, Fr, TxCall[], TxCall[]]> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
@@ -949,7 +950,7 @@ export class ExecutionService extends Service {
         artifacts: Map<string, ContractArtifact>,
         args: HashedValues[],
         calls: AzguardFunctionCall[],
-        txCalls: TxCall[],
+        txCalls: TxCall[]
     ) {
         for (const action of actions) {
             switch (action.kind) {

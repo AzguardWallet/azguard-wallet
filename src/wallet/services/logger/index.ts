@@ -8,7 +8,7 @@ import {
     type ILogs,
     LOGGER_SERVICE_NAME,
     type LogEntity,
-    LogLevel,
+    type LogLevel,
     type LogOrigin,
     LoggerServiceMethod
 } from "./client";
@@ -52,7 +52,7 @@ export class LoggerService extends Service {
                 }
             }
             default: {
-                this.addLog(LogLevel.Error, `Invalid request method ${request.method}`);
+                this.logError(`Invalid request method ${request.method}`);
                 return undefined;
             }                
         }

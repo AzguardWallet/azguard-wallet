@@ -45,9 +45,20 @@ const handleLockWallet = () => {
 	managers.profile.lockActiveProfile()
 }
 
-const handleOpenLogs = () => {
+const handleOpenLogs = async () => {
+	if (appStore.loggerWindowId) {
+		try {
+			const win = await chrome.windows.get(appStore.loggerWindowId)
+			chrome.windows.update(win.id, { focused: true })
+			return
+		} catch (error) {
+			appStore.loggerWindowId = null
+		}
+	}
+
 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
-	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
+	const window = await chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
+	appStore.loggerWindowId = window.id
 }
 
 onMounted(async () => {
