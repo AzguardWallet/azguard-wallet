@@ -1,3 +1,5 @@
+import { OperationKind } from "@/wallet/services/execution/client";
+
 export enum TaskStatus {
     Pending,
     Processing,
@@ -24,6 +26,7 @@ export enum ContentKind {
     Step,
     BalanceUpdate,
     TokenMint,
+    ExecuteOperation,
 }
 
 export interface ITaskContent {
@@ -58,6 +61,14 @@ export class TokenMintContent implements ITaskContent {
         public readonly decimals: number,
         public readonly amount: string,
         public readonly estimatedTime?: number,
+    ) {}
+}
+
+export class ExecuteOperationContent implements ITaskContent {
+    public readonly kind = ContentKind.ExecuteOperation;
+    public readonly label = "Execute operation";
+    constructor(
+        public readonly operationKind: OperationKind,
     ) {}
 }
 

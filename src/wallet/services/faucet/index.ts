@@ -222,8 +222,7 @@ export class FaucetService extends Service {
             const deployTask = rootTask.startSubtask(new StepContent("Deploying token"));
 
             try {
-                // TODO: here we would provide deployTask to the execution service:
-                const deployResults = await this.executionService.executeOperations(deployOps, origin);
+                const deployResults = await this.executionService.executeOperations(deployOps, origin, deployTask);
                 if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
                     throw new Error(`Token deployment failed: ${
                         (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)?.error
@@ -250,7 +249,6 @@ export class FaucetService extends Service {
 
         const mintTask = rootTask.startSubtask(new StepContent("Minting token"));
         try {
-            // TODO: here we would provide mintTask to the execution service:
             const [mintResult] = await this.executionService.executeOperations(
                 [
                     new SendTransactionOperation(networkId, accountAddress, feeSettings, [
@@ -266,7 +264,8 @@ export class FaucetService extends Service {
                         ),
                     ]),
                 ],
-                origin
+                origin,
+                mintTask
             );
             if (mintResult.status !== OperationStatus.Ok) {
                 throw new Error(`Token mint failed: ${

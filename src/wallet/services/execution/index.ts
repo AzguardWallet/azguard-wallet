@@ -26,7 +26,7 @@ import {
 } from "@aztec/stdlib/contract";
 import { PXE } from '@aztec/stdlib/interfaces/client';
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
-import { Capsule, HashedValues, TxExecutionRequest, UtilitySimulationResult } from '@aztec/stdlib/tx';
+import { Capsule, HashedValues, TxExecutionRequest, TxHash, TxProvingResult, TxSimulationResult, UtilitySimulationResult } from '@aztec/stdlib/tx';
 import { z } from "zod";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
@@ -50,6 +50,7 @@ import {
     OriginType,
     TransferToken,
     TransferType,
+    Tx,
     TxCall,
     TxOrigin,
     TxTransfer,
@@ -58,6 +59,9 @@ import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } 
 import { decodeFromAbiPatched } from "@/wallet/utils/abi-decoder";
 import { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
+import { TaskService } from "@/wallet/services/task";
+import { WrappedTask } from "@/wallet/services/task/wrapped-task";
+import { ExecuteOperationContent, StepContent } from "@/wallet/services/task/client";
 import {
     EXECUTION_SERVICE_NAME,
     ExecutionServiceMethod,
@@ -110,6 +114,7 @@ export class ExecutionService extends Service {
         private readonly fpcService: FpcService,
         private readonly transactionService: TransactionService,
         private readonly accountStateService: AccountStateService,
+        private readonly taskService: TaskService,
         emit: (event: EventMessage) => void,
     ) {
         super(EXECUTION_SERVICE_NAME, emit);
@@ -299,13 +304,18 @@ export class ExecutionService extends Service {
         return tx.hash;
     }
 
-    public async executeOperations(operations: IOperation[], origin: TxOrigin): Promise<IOperationResult[]> {
+    public async executeOperations(operations: IOperation[], origin: TxOrigin, parentTask?: WrappedTask): Promise<IOperationResult[]> {
         const results: IOperationResult[] = [];
         for (const operation of operations) {
+
             if (results.length && results.at(-1)!.status !== OperationStatus.Ok) {
                 results.push(new SkippedOperationResult());
                 continue;
             }
+
+            const operationTask = parentTask
+                ? parentTask.startSubtask(new ExecuteOperationContent(operation.kind))
+                : this.taskService.startNewTask(new ExecuteOperationContent(operation.kind));
             try {
                 let result;
                 switch (operation.kind) {
@@ -322,11 +332,11 @@ export class ExecutionService extends Service {
                         break;
                     }
                     case OperationKind.RegisterToken: {
-                        result = await this.executeRegisterToken(operation as RegisterTokenOperation);
+                        result = await this.executeRegisterToken(operation as RegisterTokenOperation, operationTask);
                         break;
                     }
                     case OperationKind.SendTransaction: {
-                        result = await this.executeSendTransaction(operation as SendTransactionOperation, origin);
+                        result = await this.executeSendTransaction(operation as SendTransactionOperation, origin, operationTask);
                         break;
                     }
                     case OperationKind.SimulateTransaction: {
@@ -345,10 +355,13 @@ export class ExecutionService extends Service {
                         throw new Error("Invalid operation");
                     }
                 }
+                operationTask.complete();
                 results.push(new OkOperationResult(result));
             }
             catch (error) {
-                results.push(new FailedOperationResult((error as Error)?.message ?? error as string ?? "Unknown error"));
+                const errorMessage = (error as Error)?.message ?? error as string ?? "Unknown error";
+                operationTask.fail(errorMessage);
+                results.push(new FailedOperationResult(errorMessage));
             }
         }
         return results;
@@ -406,12 +419,12 @@ export class ExecutionService extends Service {
         await this.pxeService.registerSender(network, AztecAddress.fromString(op.address));
     }
 
-    async executeRegisterToken(op: RegisterTokenOperation): Promise<void> {
+    async executeRegisterToken(op: RegisterTokenOperation, parentTask?: WrappedTask): Promise<void> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
         }
-        const ti = await this.tokenService.parseTokenInterface(op.networkId, op.address);
+        const ti = await this.tokenService.parseTokenInterface(op.networkId, op.address, parentTask);
         if (ti.getNameFn === undefined ||
             ti.getSymbolFn === undefined ||
             ti.getDecimalsFn === undefined ||
@@ -420,9 +433,9 @@ export class ExecutionService extends Service {
         ) {
             throw new Error("Couldn't find necessary methods in the contract interface. Try to add token manually.");
         }
-        await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti);
+        await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti, parentTask);
     }
-    
+
     async withFeePayment(op: SendTransactionOperation): Promise<[SendTransactionOperation, GasSettings, boolean]> {
         switch (op.feeSettings.paymentMethod.type) {
             case FeePaymentMethodType.FeeJuice: {
@@ -561,33 +574,116 @@ export class ExecutionService extends Service {
         }
     }
 
-    async executeSendTransaction(op: SendTransactionOperation, origin: TxOrigin): Promise<string> {
-        const [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op);
+    async executeSendTransaction(op: SendTransactionOperation, origin: TxOrigin, parentTask?: WrappedTask): Promise<string> {
+        let _op: SendTransactionOperation;
+        let _gasSettings: GasSettings;
+        let _isFeePayer: boolean;
+        let txRequest: TxExecutionRequest;
+        let pxe: PXE;
+        let account: IAccountContract;
+        let network: Network;
+        let nonce: Fr;
+        let txCalls: TxCall[];
+        let txSetup: TxCall[];
+        let simulatedTx: TxSimulationResult;
+        let provedTx: TxProvingResult;
+        let txHash: TxHash;
+        let tx: Tx;
 
-        const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(_op, _isFeePayer);
-        txRequest.txContext.gasSettings = _gasSettings;
+        const feeSetupStep = new StepContent("Fee setup");
+        const feeSetupTask = parentTask
+            ? parentTask.startSubtask(feeSetupStep)
+            : this.taskService.startNewTask(feeSetupStep);
+        try {
+            [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op);
+            feeSetupTask.complete();
+        } catch (error) {
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Fee setup failed";
+            feeSetupTask.fail(errorMessage);
+            throw error;
+        }
 
-        const simulatedTx = await pxe.simulateTx(
-            txRequest, // txRequest
-            true, // simulatePublic
-            undefined, // skipTxValidation
-            undefined, // skipFeeEnforcement
-            undefined, // overrides
-            [account.address], // scopes
-        );
-        const provedTx = await pxe.proveTx(txRequest, simulatedTx.privateExecutionResult);
-        const txHash = await pxe.sendTx(provedTx.toTx());
+        const processingStep = new StepContent("Transaction processing");
+        const processingTask = parentTask
+            ? parentTask.startSubtask(processingStep)
+            : this.taskService.startNewTask(processingStep);
+        try {
+            [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(_op, _isFeePayer);
+            txRequest.txContext.gasSettings = _gasSettings;
+            processingTask.complete();
+        } catch (error) {
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction processing failed";
+            processingTask.fail(errorMessage);
+            throw error;
+        }
 
-        const tx = await this.transactionService.addTransaction(
-            origin,
-            network.chainId,
-            account.address.toString(),
-            txSetup,
-            _isFeePayer,
-            txCalls,
-            nonce.toString(),
-            txHash.toString(),
-        );
+        const simulationStep = new StepContent("Transaction simulation");
+        const simulationTask = parentTask
+            ? parentTask.startSubtask(simulationStep)
+            : this.taskService.startNewTask(simulationStep);
+        try {
+            simulatedTx = await pxe.simulateTx(
+                txRequest, // txRequest
+                true, // simulatePublic
+                undefined, // skipTxValidation
+                undefined, // skipFeeEnforcement
+                undefined, // overrides
+                [account.address], // scopes
+            );
+            simulationTask.complete();
+        } catch (error) {
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction simulation failed";
+            simulationTask.fail(errorMessage);
+            throw error;
+        }
+
+        const provingStep = new StepContent("Transaction proving");
+        const provingTask = parentTask
+            ? parentTask.startSubtask(provingStep)
+            : this.taskService.startNewTask(provingStep);
+        try {
+            provedTx = await pxe.proveTx(txRequest, simulatedTx.privateExecutionResult);
+            provingTask.complete();
+        } catch (error) {
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction proving failed";
+            provingTask.fail(errorMessage);
+            throw error;
+        }
+
+        const sendingStep = new StepContent("Sending transaction");
+        const sendingTask = parentTask
+            ? parentTask.startSubtask(sendingStep)
+            : this.taskService.startNewTask(sendingStep);
+        try {
+            txHash = await pxe.sendTx(provedTx.toTx());
+            sendingTask.complete();
+        } catch (error) {
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction sending failed";
+            sendingTask.fail(errorMessage);
+            throw error;
+        }
+
+        const storageStep = new StepContent("Storing transaction");
+        const storageTask = parentTask
+            ? parentTask.startSubtask(storageStep)
+            : this.taskService.startNewTask(storageStep);
+        try {
+            tx = await this.transactionService.addTransaction(
+                origin,
+                network.chainId,
+                account.address.toString(),
+                txSetup,
+                _isFeePayer,
+                txCalls,
+                nonce.toString(),
+                txHash.toString(),
+            );
+            storageTask.complete();
+        } catch (error) {
+            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction storage failed";
+            storageTask.fail(errorMessage);
+            throw error;
+        }
 
         return tx.hash;
     }

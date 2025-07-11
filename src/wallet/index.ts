@@ -78,6 +78,7 @@ const executionService = new ExecutionService(
     fpcService,
     transactionService,
     accountStateService,
+    taskService,
     broadcast
 );
 const tokenBalanceService = new TokenBalanceService(
