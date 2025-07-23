@@ -81,7 +81,7 @@ export class DefaultTransferPrivateToPublicFn extends TransferPrivateToPublicFn 
                     type: {
                         fields: [{ name: "inner", type: { kind: "field" } }],
                         kind: "struct",
-                        path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress",
+                        path: "aztec::protocol_types::address::aztec_address::AztecAddress",
                     },
                     visibility: "private",
                 },
@@ -90,7 +90,7 @@ export class DefaultTransferPrivateToPublicFn extends TransferPrivateToPublicFn 
                     type: {
                         fields: [{ name: "inner", type: { kind: "field" } }],
                         kind: "struct",
-                        path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress",
+                        path: "aztec::protocol_types::address::aztec_address::AztecAddress",
                     },
                     visibility: "private",
                 },
@@ -104,7 +104,7 @@ export class DefaultTransferPrivateToPublicFn extends TransferPrivateToPublicFn 
                     visibility: "private",
                 },
                 {
-                    name: "nonce",
+                    name: "authwit_nonce",
                     type: { kind: "field" },
                     visibility: "private",
                 },
@@ -125,13 +125,13 @@ export class DefaultTransferPrivateToPublicFn extends TransferPrivateToPublicFn 
                 fn.parameters.length === 4 &&
                 fn.parameters[0].name === "from" &&
                 (fn.parameters[0].type as StructType)?.path ===
-                    "authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                    "aztec::protocol_types::address::aztec_address::AztecAddress" &&
                 fn.parameters[1].name === "to" &&
                 (fn.parameters[1].type as StructType)?.path ===
-                    "authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                    "aztec::protocol_types::address::aztec_address::AztecAddress" &&
                 fn.parameters[2].name === "amount" &&
                 fn.parameters[2].type.kind === "integer" &&
-                (fn.parameters[3].name === "nonce" || fn.parameters[3].name === "_nonce") &&
+                (fn.parameters[3].name === "authwit_nonce" || fn.parameters[3].name === "_nonce") &&
                 fn.parameters[3].type.kind === "field" &&
                 fn.returnTypes.length === 0
             ) {
