@@ -3,17 +3,15 @@
 import { onMounted, ref, watch, withDirectives } from "vue"
 import { EditorView } from "codemirror"
 import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state"
-import {
-	keymap,
-	highlightActiveLine,
-	Decoration,
-} from "@codemirror/view"
+import { keymap, highlightActiveLine, Decoration } from "@codemirror/view"
 import { defaultKeymap } from "@codemirror/commands"
 import { searchKeymap } from "@codemirror/search"
 
 /** Utils */
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { SettingServiceClient } from "@/wallet/services/settings/client"
 import { capitalize } from "@/utils/string"
 
 /** Composables */
@@ -28,6 +26,7 @@ let view = null
 
 let loggerService = null
 let profileService = null
+let settingService = null
 const logs = ref([])
 
 function getLogLevelName(level) {
@@ -45,8 +44,8 @@ const isDownloaded = ref(false)
 
 const AUTO_SCROLL_TIMEOUT_MS = 30_000
 const SCROLL_DISABLE_THRESHOLD = 20
-const MAX_LOGS_COUNT = 2_000
 const MAX_LOGS_DIFF = 100
+const maxLogsCount = ref(DEFAULT_SETTINGS?.developer?.debugMode ? 10_000 : 1_000)
 
 const shouldAutoScroll = ref(true)
 const showScrollBtn = ref(false)
@@ -63,7 +62,7 @@ const handleSelectlevel = (level) => {
 const onLogAdded = (log) => {
 	logs.value.push(log)
 
-	if (logs.value.length > MAX_LOGS_COUNT + MAX_LOGS_DIFF) {
+	if (logs.value.length > maxLogsCount.value + MAX_LOGS_DIFF) {
 		logs.value.splice(0, MAX_LOGS_DIFF)
 	}
 
@@ -74,7 +73,7 @@ const onLogAdded = (log) => {
 	if (view) {
 		const doc = view.state.doc
 
-		if (filteredLogs.value.length > MAX_LOGS_COUNT + MAX_LOGS_DIFF) {
+		if (filteredLogs.value.length > maxLogsCount.value + MAX_LOGS_DIFF) {
 			view.dispatch({
 				changes: {
 					from: doc.line(1).from,
@@ -250,11 +249,19 @@ function exportLogsToCSV() {
 	}, 1_500)
 }
 
-const onActiveProfileChanged = (profile) => {
+function onActiveProfileChanged(profile) {
 	if (!profile) {
 		chrome.windows.getCurrent(window => {
 			chrome.windows.remove(window.id)
 		})
+	}
+}
+
+async function onSettingUpdate(setting) {
+	if (setting.key === "debugMode") {
+		maxLogsCount.value = setting.value ? 10_000 : 1_000
+		logs.value = await loggerService.getLogs()
+		updateEditorContent()
 	}
 }
 
@@ -269,6 +276,8 @@ onMounted(async () => {
 	await nextTick()
 
 	profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, onActiveProfileChanged)
+	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
+
 	loggerService = new LoggerServiceClient(undefined, undefined)
 	logs.value = await loggerService.getLogs()
 	loggerService.onLogAdded = onLogAdded
