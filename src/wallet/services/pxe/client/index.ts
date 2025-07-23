@@ -26,7 +26,7 @@ import { z } from "zod";
 import { ServiceClient } from "@/wallet/base/message-service/service-client";
 import { Network } from "@/wallet/services/network/client";
 import { ensureOffscreenRunning } from "@/wallet/utils/offscreen";
-import { ContractClassMetadataSchema, ContractMetadataSchema, PXEInfoSchema, TxProvingResultSchema } from "@/wallet/utils/schemas";
+import { ContractClassMetadataSchema, ContractMetadataSchema, PXEInfoSchema } from "@/wallet/utils/schemas";
 import { PxeServiceMethod as PxeServiceMethod } from "./methods";
 import { PXEProxy } from "./proxy";
 
@@ -110,9 +110,7 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
     ): Promise<TxProvingResult> {
         await ensureOffscreenRunning();
         const result = await this.request(PxeServiceMethod.ProveTx, { network, txRequest, privateExecutionResult });
-        // TODO: uncomment when https://github.com/AztecProtocol/aztec-packages/pull/14498 merged
-        //return await TxProvingResult.schema.parseAsync(result);
-        return await TxProvingResultSchema.parseAsync(result);
+        return await TxProvingResult.schema.parseAsync(result);
     }
 
     public async registerAccount(
