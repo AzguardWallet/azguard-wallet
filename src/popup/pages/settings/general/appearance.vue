@@ -78,11 +78,9 @@ async function applySetting(key, value) {
 				chrome.sidePanel.open({
 					windowId: currentWindow.id,
 				})
-				window.close()
-			} else {
-				window.close()
 			}
 			
+			window.close()
 			break;
 	
 		default:

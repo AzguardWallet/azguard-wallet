@@ -16,14 +16,14 @@ import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
-const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
-const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark") // computed(() => settings.value.appearance?.theme)
+const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
+const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.appearance?.sidePanel)
 let settingService = null
+
 function onSettingUpdate(setting) {
 	if (setting.key === "theme") {
 		theme.value = setting.value
@@ -39,22 +39,38 @@ const handleOpen = target => {
 	})
 }
 
-const handleSelectTheme = (theme) => {
+async function handleSwitchTheme () {
 	try {
-		settingService.updateSetting("theme", theme)
+		const newTheme = theme.value === "dark" ? "light" : "dark"
+		await settingService.updateSetting("theme", newTheme)
+		theme.value = newTheme
 	} catch (err) {
 		console.error(`Failed theme updating ${err}`);
 	}
 }
 
-const handleImport = () => {
-	cacheStore.importType = "default"
-	popupStore.open("import")
+async function handleSwitchAppView () {
+	try {
+		await settingService.updateSetting("sidePanel", !isSidePanelEnabled.value)
+		isSidePanelEnabled.value = !isSidePanelEnabled.value
+		if (isSidePanelEnabled.value) {
+			const currentWindow = await chrome.windows.getCurrent()
+			chrome.sidePanel.open({
+				windowId: currentWindow.id,
+			})
+			
+		}
+
+		window.close()
+	} catch (err) {
+		console.error(`Failed side panel updating ${err}`);
+	}
 }
 
 onMounted(async () => {
 	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
 	theme.value = (await settingService.getSetting("theme"))?.value
+	isSidePanelEnabled.value = (await settingService.getSetting("sidePanel"))?.value
 })
 
 onBeforeUnmount(() => {
@@ -64,6 +80,23 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex wide direction="column" align="center" justify="between" :class="$style.wrapper">
+		<Flex align="center" justify="end" gap="4" wide :class="$style.settings">
+			<Icon
+				@click="handleSwitchTheme"
+				:name="theme === 'dark' ? 'sun' : 'moon'"
+				size="16"
+				color="tertiary"
+				:class="$style.icon"
+			/>
+			<Icon
+				@click="handleSwitchAppView"
+				name="dock-right"
+				size="16"
+				color="tertiary"
+				:class="$style.icon"
+			/>
+		</Flex>
+
 		<Flex direction="column" align="center" gap="16">
 			<Text size="32" weight="500" align="center" :class="$style.title"> Privacy of finances is paramount </Text>
 			<Text size="14" weight="500" color="body" height="140" align="center" :class="$style.description">
@@ -76,7 +109,7 @@ onBeforeUnmount(() => {
 			</Button>
 		</Flex>
 
-		<Flex direction="column" gap="16" align="center" :class="$style.bottom">
+		<Flex direction="column" gap="12" align="center" :class="$style.bottom">
 			<Flex wide direction="column" gap="8">
 				<Button @click="appStore.showRegisterPopup = true" size="medium" type="primary" wide>
 					<Flex align="center" gap="6">
@@ -94,30 +127,6 @@ onBeforeUnmount(() => {
 				and
 				<Text @click="handleOpen('privacy')" color="secondary" :class="$style.link"> Privacy Policy </Text>
 			</Text>
-
-			<Flex align="center" gap="4" :class="$style.theme_switcher">
-				<Icon
-					@click="handleSelectTheme('light')"
-					name="sun"
-					size="14"
-					color="tertiary"
-					:class="theme === 'light' && $style.active"
-				/>
-				<Icon
-					@click="handleSelectTheme('dark')"
-					name="moon"
-					size="14"
-					color="tertiary"
-					:class="theme === 'dark' && $style.active"
-				/>
-				<Icon
-					@click="handleSelectTheme('system')"
-					name="settings"
-					size="14"
-					color="tertiary"
-					:class="theme === 'system' && $style.active"
-				/>
-			</Flex>
 		</Flex>
 
 		<Transition name="slide">
@@ -135,6 +144,25 @@ onBeforeUnmount(() => {
 
 	padding-top: 170px;
 	margin: 0 auto;
+}
+
+.settings {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+
+	.icon {
+		box-sizing: content-box;
+		border-radius: 50%;
+		cursor: pointer;
+
+		padding: 4px;
+
+		&:hover {
+			background: var(--gray-10);
+			fill: var(--txt-primary);
+		}
+	}
 }
 
 .title {
@@ -166,24 +194,5 @@ onBeforeUnmount(() => {
 	&:hover {
 		color: var(--txt-primary);
 	}
-}
-
-.theme_switcher {
-	background: var(--gray-10);
-	border-radius: 50px;
-
-	& svg {
-		box-sizing: content-box;
-		border-radius: 50%;
-		cursor: pointer;
-
-		padding: 2px;
-
-		&.active {
-			fill: var(--txt-primary);
-		}
-	}
-
-	padding: 4px;
 }
 </style>
