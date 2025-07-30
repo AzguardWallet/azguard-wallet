@@ -1,4 +1,4 @@
-import { OperationKind } from "@/wallet/services/execution/client";
+import { OperationKind, TransferType } from "@/wallet/services/execution/client";
 
 export enum TaskStatus {
     Pending,
@@ -27,6 +27,7 @@ export enum ContentKind {
     BalanceUpdate,
     TokenMint,
     ExecuteOperation,
+    Transfer,
 }
 
 export interface ITaskContent {
@@ -69,6 +70,17 @@ export class ExecuteOperationContent implements ITaskContent {
     public readonly label = "Execute operation";
     constructor(
         public readonly operationKind: OperationKind,
+    ) {}
+}
+
+export class TransferContent implements ITaskContent {
+    public readonly kind = ContentKind.Transfer;
+    public readonly label = "Transfer";
+    constructor(
+        public readonly tokenId: number,
+        public readonly transferType: TransferType,
+        public readonly recipientAddress: string,
+        public readonly amount: bigint,
     ) {}
 }
 
