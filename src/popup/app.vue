@@ -62,6 +62,10 @@ function applySetting(setting) {
 }
 
 const initNetworks = async () => {
+	managers.network?.dispose()
+	appStore.networks = []
+	appStore.network = null
+
 	managers.network = new NetworkServiceClient()
 	appStore.networks = (await managers.network.getOrInitNetworks()).sort((a, b) => {
 		const aPos = getChainPosition(a.chainId)
@@ -69,18 +73,15 @@ const initNetworks = async () => {
 		return aPos === bPos ? a.name.localeCompare(b.name) : aPos - bPos
 	})
 
-	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
-	if ("azguard:ui:activeNetwork" in activeNetworkResult) {
-		const localActiveNetworkId = activeNetworkResult["azguard:ui:activeNetwork"]
-		appStore.network = appStore.networks.find(n => n.id === localActiveNetworkId)
-	}
-	appStore.network ??= appStore.networks.find(n => n.isDefault)
+	appStore.network = appStore.networks.find(n => n.isDefault)
+	
 	managers.network.setDefault(appStore.network.id)
 	appStore.syncNetworkStatus()
 }
 
 const initAccount = async () => {
 	managers.account = new AccountServiceClient(appStore.profile, appStore.network)
+
 	appStore.accounts = await managers.account.getAccounts(true)
 
 	/** temp */
@@ -291,9 +292,7 @@ watch(
 
 onBeforeUnmount(() => {
 	clearInterval(intervalId)
-	// if (settingService) {
-		settingService.dispose()
-	// }
+	settingService.dispose()
 })
 </script>
 

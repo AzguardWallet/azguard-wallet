@@ -1,8 +1,12 @@
 <script setup>
+/** Utils */
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
+
 /** Components */
+import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import RegisterPopup from "../popups/RegisterPopup/RegisterPopup.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Store */
@@ -17,6 +21,8 @@ const props = defineProps({
 	displaceIdx: Number,
 })
 
+let profileService = null
+const profiles = ref([])
 const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.select_profile?.order
 })
@@ -25,6 +31,36 @@ const handleSelectProfile = profile => {
 	appStore.profile = profile
 	emit("onClose")
 }
+
+const handleProfileCreated = () => {
+	emit("onClose")
+}
+
+function onProfileAdded() {
+	
+}
+
+function onProfileUpdated() {
+	
+}
+
+function onProfileDeleted() {
+	
+}
+
+watch(
+	() => props.show,
+	async () => {
+		if (!props.show) {
+			profileService.dispose()
+			profileService = null
+			profiles.value = []
+		} else {
+			profileService = new ProfileServiceClient(undefined, undefined, onProfileAdded, onProfileUpdated, onProfileDeleted, undefined)
+			profiles.value = await profileService.getProfiles()
+		}
+	},
+)
 </script>
 
 <template>
@@ -36,16 +72,47 @@ const handleSelectProfile = profile => {
 
 					<ItemsContainer>
 						<SettingItem
-							v-for="profile in appStore.profiles"
+							v-for="profile in profiles"
 							@click="handleSelectProfile(profile)"
 							:title="profile.name"
-							:description="profile.id"
-							icon="user"
-							iconBgColor="blue"
-						/>
+						>
+							<template #right>
+								<Icon
+									:name="
+										profile?.id === appStore.profile?.id
+											? 'check-circle'
+											: 'circle'
+									"
+									size="16"
+									:color="
+										profile?.id === appStore.profile?.id
+											? 'green'
+											: 'tertiary'
+									"
+								/>
+							</template>
+						</SettingItem>
 					</ItemsContainer>
+
+					<Button
+						@click="appStore.showRegisterPopup = true"
+						wide
+						type="secondary"
+						size="medium"
+						leftIcon="plus-circle"
+						leftIconColor="primary"
+					>
+						<Text size="13">New Profile</Text>
+					</Button>
 				</Flex>
 			</Flex>
+
+			<Transition name="slide">
+				<RegisterPopup
+					v-if="appStore.showRegisterPopup"
+					@onProfileCreated="handleProfileCreated"
+				/>
+			</Transition>
 		</PopupCard>
 	</Popup>
 </template>

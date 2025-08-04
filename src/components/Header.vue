@@ -92,8 +92,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-	loggerService.dispose()
-	settingService.dispose()
+	loggerService?.dispose()
+	settingService?.dispose()
 })
 </script>
 
