@@ -120,7 +120,7 @@ export class FaucetService extends Service {
         let instance: ContractInstanceWithAddress;
         const origin = new TxOrigin(OriginType.UI, "Faucet")
 
-        const rootTask = this.taskService.startNewTask(new TokenMintContent(name, symbol, decimals, amount));
+        const rootTask = this.taskService.startNewTask(new TokenMintContent(name, symbol, decimals, amount), undefined, origin);
         const checkTask = rootTask.startSubtask(new StepContent("Check if need to deploy token"));
         try {
             deployActions = [];

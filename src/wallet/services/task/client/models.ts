@@ -1,4 +1,5 @@
 import { OperationKind, TransferType } from "@/wallet/services/execution/client";
+import { TxOrigin } from "@/wallet/services/transaction/client";
 
 export enum TaskStatus {
     Pending,
@@ -15,7 +16,7 @@ export type Task = {
     createdAt: number;
     startedAt?: number;
     subtasks: Task[];
-    source?: string;
+    origin?: TxOrigin;
     parent?: Task;
     finishedAt?: number;
     result?: ITaskResult;

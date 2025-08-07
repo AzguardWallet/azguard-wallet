@@ -17,6 +17,7 @@ import {
     ITaskResult,
 } from "./client";
 import { WrappedTask } from "./wrapped-task";
+import { TxOrigin } from "@/wallet/services/transaction/client";
 
 export const TASK_RETENTION_PERIOD_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
 
@@ -63,7 +64,7 @@ export class TaskService extends Service {
     private createTask(
         content: ITaskContent,
         parentId?: string,
-        source?: string,
+        origin?: TxOrigin,
         status: TaskStatus = TaskStatus.Pending,
     ): WrappedTask {
         let taskId: string;
@@ -83,7 +84,7 @@ export class TaskService extends Service {
             createdAt: Date.now(),
             startedAt: undefined,
             subtasks: [],
-            source,
+            origin,
             parent,
             finishedAt: undefined,
             result: undefined,
@@ -101,29 +102,29 @@ export class TaskService extends Service {
             parent.subtasks.push(newTask);
             this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, parent));
         }
-        return new WrappedTask(newTask.id, this, source);
+        return new WrappedTask(newTask.id, this, origin);
     }
 
     /**
      * Creates a new pending task of any level.
      * @param content - Task content
      * @param parentId - Optional parent task ID
-     * @param source - Optional source of the task
+     * @param origin - Optional origin of the task
      * @returns Created task wrapper
      */
-    public createNewTask(content: ITaskContent, parentId?: string, source?: string): WrappedTask {
-        return this.createTask(content, parentId, source, TaskStatus.Pending);
+    public createNewTask(content: ITaskContent, parentId?: string, origin?: TxOrigin): WrappedTask {
+        return this.createTask(content, parentId, origin, TaskStatus.Pending);
     }
 
     /**
      * Creates a new processing task of any level.
      * @param content - Task content
      * @param parentId - Optional parent task ID
-     * @param source - Optional source of the task
+     * @param origin - Optional origin of the task
      * @returns Created task wrapper
      */
-    public startNewTask(content: ITaskContent, parentId?: string, source?: string): WrappedTask {
-        return this.createTask(content, parentId, source, TaskStatus.Processing);
+    public startNewTask(content: ITaskContent, parentId?: string, origin?: TxOrigin): WrappedTask {
+        return this.createTask(content, parentId, origin, TaskStatus.Processing);
     }
 
     private validateTaskBeforeFinish(task: Task): void {

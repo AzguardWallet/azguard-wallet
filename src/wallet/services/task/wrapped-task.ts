@@ -1,19 +1,20 @@
 import { TaskService } from "./index";
 import { ITaskContent, ITaskResult, EmptyResult, TaskStatus, Task } from "./client/models";
+import { TxOrigin } from "@/wallet/services/transaction/client";
 
 export class WrappedTask {
     constructor(
         public readonly id: string,
         private readonly taskService: TaskService,
-        public readonly source?: string,
+        public readonly origin?: TxOrigin,
     ) {}
 
     public createSubtask(content: ITaskContent): WrappedTask {
-        return this.taskService.createNewTask(content, this.id, this.source);
+        return this.taskService.createNewTask(content, this.id, this.origin);
     }
 
     public startSubtask(content: ITaskContent): WrappedTask {
-        return this.taskService.startNewTask(content, this.id, this.source);
+        return this.taskService.startNewTask(content, this.id, this.origin);
     }
 
     public start(): void {

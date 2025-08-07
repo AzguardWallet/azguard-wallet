@@ -166,8 +166,9 @@ export class ExecutionService extends Service {
         amount: bigint,
         feeSettings: FeeSettings,
     ): Promise<string> {
+        const origin = new TxOrigin(OriginType.UI);
         const transferContent = new TransferContent(tokenId, transferType, recipientAddress, amount);
-        const transferTask = this.taskService.startNewTask(transferContent);
+        const transferTask = this.taskService.startNewTask(transferContent, undefined, origin);
 
         try {
             const profile = await this.profileService.getActiveProfile();
@@ -281,7 +282,7 @@ export class ExecutionService extends Service {
             const txHash = await this.sendProvedTx(pxe, provedTx.toTx(), transferTask);
 
             const tx = await this.transactionService.addTransaction(
-                new TxOrigin(OriginType.UI),
+                origin,
                 network.chainId,
                 accountAddress,
                 txSetup,
@@ -326,7 +327,7 @@ export class ExecutionService extends Service {
 
             const operationTask = parentTask
                 ? parentTask.startSubtask(new ExecuteOperationContent(operation.kind))
-                : this.taskService.startNewTask(new ExecuteOperationContent(operation.kind));
+                : this.taskService.startNewTask(new ExecuteOperationContent(operation.kind), undefined, origin);
             try {
                 let result;
                 switch (operation.kind) {

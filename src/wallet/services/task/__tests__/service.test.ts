@@ -3,6 +3,7 @@ import { TaskService, TASK_RETENTION_PERIOD_MS } from "../index";
 import { StepContent, TaskStatus, ContentKind, Task, EmptyResult, ITaskResult, ResultKind } from "../client/models";
 import { WrappedTask } from "../wrapped-task";
 import { TaskServiceEvent } from "../client/events";
+import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 
 class TestResult implements ITaskResult {
     public readonly kind = ResultKind.Empty;
@@ -123,16 +124,16 @@ describe("Task Tree Implementation", () => {
             ]);
         });
 
-        test("should propagate source to subtasks", () => {
+        test("should propagate origin to subtasks", () => {
             const { service } = createTestSetup();
-            const source = "test-source";
+            const origin = new TxOrigin(OriginType.UI);
 
-            const rootTask = service.createNewTask(new StepContent("Root"), undefined, source);
+            const rootTask = service.createNewTask(new StepContent("Root"), undefined, origin);
             const subtask = rootTask.createSubtask(new StepContent("Subtask"));
 
-            expect(rootTask.source).toBe(source);
-            expect(subtask.source).toBe(source);
-            expect(subtask.task.source).toBe(source);
+            expect(rootTask.origin).toBe(origin);
+            expect(subtask.origin).toBe(origin);
+            expect(subtask.task.origin).toBe(origin);
         });
     });
 
