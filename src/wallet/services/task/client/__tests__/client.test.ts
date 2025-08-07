@@ -3,6 +3,7 @@ import { TASK_SERVICE_NAME, TaskServiceClient, TaskServiceMethod } from "..";
 import { TaskServiceEvent, TaskServiceEventMessage } from "../events";
 import { TaskStatus, StepContent } from "../models";
 import { createChromePortFixture, ChromePortFixture } from "./chrome-port.fixture";
+import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 
 let portFixture: ChromePortFixture;
 
@@ -21,7 +22,7 @@ const createMockTask = () => ({
     createdAt: Date.now(),
     startedAt: Date.now(),
     subtasks: [],
-    source: "test_source",
+    origin: new TxOrigin(OriginType.UI),
     parent: undefined,
     finishedAt: undefined,
     result: undefined,
