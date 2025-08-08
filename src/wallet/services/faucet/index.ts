@@ -16,7 +16,6 @@ import {
 import { PublicKeys } from "@aztec/stdlib/keys"
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages"
 import { Service } from "@/wallet/base/port-service/service"
-import type { TokenService } from "@/wallet/services/token"
 import type { TransactionService } from "@/wallet/services/transaction"
 import { TxOrigin, OriginType } from "@/wallet/services/transaction/client"
 import type { NetworkService } from "@/wallet/services/network"
@@ -38,6 +37,7 @@ import {
     type FeeSettings,
     FeePaymentMethodType,
     FeeJuicePaymentMethod,
+    RegisterTokenOperation,
 } from "@/wallet/services/execution/client"
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
@@ -57,7 +57,6 @@ export class FaucetService extends Service {
         private readonly accountService: AccountService,
         private readonly executionService: ExecutionService,
         private readonly transactionService: TransactionService,
-        private readonly tokenService: TokenService,
         private readonly taskService: TaskService,
         emit: (event: EventMessage) => void
     ) {
@@ -249,7 +248,7 @@ export class FaucetService extends Service {
 
         const mintTask = rootTask.startSubtask(new StepContent("Minting token"));
         try {
-            const [mintResult] = await this.executionService.executeOperations(
+            const [mintResult, registerResult] = await this.executionService.executeOperations(
                 [
                     new SendTransactionOperation(networkId, accountAddress, feeSettings, [
                         new CallAction(
@@ -263,6 +262,11 @@ export class FaucetService extends Service {
                             [accountAddress, amount],
                         ),
                     ]),
+                    new RegisterTokenOperation(
+                        networkId,
+                        accountAddress,
+                        instance.address.toString(),
+                    )
                 ],
                 origin,
                 mintTask
@@ -270,6 +274,11 @@ export class FaucetService extends Service {
             if (mintResult.status !== OperationStatus.Ok) {
                 throw new Error(`Token mint failed: ${
                     (mintResult as FailedOperationResult)?.error
+                }`);
+            }
+            if (registerResult.status !== OperationStatus.Ok) {
+                throw new Error(`Token register failed: ${
+                    (registerResult as FailedOperationResult)?.error
                 }`);
             }
             const mintTx = (mintResult as OkOperationResult<string>).result;
@@ -280,30 +289,6 @@ export class FaucetService extends Service {
         } catch (error) {
             const errorMessage = (error as Error)?.message ?? error as string ?? "Mint failed";
             mintTask.fail(errorMessage);
-            rootTask.fail(errorMessage);
-            throw error;
-        }
-
-        try {
-            const tokens = await this.tokenService.getTokens(profile.id, network.chainId);
-            if (!tokens.some(x => x.contract === instance.address.toString())) {
-                console.debug("adding faucet token...");
-                const ti = await this.tokenService.parseTokenInterface(
-                    networkId,
-                    instance.address.toString(),
-                    rootTask,
-                );
-                const token = await this.tokenService.addToken(
-                    profile.id,
-                    networkId,
-                    accountAddress,
-                    ti,
-                    rootTask,
-                );
-                console.debug("faucet token:", token);
-            }
-        } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Register failed";
             rootTask.fail(errorMessage);
             throw error;
         }
