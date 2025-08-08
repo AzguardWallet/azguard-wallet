@@ -849,7 +849,7 @@ export class ExecutionService extends Service {
                             visibility: "public"
                         })),
                     } as any,
-                    ensureArray(values),
+                    [values], // TODO: change to "ensureArray(values)" when aztec supports multi-type decoding
                 );
             }
             catch (error) {
