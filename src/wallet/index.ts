@@ -97,7 +97,6 @@ const faucetService = new FaucetService(
     accountService,
     executionService,
     transactionService,
-    tokenService,
     taskService,
     broadcast,
 );
