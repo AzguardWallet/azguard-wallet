@@ -51,8 +51,8 @@ export async function stop() {
 }
 
 // services
-const taskService = new TaskService(broadcast);
 const profileService = new ProfileService(broadcast);
+const taskService = new TaskService(profileService, broadcast);
 const networkService = new NetworkService(profileService, broadcast);
 const accountService = new AccountService(profileService, networkService, broadcast);
 const tokenService = new TokenService(

@@ -18,14 +18,20 @@ import {
 } from "./client";
 import { WrappedTask } from "./wrapped-task";
 import { TxOrigin } from "@/wallet/services/transaction/client";
+import { ProfileService } from "@/wallet/services/profile";
 
 export const TASK_RETENTION_PERIOD_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
 
 export class TaskService extends Service {
     private readonly tasks: Map<string, Task> = new Map();
+    private profile?: string = undefined
 
-    constructor(emit: (event: EventMessage) => void) {
+    constructor(
+        private readonly profileService: ProfileService,
+        emit: (event: EventMessage) => void
+    ) {
         super(TASK_SERVICE_NAME, emit);
+        this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged);
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -242,6 +248,16 @@ export class TaskService extends Service {
         task.subtasks.forEach(child => this.deleteTaskTree(child.id));
         this.tasks.delete(taskId);
         this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskDeleted, task));
+    }
+
+    private readonly onActiveProfileChanged = async (profileId?: string) => {
+        if (profileId) {
+            if (this.profile && this.profile !== profileId) {
+                this.tasks.clear();
+                console.debug(`Tasks cleared for profile #${profileId}`);
+            }
+            this.profile = profileId;
+        }
     }
 }
 export { WrappedTask } from "./wrapped-task";
