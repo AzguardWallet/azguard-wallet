@@ -1,9 +1,9 @@
 import { expect, test, vi, beforeEach, afterEach, describe } from "vitest";
 import { TaskService, TASK_RETENTION_PERIOD_MS } from "../index";
 import { StepContent, TaskStatus, ContentKind, Task, EmptyResult, ITaskResult, ResultKind } from "../client/models";
-import { WrappedTask } from "../wrapped-task";
 import { TaskServiceEvent } from "../client/events";
 import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
+import { ProfileService } from "@/wallet/services/profile";
 
 class TestResult implements ITaskResult {
     public readonly kind = ResultKind.Empty;
@@ -12,7 +12,14 @@ class TestResult implements ITaskResult {
 
 const createTestSetup = () => {
     const emitMock = vi.fn();
-    const service = new TaskService(emitMock);
+    const profileMock = {
+        onActiveProfileChanged: [] as ((id?: string) => void)[],
+    } as unknown as ProfileService;
+    const service = new TaskService(profileMock, emitMock);
+
+    const switchToProfile = (id?: string) => {
+        profileMock.onActiveProfileChanged.forEach(cb => cb(id));
+    };
 
     const rootStepContent = new StepContent("Root Task");
     const stepOne = new StepContent("Step One", 1000);
@@ -33,6 +40,7 @@ const createTestSetup = () => {
         stepOne,
         stepTwo,
         expectEvent,
+        switchToProfile,
     };
 };
 
@@ -319,4 +327,31 @@ describe("Task Tree Implementation", () => {
             expect(() => service.getTask(task.id)).toThrow(`Task ${task.id} has been expired`);
         });
     });
+    describe("Profile-driven task cleanup", () => {
+        test("clears tasks when switching to a different profile", () => {
+            const { service, switchToProfile } = createTestSetup();
+
+            switchToProfile("A");
+            service.createNewTask(new StepContent("T1"));
+            service.createNewTask(new StepContent("T2"));
+            expect(service.getTasks().length).toBe(2);
+
+            // Switch to a different profile - should clear
+            switchToProfile("B");
+            expect(service.getTasks().length).toBe(0);
+        });
+
+        test("keeps tasks when switching to the same profile", () => {
+          const { service, switchToProfile } = createTestSetup();
+
+          switchToProfile("A");
+          service.createNewTask(new StepContent("T1"));
+          service.createNewTask(new StepContent("T2"));
+          expect(service.getTasks().length).toBe(2);
+
+          // Set to the same profile - no clearing
+          switchToProfile("A");
+          expect(service.getTasks().length).toBe(2);
+        });
+      });
 });
