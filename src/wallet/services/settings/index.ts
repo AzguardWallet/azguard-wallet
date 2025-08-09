@@ -24,7 +24,7 @@ import { DEFAULT_SETTINGS, DEFAULT_SETTING_GROUPS } from "./defaults";
 export class SettingService extends Service {
     public readonly onSettingUpdated: ((setting: Setting) => void)[] = [];
 
-    private readonly settings: EntityStorage<SettingValue>;
+    private readonly storage: EntityStorage<SettingValue>;
     private initialized = false;
     private initPromise: Promise<void>;
     private readonly lock = new Lock();
@@ -34,7 +34,7 @@ export class SettingService extends Service {
         emit: (event: EventMessage) => void,
     ) {
         super(SETTING_SERVICE_NAME, logger, emit);
-        this.settings = new EntityStorage("azguard:settings", StorageType.Local);
+        this.storage = new EntityStorage("azguard:settings", StorageType.Local);
         this.initPromise = this.initDefaultSettings();
     }
 
@@ -103,9 +103,9 @@ export class SettingService extends Service {
         for (const [group, settings] of Object.entries(DEFAULT_SETTINGS)) {
             for (const [key, value] of Object.entries(settings)) {
                 const id = `${group}:${key}`;
-                const exists = await this.settings.contains(id);
+                const exists = await this.storage.contains(id);
                 if (!exists) {
-                    await this.settings.set(id, value);
+                    await this.storage.set(id, value);
                 }
                 switch (key) {
                     case "ttl": {
@@ -116,7 +116,7 @@ export class SettingService extends Service {
                         break;
                     }
                     case "debugMode": {
-                        const value = await this.settings.get(id);
+                        const value = await this.storage.get(id);
                         this.logger.setDebugMode(value as boolean);
                         break;
                     }
@@ -139,7 +139,7 @@ export class SettingService extends Service {
     public async getSettings(includeFullKey = false): Promise<Setting[]> {
         await this.ensureInitialized();
 
-        const all = await this.settings.getAll();
+        const all = await this.storage.getAll();
         return all.map(([fullKey, value]) => {
             const key = includeFullKey
                 ? fullKey
@@ -153,7 +153,7 @@ export class SettingService extends Service {
     public async getSetting(key: string): Promise<Setting> {
         await this.ensureInitialized();
         
-        const value = await this.settings.get(this.getSettingId(key));
+        const value = await this.storage.get(this.getSettingId(key));
         if (value === undefined) {
             throw new Error("Unknown key");
         }
@@ -171,7 +171,7 @@ export class SettingService extends Service {
             if (_setting?.value === value) return;
 
             const id = this.getSettingId(key);
-            await this.settings.set(id, value)
+            await this.storage.set(id, value)
 
             if (key === "debugMode") {
                 this.logger.setDebugMode(value as boolean);
@@ -197,15 +197,15 @@ export class SettingService extends Service {
         await this.lock.enter();
 
         try {
-            const keys = await this.settings.getKeys();
+            const keys = await this.storage.getKeys();
             for (const key of keys) {
-                await this.settings.delete(key);
+                await this.storage.delete(key);
             }
 
             for (const [group, entries] of Object.entries(DEFAULT_SETTINGS)) {
                 for (const [key, value] of Object.entries(entries)) {
                     const id = `${group}:${key}`;
-                    await this.settings.set(id, value);
+                    await this.storage.set(id, value);
 
                     const setting = new Setting(key, value);
                     this.emit(new SettingServiceEventMessage(

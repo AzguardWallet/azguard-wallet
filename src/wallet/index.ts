@@ -15,6 +15,7 @@ import { AccountStateService } from "./services/account-state";
 import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
+import { ContactService } from "./services/contacts";
 import { LoggerService } from "./services/logger";
 import { SettingService } from "./services/settings";
 import { LOGGER_SERVICE_NAME } from "./services/logger/client";
@@ -117,6 +118,7 @@ const dappInteractionService = new DappInteractionService(
     logs,
     broadcast,
 );
+const contactService = new ContactService(profileService, logs, broadcast);
 const rpcService = new RpcService(
     dappSessionService,
     dappInteractionService,
@@ -147,7 +149,8 @@ const services = new Map<string, Service>([
     [accountStateService.name, accountStateService],
     [taskTrackerService.name, taskTrackerService],
     [loggerService.name, loggerService],
-    [settingService.name, settingService]
+    [settingService.name, settingService],
+    [contactService.name, contactService]
 ]);
 
 // state

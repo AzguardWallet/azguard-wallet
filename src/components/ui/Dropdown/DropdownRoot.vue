@@ -92,9 +92,12 @@ const handleOutside = e => {
 	close()
 }
 
-watch(isOpen, () => {
+watch(isOpen, async () => {
 	if (!isOpen.value) {
-		trap.value.deactivate()
+		await nextTick()
+		if (trap.value?.active) {
+			trap.value.deactivate()
+		}
 		removeOutside()
 
 		if (Object.prototype.hasOwnProperty.call(dropdownStyles.value, "top")) {

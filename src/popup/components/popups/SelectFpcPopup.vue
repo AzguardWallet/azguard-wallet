@@ -35,7 +35,7 @@ const selectedFpc = ref()
 const allFpcs = ref([])
 const fpcs = computed(() => {
 	return allFpcs.value
-		.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
+		?.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
 		.map(f => prepareFpc(f))
 })
 const balances = ref([])
@@ -46,7 +46,7 @@ const filteredFpcs = computed(() => {
 	const lowTerm = searchTerm.value?.toLowerCase() || ""
 	if (!lowTerm) return fpcs.value
 
-	return fpcs.value.filter(fpc => {
+	return fpcs.value?.filter(fpc => {
 		return (
 			fpc.name?.toLowerCase().includes(lowTerm) ||
 			fpc.typeName?.toLowerCase().includes(lowTerm) ||
@@ -115,13 +115,13 @@ const onFpcUpdated = (fpc) => {
 	fpcs.value[idx] = prepareFpc(fpc)
 }
 const onFpcDeleted = (fpc) => {
-	fpcs.value = fpcs.value.filter(f => f.id !== fpc.id)
+	fpcs.value = fpcs.value?.filter(f => f.id !== fpc.id)
 }
 const onBalanceAdded = (balance) => {
-	balances.value.push(balance)
+	balances.value?.push(balance)
 }
 const onBalanceDeleted = (balance) => {
-	balances.value = balances.value.filter(b => b.id !== balance.id)
+	balances.value = balances.value?.filter(b => b.id !== balance.id)
 }
 watch(
 	() => props.show,
@@ -175,6 +175,10 @@ watch(
 				</Flex>
 
 				<Banner v-if="isLoading" isLoading> Fetching FPCs </Banner>
+
+				<Banner v-else-if="!filteredFpcs?.length" wide>
+					No FPC found, get started by adding new Fee Payment Contract
+				</Banner>
 
 				<Tooltip v-else-if="error" wide>
 					<Banner :action="{ name: 'Try again', callback: () => init() }" variant="error" wide>
@@ -230,7 +234,7 @@ watch(
 						</Flex>
 					</Flex>
 
-					<Flex v-if="filteredFpcs.length === 0" align="center" justify="center" gap="8">
+					<Flex v-if="filteredFpcs?.length === 0" align="center" justify="center" gap="8">
 						<Text size="13" weight="600" color="tertiary"> No FPCs found </Text>
 					</Flex>
 				</Flex>

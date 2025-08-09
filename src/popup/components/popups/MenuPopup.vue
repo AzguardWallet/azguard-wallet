@@ -98,7 +98,14 @@ onBeforeUnmount(() => {
 						iconBgColor="transparent"
 						:disabled="appStore.profiles.length === 1"
 					/> -->
-					<SettingItem title="Contacts" icon="contacts" iconBgColor="var(--green)" chevron disabled />
+					<SettingItem
+						@click="emit('onClose')"
+						to="/popup/settings/general/contacts"
+						title="Contacts"
+						icon="contacts"
+						iconBgColor="blue"
+						chevron
+					/>
 				</ItemsContainer>
 
 				<ItemsContainer title="Other">

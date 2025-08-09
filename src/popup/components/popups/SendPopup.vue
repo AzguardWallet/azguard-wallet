@@ -12,8 +12,9 @@ import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 
 /** Utils */
 import { managers } from "@/utils/core.js"
-import { capitalize, isValidHex } from "@/utils/string"
+import { capitalize, isValidHex, trimAddress } from "@/utils/string"
 import { TransferType } from "@/wallet/services/transaction/client"
+import { ContactServiceClient } from "@/wallet/services/contacts/client"
 import { getChainColor, getChainName } from "@/components/ui/utils.js"
 
 /** Composables */
@@ -93,6 +94,39 @@ const initReceiverType = () => {
 	}
 }
 
+let contactService = null
+const contacts = ref([])
+const selectedContact = ref()
+const searchTerm = ref("")
+const isSearchInputFocused = ref(false)
+const filteredContacts = computed(() => {
+	if (!searchTerm.value) return []
+
+	const lowTerm = searchTerm.value?.toLowerCase() || ""
+
+	return contacts.value?.filter(c => {
+		return (
+			c.name?.toLowerCase().includes(lowTerm) ||
+			c.address === searchTerm.value ||
+			c.abbr?.toLowerCase() === lowTerm
+		)
+	})
+})
+const showSuggestions = computed(() => {
+	return filteredContacts.value?.length && isSearchInputFocused.value
+})
+
+function handleSearhBlur() {
+	setTimeout(() => {
+		isSearchInputFocused.value = false
+	}, 100)
+}
+function handleSelectContact(contact) {
+	selectedContact.value = contact
+	searchTerm.value = contact.address
+}
+
+
 const amountTerm = ref()
 
 const destinationAddressTerm = ref("")
@@ -164,6 +198,21 @@ const handleSend = async () => {
 	}
 }
 
+function onContactAdded(contact) {
+	contacts.value.push(contact)
+}
+function onContactUpdated(contact) {
+	const idx = contacts.value.findIndex(c => c.id === contact.id)
+	if (idx !== -1) {
+		contacts.value[idx] = contact
+	} else {
+		contacts.value.push(contact)
+	}
+}
+function onContactDeleted(contact) {
+	contacts.value = contacts.value.filter(c => c.id !== contact.id)
+}
+
 watch(
 	() => cacheStore.activeTokenIdx,
 	() => {
@@ -186,11 +235,29 @@ watch(
 )
 
 watch(
+	() => searchTerm.value,
+	(newVal) => {
+		if (selectedContact.value && newVal !== selectedContact.value.address) {
+			selectedContact.value = null
+		}
+	}
+)
+
+watch(
 	() => props.show,
-	() => {
+	async () => {
 		if (props.show) {
 			initSendType()
 			initReceiverType()
+
+			contactService = new ContactServiceClient(
+				undefined,
+				undefined,
+				onContactAdded,
+				onContactUpdated,
+				onContactDeleted,
+			)
+			contacts.value = await contactService.getContacts()
 
 			if (route.params.id) {
 				cacheStore.activeTokenIdx = route.params.id
@@ -203,16 +270,36 @@ watch(
 			if (!appStore.tokens.length) {
 				awaitingNewToken.value = true
 			}
+
+			document.addEventListener("keydown", onKeydown)
 		} else {
 			amountTerm.value = null
 			destinationAddressTerm.value = ""
 
+			searchTerm.value = ""
+			isSearchInputFocused.value = false
+
+			contacts.value = []
+			selectedContact.value = null
+			contactService?.dispose()
+
 			awaitingNewToken.value = false
 
 			cacheStore.preselectedBalanceType = "private"
+
+			document.removeEventListener("keydown", onKeydown)
 		}
 	},
 )
+
+const onKeydown = e => {
+	if (e.key === "Enter") {
+		if (showSuggestions.value) {
+			handleSelectContact(filteredContacts.value[0])
+			document.activeElement?.blur()
+		}
+	}
+}
 </script>
 
 <template>
@@ -260,21 +347,53 @@ watch(
 						</Flex>
 
 						<Input
-							v-model="destinationAddressTerm"
+							v-model="searchTerm"
+							@focus="isSearchInputFocused = true"
+							@blur="handleSearhBlur()"
 							:label="`${capitalize(selectedReceiverType)} destination`"
-							placeholder="0xABCD"
+							placeholder="Enter contact name or address"
 							wide
+							:style="{ position: 'relative' }"
 						>
 							<template #suffix>
 								<Icon v-if="isAllowedToSend" name="check-circle" size="14" color="green" />
 							</template>
+
 							<template #right>
-								<Flex v-if="selfAccountDestination" align="center" gap="6">
+								<Flex v-if="selfAccountDestination || selectedContact" align="center" gap="6" :class="$style.input_right">
 									<Icon name="vault" size="12" color="blue" />
 									<Text size="13" weight="600" color="primary" noWrap>
-										{{ selfAccountDestination.name }}
+										{{ selfAccountDestination?.name ?? selectedContact?.name }}
 									</Text>
 								</Flex>
+							</template>
+
+							<template #bottom>
+								<Transition name="fade">
+									<Flex v-if="showSuggestions" align="center" direction="column" wide :class="$style.contacts_wrapper">
+										<Flex
+											v-for="c in filteredContacts"
+											@click="handleSelectContact(c)"
+											align="center"
+											gap="10"
+											:class="$style.contact"
+											wide
+										>
+											<Flex align="center" justify="center" :class="$style.contact_avatar" :style="{ backgroundColor: `var(--${c.color})`}">
+												<Text size="10" weight="600" color="primary">
+													{{ c.abbr }}
+												</Text>
+											</Flex>
+
+											<Flex direction="column" gap="4" wide>
+												<Text size="14" weight="600" color="primary" :class="$style.title"> {{ c.name }} </Text>
+												<Text size="12" weight="500" color="tertiary" :class="$style.description">
+													{{ trimAddress(c.address) }}
+												</Text>
+											</Flex>
+										</Flex>
+									</Flex>
+								</Transition>
 							</template>
 						</Input>
 
@@ -318,6 +437,79 @@ watch(
 	background: var(--gray-10);
 
 	padding: 2px;
+}
+
+.input_right {
+	max-width: 50%;
+	& span {
+		max-width: 90%;
+		min-width: 90%;
+
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+}
+
+.contacts_wrapper {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	z-index: 999;
+
+	border-radius: 10px;
+	box-shadow: inset 0 0 0 1px var(--border), 0 1px 3px var(--shadow-5);
+	background: var(--card-bg);
+
+	max-height: 150px;
+
+	overflow-y: auto;
+
+	.contact {
+		cursor: pointer;
+
+		padding: 8px 12px;
+		transition: all 0.2s var(--bezier);
+
+		&:hover {
+			background: var(--gray-3);
+		}
+
+		&:active {
+			background: var(--gray-5);
+		}
+
+		.contact_avatar {
+			width: 28px;
+			height: 28px;
+			border-radius: 50%;
+			flex-shrink: 0;
+		}
+
+		.title {
+			min-width: 100%;
+			width: 0;
+
+			line-height: 16px !important;
+
+			text-overflow: ellipsis;
+			overflow: hidden;
+			white-space: nowrap;
+		}
+
+		.description {
+			min-width: 100%;
+			width: 0;
+
+			line-height: 14px !important;
+
+			text-overflow: ellipsis;
+			overflow: hidden;
+			white-space: nowrap;
+		}
+
+	}
 }
 
 .bottom {

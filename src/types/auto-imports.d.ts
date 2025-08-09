@@ -61,6 +61,7 @@ declare global {
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
   const getDecimalSeparator: typeof import('../utils/amount.js')['getDecimalSeparator']
+  const getRandomElement: typeof import('../utils/general.js')['getRandomElement']
   const getTemplate: typeof import('../composables/notification.js')['getTemplate']
   const getThousandSeparator: typeof import('../utils/amount.js')['getThousandSeparator']
   const h: typeof import('vue')['h']

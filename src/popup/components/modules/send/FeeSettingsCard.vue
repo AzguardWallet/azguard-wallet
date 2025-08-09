@@ -181,7 +181,7 @@ const init = async () => {
 				selectedMethod.value = fpms[props.account.address]
 			} else {
 				const fpcs = (await fpcService.getFpcs(props.network.chainId))?.filter(f => f.type === FpcType.DefaultSponsoredFpc)
-				if (fpcs.length) {
+				if (fpcs?.length) {
 					selectedMethod.value = {
 						...methods.value[2],
 						fpc: fpcs[0],
@@ -192,7 +192,6 @@ const init = async () => {
 			}
 		}
 	} catch (e) {
-		console.error("Failed to init", e)
 		error.value = (e)?.message || e
 	} finally {
 		isLoading.value = false
@@ -310,8 +309,8 @@ onBeforeMount(async () => {
 })
 onBeforeUnmount(() => {
 	cacheStore.feePaymentMethods = cacheStore.feePaymentMethods.filter(m => m.id !== methodId)
-	fpcService.dispose()
-	tokenBalanceService.dispose()
+	fpcService?.dispose()
+	tokenBalanceService?.dispose()
 })
 </script>
 

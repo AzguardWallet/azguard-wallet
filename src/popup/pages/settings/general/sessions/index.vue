@@ -12,8 +12,6 @@
 import Navigation from "../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import PageHeader from "@/components/ui/Settings/PageHeader.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
@@ -60,13 +58,27 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 
 <template>
 	<Flex direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="24">
+		<Flex direction="column" gap="8" :class="$style.section_wrapper">
 			<Breadcrumbs hide-title />
 
 			<PageHeader title="Sessions" icon="plug-circle" iconColor="sand" />
 
-			<Flex direction="column" gap="16">
-				<Flex align="center" justify="end" wide>
+			<Flex direction="column" gap="16" :class="$style.section_wrapper">
+				<Flex align="center" justify="end" gap="10" wide>
+					<Tooltip position="end">
+						<Icon
+							@click="handleOpenConnectByURIPopup"
+							name="plug-circle"
+							size="20"
+							color="tertiary"
+							:class="$style.connect_by_uri"
+						/>
+
+						<template #content>
+							<Text size="12" color="secondary">Connect new dApp by URI</Text>
+						</template>
+					</Tooltip>
+
 					<Tooltip v-if="dappSessions.length" position="end">
 						<Icon
 							@click="handleDropAllSessions"
@@ -108,39 +120,45 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 						</Flex>
 
 						<Flex align="center" gap="8" :class="$style.icons">
-							<Icon @click.stop="handleDropSession(ds)" name="close-circle" size="16" color="tertiary" />
+							<Icon @click.stop="handleDropSession(ds)" name="close-circle" size="16" color="tertiary" :class="$style.delete_icon" />
 						</Flex>
 					</Flex>
+
+                    <Button @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plug-circle" :style="{marginTop: '8px'}">
+                        Connect new Dapp
+                    </Button>
 				</Flex>
 
-				<Flex v-else direction="column" ap align="center" gap="12" :class="$style.empty_banner">
-					<Icon name="plug-circle" size="20" color="tertiary" />
+                <Flex v-else direction="column" align="center" justify="between" :class="$style.empty_section">
+                    <Flex direction="column" align="center" gap="12" :class="$style.empty_banner">
+                        <Icon name="plug-circle" size="20" color="tertiary" />
 
-					<Flex direction="column" align="center" gap="6">
-						<Text size="13" weight="600" color="secondary" align="center">
-							There are no active sessions
-						</Text>
-						<Text size="12" weight="500" height="140" color="tertiary" align="center">
-							You can connect dApp directly by URI
-						</Text>
-					</Flex>
-				</Flex>
+                        <Flex direction="column" align="center" gap="6">
+                            <Text size="13" weight="600" color="secondary" align="center">
+                                There are no active sessions
+                            </Text>
+                            <Text size="12" weight="500" height="140" color="tertiary" align="center">
+                                You can connect dApp directly by URI
+                            </Text>
+                        </Flex>
+                    </Flex>
+
+                    <Button @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plug-circle">
+                        Connect new Dapp
+                    </Button>
+                </Flex>
 			</Flex>
 		</Flex>
 
-		<Flex direction="column" gap="6" :class="$style.uri_connect_section">
-			<Button @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plug-circle">
-				Connect new Dapp
-			</Button>
-
-			<Navigation />
-		</Flex>
+		<Navigation />
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
 	flex: 1;
+
+	height: 100%;
 
 	background: var(--card-bg);
 	border-top: 2px solid var(--gray-8);
@@ -152,7 +170,16 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 	padding: 20px 24px 24px 24px;
 }
 
+.connect_by_uri {
+	cursor: pointer;
+
+	&:hover {
+		fill: var(--txt-secondary);
+	}
+}
+
 .disconnect_all {
+	margin-top: 4px;
 	cursor: pointer;
 
 	&:hover {
@@ -160,13 +187,17 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 	}
 }
 
-.sessions_section {
-	max-height: calc(var(--base-height) - 265px);
-	overflow: auto;
+.section_wrapper {
+	flex: 1;
+
+	min-height: 0;
 }
 
-.uri_connect_section {
-	margin-bottom: 48px;
+.sessions_section {
+	flex: 1;
+
+	padding-bottom: 100px;
+	overflow: auto;
 }
 
 .session {
@@ -209,6 +240,18 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 	opacity: 0;
 
 	transition: all 0.2s var(--bezier);
+}
+
+.delete_icon {
+	&:hover {
+		fill: var(--red);
+	}
+}
+
+.empty_section {
+    flex: 1;
+
+    margin-bottom: 50px;
 }
 
 .empty_banner {

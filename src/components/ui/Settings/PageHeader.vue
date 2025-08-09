@@ -20,9 +20,9 @@ const props = defineProps({
 </script>
 
 <template>
-	<Flex direction="column" align="center" gap="16">
+	<Flex direction="column" align="center" gap="12">
 		<Flex :class="[$style.icon, $style[iconColor]]">
-			<Icon :name="icon" size="24" color="primary" />
+			<Icon :name="icon" size="24" color="white" />
 			<div />
 		</Flex>
 
