@@ -8,7 +8,7 @@ import type { Account } from "@/wallet/services/account/client";
 import type { DappSessionService } from "@/wallet/services/dapp-session";
 import { AccessLevel, type DappSession } from "@/wallet/services/dapp-session/client";
 import type { ExecutionService } from "@/wallet/services/execution";
-import { type ILogs } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import {
     type IOperation,
     FeeSettings,

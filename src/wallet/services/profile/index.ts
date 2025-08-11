@@ -1,7 +1,7 @@
 import { Fr } from "@aztec/foundation/fields";
 import type { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
-import { type ILogs } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, SimpleStorage, StorageType } from "@/wallet/storage";
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
 import { getEntropy, getMnemonic } from "@/wallet/utils/mnemonic";
@@ -590,7 +590,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.logError(["Failed to initialize profile session", error]);
+            this.logError("Failed to initialize profile session", error);
         }
         finally {
             this.lock.leave();
@@ -609,7 +609,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.logError(["Failed to close profile session", error]);
+            this.logError("Failed to close profile session", error);
         }
     }
 
@@ -618,11 +618,11 @@ export class ProfileService extends Service {
             if (this.activeSession.session.since + sessionTtl > Date.now()) {
                 return this.activeSession;
             }
-            else {
-                this.logDebug("Session expired");
-                await this._closeSession();
-            }
+
+            this.logDebug("Session expired");
+            await this._closeSession();
         }
+
         return undefined;
     }
 
@@ -635,7 +635,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.logError(["Failed to refresh profile session", error]);
+            this.logError("Failed to refresh profile session", error);
         }
     }
 
@@ -662,7 +662,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.logError(["Failed to open profile session", error]);
+            this.logError("Failed to open profile session", error);
         }
     }
 
@@ -705,7 +705,7 @@ export class ProfileService extends Service {
             return await key.decrypt(payload);
         }
         catch (error) {
-            this.logDebug(["Failed to decrypt payload", error]);
+            this.logDebug("Failed to decrypt payload", error);
             return undefined;
         }
     }

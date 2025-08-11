@@ -823,7 +823,7 @@ export class ExecutionService extends Service {
                             decodedArgs = ensureArray(decodeFromAbiPatched(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
                         }
                         catch (error) {
-                            this.logError(["Failed to decode utility call args", fn.parameters, _call.args, error]);
+                            this.logError("Failed to decode utility call args", fn.parameters, _call.args, error);
                             throw new Error(`Failed to decode utility "encoded_call" args: ${(error as Error)?.message}. Try to use "call" instead.`);
                         }
                         utility.push([
@@ -886,7 +886,7 @@ export class ExecutionService extends Service {
                     result.decoded[i] = decodeFromAbiPatched(types, values);
                 }
                 catch (error) {
-                    this.logError(["Failed to decode simulation results", types, values, error]);
+                    this.logError("Failed to decode simulation results", types, values, error);
                 }
             }
         }
@@ -906,7 +906,7 @@ export class ExecutionService extends Service {
                 );
             }
             catch (error) {
-                this.logError(["Failed to encode utility simulation results", types, values, error]);
+                this.logError("Failed to encode utility simulation results", types, values, error);
             }
             result.decoded[i] = values;
         }

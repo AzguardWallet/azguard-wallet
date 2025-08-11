@@ -28,32 +28,32 @@ export abstract class ServiceClient {
         this.connection = this.connect();
     }
 
-    protected log(level: LogLevel, args: any, message?: string) {
+    protected log(level: LogLevel, message: string, ...args: any[]) {
         this.logger.addLog(
             level,
-            args,
             message,
+            args,
             this.serviceName,
             LogOrigin.BG,
         );
     }
 
-    protected logDebug(args: any, message?: string) {
-        this.log(LogLevel.Debug, args, message);
+    protected logDebug(message: string, ...args: any[]) {
+        this.log(LogLevel.Debug, message, ...args);
     }
 
-    protected logInfo(args: any, message?: string) {
-        this.log(LogLevel.Info, args, message);
+    protected logInfo(message: string, ...args: any[]) {
+        this.log(LogLevel.Info, message, ...args);
     }
 
-    protected logWarn(args: any, message?: string) {
-        this.log(LogLevel.Warning, args, message);
+    protected logWarn(message: string, ...args: any[]) {
+        this.log(LogLevel.Warning, message, ...args);
     }
 
-    protected logError(args: any, message?: string) {
-        this.log(LogLevel.Error, args, message);
+    protected logError(message: string, ...args: any[]) {
+        this.log(LogLevel.Error, message, ...args);
     }
-    
+
     protected abstract onEvent(message: EventMessage): void;
 
     protected async request<T>(request: RequestMessage): Promise<T> {
@@ -63,7 +63,7 @@ export abstract class ServiceClient {
         if (this.disposed) {
             throw new Error("Cannot send requests from disposed client");
         }
-        this.logDebug(["Request created", request]);
+        this.logDebug("Request created", request);
         // just in case
         if (this.requests.has(request.requestId)) {
             throw new Error(`Request with id ${request.requestId} already exists`);
@@ -71,10 +71,10 @@ export abstract class ServiceClient {
         const promise = new Promise<T>((resolve, reject) => {
             this.requests.set(request.requestId, [resolve, reject]);
         });
-        this.logDebug(["Pending requests", this.requests.size]);
+        this.logDebug("Pending requests", this.requests.size);
         const requestMessage = jsonSanitize(request);
         this.port!.postMessage(requestMessage);
-        this.logDebug(["Message sent", requestMessage]);
+        this.logDebug("Message sent", requestMessage);
         return promise;
     }
     
@@ -92,7 +92,7 @@ export abstract class ServiceClient {
                 return;
             }
             catch (error) {
-                this.logError(["Failed to connect.", error])
+                this.logError("Failed to connect.", error)
                 await sleep(1000);
             }
         }
@@ -113,7 +113,7 @@ export abstract class ServiceClient {
     }
 
     private readonly onMessage = (message: IMessage) => {
-        this.logDebug(["Message received", message]);
+        this.logDebug("Message received", message);
         if (message.type !== MessageType.Response && message.type !== MessageType.Event) {
             this.logWarn("Invalid message");
             return;
@@ -128,19 +128,19 @@ export abstract class ServiceClient {
             const [resolve, reject] = requestPromise;
             if (response.error !== undefined) {
                 reject(response.error);
-                this.logDebug(["Request rejected", response.requestId, response.error]);
+                this.logDebug("Request rejected", response.requestId, response.error);
             }
             else {
                 resolve(response.result);
-                this.logDebug(["Request resolved", response.requestId, response.result]);
+                this.logDebug("Request resolved", response.requestId, response.result);
             }
             this.requests.delete(response.requestId);
-            this.logDebug(["Pending requests", this.requests.size]);
+            this.logDebug("Pending requests", this.requests.size);
         }
         else {
             const event = message as EventMessage;
             try { this.onEvent(event); } catch {}
-            this.logDebug(["Event processed", event]);
+            this.logDebug("Event processed", event);
         }
     }
 

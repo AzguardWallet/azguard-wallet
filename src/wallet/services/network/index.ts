@@ -2,7 +2,7 @@ import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
 import type { ProfileService } from "@/wallet/services/profile";
-import { type ILogs } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
@@ -159,7 +159,7 @@ export class NetworkService extends Service {
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
 			}
 			catch (error) {
-				this.logError(["Failed to add 'Azguard Node'", error]);
+				this.logError("Failed to add 'Azguard Node'", error);
 			}
 			try {
 				const name = "Aztec Node";
@@ -177,7 +177,7 @@ export class NetworkService extends Service {
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
 			}
 			catch (error) {
-				this.logError(["Failed to add 'Sandbox'", error]);
+				this.logError("Failed to add 'Sandbox'", error);
 			}
 			for (const network of defaultNetworks) {
 				this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, network));
@@ -385,7 +385,7 @@ export class NetworkService extends Service {
 			const rpc = createAztecNodeClient(rpcUrl);
 			return (await rpc.getNodeInfo()).l1ChainId;
 		} catch (error) {
-			this.logError(error);
+			this.logError("Failed to fetch node info", error);
 			throw new Error("Failed to fetch node info");
 		}
 	}
@@ -457,7 +457,7 @@ export class NetworkService extends Service {
 			}
 		}
 		catch (error: unknown) {
-			this.logError(["Failed to migrate storage", error]);
+			this.logError("Failed to migrate storage", error);
 		}
 	}
 	

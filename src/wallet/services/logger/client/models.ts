@@ -17,8 +17,8 @@ export type LogEntity = {
     origin: LogOrigin;
     level: LogLevel;
     ts: number;
-    args: string[];
-    message?: string;
+    message: string;
+    args?: string[];
     source?: string;
 }
 
@@ -26,8 +26,8 @@ export interface ILogs {
     add(log: LogEntity): LogEntity | undefined;
     add(
 		level: LogLevel,
-		args: any,
-		message?: string,
+		message: string,
+		args?: any,
 		source?: string,
 		origin?: LogOrigin
 	): LogEntity | undefined;
@@ -39,8 +39,8 @@ export interface ILogsAsync {
     addLog(log: LogEntity): Promise<void>;
     addLog(
 		level: LogLevel,
-		args: any,
-		message?: string,
+		message: string,
+		args?: any,
 		source?: string,
 		origin?: LogOrigin
 	): Promise<void>;
@@ -70,26 +70,24 @@ export class InMemoryLogs implements ILogs {
 		return this.isDebugMode ? 10_000 : 1_000;
 	}
 
-    add(...args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): LogEntity | undefined {
+    add(...args: [LogEntity] | [LogLevel, string, any[]?, string?, LogOrigin?]): LogEntity | undefined {
 		let log: LogEntity;
 
 		if (typeof args[0] === "object" && "level" in args[0]) {
 			log = args[0] as LogEntity;
 		} else {
-			const [level, inputArgs, message, source, origin] = args as [
+			const [level, message, inputArgs, source, origin] = args as [
 				LogLevel,
-				any,
-				string?,
+				string,
+				any[]?,
 				string?,
 				LogOrigin?
 			];
 
 			if (!this.isDebugMode && level === LogLevel.Debug) return undefined;
 
-			const rawArgs = Array.isArray(inputArgs) ? inputArgs : [inputArgs];
-			const stringArgs = rawArgs.map(a => {
-				if (!a) return String(a);
-
+			const stringArgs = (inputArgs ?? []).map(a => {
+				if (a === null || a === undefined) return String(a);
 				if (typeof a === "object") {
 					try {
 						return JSON.stringify(a);
@@ -97,7 +95,6 @@ export class InMemoryLogs implements ILogs {
 						return String(a);
 					}
 				}
-
 				return String(a);
 			});
 
@@ -105,7 +102,7 @@ export class InMemoryLogs implements ILogs {
 				origin: origin ?? LogOrigin.BG,
 				level,
 				ts: Date.now(),
-				args: stringArgs,
+				args: stringArgs.length ? stringArgs : undefined,
 				message,
 				source,
 			};
@@ -116,22 +113,6 @@ export class InMemoryLogs implements ILogs {
 		this.logs.add(log);
         
         return log;
-	}
-
-	addDebug(args: any, message?: string, source?: string, origin?: LogOrigin): LogEntity | undefined {
-		return this.add(LogLevel.Debug, args, message, source, origin);
-	}
-
-	addInfo(args: any, message?: string, source?: string, origin?: LogOrigin): LogEntity | undefined {
-		return this.add(LogLevel.Info, args, message, source, origin);
-	}
-
-	addWarn(args: any, message?: string, source?: string, origin?: LogOrigin): LogEntity | undefined {
-		return this.add(LogLevel.Warning, args, message, source, origin);
-	}
-
-	addError(args: any, message?: string, source?: string, origin?: LogOrigin): LogEntity | undefined {
-		return this.add(LogLevel.Error, args, message, source, origin);
 	}
 
 	get(count?: number): LogEntity[] {

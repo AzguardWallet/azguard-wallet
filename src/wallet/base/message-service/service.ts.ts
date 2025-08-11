@@ -24,30 +24,30 @@ export abstract class Service<TMethod, TEvent> {
         this.logger = logger;
     }
 
-    protected log(level: LogLevel, args: any, message?: string) {
+    protected log(level: LogLevel, message: string, ...args: any[]) {
         this.logger.addLog(
             level,
-            args,
             message,
+            args,
             this.name,
             LogOrigin.BG,
         );
     }
-
-    protected logDebug(args: any, message?: string) {
-        this.log(LogLevel.Debug, args, message);
+    
+    protected logDebug(message: string, ...args: any[]) {
+        this.log(LogLevel.Debug, message, ...args);
     }
 
-    protected logInfo(args: any, message?: string) {
-        this.log(LogLevel.Info, args, message);
+    protected logInfo(message: string, ...args: any[]) {
+        this.log(LogLevel.Info, message, ...args);
     }
 
-    protected logWarn(args: any, message?: string) {
-        this.log(LogLevel.Warning, args, message);
+    protected logWarn(message: string, ...args: any[]) {
+        this.log(LogLevel.Warning, message, ...args);
     }
 
-    protected logError(args: any, message?: string) {
-        this.log(LogLevel.Error, args, message);
+    protected logError(message: string, ...args: any[]) {
+        this.log(LogLevel.Error, message, ...args);
     }
     
     public start() {
@@ -68,7 +68,7 @@ export abstract class Service<TMethod, TEvent> {
     }
 
     private readonly onMessage = async (message: IMessage<unknown>) => {
-        this.logDebug(["Message received", message]);
+        this.logDebug("Message received", message);
         if (message.type !== MessageType.Request || 
             message.from === undefined ||
             message.content === undefined
@@ -77,7 +77,7 @@ export abstract class Service<TMethod, TEvent> {
             return;
         }
         const { content: request } = message as RequestMessage<TMethod, unknown>;
-        this.logDebug(["Request received", request]);
+        this.logDebug("Request received", request);
         if (!request.requestId || !request.method) {
             this.logWarn("Invalid request");
             return;
@@ -85,7 +85,7 @@ export abstract class Service<TMethod, TEvent> {
         let responseContent: ResponseContent<unknown>;
         try {
             const result = await this.onRequest(request.method, request.params);
-            this.logDebug(["Request processed", request.requestId, result]);
+            this.logDebug("Request processed", request.requestId, result);
             responseContent = new ResponseContent(
                 request.requestId,
                 jsonSanitize(result),
@@ -93,21 +93,21 @@ export abstract class Service<TMethod, TEvent> {
             );
         }
         catch (error: unknown) {
-            this.logDebug(["Request failed", request.requestId, error]);
+            this.logDebug("Request failed", request.requestId, error);
             responseContent = new ResponseContent(
                 request.requestId,
                 undefined,
                 `${(error as Error)?.message ?? error ?? "Unknown error"}`,
             );
         }
-        this.logDebug(["Request created", responseContent]);
+        this.logDebug("Request created", responseContent);
         const responseMessage = new ResponseMessage(
             responseContent,
             this.name,
             message.from,
         );
         chrome.runtime.sendMessage(responseMessage);
-        this.logDebug(["Message sent", responseMessage]);
+        this.logDebug("Message sent", responseMessage);
     };
 
     protected emit(event: TEvent, payload?: unknown, to?: string) {
@@ -115,14 +115,14 @@ export abstract class Service<TMethod, TEvent> {
             event,
             jsonSanitize(payload),
         );
-        this.logDebug(["Event created", eventContent]);
+        this.logDebug("Event created", eventContent);
         const eventMessage = new EventMessage(
             eventContent,
             this.name,
             to,
         );
         chrome.runtime.sendMessage(eventMessage);
-        this.logDebug(["Message sent", eventMessage]);
+        this.logDebug("Message sent", eventMessage);
     }
 
     protected abstract onRequest(method: TMethod, params: unknown): Promise<unknown>;

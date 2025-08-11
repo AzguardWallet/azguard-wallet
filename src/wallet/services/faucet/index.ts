@@ -23,8 +23,8 @@ import type { AccountService } from "@/wallet/services/account"
 import type { ProfileService } from "@/wallet/services/profile"
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import type { ExecutionService } from "@/wallet/services/execution"
-import { TaskService } from "@/wallet/services/task";
-import { type ILogs } from "@/wallet/services/logger/client";
+import type { TaskService } from "@/wallet/services/task";
+import type { ILogs } from "@/wallet/services/logger/client";
 import {
     type IOperation,
     RegisterContractOperation,
@@ -230,7 +230,7 @@ export class FaucetService extends Service {
                     }`);
                 }
                 const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
-                this.logDebug(["faucet deploy tx", deployTx]);
+                this.logDebug("faucet deploy tx", deployTx);
                 await this.transactionService.waitForTx(deployTx, deployTask);
                 this.logDebug("faucet deploy tx mined");
                 if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
@@ -284,7 +284,7 @@ export class FaucetService extends Service {
                 }`);
             }
             const mintTx = (mintResult as OkOperationResult<string>).result;
-            this.logDebug(["faucet mint tx:", mintTx]);
+            this.logDebug("faucet mint tx:", mintTx);
             await this.transactionService.waitForTx(mintTx, mintTask);
             this.logDebug("faucet mint tx mined");
             mintTask.complete();

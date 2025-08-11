@@ -27,8 +27,8 @@ export class GetLogsResponse extends ResponseMessage {
 export class AddLogRequest extends RequestMessage {
     constructor(
         public readonly level: LogLevel,
-        public readonly args: any,
-        public readonly message?: string,
+        public readonly message: string,
+        public readonly args?: any[],
         public readonly source?: string,
         public readonly origin?: LogOrigin,
     ) {

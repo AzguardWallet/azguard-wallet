@@ -5,7 +5,7 @@ import type { AccountService } from "@/wallet/services/account";
 import type { Account } from "@/wallet/services/account/client";
 import type { NetworkService } from "@/wallet/services/network";
 import type { ProfileService } from "@/wallet/services/profile"
-import { type ILogs } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
 import {
@@ -23,7 +23,7 @@ import {
     TxStatus,
     TxBlock,
 } from "./client";
-import { WrappedTask } from "../task";
+import type { WrappedTask } from "../task";
 import { StepContent } from "../task/client";
 
 export class TransactionService extends Service {
@@ -175,7 +175,7 @@ export class TransactionService extends Service {
                         this.logDebug(`Transactions synced in ${end - start}ms`);
                     }
                     catch (error) {
-                        this.logError(["Failed to sync transaction status.", error]);
+                        this.logError("Failed to sync transaction status.", error);
                     }
                 }
             }

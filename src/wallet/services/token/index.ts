@@ -9,7 +9,7 @@ import type { NetworkService } from "@/wallet/services/network"
 import type { ProfileService } from "@/wallet/services/profile"
 import type { AccountService } from "@/wallet/services/account"
 import { PxeServiceClient } from "@/wallet/services/pxe/client"
-import { type ILogs } from "@/wallet/services/logger/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, Lock } from "@/wallet/utils"
 import {
@@ -18,9 +18,9 @@ import {
 	feeJuiceSymbol,
 } from "@/wallet/utils/fee-juice"
 import { type FnImpl, simulate } from "@/wallet/utils/fn"
-import { WrappedTask } from "@/wallet/services/task/wrapped-task"
+import type { WrappedTask } from "@/wallet/services/task/wrapped-task"
 import { StepContent } from "@/wallet/services/task/client"
-import { TaskService } from "@/wallet/services/task"
+import type { TaskService } from "@/wallet/services/task"
 import {
 	type AddTokenRequest,
 	AddTokenResponse,

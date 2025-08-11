@@ -323,7 +323,7 @@ export class TokenBalanceService extends Service {
 						this.logDebug(`Token balances synced in ${end - start}ms`);
 					}
 				} catch (error) {
-					this.logError(["Failed to sync token balances.", error]);
+					this.logError("Failed to sync token balances.", error);
 				}
 			}
 			await sleep(1000)
@@ -332,7 +332,7 @@ export class TokenBalanceService extends Service {
 
 	private async syncBatch(account: string, tbs: TokenBalanceRaw[]) {
 		for (const tb of tbs) {
-			let taskId = this.pendingTasks.get(tb.id)
+			const taskId = this.pendingTasks.get(tb.id)
 			if (!taskId) {
 				const task = this.taskService.startNewTask(new BalanceUpdateContent(tb.id))
 				this.pendingTasks.set(tb.id, task.id)

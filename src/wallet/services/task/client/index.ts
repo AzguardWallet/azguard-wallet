@@ -1,8 +1,9 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { Task } from "./models";
-import { TaskServiceEvent, TaskServiceEventMessage } from "./events";
+import type { Task } from "./models";
+import { TaskServiceEvent, type TaskServiceEventMessage } from "./events";
 import { GetAllTasksRequest, GetTaskRequest } from "./methods";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 
 export const TASK_SERVICE_NAME = "task";
 
@@ -29,7 +30,7 @@ export class TaskServiceClient extends ServiceClient {
         private readonly onTaskUpdated?: (task: Task) => void,
         private readonly onTaskDeleted?: (task: Task) => void,
     ) {
-        super(TASK_SERVICE_NAME, onConnected, onDisconnected);
+        super(TASK_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
