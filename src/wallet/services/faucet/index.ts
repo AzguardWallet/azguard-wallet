@@ -24,7 +24,7 @@ import type { ProfileService } from "@/wallet/services/profile"
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import type { ExecutionService } from "@/wallet/services/execution"
 import { TaskService } from "@/wallet/services/task";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import { type ILogs } from "@/wallet/services/logger/client";
 import {
     type IOperation,
     RegisterContractOperation,
@@ -147,7 +147,7 @@ export class FaucetService extends Service {
 
             const classMetadata = await pxe.getContractClassMetadata(contractClass.id);
             if (!classMetadata.isContractClassPubliclyRegistered) {
-                console.debug("register faucet token class id");
+                this.logDebug("register faucet token class id");
                 const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
                 const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
                 deployActions.push(
@@ -171,7 +171,7 @@ export class FaucetService extends Service {
 
             const contractMetadata = await pxe.getContractMetadata(instance.address);
             if (!contractMetadata.isContractPubliclyDeployed) {
-                console.debug("deploy faucet token");
+                this.logDebug("deploy faucet token");
                 const {salt, currentContractClassId, initializationHash, publicKeys} = instance;
                 deployActions.push(
                     new CallAction(
@@ -189,7 +189,7 @@ export class FaucetService extends Service {
             }
 
             if (!contractMetadata.isContractInitialized) {
-                console.debug("initialize faucet token");
+                this.logDebug("initialize faucet token");
                 deployOps.unshift(
                     new RegisterContractOperation(
                         networkId,
@@ -230,9 +230,9 @@ export class FaucetService extends Service {
                     }`);
                 }
                 const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
-                console.debug("faucet deploy tx:", deployTx);
+                this.logDebug(["faucet deploy tx", deployTx]);
                 await this.transactionService.waitForTx(deployTx, deployTask);
-                console.debug("faucet deploy tx mined");
+                this.logDebug("faucet deploy tx mined");
                 if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
                     feeSettings = {
                         ...feeSettings,
@@ -284,9 +284,9 @@ export class FaucetService extends Service {
                 }`);
             }
             const mintTx = (mintResult as OkOperationResult<string>).result;
-            console.debug("faucet mint tx:", mintTx);
+            this.logDebug(["faucet mint tx:", mintTx]);
             await this.transactionService.waitForTx(mintTx, mintTask);
-            console.debug("faucet mint tx mined");
+            this.logDebug("faucet mint tx mined");
             mintTask.complete();
         } catch (error) {
             const errorMessage = (error as Error)?.message ?? error as string ?? "Mint failed";

@@ -31,7 +31,7 @@ import { z } from "zod";
 import { Service } from "@/wallet/base/message-service/service.ts";
 import { type Profile, ProfileServiceClient } from "@/wallet/services/profile/client";
 import type { Network } from "@/wallet/services/network/client";
-import { LoggerServiceClient, LogLevel } from "@/wallet/services/logger/client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { Lock } from "@/wallet/utils";
 import {
     type GetContractClassMetadataParams,

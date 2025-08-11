@@ -1,5 +1,6 @@
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
+import { type ILogs } from "@/wallet/services/logger/client";
 import { getRandomHex } from "@/wallet/utils";
 import {
     TASK_SERVICE_NAME,
@@ -28,9 +29,10 @@ export class TaskService extends Service {
 
     constructor(
         private readonly profileService: ProfileService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {
-        super(TASK_SERVICE_NAME, emit);
+        super(TASK_SERVICE_NAME, logger, emit);
         this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged);
     }
 
@@ -254,7 +256,7 @@ export class TaskService extends Service {
         if (profileId) {
             if (this.profile && this.profile !== profileId) {
                 this.tasks.clear();
-                console.debug(`Tasks cleared for profile #${profileId}`);
+                this.logDebug(`Tasks cleared for profile #${profileId}`);
             }
             this.profile = profileId;
         }
