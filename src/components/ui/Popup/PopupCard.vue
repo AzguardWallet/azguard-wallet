@@ -47,7 +47,7 @@ onBeforeUnmount(() => {
 	>
 		<div @click="showFullscreen = !showFullscreen" :class="$style.bar" />
 
-		<Flex direction="column" gap="16" wide>
+		<Flex direction="column" gap="16" wide :style="{ minHeight: 0 }">
 			<slot />
 		</Flex>
 	</Flex>

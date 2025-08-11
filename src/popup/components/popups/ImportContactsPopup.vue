@@ -241,7 +241,7 @@ watch(
 .wrapper {
 	flex: 1;
 
-	height: 100%;
+	min-height: 0;
 
 	padding: 0 20px 24px 20px;
 }
