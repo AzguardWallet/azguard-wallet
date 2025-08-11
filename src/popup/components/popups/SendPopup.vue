@@ -117,18 +117,34 @@ const showSuggestions = computed(() => {
 })
 
 function handleSearchBlur() {
+	if (searchTerm.value !== selectedContact.value?.address) {
+		const contact = [...contacts.value, ...appStore.accounts].find(c => c.address === searchTerm.value)
+		if (contact) {
+			handleSelectContact(contact)
+		}
+	}
+
 	setTimeout(() => {
 		isSearchInputFocused.value = false
-	}, 100)
+	}, 250)
 }
 function handleSelectContact(contact) {
 	selectedContact.value = contact
 	searchTerm.value = contact.address
+
+	if (selectedSendType.value === selectedReceiverType.value) {
+		if (activeToken.value?.hasPrivateTransfers && selectedReceiverType.value === "public") {
+			selectedReceiverType.value = "private"
+		}
+
+		if (!activeToken.value?.hasPublicTransfers && selectedReceiverType.value === "private") {
+			selectedReceiverType.value = "public"
+		}
+	}
 }
 
 const amountTerm = ref()
-const destinationAddressTerm = ref("")
-
+const isValidAddress = computed(() => isValidHex(searchTerm.value))
 const isAllowedToSend = computed(() => {
 	if (!amountTerm.value) return
 
@@ -141,7 +157,7 @@ const isAllowedToSend = computed(() => {
 	if (Number.isNaN(amountToSend)) return
 	if (amountToSend < 0.00000001) return
 	if (!amountToSend) return
-	if (!isValidHex(destinationAddressTerm.value)) return
+	if (!isValidAddress.value) return
 	if (amountToSend > tokenBalanceByType.value) return
 	if (!feeSettings.value) return
 
@@ -170,7 +186,7 @@ const handleSend = async () => {
 
 	appStore.awaitingTransactions.push({
 		account: appStore.account.address,
-		destination: destinationAddressTerm.value,
+		destination: searchTerm.value,
 		contract: activeToken.value.contract,
 	})
 
@@ -180,7 +196,7 @@ const handleSend = async () => {
 			appStore.account.address,
 			activeToken.value.id,
 			type,
-			destinationAddressTerm.value,
+			searchTerm.value,
 			amountToSend,
 			feeSettings.value,
 		)
@@ -273,7 +289,6 @@ watch(
 			document.addEventListener("keydown", onKeydown)
 		} else {
 			amountTerm.value = null
-			destinationAddressTerm.value = ""
 
 			searchTerm.value = ""
 			isSearchInputFocused.value = false
@@ -356,16 +371,19 @@ const onKeydown = e => {
 							wide
 							:style="{ position: 'relative' }"
 						>
-							<template #suffix>
-								<Icon v-if="isAllowedToSend" name="check-circle" size="14" color="green" />
-							</template>
-
 							<template #right>
 								<Flex v-if="selectedContact" align="center" gap="6" :class="$style.input_right">
 									<Icon name="vault" size="12" color="blue" />
 									<Text size="13" weight="600" color="primary" noWrap>
 										{{ selectedContact?.name }}
 									</Text>
+								</Flex>
+								<Flex v-else-if="!isSearchInputFocused && !isValidAddress && searchTerm.length > 0" align="center" gap="6" :class="$style.input_right">
+									<Icon name="warning" size="12" color="red" />
+									<Text size="12" weight="600" color="primary"> Invalid address </Text>
+								</Flex>
+								<Flex v-else-if="!isSearchInputFocused && isValidAddress" align="center" :class="$style.input_right">
+									<Icon name="check-circle" size="14" color="green" />
 								</Flex>
 							</template>
 
