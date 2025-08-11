@@ -10,14 +10,30 @@ const props = defineProps({
 	hoverColor: { type: String, required: false },
 	rotate: { type: [String, Number], default: 0 },
 	fill: { type: Boolean, default: false },
+	scale: { type: [String, Number], default: 1 },
+	loading: { type: Boolean, default: false },
 })
 
 const styles = computed(() => {
-	return {
+	const s = {
 		minWidth: `${props.size}px`,
 		minHeight: `${props.size}px`,
-		transform: props.rotate ? `rotate(${props.rotate}deg)` : null,
+		transformBox: "view-box",
+		transformOrigin: "center center",
+		transform: "",
 	}
+
+	const ops = []
+	if (props.rotate) ops.push(`rotate(${props.rotate}deg)`)
+	if (props.scale != 1) ops.push(`scale(${props.scale})`)
+	if (ops.length) s.transform = ops.join(" ")
+
+	return s
+	// return {
+	// 	minWidth: `${props.size}px`,
+	// 	minHeight: `${props.size}px`,
+	// 	transform: props.rotate ? `rotate(${props.rotate}deg)` : null,
+	// }
 })
 
 const classes = computed(() => {
@@ -47,7 +63,7 @@ const isSplitted = () => {
 		:width="size"
 		:height="size"
 		:style="styles"
-		:class="[...classes, props.hoverColor && $style.hovered]"
+		:class="[...classes, props.hoverColor && $style.hovered, loading && $style.loading]"
 		role="img"
 	>
 		<path v-if="!isSplitted(name)" :d="getIcon(name)" />
@@ -75,6 +91,24 @@ const isSplitted = () => {
 
 	&:hover {
 		fill: v-bind(hoverColorVar);
+	}
+}
+
+.loading {
+	animation: skeleton 1s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+	0% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.5;
+	}
+
+	100% {
+		opacity: 1;
 	}
 }
 </style>

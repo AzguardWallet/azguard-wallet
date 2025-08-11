@@ -18,7 +18,7 @@ const onDisconnected = () => {
 
 const profileService = new ProfileServiceClient(onConnected, onDisconnected)
 const walletConnectService = new WalletConnectServiceClient()
-const dappSessionSevice = new DappSessionServiceClient()
+const dappSessionService = new DappSessionServiceClient()
 const balanceService = new TokenBalanceServiceClient()
 const accountStateClientService = new AccountStateServiceClient()
 
@@ -37,8 +37,8 @@ const executionService = new ExecutionServiceClient(
 export const managers = {
 	profile: profileService,
 	network: null, // must be initialized after profile.onActiveProfileChanged
-	wallectConnect: walletConnectService,
-	dappSession: dappSessionSevice,
+	walletConnect: walletConnectService,
+	dappSession: dappSessionService,
 	balance: balanceService,
 	execution: executionService,
 	faucet: faucetService,

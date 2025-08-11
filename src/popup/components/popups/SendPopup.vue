@@ -48,7 +48,7 @@ const awaitingNewToken = ref(false)
 const activeToken = computed(() =>
 	appStore.tokens.find(t => t.id == cacheStore.activeTokenIdx),
 )
-const isBlockedTranfer = computed(
+const isBlockedTransfer = computed(
 	() => !activeToken.value?.hasPrivateTransfers && !activeToken.value?.hasPublicTransfers,
 )
 const tokenBalance = computed(() => {
@@ -104,7 +104,7 @@ const filteredContacts = computed(() => {
 
 	const lowTerm = searchTerm.value?.toLowerCase() || ""
 
-	return contacts.value?.filter(c => {
+	return [...contacts.value, ...appStore.accounts]?.filter(c => {
 		return (
 			c.name?.toLowerCase().includes(lowTerm) ||
 			c.address === searchTerm.value ||
@@ -116,7 +116,7 @@ const showSuggestions = computed(() => {
 	return filteredContacts.value?.length && isSearchInputFocused.value
 })
 
-function handleSearhBlur() {
+function handleSearchBlur() {
 	setTimeout(() => {
 		isSearchInputFocused.value = false
 	}, 100)
@@ -126,13 +126,8 @@ function handleSelectContact(contact) {
 	searchTerm.value = contact.address
 }
 
-
 const amountTerm = ref()
-
 const destinationAddressTerm = ref("")
-const selfAccountDestination = computed(() =>
-	appStore.accounts.findLast(a => a.address === destinationAddressTerm.value),
-)
 
 const isAllowedToSend = computed(() => {
 	if (!amountTerm.value) return
@@ -142,7 +137,7 @@ const isAllowedToSend = computed(() => {
 	)
 
 	if (!tokenBalanceByType.value) return
-	if (isBlockedTranfer.value) return
+	if (isBlockedTransfer.value) return
 	if (Number.isNaN(amountToSend)) return
 	if (amountToSend < 0.00000001) return
 	if (!amountToSend) return
@@ -267,6 +262,10 @@ watch(
 				cacheStore.activeTokenIdx = appStore.tokens[0]?.id
 			}
 
+			if (cacheStore.preselectedContactToSend) {
+				handleSelectContact(cacheStore.preselectedContactToSend)
+			}
+
 			if (!appStore.tokens.length) {
 				awaitingNewToken.value = true
 			}
@@ -279,13 +278,15 @@ watch(
 			searchTerm.value = ""
 			isSearchInputFocused.value = false
 
+			contactService?.dispose()
+			contactService = null
 			contacts.value = []
 			selectedContact.value = null
-			contactService?.dispose()
 
 			awaitingNewToken.value = false
 
 			cacheStore.preselectedBalanceType = "private"
+			cacheStore.preselectedContactToSend = null
 
 			document.removeEventListener("keydown", onKeydown)
 		}
@@ -332,7 +333,7 @@ const onKeydown = e => {
 							<SelectTokenCard :token="activeToken" />
 
 							<SendTypesCard
-								v-if="!isBlockedTranfer"
+								v-if="!isBlockedTransfer"
 								v-model:sendType="selectedSendType"
 								v-model:receiverType="selectedReceiverType"
 								:token="activeToken"
@@ -349,9 +350,9 @@ const onKeydown = e => {
 						<Input
 							v-model="searchTerm"
 							@focus="isSearchInputFocused = true"
-							@blur="handleSearhBlur()"
+							@blur="handleSearchBlur()"
 							:label="`${capitalize(selectedReceiverType)} destination`"
-							placeholder="Enter contact name or address"
+							placeholder="Enter name or address"
 							wide
 							:style="{ position: 'relative' }"
 						>
@@ -360,10 +361,10 @@ const onKeydown = e => {
 							</template>
 
 							<template #right>
-								<Flex v-if="selfAccountDestination || selectedContact" align="center" gap="6" :class="$style.input_right">
+								<Flex v-if="selectedContact" align="center" gap="6" :class="$style.input_right">
 									<Icon name="vault" size="12" color="blue" />
 									<Text size="13" weight="600" color="primary" noWrap>
-										{{ selfAccountDestination?.name ?? selectedContact?.name }}
+										{{ selectedContact?.name }}
 									</Text>
 								</Flex>
 							</template>
@@ -379,10 +380,14 @@ const onKeydown = e => {
 											:class="$style.contact"
 											wide
 										>
-											<Flex align="center" justify="center" :class="$style.contact_avatar" :style="{ backgroundColor: `var(--${c.color})`}">
+											<Flex v-if="c.abbr" align="center" justify="center" :class="$style.contact_avatar" :style="{ backgroundColor: `var(--${c.color})`}">
 												<Text size="10" weight="600" color="primary">
 													{{ c.abbr }}
 												</Text>
+											</Flex>
+
+											<Flex v-else align="center" justify="center">
+												<Icon name="vault" size="28" scale="1.2" color="secondary" />
 											</Flex>
 
 											<Flex direction="column" gap="4" wide>

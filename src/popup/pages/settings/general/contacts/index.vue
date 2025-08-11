@@ -55,7 +55,11 @@ function onContactDeleted(contact) {
 	contacts.value = contacts.value.filter(c => c.id !== contact.id)
 }
 
-const handleCopyContactAddress = (contact) => {
+function handleClickContact(contact) {
+	cacheStore.preselectedContactToSend = contact
+	popupStore.open("send")
+}
+function handleCopyContactAddress(contact) {
 	window.navigator.clipboard.writeText(contact.address)
 	openToast({ label: "Address is copied", icon: "copy" })
 }
@@ -249,7 +253,7 @@ onMounted(async () => {
 				<Flex v-if="sortedContacts.length" direction="column" gap="6" :class="$style.contacts_section">
 					<Flex
 						v-for="c in sortedContacts"
-						@click="handleCopyContactAddress(c)"
+						@click="handleClickContact(c)"
 						align="center"
 						justify="between"
 						:class="$style.contact"
@@ -270,6 +274,13 @@ onMounted(async () => {
 						</Flex>
 
 						<Flex align="center" gap="8" :class="$style.icons">
+							<Icon
+								@click.stop="handleCopyContactAddress(c)"
+								name="copy"
+								size="14"
+								color="tertiary"
+								:class="$style.icon_btn"
+							/>
 							<Icon
 								@click.stop="handleEditContact(c)"
 								name="edit"
