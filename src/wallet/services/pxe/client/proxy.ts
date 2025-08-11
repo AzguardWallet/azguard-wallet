@@ -26,6 +26,7 @@ import { NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
     IndexedTxEffect,
     PrivateExecutionResult,
+    SimulationOverrides,
     Tx,
     TxExecutionRequest,
     TxHash,
@@ -69,7 +70,7 @@ export class PXEProxy implements PXE {
         return this.pxeService.registerContract(this.network, contract);
     }
     updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void> {
-        throw new Error("Method not implemented.");
+        return this.pxeService.updateContract(this.network, contractAddress, artifact);
     }
     getContracts(): Promise<AztecAddress[]> {
         return this.pxeService.getContracts(this.network);
@@ -80,18 +81,18 @@ export class PXEProxy implements PXE {
     simulateTx(
         txRequest: TxExecutionRequest,
         simulatePublic: boolean,
-        msgSender?: AztecAddress,
         skipTxValidation?: boolean,
         skipFeeEnforcement?: boolean,
+        overrides?: SimulationOverrides,
         scopes?: AztecAddress[],
     ): Promise<TxSimulationResult> {
         return this.pxeService.simulateTx(
             this.network,
             txRequest,
             simulatePublic,
-            msgSender,
             skipTxValidation,
             skipFeeEnforcement,
+            overrides,
             scopes,
         );
     }

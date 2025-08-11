@@ -42,8 +42,8 @@ export abstract class Fn extends FnImpl {
         return await FunctionSelector.fromNameAndParameters(abi.name, abi.parameters);
     }
 
-    public async packArgs(args: any[]): Promise<HashedValues> {
-        return await HashedValues.fromArgs(encodeArguments(this.abi(), args));
+    public encodeArgs(args: any[]): Fr[] {
+        return encodeArguments(this.abi(), args);
     }
 
     public getReturnTypes(): AbiType[] {
@@ -70,8 +70,12 @@ export async function simulate(
         const { result } = await pxe.simulateUtility(viewFn.name, args, AztecAddress.fromString(contract));
         return result;
     }
+    
+    const encodedArgs = viewFn.encodeArgs(args);
+    const packedArgs = viewFn.type === FunctionType.PUBLIC
+        ? await HashedValues.fromCalldata([(await viewFn.getSelector()).toField(), ...encodedArgs])
+        : await HashedValues.fromArgs(encodedArgs);
 
-    const packedArgs = await viewFn.packArgs(args);
     const call = new AzguardFunctionCall(
         AztecAddress.fromString(contract),
         await viewFn.getSelector(),
@@ -85,9 +89,9 @@ export async function simulate(
     const tx = await pxe.simulateTx(
         txRequest, // txRequest
         true, // simulatePublic
-        undefined, // msgSender
         undefined, // skipTxValidation
         true, // skipFeeEnforcement
+        undefined, // overrides
         [account.address], // scopes
     );
 

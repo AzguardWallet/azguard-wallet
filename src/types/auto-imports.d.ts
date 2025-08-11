@@ -25,8 +25,8 @@ declare global {
   const browser: typeof import('webextension-polyfill')
   const capitalize: typeof import('../utils/string.js')['capitalize']
   const capitilize: typeof import('../utils/string.js')['capitilize']
-  const checkAztecVersion: typeof import('../utils/core.js')['checkAztecVersion']
   const checkNotificationsForShow: typeof import('../composables/notification.js')['checkNotificationsForShow']
+  const checkSentinel: typeof import('../utils/core.js')['checkSentinel']
   const comma: typeof import('../utils/amount.js')['comma']
   const computed: typeof import('vue')['computed']
   const computedAsync: typeof import("@vueuse/core")["computedAsync"]
@@ -60,6 +60,7 @@ declare global {
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const getCurrentWatcher: typeof import('vue')['getCurrentWatcher']
   const getDecimalSeparator: typeof import('../utils/amount.js')['getDecimalSeparator']
   const getTemplate: typeof import('../composables/notification.js')['getTemplate']
   const getThousandSeparator: typeof import('../utils/amount.js')['getThousandSeparator']
@@ -77,6 +78,7 @@ declare global {
   const isReactive: typeof import('vue')['isReactive']
   const isReadonly: typeof import('vue')['isReadonly']
   const isRef: typeof import('vue')['isRef']
+  const isShallow: typeof import('vue')['isShallow']
   const isValidAmount: typeof import('../utils/amount.js')['isValidAmount']
   const isValidHex: typeof import('../utils/string.js')['isValidHex']
   const makeDestructurable: typeof import("@vueuse/core")["makeDestructurable"]
@@ -126,7 +128,7 @@ declare global {
   const resolveRef: typeof import("@vueuse/core")["resolveRef"]
   const resolveUnref: typeof import("@vueuse/core")["resolveUnref"]
   const sendMessage: typeof import("webext-bridge")["sendMessage"]
-  const setAztecVersion: typeof import('../utils/core.js')['setAztecVersion']
+  const setSentinel: typeof import('../utils/core.js')['setSentinel']
   const shallowReactive: typeof import('vue')['shallowReactive']
   const shallowReadonly: typeof import('vue')['shallowReadonly']
   const shallowRef: typeof import('vue')['shallowRef']
@@ -344,6 +346,9 @@ declare global {
 // for type re-export
 declare global {
   // @ts-ignore
-  export type { Component, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
+  export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
+  // @ts-ignore
+  export type { NotificationType, NotificationPayload, NotificationItem } from '../stores/notification.store'
+  import('../stores/notification.store')
 }

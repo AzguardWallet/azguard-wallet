@@ -21,6 +21,7 @@ import { InMemoryLogs, LogLevel } from "./services/logger/client";
 import { sleep } from "./utils";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
+import { TaskService } from "./services/task";
 
 export async function init() {
     loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
@@ -59,9 +60,17 @@ const logs = new InMemoryLogs();
 // services
 const loggerService = new LoggerService(logs, broadcast);
 const profileService = new ProfileService(logs, broadcast);
+const taskService = new TaskService(profileService, logs, broadcast);
 const networkService = new NetworkService(profileService, logs, broadcast);
 const accountService = new AccountService(profileService, networkService, logs, broadcast);
-const tokenService = new TokenService(profileService, networkService,accountService, logs, broadcast);
+const tokenService = new TokenService(
+    profileService,
+    networkService,
+    accountService,
+    taskService,
+    logs,
+    broadcast,
+);
 const fpcService = new FpcService(profileService, networkService, logs, broadcast);
 const transactionService = new TransactionService(
     profileService,
@@ -79,6 +88,7 @@ const executionService = new ExecutionService(
     fpcService,
     transactionService,
     accountStateService,
+    taskService,
     logs,
     broadcast
 );
@@ -89,6 +99,7 @@ const tokenBalanceService = new TokenBalanceService(
     tokenService,
     transactionService,
     executionService,
+    taskService,
     logs,
     broadcast,
 );
@@ -98,7 +109,7 @@ const faucetService = new FaucetService(
     accountService,
     executionService,
     transactionService,
-    tokenService,
+    taskService,
     logs,
     broadcast,
 );
@@ -140,6 +151,7 @@ const services = new Map<string, Service>([
     [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
     [accountStateService.name, accountStateService],
+    [taskService.name, taskService],
     [loggerService.name, loggerService],
 ]);
 

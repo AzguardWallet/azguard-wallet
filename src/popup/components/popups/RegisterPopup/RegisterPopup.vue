@@ -3,7 +3,7 @@
 import WalletPasswordContent from "./WalletPasswordContent.vue"
 
 /** Utils */
-import { managers, setAztecVersion } from "@/utils/core"
+import { managers, setSentinel } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { sleep } from "@/wallet/utils"
 
@@ -57,7 +57,7 @@ const handleCreateProfile = async () => {
 		"azguard:ui:activeAccount": appStore.account?.address,
 	})
 	
-	await setAztecVersion()
+	await setSentinel()
 
 	router.push("/popup/general")
 

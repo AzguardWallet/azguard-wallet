@@ -19,16 +19,16 @@ const displaceIdx = computed(() => {
 
 const depositMethods = [
     {
-        title: "Human Tech",
+        title: "Human Tech Bridge",
         alias: "human_tech",
         description: "Bridge between Etherium and Aztec",
         target: "https://bridge.human.tech/",
         icon: "human_tech",
     },
     {
-        title: "Faucet",
+        title: "Azguard Faucet",
         alias: "faucet",
-        description: "Azguard wallet faucet",
+        description: "Mint your own Aztec token",
         target: "faucet",
         icon: "logo",
     },

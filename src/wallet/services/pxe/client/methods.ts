@@ -4,7 +4,7 @@ import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { ContractInstanceWithAddress, PartialAddress } from "@aztec/stdlib/contract";
 import type { NotesFilter } from "@aztec/stdlib/note";
-import type { PrivateExecutionResult, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
+import type { PrivateExecutionResult, SimulationOverrides, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
 import type { Network } from "@/wallet/services/network/client";
 
 export enum PxeServiceMethod {
@@ -25,6 +25,7 @@ export enum PxeServiceMethod {
     SendTx = 15,
     SimulateTx = 16,
     SimulateUtility = 17,
+    UpdateContract = 18,
 }
 
 type BaseParams = {
@@ -88,9 +89,9 @@ export type SendTxParams = BaseParams & {
 export type SimulateTxParams = BaseParams & {
     txRequest: TxExecutionRequest;
     simulatePublic: boolean;
-    msgSender?: AztecAddress;
     skipTxValidation?: boolean;
     skipFeeEnforcement?: boolean;
+    overrides?: SimulationOverrides,
     scopes?: AztecAddress[];
 };
 
@@ -101,4 +102,9 @@ export type SimulateUtilityParams = BaseParams & {
     authwits?: AuthWitness[];
     from?: AztecAddress;
     scopes?: AztecAddress[];
+};
+
+export type UpdateContractParams = BaseParams & {
+    address: AztecAddress;
+    artifact: ContractArtifact;
 };

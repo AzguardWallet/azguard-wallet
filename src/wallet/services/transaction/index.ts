@@ -5,7 +5,7 @@ import type { AccountService } from "@/wallet/services/account";
 import type { Account } from "@/wallet/services/account/client";
 import type { NetworkService } from "@/wallet/services/network";
 import type { ProfileService } from "@/wallet/services/profile"
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import { type ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
 import {
@@ -23,6 +23,8 @@ import {
     TxStatus,
     TxBlock,
 } from "./client";
+import { WrappedTask } from "../task";
+import { StepContent } from "../task/client";
 
 export class TransactionService extends Service {
     public readonly onTransactionAdded: ((tx: Tx) => void)[] = [];
@@ -123,10 +125,12 @@ export class TransactionService extends Service {
         return tx;
     }
 
-    public async waitForTx(txHash: string) {
+    public async waitForTx(txHash: string, parentTask?: WrappedTask) {
+        const waitForTxTask = parentTask?.startSubtask(new StepContent("Waiting for transaction"));
         while (this.pending.has(txHash)) {
             await sleep(100);
         }
+        waitForTxTask?.complete();
     }
 
     private readonly onAccountDeleted = async (account: Account) => {

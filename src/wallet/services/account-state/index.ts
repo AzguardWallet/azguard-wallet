@@ -270,7 +270,7 @@ export class AccountStateService extends Service {
                 x.contractAddress.toString(),
                 x.storageSlot.toString(),
                 x.txHash.toString(),
-                x.nonce.toString(),
+                x.noteNonce.toString(),
             ));
         }
         catch (error) {

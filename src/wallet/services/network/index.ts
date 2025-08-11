@@ -2,7 +2,7 @@ import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
 import type { ProfileService } from "@/wallet/services/profile";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import { type ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
@@ -162,31 +162,13 @@ export class NetworkService extends Service {
 				this.logError(["Failed to add 'Azguard Node'", error]);
 			}
 			try {
-				const name = "Aztec Node 1";
-				const rpcUrl = "https://full-node.alpha-testnet.aztec.network";
-				const chainId = 11155111;
-				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
-			}
-			catch (error) {
-				this.logError(["Failed to add 'Aztec Node 1'", error]);
-			}
-			try {
-				const name = "Aztec Node 2";
+				const name = "Aztec Node";
 				const rpcUrl = "https://aztec-alpha-testnet-fullnode.zkv.xyz";
 				const chainId = 11155111;
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
 			}
 			catch (error) {
-				this.logError(["Failed to add 'Aztec Node 2'", error]);
-			}
-			try {
-				const name = "Devnet";
-				const rpcUrl = "https://node.devnet.azguardwallet.io";
-				const chainId = 1337;
-				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
-			}
-			catch (error) {
-				this.logError(["Failed to add 'Devnet'", error]);
+				console.error("Failed to add 'Aztec Node'", error);
 			}
 			try {
 				const name = "Sandbox";
@@ -522,38 +504,14 @@ export class NetworkService extends Service {
 			}
 			if (!networks.find(([_, network]) =>
 				network.profileId === profileId &&
-				network.rpcUrl === "https://full-node.alpha-testnet.aztec.network")
-			) {
-				await this._addNetwork(
-					profileId,
-					"Aztec Node 1",
-					"https://full-node.alpha-testnet.aztec.network",
-					11155111,
-					false,
-				);
-			}
-			if (!networks.find(([_, network]) =>
-				network.profileId === profileId &&
 				network.rpcUrl === "https://aztec-alpha-testnet-fullnode.zkv.xyz")
 			) {
 				await this._addNetwork(
 					profileId,
-					"Aztec Node 2",
+					"Aztec Node",
 					"https://aztec-alpha-testnet-fullnode.zkv.xyz",
 					11155111,
 					false,
-				);
-			}
-			if (!networks.find(([_, network]) =>
-				network.profileId === profileId &&
-				network.rpcUrl === "https://node.devnet.azguardwallet.io")
-			) {
-				await this._addNetwork(
-					profileId,
-					"Devnet",
-					"https://node.devnet.azguardwallet.io",
-					1337,
-					true,
 				);
 			}
 		}

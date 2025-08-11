@@ -24,24 +24,7 @@ export const getSetAuthorizedFn = () => ({
 		},
 	],
 	returnTypes: [],
-	errorTypes: {
-		"16761564377371454734": {
-			error_kind: "string",
-			string: "Array index out of bounds",
-		},
-		"17843811134343075018": {
-			error_kind: "string",
-			string: "Stack too deep",
-		},
-		"206160798890201757": {
-			error_kind: "string",
-			string: "Storage slot 0 not allowed. Storage slots must start from 1.",
-		},
-		"5019202896831570965": {
-			error_kind: "string",
-			string: "attempt to add with overflow",
-		},
-	},
+	errorTypes: {},
 } as FunctionAbi)
 
 export const getSetAuthorizedSelector = async () => {

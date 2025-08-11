@@ -73,6 +73,14 @@ export class AzguardV0 implements IAccountContract {
         return new AzguardV0(secret, signingKey, signingPubKey, instance);
     }
 
+    public async ensureRegistered(pxe: PXE): Promise<void> {
+        const accounts = await pxe.getRegisteredAccounts();
+        if (!accounts.find(x => x.address.toString() === this.address.toString())) {
+            console.debug('register account...');
+            await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
+        }
+    }
+
     public async getCompleteAddress(): Promise<CompleteAddress> {
         return await CompleteAddress.fromSecretKeyAndInstance(this.secret, this.instance);
     }
@@ -344,7 +352,7 @@ export class AzguardV0 implements IAccountContract {
             },
         ];
         const mceArgs = await HashedValues.fromArgs(
-            encodeArguments(getMulticallEntrypointFn(), [{ function_calls: mceCalls, nonce: Fr.zero() }]),
+            encodeArguments(getMulticallEntrypointFn(), [{ function_calls: mceCalls, tx_nonce: Fr.zero() }]),
         );
 
         return new TxExecutionRequest(

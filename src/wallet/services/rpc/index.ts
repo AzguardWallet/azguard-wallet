@@ -3,7 +3,7 @@ import { Service } from "@/wallet/base/port-service/service";
 import type { DappSessionService } from "@/wallet/services/dapp-session";
 import type { DappSession } from "@/wallet/services/dapp-session/client";
 import type { DappInteractionService } from "@/wallet/services/dapp-interaction";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
+import { type ILogs } from "@/wallet/services/logger/client";
 import type {
     ConnectionParams,
     ExecutionParams,
