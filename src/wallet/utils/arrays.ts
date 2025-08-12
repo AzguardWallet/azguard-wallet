@@ -1,4 +1,4 @@
-export const array_equals = (arr1: Uint8Array, arr2: Uint8Array): boolean => {
+export const array_equals = (arr1: Uint8Array<ArrayBuffer>, arr2: Uint8Array<ArrayBuffer>): boolean => {
     if (arr1.length !== arr2.length) {
         return false;
     }

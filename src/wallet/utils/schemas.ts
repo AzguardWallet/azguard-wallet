@@ -2,7 +2,7 @@ import { ContractArtifactSchema } from "@aztec/stdlib/abi";
 import { ContractClassWithIdSchema, ContractInstanceWithAddressSchema, ProtocolContractAddressesSchema } from "@aztec/stdlib/contract";
 import { ContractClassMetadata, ContractMetadata, PXEInfo } from "@aztec/stdlib/interfaces/client";
 import { ZodFor } from "@aztec/foundation/schemas";
-import { z } from "zod";
+import z from "zod";
 
 // copied from aztec.js, because it's not exported
 

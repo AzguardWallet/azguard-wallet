@@ -27,7 +27,7 @@ import {
 import { type AztecNode, type ContractClassMetadata, type ContractMetadata, createAztecNodeClient, type PXE } from "@aztec/stdlib/interfaces/client";
 import { NotesFilterSchema } from "@aztec/stdlib/note";
 import { PrivateExecutionResult, SimulationOverrides, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
-import { z } from "zod";
+import z from "zod";
 import { Service } from "@/wallet/base/message-service/service.ts";
 import { type Profile, ProfileServiceClient } from "@/wallet/services/profile/client";
 import type { Network } from "@/wallet/services/network/client";

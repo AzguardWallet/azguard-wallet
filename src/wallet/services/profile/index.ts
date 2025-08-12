@@ -254,7 +254,7 @@ export class ProfileService extends Service {
         const passhash = await EncryptionKey.getPasshash(password);
         const key = await EncryptionKey.fromPasshash(passhash);
         const guard = await key.encrypt(encryptionGuard);
-        const secret = await key.encrypt(Fr.random().toBuffer());
+        const secret = await key.encrypt(Fr.random().toBuffer() as Buffer<ArrayBuffer>);
         try {
             await this.lock.enter();
 
@@ -668,8 +668,8 @@ export class ProfileService extends Service {
 
     private async importProfile(
         name: string,
-        guard: Uint8Array,
-        secret: Uint8Array,
+        guard: Uint8Array<ArrayBuffer>,
+        secret: Uint8Array<ArrayBuffer>,
         key: EncryptionKey,
         passhash: ArrayBuffer,
     ): Promise<Profile> {
@@ -700,7 +700,7 @@ export class ProfileService extends Service {
         }
     }
 
-    private async tryDecrypt(payload: Uint8Array, key: EncryptionKey): Promise<Uint8Array | undefined> {
+    private async tryDecrypt(payload: Uint8Array<ArrayBuffer>, key: EncryptionKey): Promise<Uint8Array<ArrayBuffer> | undefined> {
         try {
             return await key.decrypt(payload);
         }
