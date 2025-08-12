@@ -27,7 +27,7 @@ import {
 import { PXE } from '@aztec/stdlib/interfaces/client';
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import { Capsule, HashedValues, PrivateExecutionResult, TxExecutionRequest, TxHash, TxProvingResult, TxSimulationResult, UtilitySimulationResult, Tx, SimulationOverrides } from '@aztec/stdlib/tx';
-import { z } from "zod";
+import z from "zod";
 import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
 import { NetworkService } from "@/wallet/services/network";

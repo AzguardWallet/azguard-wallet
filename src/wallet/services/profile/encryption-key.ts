@@ -28,7 +28,7 @@ export class EncryptionKey {
      * @param payload - Bytes to be encrypted
      * @returns Encrypted bytes
      */
-    public async encrypt(payload: Uint8Array): Promise<Uint8Array> {
+    public async encrypt(payload: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
         const iv = self.crypto.getRandomValues(new Uint8Array(12));
         const salt = await self.crypto.subtle.digest("SHA-256", iv);
         const key = await this.deriveKey(salt);
@@ -48,7 +48,7 @@ export class EncryptionKey {
      * @param payload - Bytes to be decrypted
      * @returns Decrypted bytes
      */
-    public async decrypt(payload: Uint8Array): Promise<Uint8Array> {
+    public async decrypt(payload: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
         if (payload.length < 13) {
             throw new Error('Invalid payload length');
         }
