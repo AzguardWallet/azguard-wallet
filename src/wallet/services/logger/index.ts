@@ -9,21 +9,17 @@ import {
     LOGGER_SERVICE_NAME,
     type LogEntity,
     LogLevel,
-    type LogOrigin,
-    LoggerServiceMethod
+    LoggerServiceMethod,
 } from "./client";
 import { LoggerServiceEvent, LoggerServiceEventMessage } from "./client/events";
-import { ConsoleSnifferServiceClient } from "@/wallet/services/console-sniffer/client";
 
 export class LoggerService extends Service {
-    private readonly consoleSnifferService: ConsoleSnifferServiceClient;
 
     public constructor(
         private readonly logs: ILogs,
         emit: (event: EventMessage) => void
     ) {        
         super(LOGGER_SERVICE_NAME, logs, emit);
-        this.consoleSnifferService = new ConsoleSnifferServiceClient(undefined, this.onSnifferLogAdded)
     }
     
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -42,9 +38,8 @@ export class LoggerService extends Service {
                 try {
                     this.addLog(
                         _request.level,
-                        _request.args,
                         _request.message,
-                        _request.source,
+                        _request.args,
                     );
                     return new AddLogResponse(_request);
                 } catch (error: any) {
@@ -62,21 +57,15 @@ export class LoggerService extends Service {
         return this.logs.get(count);
     }
 
-    public addLog(level: LogLevel, args: any, message?: string, source?: string, origin?: LogOrigin): void {
+    public addLog(level: LogLevel, message: string, ...args: any[]): void {
         const log = this.logs.add(
             level,
-            args,
             message,
-            source,
-            origin,
+            args,
         );
 
         if (log) {
             this.emit(new LoggerServiceEventMessage(LoggerServiceEvent.LogAdded, log));
         }
-    }
-
-    private onSnifferLogAdded = (logEntity: LogEntity) => {
-        this.addLog(logEntity.level, logEntity.args, undefined, logEntity.source, logEntity.origin);
     }
 }

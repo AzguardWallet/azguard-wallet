@@ -184,7 +184,7 @@ async function onMessage(message: IMessage, client: chrome.runtime.Port) {
     if (typeof message.type !== "number") return; // crutch for crx
     const isLoggerMessage = message.service === LOGGER_SERVICE_NAME; // don't log logger's messages
 
-    if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Message received", message]);
+    if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Message received", [message]);
     if (message.type !== MessageType.Request) {
         if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Invalid message");
         client.disconnect();
@@ -193,7 +193,7 @@ async function onMessage(message: IMessage, client: chrome.runtime.Port) {
     const request = message as RequestMessage;
     const service = services.get(request.service);
     if (!service) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, ["Service is not registered", request.service]);
+        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Service is not registered", request.service);
         client.disconnect();
         return;
     }
@@ -204,10 +204,10 @@ async function onMessage(message: IMessage, client: chrome.runtime.Port) {
         return;
     }
     if (response.error === undefined) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Request processed", request.requestId, response.result]);
+        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Request processed", request.requestId, response.result);
     }
     else {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Request failed", request.requestId, response.error]);
+        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Request failed", request.requestId, response.error);
     }
     send(client, response);
 }
@@ -218,7 +218,7 @@ async function runWorker() {
             await chrome.storage.session.set({"azguard:core:liveness": Date.now()});
         }
         catch (error) {
-            loggerService.addLog(LogLevel.Error, ["Wallet worker failed", error]);
+            loggerService.addLog(LogLevel.Error, "Wallet worker failed", error);
         }
         await sleep(10000);
     }
@@ -233,10 +233,10 @@ function broadcast(event: EventMessage) {
             }
         }
         
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Event broadcasted.", event]);
+        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Event broadcasted.", event);
     }
     catch (error) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, ["Failed to broadcast event", error]);
+        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Failed to broadcast event", error);
     }
 }
 
@@ -245,9 +245,9 @@ function send(port: chrome.runtime.Port, message: IMessage) {
     try {
         port.postMessage(jsonSanitize(message));
 
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Message sent", message]);
+        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Message sent", message);
     }
     catch (error) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, ["Failed to send message", error]);
+        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Failed to send message", error);
     }
 }

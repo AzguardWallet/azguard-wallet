@@ -11,6 +11,19 @@ export abstract class Service {
     abstract process(request: RequestMessage): Promise<ResponseMessage | undefined>;
 
     protected log(level: LogLevel, message: string, ...args: any[]) {
+        // let normArgs: any;
+
+        // if (args.length === 0) {
+        //     normArgs = undefined;
+        // } else if (args.length === 1) {
+        //     normArgs = args[0];
+        // } else {
+        //     normArgs = args;
+        // }
+        // const normArgs = (args.length === 1 && Array.isArray(args[0]))
+        //     ? args[0]
+        //     : args;
+
         this.logger.add(
             level,
             message,
@@ -18,6 +31,14 @@ export abstract class Service {
             this.name,
             LogOrigin.BG,
         );
+
+        // this.logger.add(
+        //     level,
+        //     message,
+        //     args,
+        //     this.name,
+        //     LogOrigin.BG,
+        // );
     }
 
     protected logDebug(message: string, ...args: any[]) {

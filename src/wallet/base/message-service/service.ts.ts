@@ -25,6 +25,19 @@ export abstract class Service<TMethod, TEvent> {
     }
 
     protected log(level: LogLevel, message: string, ...args: any[]) {
+        // let normArgs: any;
+
+        // if (args.length === 0) {
+        //     normArgs = undefined;
+        // } else if (args.length === 1) {
+        //     normArgs = args[0];
+        // } else {
+        //     normArgs = args;
+        // }
+        // const normArgs = (args.length === 1 && Array.isArray(args[0]))
+        //     ? args[0]
+        //     : args;
+
         this.logger.addLog(
             level,
             message,
@@ -32,6 +45,14 @@ export abstract class Service<TMethod, TEvent> {
             this.name,
             LogOrigin.BG,
         );
+
+        // this.logger.addLog(
+        //     level,
+        //     message,
+        //     args,
+        //     this.name,
+        //     LogOrigin.BG,
+        // );
     }
     
     protected logDebug(message: string, ...args: any[]) {

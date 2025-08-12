@@ -1,6 +1,34 @@
-import { ConsoleSnifferService } from "@/wallet/services/console-sniffer";
-import { LogOrigin } from "@/wallet/services/logger/client/models"
-const consoleSnifferService = new ConsoleSnifferService(LogOrigin.UI);
+import { LogLevel, LogOrigin } from "@/wallet/services/logger/client/models"
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+const loggerService = new LoggerServiceClient()
+function patchConsoleMethods() {
+    for (const level of Object.values(LogLevel)) {
+        const cbName = `on${level}`;
+
+        (window as any)[cbName] = (...args: any[]) => {
+            const stringArgs = (args ?? []).map(a => {
+				if (a === null || a === undefined) return String(a);
+				if (typeof a === "object") {
+					try {
+						return JSON.stringify(a);
+					} catch {
+						return String(a);
+					}
+				}
+				return String(a);
+			});
+
+            loggerService.addLog(
+                level,
+                stringArgs.join(" "),
+                undefined,
+                undefined,
+                LogOrigin.UI
+            );
+        };
+    }
+}
+patchConsoleMethods()
 
 import { createPinia } from "pinia"
 import { createApp } from "vue"

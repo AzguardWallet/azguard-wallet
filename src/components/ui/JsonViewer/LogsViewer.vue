@@ -22,13 +22,6 @@ const { openToast } = useToast()
 /** Services */
 import { createLoggerTheme } from "./creator.js"
 
-const props = defineProps({
-	// logs: {
-	// 	type: Array,
-	// 	required: true,
-	// },
-})
-
 const editorRef = ref(null)
 let view = null
 
@@ -150,9 +143,35 @@ function scrollToBottom() {
 function formatSingleLog(log) {
 	const time = new Date(log.ts).toLocaleTimeString()
 	const level = log.level.toUpperCase()
-	const args = (log.args || []).map(String).join(" ")
 
-	return `[${time}] [${log.origin}]${log.source ? ` [${log.source}]` : ""} ${getLogLevelName(level)}: ${log.message ? `${log.message} ` : ""}${args}`
+	function formatArg(arg) {
+		if (Array.isArray(arg)) {
+			if (!arg.length) return ""
+
+			return arg.map(formatArg)
+		}
+
+		if (typeof arg === "object") {
+            try {
+                return JSON.stringify(arg);
+            } catch {
+                return String(arg);
+            }
+        }
+
+		return arg
+	}
+
+	let args
+	if (!log.args) {
+		args = ""
+	} else if (Array.isArray(log.args) && log.args?.length) {
+		args = log.args.map(formatArg).filter(Boolean).join(", ")
+	} else {
+		args = formatArg(log.args)
+	}
+
+	return `[${time}] [${log.origin}]${log.source ? ` [${log.source}]` : ""} ${getLogLevelName(level)}: ${log.message} ${args}`
 }
 function formatLogs(logs) {
 	return logs

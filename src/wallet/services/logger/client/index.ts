@@ -59,7 +59,7 @@ export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
      * @param source log source
      * @param origin log origin
      */
-    public async addLog(...args: [LogEntity] | [LogLevel, string, any[]?, string?, LogOrigin?]): Promise<void> {
+    public async addLog(...args: [LogEntity] | [LogLevel, string, any?, string?, LogOrigin?]): Promise<void> {
         if (typeof args[0] === "object" && "level" in args[0]) {
             const log = args[0] as LogEntity;
 
@@ -76,7 +76,7 @@ export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
             ] = args as [
 				LogLevel,
 				string,
-				any[]?,
+				any?,
 				string?,
 				LogOrigin?
 			];

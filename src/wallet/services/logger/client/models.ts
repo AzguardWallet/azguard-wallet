@@ -70,6 +70,19 @@ export class InMemoryLogs implements ILogs {
 		return this.isDebugMode ? 10_000 : 1_000;
 	}
 
+	private normalizeArgs(args: any): any {
+		if (!args || args.length === 0) return undefined;
+		if (args.length === 1) {
+			if (Array.isArray(args[0]) && !args[0].length) {
+				return undefined;
+			} else {
+				return args[0];
+			}
+		}
+
+		return args;
+	}
+
     add(...args: [LogEntity] | [LogLevel, string, any[]?, string?, LogOrigin?]): LogEntity | undefined {
 		let log: LogEntity;
 
@@ -86,24 +99,14 @@ export class InMemoryLogs implements ILogs {
 
 			if (!this.isDebugMode && level === LogLevel.Debug) return undefined;
 
-			const stringArgs = (inputArgs ?? []).map(a => {
-				if (a === null || a === undefined) return String(a);
-				if (typeof a === "object") {
-					try {
-						return JSON.stringify(a);
-					} catch {
-						return String(a);
-					}
-				}
-				return String(a);
-			});
+			const normArgs = this.normalizeArgs(inputArgs);
 
 			log = {
 				origin: origin ?? LogOrigin.BG,
 				level,
 				ts: Date.now(),
-				args: stringArgs.length ? stringArgs : undefined,
 				message,
+				args: normArgs,
 				source,
 			};
 		}
@@ -111,8 +114,8 @@ export class InMemoryLogs implements ILogs {
 		if (!this.isDebugMode && log.level === LogLevel.Debug) return undefined;
 
 		this.logs.add(log);
-        
-        return log;
+
+		return log;
 	}
 
 	get(count?: number): LogEntity[] {
