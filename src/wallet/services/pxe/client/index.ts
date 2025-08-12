@@ -22,7 +22,7 @@ import {
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
-import { z } from "zod";
+import z from "zod";
 import { ServiceClient } from "@/wallet/base/message-service/service-client";
 import { Network } from "@/wallet/services/network/client";
 import { ensureOffscreenRunning } from "@/wallet/utils/offscreen";

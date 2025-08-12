@@ -2049,7 +2049,7 @@ const bip39Words = [
 	"zoo",
 ]
 
-function bytesToBits(data: Uint8Array): Uint8Array {
+function bytesToBits(data: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> {
 	const bits = new Uint8Array(data.length * 8)
 	for (let i = 0; i < data.length; ++i) {
 		bits[i * 8 + 0] = (data[i] >> 7) & 1
@@ -2064,7 +2064,7 @@ function bytesToBits(data: Uint8Array): Uint8Array {
 	return bits
 }
 
-export const getMnemonic = async (entropy: Uint8Array): Promise<string[]> => {
+export const getMnemonic = async (entropy: Uint8Array<ArrayBuffer>): Promise<string[]> => {
 	if (!entropy?.length || entropy.length % 4 > 0) {
 		throw new Error("Invalid entropy length")
 	}
@@ -2100,7 +2100,7 @@ export const getMnemonic = async (entropy: Uint8Array): Promise<string[]> => {
 	return words
 }
 
-export const getEntropy = async (mnemonic: string[]): Promise<Uint8Array> => {
+export const getEntropy = async (mnemonic: string[]): Promise<Uint8Array<ArrayBuffer>> => {
 	if (!mnemonic?.length || mnemonic.length % 3 > 0) {
 		throw new Error("Invalid mnemonic length")
 	}
