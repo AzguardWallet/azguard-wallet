@@ -2,6 +2,7 @@ import { BarretenbergSync } from "@aztec/bb.js"
 import { EventMessage, IMessage, MessageType, RequestMessage } from "./base/port-service/messages";
 import { Service } from "./base/port-service/service";
 import { AccountService } from "./services/account";
+import { AuthRegistryService } from "./services/auth-registry";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
 import { WalletConnectService } from "./services/wallet-connect";
@@ -70,6 +71,12 @@ const transactionService = new TransactionService(
     broadcast,
 );
 const accountStateService = new AccountStateService(networkService, broadcast);
+const authRegistryService = new AuthRegistryService(
+    networkService,
+    taskService,
+    transactionService,
+    broadcast,
+);
 const executionService = new ExecutionService(
     profileService,
     networkService,
@@ -77,10 +84,11 @@ const executionService = new ExecutionService(
     tokenService,
     fpcService,
     transactionService,
-    accountStateService,
+    authRegistryService,
     taskService,
     broadcast
 );
+authRegistryService.executionService = executionService; // TODO: implement DI
 const tokenBalanceService = new TokenBalanceService(
     profileService,
     networkService,
@@ -135,6 +143,7 @@ const services = new Map<string, Service>([
     [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
     [accountStateService.name, accountStateService],
+    [authRegistryService.name, authRegistryService],
     [taskService.name, taskService],
 ]);
 

@@ -36,7 +36,7 @@ import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { AccountService } from "@/wallet/services/account";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
 import { ProfileService } from "@/wallet/services/profile";
-import { AccountStateService } from "@/wallet/services/account-state";
+import { AuthRegistryService } from "@/wallet/services/auth-registry";
 import { TokenService } from "@/wallet/services/token";
 import {
     TransferPrivateFn,
@@ -112,7 +112,7 @@ export class ExecutionService extends Service {
         private readonly tokenService: TokenService,
         private readonly fpcService: FpcService,
         private readonly transactionService: TransactionService,
-        private readonly accountStateService: AccountStateService,
+        private readonly authRegistryService: AuthRegistryService,
         private readonly taskService: TaskService,
         emit: (event: EventMessage) => void,
     ) {
@@ -1044,33 +1044,21 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
                             messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
-                            // await this.accountStateService.addCallAuthwit(
-                            //     account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, false,
-                            // );
                             break;
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
                             messageHash = await this.getEncodedCallMessageHash(_content, nodeInfo, instances, artifacts);
-                            // await this.accountStateService.addCallAuthwit(
-                            //     account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
-                            // );
                             break;
                         }
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
                             messageHash = await this.getIntentMessageHash(_content, nodeInfo);
-                            // await this.accountStateService.addIntentAuthwit(
-                            //     account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, false,
-                            // );
                             break;
                         }
                         case AuthwitContentKind.MessageHash: {
                             const _content = _action.content as MessageHashAuthwitContent;
                             messageHash = Fr.fromString(_content.messageHash);
-                            // await this.accountStateService.addAuthwit(
-                            //     account.address.toString(), messageHash.toString(), false,
-                            // );
                             break;
                         }
                         default: {
@@ -1096,32 +1084,32 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
                             messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
-                            await this.accountStateService.addCallAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, true,
+                            await this.authRegistryService.trackAuthwit(
+                                account.address.toString(), messageHash.toString(), _content,
                             );
                             break;
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
                             messageHash = await this.getEncodedCallMessageHash(_content, nodeInfo, instances, artifacts);
-                            await this.accountStateService.addCallAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, true,
+                            await this.authRegistryService.trackAuthwit(
+                                account.address.toString(), messageHash.toString(), _content,
                             );
                             break;
                         }
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
                             messageHash = await this.getIntentMessageHash(_content, nodeInfo);
-                            await this.accountStateService.addIntentAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, true,
+                            await this.authRegistryService.trackAuthwit(
+                                account.address.toString(), messageHash.toString(), _content,
                             );
                             break;
                         }
                         case AuthwitContentKind.MessageHash: {
                             const _content = _action.content as MessageHashAuthwitContent;
                             messageHash = Fr.fromString(_content.messageHash);
-                            await this.accountStateService.addAuthwit(
-                                account.address.toString(), messageHash.toString(), true,
+                            await this.authRegistryService.trackAuthwit(
+                                account.address.toString(), messageHash.toString(), _content,
                             );
                             break;
                         }

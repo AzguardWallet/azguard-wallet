@@ -40,6 +40,7 @@ import {
     GetNodeInfoParams,
     GetNotesParams,
     GetPXEInfoParams,
+    GetPublicStorageAtParams,
     GetSendersParams,
     GetRegisteredAccountsParams,
     ProveTxParams,
@@ -115,6 +116,14 @@ export class PxeService extends Service<PxeServiceMethod, void> {
                 const { network } = params as GetPXEInfoParams;
                 const pxe = await this.getPxeClient(network);
                 return await pxe.getPXEInfo();
+            }
+            case PxeServiceMethod.GetPublicStorageAt: {
+                const { network, contract, slot } = params as GetPublicStorageAtParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getPublicStorageAt(
+                    await AztecAddress.schema.parseAsync(contract),
+                    await Fr.schema.parseAsync(slot),
+                );
             }
             case PxeServiceMethod.GetSenders: {
                 const { network } = params as GetSendersParams;

@@ -7,7 +7,7 @@ import { Service } from "@/wallet/base/port-service/service";
 import type { NetworkService } from "@/wallet/services/network";
 import { PxeServiceClient } from '@/wallet/services/pxe/client';
 import { EntityStorage, StorageType } from "@/wallet/storage";
-import { isPublicAuthwitConsumable } from "@/wallet/utils/auth-registry";
+import { isAuthwitConsumable } from "@/wallet/utils/auth-registry";
 import {
     type Authwit,
     type GetAccountsRequest,
@@ -307,7 +307,7 @@ export class AccountStateService extends Service {
     }
 
     private async syncPublicAuthwit(pxe: PXE, authwit: Authwit) {
-        if (!await isPublicAuthwitConsumable(pxe, authwit.owner, authwit.hash)) {
+        if (!await isAuthwitConsumable(pxe, authwit.owner, authwit.hash)) {
             await this.authwits.delete(`${authwit.hash}:${authwit.isPublic}`);
         }
     }

@@ -114,7 +114,7 @@ export class PXEProxy implements PXE {
         throw new Error("Method not implemented.");
     }
     getPublicStorageAt(contract: AztecAddress, slot: Fr): Promise<Fr> {
-        throw new Error("Method not implemented.");
+        return this.pxeService.getPublicStorageAt(this.network, contract, slot);
     }
     getNotes(filter: NotesFilter): Promise<UniqueNote[]> {
         return this.pxeService.getNotes(this.network, filter);
