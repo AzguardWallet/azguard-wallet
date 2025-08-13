@@ -29,7 +29,7 @@ export abstract class ServiceClient {
     }
 
     protected log(level: LogLevel, message: string, ...args: any[]) {
-        this.logger.addLog(
+        return this.logger.addLog(
             level,
             message,
             args,
@@ -39,19 +39,19 @@ export abstract class ServiceClient {
     }
 
     protected logDebug(message: string, ...args: any[]) {
-        this.log(LogLevel.Debug, message, ...args);
+        return this.log(LogLevel.Debug, message, ...args);
     }
 
     protected logInfo(message: string, ...args: any[]) {
-        this.log(LogLevel.Info, message, ...args);
+        return this.log(LogLevel.Info, message, ...args);
     }
 
     protected logWarn(message: string, ...args: any[]) {
-        this.log(LogLevel.Warning, message, ...args);
+        return this.log(LogLevel.Warning, message, ...args);
     }
 
     protected logError(message: string, ...args: any[]) {
-        this.log(LogLevel.Error, message, ...args);
+        return this.log(LogLevel.Error, message, ...args);
     }
 
     protected abstract onEvent(message: EventMessage): void;

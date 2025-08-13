@@ -22,11 +22,11 @@ export class WalletConnectServiceClient extends ServiceClient {
         onConnected?: () => void,
         onDisconnected?: () => void,
     ) {
-        super(WALLET_CONNECT_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(WALLET_CONNECT_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
-        console.error(`Unexpected event type ${message.event}.`);
+        this.logError(`Unexpected event type ${message.event}.`);
     }
 
     /**

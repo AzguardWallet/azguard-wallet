@@ -168,7 +168,7 @@ export class NetworkService extends Service {
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
 			}
 			catch (error) {
-				console.error("Failed to add 'Aztec Node'", error);
+				this.logError("Failed to add 'Aztec Node'", error);
 			}
 			try {
 				const name = "Sandbox";

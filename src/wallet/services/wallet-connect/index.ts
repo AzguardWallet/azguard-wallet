@@ -85,11 +85,11 @@ export class WalletConnectService extends Service {
     private configureLoggers = (core: InstanceType<typeof Core>, level: string) => {
         const noop = () => {};
         const loggerConfig = {
-            error: level !== "silent" ? console.error : noop,
-            warn: ["warn", "info", "debug", "trace"].includes(level) ? console.warn : noop,
-            info: ["info", "debug", "trace"].includes(level) ? console.info : noop,
-            debug: ["debug", "trace"].includes(level) ? console.debug : noop,
-            trace: level === "trace" ? console.trace : noop,
+            error: level !== "silent" ? this.logError : noop,
+            warn: ["warn", "info", "debug", "trace"].includes(level) ? this.logWarn : noop,
+            info: ["info", "debug", "trace"].includes(level) ? this.logInfo : noop,
+            debug: ["debug", "trace"].includes(level) ? this.logDebug : noop,
+            trace: level === "trace" ? this.logDebug : noop,
         };
         const paths = [
             "logger",

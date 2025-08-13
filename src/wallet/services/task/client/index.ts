@@ -30,7 +30,7 @@ export class TaskServiceClient extends ServiceClient {
         private readonly onTaskUpdated?: (task: Task) => void,
         private readonly onTaskDeleted?: (task: Task) => void,
     ) {
-        super(TASK_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(TASK_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -63,7 +63,7 @@ export class TaskServiceClient extends ServiceClient {
                 break;
             }
             default: {
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
             }
         }

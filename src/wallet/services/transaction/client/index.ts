@@ -33,7 +33,7 @@ export class TransactionServiceClient extends ServiceClient {
         private readonly onTransactionUpdated?: (tx: Tx) => void,
         private readonly onTransactionDeleted?: (tx: Tx) => void,
     ) {
-        super(TRANSACTION_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(TRANSACTION_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -57,7 +57,7 @@ export class TransactionServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

@@ -25,50 +25,29 @@ export abstract class Service<TMethod, TEvent> {
     }
 
     protected log(level: LogLevel, message: string, ...args: any[]) {
-        // let normArgs: any;
-
-        // if (args.length === 0) {
-        //     normArgs = undefined;
-        // } else if (args.length === 1) {
-        //     normArgs = args[0];
-        // } else {
-        //     normArgs = args;
-        // }
-        // const normArgs = (args.length === 1 && Array.isArray(args[0]))
-        //     ? args[0]
-        //     : args;
-
-        this.logger.addLog(
+        return this.logger.addLog(
             level,
             message,
             args,
             this.name,
             LogOrigin.BG,
         );
-
-        // this.logger.addLog(
-        //     level,
-        //     message,
-        //     args,
-        //     this.name,
-        //     LogOrigin.BG,
-        // );
     }
     
     protected logDebug(message: string, ...args: any[]) {
-        this.log(LogLevel.Debug, message, ...args);
+        return this.log(LogLevel.Debug, message, ...args);
     }
 
     protected logInfo(message: string, ...args: any[]) {
-        this.log(LogLevel.Info, message, ...args);
+        return this.log(LogLevel.Info, message, ...args);
     }
 
     protected logWarn(message: string, ...args: any[]) {
-        this.log(LogLevel.Warning, message, ...args);
+        return this.log(LogLevel.Warning, message, ...args);
     }
 
     protected logError(message: string, ...args: any[]) {
-        this.log(LogLevel.Error, message, ...args);
+        return this.log(LogLevel.Error, message, ...args);
     }
     
     public start() {
@@ -121,7 +100,7 @@ export abstract class Service<TMethod, TEvent> {
                 `${(error as Error)?.message ?? error ?? "Unknown error"}`,
             );
         }
-        this.logDebug("Request created", responseContent);
+        this.logDebug("Response created", responseContent);
         const responseMessage = new ResponseMessage(
             responseContent,
             this.name,

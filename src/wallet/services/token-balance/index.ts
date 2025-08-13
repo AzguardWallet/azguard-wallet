@@ -351,7 +351,7 @@ export class TokenBalanceService extends Service {
 				const tb = tbs[i];
 				const token = this.tokens.get(tb.token)
 				if (!token) {
-					console.error(`Unknown token #${tb.token}`)
+					this.logError(`Unknown token #${tb.token}`)
 					const taskId = this.pendingTasks.get(tb.id)!
 					this.taskService.failTask(taskId, `Unknown token #${tb.token}`)
 					continue;
@@ -491,7 +491,7 @@ export class TokenBalanceService extends Service {
 			const stop = Date.now()
 			this.logDebug(`Synced in ${stop - start}ms`);
 		} catch (error) {
-			console.error("Failed to sync", error)
+			this.logError("Failed to sync", error)
 
 			const errorMessage = (error as Error)?.message ?? error as string ?? "Sync failed";
 			for (const tb of tbs) {

@@ -27,7 +27,6 @@ export async function init() {
     loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
     await BarretenbergSync.initSingleton(process.env.BB_WASM_PATH);
     loggerService.addLog(LogLevel.Debug, "BarretenbergSync inited.")
-    await ensureOffscreenRunning();
 }
 
 export function start() {

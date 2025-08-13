@@ -47,7 +47,7 @@ export class TokenServiceClient extends ServiceClient {
         private readonly onTokenUpdated?: (token: TokenInfo) => void,
         private readonly onTokenDeleted?: (token: TokenInfo) => void,
     ) {
-        super(TOKEN_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(TOKEN_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
         if (profile.id !== account.profileId || network.chainId !== account.chainId) {
             throw new Error("account doesn't match profile and network");
         }
@@ -74,7 +74,7 @@ export class TokenServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

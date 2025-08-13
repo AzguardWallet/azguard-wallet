@@ -41,7 +41,7 @@ export class NetworkServiceClient extends ServiceClient {
         private readonly onNetworkDeleted?: (network: Network) => void,
         private readonly onDefaultNetworkChanged?: (network: Network) => void,
     ) {
-        super(NETWORK_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(NETWORK_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -71,7 +71,7 @@ export class NetworkServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

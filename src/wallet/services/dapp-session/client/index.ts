@@ -36,7 +36,7 @@ export class DappSessionServiceClient extends ServiceClient {
         private readonly onDappSessionUpdated?: (session: DappSession) => void,
         private readonly onDappSessionDeleted?: (session: DappSession) => void,
     ) {
-        super(DAPP_SESSION_SERVICE_NAME, new LoggerServiceClient,  onConnected, onDisconnected);
+        super(DAPP_SESSION_SERVICE_NAME, new LoggerServiceClient(),  onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -60,7 +60,7 @@ export class DappSessionServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

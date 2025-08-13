@@ -39,7 +39,7 @@ export class TokenBalanceServiceClient extends ServiceClient {
 			token: TokenBalanceInfo
 		) => void
 	) {
-		super(TOKEN_BALANCE_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected)
+		super(TOKEN_BALANCE_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected)
 	}
 
 	protected onEvent(message: EventMessage): void {
@@ -75,7 +75,7 @@ export class TokenBalanceServiceClient extends ServiceClient {
 				}
 				break
 			default:
-				console.error(`Unexpected event type ${message.event}.`)
+				this.logError(`Unexpected event type ${message.event}.`)
 				break
 		}
 	}
