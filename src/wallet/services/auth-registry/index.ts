@@ -6,8 +6,8 @@ import { ExecutionService } from "@/wallet/services/execution";
 import { CallAction, FeeSettings, IAuthwitContent, SendTransactionOperation } from "@/wallet/services/execution/client";
 import type { NetworkService } from "@/wallet/services/network";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
-import { TaskService } from "@/wallet/services/task";
-import { StepContent } from "@/wallet/services/task/client";
+import { TaskService, WrappedTask } from "@/wallet/services/task";
+import { RevokeAuthwitsContent, StepContent } from "@/wallet/services/task/client";
 import { TransactionService } from "@/wallet/services/transaction";
 import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
@@ -31,7 +31,7 @@ import {
     AuthRegistryServiceEventMessage,
 } from "./client";
 
-const MAX_REVOKES_PER_TX = 28;
+const MAX_REVOKES_PER_TX = 28; // Aztec protocol limitation
 
 export class AuthRegistryService extends Service {
     private readonly pxeService: PxeServiceClient;
@@ -122,7 +122,7 @@ export class AuthRegistryService extends Service {
             const nextId = array_max(authwits.map(x => x.id)) + 1;
             const authwit = new Authwit(nextId, account, hash, content);
             await this.authwits.set(`${authwit.id}`, authwit);
-            this.emit(new AuthRegistryServiceEventMessage(AuthRegistryServiceEvent.AuthwitAdded, undefined, authwit));
+            this.emit(new AuthRegistryServiceEventMessage(AuthRegistryServiceEvent.AuthwitAdded, authwit));
         } finally {
             this.lock.leave();
         }
@@ -133,45 +133,47 @@ export class AuthRegistryService extends Service {
     }
 
     public async revokeAuthwits(networkId: string, account: string, ids: number[], feeSettings: FeeSettings) {
-        const task = this.taskService.startNewTask(new StepContent("Revoke public authwits"));
+        if (ids.length > MAX_REVOKES_PER_TX) {
+            throw new Error(`Cannot revoke more than ${MAX_REVOKES_PER_TX} authwits per single tx`);
+        }
+
+        const authwits = [];
+        for (const id of ids) {
+            const authwit = await this.authwits.get(`${id}`);
+            if (!authwit) {
+                throw new Error(`Authwit #${id} doesn't exist`);
+            }
+            authwits.push(authwit);
+        }
+
+        const task = this.taskService.startNewTask(new RevokeAuthwitsContent(ids));
         try {
-            if (ids.length > MAX_REVOKES_PER_TX) {
-                throw new Error(`Cannot revoke more than ${MAX_REVOKES_PER_TX} authwits per single tx`);
-            }
-            const authwits = [];
-            for (const id of ids) {
-                const authwit = await this.authwits.get(`${id}`);
-                if (!authwit) {
-                    throw new Error(`Authwit #${id} doesn't exist`);
-                }
-                authwits.push(authwit);
-            }
             const registryAddress = getAuthRegistryAddress().toString();
             const txHash = await this.executionService.executeSendTransaction(
                 new SendTransactionOperation(
                     networkId,
                     account,
                     feeSettings,
-                    authwits.map(
-                        x => new CallAction(registryAddress, "set_authorized", [x.hash, false]),
-                    ),
+                    authwits.map(x => new CallAction(registryAddress, "set_authorized", [x.hash, false])),
                 ),
                 new TxOrigin(OriginType.UI),
                 task,
             );
+
             await this.transactionService.waitForTx(txHash, task);
-            
+
             const network = await this.networks.getNetwork(networkId);
             const pxe = this.pxeService.getPXE(network);
-            await this.syncAuthwits(pxe, account, ids);
-        } catch (error: unknown) {
-            task.fail((error as Error)?.message ?? (error as string) ?? "Failed to revoke public authwit");
+            await this.syncAuthwits(pxe, account, task, authwits);
+
+            task.complete();
+        } catch (error) {
+            task.fail(error);
             throw error;
         }
     }
 
     public async getRegistryEnabled(account: string): Promise<boolean> {
-        console.error(await this.statuses.get(account));
         return (await this.statuses.get(account)) ?? true;
     }
 
@@ -185,80 +187,98 @@ export class AuthRegistryService extends Service {
                 new TxOrigin(OriginType.UI),
                 task,
             );
+
             await this.transactionService.waitForTx(txHash, task);
 
             const network = await this.networks.getNetwork(networkId);
             const pxe = this.pxeService.getPXE(network);
-            await this.syncStatus(pxe, account);
-        } catch (error: unknown) {
-            task.fail(
-                (error as Error)?.message ??
-                    (error as string) ??
-                    `Failed to ${enabled ? "enable" : "disable"} auth registry`,
-            );
+            await this.syncStatus(pxe, account, task);
+
+            task.complete();
+        } catch (error) {
+            task.fail(error);
             throw error;
         }
     }
 
     public async syncRegistry(networkId: string, account: string): Promise<void> {
-        const network = await this.networks.getNetwork(networkId);
-        const pxe = this.pxeService.getPXE(network);
-        const authwits = await this.getAuthwits(account);
-        await Promise.all([this.syncAuthwits(pxe, account), this.syncStatus(pxe, account)]);
+        const task = this.taskService.startNewTask(new StepContent("Sync auth registry"));
+        try {
+            const network = await this.networks.getNetwork(networkId);
+            const pxe = this.pxeService.getPXE(network);
+            await Promise.all([
+                this.syncAuthwits(pxe, account, task),
+                this.syncStatus(pxe, account, task),
+            ]);
+            task.complete();
+        } catch (error) {
+            task.fail(error);
+            throw error;
+        }
     }
 
-    private async syncAuthwits(pxe: PXE, account: string, ids?: number[]) {
-        let authwits = [];
-        if (ids) {
-            for (const id of ids) {
-                const authwit = await this.authwits.get(`${id}`);
-                if (!authwit) {
-                    throw new Error(`Authwit #${id} doesn't exist`);
+    private async syncAuthwits(pxe: PXE, account: string, parentTask: WrappedTask, authwits?: Authwit[]) {
+        const task = parentTask.startSubtask(new StepContent("Sync authwits"));
+        try {
+            const _authwits = authwits ?? (await this.getAuthwits(account));
+            await Promise.all(
+                _authwits.map(authwit => this.syncAuthwit(pxe, authwit, task)),
+            );
+            task.complete();
+        } catch (error) {
+            task.fail(error);
+            throw error;
+        }
+    }
+
+    private async syncAuthwit(pxe: PXE, authwit: Authwit, parentTask: WrappedTask) {
+        const task = parentTask.createSubtask(new StepContent(`Sync authwit #${authwit.id}`));
+        try {
+            const isConsumable = await isAuthwitConsumable(pxe, authwit.account, authwit.hash);
+            if (isConsumable) return;
+            try {
+                await this.lock.enter();
+                if (await this.authwits.get(`${authwit.id}`)) {
+                    await this.authwits.delete(`${authwit.id}`);
+                    this.emit(new AuthRegistryServiceEventMessage(AuthRegistryServiceEvent.AuthwitDeleted, authwit));
                 }
-                authwits.push(authwit);
+            } finally {
+                this.lock.leave();
             }
-        }
-        else {
-            authwits = await this.getAuthwits(account)
-        }
-        await Promise.all(authwits.map(authwit => this.syncAuthwit(pxe, authwit)));
-    }
-
-    private async syncAuthwit(pxe: PXE, authwit: Authwit) {
-        const isConsumable = await isAuthwitConsumable(pxe, authwit.account, authwit.hash);
-        if (isConsumable) return;
-        try {
-            await this.lock.enter();
-            if (await this.authwits.get(`${authwit.id}`)) {
-                await this.authwits.delete(`${authwit.id}`);
-                this.emit(
-                    new AuthRegistryServiceEventMessage(AuthRegistryServiceEvent.AuthwitDeleted, undefined, authwit),
-                );
-            }
-        } finally {
-            this.lock.leave();
+            task.complete();
+        } catch (error) {
+            task.fail(error);
+            throw error;
         }
     }
 
-    private async syncStatus(pxe: PXE, account: string): Promise<void> {
-        const isEnabled = await isAuthRegistryEnabled(pxe, account);
+    private async syncStatus(pxe: PXE, account: string, parentTask: WrappedTask): Promise<void> {
+        const task = parentTask.startSubtask(new StepContent("Sync status"));
         try {
-            await this.lock.enter();
-            const enabled = await this.statuses.get(account);
-            if (enabled !== isEnabled) {
-                await this.statuses.set(account, isEnabled);
-                this.emit(
-                    new AuthRegistryServiceEventMessage(
-                        isEnabled
-                            ? AuthRegistryServiceEvent.RegistryEnabled
-                            : AuthRegistryServiceEvent.RegistryDisabled,
-                        account,
-                        undefined,
-                    ),
-                );
+            const isEnabled = await isAuthRegistryEnabled(pxe, account);
+            try {
+                await this.lock.enter();
+                const enabled = await this.statuses.get(account);
+                if (enabled !== isEnabled) {
+                    if (isEnabled) {
+                        await this.statuses.delete(account);
+                        this.emit(
+                            new AuthRegistryServiceEventMessage(AuthRegistryServiceEvent.RegistryEnabled, account),
+                        );
+                    } else {
+                        await this.statuses.set(account, isEnabled);
+                        this.emit(
+                            new AuthRegistryServiceEventMessage(AuthRegistryServiceEvent.RegistryDisabled, account),
+                        );
+                    }
+                }
+            } finally {
+                this.lock.leave();
             }
-        } finally {
-            this.lock.leave();
+            task.complete();
+        } catch (error) {
+            task.fail(error);
+            throw error;
         }
     }
 }

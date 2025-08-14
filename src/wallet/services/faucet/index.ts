@@ -211,9 +211,8 @@ export class FaucetService extends Service {
             }
             checkTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Check failed";
-            checkTask.fail(errorMessage);
-            rootTask.fail(errorMessage);
+            checkTask.fail(error);
+            rootTask.fail(error);
             throw error;
         }
 
@@ -239,9 +238,8 @@ export class FaucetService extends Service {
                 }
                 deployTask.complete();
             } catch (error) {
-                const errorMessage = (error as Error)?.message ?? error as string ?? "Deploy failed";
-                deployTask.fail(errorMessage);
-                rootTask.fail(errorMessage);
+                deployTask.fail(error);
+                rootTask.fail(error);
                 throw error;
             }
         }
@@ -287,9 +285,8 @@ export class FaucetService extends Service {
             console.debug("faucet mint tx mined");
             mintTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Mint failed";
-            mintTask.fail(errorMessage);
-            rootTask.fail(errorMessage);
+            mintTask.fail(error);
+            rootTask.fail(error);
             throw error;
         }
         rootTask.complete();

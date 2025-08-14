@@ -25,8 +25,8 @@ export class WrappedTask {
         this.taskService.completeTask(this.id, result);
     }
 
-    public fail(error: string = "Unknown error"): void {
-        this.taskService.failTask(this.id, error);
+    public fail(error: unknown): void {
+        this.taskService.failTask(this.id, (error as Error)?.message ?? (error as string) ?? "Unknown error");
     }
 
     public cancel(): void {

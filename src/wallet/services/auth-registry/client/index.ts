@@ -46,28 +46,28 @@ export class AuthRegistryServiceClient extends ServiceClient {
             case AuthRegistryServiceEvent.AuthwitAdded:
                 if (this.onAuthwitAdded) {
                     try {
-                        this.onAuthwitAdded((message as AuthRegistryServiceEventMessage).authwit!);
+                        this.onAuthwitAdded((message as AuthRegistryServiceEventMessage).data as Authwit);
                     } catch {}
                 }
                 break;
             case AuthRegistryServiceEvent.AuthwitDeleted:
                 if (this.onAuthwitDeleted) {
                     try {
-                        this.onAuthwitDeleted((message as AuthRegistryServiceEventMessage).authwit!);
+                        this.onAuthwitDeleted((message as AuthRegistryServiceEventMessage).data as Authwit);
                     } catch {}
                 }
                 break;
             case AuthRegistryServiceEvent.RegistryEnabled:
                 if (this.onRegistryEnabled) {
                     try {
-                        this.onRegistryEnabled((message as AuthRegistryServiceEventMessage).account!);
+                        this.onRegistryEnabled((message as AuthRegistryServiceEventMessage).data as string);
                     } catch {}
                 }
                 break;
             case AuthRegistryServiceEvent.RegistryDisabled:
                 if (this.onRegistryDisabled) {
                     try {
-                        this.onRegistryDisabled((message as AuthRegistryServiceEventMessage).account!);
+                        this.onRegistryDisabled((message as AuthRegistryServiceEventMessage).data as string);
                     } catch {}
                 }
                 break;

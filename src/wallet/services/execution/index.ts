@@ -310,8 +310,7 @@ export class ExecutionService extends Service {
             return tx.hash;
         }
         catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Transfer failed";
-            transferTask.fail(errorMessage);
+            transferTask.fail(error);
             throw error;
         }
     }
@@ -371,9 +370,8 @@ export class ExecutionService extends Service {
                 results.push(new OkOperationResult(result));
             }
             catch (error) {
-                const errorMessage = (error as Error)?.message ?? error as string ?? "Unknown error";
-                operationTask.fail(errorMessage);
-                results.push(new FailedOperationResult(errorMessage));
+                operationTask.fail(error);
+                results.push(new FailedOperationResult((error as Error)?.message ?? error as string ?? "Unknown error"));
             }
         }
         return results;
@@ -604,8 +602,7 @@ export class ExecutionService extends Service {
                 }
             }
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Fee estimation failed";
-            feeSetupTask.fail(errorMessage);
+            feeSetupTask.fail(error);
             throw error;
         }
     }
@@ -1002,8 +999,7 @@ export class ExecutionService extends Service {
             txRequest = await account.buildTxExecutionRequest(pxe, setup, isFeePayer, calls, args, nonce, authwits, capsules);
             processingTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction processing failed";
-            processingTask.fail(errorMessage);
+            processingTask.fail(error);
             throw error;
         }
 
@@ -1260,8 +1256,7 @@ export class ExecutionService extends Service {
             );
             simulationTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Simulation failed";
-            simulationTask.fail(errorMessage);
+            simulationTask.fail(error);
             throw error;
         }
         return simulatedTx;
@@ -1285,8 +1280,7 @@ export class ExecutionService extends Service {
             provedTx = await pxe.proveTx(txRequest, privateExecutionResult);
             provingTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Proof generation failed";
-            provingTask.fail(errorMessage);
+            provingTask.fail(error);
             throw error;
         }
         return provedTx;
@@ -1309,8 +1303,7 @@ export class ExecutionService extends Service {
             txHash = await pxe.sendTx(tx);
             sendingTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction sending failed";
-            sendingTask.fail(errorMessage);
+            sendingTask.fail(error);
             throw error;
         }
         return txHash;

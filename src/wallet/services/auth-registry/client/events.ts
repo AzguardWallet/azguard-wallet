@@ -11,8 +11,7 @@ export enum AuthRegistryServiceEvent {
 export class AuthRegistryServiceEventMessage extends EventMessage {
     constructor(
         event: AuthRegistryServiceEvent,
-        public readonly account?: string,
-        public readonly authwit?: Authwit,
+        public readonly data: Authwit | string,
     ) {
         super(AUTH_REGISTRY_SERVICE_NAME, event);
     }
