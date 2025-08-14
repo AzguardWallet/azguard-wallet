@@ -1,8 +1,7 @@
 import { RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
-import { Authwit, Note, NoteStatus, ACCOUNT_STATE_SERVICE_NAME } from ".";
+import { Note, NoteStatus, ACCOUNT_STATE_SERVICE_NAME } from ".";
 
 export enum AccountStateServiceMethod {
-    GetAuthwits,
     GetAccounts,
     GetSenders,
     AddSender,
@@ -10,26 +9,6 @@ export enum AccountStateServiceMethod {
     GetContracts,
     GetNotes,
     GetVersion,
-}
-
-export class GetAuthwitsRequest extends RequestMessage {
-    constructor(
-        public readonly networkId: string,
-        public readonly owner: string,
-        public readonly isPublic?: boolean,
-    ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, AccountStateServiceMethod.GetAuthwits);
-    }
-}
-
-export class GetAuthwitsResponse extends ResponseMessage {
-    constructor(
-        request: GetAuthwitsRequest,
-        result?: Authwit[],
-        error?: string,
-    ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, request.requestId, result, error);
-    }
 }
 
 export class GetAccountsRequest extends RequestMessage {

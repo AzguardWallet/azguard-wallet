@@ -1,19 +1,13 @@
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
-import type { PXE } from '@aztec/stdlib/interfaces/client';
 import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
 import { TxHash } from "@aztec/stdlib/tx";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
 import type { NetworkService } from "@/wallet/services/network";
 import { PxeServiceClient } from '@/wallet/services/pxe/client';
-import { EntityStorage, StorageType } from "@/wallet/storage";
-import { isAuthwitConsumable } from "@/wallet/utils/auth-registry";
 import {
-    type Authwit,
     type GetAccountsRequest,
     GetAccountsResponse,
-    type GetAuthwitsRequest,
-    GetAuthwitsResponse,
     type GetSendersRequest,
     GetSendersResponse,
     type AddSenderRequest,
@@ -35,7 +29,6 @@ import {
 } from "./client";
 
 export class AccountStateService extends Service {
-    private readonly authwits: EntityStorage<Authwit>;
     private readonly pxeService: PxeServiceClient;
 
     constructor(
@@ -43,21 +36,11 @@ export class AccountStateService extends Service {
         emit: (event: EventMessage) => void
     ) {
         super(ACCOUNT_STATE_SERVICE_NAME, emit);
-        this.authwits = new EntityStorage("azguard:core:authwits", StorageType.Local);
         this.pxeService = new PxeServiceClient();
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
         switch (request.method) {
-            case AccountStateServiceMethod.GetAuthwits: {
-                const _request = request as GetAuthwitsRequest;
-                try {
-                    const authwits = await this.getAuthwits(_request.networkId, _request.owner, _request.isPublic);
-                    return new GetAuthwitsResponse(_request, authwits)
-                } catch (error: any) {
-                    return new GetAuthwitsResponse(_request, undefined, error.message);
-                }
-            }
             case AccountStateServiceMethod.GetAccounts: {
                 const _request = request as GetAccountsRequest;
                 try {
@@ -132,57 +115,6 @@ export class AccountStateService extends Service {
                 return undefined;
             }
         }
-    }
-
-    public async addAuthwit(
-        owner: string,
-        hash: string,
-        isPublic: boolean,
-    ) {
-        await this.authwits.set(`${hash}:${isPublic}`, {
-            owner,
-            hash,
-            content: undefined,
-            isPublic,
-        })
-    }
-
-    public async addCallAuthwit(
-        owner: string,
-        hash: string,
-        caller: string,
-        contract: string,
-        method: string,
-        args: any[],
-        isPublic: boolean,
-    ) {
-        await this.authwits.set(`${hash}:${isPublic}`, {
-            owner,
-            hash,
-            content: { caller, contract, method, args },
-            isPublic,
-        })
-    }
-
-    public async addIntentAuthwit(
-        owner: string,
-        hash: string,
-        consumer: string,
-        intent: string[],
-        isPublic: boolean,
-    ) {
-        await this.authwits.set(`${hash}:${isPublic}`, {
-            owner,
-            hash,
-            content: { consumer, intent },
-            isPublic,
-        })
-    }
-
-    public async getAuthwits(networkId: string, owner: string, isPublic?: boolean): Promise<Authwit[]> {
-        await this.syncAuthwits(networkId, owner);
-        return (await this.authwits.getValues())
-            .filter(x => x.owner === owner && (isPublic === undefined || x.isPublic === isPublic));
     }
 
     public async getAccounts(networkId: string): Promise<string[]> {
@@ -286,29 +218,6 @@ export class AccountStateService extends Service {
         catch (error) {
             console.error("Failed to fetch PXE info", error);
             throw new Error("PXE request failed");
-        }
-    }
-
-    private async syncAuthwits(networkId: string, owner: string) {
-        const network = await this.networks.getNetwork(networkId);
-        const pxe = this.pxeService.getPXE(network);
-        const active = (await this.authwits.getValues()).filter(x => x.owner === owner);
-        await Promise.allSettled(
-            active.map(x => x.isPublic ? this.syncPublicAuthwit(pxe, x) : this.syncPrivateAuthwit(pxe, x))
-        );
-    }
-
-    private async syncPrivateAuthwit(pxe: PXE, authwit: Authwit) {
-        // TODO: Check nullifiers
-        const res = [] as any; //await pxe.getAuthWitness(Fr.fromString(authwit.hash)); // TODO: Fr.fromHexString
-        if (!res || res.length === 0) {
-            await this.authwits.delete(`${authwit.hash}:${authwit.isPublic}`);
-        }
-    }
-
-    private async syncPublicAuthwit(pxe: PXE, authwit: Authwit) {
-        if (!await isAuthwitConsumable(pxe, authwit.owner, authwit.hash)) {
-            await this.authwits.delete(`${authwit.hash}:${authwit.isPublic}`);
         }
     }
 }
