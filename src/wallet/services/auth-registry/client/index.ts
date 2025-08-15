@@ -105,7 +105,7 @@ export class AuthRegistryServiceClient extends ServiceClient {
     }
 
     /**
-     * Enables or disables auth registry for the account.
+     * Enables or disables auth registry for the account (sends a transaction).
      * @param networkId Network id.
      * @param account Account address.
      * @param enabled Whether to enable or disable the auth registry.
