@@ -35,30 +35,29 @@ export abstract class ServiceClient<TMethod, TEvent> {
         chrome.runtime.onMessage.addListener(this.onMessageListener);
     }
 
-    protected log(level: LogLevel, message: string, ...args: any[]) {
+    protected log(level: LogLevel, ...args: any[]) {
         return this.logger.addLog(
             level,
-            message,
             args,
             this.service,
             LogOrigin.BG,
         );
     }
 
-    protected logDebug(message: string, ...args: any[]) {
-        return this.log(LogLevel.Debug, message, ...args);
+    protected logDebug(...args: any[]) {
+        return this.log(LogLevel.Debug, args);
     }
 
-    protected logInfo(message: string, ...args: any[]) {
-        return this.log(LogLevel.Info, message, ...args);
+    protected logInfo(...args: any[]) {
+        return this.log(LogLevel.Info, args);
     }
 
-    protected logWarn(message: string, ...args: any[]) {
-        return this.log(LogLevel.Warning, message, ...args);
+    protected logWarn(...args: any[]) {
+        return this.log(LogLevel.Warning, args);
     }
 
-    protected logError(message: string, ...args: any[]) {
-        return this.log(LogLevel.Error, message, ...args);
+    protected logError(...args: any[]) {
+        return this.log(LogLevel.Error, args);
     }
 
     public dispose() {

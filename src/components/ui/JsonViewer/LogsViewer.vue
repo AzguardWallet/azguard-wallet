@@ -34,7 +34,7 @@ function getLogLevelName(level) {
 		: level
 }
 
-const defLevels = ["INFO", "DEBUG", "WARN", "ERROR"]
+const defLevels = ["DEBUG", "INFO", "WARN", "ERROR"]
 const selectedLevels = ref([...defLevels])
 const filteredLogs = computed(() =>
 	logs.value.filter(log => selectedLevels.value.includes(getLogLevelName(log.level).toUpperCase()))
@@ -141,7 +141,8 @@ function scrollToBottom() {
 }
 
 function formatSingleLog(log) {
-	const time = new Date(log.ts).toLocaleTimeString()
+	const date = new Date(log.ts)
+	const time = `${date.toTimeString().slice(0, 8)}.${date.getMilliseconds().toString().padStart(3, '0')}`
 	const level = log.level.toUpperCase()
 
 	function formatArg(arg) {
@@ -171,7 +172,7 @@ function formatSingleLog(log) {
 		args = formatArg(log.args)
 	}
 
-	return `[${time}] [${log.origin}]${log.source ? ` [${log.source}]` : ""} ${getLogLevelName(level)}: ${log.message} ${args}`
+	return `[${time}] [${log.origin}]${log.source ? ` [${log.source}]` : ""} ${getLogLevelName(level)}: ${args}`
 }
 function formatLogs(logs) {
 	return logs
@@ -181,18 +182,17 @@ function formatLogs(logs) {
 function buildLogDecorations(doc) {
 	const builder = new RangeSetBuilder()
 	const fullText = doc.toString()
-	const logs = fullText.split(/\n(?=\[\d{2}:\d{2}:\d{2}\] \[)/)
+	const logs = fullText.split(/\n(?=\[\d{2}:\d{2}:\d{2}\.\d{3}\] \[)/)
 
 	let pos = 0
 	for (const log of logs) {
-		const levelMatch = log.match(/\] (DEBUG|LOG|WARN|ERROR):/)
+		const levelMatch = log.match(/\] (DEBUG|WARN|ERROR):/)
 		const level = levelMatch ? levelMatch[1] : "INFO"
 
 		let levelClass = "log-line-info"
 		if (level === "ERROR") levelClass = "log-line-error"
 		else if (level === "WARN") levelClass = "log-line-warn"
 		else if (level === "DEBUG") levelClass = "log-line-debug"
-		else if (level === "LOG") levelClass = "log-line-info"
 
 		builder.add(pos, pos + log.length, Decoration.mark({ class: levelClass }))
 		pos += log.length + 1
@@ -244,6 +244,7 @@ function exportLogsToCSV() {
 		const source = log.source || ""
 		const level = log.level || ""
 		const args = (log.args || []).join(" ").replace(/\n/g, " ")
+
 		return [time, origin, source, level, args]
 	})
 

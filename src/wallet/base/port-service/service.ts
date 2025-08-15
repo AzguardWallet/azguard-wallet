@@ -10,29 +10,28 @@ export abstract class Service {
 
     abstract process(request: RequestMessage): Promise<ResponseMessage | undefined>;
 
-    protected log(level: LogLevel, message: string, ...args: any[]) {
+    protected log(level: LogLevel, ...args: any[]) {
         this.logger.add(
             level,
-            message,
             args,
             this.name,
             LogOrigin.BG,
         );
     }
 
-    protected logDebug(message: string, ...args: any[]) {
-        this.log(LogLevel.Debug, message, ...args);
+    protected logDebug(...args: any[]) {
+        this.log(LogLevel.Debug, args);
     }
 
-    protected logInfo(message: string, ...args: any[]) {
-        this.log(LogLevel.Info, message, ...args);
+    protected logInfo(...args: any[]) {
+        this.log(LogLevel.Info, args);
     }
 
-    protected logWarn(message: string, ...args: any[]) {
-        this.log(LogLevel.Warning, message, ...args);
+    protected logWarn(...args: any[]) {
+        this.log(LogLevel.Warning, args);
     }
 
-    protected logError(message: string, ...args: any[]) {
-        this.log(LogLevel.Error, message, ...args);
+    protected logError(...args: any[]) {
+        this.log(LogLevel.Error, args);
     }
 }

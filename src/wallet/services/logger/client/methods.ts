@@ -4,6 +4,7 @@ import { type LogEntity, type LogLevel, LOGGER_SERVICE_NAME, type LogOrigin } fr
 export enum LoggerServiceMethod {
     AddLog,
     GetLogs,
+    ClearLogs,
 }
 
 export class GetLogsRequest extends RequestMessage {
@@ -27,7 +28,6 @@ export class GetLogsResponse extends ResponseMessage {
 export class AddLogRequest extends RequestMessage {
     constructor(
         public readonly level: LogLevel,
-        public readonly message: string,
         public readonly args?: any[],
         public readonly source?: string,
         public readonly origin?: LogOrigin,
@@ -39,6 +39,21 @@ export class AddLogRequest extends RequestMessage {
 export class AddLogResponse extends ResponseMessage {
     constructor(
         request: AddLogRequest,
+        error?: string,
+    ) {
+        super(LOGGER_SERVICE_NAME, request.requestId, undefined, error);
+    }
+}
+
+export class ClearLogsRequest extends RequestMessage {
+    constructor() {
+        super(LOGGER_SERVICE_NAME, LoggerServiceMethod.AddLog);
+    }
+}
+
+export class ClearLogsResponse extends ResponseMessage {
+    constructor(
+        request: ClearLogsRequest,
         error?: string,
     ) {
         super(LOGGER_SERVICE_NAME, request.requestId, undefined, error);

@@ -17,8 +17,7 @@ export type LogEntity = {
     origin: LogOrigin;
     level: LogLevel;
     ts: number;
-    message: string;
-    args?: string[];
+    args?: any[];
     source?: string;
 }
 
@@ -26,21 +25,20 @@ export interface ILogs {
     add(log: LogEntity): LogEntity | undefined;
     add(
 		level: LogLevel,
-		message: string,
-		args?: any,
+		args?: any[],
 		source?: string,
 		origin?: LogOrigin
 	): LogEntity | undefined;
     get(count?: number): LogEntity[];
     setDebugMode(isDebug: boolean): void;
+	clear(): void;
 }
 
 export interface ILogsAsync {
     addLog(log: LogEntity): Promise<void>;
     addLog(
 		level: LogLevel,
-		message: string,
-		args?: any,
+		args?: any[],
 		source?: string,
 		origin?: LogOrigin
 	): Promise<void>;
@@ -48,7 +46,7 @@ export interface ILogsAsync {
 }
 
 export class DummyLogger implements ILogsAsync {
-    async addLog(..._args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): Promise<void> {
+    async addLog(..._args: [LogEntity] | [LogLevel, any[]?, string?, LogOrigin?]): Promise<void> {
         return;
     }
 
@@ -70,28 +68,14 @@ export class InMemoryLogs implements ILogs {
 		return this.isDebugMode ? 10_000 : 1_000;
 	}
 
-	private normalizeArgs(args: any): any {
-		if (!args || args.length === 0) return undefined;
-		if (args.length === 1) {
-			if (Array.isArray(args[0]) && !args[0].length) {
-				return undefined;
-			} else {
-				return args[0];
-			}
-		}
-
-		return args;
-	}
-
-    add(...args: [LogEntity] | [LogLevel, string, any[]?, string?, LogOrigin?]): LogEntity | undefined {
+    add(...args: [LogEntity] | [LogLevel, any[]?, string?, LogOrigin?]): LogEntity | undefined {
 		let log: LogEntity;
 
 		if (typeof args[0] === "object" && "level" in args[0]) {
 			log = args[0] as LogEntity;
 		} else {
-			const [level, message, inputArgs, source, origin] = args as [
+			const [level, inputArgs, source, origin] = args as [
 				LogLevel,
-				string,
 				any[]?,
 				string?,
 				LogOrigin?
@@ -99,14 +83,11 @@ export class InMemoryLogs implements ILogs {
 
 			if (!this.isDebugMode && level === LogLevel.Debug) return undefined;
 
-			const normArgs = this.normalizeArgs(inputArgs);
-
 			log = {
 				origin: origin ?? LogOrigin.BG,
 				level,
 				ts: Date.now(),
-				message,
-				args: normArgs,
+				args: inputArgs,
 				source,
 			};
 		}
@@ -114,7 +95,7 @@ export class InMemoryLogs implements ILogs {
 		if (!this.isDebugMode && log.level === LogLevel.Debug) return undefined;
 
 		this.logs.add(log);
-
+		
 		return log;
 	}
 
@@ -128,5 +109,9 @@ export class InMemoryLogs implements ILogs {
 			this.isDebugMode = isDebug;
 			this.logs.resize(this.getMaxEntries());
 		}
+	}
+
+	clear(): void {
+		this.clear();
 	}
 }

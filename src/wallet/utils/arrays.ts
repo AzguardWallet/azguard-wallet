@@ -54,4 +54,10 @@ export class CircularBuffer<T> {
 			this.add(item);
 		}
 	}
+
+	clear(): void {
+        this.buffer.fill(undefined as T);
+        this.pointer = 0;
+        this.full = false;
+    }
 }

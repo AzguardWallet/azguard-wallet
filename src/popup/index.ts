@@ -6,22 +6,9 @@ function patchConsoleMethods() {
         const cbName = `on${level}`;
 
         (window as any)[cbName] = (...args: any[]) => {
-            const stringArgs = (args ?? []).map(a => {
-				if (a === null || a === undefined) return String(a);
-				if (typeof a === "object") {
-					try {
-						return JSON.stringify(a);
-					} catch {
-						return String(a);
-					}
-				}
-				return String(a);
-			});
-
             loggerService.addLog(
                 level,
-                stringArgs.join(" "),
-                undefined,
+                args,
                 undefined,
                 LogOrigin.UI
             );

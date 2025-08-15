@@ -1,7 +1,7 @@
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { LoggerServiceEvent, type LoggerServiceEventMessage } from "./events";
-import { AddLogRequest, GetLogsRequest } from "./methods";
+import { AddLogRequest, GetLogsRequest, ClearLogsRequest } from "./methods";
 import { DummyLogger, type ILogsAsync, type LogLevel, type LogEntity, type LogOrigin } from "./models";
 
 export * from './events';
@@ -59,29 +59,34 @@ export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
      * @param source log source
      * @param origin log origin
      */
-    public async addLog(...args: [LogEntity] | [LogLevel, string, any?, string?, LogOrigin?]): Promise<void> {
+    public async addLog(...args: [LogEntity] | [LogLevel, any[]?, string?, LogOrigin?]): Promise<void> {
         if (typeof args[0] === "object" && "level" in args[0]) {
             const log = args[0] as LogEntity;
 
             await this.request(new AddLogRequest(
-                log.level, log.message, log.args, log.source, log.origin
+                log.level, log.args, log.source, log.origin
             ));
 		} else {
             const [
                 level,
-                message,
                 inputArgs,
                 source,
                 origin
             ] = args as [
 				LogLevel,
-				string,
-				any?,
+				any[]?,
 				string?,
 				LogOrigin?
 			];
 
-            await this.request(new AddLogRequest(level, message, inputArgs, source, origin));
+            await this.request(new AddLogRequest(level, inputArgs, source, origin));
         }
+    }
+
+    /**
+     * Clear in memory logs.
+     */
+    public clearLogs(): Promise<LogEntity[]> {
+        return this.request(new ClearLogsRequest());
     }
 }

@@ -183,31 +183,34 @@ async function onMessage(message: IMessage, client: chrome.runtime.Port) {
     if (typeof message.type !== "number") return; // crutch for crx
     const isLoggerMessage = message.service === LOGGER_SERVICE_NAME; // don't log logger's messages
 
-    if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Message received", [message]);
+    if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Message received", message], message.service);
     if (message.type !== MessageType.Request) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Invalid message");
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Invalid message"], message.service);
         client.disconnect();
         return;
     }
     const request = message as RequestMessage;
     const service = services.get(request.service);
     if (!service) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Service is not registered", request.service);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Service is not registered", request.service], message.service);
         client.disconnect();
         return;
     }
     const response = await service.process(request);
     if (!response) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, `Service ${request.service} doesn't have method ${request.method}`);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, [`Service ${request.service} doesn't have method ${request.method}`], message.service);
         client.disconnect();
         return;
     }
-    if (response.error === undefined) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Request processed", request.requestId, response.result);
+    if (!isLoggerMessage) {
+        if (response.error === undefined) {
+            loggerService.addLogWithMeta(LogLevel.Debug, ["Request processed", request.requestId, response.result], message.service);
+        }
+        else {
+            loggerService.addLogWithMeta(LogLevel.Debug, ["Request failed", request.requestId, response.error], message.service);
+        }
     }
-    else {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Request failed", request.requestId, response.error);
-    }
+
     send(client, response);
 }
 
@@ -232,10 +235,10 @@ function broadcast(event: EventMessage) {
             }
         }
         
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Event broadcasted.", event);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Event broadcasted.", event], event.service);
     }
     catch (error) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Failed to broadcast event", error);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Failed to broadcast event", error], event.service);
     }
 }
 
@@ -244,9 +247,9 @@ function send(port: chrome.runtime.Port, message: IMessage) {
     try {
         port.postMessage(jsonSanitize(message));
 
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, "Message sent", message);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Message sent", message], message.service);
     }
     catch (error) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Failed to send message", error);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Failed to send message", error], message.service);
     }
 }
