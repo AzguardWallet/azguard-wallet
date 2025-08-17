@@ -11,6 +11,10 @@ import {
 import { defaultKeymap } from "@codemirror/commands"
 import { searchKeymap } from "@codemirror/search"
 
+/** Components */
+import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
+import Popover from "@/components/ui/Popover.vue"
+
 /** Utils */
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
 import { capitalize } from "@/utils/string"
@@ -29,32 +33,87 @@ let loggerService = null
 const logs = ref([])
 
 function getLogLevelName(level) {
-	return level.toLowerCase() === "log"
+	return level?.toLowerCase() === "log"
 		? "INFO"
 		: level
 }
 
-const defLevels = ["DEBUG", "INFO", "WARN", "ERROR"]
-const selectedLevels = ref([...defLevels])
-const filteredLogs = computed(() =>
-	logs.value.filter(log => selectedLevels.value.includes(getLogLevelName(log.level).toUpperCase()))
-)
-const isDownloaded = ref(false)
+const sources = ["account", "account-state", "dapp-interaction", "dapp-session", "execution", "faucet", "fpc", "logger", "network", "profile", "pxe", "rpc", "task", "token", "token-balance", "transaction", "wallet-connect", "undefined"]
+const allowedSources = computed(() => new Set(Object.keys(filters.source).filter(k => filters.source[k])))
+const origins = ["UI", "OF", "BG"]
+const allowedOrigins = computed(() => new Set(Object.keys(filters.origin).filter(k => filters.origin[k])))
+const levels = ["DEBUG", "INFO", "WARN", "ERROR"]
+const allowedLevels = computed(() => new Set(Object.keys(filters.level).filter(k => filters.level[k]).map(l => getLogLevelName(l).toUpperCase())))
+const allOptionsSelected = computed(() => {
+	return {
+		source: allowedSources.value?.size === sources.length,
+		origin: allowedOrigins.value?.size === origins.length,
+		level: allowedLevels.value?.size === levels.length,
+	}
+})
+
+const filteredLogs = computed(() => logs.value.filter(log => isLogInclude(log)))
 
 const AUTO_SCROLL_TIMEOUT_MS = 30_000
 const SCROLL_DISABLE_THRESHOLD = 20
-const MAX_LOGS_COUNT = 2_000
+const MAX_LOGS_COUNT = 20_000
 const MAX_LOGS_DIFF = 100
 
 const shouldAutoScroll = ref(true)
 const showScrollBtn = ref(false)
 let scrollTimeout = null
 
-const handleSelectlevel = (level) => {
-	if (selectedLevels.value.includes(level)) {
-		selectedLevels.value = selectedLevels.value.filter(l => l !== level)
-	} else {
-		selectedLevels.value = [...selectedLevels.value, level]
+const popovers = reactive({
+	source: false,
+	origin: false,
+	level: false,
+})
+const filters = reactive({
+	source: sources.reduce((acc, b) => ( {...acc, [b]: true} ), {}),
+	origin: origins.reduce((acc, b) => ( {...acc, [b]: true} ), {}),
+	level: levels.reduce((acc, b) => ( {...acc, [b]: true} ), {}),
+})
+const searchTerm = ref("")
+
+const handleOpenPopover = (name) => {
+	popovers[name] = true
+}
+const onPopoverClose = (name) => {
+	popovers[name] = false
+	if (name === "source") {
+		searchTerm.value = ""
+	}
+}
+function updateFilter(filter, value) {
+	filters[filter][value] = !filters[filter][value]
+	updateEditorContent()
+}
+function handleSelectAll(filter) {
+	const value = allOptionsSelected.value[filter]
+	Object.keys(filters[filter]).forEach(f => filters[filter][f] = !value)
+	updateEditorContent()
+}
+function isLogInclude(log) {
+	const sourceOk = log.source
+		? allowedSources.value.has(log.source)
+		: !!filters.source.undefined
+    const originOk = allowedOrigins.value.has(log.origin)
+    const levelOk = allowedLevels.value.has(getLogLevelName(log.level).toUpperCase())
+
+    return sourceOk && originOk && levelOk
+}
+function getDisplayName(kind, value) {
+	switch (kind) {
+		case "source":
+			if (value === "fpc" || value === "pxe" || value === "rpc") return value.toUpperCase()
+			if (value === "undefined") return `(${value})`
+
+			return value.split("-").map(v => capitalize(v)).join(" ")
+		case "origin":
+			return value.toUpperCase()
+	
+		default:
+			return capitalize(value.toLowerCase())
 	}
 }
 
@@ -65,9 +124,7 @@ const onLogAdded = (log) => {
 		logs.value.splice(0, MAX_LOGS_DIFF)
 	}
 
-	if (!selectedLevels.value.includes(getLogLevelName(log.level).toUpperCase())) {
-		return
-	}
+	if(!isLogInclude(log)) return;
 
 	if (view) {
 		const doc = view.state.doc
@@ -140,28 +197,27 @@ function scrollToBottom() {
 	showScrollBtn.value = false
 }
 
+function formatArg(arg) {
+	if (Array.isArray(arg)) {
+		if (!arg.length) return ""
+
+		return arg.map(formatArg)
+	}
+
+	if (typeof arg === "object") {
+		try {
+			return JSON.stringify(arg);
+		} catch {
+			return String(arg);
+		}
+	}
+
+	return arg
+}
 function formatSingleLog(log) {
 	const date = new Date(log.ts)
 	const time = `${date.toTimeString().slice(0, 8)}.${date.getMilliseconds().toString().padStart(3, '0')}`
-	const level = log.level.toUpperCase()
-
-	function formatArg(arg) {
-		if (Array.isArray(arg)) {
-			if (!arg.length) return ""
-
-			return arg.map(formatArg)
-		}
-
-		if (typeof arg === "object") {
-            try {
-                return JSON.stringify(arg);
-            } catch {
-                return String(arg);
-            }
-        }
-
-		return arg
-	}
+	const level = log.level?.toUpperCase()
 
 	let args
 	if (!log.args) {
@@ -238,49 +294,65 @@ function updateEditorContent() {
 }
 
 function exportLogsToCSV() {
-	const rows = logs.value.map(log => {
-		const time = new Date(log.ts).toISOString()
-		const origin = log.origin || ""
-		const source = log.source || ""
-		const level = log.level || ""
-		const args = (log.args || []).join(" ").replace(/\n/g, " ")
+	try {
+		const rows = logs.value.map(log => {
+			const time = new Date(log.ts).toISOString()
+			const origin = log.origin ?? ""
+			const source = log.source ?? ""
+			const level = log.level ?? ""
 
-		return [time, origin, source, level, args]
-	})
+			let args
+			if (!log.args) {
+				args = ""
+			} else if (Array.isArray(log.args) && log.args?.length) {
+				args = log.args.map(formatArg).filter(Boolean).join(", ")
+			} else {
+				args = formatArg(log.args)
+			}
 
-	const csvContent = [
-		["time", "origin", "source", "level", "args"],
-		...rows
-	].map(row =>
-		row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
-	).join("\n")
+			return [time, origin, source, level, args]
+		})
 
-	const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-	const url = URL.createObjectURL(blob)
+		const csvContent = [
+			["time", "origin", "source", "level", "args"],
+			...rows
+		].map(row =>
+			row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
+		).join("\n")
 
-	const link = document.createElement("a")
-	link.setAttribute("href", url)
-	link.setAttribute("download", `AzguardWalletLogs_${new Date(Date.now()).toISOString()}.csv`)
-	link.style.display = "none"
-	document.body.appendChild(link)
-	link.click()
-	document.body.removeChild(link)
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+		const url = URL.createObjectURL(blob)
 
-	URL.revokeObjectURL(url)
+		const link = document.createElement("a")
+		link.setAttribute("href", url)
+		link.setAttribute("download", `AzguardWalletLogs_${new Date(Date.now()).toISOString()}.csv`)
+		link.style.display = "none"
+		document.body.appendChild(link)
+		link.click()
+		document.body.removeChild(link)
 
-	isDownloaded.value = true
-	openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
-	setTimeout(() => {
-		isDownloaded.value = false
-	}, 1_500)
-}
+		URL.revokeObjectURL(url)
 
-watch(
-	() => selectedLevels.value,
-	() => {
-		updateEditorContent()
+		openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
+	} catch (err) {
+		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
+		console.error(err);
 	}
-)
+}
+async function handleClearLogs() {
+	try {
+		loggerService.onLogAdded = null
+		await loggerService.clearLogs()
+		loggerService.onLogAdded = onLogAdded
+
+		logs.value = []
+		await nextTick()
+		updateEditorContent()
+	} catch (err) {
+		openToast({ label: "Failed to clear logs", icon: "warning" }, 2_000)
+		console.error(err);
+	}
+}
 
 onMounted(async () => {
 	await nextTick()
@@ -333,39 +405,95 @@ onBeforeUnmount(() => {
 <template>
 	<div :class="$style.wrapper">
 		<Flex align="center" gap="12" :class="$style.actions">
-			<Flex
-				v-for="level in defLevels"
-				@click="handleSelectlevel(level)"
-				align="center"
-				gap="6"
-				:class="[$style.filter_btn, $style[level.toLowerCase()], !selectedLevels.includes(level) && $style.inactive]"
+			<Popover
+				v-for="p in Object.keys(popovers)"
+				:open="popovers[p]"
+				@on-close="onPopoverClose(p)"
+				side="left"
+				:width="p === 'source' ? '160' : '136'"
 			>
-				<Icon
-					:name="selectedLevels.includes(level) ? 'check-circle' : 'circle'"
-					size="12"
-				/>
+				<Flex @click="handleOpenPopover(p)" align="center" gap="4" :class="[$style.filter_button, !allOptionsSelected[p] && $style.filter_button_active]">
+					<Icon
+						:name="allOptionsSelected[p] ? 'filter-outline' : 'filter'"
+						size="14"
+					/>
+					
+					<Text size="12"> {{ capitalize(p) }} </Text>
+				</Flex>
 
-				<Text size="12">
-					{{ capitalize(level.toLowerCase()) }}
-				</Text>
-			</Flex>
+				<template #content>
+					<Flex direction="column" gap="4" :class="$style.filter_content_wrapper">
+						<Flex direction="column" gap="8" wide :class="$style.filter_content_title">
+							<Text size="12" color="tertiary"> {{ `Filter by log ${p}` }} </Text>
 
-			<Flex :class="$style.action_btn">
-				<Icon
-					v-if="!isDownloaded"
-					@click="exportLogsToCSV"
-					name="download-outline"
-					size="12"
-					color="secondary"
-					:class="$style.download_btn"
-				/>
-				<Icon
-					v-else
-					name="check"
-					size="12"
-					color="green"
-				/>
-			</Flex>
+							<Input v-if="p === 'source'" v-model="searchTerm" size="mini" placeholder="Search" autofocus :class="$style.filter_content_input" />
+						</Flex>
+						<Flex align="start" direction="column" gap="4" :class="p === 'source' && $style.filter_items_wrapper">
+							<Flex
+								v-if="!searchTerm"
+								@click="handleSelectAll(p)"
+								align="center"
+								justify="start"
+								gap="8"
+								wide
+								:class="$style.filter_content_item"
+							>
+								<Icon :name="allOptionsSelected[p] ? 'check-circle' : 'circle'" size="12" />
+								<Text size="12"> Select All </Text>
+							</Flex>
+
+							<Flex
+								v-if="p === 'source' ? Object.keys(filters[p])?.filter(s => s.includes(searchTerm?.toLowerCase()))?.length : Object.keys(filters[p])?.length"
+								v-for="k in p === 'source' ? Object.keys(filters[p])?.filter(s => s.includes(searchTerm?.toLowerCase())) : Object.keys(filters[p])"
+								@click="updateFilter(p, k)"
+								align="center"
+								gap="8"
+								wide
+								:class="[$style.filter_content_item, !filters[p][k] && $style.inactive]"
+							>
+								<Icon
+									:name="filters[p][k] ? 'check-circle' : 'circle'"
+									size="12"
+								/>
+
+								<Text size="12">
+									{{ getDisplayName(p, k) }}
+								</Text>
+							</Flex>
+							<Flex v-else align="center" justify="center" wide :class="$style.empty_content">
+								<Text size="12" weight="500" color="tertiary">Nothing was found</Text>
+							</Flex>
+						</Flex>
+					</Flex>
+				</template>
+			</Popover>
+
+			<Dropdown>
+				<Flex align="center" gap="4" :class="$style.filter_button">
+					<Icon
+						name="dots"
+						size="14"
+					/>
+				</Flex>
+
+				<template #popup>
+					<DropdownItem @click="exportLogsToCSV" :class="$style.filter_content_item">
+						<Flex align="center" gap="8">
+							<Icon
+								name="download-outline"
+								size="12"
+							/>
+							<Text size="12">Export logs to CSV</Text>
+						</Flex>
+					</DropdownItem>
+					<DropdownItem @click="handleClearLogs" :class="$style.filter_content_item">
+						<Flex align="center" gap="6">
+							<Icon name="close" size="14" style="padding-right: 4px;" />
+							Clear logs
+						</Flex>
+					</DropdownItem>
+				</template>
+			</Dropdown>
 		</Flex>
 
 		<Flex
@@ -407,70 +535,90 @@ onBeforeUnmount(() => {
 	z-index: 1;
 }
 
-.filter_btn {
-	padding: 4px 8px;
-	background-color: var(--card-bg);
-	border: 1.5px solid var(--border);
-	border-radius: 4px;
-	box-shadow: 0 1px 2px var(--shadow-5);
+.filter_button {
+	padding: 6px 8px;
+	background-color: var(--dropdown-bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
 
 	color: var(--txt-secondary);
 	fill: var(--txt-secondary);
 
 	cursor: pointer;
 
-	transition: all 0.2s ease;
+	transition: all 0.1s ease;
 
 	&:hover {
-		background: var(--dropdown-bg);
 		border-color: var(--txt-tertiary);
-		filter: brightness(1);
+		
 		* {
 			color: var(--txt-primary);
 			fill: var(--txt-primary);
 		}
 	}
-
-	&:active {
-		transform: scale(0.95);
-	}
 }
 
-.warn {
-	background-color: var(--log-warn-background);
-	color: var(--log-warn-color);
+.filter_button_active {
+	fill: var(--blue);
 
 	&:hover {
-		background: var(--log-warn-background);
-		border-color: var(--log-warn-color);
-		filter: brightness(1);
 		* {
-			background-color: var(--log-warn-background);
-			color: var(--log-warn-color);
+			fill: var(--blue);
 		}
+		
 	}
-
 }
 
-.error {
-	background-color: var(--log-error-background);
-	color: var(--log-error-color);
+.filter_content_wrapper {
+	padding: 2px 8px 0 8px;
+	min-height: 0;
+	flex: 1;
+}
+
+.filter_content_title {
+	border-bottom: 1.5px solid var(--border);
+	padding-bottom: 8px;
+}
+
+.filter_items_wrapper {
+	flex: 1;
+
+	min-height: 0;
+	max-height: 200px;
+
+	overflow-y: scroll;
+	scrollbar-width: thin;
+	scrollbar-color: var(--txt-tertiary) transparent;
+}
+
+.filter_content_item {
+	padding: 6px 8px;
+	background-color: var(--dropdown-bg);
+	border-radius: 4px;
+
+	color: var(--txt-secondary);
+	fill: var(--txt-secondary);
+
+	cursor: pointer;
+
+	transition: all 0.1s ease;
 
 	&:hover {
-		background: var(--log-error-background);
-		border-color: var(--log-error-color);
-		filter: brightness(1);
+		background: var(--gray-5);
 		* {
-			background-color: var(--log-error-background);
-			color: var(--log-error-color);
+			color: var(--txt-primary);
+			fill: var(--txt-primary);
 		}
 	}
 }
 
 .inactive {
-	filter: brightness(var(--log-inactive-filter));
 	color: var(--txt-tertiary);
 	fill: var(--txt-tertiary);
+}
+
+.empty_content {
+	padding: 6px 0;
 }
 
 .action_btn {

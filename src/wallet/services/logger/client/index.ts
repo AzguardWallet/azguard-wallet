@@ -86,7 +86,7 @@ export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
     /**
      * Clear in memory logs.
      */
-    public clearLogs(): Promise<LogEntity[]> {
-        return this.request(new ClearLogsRequest());
+    public clearLogs(): void {
+        this.request(new ClearLogsRequest());
     }
 }

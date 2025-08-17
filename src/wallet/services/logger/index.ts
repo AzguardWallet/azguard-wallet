@@ -5,6 +5,8 @@ import {
     AddLogResponse,
     type GetLogsRequest,
     GetLogsResponse,
+    type ClearLogsRequest,
+    ClearLogsResponse,
     type ILogs,
     LOGGER_SERVICE_NAME,
     type LogEntity,
@@ -46,6 +48,15 @@ export class LoggerService extends Service {
                     return new AddLogResponse(_request);
                 } catch (error: any) {
                     return new AddLogResponse(_request, error.message);
+                }
+            }
+            case LoggerServiceMethod.ClearLogs: {
+                const _request = request as ClearLogsRequest;
+                try {
+                    this.clearLogs();
+                    return new ClearLogsResponse(_request);
+                } catch (error: any) {
+                    return new ClearLogsResponse(_request, error.message);
                 }
             }
             default: {

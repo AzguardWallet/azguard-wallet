@@ -31,6 +31,7 @@ declare module 'vue' {
     LogsViewer: typeof import('./../components/ui/JsonViewer/LogsViewer.vue')['default']
     NotificationManager: typeof import('./../components/ui/NotificationManager.vue')['default']
     PageHeader: typeof import('./../components/ui/Settings/PageHeader.vue')['default']
+    Popover: typeof import('./../components/ui/Popover.vue')['default']
     Popup: typeof import('./../components/ui/Popup/Popup.vue')['default']
     PopupCard: typeof import('./../components/ui/Popup/PopupCard.vue')['default']
     PopupHeader: typeof import('./../components/ui/Popup/PopupHeader.vue')['default']

@@ -47,7 +47,7 @@ export class AddLogResponse extends ResponseMessage {
 
 export class ClearLogsRequest extends RequestMessage {
     constructor() {
-        super(LOGGER_SERVICE_NAME, LoggerServiceMethod.AddLog);
+        super(LOGGER_SERVICE_NAME, LoggerServiceMethod.ClearLogs);
     }
 }
 

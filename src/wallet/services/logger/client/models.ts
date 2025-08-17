@@ -111,7 +111,7 @@ export class InMemoryLogs implements ILogs {
 		}
 	}
 
-	clear(): void {
-		this.clear();
+	async clear(): Promise<void> {
+		this.logs.clear();
 	}
 }
