@@ -34,23 +34,24 @@ import type { Network } from "@/wallet/services/network/client";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { Lock } from "@/wallet/utils";
 import {
-    type GetContractClassMetadataParams,
-    type GetContractMetadataParams, 
-    type GetContractsParams,
-    type GetCurrentBaseFeesParams,
-    type GetNodeInfoParams,
-    type GetNotesParams,
-    type GetPXEInfoParams,
-    type GetSendersParams,
-    type GetRegisteredAccountsParams,
-    type ProveTxParams,
-    type RegisterAccountParams,
-    type RegisterContractParams,
-    type RegisterSenderParams,
-    type RemoveSenderParams,
-    type SendTxParams,
-    type SimulateTxParams,
-    type SimulateUtilityParams,
+    GetContractClassMetadataParams,
+    GetContractMetadataParams, 
+    GetContractsParams,
+    GetCurrentBaseFeesParams,
+    GetNodeInfoParams,
+    GetNotesParams,
+    GetPXEInfoParams,
+    GetPublicStorageAtParams,
+    GetSendersParams,
+    GetRegisteredAccountsParams,
+    ProveTxParams,
+    RegisterAccountParams,
+    RegisterContractParams,
+    RegisterSenderParams,
+    RemoveSenderParams,
+    SendTxParams,
+    SimulateTxParams,
+    SimulateUtilityParams,
     PXE_SERVICE_NAME,
     PxeServiceMethod,
     type UpdateContractParams,
@@ -116,6 +117,14 @@ export class PxeService extends Service<PxeServiceMethod, void> {
                 const { network } = params as GetPXEInfoParams;
                 const pxe = await this.getPxeClient(network);
                 return await pxe.getPXEInfo();
+            }
+            case PxeServiceMethod.GetPublicStorageAt: {
+                const { network, contract, slot } = params as GetPublicStorageAtParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getPublicStorageAt(
+                    await AztecAddress.schema.parseAsync(contract),
+                    await Fr.schema.parseAsync(slot),
+                );
             }
             case PxeServiceMethod.GetSenders: {
                 const { network } = params as GetSendersParams;

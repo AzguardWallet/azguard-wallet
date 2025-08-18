@@ -2,6 +2,7 @@ import { expect, test, vi, beforeEach, afterEach, describe } from "vitest";
 import { TaskService, TASK_RETENTION_PERIOD_MS } from "../index";
 import { StepContent, TaskStatus, ContentKind, Task, EmptyResult, ITaskResult, ResultKind } from "../client/models";
 import { TaskServiceEvent } from "../client/events";
+import { InMemoryLogs } from "@/wallet/services/logger/client";
 import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 import { ProfileService } from "@/wallet/services/profile";
 import { InMemoryLogs } from "@/wallet/services/logger/client";

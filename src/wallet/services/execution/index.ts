@@ -33,11 +33,11 @@ import { Service } from "@/wallet/base/port-service/service";
 import type { NetworkService } from "@/wallet/services/network";
 import type { Network } from "@/wallet/services/network/client";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
-import type { AccountService } from "@/wallet/services/account";
-import { AzguardFunctionCall, type IAccountContract } from "@/wallet/services/account/contracts";
-import type { ProfileService } from "@/wallet/services/profile";
-import type { AccountStateService } from "@/wallet/services/account-state";
-import type { TokenService } from "@/wallet/services/token";
+import { AccountService } from "@/wallet/services/account";
+import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
+import { ProfileService } from "@/wallet/services/profile";
+import { AuthRegistryService } from "@/wallet/services/auth-registry";
+import { TokenService } from "@/wallet/services/token";
 import {
     TransferPrivateFn,
     TransferPrivateToPublicFn,
@@ -113,7 +113,7 @@ export class ExecutionService extends Service {
         private readonly tokenService: TokenService,
         private readonly fpcService: FpcService,
         private readonly transactionService: TransactionService,
-        private readonly accountStateService: AccountStateService,
+        private readonly authRegistryService: AuthRegistryService,
         private readonly taskService: TaskService,
         public readonly logger: ILogs,
         emit: (event: EventMessage) => void,
@@ -312,8 +312,7 @@ export class ExecutionService extends Service {
             return tx.hash;
         }
         catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Transfer failed";
-            transferTask.fail(errorMessage);
+            transferTask.fail(error);
             throw error;
         }
     }
@@ -373,9 +372,8 @@ export class ExecutionService extends Service {
                 results.push(new OkOperationResult(result));
             }
             catch (error) {
-                const errorMessage = (error as Error)?.message ?? error as string ?? "Unknown error";
-                operationTask.fail(errorMessage);
-                results.push(new FailedOperationResult(errorMessage));
+                operationTask.fail(error);
+                results.push(new FailedOperationResult((error as Error)?.message ?? error as string ?? "Unknown error"));
             }
         }
         return results;
@@ -606,8 +604,7 @@ export class ExecutionService extends Service {
                 }
             }
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Fee estimation failed";
-            feeSetupTask.fail(errorMessage);
+            feeSetupTask.fail(error);
             throw error;
         }
     }
@@ -1004,8 +1001,7 @@ export class ExecutionService extends Service {
             txRequest = await account.buildTxExecutionRequest(pxe, setup, isFeePayer, calls, args, nonce, authwits, capsules);
             processingTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction processing failed";
-            processingTask.fail(errorMessage);
+            processingTask.fail(error);
             throw error;
         }
 
@@ -1046,33 +1042,21 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
                             messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
-                            // await this.accountStateService.addCallAuthwit(
-                            //     account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, false,
-                            // );
                             break;
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
                             messageHash = await this.getEncodedCallMessageHash(_content, nodeInfo, instances, artifacts);
-                            // await this.accountStateService.addCallAuthwit(
-                            //     account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, false,
-                            // );
                             break;
                         }
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
                             messageHash = await this.getIntentMessageHash(_content, nodeInfo);
-                            // await this.accountStateService.addIntentAuthwit(
-                            //     account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, false,
-                            // );
                             break;
                         }
                         case AuthwitContentKind.MessageHash: {
                             const _content = _action.content as MessageHashAuthwitContent;
                             messageHash = Fr.fromString(_content.messageHash);
-                            // await this.accountStateService.addAuthwit(
-                            //     account.address.toString(), messageHash.toString(), false,
-                            // );
                             break;
                         }
                         default: {
@@ -1098,32 +1082,32 @@ export class ExecutionService extends Service {
                         case AuthwitContentKind.Call: {
                             const _content = _action.content as CallAuthwitContent;
                             messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
-                            await this.accountStateService.addCallAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.caller, _content.contract, _content.method, _content.args, true,
+                            await this.authRegistryService.trackAuthwit(
+                                account.address.toString(), messageHash.toString(), _content,
                             );
                             break;
                         }
                         case AuthwitContentKind.EncodedCall: {
                             const _content = _action.content as EncodedCallAuthwitContent;
                             messageHash = await this.getEncodedCallMessageHash(_content, nodeInfo, instances, artifacts);
-                            await this.accountStateService.addCallAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.caller, _content.to, _content.selector, _content.args, true,
+                            await this.authRegistryService.trackAuthwit(
+                                account.address.toString(), messageHash.toString(), _content,
                             );
                             break;
                         }
                         case AuthwitContentKind.Intent: {
                             const _content = _action.content as IntentAuthwitContent;
                             messageHash = await this.getIntentMessageHash(_content, nodeInfo);
-                            await this.accountStateService.addIntentAuthwit(
-                                account.address.toString(), messageHash.toString(), _content.consumer, _content.intent, true,
+                            await this.authRegistryService.trackAuthwit(
+                                account.address.toString(), messageHash.toString(), _content,
                             );
                             break;
                         }
                         case AuthwitContentKind.MessageHash: {
                             const _content = _action.content as MessageHashAuthwitContent;
                             messageHash = Fr.fromString(_content.messageHash);
-                            await this.accountStateService.addAuthwit(
-                                account.address.toString(), messageHash.toString(), true,
+                            await this.authRegistryService.trackAuthwit(
+                                account.address.toString(), messageHash.toString(), _content,
                             );
                             break;
                         }
@@ -1274,8 +1258,7 @@ export class ExecutionService extends Service {
             );
             simulationTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Simulation failed";
-            simulationTask.fail(errorMessage);
+            simulationTask.fail(error);
             throw error;
         }
         return simulatedTx;
@@ -1299,8 +1282,7 @@ export class ExecutionService extends Service {
             provedTx = await pxe.proveTx(txRequest, privateExecutionResult);
             provingTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Proof generation failed";
-            provingTask.fail(errorMessage);
+            provingTask.fail(error);
             throw error;
         }
         return provedTx;
@@ -1323,8 +1305,7 @@ export class ExecutionService extends Service {
             txHash = await pxe.sendTx(tx);
             sendingTask.complete();
         } catch (error) {
-            const errorMessage = (error as Error)?.message ?? error as string ?? "Transaction sending failed";
-            sendingTask.fail(errorMessage);
+            sendingTask.fail(error);
             throw error;
         }
         return txHash;

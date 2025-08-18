@@ -1,4 +1,4 @@
-import type { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/fields";
 import type { ContractArtifact } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -14,6 +14,7 @@ import type { ContractClassMetadata, ContractMetadata, PXE, PXEInfo } from "@azt
 import { type NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
     type PrivateExecutionResult,
+    SimulationOverrides,
     type Tx,
     type TxExecutionRequest,
     TxHash,
@@ -90,6 +91,12 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
         await ensureOffscreenRunning();
         const result = await this.request(PxeServiceMethod.GetPXEInfo, { network });
         return await PXEInfoSchema.parseAsync(result);
+    }
+
+    public async getPublicStorageAt(network: Network, contract: AztecAddress, slot: Fr): Promise<Fr> {
+        await ensureOffscreenRunning();
+        const result = await this.request(PxeServiceMethod.GetPublicStorageAt, { network, contract, slot });
+        return await Fr.schema.parseAsync(result);
     }
 
     public async getSenders(network: Network): Promise<AztecAddress[]> {

@@ -12,6 +12,7 @@ import { ExecutionService } from "./services/execution";
 import { FaucetService } from "./services/faucet";
 import { FpcService } from "./services/fpc";
 import { AccountStateService } from "./services/account-state";
+import { AuthRegistryService } from "./services/auth-registry";
 import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
@@ -81,6 +82,13 @@ const transactionService = new TransactionService(
     broadcast,
 );
 const accountStateService = new AccountStateService(networkService, logs, broadcast);
+const authRegistryService = new AuthRegistryService(
+    networkService,
+    taskService,
+    transactionService,
+    logs,
+    broadcast,
+);
 const executionService = new ExecutionService(
     profileService,
     networkService,
@@ -88,11 +96,12 @@ const executionService = new ExecutionService(
     tokenService,
     fpcService,
     transactionService,
-    accountStateService,
+    authRegistryService,
     taskService,
     logs,
     broadcast
 );
+authRegistryService.executionService = executionService; // TODO: implement DI
 const tokenBalanceService = new TokenBalanceService(
     profileService,
     networkService,
@@ -152,6 +161,7 @@ const services = new Map<string, Service>([
     [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
     [accountStateService.name, accountStateService],
+    [authRegistryService.name, authRegistryService],
     [taskService.name, taskService],
     [loggerService.name, loggerService],
     [settingService.name, settingService]
