@@ -2,6 +2,7 @@ import { expect, test, vi, beforeEach, afterEach, describe } from "vitest";
 import { TaskService, TASK_RETENTION_PERIOD_MS } from "../index";
 import { StepContent, TaskStatus, ContentKind, Task, EmptyResult, ITaskResult, ResultKind } from "../client/models";
 import { TaskServiceEvent } from "../client/events";
+import { InMemoryLogs } from "@/wallet/services/logger/client";
 import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 import { ProfileService } from "@/wallet/services/profile";
 
@@ -15,7 +16,8 @@ const createTestSetup = () => {
     const profileMock = {
         onActiveProfileChanged: [] as ((id?: string) => void)[],
     } as unknown as ProfileService;
-    const service = new TaskService(profileMock, emitMock);
+    const logs = new InMemoryLogs();
+    const service = new TaskService(profileMock, logs, emitMock);
 
     const switchToProfile = (id?: string) => {
         profileMock.onActiveProfileChanged.forEach(cb => cb(id));

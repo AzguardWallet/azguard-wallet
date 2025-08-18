@@ -293,7 +293,7 @@ export class TokenService extends Service {
 			task.complete();
 			return result;
 		} catch (error) {
-			task.fail((error as Error)?.message ?? error as string ?? "Failed to add token");
+			task.fail(error);
 			throw error;
 		}
 		finally {
@@ -345,7 +345,7 @@ export class TokenService extends Service {
 			task.complete();
 			return result;
 		} catch (error) {
-			task.fail((error as Error)?.message ?? error as string ?? "Failed to update token");
+			task.fail(error);
 			throw error;
 		}
 		finally {
@@ -570,7 +570,7 @@ export class TokenService extends Service {
 			task.complete();
 			return result;
 		} catch (error) {
-			task.fail((error as Error)?.message ?? error as string ?? "Failed to parse token interface");
+			task.fail(error);
 			throw error;
 		}
 	}

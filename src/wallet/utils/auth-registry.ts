@@ -1,38 +1,58 @@
-import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/constants"
-import { FunctionAbi, FunctionSelector } from "@aztec/stdlib/abi"
-import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { PXE } from "@aztec/stdlib/interfaces/client"
+import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/constants";
+import { Fr } from "@aztec/foundation/fields";
+import { AuthRegistryContract } from "@aztec/noir-contracts.js/AuthRegistry";
+import { FunctionAbi, FunctionSelector } from "@aztec/stdlib/abi";
+import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { deriveStorageSlotInMap } from "@aztec/stdlib/hash";
+import { PXE } from "@aztec/stdlib/interfaces/client";
 
-export const getAuthRegistryAddress = () => AztecAddress.fromNumber(CANONICAL_AUTH_REGISTRY_ADDRESS)
+export const getAuthRegistryAddress = () => AztecAddress.fromNumber(CANONICAL_AUTH_REGISTRY_ADDRESS);
 
-export const getSetAuthorizedFn = () => ({
-	name: "set_authorized",
-	functionType: "public",
-	isInternal: false,
-	isStatic: false,
-	isInitializer: false,
-	parameters: [
-		{
-			name: "message_hash",
-			type: { kind: "field" },
-			visibility: "private",
-		},
-		{
-			name: "authorize",
-			type: { kind: "boolean" },
-			visibility: "private",
-		},
-	],
-	returnTypes: [],
-	errorTypes: {},
-} as FunctionAbi)
+export const getSetAuthorizedFn = () =>
+    ({
+        name: "set_authorized",
+        functionType: "public",
+        isInternal: false,
+        isStatic: false,
+        isInitializer: false,
+        parameters: [
+            {
+                name: "message_hash",
+                type: { kind: "field" },
+                visibility: "private",
+            },
+            {
+                name: "authorize",
+                type: { kind: "boolean" },
+                visibility: "private",
+            },
+        ],
+        returnTypes: [],
+        errorTypes: {},
+    } as FunctionAbi);
 
 export const getSetAuthorizedSelector = async () => {
-	const fn = getSetAuthorizedFn()
-	return await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)
-}
+    const fn = getSetAuthorizedFn();
+    return await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
+};
 
-export const isPublicAuthwitConsumable = async (pxe: PXE, owner: string, message_hash: string) => {
-    const { result } = await pxe.simulateUtility("utility_is_consumable", [owner, message_hash], getAuthRegistryAddress());
-    return result == true;
-}
+export const isAuthwitConsumable = async (pxe: PXE, account: string, message_hash: string) => {
+    const slot = await deriveStorageSlotInMap(
+        await deriveStorageSlotInMap(
+            AuthRegistryContract.storage.approved_actions.slot,
+            AztecAddress.fromString(account),
+        ),
+        Fr.fromString(message_hash),
+    );
+    const approved = await pxe.getPublicStorageAt(getAuthRegistryAddress(), slot);
+    return !approved.isZero();
+};
+
+export const isAuthRegistryEnabled = async (pxe: PXE, account: string) => {
+    const slot = await deriveStorageSlotInMap(
+        AuthRegistryContract.storage.reject_all.slot,
+        AztecAddress.fromString(account),
+    );
+    const rejectAll = await pxe.getPublicStorageAt(getAuthRegistryAddress(), slot);
+    return rejectAll.isZero();
+};

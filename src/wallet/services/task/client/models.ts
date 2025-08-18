@@ -29,6 +29,7 @@ export enum ContentKind {
     TokenMint,
     ExecuteOperation,
     Transfer,
+    RevokeAuthwits,
 }
 
 export interface ITaskContent {
@@ -82,6 +83,15 @@ export class TransferContent implements ITaskContent {
         public readonly transferType: TransferType,
         public readonly recipientAddress: string,
         public readonly amount: bigint,
+    ) {}
+}
+
+export class RevokeAuthwitsContent implements ITaskContent {
+    public readonly kind = ContentKind.RevokeAuthwits;
+    public readonly label = "Revoke public authwits";
+    constructor(
+        public readonly authwitIds: number[],
+        public readonly estimatedTime?: number,
     ) {}
 }
 
