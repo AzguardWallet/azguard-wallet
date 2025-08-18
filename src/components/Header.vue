@@ -1,6 +1,7 @@
 <script setup>
 /** Utils */
 import { getChainName } from "@/components/ui/utils.js"
+import { LoggerServiceClient } from "@/wallet/services/logger/client"
 
 /** Composables */
 import { useSettings } from "@/composables/settings.js"
@@ -12,10 +13,62 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
+const indicateWalletActivity = computed(() => settings.value?.developer?.indicateWalletActivity)
+const highlightColor = ref("")
+const isLogsHighlighted = ref(false)
+const INDICATION_DURATION = 5_000
+let highlightTimer = null
+let loggerService = null
+
+function setHighlightColor(color) {
+	if (highlightTimer) {
+		clearTimeout(highlightTimer)
+		highlightTimer = null
+	}
+
+	highlightColor.value = color
+	isLogsHighlighted.value = true
+
+	highlightTimer = setTimeout(() => {
+		isLogsHighlighted.value = false
+		highlightTimer = null
+	}, INDICATION_DURATION)
+}
+function onLogAdded(log) {
+	switch (log.level.toUpperCase()) {
+		case "WARN":
+			setHighlightColor("var(--yellow)")
+			break;
+		case "ERROR":
+			setHighlightColor("var(--red)")
+			break;
+
+		default:
+			break;
+	}
+}
+
 const handleOpenPopup = target => {
 	if (!appStore.isLogined) return
 	popupStore.open(target)
 }
+
+watch(
+	() => indicateWalletActivity.value,
+	() => {
+		if (!indicateWalletActivity.value && loggerService) {
+			loggerService.dispose()
+		} else if (indicateWalletActivity.value) {
+			loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
+		}
+	}
+)
+
+onMounted(() => {
+	if (indicateWalletActivity.value) {
+		loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
+	}
+})
 </script>
 
 <template>
@@ -25,9 +78,15 @@ const handleOpenPopup = target => {
 			@click="handleOpenPopup('menu')"
 			align="center"
 			justify="center"
-			:class="[$style.button, !appStore.isLogined && $style.disabled]"
+			:class="[
+				$style.button,
+				$style.logs_indicator,
+				isLogsHighlighted && $style['logs_indicator--visible'],
+				!appStore.isLogined && $style.disabled
+			]"
+			:style="highlightColor ? { '--highlight-color': highlightColor } : {}"
 		>
-			<Icon name="user" size="14" color="primary" />
+			<Icon name="logo" size="14" color="primary" />
 		</Flex>
 
 		<Flex align="center" gap="8">
@@ -117,6 +176,42 @@ const handleOpenPopup = target => {
 	&.disabled {
 		opacity: 0.5;
 		pointer-events: none;
+	}
+}
+
+.logs_indicator::before {
+	content: "";
+	position: absolute;
+	top: -2px;
+	left: -2px;
+	right: -2px;
+	bottom: -2px;
+	z-index: -1;
+
+	border-radius: 50%;
+	background: radial-gradient(
+		circle,
+		transparent 40%,
+		var(--highlight-color) 80%,
+		transparent 100%
+	);
+
+	opacity: 0;
+	transition: opacity 1s ease;
+	animation: pulse 2.5s infinite ease-in-out;
+}
+
+.logs_indicator--visible::before {
+	opacity: 1;
+}
+
+@keyframes pulse {
+	0%, 100% {
+		filter: brightness(0.7);
+	}
+
+	50% {
+		filter: brightness(1.1);
 	}
 }
 

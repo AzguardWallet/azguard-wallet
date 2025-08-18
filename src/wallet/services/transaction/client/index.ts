@@ -1,7 +1,8 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { TransactionServiceEvent, TransactionServiceEventMessage } from "./events";
-import { Tx } from "./models";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { TransactionServiceEvent, type TransactionServiceEventMessage } from "./events";
+import type { Tx } from "./models";
 import {
     GetTransactionRequest,
     GetTransactionsRequest,
@@ -18,7 +19,7 @@ export const TRANSACTION_SERVICE_NAME = "transaction";
  */
 export class TransactionServiceClient extends ServiceClient {
     /**
-     * Creates TransactionServiceClient instace.
+     * Creates TransactionServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onTransactionAdded Callback, called when a new transaction was created.
@@ -32,7 +33,7 @@ export class TransactionServiceClient extends ServiceClient {
         private readonly onTransactionUpdated?: (tx: Tx) => void,
         private readonly onTransactionDeleted?: (tx: Tx) => void,
     ) {
-        super(TRANSACTION_SERVICE_NAME, onConnected, onDisconnected);
+        super(TRANSACTION_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -56,7 +57,7 @@ export class TransactionServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

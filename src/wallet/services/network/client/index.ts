@@ -1,7 +1,8 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { NetworkServiceEvent, NetworkServiceEventMessage } from "./events";
-import { Network, NodeStatus } from "./models";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { NetworkServiceEvent, type NetworkServiceEventMessage } from "./events";
+import type { Network, NodeStatus } from "./models";
 import {
     AddNetworkRequest,
     DeleteNetworkRequest,
@@ -24,7 +25,7 @@ export const NETWORK_SERVICE_NAME = "network";
  */
 export class NetworkServiceClient extends ServiceClient {
     /**
-     * Creates NetworkServiceClient instace.
+     * Creates NetworkServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onNetworkAdded Callback, called when a new network was created.
@@ -40,7 +41,7 @@ export class NetworkServiceClient extends ServiceClient {
         private readonly onNetworkDeleted?: (network: Network) => void,
         private readonly onDefaultNetworkChanged?: (network: Network) => void,
     ) {
-        super(NETWORK_SERVICE_NAME, onConnected, onDisconnected);
+        super(NETWORK_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -70,7 +71,7 @@ export class NetworkServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

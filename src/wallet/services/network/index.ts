@@ -1,31 +1,32 @@
-import { AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
-import { ProfileService } from "@/wallet/services/profile";
+import type { ProfileService } from "@/wallet/services/profile";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
-	AddNetworkRequest,
+	type AddNetworkRequest,
 	AddNetworkResponse,
-	DeleteNetworkRequest,
+	type DeleteNetworkRequest,
 	DeleteNetworkResponse,
-	GetNetworkRequest,
+	type GetNetworkRequest,
 	GetNetworkResponse,
-	GetNetworksRequest,
+	type GetNetworksRequest,
 	GetNetworksResponse,
 	Network,
 	NETWORK_SERVICE_NAME,
 	NetworkServiceEvent,
 	NetworkServiceEventMessage,
 	NetworkServiceMethod,
-	GetNodeStatusRequest,
+	type GetNodeStatusRequest,
 	GetNodeStatusResponse,
-	SetDefaultRequest,
+	type SetDefaultRequest,
 	SetDefaultResponse,
-	UpdateNetworkRequest,
+	type UpdateNetworkRequest,
 	UpdateNetworkResponse,
 	NodeStatus,
-	GetOrInitNetworksRequest,
+	type GetOrInitNetworksRequest,
 	GetOrInitNetworksResponse,
 } from "./client";
 
@@ -45,9 +46,10 @@ export class NetworkService extends Service {
 
 	public constructor(
 		private readonly profiles: ProfileService,
+		public readonly logger: ILogs,
 		emit: (event: EventMessage) => void
 	) {
-		super(NETWORK_SERVICE_NAME, emit);
+		super(NETWORK_SERVICE_NAME, logger, emit);
 		this.storage = new EntityStorage("azguard:core:networks", StorageType.Local);
 		this.profiles.onActiveProfileChanged.push(this.onActiveProfileChanged);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
@@ -130,7 +132,7 @@ export class NetworkService extends Service {
 				}
 			}
 			default: {
-				console.error(`Invalid request method ${request.method}.`);
+				this.logError(`Invalid request method ${request.method}.`);
 				return undefined;
 			}
 		}
@@ -149,7 +151,7 @@ export class NetworkService extends Service {
 				return networks.map(([id, network]) => this.makeNetwork(id, network));
 			}
 			
-			let defaultNetworks = [];
+			const defaultNetworks = [];
 			try {
 				const name = "Azguard Node";
 				const rpcUrl = "https://node.testnet.azguardwallet.io";
@@ -157,7 +159,7 @@ export class NetworkService extends Service {
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
 			}
 			catch (error) {
-				console.error("Failed to add 'Azguard Node'", error);
+				this.logError("Failed to add 'Azguard Node'", error);
 			}
 			try {
 				const name = "Aztec Node";
@@ -166,7 +168,7 @@ export class NetworkService extends Service {
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
 			}
 			catch (error) {
-				console.error("Failed to add 'Aztec Node'", error);
+				this.logError("Failed to add 'Aztec Node'", error);
 			}
 			try {
 				const name = "Sandbox";
@@ -175,7 +177,7 @@ export class NetworkService extends Service {
 				defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
 			}
 			catch (error) {
-				console.error("Failed to add 'Sandbox'", error);
+				this.logError("Failed to add 'Sandbox'", error);
 			}
 			for (const network of defaultNetworks) {
 				this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.DefaultNetworkChanged, network));
@@ -383,7 +385,7 @@ export class NetworkService extends Service {
 			const rpc = createAztecNodeClient(rpcUrl);
 			return (await rpc.getNodeInfo()).l1ChainId;
 		} catch (error) {
-			console.error(error);
+			this.logError("Failed to fetch node info", error);
 			throw new Error("Failed to fetch node info");
 		}
 	}
@@ -412,13 +414,13 @@ export class NetworkService extends Service {
 
     private readonly onProfileDeleted = async (profileId: string) => {
 		await this.ensureInitialized();
-        console.debug(`profile ${profileId} deleted, remove related networks`);
+		this.logDebug(`Profile ${profileId} deleted, remove related networks`);
         try {
 			await this.lock.enter();
             this.nodes.clear();
 			const networks = (await this.storage.getAll()).filter(([_, network]) => network.profileId === profileId);
 			for (const [id, network] of networks) {
-				console.debug(`remove network #${id}`);
+				this.logDebug(`Remove network #${id}`);
 				await this.storage.delete(id);
 				this.emit(new NetworkServiceEventMessage(NetworkServiceEvent.NetworkDeleted, this.makeNetwork(id, network)));
 			}
@@ -428,9 +430,9 @@ export class NetworkService extends Service {
     }
 
 	private async initialize(): Promise<void> {
-		console.debug("Initialize");
+		this.logDebug("Initialize");
 		await this.checkMigrations();
-		console.debug("Initialized");
+		this.logDebug("Initialized");
 		this.init = null;
 	}
 
@@ -442,10 +444,10 @@ export class NetworkService extends Service {
 
 	private async checkMigrations(): Promise<void> {
 		try {
-			console.debug("Check storage migrations");
+			this.logDebug("Check storage migrations");
 			switch (await this.storage.getVersion()) {
 				case 1: {
-					console.debug("No migrations needed");
+					this.logDebug("No migrations needed");
 					break;
 				}
 				default: {
@@ -455,14 +457,14 @@ export class NetworkService extends Service {
 			}
 		}
 		catch (error: unknown) {
-			console.error("Failed to migrate storage", error);
+			this.logError("Failed to migrate storage", error);
 		}
 	}
 	
 	private async migrate_0_1(): Promise<void> {
-		console.debug("Migrating storage");
+		this.logDebug("Migrating storage");
 		const networks = await this.storage.getAll();
-		console.debug("Replace legacy nodes");
+		this.logDebug("Replace legacy nodes");
 		for (const [id, network] of networks) {
 			if (network.rpcUrl === "http://34.107.66.170") {
 				network.name = "Azguard Node";
@@ -477,7 +479,7 @@ export class NetworkService extends Service {
 				await this.storage.set(id, network);
 			}
 		}
-		console.debug("Remove azguardbox");
+		this.logDebug("Remove azguardbox");
 		for (let i = networks.length - 1; i >= 0; i--) {
 			const [id, network] = networks[i];
 			if (network.chainId === 41337) {
@@ -485,7 +487,7 @@ export class NetworkService extends Service {
 				networks.splice(i);
 			}
 		}
-		console.debug("Add default nodes if missed");
+		this.logDebug("Add default nodes if missed");
 		const profiles = new Set(networks.map(([_, network]) => network.profileId));
 		for (const profileId of profiles) {
 			if (!networks.find(([_, network]) =>
@@ -513,8 +515,8 @@ export class NetworkService extends Service {
 				);
 			}
 		}
-		console.debug("Set storage version to 1");
+		this.logDebug("Set storage version to 1");
 		await this.storage.setVersion(1);
-		console.debug("Storage migrated");
+		this.logDebug("Storage migrated");
 	}
 }

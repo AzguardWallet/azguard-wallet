@@ -9,6 +9,7 @@ import type { NetworkService } from "@/wallet/services/network"
 import type { ProfileService } from "@/wallet/services/profile"
 import type { AccountService } from "@/wallet/services/account"
 import { PxeServiceClient } from "@/wallet/services/pxe/client"
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, Lock } from "@/wallet/utils"
 import {
@@ -17,9 +18,9 @@ import {
 	feeJuiceSymbol,
 } from "@/wallet/utils/fee-juice"
 import { type FnImpl, simulate } from "@/wallet/utils/fn"
-import { WrappedTask } from "@/wallet/services/task/wrapped-task"
+import type { WrappedTask } from "@/wallet/services/task/wrapped-task"
 import { StepContent } from "@/wallet/services/task/client"
-import { TaskService } from "@/wallet/services/task"
+import type { TaskService } from "@/wallet/services/task"
 import {
 	type AddTokenRequest,
 	AddTokenResponse,
@@ -91,9 +92,10 @@ export class TokenService extends Service {
 		private readonly networks: NetworkService,
 		private readonly accounts: AccountService,
 		private readonly tasks: TaskService,
+		public readonly logger: ILogs,
 		emit: (event: EventMessage) => void
 	) {
-		super(TOKEN_SERVICE_NAME, emit)
+		super(TOKEN_SERVICE_NAME, logger, emit)
 		this.pxeService = new PxeServiceClient();
 		this.tokens = new EntityStorage(
 			"azguard:core:tokens",
@@ -218,7 +220,7 @@ export class TokenService extends Service {
 				}
 			}
 			default: {
-				console.error(`Invalid request method ${request.method}.`)
+				this.logError(`Invalid request method ${request.method}.`);
 				return undefined
 			}
 		}
@@ -698,9 +700,9 @@ export class TokenService extends Service {
 	}
 
     private readonly onProfileDeleted = async (profileId: string) => {
-        console.debug(`profile ${profileId} deleted, remove related tokens`);
+		this.logDebug(`Profile ${profileId} deleted, remove related tokens`);
 		for (const token of (await this.tokens.getValues()).filter(x => x.profileId === profileId)) {
-			console.debug(`remove token ${token.id}`);
+			this.logDebug(`Remove token ${token.id}`);
 			await this.deleteToken(token.id);
 		}
     }

@@ -1,7 +1,8 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { DappInteractionServiceEvent, DappInteractionServiceEventMessage } from "./events";
-import {
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { DappInteractionServiceEvent, type DappInteractionServiceEventMessage } from "./events";
+import type {
     ConnectionPayload,
     ConnectionResult,
     ExecutionPayload,
@@ -24,7 +25,7 @@ export const DAPP_INTERACTION_SERVICE_NAME = "dapp-interaction";
  */
 export class DappInteractionServiceClient extends ServiceClient {
     /**
-     * Creates DappInteractionServiceClient instace.
+     * Creates DappInteractionServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onInteractionCancelled Callback, called when a dapp interaction was cancelled.
@@ -34,7 +35,7 @@ export class DappInteractionServiceClient extends ServiceClient {
         onDisconnected?: () => void,
         private readonly onInteractionCancelled?: (interactionId: string) => void,
     ) {
-        super(DAPP_INTERACTION_SERVICE_NAME, onConnected, onDisconnected);
+        super(DAPP_INTERACTION_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -46,7 +47,7 @@ export class DappInteractionServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

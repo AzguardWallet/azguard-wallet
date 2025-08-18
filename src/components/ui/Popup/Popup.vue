@@ -32,6 +32,7 @@ watch(
 			})
 			trap.activate()
 		} else {
+			await nextTick()
 			trap.deactivate()
 		}
 	},

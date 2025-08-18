@@ -4,10 +4,10 @@ import {
 } from "@aztec/aztec.js";
 import { Fr } from '@aztec/foundation/fields';
 import {
-    AbiDecoded,
-    AbiType,
+    type AbiDecoded,
+    type AbiType,
     AbiTypeSchema,
-    ContractArtifact,
+    type ContractArtifact,
     ContractArtifactSchema,
     encodeArguments,
     FunctionSelector,
@@ -17,21 +17,21 @@ import {
 import { AuthWitness } from '@aztec/stdlib/auth-witness';
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
 import {
-    CompleteAddress,
+    type CompleteAddress,
     computeContractAddressFromInstance,
-    ContractInstanceWithAddress,
+    type ContractInstanceWithAddress,
     ContractInstanceWithAddressSchema,
     getContractClassFromArtifact,
-    NodeInfo,
+    type NodeInfo,
 } from "@aztec/stdlib/contract";
-import { PXE } from '@aztec/stdlib/interfaces/client';
+import type { PXE } from '@aztec/stdlib/interfaces/client';
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import { Capsule, HashedValues, PrivateExecutionResult, TxExecutionRequest, TxHash, TxProvingResult, TxSimulationResult, UtilitySimulationResult, Tx, SimulationOverrides } from '@aztec/stdlib/tx';
-import { z } from "zod";
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import z from "zod";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
-import { NetworkService } from "@/wallet/services/network";
-import { Network } from "@/wallet/services/network/client";
+import type { NetworkService } from "@/wallet/services/network";
+import type { Network } from "@/wallet/services/network/client";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { AccountService } from "@/wallet/services/account";
 import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
@@ -44,8 +44,8 @@ import {
     TransferPublicFn,
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
-import { FpcService } from "@/wallet/services/fpc";
-import { TransactionService } from "@/wallet/services/transaction";
+import type { FpcService } from "@/wallet/services/fpc";
+import type { TransactionService } from "@/wallet/services/transaction";
 import {
     OriginType,
     TransferToken,
@@ -54,9 +54,10 @@ import {
     TxOrigin,
     TxTransfer,
 } from "@/wallet/services/transaction/client";
+import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import { decodeFromAbiPatched } from "@/wallet/utils/abi-decoder";
-import { Fn } from "@/wallet/utils/fn";
+import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import { TaskService } from "@/wallet/services/task";
 import { WrappedTask } from "@/wallet/services/task/wrapped-task";
@@ -64,42 +65,42 @@ import { ExecuteOperationContent, StepContent, TransferContent } from "@/wallet/
 import {
     EXECUTION_SERVICE_NAME,
     ExecutionServiceMethod,
-    ExecuteTransferRequest,
+    type ExecuteTransferRequest,
     ExecuteTransferResponse,
-    ExecuteOperationsRequest,
+    type ExecuteOperationsRequest,
     ExecuteOperationsResponse,
     OperationKind,
-    IOperation,
-    GetCompleteAddressOperation,
-    RegisterSenderOperation,
-    RegisterTokenOperation,
-    RegisterContractOperation,
+    type IOperation,
+    type GetCompleteAddressOperation,
+    type RegisterSenderOperation,
+    type RegisterTokenOperation,
+    type RegisterContractOperation,
     SendTransactionOperation,
-    SimulateTransactionOperation,
-    SimulateUtilityOperation,
-    SimulateViewsOperation,
+    type SimulateTransactionOperation,
+    type SimulateUtilityOperation,
+    type SimulateViewsOperation,
     OperationStatus,
-    IOperationResult,
+    type IOperationResult,
     SkippedOperationResult,
     FailedOperationResult,
     OkOperationResult,
     AuthwitContentKind,
-    CallAuthwitContent,
-    EncodedCallAuthwitContent,
-    IntentAuthwitContent,
-    MessageHashAuthwitContent,
+    type CallAuthwitContent,
+    type EncodedCallAuthwitContent,
+    type IntentAuthwitContent,
+    type MessageHashAuthwitContent,
     ActionKind,
-    IAction,
-    AddCapsuleAction,
-    AddPrivateAuthwitAction,
-    AddPublicAuthwitAction,
-    CallAction,
+    type IAction,
+    type AddCapsuleAction,
+    type AddPrivateAuthwitAction,
+    type AddPublicAuthwitAction,
+    type CallAction,
     EncodedCallAction,
     FeePaymentMethodType,
-    FpcPaymentMethod,
-    FeeJuiceWithClaimPaymentMethod,
-    CustomPaymentMethod,
-    FeeSettings,
+    type FpcPaymentMethod,
+    type FeeJuiceWithClaimPaymentMethod,
+    type CustomPaymentMethod,
+    type FeeSettings,
 } from "./client";
 
 export class ExecutionService extends Service {
@@ -114,9 +115,10 @@ export class ExecutionService extends Service {
         private readonly transactionService: TransactionService,
         private readonly authRegistryService: AuthRegistryService,
         private readonly taskService: TaskService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void,
     ) {
-        super(EXECUTION_SERVICE_NAME, emit);
+        super(EXECUTION_SERVICE_NAME, logger, emit);
         this.pxeService = new PxeServiceClient();
     }
 
@@ -151,7 +153,7 @@ export class ExecutionService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`)
                 return undefined;
             }                
         }
@@ -671,7 +673,7 @@ export class ExecutionService extends Service {
         if (!registeredContracts.has(op.contract)) {
             const [_, instance] = await this.getInstance(pxe, op.contract);
             const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
-            console.debug("Register contract");
+            this.logDebug("Register contract");
             await pxe.registerContract({instance, artifact});
         }
 
@@ -704,7 +706,7 @@ export class ExecutionService extends Service {
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         for (const [contract, instance] of instances) {
             if (!registeredContracts.has(contract)) {
-                console.debug("Register contract");
+                this.logDebug("Register contract");
                 await pxe.registerContract({
                     instance,
                     artifact: artifacts.get(instance.currentContractClassId.toString()),
@@ -779,7 +781,7 @@ export class ExecutionService extends Service {
                             fn.returnTypes,
                         ]);
                     }
-                    console.debug("Call enqueued.");
+                    this.logDebug("Call enqueued.");
                     break;
                 }
                 case ActionKind.EncodedCall: {
@@ -818,7 +820,7 @@ export class ExecutionService extends Service {
                             decodedArgs = ensureArray(decodeFromAbiPatched(fn.parameters.map(x => x.type), _call.args.map(x => Fr.fromString(x))));
                         }
                         catch (error) {
-                            console.error("Failed to decode utility call args", fn.parameters, _call.args, error);
+                            this.logError("Failed to decode utility call args", fn.parameters, _call.args, error);
                             throw new Error(`Failed to decode utility "encoded_call" args: ${(error as Error)?.message}. Try to use "call" instead.`);
                         }
                         utility.push([
@@ -852,7 +854,7 @@ export class ExecutionService extends Service {
                             fn.returnTypes,
                         ]);
                     }
-                    console.debug("EncodedCall enqueued.");
+                    this.logDebug("EncodedCall enqueued.");
                     break;
                 }
             }
@@ -881,7 +883,7 @@ export class ExecutionService extends Service {
                     result.decoded[i] = decodeFromAbiPatched(types, values);
                 }
                 catch (error) {
-                    console.error("Failed to decode simulation results", types, values, error);
+                    this.logError("Failed to decode simulation results", types, values, error);
                 }
             }
         }
@@ -901,7 +903,7 @@ export class ExecutionService extends Service {
                 );
             }
             catch (error) {
-                console.error("Failed to encode utility simulation results", types, values, error);
+                this.logError("Failed to encode utility simulation results", types, values, error);
             }
             result.decoded[i] = values;
         }
@@ -949,7 +951,7 @@ export class ExecutionService extends Service {
             const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
             for (const [contract, instance] of instances) {
                 if (!registeredContracts.has(contract)) {
-                    console.debug("Register contract");
+                    this.logDebug("Register contract");
                     await pxe.registerContract({
                         instance,
                         artifact: artifacts.get(instance.currentContractClassId.toString()),
@@ -1022,18 +1024,18 @@ export class ExecutionService extends Service {
             switch (action.kind) {
                 case ActionKind.AddCapsule: {
                     const _action = action as AddCapsuleAction;
-                    console.debug("Adding capsule...");
+                    this.logDebug("Adding capsule...");
                     capsules.push(new Capsule(
                         AztecAddress.fromString(_action.contract),
                         Fr.fromString(_action.storageSlot),
                         _action.capsule.map(Fr.fromString)
                     ));
-                    console.debug("Capsule added.");
+                    this.logDebug("Capsule added.");
                     break;
                 }
                 case ActionKind.AddPrivateAuthwit: {
                     const _action = action as AddPrivateAuthwitAction;
-                    console.debug("Adding private authwit...");
+                    this.logDebug("Adding private authwit...");
 
                     let messageHash: Fr;
                     switch (_action.content.kind) {
@@ -1068,12 +1070,12 @@ export class ExecutionService extends Service {
                     
                     authwits.push(authwit);
 
-                    console.debug("Private authwit added.");
+                    this.logDebug("Private authwit added.");
                     break;
                 }
                 case ActionKind.AddPublicAuthwit: {
                     const _action = action as AddPublicAuthwitAction;
-                    console.debug("Adding public authwit...");
+                    this.logDebug("Adding public authwit...");
                     
                     let messageHash: Fr;
                     switch (_action.content.kind) {
@@ -1132,7 +1134,7 @@ export class ExecutionService extends Service {
                         [messageHash, true],
                     ));
 
-                    console.debug("Public authwit added.");
+                    this.logDebug("Public authwit added.");
                     break;
                 }
                 case ActionKind.Call: {
@@ -1167,7 +1169,7 @@ export class ExecutionService extends Service {
                         _action.method,
                         _action.args,
                     ));
-                    console.debug("Call enqueued.");
+                    this.logDebug("Call enqueued.");
                     break;
                 }
                 case ActionKind.EncodedCall: {
@@ -1220,7 +1222,7 @@ export class ExecutionService extends Service {
                         _action.selector,
                         _action.args,
                     ));
-                    console.debug("EncodedCall enqueued.");
+                    this.logDebug("EncodedCall enqueued.");
                     break;
                 }
             }
@@ -1464,13 +1466,13 @@ export class ExecutionService extends Service {
     }
 
     private async getInstances(pxe: PXE, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
-        console.debug("Get instances...");
+        this.logDebug("Get instances...");
         const instances = new Map<string, ContractInstanceWithAddress>();
-        console.debug(`Fetching ${contracts.length} instances...`);
+        this.logDebug(`Fetching ${contracts.length} instances...`);
         const fetched = await Promise.all(
             contracts.map(x => this.getInstance(pxe, x)),
         );
-        console.debug(`${fetched.length} instances fetched`);
+        this.logDebug(`${fetched.length} instances fetched`);
         for (const [address, instance] of fetched) {
             instances.set(address, instance);
         }
@@ -1486,7 +1488,7 @@ export class ExecutionService extends Service {
     }
 
     private async getArtifacts(pxe: PXE, instances: Map<string, ContractInstanceWithAddress>): Promise<Map<string, ContractArtifact>> {
-        console.debug("Get artifacts...");
+        this.logDebug("Get artifacts...");
         const artifacts = new Map<string, ContractArtifact>();
         const classIds = new Set(
             instances
@@ -1494,11 +1496,11 @@ export class ExecutionService extends Service {
                 .filter(x => !artifacts.has(x.currentContractClassId.toString()))
                 .map(x => x.currentContractClassId.toString())
         );
-        console.debug(`Fetching ${classIds.size} artifacts...`);
+        this.logDebug(`Fetching ${classIds.size} artifacts...`);
         const fetched = await Promise.all(
             classIds.values().map(x => this.getArtifact(pxe, x))
         );
-        console.debug(`${fetched.length} artifacts fetched`);
+        this.logDebug(`${fetched.length} artifacts fetched`);
         for (const [classId, artifact] of fetched) {
             artifacts.set(classId, artifact);
         }

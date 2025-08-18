@@ -1,11 +1,16 @@
 import { getRandomHex } from "@/wallet/utils";
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
-    IMessage,
+    type ILogsAsync,
+    LogLevel,
+    LogOrigin
+} from "@/wallet/services/logger/client/models";
+import {
+    type IMessage,
     MessageType,
-    EventMessage,
+    type EventMessage,
     RequestMessage,
-    ResponseMessage,
+    type ResponseMessage,
     RequestContent,
 
 } from "./messages";
@@ -13,15 +18,46 @@ import {
 export abstract class ServiceClient<TMethod, TEvent> {
     private readonly name: string;
     private readonly service: string;
+    private readonly logger: ILogsAsync;
     private readonly requests: Map<number, [(result: any) => void, (error: string) => void]>;
-    private disposed: boolean = false;
+    private disposed = false;
     
-    protected constructor(service: string, name?: string) {
+    protected constructor(
+        service: string,
+        logger: ILogsAsync,
+        name?: string,
+    ) {
         this.name = name ?? getRandomHex(8);
         this.service = service;
+        this.logger = logger;
         this.requests = new Map();
 
         chrome.runtime.onMessage.addListener(this.onMessageListener);
+    }
+
+    protected log(level: LogLevel, ...args: any[]) {
+        return this.logger.addLog(
+            level,
+            args,
+            this.service,
+            LogOrigin.BG,
+        );
+    }
+
+    protected logDebug(...args: any[]) {
+        return this.log(LogLevel.Debug, args);
+    }
+
+    protected logInfo(...args: any[]) {
+        return this.log(LogLevel.Info, args);
+    }
+
+    protected logWarn(...args: any[]) {
+        return this.log(LogLevel.Warning, args);
+    }
+
+    protected logError(...args: any[]) {
+        return this.log(LogLevel.Error, args);
     }
 
     public dispose() {
@@ -33,44 +69,44 @@ export abstract class ServiceClient<TMethod, TEvent> {
     }
 
     private readonly onMessageListener = (message: IMessage<unknown>): boolean => {
-        if (message.to === this.name) {
+        if (message.to === this.name || message.type === MessageType.Event && message.from === this.service && message.to === undefined) {
             this.onMessage(message); // fire and forget
         }
         return false;
     }
 
     private readonly onMessage = async (message: IMessage<unknown>) => {
-        console.debug("Message received", message);
+        this.logDebug("Message received", message);
         if (message.type !== MessageType.Response && message.type !== MessageType.Event || 
             message.from !== this.service ||
             message.content === undefined
         ) {
-            console.warn("Invalid message");
+            this.logWarn("Invalid message");
             return;
         }
         if (message.type === MessageType.Response) {
             const { content: response } = message as ResponseMessage<unknown>;
-            console.debug("Response received", response);
+            this.logDebug("Response received", response);
             const requestPromise = this.requests.get(response.requestId);
             if (!requestPromise) {
-                console.warn("Invalid response");
+                this.logWarn("Invalid response");
                 return;
             }
             const [resolve, reject] = requestPromise;
             if (response.error !== undefined) {
                 reject(response.error);
-                console.debug("Request rejected", response.requestId, response.error);
+                this.logDebug("Request rejected", response.requestId, response.error);
             }
             else {
                 resolve(response.result);
-                console.debug("Request resolved", response.requestId, response.result);
+                this.logDebug("Request resolved", response.requestId, response.result);
             }
             this.requests.delete(response.requestId);
-            console.debug("Pending requests", this.requests.size);
+            this.logDebug("Pending requests", this.requests.size);
         }
         else {
             const { content: event } = message as EventMessage<TEvent, unknown>;
-            console.debug("Event received", event);
+            this.logDebug("Event received", event);
             try { this.onEvent(event.event, event.payload); } catch {}
         }
     };
@@ -83,7 +119,8 @@ export abstract class ServiceClient<TMethod, TEvent> {
             method,
             jsonSanitize(params),
         );
-        console.debug("Request created", requestContent.requestId, requestContent);
+        this.logDebug("Request created", requestContent.requestId, requestContent);
+
         // just in case
         if (this.requests.has(requestContent.requestId)) {
             throw new Error(`Request with id ${requestContent.requestId} already exists`);
@@ -91,14 +128,14 @@ export abstract class ServiceClient<TMethod, TEvent> {
         const promise = new Promise<T>((resolve, reject) => {
             this.requests.set(requestContent.requestId, [resolve, reject]);
         });
-        console.debug("Pending requests", this.requests.size);
+        this.logDebug("Pending requests", this.requests.size);
         const requestMessage = new RequestMessage(
             requestContent,
             this.name,
             this.service,
         );
         await chrome.runtime.sendMessage(requestMessage);
-        console.debug("Message sent", requestMessage);
+        this.logDebug("Message sent", requestMessage);
         return promise;
     }
 

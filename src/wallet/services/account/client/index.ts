@@ -1,9 +1,10 @@
-import { EventMessage } from '@/wallet/base/port-service/messages';
+import type { EventMessage } from '@/wallet/base/port-service/messages';
 import { ServiceClient } from '@/wallet/base/port-service/service-client';
-import { Profile } from '@/wallet/services/profile/client';
-import { Network } from '@/wallet/services/network/client';
-import { Account, AccountType } from './models';
-import { AccountServiceEvent, AccountServiceEventMessage } from './events';
+import type { Profile } from '@/wallet/services/profile/client';
+import type { Network } from '@/wallet/services/network/client';
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import type { Account, AccountType } from './models';
+import { AccountServiceEvent, type AccountServiceEventMessage } from './events';
 import {
     ChangeAccountNameRequest,
     ChangeAccountVisibilityRequest,
@@ -23,7 +24,7 @@ export const ACCOUNT_SERVICE_NAME = "account";
  */
 export class AccountServiceClient extends ServiceClient {
     /**
-     * Creates AccountServiceClient instace.
+     * Creates AccountServiceClient instance.
      * @param profile Profile, determining accounts scope (each profile + network has its own set of accounts).
      * @param network Network, determining accounts scope (each profile + network has its own set of accounts).
      * @param onConnected Callback, called when the client is connected to the background service.
@@ -41,7 +42,7 @@ export class AccountServiceClient extends ServiceClient {
         private readonly onAccountUpdated?: (account: Account) => void,
         private readonly onAccountDeleted?: (account: Account) => void,
     ) {
-        super(ACCOUNT_SERVICE_NAME, onConnected, onDisconnected);
+        super(ACCOUNT_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -67,7 +68,7 @@ export class AccountServiceClient extends ServiceClient {
                     }
                     break;
                 default:
-                    console.error(`Unexpected event type ${message.event}.`);
+                    this.logError(`Unexpected event type ${message.event}.`);
                     break;
             }
         }

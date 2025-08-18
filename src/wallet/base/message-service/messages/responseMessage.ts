@@ -1,4 +1,4 @@
-import { IMessage, MessageType } from ".";
+import { type IMessage, MessageType } from ".";
 
 export class ResponseContent<T> {
     constructor(

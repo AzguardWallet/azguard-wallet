@@ -1,9 +1,10 @@
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
-import { DappSessionService } from "@/wallet/services/dapp-session";
-import { DappSession } from "@/wallet/services/dapp-session/client";
-import { DappInteractionService } from "@/wallet/services/dapp-interaction";
-import {
+import type { DappSessionService } from "@/wallet/services/dapp-session";
+import type { DappSession } from "@/wallet/services/dapp-session/client";
+import type { DappInteractionService } from "@/wallet/services/dapp-interaction";
+import type { ILogs } from "@/wallet/services/logger/client";
+import type {
     ConnectionParams,
     ExecutionParams,
     DappSessionInfo,
@@ -11,13 +12,13 @@ import {
 } from "@/wallet/services/dapp-interaction/types";
 import {
     RPC_SERVICE_NAME,
-    InvokeRequest,
+    type InvokeRequest,
     InvokeResponse,
     RpcServiceEventMessage,
     RpcServiceMethod,
 } from "./client";
 import {
-    WalletInfo,
+    type WalletInfo,
     AzguardWalletInfo,
     RpcEvent,
     RpcMethod,
@@ -28,9 +29,10 @@ export class RpcService extends Service {
     constructor(
         private readonly dappSessions: DappSessionService,
         private readonly dappInteractions: DappInteractionService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {
-        super(RPC_SERVICE_NAME, emit);
+        super(RPC_SERVICE_NAME, logger, emit);
         this.dappSessions.onDappSessionUpdated.push(this.onDappSessionUpdated);
         this.dappSessions.onDappSessionDeleted.push(this.onDappSessionDeleted);
     }
@@ -48,7 +50,7 @@ export class RpcService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }                
         }

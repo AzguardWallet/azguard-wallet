@@ -1,8 +1,7 @@
 import { BarretenbergSync } from "@aztec/bb.js"
-import { EventMessage, IMessage, MessageType, RequestMessage } from "./base/port-service/messages";
-import { Service } from "./base/port-service/service";
+import { type EventMessage, type IMessage, MessageType, type RequestMessage } from "./base/port-service/messages";
+import type { Service } from "./base/port-service/service";
 import { AccountService } from "./services/account";
-import { AuthRegistryService } from "./services/auth-registry";
 import { NetworkService } from "./services/network";
 import { ProfileService } from "./services/profile";
 import { WalletConnectService } from "./services/wallet-connect";
@@ -13,64 +12,74 @@ import { ExecutionService } from "./services/execution";
 import { FaucetService } from "./services/faucet";
 import { FpcService } from "./services/fpc";
 import { AccountStateService } from "./services/account-state";
+import { AuthRegistryService } from "./services/auth-registry";
 import { RpcService } from "./services/rpc";
 import { DappSessionService } from "./services/dapp-session";
 import { DappInteractionService } from "./services/dapp-interaction";
+import { LoggerService } from "./services/logger";
+import { LOGGER_SERVICE_NAME } from "./services/logger/client";
+import { InMemoryLogs, LogLevel } from "./services/logger/client";
 import { sleep } from "./utils";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
 import { TaskService } from "./services/task";
 
 export async function init() {
-    console.debug("Init BarretenbergSync...");
+    loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
     await BarretenbergSync.initSingleton(process.env.BB_WASM_PATH);
-    console.debug("BarretenbergSync inited.");
+    loggerService.addLog(LogLevel.Debug, "BarretenbergSync inited.")
 }
 
 export function start() {
     if (isRunning) return;
-    console.debug("Start wallet...");
+    loggerService.addLog(LogLevel.Debug, "Start wallet...")
     chrome.runtime.onConnect.addListener(onConnect);
     ensureOffscreenRunning(); // ff
     isRunning = true;
     worker = runWorker();
-    console.debug("Wallet started.");
+    loggerService.addLog(LogLevel.Debug, "Wallet started.")
 }
 
 export async function stop() {
     if (!isRunning) return;
-    console.warn("Stop wallet...");
+    loggerService.addLog(LogLevel.Warning, "Stop wallet...")
     isRunning = false;
     chrome.runtime.onConnect.removeListener(onConnect);
     while (ports.length) {
-        console.debug("Drop client...");
+        loggerService.addLog(LogLevel.Debug, "Drop client...")
         ports.pop()!.disconnect();
-        console.debug(`Client dropped. Total: ${ports.length}.`);
+        loggerService.addLog(LogLevel.Debug, `Client dropped. Total: ${ports.length}.`)
     }
     await worker;
-    console.warn("Wallet stopped.");
+    loggerService.addLog(LogLevel.Warning, "Wallet stopped.")
 }
 
+// logs
+const logs = new InMemoryLogs();
+
 // services
-const profileService = new ProfileService(broadcast);
-const taskService = new TaskService(profileService, broadcast);
-const networkService = new NetworkService(profileService, broadcast);
-const accountService = new AccountService(profileService, networkService, broadcast);
+const loggerService = new LoggerService(logs, broadcast);
+const profileService = new ProfileService(logs, broadcast);
+const taskService = new TaskService(profileService, logs, broadcast);
+const networkService = new NetworkService(profileService, logs, broadcast);
+const accountService = new AccountService(profileService, networkService, logs, broadcast);
 const tokenService = new TokenService(
     profileService,
     networkService,
     accountService,
     taskService,
+    logs,
     broadcast,
 );
-const fpcService = new FpcService(profileService, networkService,broadcast);
+const fpcService = new FpcService(profileService, networkService, logs, broadcast);
 const transactionService = new TransactionService(
     profileService,
     accountService,
     networkService,
+    logs,
     broadcast,
 );
-const accountStateService = new AccountStateService(networkService, broadcast);
+const accountStateService = new AccountStateService(networkService, logs, broadcast);
 const authRegistryService = new AuthRegistryService(
     networkService,
     taskService,
@@ -86,6 +95,7 @@ const executionService = new ExecutionService(
     transactionService,
     authRegistryService,
     taskService,
+    logs,
     broadcast
 );
 authRegistryService.executionService = executionService; // TODO: implement DI
@@ -97,6 +107,7 @@ const tokenBalanceService = new TokenBalanceService(
     transactionService,
     executionService,
     taskService,
+    logs,
     broadcast,
 );
 const faucetService = new FaucetService(
@@ -106,25 +117,29 @@ const faucetService = new FaucetService(
     executionService,
     transactionService,
     taskService,
+    logs,
     broadcast,
 );
-const dappSessionService = new DappSessionService(profileService, broadcast);
+const dappSessionService = new DappSessionService(profileService, logs, broadcast);
 const dappInteractionService = new DappInteractionService(
     profileService,
     networkService,
     accountService,
     dappSessionService,
     executionService,
+    logs,
     broadcast,
 );
 const rpcService = new RpcService(
     dappSessionService,
     dappInteractionService,
+    logs,
     broadcast,
 );
 const walletConnectService = new WalletConnectService(
     dappSessionService,
     dappInteractionService,
+    logs,
     broadcast,
 );
 
@@ -145,6 +160,7 @@ const services = new Map<string, Service>([
     [accountStateService.name, accountStateService],
     [authRegistryService.name, authRegistryService],
     [taskService.name, taskService],
+    [loggerService.name, loggerService],
 ]);
 
 // state
@@ -153,52 +169,57 @@ let worker = Promise.resolve();
 let isRunning = false;
 
 function onConnect(port: chrome.runtime.Port) {
-    console.debug("onConnect...");
+    loggerService.addLog(LogLevel.Debug, "onConnect...");
     port.onDisconnect.addListener(onDisconnect);
     port.onMessage.addListener(onMessage);
     ports.push(port);
-    console.debug(`Client connected. Total: ${ports.length}.`);
+    loggerService.addLog(LogLevel.Debug, `Client connected. Total: ${ports.length}.`);
 }
 
 function onDisconnect(port: chrome.runtime.Port) {
-    console.debug("onDisconnect...");
+    loggerService.addLog(LogLevel.Debug, "onDisconnect...");
     for (let i = ports.length - 1; i >= 0; i--) {
         if (ports[i] === port) {
             port.onDisconnect.removeListener(onDisconnect);
             port.onMessage.removeListener(onMessage);
             ports.splice(i, 1);
-            console.debug(`Client disconnected. Total: ${ports.length}.`);
+            loggerService.addLog(LogLevel.Debug, `Client disconnected. Total: ${ports.length}.`);
         }
     }
 }
 
 async function onMessage(message: IMessage, client: chrome.runtime.Port) {
-    if (typeof message.type !== 'number') return; // crutch for crx
-    console.debug("Message received", message);
+    if (typeof message.type !== "number") return; // crutch for crx
+    const isLoggerMessage = message.service === LOGGER_SERVICE_NAME; // don't log logger's messages
+
+    if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Message received", message], message.service);
     if (message.type !== MessageType.Request) {
-        console.error("Invalid message");
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Invalid message"], message.service);
         client.disconnect();
         return;
     }
     const request = message as RequestMessage;
     const service = services.get(request.service);
     if (!service) {
-        console.error("Service is not registered", request.service);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Service is not registered", request.service], message.service);
         client.disconnect();
         return;
     }
     const response = await service.process(request);
     if (!response) {
-        console.error(`Service ${request.service} doesn't have method ${request.method}`);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, [`Service ${request.service} doesn't have method ${request.method}`], message.service);
         client.disconnect();
         return;
     }
-    if (response.error === undefined) {
-        console.debug("Request processed", request.requestId, response.result);
+    if (!isLoggerMessage) {
+        if (response.error === undefined) {
+            loggerService.addLogWithMeta(LogLevel.Debug, ["Request processed", request.requestId, response.result], message.service);
+        }
+        else {
+            loggerService.addLogWithMeta(LogLevel.Debug, ["Request failed", request.requestId, response.error], message.service);
+        }
     }
-    else {
-        console.debug("Request failed", request.requestId, response.error);
-    }
+
     send(client, response);
 }
 
@@ -208,32 +229,36 @@ async function runWorker() {
             await chrome.storage.session.set({"azguard:core:liveness": Date.now()});
         }
         catch (error) {
-            console.error("Wallet worker failed", error);
+            loggerService.addLog(LogLevel.Error, "Wallet worker failed", error);
         }
         await sleep(10000);
     }
 }
 
 function broadcast(event: EventMessage) {
+    const isLoggerMessage = event.service === LOGGER_SERVICE_NAME;
     try {
         for (const port of ports) {
             if (port.name === event.service) {
                 send(port, event);
             }
         }
-        console.debug("Event broadcasted.", event);
+        
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Event broadcasted.", event], event.service);
     }
     catch (error) {
-        console.error("Failed to broadcast event", error);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Failed to broadcast event", error], event.service);
     }
 }
 
 function send(port: chrome.runtime.Port, message: IMessage) {
+    const isLoggerMessage = message.service === LOGGER_SERVICE_NAME;
     try {
         port.postMessage(jsonSanitize(message));
-        console.debug("Message sent", message);
+
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Message sent", message], message.service);
     }
     catch (error) {
-        console.error("Failed to send message", error);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Failed to send message", error], message.service);
     }
 }

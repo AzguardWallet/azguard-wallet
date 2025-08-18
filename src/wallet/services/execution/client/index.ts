@@ -1,5 +1,6 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import type { TransferType, TxOrigin } from "@/wallet/services/transaction/client";
 import { ExecuteOperationsRequest, ExecuteTransferRequest } from "./methods";
 import type { FeeSettings, IOperation, IOperationResult } from "./models";
@@ -15,7 +16,7 @@ export const EXECUTION_SERVICE_NAME = "execution";
  */
 export class ExecutionServiceClient extends ServiceClient {
     /**
-     * Creates ExecutionServiceClient instace.
+     * Creates ExecutionServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      */
@@ -23,13 +24,13 @@ export class ExecutionServiceClient extends ServiceClient {
         onConnected?: () => void,
         onDisconnected?: () => void,
     ) {
-        super(EXECUTION_SERVICE_NAME, onConnected, onDisconnected);
+        super(EXECUTION_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
         switch (message.event) {
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

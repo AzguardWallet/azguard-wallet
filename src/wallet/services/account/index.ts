@@ -8,6 +8,7 @@ import type {
 import { Service } from "@/wallet/base/port-service/service"
 import type { NetworkService } from "@/wallet/services/network"
 import type { ProfileService } from "@/wallet/services/profile"
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max } from "@/wallet/utils"
 import {
@@ -48,9 +49,10 @@ export class AccountService extends Service {
 	constructor(
 		private readonly profiles: ProfileService,
 		private readonly networks: NetworkService,
+		public readonly logger: ILogs,
 		emit: (event: EventMessage) => void
 	) {
-		super(ACCOUNT_SERVICE_NAME, emit)
+		super(ACCOUNT_SERVICE_NAME, logger, emit)
 		this.storage = new EntityStorage("azguard:core:accounts", StorageType.Local);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
 	}
@@ -178,7 +180,7 @@ export class AccountService extends Service {
 				}
 			}
 			default: {
-				console.error(`Invalid request method ${request.method}.`)
+				this.logError(`Invalid request method ${request.method}.`)
 				return undefined
 			}
 		}
@@ -346,10 +348,10 @@ export class AccountService extends Service {
 	}
 
     private readonly onProfileDeleted = async (profileId: string) => {
-        console.debug(`profile ${profileId} deleted, remove related accounts`);
+		this.logDebug(`profile ${profileId} deleted, remove related accounts`)
 		const accounts = (await this.storage.getAll()).filter(([_, v]) => v.profileId === profileId);
 		for (const [address, account] of accounts) {
-			console.debug(`remove account ${address}`);
+			this.logDebug(`remove account ${address}`)
 			await this.deleteAccount(account.profileId, account.chainId, address);
 		}
     }

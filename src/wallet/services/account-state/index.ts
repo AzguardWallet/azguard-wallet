@@ -3,6 +3,7 @@ import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
 import { TxHash } from "@aztec/stdlib/tx";
 import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
+import { ILogs } from '@/wallet/services/logger/client';
 import type { NetworkService } from "@/wallet/services/network";
 import { PxeServiceClient } from '@/wallet/services/pxe/client';
 import {
@@ -33,9 +34,10 @@ export class AccountStateService extends Service {
 
     constructor(
         private readonly networks: NetworkService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, emit);
+        super(ACCOUNT_STATE_SERVICE_NAME, logger, emit);
         this.pxeService = new PxeServiceClient();
     }
 
@@ -111,7 +113,7 @@ export class AccountStateService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`)
                 return undefined;
             }
         }
@@ -124,7 +126,7 @@ export class AccountStateService extends Service {
             return accounts.map(x => x.address.toString());
         }
         catch (error) {
-            console.error("Failed to fetch registered accounts", error);
+            this.logError("Failed to fetch registered accounts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -136,7 +138,7 @@ export class AccountStateService extends Service {
             return senders.map(x => x.toString());
         }
         catch (error) {
-            console.error("Failed to fetch registered senders", error);
+            this.logError("Failed to fetch registered senders", error);
             throw new Error("PXE request failed");
         }
     }
@@ -149,7 +151,7 @@ export class AccountStateService extends Service {
             return sender;
         }
         catch (error) {
-            console.error("Failed to register sender", error);
+            this.logError("Failed to register sender", error);
             throw new Error("PXE request failed");
         }
     }
@@ -162,7 +164,7 @@ export class AccountStateService extends Service {
             return address;
         }
         catch (error) {
-            console.error("Failed to remove sender", error);
+            this.logError("Failed to remove sender", error);
             throw new Error("PXE request failed");
         }
     }
@@ -174,7 +176,7 @@ export class AccountStateService extends Service {
             return contracts.map(x => x.toString());
         }
         catch (error) {
-            console.error("Failed to fetch registered contracts", error);
+            this.logError("Failed to fetch registered contracts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -204,7 +206,7 @@ export class AccountStateService extends Service {
             ));
         }
         catch (error) {
-            console.error("Failed to fetch incoming notes", error);
+            this.logError("Failed to fetch incoming notes", error);
             throw new Error("PXE request failed");
         }
     }
@@ -216,7 +218,7 @@ export class AccountStateService extends Service {
             return pxeInfo.pxeVersion;
         }
         catch (error) {
-            console.error("Failed to fetch PXE info", error);
+            this.logError("Failed to fetch PXE info", error);
             throw new Error("PXE request failed");
         }
     }

@@ -11,9 +11,13 @@
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
+
+const handleOpenLogs = () => {
+	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
+	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
+}
 </script>
 
 <template>
@@ -29,6 +33,17 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 			<SettingItem to="/popup/settings/general/sessions" title="Sessions" icon="plug-circle" iconBgColor="sand" />
 		</ItemsContainer>
 
+		<ItemsContainer title="Activity">
+			<SettingItem title="Task tracker" icon="task-tracker" iconBgColor="var(--green)" chevron disabled />
+			<SettingItem
+				@click="handleOpenLogs"
+				title="Logs"
+				icon="logs"
+				iconBgColor="var(--gray)"
+				chevron
+			/>
+		</ItemsContainer>
+
 		<ItemsContainer title="Interface">
 			<SettingItem to="/popup/settings/general/appearance" title="Appearance" icon="sun" iconBgColor="purple" />
 		</ItemsContainer>
@@ -41,6 +56,8 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 .wrapper {
 	flex: 1;
 
+	overflow: auto;
+
 	background: var(--card-bg);
 	border-top: 2px solid var(--gray-8);
 	box-shadow: inset 0 10px 8px -2px var(--gray-3);
@@ -48,7 +65,7 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
 
-	padding: 20px 24px 24px 24px;
+	padding: 20px 24px 80px 24px;
 }
 
 .item {

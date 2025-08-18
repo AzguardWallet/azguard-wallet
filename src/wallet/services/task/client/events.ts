@@ -1,5 +1,5 @@
 import { EventMessage } from "@/wallet/base/port-service/messages";
-import { Task } from "./models";
+import type { Task } from "./models";
 import { TASK_SERVICE_NAME } from ".";
 
 export enum TaskServiceEvent {
