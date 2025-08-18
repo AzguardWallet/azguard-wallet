@@ -37,7 +37,7 @@ export class AccountStateServiceClient extends ServiceClient {
         private readonly onSenderAdded?: (sender: string) => void,
         private readonly onSenderDeleted?: (sender: string) => void,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(ACCOUNT_STATE_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

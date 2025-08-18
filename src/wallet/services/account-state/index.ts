@@ -194,7 +194,7 @@ export class AccountStateService extends Service {
             return accounts.map(x => x.address.toString());
         }
         catch (error) {
-            this.logError(["Failed to fetch registered accounts", error]);
+            this.logError("Failed to fetch registered accounts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -206,7 +206,7 @@ export class AccountStateService extends Service {
             return senders.map(x => x.toString());
         }
         catch (error) {
-            this.logError(["Failed to fetch registered senders", error]);
+            this.logError("Failed to fetch registered senders", error);
             throw new Error("PXE request failed");
         }
     }
@@ -219,7 +219,7 @@ export class AccountStateService extends Service {
             return sender;
         }
         catch (error) {
-            this.logError(["Failed to register sender", error]);
+            this.logError("Failed to register sender", error);
             throw new Error("PXE request failed");
         }
     }
@@ -232,7 +232,7 @@ export class AccountStateService extends Service {
             return address;
         }
         catch (error) {
-            this.logError(["Failed to remove sender", error]);
+            this.logError("Failed to remove sender", error);
             throw new Error("PXE request failed");
         }
     }
@@ -244,7 +244,7 @@ export class AccountStateService extends Service {
             return contracts.map(x => x.toString());
         }
         catch (error) {
-            this.logError(["Failed to fetch registered contracts", error]);
+            this.logError("Failed to fetch registered contracts", error);
             throw new Error("PXE request failed");
         }
     }
@@ -270,11 +270,11 @@ export class AccountStateService extends Service {
                 x.contractAddress.toString(),
                 x.storageSlot.toString(),
                 x.txHash.toString(),
-                x.nonce.toString(),
+                x.noteNonce.toString(),
             ));
         }
         catch (error) {
-            this.logError(["Failed to fetch incoming notes", error]);
+            this.logError("Failed to fetch incoming notes", error);
             throw new Error("PXE request failed");
         }
     }
@@ -286,7 +286,7 @@ export class AccountStateService extends Service {
             return pxeInfo.pxeVersion;
         }
         catch (error) {
-            this.logError(["Failed to fetch PXE info", error]);
+            this.logError("Failed to fetch PXE info", error);
             throw new Error("PXE request failed");
         }
     }

@@ -22,13 +22,12 @@ import { InMemoryLogs, LogLevel } from "./services/logger/client";
 import { sleep } from "./utils";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
-import { TaskTrackerService } from "./services/task-tracker";
+import { TaskService } from "./services/task";
 
 export async function init() {
     loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
     await BarretenbergSync.initSingleton(process.env.BB_WASM_PATH);
     loggerService.addLog(LogLevel.Debug, "BarretenbergSync inited.")
-    await ensureOffscreenRunning();
 }
 
 export function start() {
@@ -61,11 +60,18 @@ const logs = new InMemoryLogs();
 // services
 const settingService = new SettingService(logs, broadcast)
 const loggerService = new LoggerService(logs, broadcast);
-const taskTrackerService = new TaskTrackerService(logs, broadcast);
 const profileService = new ProfileService(settingService, logs, broadcast);
+const taskService = new TaskService(profileService, logs, broadcast);
 const networkService = new NetworkService(profileService, logs, broadcast);
 const accountService = new AccountService(profileService, networkService, logs, broadcast);
-const tokenService = new TokenService(profileService, networkService,accountService, logs, broadcast);
+const tokenService = new TokenService(
+    profileService,
+    networkService,
+    accountService,
+    taskService,
+    logs,
+    broadcast,
+);
 const fpcService = new FpcService(profileService, networkService, logs, broadcast);
 const transactionService = new TransactionService(
     profileService,
@@ -83,6 +89,7 @@ const executionService = new ExecutionService(
     fpcService,
     transactionService,
     accountStateService,
+    taskService,
     logs,
     broadcast
 );
@@ -93,6 +100,7 @@ const tokenBalanceService = new TokenBalanceService(
     tokenService,
     transactionService,
     executionService,
+    taskService,
     logs,
     broadcast,
 );
@@ -102,8 +110,7 @@ const faucetService = new FaucetService(
     accountService,
     executionService,
     transactionService,
-    tokenService,
-    taskTrackerService,
+    taskService,
     logs,
     broadcast,
 );
@@ -145,7 +152,7 @@ const services = new Map<string, Service>([
     [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
     [accountStateService.name, accountStateService],
-    [taskTrackerService.name, taskTrackerService],
+    [taskService.name, taskService],
     [loggerService.name, loggerService],
     [settingService.name, settingService]
 ]);
@@ -179,31 +186,34 @@ async function onMessage(message: IMessage, client: chrome.runtime.Port) {
     if (typeof message.type !== "number") return; // crutch for crx
     const isLoggerMessage = message.service === LOGGER_SERVICE_NAME; // don't log logger's messages
 
-    if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Message received", message]);
+    if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Message received", message], message.service);
     if (message.type !== MessageType.Request) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, "Invalid message");
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Invalid message"], message.service);
         client.disconnect();
         return;
     }
     const request = message as RequestMessage;
     const service = services.get(request.service);
     if (!service) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, ["Service is not registered", request.service]);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Service is not registered", request.service], message.service);
         client.disconnect();
         return;
     }
     const response = await service.process(request);
     if (!response) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, `Service ${request.service} doesn't have method ${request.method}`);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, [`Service ${request.service} doesn't have method ${request.method}`], message.service);
         client.disconnect();
         return;
     }
-    if (response.error === undefined) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Request processed", request.requestId, response.result]);
+    if (!isLoggerMessage) {
+        if (response.error === undefined) {
+            loggerService.addLogWithMeta(LogLevel.Debug, ["Request processed", request.requestId, response.result], message.service);
+        }
+        else {
+            loggerService.addLogWithMeta(LogLevel.Debug, ["Request failed", request.requestId, response.error], message.service);
+        }
     }
-    else {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Request failed", request.requestId, response.error]);
-    }
+
     send(client, response);
 }
 
@@ -213,7 +223,7 @@ async function runWorker() {
             await chrome.storage.session.set({"azguard:core:liveness": Date.now()});
         }
         catch (error) {
-            loggerService.addLog(LogLevel.Error, ["Wallet worker failed", error]);
+            loggerService.addLog(LogLevel.Error, "Wallet worker failed", error);
         }
         await sleep(10000);
     }
@@ -228,10 +238,10 @@ function broadcast(event: EventMessage) {
             }
         }
         
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Event broadcasted.", event]);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Event broadcasted.", event], event.service);
     }
     catch (error) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, ["Failed to broadcast event", error]);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Failed to broadcast event", error], event.service);
     }
 }
 
@@ -240,9 +250,9 @@ function send(port: chrome.runtime.Port, message: IMessage) {
     try {
         port.postMessage(jsonSanitize(message));
 
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Debug, ["Message sent", message]);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Message sent", message], message.service);
     }
     catch (error) {
-        if (!isLoggerMessage) loggerService.addLog(LogLevel.Error, ["Failed to send message", error]);
+        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Failed to send message", error], message.service);
     }
 }

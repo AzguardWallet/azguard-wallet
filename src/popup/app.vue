@@ -305,6 +305,7 @@ onBeforeUnmount(() => {
 		<div id="popup" />
 		<div id="tooltip" />
 		<div id="dropdown" />
+		<div id="popover" />
 		<div id="toast" />
 
 		<div>

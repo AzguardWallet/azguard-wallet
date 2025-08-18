@@ -63,7 +63,7 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
                     type: {
                         fields: [{ name: "inner", type: { kind: "field" } }],
                         kind: "struct",
-                        path: "authwit::aztec::protocol_types::address::aztec_address::AztecAddress",
+                        path: "aztec::protocol_types::address::aztec_address::AztecAddress",
                     },
                     visibility: "private",
                 },
@@ -93,7 +93,7 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
                 fn.functionType === FunctionType.UTILITY &&
                 fn.parameters.length === 1 &&
                 (fn.parameters[0].type as StructType)?.path ===
-                    "authwit::aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                    "aztec::protocol_types::address::aztec_address::AztecAddress" &&
                 fn.returnTypes.length === 1 &&
                 fn.returnTypes[0].kind === "integer"
             ) {
