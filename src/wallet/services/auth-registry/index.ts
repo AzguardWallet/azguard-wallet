@@ -4,6 +4,7 @@ import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/bas
 import { Service } from "@/wallet/base/port-service/service";
 import { ExecutionService } from "@/wallet/services/execution";
 import { CallAction, FeeSettings, IAuthwitContent, SendTransactionOperation } from "@/wallet/services/execution/client";
+import { ILogs } from "@/wallet/services/logger/client";
 import type { NetworkService } from "@/wallet/services/network";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { TaskService, WrappedTask } from "@/wallet/services/task";
@@ -45,9 +46,10 @@ export class AuthRegistryService extends Service {
         private readonly networks: NetworkService,
         private readonly taskService: TaskService,
         private readonly transactionService: TransactionService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void,
     ) {
-        super(AUTH_REGISTRY_SERVICE_NAME, emit);
+        super(AUTH_REGISTRY_SERVICE_NAME, logger, emit);
         this.pxeService = new PxeServiceClient();
         this.authwits = new EntityStorage("azguard:core:auth-registry", StorageType.Local);
         this.statuses = new EntityStorage("azguard:core:auth-registry-enabled", StorageType.Local);
@@ -106,7 +108,7 @@ export class AuthRegistryService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }
         }

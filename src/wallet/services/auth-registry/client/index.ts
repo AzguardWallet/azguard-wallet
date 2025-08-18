@@ -1,6 +1,7 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import { FeeSettings } from "@/wallet/services/execution/client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { AuthRegistryServiceEvent, type AuthRegistryServiceEventMessage } from "./events";
 import {
     GetAuthwitsRequest,
@@ -38,7 +39,7 @@ export class AuthRegistryServiceClient extends ServiceClient {
         private readonly onRegistryEnabled?: (account: string) => void,
         private readonly onRegistryDisabled?: (account: string) => void,
     ) {
-        super(AUTH_REGISTRY_SERVICE_NAME, onConnected, onDisconnected);
+        super(AUTH_REGISTRY_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -72,7 +73,7 @@ export class AuthRegistryServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }
