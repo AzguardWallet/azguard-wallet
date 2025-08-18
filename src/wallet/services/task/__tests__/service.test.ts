@@ -5,7 +5,6 @@ import { TaskServiceEvent } from "../client/events";
 import { InMemoryLogs } from "@/wallet/services/logger/client";
 import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 import { ProfileService } from "@/wallet/services/profile";
-import { InMemoryLogs } from "@/wallet/services/logger/client";
 
 class TestResult implements ITaskResult {
     public readonly kind = ResultKind.Empty;
