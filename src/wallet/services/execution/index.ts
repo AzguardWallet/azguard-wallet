@@ -61,6 +61,7 @@ import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import { TaskService } from "@/wallet/services/task";
 import { WrappedTask } from "@/wallet/services/task/wrapped-task";
 import { ExecuteOperationContent, StepContent, TransferContent } from "@/wallet/services/task/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import {
     EXECUTION_SERVICE_NAME,
     ExecutionServiceMethod,

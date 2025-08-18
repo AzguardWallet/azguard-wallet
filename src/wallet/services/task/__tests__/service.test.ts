@@ -4,6 +4,7 @@ import { StepContent, TaskStatus, ContentKind, Task, EmptyResult, ITaskResult, R
 import { TaskServiceEvent } from "../client/events";
 import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 import { ProfileService } from "@/wallet/services/profile";
+import { InMemoryLogs } from "@/wallet/services/logger/client";
 
 class TestResult implements ITaskResult {
     public readonly kind = ResultKind.Empty;
@@ -15,7 +16,8 @@ const createTestSetup = () => {
     const profileMock = {
         onActiveProfileChanged: [] as ((id?: string) => void)[],
     } as unknown as ProfileService;
-    const service = new TaskService(profileMock, emitMock);
+    const logs = new InMemoryLogs();
+    const service = new TaskService(profileMock, logs, emitMock);
 
     const switchToProfile = (id?: string) => {
         profileMock.onActiveProfileChanged.forEach(cb => cb(id));

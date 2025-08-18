@@ -17,9 +17,10 @@ import {
     type Tx,
     type TxExecutionRequest,
     TxHash,
-    type TxProvingResult,
+    TxProvingResult,
     TxSimulationResult,
     UtilitySimulationResult,
+    SimulationOverrides,
 } from "@aztec/stdlib/tx";
 import z from "zod";
 import { ServiceClient } from "@/wallet/base/message-service/service-client";
