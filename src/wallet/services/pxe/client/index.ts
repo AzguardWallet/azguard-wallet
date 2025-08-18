@@ -14,10 +14,11 @@ import type { ContractClassMetadata, ContractMetadata, PXE, PXEInfo } from "@azt
 import { type NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
     type PrivateExecutionResult,
+    SimulationOverrides,
     type Tx,
     type TxExecutionRequest,
     TxHash,
-    type TxProvingResult,
+    TxProvingResult,
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
