@@ -84,6 +84,7 @@ const authRegistryService = new AuthRegistryService(
     networkService,
     taskService,
     transactionService,
+    logs,
     broadcast,
 );
 const executionService = new ExecutionService(
