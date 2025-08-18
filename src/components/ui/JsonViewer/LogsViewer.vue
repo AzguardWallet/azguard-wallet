@@ -14,7 +14,6 @@ import Popover from "@/components/ui/Popover.vue"
 /** Utils */
 import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
-import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { SettingServiceClient } from "@/wallet/services/settings/client"
 import { capitalize } from "@/utils/string"
 
@@ -29,7 +28,6 @@ const editorRef = ref(null)
 let view = null
 
 let loggerService = null
-let profileService = null
 let settingService = null
 const logs = ref([])
 
@@ -39,7 +37,7 @@ function getLogLevelName(level) {
 		: level
 }
 
-const sources = ["account", "account-state", "dapp-interaction", "dapp-session", "execution", "faucet", "fpc", "logger", "network", "profile", "pxe", "rpc", "task", "token", "token-balance", "transaction", "wallet-connect", "undefined"]
+const sources = ["account", "account-state", "dapp-interaction", "dapp-session", "execution", "faucet", "fpc", "logger", "network", "profile", "pxe", "rpc", "setting", "task", "token", "token-balance", "transaction", "wallet-connect", "undefined"]
 const allowedSources = computed(() => new Set(Object.keys(filters.source).filter(k => filters.source[k])))
 const origins = ["UI", "OF", "BG"]
 const allowedOrigins = computed(() => new Set(Object.keys(filters.origin).filter(k => filters.origin[k])))
@@ -355,14 +353,6 @@ async function handleClearLogs() {
 	}
 }
 
-function onActiveProfileChanged(profile) {
-	if (!profile) {
-		chrome.windows.getCurrent(window => {
-			chrome.windows.remove(window.id)
-		})
-	}
-}
-
 async function onSettingUpdate(setting) {
 	if (setting.key === "debugMode") {
 		maxLogsCount.value = setting.value ? 10_000 : 1_000
@@ -374,7 +364,6 @@ async function onSettingUpdate(setting) {
 onMounted(async () => {
 	await nextTick()
 
-	profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, onActiveProfileChanged)
 	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
 
 	loggerService = new LoggerServiceClient(undefined, undefined)
@@ -415,7 +404,6 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-	profileService.dispose()
 	loggerService.dispose()
 
 	clearTimeout(scrollTimeout)

@@ -7,15 +7,39 @@ import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue"
 
 /** Utils */
 import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
 
 const params = new URLSearchParams(window.location.search)
 const requestId = params.get("requestId")
 const payload = ref()
 const data = computed(() => payload.value?.params.operations)
 
+let profileService
+
+function onActiveProfileChanged(profile) {
+	if (!profile) {
+		chrome.windows.getCurrent(window => {
+			chrome.windows.remove(window.id)
+		})
+	}
+}
+
+function onClose() {
+	profileService.dispose()
+	profileService = null
+}
+
 onMounted(async () => {
 	payload.value = await new DappInteractionServiceClient().getInteractionPayload(requestId)
+	profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, onActiveProfileChanged)
+	
+	window.addEventListener("beforeunload", onClose)
 })
+
+onUnmounted(() => {
+	window.removeEventListener("beforeunload", onClose)
+})
+
 </script>
 
 <template>

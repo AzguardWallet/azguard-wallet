@@ -9,7 +9,6 @@ import {
 	highlightActiveLine,
 	highlightActiveLineGutter,
 	highlightSpecialChars,
-	drawSelection,
 } from "@codemirror/view"
 import { bracketMatching, foldGutter } from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
