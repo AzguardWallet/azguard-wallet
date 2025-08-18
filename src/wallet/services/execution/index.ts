@@ -54,7 +54,6 @@ import {
     TxOrigin,
     TxTransfer,
 } from "@/wallet/services/transaction/client";
-import type { ILogs } from "@/wallet/services/logger/client";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import { decodeFromAbiPatched } from "@/wallet/utils/abi-decoder";
 import type { Fn } from "@/wallet/utils/fn";

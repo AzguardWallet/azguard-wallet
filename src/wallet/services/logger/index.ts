@@ -60,7 +60,7 @@ export class LoggerService extends Service {
                 }
             }
             default: {
-                this.logError(`Invalid request method ${request.method}`);
+                this.addLog(LogLevel.Error, `Invalid request method ${request.method}`);
                 return undefined;
             }                
         }

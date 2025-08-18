@@ -9,7 +9,7 @@ import type { DappMetadata, DappPermissions, DappSession } from "@/wallet/servic
 import type { DappInteractionService } from '@/wallet/services/dapp-interaction';
 import type { ConnectionParams, DappSessionInfo, ExecutionParams } from "@/wallet/services/dapp-interaction/types";
 import { AzguardWalletInfo, RpcMethod } from '@/wallet/services/rpc/types';
-import type { ILogs } from "@/wallet/services/logger/client";
+import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import { parseExecutionParams, parseConnectionParams } from '@/wallet/services/rpc/utils';
 import { sleep } from "@/wallet/utils/sleep";
 import {
