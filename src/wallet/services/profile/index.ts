@@ -1,45 +1,46 @@
 import { Fr } from "@aztec/foundation/fields";
-import { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/port-service/messages";
+import type { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, SimpleStorage, StorageType } from "@/wallet/storage";
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
 import { getEntropy, getMnemonic } from "@/wallet/utils/mnemonic";
 import { EncryptionKey } from "./encryption-key";
 import {
-    ChangeProfileNameRequest,
+    type ChangeProfileNameRequest,
     ChangeProfileNameResponse,
-    ChangeProfilePasswordRequest,
+    type ChangeProfilePasswordRequest,
     ChangeProfilePasswordResponse,
-    CreateProfileRequest,
+    type CreateProfileRequest,
     CreateProfileResponse,
-    DeleteProfileRequest,
+    type DeleteProfileRequest,
     DeleteProfileResponse,
-    ExportEncryptedRequest,
+    type ExportEncryptedRequest,
     ExportEncryptedResponse,
-    ExportMnemonicRequest,
+    type ExportMnemonicRequest,
     ExportMnemonicResponse,
-    ExportPlainRequest,
+    type ExportPlainRequest,
     ExportPlainResponse,
-    GetActiveProfileRequest,
+    type GetActiveProfileRequest,
     GetActiveProfileResponse,
-    GetProfilesRequest,
+    type GetProfilesRequest,
     GetProfilesResponse,
-    ImportEncryptedRequest,
+    type ImportEncryptedRequest,
     ImportEncryptedResponse,
-    ImportMnemonicRequest,
+    type ImportMnemonicRequest,
     ImportMnemonicResponse,
-    ImportPlainRequest,
+    type ImportPlainRequest,
     ImportPlainResponse,
-    LockActiveProfileRequest,
+    type LockActiveProfileRequest,
     LockActiveProfileResponse,
     PROFILE_SERVICE_NAME,
     Profile,
     ProfileServiceEvent,
     ProfileServiceEventMessage,
     ProfileServiceMethod,
-    RefreshSessionRequest,
+    type RefreshSessionRequest,
     RefreshSessionResponse,
-    UnlockProfileRequest,
+    type UnlockProfileRequest,
     UnlockProfileResponse
 } from "./client";
 
@@ -75,8 +76,11 @@ export class ProfileService extends Service {
     private initPromise?: Promise<void>;
     private activeSession?: ActiveSession;
 
-    constructor(emit: (event: EventMessage) => void) {
-        super(PROFILE_SERVICE_NAME, emit);
+    constructor(
+        public readonly logger: ILogs,
+        emit: (event: EventMessage) => void
+    ) {
+        super(PROFILE_SERVICE_NAME, logger, emit);
         this.profiles = new EntityStorage('azguard:core:profiles', StorageType.Local);
         this.session = new SimpleStorage('azguard:core:profiles', StorageType.Session);
         this.initPromise = this.initSession();
@@ -235,7 +239,7 @@ export class ProfileService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }
         }
@@ -559,7 +563,7 @@ export class ProfileService extends Service {
                         const key = await EncryptionKey.fromPasshash(passhash.buffer);
                         const guard = await this.tryDecrypt(Buffer.from(profile.guard, 'base64'), key);
                         if (guard && array_equals(guard, encryptionGuard)) {
-                            console.debug('session restored');
+                            this.logDebug("Session restored");
                             this.activeSession = {profile, session, key};
                             this.emit(new ProfileServiceEventMessage(
                                 ProfileServiceEvent.ActiveProfileChanged,
@@ -570,23 +574,23 @@ export class ProfileService extends Service {
                             }
                         }
                         else {
-                            console.debug('session contains wrong credentials');
+                            this.logDebug("Session contains wrong credentials");
                             await this._closeSession();
                         }
                     }
                     else {
-                        console.debug('session refers wrong profile');
+                        this.logDebug("Session refers wrong profile");
                         await this._closeSession();
                     }
                 }
                 else {
-                    console.debug('session expired');
+                    this.logDebug("Session expired");
                     await this._closeSession();
                 }
             }
         }
         catch (error) {
-            console.error("Failed to initialize profile session", error);
+            this.logError("Failed to initialize profile session", error);
         }
         finally {
             this.lock.leave();
@@ -605,7 +609,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            console.error("Failed to close profile session", error);
+            this.logError("Failed to close profile session", error);
         }
     }
 
@@ -614,11 +618,11 @@ export class ProfileService extends Service {
             if (this.activeSession.session.since + sessionTtl > Date.now()) {
                 return this.activeSession;
             }
-            else {
-                console.debug('session expired');
-                await this._closeSession();
-            }
+
+            this.logDebug("Session expired");
+            await this._closeSession();
         }
+
         return undefined;
     }
 
@@ -631,7 +635,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            console.error("Failed to refresh profile session", error);
+            this.logError("Failed to refresh profile session", error);
         }
     }
 
@@ -658,7 +662,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            console.error("Failed to open profile session", error);
+            this.logError("Failed to open profile session", error);
         }
     }
 
@@ -701,7 +705,7 @@ export class ProfileService extends Service {
             return await key.decrypt(payload);
         }
         catch (error) {
-            console.debug("Failed to decrypt payload", error);
+            this.logDebug("Failed to decrypt payload", error);
             return undefined;
         }
     }

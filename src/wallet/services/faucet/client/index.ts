@@ -1,5 +1,6 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import type { FeeSettings } from "@/wallet/services/execution/client";
 import { MintRequest } from "./methods";
 
@@ -12,7 +13,7 @@ export const FAUCET_SERVICE_NAME = "faucet";
  */
 export class FaucetServiceClient extends ServiceClient {
     /**
-     * Creates FaucetServiceClient instace.
+     * Creates FaucetServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      */
@@ -20,13 +21,13 @@ export class FaucetServiceClient extends ServiceClient {
         onConnected?: () => void,
         onDisconnected?: () => void,
     ) {
-        super(FAUCET_SERVICE_NAME, onConnected, onDisconnected);
+        super(FAUCET_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
         switch (message.event) {
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

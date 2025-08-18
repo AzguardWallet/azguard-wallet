@@ -1,5 +1,24 @@
+import { LogLevel, LogOrigin } from "@/wallet/services/logger/client/models"
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { PxeService } from "@/wallet/services/pxe";
 import { OFFSCREEN_READY_MESSAGE } from "@/wallet/utils/offscreen";
+
+const loggerService = new LoggerServiceClient()
+function patchConsoleMethods() {
+    for (const level of Object.values(LogLevel)) {
+        const cbName = `on${level}`;
+
+        (window as any)[cbName] = (...args: any[]) => {
+            loggerService.addLog(
+                level,
+                args,
+                "pxe",
+                LogOrigin.OF
+            );
+        };
+    }
+}
+patchConsoleMethods()
 
 const pxeService = new PxeService();
 pxeService.start();

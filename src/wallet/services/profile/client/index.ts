@@ -1,5 +1,6 @@
 import type { EventMessage } from '@/wallet/base/port-service/messages';
 import { ServiceClient } from '@/wallet/base/port-service/service-client';
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { ProfileServiceEvent, type ProfileServiceEventMessage } from './events';
 import {
     ChangeProfileNameRequest,
@@ -31,7 +32,7 @@ export const PROFILE_SERVICE_NAME = "profile";
  */
 export class ProfileServiceClient extends ServiceClient {
     /**
-     * Creates ProfileServiceClient instace.
+     * Creates ProfileServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onProfileAdded Callback, called when a new profile was created.
@@ -47,7 +48,7 @@ export class ProfileServiceClient extends ServiceClient {
         private readonly onProfileDeleted?: (profile: Profile) => void,
         private readonly onActiveProfileChanged?: (profile?: Profile) => void,
     ) {
-        super(PROFILE_SERVICE_NAME, onConnected, onDisconnected);
+        super(PROFILE_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -77,7 +78,7 @@ export class ProfileServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

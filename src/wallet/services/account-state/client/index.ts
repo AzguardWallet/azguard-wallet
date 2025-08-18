@@ -1,5 +1,6 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { AccountStateServiceEvent, type AccountStateServiceEventMessage } from "./events";
 import type { Authwit, Note, NoteStatus } from "./models";
 import {
@@ -24,7 +25,7 @@ export const ACCOUNT_STATE_SERVICE_NAME = "account-state";
  */
 export class AccountStateServiceClient extends ServiceClient {
     /**
-     * Creates AccountStateServiceClient instace.
+     * Creates AccountStateServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onSenderAdded Callback, called when a new sender was added.
@@ -36,7 +37,7 @@ export class AccountStateServiceClient extends ServiceClient {
         private readonly onSenderAdded?: (sender: string) => void,
         private readonly onSenderDeleted?: (sender: string) => void,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, onConnected, onDisconnected);
+        super(ACCOUNT_STATE_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -56,7 +57,7 @@ export class AccountStateServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

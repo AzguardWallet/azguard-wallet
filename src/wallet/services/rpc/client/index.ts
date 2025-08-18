@@ -1,6 +1,7 @@
-import { EventMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { RpcServiceEvent, RpcServiceEventMessage } from "./events";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { RpcServiceEvent, type RpcServiceEventMessage } from "./events";
 import { InvokeRequest } from "./methods";
 
 export * from './events';
@@ -13,7 +14,7 @@ export const RPC_SERVICE_NAME = "rpc";
  */
 export class RpcServiceClient extends ServiceClient {
     /**
-     * Creates RpcServiceClient instace.
+     * Creates RpcServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onGenericEvent Callback, called on external RPC events.
@@ -23,7 +24,7 @@ export class RpcServiceClient extends ServiceClient {
         onDisconnected?: () => void,
         private readonly onGenericEvent?: (name: string, payload: [string, unknown]) => void,
     ) {
-        super(RPC_SERVICE_NAME, onConnected, onDisconnected);
+        super(RPC_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -36,7 +37,7 @@ export class RpcServiceClient extends ServiceClient {
                 }
                 break;
             default:
-                console.error(`Unexpected event type ${message.event}.`);
+                this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
     }

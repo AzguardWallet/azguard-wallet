@@ -1,5 +1,6 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import {
     ConnectByURIRequest,
 } from "./methods";
@@ -13,7 +14,7 @@ export const WALLET_CONNECT_SERVICE_NAME = "wallet-connect";
  */
 export class WalletConnectServiceClient extends ServiceClient {
     /**
-     * Creates WalletConnectServiceClient instace.
+     * Creates WalletConnectServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      */
@@ -21,11 +22,11 @@ export class WalletConnectServiceClient extends ServiceClient {
         onConnected?: () => void,
         onDisconnected?: () => void,
     ) {
-        super(WALLET_CONNECT_SERVICE_NAME, onConnected, onDisconnected);
+        super(WALLET_CONNECT_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
-        console.error(`Unexpected event type ${message.event}.`);
+        this.logError(`Unexpected event type ${message.event}.`);
     }
 
     /**

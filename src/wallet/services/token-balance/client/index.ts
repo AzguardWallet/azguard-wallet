@@ -1,10 +1,11 @@
-import { EventMessage } from "@/wallet/base/port-service/messages"
+import type { EventMessage } from "@/wallet/base/port-service/messages"
 import { ServiceClient } from "@/wallet/base/port-service/service-client"
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import {
 	TokenBalanceServiceEvent,
-	TokenBalanceServiceEventMessage,
+	type TokenBalanceServiceEventMessage,
 } from "./events"
-import { TokenBalanceInfo } from "./models"
+import type { TokenBalanceInfo } from "./models"
 import { GetTokenBalancesRequest, RefreshTokenBalanceRequest } from "./methods"
 
 export * from "./events"
@@ -18,7 +19,7 @@ export const TOKEN_BALANCE_SERVICE_NAME = "token-balance"
  */
 export class TokenBalanceServiceClient extends ServiceClient {
 	/**
-	 * Creates TokenBalanceServiceClient instace.
+	 * Creates TokenBalanceServiceClient instance.
 	 * @param onConnected Callback, called when the client is connected to the background service.
 	 * @param onDisconnected Callback, called when the client is disconnected from the background service.
 	 * @param onTokenBalanceAdded Callback, called when a new token balance was created.
@@ -38,7 +39,7 @@ export class TokenBalanceServiceClient extends ServiceClient {
 			token: TokenBalanceInfo
 		) => void
 	) {
-		super(TOKEN_BALANCE_SERVICE_NAME, onConnected, onDisconnected)
+		super(TOKEN_BALANCE_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected)
 	}
 
 	protected onEvent(message: EventMessage): void {
@@ -74,7 +75,7 @@ export class TokenBalanceServiceClient extends ServiceClient {
 				}
 				break
 			default:
-				console.error(`Unexpected event type ${message.event}.`)
+				this.logError(`Unexpected event type ${message.event}.`)
 				break
 		}
 	}

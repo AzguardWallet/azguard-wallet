@@ -1,5 +1,5 @@
-import { DappSession } from "@/wallet/services/dapp-session/client";
-import {
+import type { DappSession } from "@/wallet/services/dapp-session/client";
+import type {
     ConnectionParams,
     ExecutionParams,
     DappSessionInfo,

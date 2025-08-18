@@ -231,3 +231,92 @@ export const createTheme = ({ styles }) => {
 
 	return extension
 }
+
+export const createLoggerTheme = () => {
+	const theme = EditorView.theme(
+		{
+			"&": {
+				backgroundColor: "var(--log-background)",
+				color: "var(--txt-secondary)",
+
+				fontFamily: "monospace",
+				fontSize: "13px",
+				width: "100%",
+				height: "100%",
+			},
+			".cm-scroller": {
+				width: "100%",
+				height: "100%",
+				overflow: "scroll",
+				scrollbarWidth: "thin",
+				scrollbarColor: "var(--txt-tertiary) transparent",
+			},
+			".cm-scroller::-webkit-scrollbar": {
+				width: "4px",
+				height: "4px",
+			},
+			".cm-scroller::-webkit-scrollbar-track": {
+				background: "transparent",
+			},
+			".cm-scroller::-webkit-scrollbar-thumb": {
+				backgroundColor: "var(--txt-tertiary)",
+				borderRadius: "4px",
+			},
+			".cm-content": {
+				minHeight: "max-content",
+				caretColor: "#d4d4d4",
+			},
+			".cm-line": {
+				padding: "0 12px 0 6px",
+				whiteSpace: "pre",
+			},
+
+			// Log levels
+			".log-line-info": {
+				color: "var(--txt-secondary)",
+			},
+			".log-line-debug": {
+				color: "var(--txt-tertiary)",
+			},
+			".log-line-warn": {
+				color: "var(--log-warn-color)",
+				backgroundColor: "var(--log-warn-background)",
+			},
+			".log-line-error": {
+				color: "var(--log-error-color)",
+				backgroundColor: "var(--log-error-background)",
+			},
+
+			// Active line & selection
+			".cm-activeLine": {
+				background: "rgba(255, 255, 255, 0.05) !important",
+			},
+			".cm-selectionBackground": {
+				background: "rgba(255, 255, 255, 0.1)",
+			},
+			"&.cm-focused .cm-selectionBackground": {
+				background: "rgba(255, 255, 255, 0.15)",
+			},
+			".cm-selectionMatch": {
+				outline: "none",
+			},
+			".cm-searchMatch": {
+				background: "rgba(255, 255, 0, 0.1)",
+				outline: "none",
+			},
+
+			// Row numbers
+			".cm-gutters": {
+				backgroundColor: "transparent",
+				color: "#888",
+			},
+		},
+		{
+			dark: true,
+		},
+	)
+
+	const highlightStyle = HighlightStyle.define([])
+
+	return [theme, syntaxHighlighting(highlightStyle)]
+}

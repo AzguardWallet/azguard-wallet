@@ -1,3 +1,22 @@
+import { LogLevel, LogOrigin } from "@/wallet/services/logger/client/models"
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+const loggerService = new LoggerServiceClient()
+function patchConsoleMethods() {
+    for (const level of Object.values(LogLevel)) {
+        const cbName = `on${level}`;
+
+        (window as any)[cbName] = (...args: any[]) => {
+            loggerService.addLog(
+                level,
+                args,
+                undefined,
+                LogOrigin.UI
+            );
+        };
+    }
+}
+patchConsoleMethods()
+
 import { createPinia } from "pinia"
 import { createApp } from "vue"
 import { createRouter, createWebHashHistory } from "vue-router/auto"

@@ -1,24 +1,25 @@
-import { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
+import type { ILogs } from "@/wallet/services/logger/client";
 import { getRandomHex } from "@/wallet/utils";
 import {
     TASK_SERVICE_NAME,
     TaskServiceMethod,
-    GetAllTasksRequest,
+    type GetAllTasksRequest,
     GetAllTasksResponse,
-    GetTaskRequest,
+    type GetTaskRequest,
     GetTaskResponse,
-    Task,
+    type Task,
     TaskServiceEvent,
     TaskServiceEventMessage,
     TaskStatus,
-    ITaskContent,
+    type ITaskContent,
     EmptyResult,
-    ITaskResult,
+    type ITaskResult,
 } from "./client";
 import { WrappedTask } from "./wrapped-task";
-import { TxOrigin } from "@/wallet/services/transaction/client";
-import { ProfileService } from "@/wallet/services/profile";
+import type { TxOrigin } from "@/wallet/services/transaction/client";
+import type { ProfileService } from "@/wallet/services/profile";
 
 export const TASK_RETENTION_PERIOD_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
 
@@ -28,9 +29,10 @@ export class TaskService extends Service {
 
     constructor(
         private readonly profileService: ProfileService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {
-        super(TASK_SERVICE_NAME, emit);
+        super(TASK_SERVICE_NAME, logger, emit);
         this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged);
     }
 
@@ -61,7 +63,7 @@ export class TaskService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }
         }
@@ -79,7 +81,7 @@ export class TaskService extends Service {
         } while (this.tasks.has(taskId));
 
         const parent = parentId ? this.getTaskById(parentId) : undefined;
-        if (parent && parent.finishedAt) {
+        if (parent?.finishedAt) {
             throw new Error(`Cannot add task to finished parent ${parentId}`);
         }
 
@@ -171,7 +173,7 @@ export class TaskService extends Service {
      * @param taskId - Task ID to fail
      * @param error - Error message
      */
-    public failTask(taskId: string, error: string = "Unknown error"): void {
+    public failTask(taskId: string, error = "Unknown error"): void {
         const task = this.getTaskById(taskId);
         this.validateNotPending(task);
         this.validateTaskBeforeFinish(task);
@@ -254,7 +256,7 @@ export class TaskService extends Service {
         if (profileId) {
             if (this.profile && this.profile !== profileId) {
                 this.tasks.clear();
-                console.debug(`Tasks cleared for profile #${profileId}`);
+                this.logDebug(`Tasks cleared for profile #${profileId}`);
             }
             this.profile = profileId;
         }

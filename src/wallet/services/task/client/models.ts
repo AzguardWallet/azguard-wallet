@@ -1,5 +1,5 @@
-import { OperationKind, TransferType } from "@/wallet/services/execution/client";
-import { TxOrigin } from "@/wallet/services/transaction/client";
+import type { OperationKind, TransferType } from "@/wallet/services/execution/client";
+import type { TxOrigin } from "@/wallet/services/transaction/client";
 
 export enum TaskStatus {
     Pending,

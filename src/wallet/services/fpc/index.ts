@@ -4,6 +4,7 @@ import { Service } from "@/wallet/base/port-service/service";
 import type { ProfileService } from "@/wallet/services/profile";
 import type { NetworkService } from "@/wallet/services/network";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
+import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import {
@@ -35,9 +36,10 @@ export class FpcService extends Service {
     constructor(
         private readonly profiles: ProfileService,
         private readonly networks: NetworkService,
+        public readonly logger: ILogs,
         emit: (event: EventMessage) => void,
     ) {
-        super(FPC_SERVICE_NAME, emit);
+        super(FPC_SERVICE_NAME, logger, emit);
         this.pxeService = new PxeServiceClient();
         this.storage = new EntityStorage("azguard:core:fpcs", StorageType.Local);
         this.profiles.onProfileDeleted.push(this.onProfileDeleted);
@@ -98,7 +100,7 @@ export class FpcService extends Service {
                 }
             }
             default: {
-                console.error(`Invalid request method ${request.method}.`);
+                this.logError(`Invalid request method ${request.method}.`);
                 return undefined;
             }
         }
@@ -114,7 +116,7 @@ export class FpcService extends Service {
         );
         // TODO: remove it
         if (!result.length && chainId) {
-            console.log("Discovering FPCs...");
+            this.logInfo("Discovering FPCs...");
             try {
                 await this.lock.enter();
                 const networks = await this.networks.getNetworks(chainId);
@@ -133,7 +135,7 @@ export class FpcService extends Service {
                             contractMeta.contractInstance.currentContractClassId,
                         );
                         if (classMeta.artifact) {
-                            console.log(`Found FPC: ${contract.toString()}`);
+                            this.logInfo(`Found FPC: ${contract.toString()}`);
 
                             const registeredContracts = await pxe.getContracts();
                             if (!registeredContracts.find(x => x.toString() === contract.toString())) {
@@ -297,12 +299,12 @@ export class FpcService extends Service {
     }
 
     private readonly onProfileDeleted = async (profileId: string) => {
-        console.debug(`profile ${profileId} deleted, remove related FPCs`);
+        this.logDebug(`Profile ${profileId} deleted, remove related FPCs`);
         try {
             await this.lock.enter();
             const fpcs = (await this.storage.getValues()).filter(fpc => fpc.profileId === profileId);
             for (const fpc of fpcs) {
-                console.debug(`remove fpc #${fpc.id}`);
+                this.logDebug(`Remove fpc #${fpc.id}`);
                 await this.storage.delete(fpc.id);
                 this.emit(new FpcServiceEventMessage(FpcServiceEvent.FpcDeleted, fpc));
             }

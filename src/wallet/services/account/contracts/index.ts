@@ -1,10 +1,10 @@
 import { Fr } from '@aztec/foundation/fields';
 import { FunctionSelector } from '@aztec/stdlib/abi';
-import { AuthWitness } from '@aztec/stdlib/auth-witness';
+import type { AuthWitness } from '@aztec/stdlib/auth-witness';
 import { AztecAddress } from '@aztec/stdlib/aztec-address';
-import { CompleteAddress } from '@aztec/stdlib/contract';
-import { PXE } from '@aztec/stdlib/interfaces/client';
-import { Capsule, HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
+import type { CompleteAddress } from '@aztec/stdlib/contract';
+import type { PXE } from '@aztec/stdlib/interfaces/client';
+import type { Capsule, HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
 
 export * from './azguard-v0';
 

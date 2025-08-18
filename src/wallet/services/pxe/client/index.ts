@@ -10,25 +10,25 @@ import {
     type PartialAddress,
 } from "@aztec/stdlib/contract";
 import { GasFees } from "@aztec/stdlib/gas";
-import { ContractClassMetadata, ContractMetadata, PXE, PXEInfo } from "@aztec/stdlib/interfaces/client";
-import { NotesFilter, UniqueNote } from "@aztec/stdlib/note";
+import type { ContractClassMetadata, ContractMetadata, PXE, PXEInfo } from "@aztec/stdlib/interfaces/client";
+import { type NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
-    PrivateExecutionResult,
-    SimulationOverrides,
-    Tx,
-    TxExecutionRequest,
+    type PrivateExecutionResult,
+    type Tx,
+    type TxExecutionRequest,
     TxHash,
-    TxProvingResult,
+    type TxProvingResult,
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
 import z from "zod";
 import { ServiceClient } from "@/wallet/base/message-service/service-client";
-import { Network } from "@/wallet/services/network/client";
+import type { Network } from "@/wallet/services/network/client";
 import { ensureOffscreenRunning } from "@/wallet/utils/offscreen";
 import { ContractClassMetadataSchema, ContractMetadataSchema, PXEInfoSchema } from "@/wallet/utils/schemas";
-import { PxeServiceMethod as PxeServiceMethod } from "./methods";
+import { PxeServiceMethod } from "./methods";
 import { PXEProxy } from "./proxy";
+import { DummyLogger } from "@/wallet/services/logger/client";
 
 export * from "./methods";
 
@@ -36,7 +36,7 @@ export const PXE_SERVICE_NAME = "pxe";
 
 export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
     public constructor(name?: string) {
-        super(PXE_SERVICE_NAME, name);
+        super(PXE_SERVICE_NAME, new DummyLogger(), name);
     }
 
     protected async onEvent() {}
