@@ -73,7 +73,7 @@ export class ProfileService extends Service {
 
     private readonly profiles: EntityStorage<ProfileDto>;
     private readonly session: SimpleStorage<SessionDto>;
-    private sessionTtl: number = DEFAULT_SETTINGS.session.ttl as number;
+    private sessionTtl: number = DEFAULT_SETTINGS.sessionTtl as number;
     private readonly lock = new Lock();
 
     private initPromise?: Promise<void>;
@@ -561,6 +561,9 @@ export class ProfileService extends Service {
             
             const session = await this.session.get('active_profile');
             if (session) {
+                const setting = await this.settings.getSetting("sessionTtl");
+                this.sessionTtl = Number(setting.value);
+
                 if (session.since + this.sessionTtl > Date.now() || !this.sessionTtl) {
                     const profile = await this.profiles.get(session.profile);
                     if (profile) {
@@ -593,9 +596,6 @@ export class ProfileService extends Service {
                     await this._closeSession();
                 }
             }
-
-            const setting = await this.settings.getSetting("ttl");
-            this.sessionTtl = Number(setting.value);
         }
         catch (error) {
             this.logError("Failed to initialize profile session", error);
@@ -719,7 +719,7 @@ export class ProfileService extends Service {
     }
 
     private readonly onSettingUpdated = (setting: Setting) => {
-        if (setting.key === "ttl" && typeof setting.value === "number") {
+        if (setting.key === "sessionTtl" && typeof setting.value === "number") {
             this.sessionTtl = setting.value;
         }
     }

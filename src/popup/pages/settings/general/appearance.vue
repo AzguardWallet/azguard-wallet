@@ -23,11 +23,11 @@ const { openToast } = useToast()
 
 let settingService = null
 const isLoading = ref(true)
-const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
-const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.appearance?.sidePanel)
-const isShowNodeNameEnabled = ref(DEFAULT_SETTINGS?.appearance?.showNode)
-const isShowPopupFullscreen = ref(DEFAULT_SETTINGS?.appearance?.showPopupFullscreen)
-const isAnimationsDisabled = ref(DEFAULT_SETTINGS?.appearance?.disableAnimations)
+const theme = ref(DEFAULT_SETTINGS?.theme || "dark")
+const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.sidePanel)
+const isShowNodeNameEnabled = ref(DEFAULT_SETTINGS?.showNode)
+const isShowPopupFullscreen = ref(DEFAULT_SETTINGS?.showPopupFullscreen)
+const isAnimationsDisabled = ref(DEFAULT_SETTINGS?.disableAnimations)
 const settings = {
 	theme: {
 		title: "",
