@@ -1,22 +1,22 @@
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
-import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import type { Task } from "./models";
-import { TaskTrackerServiceEvent, type TaskTrackerServiceEventMessage } from "./events";
+import { TaskServiceEvent, type TaskServiceEventMessage } from "./events";
 import { GetAllTasksRequest, GetTaskRequest } from "./methods";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
 
-export const TASK_TRACKER_SERVICE_NAME = "task-tracker";
+export const TASK_SERVICE_NAME = "task";
 
 export * from "./events";
 export * from "./methods";
 export * from "./models";
 
 /**
- * Client for interaction with the TaskTrackerService via messaging API
+ * Client for interaction with the TaskService via messaging API
  */
-export class TaskTrackerServiceClient extends ServiceClient {
+export class TaskServiceClient extends ServiceClient {
     /**
-     * Creates TaskTrackerServiceClient instance.
+     * Creates TaskServiceClient instance.
      * @param onConnected Callback, called when the client is connected to the background service.
      * @param onDisconnected Callback, called when the client is disconnected from the background service.
      * @param onTaskCreated Callback, called when a new task is created.
@@ -30,32 +30,32 @@ export class TaskTrackerServiceClient extends ServiceClient {
         private readonly onTaskUpdated?: (task: Task) => void,
         private readonly onTaskDeleted?: (task: Task) => void,
     ) {
-        super(TASK_TRACKER_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(TASK_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
         switch (message.event) {
-            case TaskTrackerServiceEvent.TaskCreated: {
+            case TaskServiceEvent.TaskCreated: {
                 if (this.onTaskCreated) {
-                    const { task } = message as TaskTrackerServiceEventMessage;
+                    const { task } = message as TaskServiceEventMessage;
                     try {
                         this.onTaskCreated(task);
                     } catch {}
                 }
                 break;
             }
-            case TaskTrackerServiceEvent.TaskUpdated: {
+            case TaskServiceEvent.TaskUpdated: {
                 if (this.onTaskUpdated) {
-                    const { task } = message as TaskTrackerServiceEventMessage;
+                    const { task } = message as TaskServiceEventMessage;
                     try {
                         this.onTaskUpdated(task);
                     } catch {}
                 }
                 break;
             }
-            case TaskTrackerServiceEvent.TaskDeleted: {
+            case TaskServiceEvent.TaskDeleted: {
                 if (this.onTaskDeleted) {
-                    const { task } = message as TaskTrackerServiceEventMessage;
+                    const { task } = message as TaskServiceEventMessage;
                     try {
                         this.onTaskDeleted(task);
                     } catch {}

@@ -24,7 +24,7 @@ export class ExecutionServiceClient extends ServiceClient {
         onConnected?: () => void,
         onDisconnected?: () => void,
     ) {
-        super(EXECUTION_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(EXECUTION_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

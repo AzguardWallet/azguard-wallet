@@ -1,4 +1,4 @@
-export const array_equals = (arr1: Uint8Array, arr2: Uint8Array): boolean => {
+export const array_equals = (arr1: Uint8Array<ArrayBuffer>, arr2: Uint8Array<ArrayBuffer>): boolean => {
     if (arr1.length !== arr2.length) {
         return false;
     }
@@ -26,14 +26,14 @@ export class CircularBuffer<T> {
 	private full = false;
 
 	constructor(
-        private maxSize: number,
+        private capacity: number,
     ) {
-        this.buffer = Array<T>(maxSize).fill(undefined as T);
+        this.buffer = Array<T>(capacity).fill(undefined as T);
 	}
 
 	add(item: T): void {
 		this.buffer[this.pointer] = item;
-		this.pointer = (this.pointer + 1) % this.maxSize;
+		this.pointer = (this.pointer + 1) % this.capacity;
 		if (this.pointer === 0) this.full = true;
 	}
 
@@ -44,14 +44,20 @@ export class CircularBuffer<T> {
 		return [...this.buffer.slice(this.pointer), ...this.buffer.slice(0, this.pointer)];
 	}
 
-	resize(newSize: number): void {
-		const allItems = this.get().slice(-newSize);
-		this.maxSize = newSize;
-        this.buffer = Array<T>(newSize).fill(undefined as T);
+	resize(newCapacity: number): void {
+		const allItems = this.get().slice(-newCapacity);
+		this.capacity = newCapacity;
+        this.buffer = Array<T>(newCapacity).fill(undefined as T);
 		this.pointer = 0;
 		this.full = false;
 		for (const item of allItems) {
 			this.add(item);
 		}
 	}
+
+	clear(): void {
+        this.buffer.fill(undefined as T);
+        this.pointer = 0;
+        this.full = false;
+    }
 }

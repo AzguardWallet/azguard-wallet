@@ -19,7 +19,7 @@ import {
     SettingServiceEvent,
     SettingServiceEventMessage,
 } from "./client";
-import { DEFAULT_SETTINGS, DEFAULT_SETTING_GROUPS } from "./defaults";
+import { DEFAULT_SETTINGS } from "./defaults";
 
 export class SettingService extends Service {
     public readonly onSettingUpdated: ((setting: Setting) => void)[] = [];
@@ -43,7 +43,7 @@ export class SettingService extends Service {
             case SettingServiceMethod.GetSettings: {
                 const _request = request as GetSettingsRequest;
                 try {
-                    const res = await this.getSettings(_request.includeFullKey);
+                    const res = await this.getSettings();
                     return new GetSettingsResponse(_request, res);
                 }
                 catch (error: any) {
@@ -89,41 +89,28 @@ export class SettingService extends Service {
         }
     }
 
-    private getSettingId(key: string): string {
-        const group = DEFAULT_SETTING_GROUPS[key];
-        if (!group) {
-            this.logError(`Unknown setting key: ${key}`);
-            throw new Error(`Unknown setting key: ${key}`);
-        }
-
-        return `${group}:${key}`;
-    }
-
     public async initDefaultSettings(): Promise<void> {
-        for (const [group, settings] of Object.entries(DEFAULT_SETTINGS)) {
-            for (const [key, value] of Object.entries(settings)) {
-                const id = `${group}:${key}`;
-                const exists = await this.settings.contains(id);
-                if (!exists) {
-                    await this.settings.set(id, value);
-                }
-                switch (key) {
-                    case "ttl": {
-                        const setting = new Setting(key, value);
-                        for (const emit of this.onSettingUpdated) {
-                            try {emit(setting)} catch {}
-                        }
-                        break;
+        for (const key of Object.keys(DEFAULT_SETTINGS)) {
+            const exists = await this.settings.contains(key);
+            if (!exists) {
+                await this.settings.set(key, DEFAULT_SETTINGS[key]);
+            }
+            switch (key) {
+                case "sessionTtl": {
+                    const setting = new Setting(key, DEFAULT_SETTINGS[key]);
+                    for (const emit of this.onSettingUpdated) {
+                        try {emit(setting)} catch {}
                     }
-                    case "debugMode": {
-                        const value = await this.settings.get(id);
-                        this.logger.setDebugMode(value as boolean);
-                        break;
-                    }
-                
-                    default:
-                        break;
+                    break;
                 }
+                case "debugMode": {
+                    const value = await this.settings.get(key);
+                    this.logger.setDebugMode(value as boolean);
+                    break;
+                }
+            
+                default:
+                    break;
             }
         }
 
@@ -136,24 +123,16 @@ export class SettingService extends Service {
         }
     }
 
-    public async getSettings(includeFullKey = false): Promise<Setting[]> {
+    public async getSettings(): Promise<Setting[]> {
         await this.ensureInitialized();
 
-        const all = await this.settings.getAll();
-        return all.map(([fullKey, value]) => {
-            const key = includeFullKey
-                ? fullKey
-                : fullKey.includes(":")
-                    ? fullKey.slice(fullKey.indexOf(":") + 1)
-                    : fullKey;
-            return new Setting(key, value);
-        });
+        return (await this.settings.getAll()).map(([key, value]) => new Setting(key, value));
     }
 
     public async getSetting(key: string): Promise<Setting> {
         await this.ensureInitialized();
         
-        const value = await this.settings.get(this.getSettingId(key));
+        const value = await this.settings.get(key);
         if (value === undefined) {
             throw new Error("Unknown key");
         }
@@ -170,8 +149,7 @@ export class SettingService extends Service {
             const _setting = await this.getSetting(key);
             if (_setting?.value === value) return;
 
-            const id = this.getSettingId(key);
-            await this.settings.set(id, value)
+            await this.settings.set(key, value)
 
             if (key === "debugMode") {
                 this.logger.setDebugMode(value as boolean);
@@ -202,19 +180,16 @@ export class SettingService extends Service {
                 await this.settings.delete(key);
             }
 
-            for (const [group, entries] of Object.entries(DEFAULT_SETTINGS)) {
-                for (const [key, value] of Object.entries(entries)) {
-                    const id = `${group}:${key}`;
-                    await this.settings.set(id, value);
+            for (const key of Object.keys(DEFAULT_SETTINGS)) {
+                await this.settings.set(key, DEFAULT_SETTINGS[key]);
 
-                    const setting = new Setting(key, value);
-                    this.emit(new SettingServiceEventMessage(
-                        SettingServiceEvent.SettingUpdated,
-                        setting
-                    ));
-                    for (const emit of this.onSettingUpdated) {
-                        try {emit(setting)} catch {}
-                    }
+                const setting = new Setting(key, DEFAULT_SETTINGS[key]);
+                this.emit(new SettingServiceEventMessage(
+                    SettingServiceEvent.SettingUpdated,
+                    setting
+                ));
+                for (const emit of this.onSettingUpdated) {
+                    try {emit(setting)} catch {}
                 }
             }
         } catch (err) {

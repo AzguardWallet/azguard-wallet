@@ -5,25 +5,24 @@ import {
     AddLogResponse,
     type GetLogsRequest,
     GetLogsResponse,
+    type ClearLogsRequest,
+    ClearLogsResponse,
     type ILogs,
     LOGGER_SERVICE_NAME,
     type LogEntity,
-    type LogLevel,
-    type LogOrigin,
-    LoggerServiceMethod
+    LogLevel,
+    LogOrigin,
+    LoggerServiceMethod,
 } from "./client";
 import { LoggerServiceEvent, LoggerServiceEventMessage } from "./client/events";
-import { ConsoleSnifferServiceClient } from "@/wallet/services/console-sniffer/client";
 
 export class LoggerService extends Service {
-    private readonly consoleSnifferService: ConsoleSnifferServiceClient;
 
     public constructor(
         private readonly logs: ILogs,
         emit: (event: EventMessage) => void
     ) {        
         super(LOGGER_SERVICE_NAME, logs, emit);
-        this.consoleSnifferService = new ConsoleSnifferServiceClient(undefined, this.onSnifferLogAdded)
     }
     
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
@@ -40,19 +39,28 @@ export class LoggerService extends Service {
             case LoggerServiceMethod.AddLog: {
                 const _request = request as AddLogRequest;
                 try {
-                    this.addLog(
+                    this.addLogWithMeta(
                         _request.level,
                         _request.args,
-                        _request.message,
                         _request.source,
+                        _request.origin,
                     );
                     return new AddLogResponse(_request);
                 } catch (error: any) {
                     return new AddLogResponse(_request, error.message);
                 }
             }
+            case LoggerServiceMethod.ClearLogs: {
+                const _request = request as ClearLogsRequest;
+                try {
+                    this.clearLogs();
+                    return new ClearLogsResponse(_request);
+                } catch (error: any) {
+                    return new ClearLogsResponse(_request, error.message);
+                }
+            }
             default: {
-                this.logError(`Invalid request method ${request.method}`);
+                this.addLog(LogLevel.Error, `Invalid request method ${request.method}`);
                 return undefined;
             }                
         }
@@ -62,21 +70,23 @@ export class LoggerService extends Service {
         return this.logs.get(count);
     }
 
-    public addLog(level: LogLevel, args: any, message?: string, source?: string, origin?: LogOrigin): void {
-        const log = this.logs.add(
-            level,
-            args,
-            message,
-            source,
-            origin,
-        );
+    public addLogWithMeta(level: LogLevel, args?: any[], source?: string, origin?: LogOrigin): void {
+        const log = this.logs.add(level, args, source, origin);
 
         if (log) {
             this.emit(new LoggerServiceEventMessage(LoggerServiceEvent.LogAdded, log));
         }
     }
 
-    private onSnifferLogAdded = (logEntity: LogEntity) => {
-        this.addLog(logEntity.level, logEntity.args, undefined, logEntity.source, logEntity.origin);
+    public addLog(level: LogLevel, ...args: any[]): void {
+        const log = this.logs.add(level, args);
+
+        if (log) {
+            this.emit(new LoggerServiceEventMessage(LoggerServiceEvent.LogAdded, log));
+        }
+    }
+
+    public clearLogs(): void {
+        this.logs.clear();
     }
 }

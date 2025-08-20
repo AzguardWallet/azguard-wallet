@@ -3,36 +3,42 @@ import { Service } from "@/wallet/base/port-service/service";
 import type { ILogs } from "@/wallet/services/logger/client";
 import { getRandomHex } from "@/wallet/utils";
 import {
-    TASK_TRACKER_SERVICE_NAME,
-    TaskTrackerServiceMethod,
+    TASK_SERVICE_NAME,
+    TaskServiceMethod,
     type GetAllTasksRequest,
     GetAllTasksResponse,
     type GetTaskRequest,
     GetTaskResponse,
     type Task,
-    TaskTrackerServiceEvent,
-    TaskTrackerServiceEventMessage,
+    TaskServiceEvent,
+    TaskServiceEventMessage,
     TaskStatus,
     type ITaskContent,
     EmptyResult,
     type ITaskResult,
 } from "./client";
+import { WrappedTask } from "./wrapped-task";
+import type { TxOrigin } from "@/wallet/services/transaction/client";
+import type { ProfileService } from "@/wallet/services/profile";
 
 export const TASK_RETENTION_PERIOD_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
 
-export class TaskTrackerService extends Service {
+export class TaskService extends Service {
     private readonly tasks: Map<string, Task> = new Map();
+    private profile?: string = undefined
 
     constructor(
+        private readonly profileService: ProfileService,
         public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {
-        super(TASK_TRACKER_SERVICE_NAME, logger, emit);
+        super(TASK_SERVICE_NAME, logger, emit);
+        this.profileService.onActiveProfileChanged.push(this.onActiveProfileChanged);
     }
 
     public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
         switch (request.method) {
-            case TaskTrackerServiceMethod.GetAllTasks: {
+            case TaskServiceMethod.GetAllTasks: {
                 const _request = request as GetAllTasksRequest;
                 try {
                     return new GetAllTasksResponse(_request, this.getTasks());
@@ -44,7 +50,7 @@ export class TaskTrackerService extends Service {
                     );
                 }
             }
-            case TaskTrackerServiceMethod.GetTask: {
+            case TaskServiceMethod.GetTask: {
                 const _request = request as GetTaskRequest;
                 try {
                     return new GetTaskResponse(_request, this.getTask(_request.taskId));
@@ -66,13 +72,18 @@ export class TaskTrackerService extends Service {
     private createTask(
         content: ITaskContent,
         parentId?: string,
-        source?: string,
+        origin?: TxOrigin,
         status: TaskStatus = TaskStatus.Pending,
-    ): string {
+    ): WrappedTask {
         let taskId: string;
         do {
             taskId = getRandomHex(8);
         } while (this.tasks.has(taskId));
+
+        const parent = parentId ? this.getTaskById(parentId) : undefined;
+        if (parent?.finishedAt) {
+            throw new Error(`Cannot add task to finished parent ${parentId}`);
+        }
 
         const newTask: Task = {
             id: taskId,
@@ -81,8 +92,8 @@ export class TaskTrackerService extends Service {
             createdAt: Date.now(),
             startedAt: undefined,
             subtasks: [],
-            source,
-            parent: undefined,
+            origin,
+            parent,
             finishedAt: undefined,
             result: undefined,
             error: undefined,
@@ -92,41 +103,36 @@ export class TaskTrackerService extends Service {
             newTask.startedAt = Date.now();
         }
 
-        if (parentId) {
-            const parent = this.getTaskById(parentId);
-            if (parent.finishedAt) {
-                throw new Error(`Cannot add task to finished parent ${parentId}`);
-            }
-            newTask.parent = parent;
-            parent.subtasks.push(newTask);
-            this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, parent));
-        }
-
         this.tasks.set(newTask.id, newTask);
-        this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskCreated, newTask));
-        return newTask.id;
+        this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskCreated, newTask));
+
+        if (parent) {
+            parent.subtasks.push(newTask);
+            this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, parent));
+        }
+        return new WrappedTask(newTask.id, this, origin);
     }
 
     /**
      * Creates a new pending task of any level.
      * @param content - Task content
      * @param parentId - Optional parent task ID
-     * @param source - Optional source of the task
-     * @returns Created task ID
+     * @param origin - Optional origin of the task
+     * @returns Created task wrapper
      */
-    public createNewTask(content: ITaskContent, parentId?: string, source?: string): string {
-        return this.createTask(content, parentId, source, TaskStatus.Pending);
+    public createNewTask(content: ITaskContent, parentId?: string, origin?: TxOrigin): WrappedTask {
+        return this.createTask(content, parentId, origin, TaskStatus.Pending);
     }
 
     /**
      * Creates a new processing task of any level.
      * @param content - Task content
      * @param parentId - Optional parent task ID
-     * @param source - Optional source of the task
-     * @returns Created task ID
+     * @param origin - Optional origin of the task
+     * @returns Created task wrapper
      */
-    public startNewTask(content: ITaskContent, parentId?: string, source?: string): string {
-        return this.createTask(content, parentId, source, TaskStatus.Processing);
+    public startNewTask(content: ITaskContent, parentId?: string, origin?: TxOrigin): WrappedTask {
+        return this.createTask(content, parentId, origin, TaskStatus.Processing);
     }
 
     private validateTaskBeforeFinish(task: Task): void {
@@ -159,7 +165,7 @@ export class TaskTrackerService extends Service {
         task.finishedAt = Date.now();
         task.result = result;
         task.status = TaskStatus.Completed;
-        this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
+        this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, task));
     }
 
     /**
@@ -175,7 +181,7 @@ export class TaskTrackerService extends Service {
         task.error = error;
         task.finishedAt = Date.now();
         task.status = TaskStatus.Failed;
-        this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
+        this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, task));
     }
 
     /**
@@ -188,7 +194,7 @@ export class TaskTrackerService extends Service {
 
         task.finishedAt = Date.now();
         task.status = TaskStatus.Cancelled;
-        this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
+        this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, task));
     }
 
     public startTask(taskId: string): void {
@@ -198,7 +204,7 @@ export class TaskTrackerService extends Service {
         }
         task.status = TaskStatus.Processing;
         task.startedAt = Date.now();
-        this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskUpdated, task));
+        this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, task));
     }
 
     private getTaskById(taskId: string): Task {
@@ -210,9 +216,12 @@ export class TaskTrackerService extends Service {
     }
 
     public getTask(taskId: string): Task {
-        // NOTE: there is a chance of requested task being deleted during the task request
+        const task = this.getTaskById(taskId);
         this.cleanupStaleTasks();
-        return this.getTaskById(taskId);
+        if (!this.tasks.has(taskId)) {
+            throw new Error(`Task ${taskId} has been expired`);
+        }
+        return task;
     }
 
     public getTasks(): Task[] {
@@ -240,6 +249,17 @@ export class TaskTrackerService extends Service {
 
         task.subtasks.forEach(child => this.deleteTaskTree(child.id));
         this.tasks.delete(taskId);
-        this.emit(new TaskTrackerServiceEventMessage(TaskTrackerServiceEvent.TaskDeleted, task));
+        this.emit(new TaskServiceEventMessage(TaskServiceEvent.TaskDeleted, task));
+    }
+
+    private readonly onActiveProfileChanged = async (profileId?: string) => {
+        if (profileId) {
+            if (this.profile && this.profile !== profileId) {
+                this.tasks.clear();
+                this.logDebug(`Tasks cleared for profile #${profileId}`);
+            }
+            this.profile = profileId;
+        }
     }
 }
+export { WrappedTask } from "./wrapped-task";

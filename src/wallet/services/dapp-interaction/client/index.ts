@@ -35,7 +35,7 @@ export class DappInteractionServiceClient extends ServiceClient {
         onDisconnected?: () => void,
         private readonly onInteractionCancelled?: (interactionId: string) => void,
     ) {
-        super(DAPP_INTERACTION_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(DAPP_INTERACTION_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

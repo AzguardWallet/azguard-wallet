@@ -2,10 +2,9 @@ import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { AccountStateServiceEvent, type AccountStateServiceEventMessage } from "./events";
-import type { Authwit, Note, NoteStatus } from "./models";
+import type { Note, NoteStatus } from "./models";
 import {
     GetAccountsRequest,
-    GetAuthwitsRequest,
     GetSendersRequest,
     AddSenderRequest,
     DeleteSenderRequest,
@@ -37,7 +36,7 @@ export class AccountStateServiceClient extends ServiceClient {
         private readonly onSenderAdded?: (sender: string) => void,
         private readonly onSenderDeleted?: (sender: string) => void,
     ) {
-        super(ACCOUNT_STATE_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(ACCOUNT_STATE_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {
@@ -60,19 +59,6 @@ export class AccountStateServiceClient extends ServiceClient {
                 this.logError(`Unexpected event type ${message.event}.`);
                 break;
         }
-    }
-
-    /**
-     * Returns a list of registered authwits.
-     * @param networkId Network id.
-     * @param owner Owner account address.
-     * @param isPublic Whether to return public, private or all authwits.
-     * @throws "Profile locked" if profile is locked.
-     * @throws "Invalid id" if the network with the specified id doesn't exist within the active profile.
-     * @throws "PXE request failed" if request failed.
-     */
-    public getAuthwits(networkId: string, owner: string, isPublic?: boolean): Promise<Authwit[]> {
-        return this.request(new GetAuthwitsRequest(networkId, owner, isPublic));
     }
 
     /**

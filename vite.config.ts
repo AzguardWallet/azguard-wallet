@@ -35,9 +35,9 @@ export default defineConfig({
 	css: {
 		preprocessorOptions: {
 			scss: {
-				includePaths: [fileURLToPath(new URL("./src/assets/styles", import.meta.url))],
+				loadPaths: [fileURLToPath(new URL("./src/assets/styles", import.meta.url))],
+				quietDeps: true,
 			},
-			quietDeps: true,
 		},
 	},
 	plugins: [
@@ -131,8 +131,8 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		include: ["vue", "webextension-polyfill"],
-		exclude: ["vue-demi", "@aztec/bb.js", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi"],
+		include: ["pino", "vue", "webextension-polyfill"],
+		exclude: ["@aztec/bb.js", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi", "vue-demi"],
 		esbuildOptions: {
 			target: "esnext",
 		},

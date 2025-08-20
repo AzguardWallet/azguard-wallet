@@ -1,7 +1,7 @@
 import { ServiceClient } from "@/wallet/base/port-service/service-client";
 import type { EventMessage } from "@/wallet/base/port-service/messages";
 import { LoggerServiceEvent, type LoggerServiceEventMessage } from "./events";
-import { AddLogRequest, GetLogsRequest } from "./methods";
+import { AddLogRequest, GetLogsRequest, ClearLogsRequest } from "./methods";
 import { DummyLogger, type ILogsAsync, type LogLevel, type LogEntity, type LogOrigin } from "./models";
 
 export * from './events';
@@ -37,7 +37,7 @@ export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
                 }
                 break;
             default:
-                this.logError([`Unexpected event type ${message.event}`]);
+                this.logError(`Unexpected event type ${message.event}`);
                 break;
         }
     }
@@ -54,34 +54,39 @@ export class LoggerServiceClient extends ServiceClient implements ILogsAsync {
      * Adds a new log entity.
      * @param logEntity assembled entity
      * @param level log level
-     * @param args log arguments
      * @param message log message
+     * @param args log arguments
      * @param source log source
      * @param origin log origin
      */
-    public async addLog(...args: [LogEntity] | [LogLevel, any, string?, string?, LogOrigin?]): Promise<void> {
+    public async addLog(...args: [LogEntity] | [LogLevel, any[]?, string?, LogOrigin?]): Promise<void> {
         if (typeof args[0] === "object" && "level" in args[0]) {
             const log = args[0] as LogEntity;
 
             await this.request(new AddLogRequest(
-                log.level, log.args, log.message, log.source, log.origin
+                log.level, log.args, log.source, log.origin
             ));
 		} else {
             const [
                 level,
                 inputArgs,
-                message,
                 source,
                 origin
             ] = args as [
 				LogLevel,
-				any,
-				string?,
+				any[]?,
 				string?,
 				LogOrigin?
 			];
 
-            await this.request(new AddLogRequest(level, inputArgs, message, source, origin));
+            await this.request(new AddLogRequest(level, inputArgs, source, origin));
         }
+    }
+
+    /**
+     * Clear in memory logs.
+     */
+    public clearLogs(): void {
+        this.request(new ClearLogsRequest());
     }
 }

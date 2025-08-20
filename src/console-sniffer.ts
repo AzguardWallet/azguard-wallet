@@ -1,12 +1,19 @@
-const levels = ['log', 'warn', 'error', 'debug'] as const;
+const cbNamesMap = {
+    log: "onlog",
+    info: "onlog",
+    warn: "onwarn",
+    error: "onerror",
+    debug: "ondebug",
+    trace: "ondebug",
+} as const;
 
-for (const method of levels) {
+for (const method of Object.keys(cbNamesMap) as (keyof typeof cbNamesMap)[]) {
     const original = console[method].bind(console);
-    const cbName = `on${method}`;
+    const cbName = cbNamesMap[method];
 
     console[method] = (...args: any[]) => {
         const cb = (window as any)[cbName];
-        if (typeof cb === 'function') {
+        if (typeof cb === "function") {
             try {
                 cb(...args);
             } catch (err) {

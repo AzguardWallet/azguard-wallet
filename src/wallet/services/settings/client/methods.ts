@@ -9,9 +9,7 @@ export enum SettingServiceMethod {
 }
 
 export class GetSettingsRequest extends RequestMessage {
-    constructor(
-        public readonly includeFullKey: boolean,
-    ) {
+    constructor() {
         super(SETTING_SERVICE_NAME, SettingServiceMethod.GetSettings);
     }
 }

@@ -290,6 +290,15 @@ const handleClear = () => {
 	height: 28px;
 }
 
+.base.mini {
+	height: 22px;
+	border-radius: 6px;
+	input {
+		font-size: 12px;
+	}
+	
+}
+
 .base:hover {
 	box-shadow: inset 0 0 0 1px var(--border-hovered);
 }

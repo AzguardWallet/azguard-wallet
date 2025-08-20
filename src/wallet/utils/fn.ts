@@ -89,9 +89,9 @@ export async function simulate(
     const tx = await pxe.simulateTx(
         txRequest, // txRequest
         true, // simulatePublic
-        undefined, // msgSender
         undefined, // skipTxValidation
         true, // skipFeeEnforcement
+        undefined, // overrides
         [account.address], // scopes
     );
 
