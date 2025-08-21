@@ -26,7 +26,7 @@ const displaceIdx = computed(() => {
 })
 
 let settingService = null
-const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developer?.developerMode)
+const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developerMode)
 
 function onSettingUpdate(setting) {
 	if (setting.key === "developerMode") {

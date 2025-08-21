@@ -33,9 +33,10 @@ const cacheStore = useCacheStore()
 
 const handleSelectNetwork = target => {
 	if (appStore.network.id === target.id) return
-	managers.network.setDefault(appStore.network.id)
+
+	managers.network.setDefault(target.id)
 	appStore.network = target
-	chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
+	chrome.storage.local.set({ [`azguard:ui:lastActiveNetwork@${appStore.profile.id}`]: target.id })
 }
 
 const handleEdit = target => {
@@ -55,8 +56,8 @@ const handleDelete = target => {
 		await appStore.removeNetwork(target)
 
 		appStore.network = appStore.networks[0]
-		managers.network.setDefault(appStore.networks[0].id)
-		chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
+		managers.network.setDefault(appStore.network.id)
+		chrome.storage.local.set({ [`azguard:ui:lastActiveNetwork@${appStore.profile.id}`]: appStore.network.id })
 
 		openToast({ label: "Network is deleted" })
 	}

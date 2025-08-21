@@ -20,8 +20,8 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
-const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.appearance?.sidePanel)
+const theme = ref(DEFAULT_SETTINGS?.theme || "dark")
+const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.sidePanel)
 let settingService = null
 
 function onSettingUpdate(setting) {

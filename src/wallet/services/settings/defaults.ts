@@ -5,7 +5,7 @@ export const DEFAULT_SETTINGS: Record<string, SettingValue> = {
     theme: "dark",
     sidePanel: false,
     showNode: true,
-    showPopupFullscreen: false,
+    showPopupFullscreen: true,
     disableAnimations: false,
 
     // Wallet

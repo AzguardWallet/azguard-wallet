@@ -63,6 +63,7 @@ const handleReset = () => {
 		appStore.tokensAwaitingBalanceRefresh.clear()
 		appStore.tokens = []
 		appStore.transactions = []
+		appStore.awaitingTransactions = []
 		chrome.storage.local.remove("azguard:ui:feePaymentMethods")
 
 		appStore.isLogined = false
@@ -109,7 +110,7 @@ watch(
 				</Flex>
 
 				<ItemsContainer title="Profile to delete">
-					<SettingItem :title="appStore.profile.name" icon="user" raw />
+					<SettingItem :title="appStore.profile?.name ?? ''" icon="user" raw />
 				</ItemsContainer>
 
 				<Flex direction="column" gap="16">

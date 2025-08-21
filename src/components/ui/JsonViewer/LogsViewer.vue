@@ -56,7 +56,7 @@ const filteredLogs = computed(() => logs.value.filter(log => isLogInclude(log)))
 const AUTO_SCROLL_TIMEOUT_MS = 30_000
 const SCROLL_DISABLE_THRESHOLD = 20
 const MAX_LOGS_DIFF = 100
-const maxLogsCount = ref(DEFAULT_SETTINGS?.developer?.debugMode ? 10_000 : 1_000)
+const maxLogsCount = ref(DEFAULT_SETTINGS?.debugMode ? 10_000 : 1_000)
 
 const shouldAutoScroll = ref(true)
 const showScrollBtn = ref(false)

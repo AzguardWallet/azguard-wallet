@@ -57,8 +57,8 @@ const handleCreateNetwork = async () => {
 
 		/** todo: ref */
 		appStore.network = network
-		managers.network.setDefault(appStore.network.id)
-		chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
+		managers.network.setDefault(network.id)
+		chrome.storage.local.set({ [`azguard:ui:lastActiveNetwork@${appStore.profile.id}`]: network.id })
 
 		appStore.networks = await managers.network.getNetworks()
 

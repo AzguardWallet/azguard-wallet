@@ -14,8 +14,8 @@ const popupStore = usePopupStore()
 let loggerService = null
 let settingService = null
 
-const indicateFailures = ref(DEFAULT_SETTINGS?.developer?.indicateFailures)
-const showNode = ref(DEFAULT_SETTINGS?.appearance?.showNode)
+const indicateFailures = ref(DEFAULT_SETTINGS?.indicateFailures)
+const showNode = ref(DEFAULT_SETTINGS?.showNode)
 
 const highlightColor = ref("")
 const isLogsHighlighted = ref(false)

@@ -23,7 +23,7 @@ const popupStore = usePopupStore()
 
 /** Update theme */
 const root = document.querySelector("html")
-const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
+const theme = ref(DEFAULT_SETTINGS?.theme || "dark")
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", event => {
 	if (theme.value === "system") root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
 })
@@ -73,10 +73,18 @@ const initNetworks = async () => {
 		return aPos === bPos ? a.name.localeCompare(b.name) : aPos - bPos
 	})
 
-	appStore.network = appStore.networks.find(n => n.isDefault)
+	const key = `azguard:ui:lastActiveNetwork@${appStore.profile?.id}`
+	const lastActiveNetworkId = (await chrome.storage.local.get(key))[key]
+	
+	if (lastActiveNetworkId) {
+		appStore.network = appStore.networks.find(n => n.id === lastActiveNetworkId)
+	}
+	if (!appStore.network) {
+		appStore.network = appStore.networks.find(n => n.isDefault)
+		chrome.storage.local.set({ [key]: appStore.network.id })
+	}
 	
 	managers.network.setDefault(appStore.network.id)
-	appStore.syncNetworkStatus()
 }
 
 const initAccount = async () => {
@@ -141,6 +149,7 @@ watch(
 				onTokenAdded: appStore.onTokenAdded,
 			})
 			await appStore.syncLocalTokens()
+			await appStore.syncTransactions()
 		} else {
 			await appStore.setupActiveAccount()
 

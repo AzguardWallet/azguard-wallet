@@ -36,27 +36,31 @@ const handleProfileCreated = () => {
 	emit("onClose")
 }
 
-function onProfileAdded() {
-	
+function onProfileAddedOrUpdated(profile) {
+	const idx = profiles.value.findIndex(p => p.id === profile.id)
+	if (idx === -1) {
+		profiles.value.push(profile)
+	} else {
+		profiles.value[idx] = profile
+	}
 }
 
-function onProfileUpdated() {
-	
-}
-
-function onProfileDeleted() {
-	
+function onProfileDeleted(profile) {
+	const idx = profiles.value.findIndex(p => p.id === profile.id)
+	if (idx !== -1) {
+		profiles.value.splice(idx, 1)
+	}
 }
 
 watch(
 	() => props.show,
 	async () => {
 		if (!props.show) {
-			profileService.dispose()
+			profileService?.dispose()
 			profileService = null
 			profiles.value = []
 		} else {
-			profileService = new ProfileServiceClient(undefined, undefined, onProfileAdded, onProfileUpdated, onProfileDeleted, undefined)
+			profileService = new ProfileServiceClient(undefined, undefined, onProfileAddedOrUpdated, onProfileAddedOrUpdated, onProfileDeleted, undefined)
 			profiles.value = await profileService.getProfiles()
 		}
 	},
@@ -67,7 +71,7 @@ watch(
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.select_profile?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="16" :class="$style.wrapper">
-				<Flex direction="column" gap="12">
+				<Flex direction="column" gap="16">
 					<Text size="14" weight="600" color="primary"> Select profile </Text>
 
 					<ItemsContainer>
@@ -94,16 +98,19 @@ watch(
 						</SettingItem>
 					</ItemsContainer>
 
-					<Button
-						@click="appStore.showRegisterPopup = true"
-						wide
-						type="secondary"
-						size="medium"
-						leftIcon="plus-circle"
-						leftIconColor="primary"
-					>
-						<Text size="13">New Profile</Text>
-					</Button>
+					<Flex wide direction="column" gap="6">
+						<Button
+							@click="appStore.showRegisterPopup = true"
+							wide
+							type="primary"
+							size="medium"
+							leftIcon="plus-circle"
+							leftIconColor="primary"
+						>
+							<Text size="13">New Profile</Text>
+						</Button>
+						<Button @click="popupStore.open('import')" size="medium" type="secondary" wide> Import Profile </Button>
+					</Flex>
 				</Flex>
 			</Flex>
 

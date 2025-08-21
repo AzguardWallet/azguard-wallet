@@ -91,7 +91,7 @@ const handleHideAccount = async () => {
 				<SettingField
 					@click="handleEditCurrentAccount"
 					label="Name"
-					:value="appStore.account?.name || ''"
+					:value="appStore.account?.name ?? ''"
 					icon="edit"
 				/>
 				<SettingValue value="" label="Icon" icon="chevron-right" disabled>
