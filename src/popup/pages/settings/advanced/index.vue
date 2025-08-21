@@ -36,14 +36,14 @@ let profileService = null
 const isLoading = ref(true)
 
 const MAX_SESSION_TTL = 1440
-const sessionTtl = ref(DEFAULT_SETTINGS?.session?.ttl)
+const sessionTtl = ref(DEFAULT_SETTINGS?.sessionTtl)
 const sessionTtlMinutes = ref(0)
-const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developer?.developerMode)
-const isIndicationFailuresEnabled = ref(DEFAULT_SETTINGS?.developer?.indicateFailures)
-const isDebugModeEnabled = ref(DEFAULT_SETTINGS?.developer?.debugMode)
+const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developerMode)
+const isIndicationFailuresEnabled = ref(DEFAULT_SETTINGS?.indicateFailures)
+const isDebugModeEnabled = ref(DEFAULT_SETTINGS?.debugMode)
 
 const settings = {
-	ttl: {
+	sessionTtl: {
 		title: "Auto-lock Timeout",
 		description: "Automatic wallet locking (minutes)",
 		model: sessionTtl,
@@ -92,7 +92,7 @@ async function updateSetting(key, value) {
 		await settingService.updateSetting(key, value)
 		applySetting(key, value)
 
-		if (key === "ttl") {
+		if (key === "sessionTtl") {
 			await profileService.refreshSession()
 			openToast({ label: "Auto-lock timeout updated", icon: "info" }, 1_500)
 		}
@@ -145,7 +145,7 @@ const handleFullReset = () => {
 watch(
 	() => sessionTtlMinutes.value,
 	debounce(() => {
-		updateSetting("ttl", sessionTtlMinutes.value * 60 * 1_000)
+		updateSetting("sessionTtl", sessionTtlMinutes.value * 60 * 1_000)
 		switch (sessionTtlMinutes.value) {
 			case 0:
 				fillNotification("'0' means the wallet will never be locked automatically")
@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
 			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
 					<Flex align="center" gap="6">
-						<Text size="13" weight="600" color="primary"> {{ settings.ttl.title }} </Text>
+						<Text size="13" weight="600" color="primary"> {{ settings.sessionTtl.title }} </Text>
 						<Tooltip
 							v-if="notification.show"
 						>
@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
 							</template>
 						</Tooltip>
 					</Flex>				
-					<Text size="12" weight="500" color="tertiary"> {{ settings.ttl.description }} </Text>
+					<Text size="12" weight="500" color="tertiary"> {{ settings.sessionTtl.description }} </Text>
 				</Flex>
 
 				<Input
@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
 				/>
 			</Flex>
 			<Flex
-				v-for="sk in Object.keys(settings).filter(sk => sk !== 'ttl')"
+				v-for="sk in Object.keys(settings).filter(sk => sk !== 'sessionTtl')"
 				align="center"
 				justify="between"
 			>

@@ -33,7 +33,7 @@ export class TransactionServiceClient extends ServiceClient {
         private readonly onTransactionUpdated?: (tx: Tx) => void,
         private readonly onTransactionDeleted?: (tx: Tx) => void,
     ) {
-        super(TRANSACTION_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(TRANSACTION_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

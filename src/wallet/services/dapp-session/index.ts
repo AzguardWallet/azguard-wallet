@@ -353,7 +353,7 @@ export class DappSessionService extends Service {
 			}
 		}
 		catch (error: unknown) {
-            this.logError(["Failed to migrate storage", error]);
+            this.logError("Failed to migrate storage", error);
 		}
 	}
     

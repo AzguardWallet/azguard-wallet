@@ -21,7 +21,7 @@ export class FaucetServiceClient extends ServiceClient {
         onConnected?: () => void,
         onDisconnected?: () => void,
     ) {
-        super(FAUCET_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(FAUCET_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

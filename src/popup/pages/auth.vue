@@ -29,8 +29,10 @@ if (appStore.isLogined) {
 	router.go(-1)
 }
 
-const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
-const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.appearance?.sidePanel)
+const LAST_ACTIVE_PROFILE_KEY = "azguard:ui:lastActiveProfile"
+
+const theme = ref(DEFAULT_SETTINGS?.theme || "dark")
+const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.sidePanel)
 let settingService = null
 
 const inputElement = useTemplateRef("inputElement")
@@ -74,6 +76,7 @@ const handleUnlockWallet = async () => {
 		password.value = ""
 
 		appStore.profile = activeProfile
+		chrome.storage.local.set({ [LAST_ACTIVE_PROFILE_KEY]: activeProfile?.id })
 		managers.account = new AccountServiceClient(appStore.profile, appStore.network)
 
 		initTokenService({
@@ -141,6 +144,14 @@ onMounted(async () => {
 	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
 	theme.value = (await settingService.getSetting("theme"))?.value
 	isSidePanelEnabled.value = (await settingService.getSetting("sidePanel"))?.value
+	
+	const lastActiveProfileId = (await chrome.storage.local.get(LAST_ACTIVE_PROFILE_KEY))[LAST_ACTIVE_PROFILE_KEY]
+	if (lastActiveProfileId) {
+		const profile = (await managers.profile.getProfiles())?.find(p => p.id === lastActiveProfileId)
+		if (profile) {
+			appStore.profile = profile
+		}
+	}
 
 	document.addEventListener("keydown", onKeydown)
 })

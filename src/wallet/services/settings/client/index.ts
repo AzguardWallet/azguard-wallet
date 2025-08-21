@@ -51,8 +51,8 @@ export class SettingServiceClient extends ServiceClient {
      * Returns a list of settings.
      * @param includeFullKey If 'true', a setting key will look like {group}:{parameter}, otherwise {parameter}
      */
-    public getSettings(includeFullKey = false): Promise<Setting[]> {
-        return this.request(new GetSettingsRequest(includeFullKey));
+    public getSettings(): Promise<Setting[]> {
+        return this.request(new GetSettingsRequest());
     }
 
     /**

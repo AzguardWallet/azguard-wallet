@@ -60,6 +60,7 @@ declare global {
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const getCurrentWatcher: typeof import('vue')['getCurrentWatcher']
   const getDecimalSeparator: typeof import('../utils/amount.js')['getDecimalSeparator']
   const getRandomElement: typeof import('../utils/general.js')['getRandomElement']
   const getTemplate: typeof import('../composables/notification.js')['getTemplate']
@@ -78,6 +79,7 @@ declare global {
   const isReactive: typeof import('vue')['isReactive']
   const isReadonly: typeof import('vue')['isReadonly']
   const isRef: typeof import('vue')['isRef']
+  const isShallow: typeof import('vue')['isShallow']
   const isValidAmount: typeof import('../utils/amount.js')['isValidAmount']
   const isValidHex: typeof import('../utils/string.js')['isValidHex']
   const makeDestructurable: typeof import("@vueuse/core")["makeDestructurable"]
@@ -346,6 +348,9 @@ declare global {
 // for type re-export
 declare global {
   // @ts-ignore
-  export type { Component, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
+  export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
+  // @ts-ignore
+  export type { NotificationType, NotificationPayload, NotificationItem } from '../stores/notification.store'
+  import('../stores/notification.store')
 }

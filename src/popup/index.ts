@@ -1,6 +1,21 @@
-import { ConsoleSnifferService } from "@/wallet/services/console-sniffer";
-import { LogOrigin } from "@/wallet/services/logger/client/models"
-const consoleSnifferService = new ConsoleSnifferService(LogOrigin.UI);
+import { LogLevel, LogOrigin } from "@/wallet/services/logger/client/models"
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+const loggerService = new LoggerServiceClient()
+function patchConsoleMethods() {
+    for (const level of Object.values(LogLevel)) {
+        const cbName = `on${level}`;
+
+        (window as any)[cbName] = (...args: any[]) => {
+            loggerService.addLog(
+                level,
+                args,
+                undefined,
+                LogOrigin.UI
+            );
+        };
+    }
+}
+patchConsoleMethods()
 
 import { createPinia } from "pinia"
 import { createApp } from "vue"
@@ -80,5 +95,39 @@ router.beforeEach(async (to, from, next) => {
 createApp(App).use(router).use(createPinia()).mount("#app")
 
 self.onerror = (message, source, lineno, colno, error) => {
-	console.info(`Error: ${message}\nSource: ${source}\nLine: ${lineno}\nColumn: ${colno}\nError object: ${error}`)
+	const args: string[] = []
+	if (message !== undefined) args.push(`Message: ${message}`)
+	if (source !== undefined) args.push(`Source: ${source}`)
+	if (lineno !== undefined) args.push(`Line: ${lineno}`)
+	if (colno !== undefined) args.push(`Column: ${colno}`)
+	if (error !== undefined) args.push(error?.stack || String(error))
+
+	loggerService.addLog(
+		LogLevel.Error,
+		args,
+		undefined,
+		LogOrigin.UI
+	)
+
+	return false
+}
+
+self.onunhandledrejection = (event: PromiseRejectionEvent) => {
+	const args: string[] = []
+
+	args.push("Unhandled Promise rejection:");
+	if (event.reason !== undefined) {
+		if (event.reason instanceof Error) {
+			args.push(event.reason.stack || String(event.reason))
+		} else {
+			args.push(String(event.reason))
+		}
+	}
+
+	loggerService.addLog(
+		LogLevel.Error,
+		args,
+		undefined,
+		LogOrigin.UI
+	)
 }

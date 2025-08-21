@@ -2,15 +2,31 @@
 /** Components */
 import LogsViewer from "@/components/ui/JsonViewer/LogsViewer.vue"
 
+/** Utils */
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+let profileService
+
+function onActiveProfileChanged(profile) {
+	if (!profile) {
+		chrome.windows.getCurrent(window => {
+			chrome.windows.remove(window.id)
+		})
+	}
+}
+
 function onClose() {
+	profileService.dispose()
+	profileService = null
 	appStore.loggerWindowId = null
 }
 
 onMounted(() => {
+	profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, onActiveProfileChanged)
 	window.addEventListener("beforeunload", onClose)
 })
 

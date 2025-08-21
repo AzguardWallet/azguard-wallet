@@ -40,6 +40,7 @@ const accounts = ref([])
 
 const isLoading = ref(false)
 const isInteractionCancelled = ref(false)
+const isWrongProfile = ref(false)
 const processingError = ref({
 	show: false,
 	title: "",
@@ -70,6 +71,7 @@ const init = async () => {
 		payload.value = await interactionService.getInteractionPayload(requestId.value)
 		if (profile.value.id !== payload.value.session.profileId) {
 			// TODO: redirect to sign in page with preconfigured profile id
+			isWrongProfile.value = true
 			throw new Error("Sign in with another profile")
 		}
 		const networkClient = new NetworkServiceClient()
@@ -537,8 +539,18 @@ const showJson = () => {
 			</Flex>
 		</Flex>
 
-		<Flex v-if="isInteractionCancelled" align="center" justify="center" :class="$style.request_expired_overlay">
-			<Flex direction="column" align="center" gap="16" :class="$style.request_expired_content">
+		<Flex v-if="isWrongProfile" align="center" justify="center" :class="$style.notification_overlay">
+			<Flex direction="column" align="center" gap="16" :class="$style.notification_content">
+				<Text size="13" weight="600" color="primary">You are signed in to a different profile. Please switch profiles and resend your request.</Text>
+
+				<Button @click="closeWindow" type="primary" size="small" :style="{ width: '50%' }">
+					<Text size="13" color="inverse">OK</Text>
+				</Button>
+			</Flex>
+		</Flex>
+
+		<Flex v-else-if="isInteractionCancelled" align="center" justify="center" :class="$style.notification_overlay">
+			<Flex direction="column" align="center" gap="16" :class="$style.notification_content">
 				<Text size="13" weight="600" color="primary">The operation request was cancelled</Text>
 
 				<Button @click="closeWindow" type="primary" size="small" :style="{ width: '50%' }">
@@ -724,7 +736,7 @@ const showJson = () => {
 	pointer-events: none;
 }
 
-.request_expired_overlay {
+.notification_overlay {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -734,11 +746,13 @@ const showJson = () => {
 	z-index: 1000;
 }
 
-.request_expired_content {
+.notification_content {
+	width: 90%;
 	background-color: var(--card-bg);
 	padding: 12px;
 	border-radius: 8px;
 	text-align: center;
+	line-height: 1.2;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 	z-index: 1001;
 }

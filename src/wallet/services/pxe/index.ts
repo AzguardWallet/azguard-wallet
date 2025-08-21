@@ -26,31 +26,32 @@ import {
 } from "@aztec/stdlib/contract";
 import { type AztecNode, type ContractClassMetadata, type ContractMetadata, createAztecNodeClient, type PXE } from "@aztec/stdlib/interfaces/client";
 import { NotesFilterSchema } from "@aztec/stdlib/note";
-import { PrivateExecutionResult, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
-import { z } from "zod";
+import { PrivateExecutionResult, SimulationOverrides, Tx, TxExecutionRequest } from "@aztec/stdlib/tx";
+import z from "zod";
 import { Service } from "@/wallet/base/message-service/service.ts";
 import { type Profile, ProfileServiceClient } from "@/wallet/services/profile/client";
 import type { Network } from "@/wallet/services/network/client";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { Lock } from "@/wallet/utils";
 import {
-    type GetContractClassMetadataParams,
-    type GetContractMetadataParams, 
-    type GetContractsParams,
-    type GetCurrentBaseFeesParams,
-    type GetNodeInfoParams,
-    type GetNotesParams,
-    type GetPXEInfoParams,
-    type GetSendersParams,
-    type GetRegisteredAccountsParams,
-    type ProveTxParams,
-    type RegisterAccountParams,
-    type RegisterContractParams,
-    type RegisterSenderParams,
-    type RemoveSenderParams,
-    type SendTxParams,
-    type SimulateTxParams,
-    type SimulateUtilityParams,
+    GetContractClassMetadataParams,
+    GetContractMetadataParams, 
+    GetContractsParams,
+    GetCurrentBaseFeesParams,
+    GetNodeInfoParams,
+    GetNotesParams,
+    GetPXEInfoParams,
+    GetPublicStorageAtParams,
+    GetSendersParams,
+    GetRegisteredAccountsParams,
+    ProveTxParams,
+    RegisterAccountParams,
+    RegisterContractParams,
+    RegisterSenderParams,
+    RemoveSenderParams,
+    SendTxParams,
+    SimulateTxParams,
+    SimulateUtilityParams,
     PXE_SERVICE_NAME,
     PxeServiceMethod,
     type UpdateContractParams,
@@ -117,6 +118,14 @@ export class PxeService extends Service<PxeServiceMethod, void> {
                 const pxe = await this.getPxeClient(network);
                 return await pxe.getPXEInfo();
             }
+            case PxeServiceMethod.GetPublicStorageAt: {
+                const { network, contract, slot } = params as GetPublicStorageAtParams;
+                const pxe = await this.getPxeClient(network);
+                return await pxe.getPublicStorageAt(
+                    await AztecAddress.schema.parseAsync(contract),
+                    await Fr.schema.parseAsync(slot),
+                );
+            }
             case PxeServiceMethod.GetSenders: {
                 const { network } = params as GetSendersParams;
                 const pxe = await this.getPxeClient(network);
@@ -171,18 +180,18 @@ export class PxeService extends Service<PxeServiceMethod, void> {
                     network,
                     txRequest,
                     simulatePublic,
-                    msgSender,
                     skipTxValidation,
                     skipFeeEnforcement,
+                    overrides,
                     scopes,
                 } = params as SimulateTxParams;
                 const pxe = await this.getPxeClient(network);
                 return await pxe.simulateTx(
                     await TxExecutionRequest.schema.parseAsync(txRequest),
                     simulatePublic,
-                    await AztecAddress.schema.optional().parseAsync(msgSender),
                     skipTxValidation,
                     skipFeeEnforcement,
+                    await SimulationOverrides.schema.optional().parseAsync(overrides),
                     await z.array(AztecAddress.schema).optional().parseAsync(scopes),
                 );
             }
@@ -382,7 +391,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             return await ContractArtifactSchema.parseAsync(artifact);
         }
         catch (error: unknown) {
-            this.logError(["Failed to parse artifact from registry", error])
+            this.logError("Failed to parse artifact from registry", error)
             return undefined;
         }
     }
@@ -396,7 +405,7 @@ export class PxeService extends Service<PxeServiceMethod, void> {
             return await ContractInstanceWithAddressSchema.parseAsync(instance);
         }
         catch (error: unknown) {
-            this.logError(["Failed to parse instance from registry", error])
+            this.logError("Failed to parse instance from registry", error)
             return undefined;
         }
     }
@@ -409,13 +418,13 @@ export class PxeService extends Service<PxeServiceMethod, void> {
         try {
             const data = await fetch(`${registryUrl}${path}`);
             if (!data.ok) {
-                this.logDebug(["Failed to get artifact from public registry", data.status, data.statusText])
+                this.logDebug("Failed to get artifact from public registry", data.status, data.statusText)
                 return undefined;
             }
             return await data.json();
         }
         catch (error: unknown) {
-            this.logError(["Failed to get artifact from public registry", error])
+            this.logError("Failed to get artifact from public registry", error)
             return undefined;
         }
     }
@@ -432,9 +441,9 @@ export class PxeService extends Service<PxeServiceMethod, void> {
     }
 
 	private async initialize(): Promise<void> {
-        this.logDebug("Initialize pxe service");
+		this.logDebug("Initialize pxe service");
 		await this.checkMigrations();
-        this.logDebug("Pxe service initialized");
+		this.logDebug("Pxe service initialized");
 		this.init = null;
 	}
 
@@ -446,10 +455,10 @@ export class PxeService extends Service<PxeServiceMethod, void> {
 
 	private async checkMigrations(): Promise<void> {
 		try {
-            this.logDebug("Check pxe service migrations");
+			this.logDebug("Check pxe service migrations");
 			switch (localStorage.getItem("v")) {
 				case "1": {
-                    this.logDebug("No migrations needed");
+					this.logDebug("No migrations needed");
 					break;
 				}
 				default: {
@@ -459,19 +468,19 @@ export class PxeService extends Service<PxeServiceMethod, void> {
 			}
 		}
 		catch (error: unknown) {
-            this.logError(["Failed to migrate pxe service", error]);
+			this.logError("Failed to migrate pxe service", error);
 		}
 	}
 	
 	private async migrate_0_1(): Promise<void> {
-        this.logDebug("Migrating pxe service");
+		this.logDebug("Migrating pxe service");
         const keyvalDb = (await indexedDB.databases()).find(x => x.name === "keyval-store");
         if (keyvalDb) {
-            this.logDebug("Drop 'keyval-store' db");
+            this.logDebug("Drop 'keyval-store' db")
             const _ = indexedDB.deleteDatabase(keyvalDb.name!);
         }
-        this.logDebug("Set pxe service version to 1");
+		this.logDebug("Set pxe service version to 1");
 		localStorage.setItem("v", "1");
-        this.logDebug("Pxe service migrated");
+		this.logDebug("Pxe service migrated");
     }
 }

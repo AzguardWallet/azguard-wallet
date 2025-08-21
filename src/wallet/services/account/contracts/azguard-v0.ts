@@ -352,7 +352,7 @@ export class AzguardV0 implements IAccountContract {
             },
         ];
         const mceArgs = await HashedValues.fromArgs(
-            encodeArguments(getMulticallEntrypointFn(), [{ function_calls: mceCalls, nonce: Fr.zero() }]),
+            encodeArguments(getMulticallEntrypointFn(), [{ function_calls: mceCalls, tx_nonce: Fr.zero() }]),
         );
 
         return new TxExecutionRequest(

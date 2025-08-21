@@ -26,37 +26,3 @@ export enum NoteStatus {
     Active,
     //Nullified,
 }
-
-export class Authwit {
-    /**
-     * Creates Authwit instance
-     * @param owner Account created the authwit.
-     * @param hash Message hash.
-     * @param content Plain content.
-     * @param isPublic Wither the authwit is public or private.
-     */
-    constructor(
-        public readonly owner: string,
-        public readonly hash: string,
-        public readonly content: AuthwitCallContent | AuthwitIntentContent | undefined,
-        public readonly isPublic: boolean,
-    ) {}
-}
-
-export type AuthwitCallContent = {
-    /** Who can make the call. */
-    caller: string,
-    /** What contract can be called. */
-    contract: string,
-    /** What method can be called. */
-    method: string,
-    /** What args can be passed. */
-    args: any[],
-}
-
-export type AuthwitIntentContent = {
-    /** Who can consume the authwit. */
-    consumer: string,
-    /** Plain intent. */
-    intent: string[],
-}

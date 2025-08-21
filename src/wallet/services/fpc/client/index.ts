@@ -30,7 +30,7 @@ export class FpcServiceClient extends ServiceClient {
         private readonly onFpcUpdated?: (fpc: FpcInfo) => void,
         private readonly onFpcDeleted?: (fpc: FpcInfo) => void,
     ) {
-        super(FPC_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(FPC_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

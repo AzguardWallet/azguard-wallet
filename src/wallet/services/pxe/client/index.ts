@@ -1,4 +1,4 @@
-import type { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/fields";
 import type { ContractArtifact } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -14,18 +14,19 @@ import type { ContractClassMetadata, ContractMetadata, PXE, PXEInfo } from "@azt
 import { type NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
     type PrivateExecutionResult,
+    SimulationOverrides,
     type Tx,
     type TxExecutionRequest,
     TxHash,
-    type TxProvingResult,
+    TxProvingResult,
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
-import { z } from "zod";
+import z from "zod";
 import { ServiceClient } from "@/wallet/base/message-service/service-client";
 import type { Network } from "@/wallet/services/network/client";
 import { ensureOffscreenRunning } from "@/wallet/utils/offscreen";
-import { ContractClassMetadataSchema, ContractMetadataSchema, PXEInfoSchema, TxProvingResultSchema } from "@/wallet/utils/schemas";
+import { ContractClassMetadataSchema, ContractMetadataSchema, PXEInfoSchema } from "@/wallet/utils/schemas";
 import { PxeServiceMethod } from "./methods";
 import { PXEProxy } from "./proxy";
 import { DummyLogger } from "@/wallet/services/logger/client";
@@ -91,6 +92,12 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
         return await PXEInfoSchema.parseAsync(result);
     }
 
+    public async getPublicStorageAt(network: Network, contract: AztecAddress, slot: Fr): Promise<Fr> {
+        await ensureOffscreenRunning();
+        const result = await this.request(PxeServiceMethod.GetPublicStorageAt, { network, contract, slot });
+        return await Fr.schema.parseAsync(result);
+    }
+
     public async getSenders(network: Network): Promise<AztecAddress[]> {
         await ensureOffscreenRunning();
         const result = await this.request(PxeServiceMethod.GetSenders, { network });
@@ -110,9 +117,7 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
     ): Promise<TxProvingResult> {
         await ensureOffscreenRunning();
         const result = await this.request(PxeServiceMethod.ProveTx, { network, txRequest, privateExecutionResult });
-        // TODO: uncomment when https://github.com/AztecProtocol/aztec-packages/pull/14498 merged
-        //return await TxProvingResult.schema.parseAsync(result);
-        return await TxProvingResultSchema.parseAsync(result);
+        return await TxProvingResult.schema.parseAsync(result);
     }
 
     public async registerAccount(
@@ -157,9 +162,9 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
         network: Network,
         txRequest: TxExecutionRequest,
         simulatePublic: boolean,
-        msgSender?: AztecAddress,
         skipTxValidation?: boolean,
         skipFeeEnforcement?: boolean,
+        overrides?: SimulationOverrides,
         scopes?: AztecAddress[],
     ): Promise<TxSimulationResult> {
         await ensureOffscreenRunning();
@@ -167,9 +172,9 @@ export class PxeServiceClient extends ServiceClient<PxeServiceMethod, void> {
             network,
             txRequest,
             simulatePublic,
-            msgSender,
             skipTxValidation,
             skipFeeEnforcement,
+            overrides,
             scopes,
         });
         return await TxSimulationResult.schema.parseAsync(result);

@@ -48,7 +48,7 @@ export class ProfileServiceClient extends ServiceClient {
         private readonly onProfileDeleted?: (profile: Profile) => void,
         private readonly onActiveProfileChanged?: (profile?: Profile) => void,
     ) {
-        super(PROFILE_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(PROFILE_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

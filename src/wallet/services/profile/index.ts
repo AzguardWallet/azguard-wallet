@@ -73,7 +73,7 @@ export class ProfileService extends Service {
 
     private readonly profiles: EntityStorage<ProfileDto>;
     private readonly session: SimpleStorage<SessionDto>;
-    private sessionTtl: number = DEFAULT_SETTINGS.session.ttl as number;
+    private sessionTtl: number = DEFAULT_SETTINGS.sessionTtl as number;
     private readonly lock = new Lock();
 
     private initPromise?: Promise<void>;
@@ -259,7 +259,7 @@ export class ProfileService extends Service {
         const passhash = await EncryptionKey.getPasshash(password);
         const key = await EncryptionKey.fromPasshash(passhash);
         const guard = await key.encrypt(encryptionGuard);
-        const secret = await key.encrypt(Fr.random().toBuffer());
+        const secret = await key.encrypt(Fr.random().toBuffer() as Buffer<ArrayBuffer>);
         try {
             await this.lock.enter();
 
@@ -558,9 +558,15 @@ export class ProfileService extends Service {
     private async initSession() {
         try {
             await this.lock.enter();
+
+            const setting = await this.settings.getSetting("sessionTtl");
+            this.sessionTtl = Number(setting.value);
             
             const session = await this.session.get('active_profile');
             if (session) {
+                const setting = await this.settings.getSetting("sessionTtl");
+                this.sessionTtl = Number(setting.value);
+
                 if (session.since + this.sessionTtl > Date.now() || !this.sessionTtl) {
                     const profile = await this.profiles.get(session.profile);
                     if (profile) {
@@ -593,12 +599,9 @@ export class ProfileService extends Service {
                     await this._closeSession();
                 }
             }
-
-            const setting = await this.settings.getSetting("ttl");
-            this.sessionTtl = Number(setting.value);
         }
         catch (error) {
-            this.logError(["Failed to initialize profile session", error]);
+            this.logError("Failed to initialize profile session", error);
         }
         finally {
             this.lock.leave();
@@ -617,7 +620,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.logError(["Failed to close profile session", error]);
+            this.logError("Failed to close profile session", error);
         }
     }
 
@@ -626,11 +629,11 @@ export class ProfileService extends Service {
             if (this.activeSession.session.since + this.sessionTtl > Date.now() || !this.sessionTtl) {
                 return this.activeSession;
             }
-            else {
-                this.logDebug("Session expired");
-                await this._closeSession();
-            }
+
+            this.logDebug("Session expired");
+            await this._closeSession();
         }
+
         return undefined;
     }
 
@@ -643,7 +646,7 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.logError(["Failed to refresh profile session", error]);
+            this.logError("Failed to refresh profile session", error);
         }
     }
 
@@ -670,14 +673,14 @@ export class ProfileService extends Service {
             }
         }
         catch (error) {
-            this.logError(["Failed to open profile session", error]);
+            this.logError("Failed to open profile session", error);
         }
     }
 
     private async importProfile(
         name: string,
-        guard: Uint8Array,
-        secret: Uint8Array,
+        guard: Uint8Array<ArrayBuffer>,
+        secret: Uint8Array<ArrayBuffer>,
         key: EncryptionKey,
         passhash: ArrayBuffer,
     ): Promise<Profile> {
@@ -708,18 +711,18 @@ export class ProfileService extends Service {
         }
     }
 
-    private async tryDecrypt(payload: Uint8Array, key: EncryptionKey): Promise<Uint8Array | undefined> {
+    private async tryDecrypt(payload: Uint8Array<ArrayBuffer>, key: EncryptionKey): Promise<Uint8Array<ArrayBuffer> | undefined> {
         try {
             return await key.decrypt(payload);
         }
         catch (error) {
-            this.logDebug(["Failed to decrypt payload", error]);
+            this.logDebug("Failed to decrypt payload", error);
             return undefined;
         }
     }
 
     private readonly onSettingUpdated = (setting: Setting) => {
-        if (setting.key === "ttl" && typeof setting.value === "number") {
+        if (setting.key === "sessionTtl" && typeof setting.value === "number") {
             this.sessionTtl = setting.value;
         }
     }

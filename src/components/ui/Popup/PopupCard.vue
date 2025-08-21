@@ -14,7 +14,7 @@ const props = defineProps({
 })
 
 let settingService = null
-const showFullscreen = ref(DEFAULT_SETTINGS?.appearance?.showPopupFullscreen)
+const showFullscreen = ref(DEFAULT_SETTINGS?.showPopupFullscreen)
 
 function onSettingUpdate(setting) {
 	if (setting.key === "showPopupFullscreen") {
@@ -24,13 +24,11 @@ function onSettingUpdate(setting) {
 
 onMounted(async () => {
 	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
-	if (window.innerHeight > 600) {
-		showFullscreen.value = true
-	}
+	showFullscreen.value = (await settingService.getSetting("showPopupFullscreen"))?.value
 })
 
 onBeforeUnmount(() => {
-	settingService.dispose()
+	settingService?.dispose()
 })
 </script>
 

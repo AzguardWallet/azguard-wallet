@@ -24,7 +24,7 @@ export class RpcServiceClient extends ServiceClient {
         onDisconnected?: () => void,
         private readonly onGenericEvent?: (name: string, payload: [string, unknown]) => void,
     ) {
-        super(RPC_SERVICE_NAME, new LoggerServiceClient, onConnected, onDisconnected);
+        super(RPC_SERVICE_NAME, new LoggerServiceClient(), onConnected, onDisconnected);
     }
 
     protected onEvent(message: EventMessage): void {

@@ -36,6 +36,7 @@ export const getTemplate = (name, params) => {
                         appStore.tokensAwaitingBalanceRefresh.clear()
                         appStore.tokens = []
                         appStore.transactions = []
+                        appStore.awaitingTransactions = []
                         chrome.storage.local.remove("azguard:ui:feePaymentMethods")
         
                         appStore.isLogined = false
