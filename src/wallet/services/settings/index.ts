@@ -24,7 +24,7 @@ import { DEFAULT_SETTINGS } from "./defaults";
 export class SettingService extends Service {
     public readonly onSettingUpdated: ((setting: Setting) => void)[] = [];
 
-    private readonly storage: EntityStorage<SettingValue>;
+    private readonly settings: EntityStorage<SettingValue>;
     private initialized = false;
     private initPromise: Promise<void>;
     private readonly lock = new Lock();
@@ -34,7 +34,7 @@ export class SettingService extends Service {
         emit: (event: EventMessage) => void,
     ) {
         super(SETTING_SERVICE_NAME, logger, emit);
-        this.storage = new EntityStorage("azguard:settings", StorageType.Local);
+        this.settings = new EntityStorage("azguard:settings", StorageType.Local);
         this.initPromise = this.initDefaultSettings();
     }
 
@@ -175,9 +175,9 @@ export class SettingService extends Service {
         await this.lock.enter();
 
         try {
-            const keys = await this.storage.getKeys();
+            const keys = await this.settings.getKeys();
             for (const key of keys) {
-                await this.storage.delete(key);
+                await this.settings.delete(key);
             }
 
             for (const key of Object.keys(DEFAULT_SETTINGS)) {
