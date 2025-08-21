@@ -2,10 +2,8 @@
 /** Utils */
 import { getChainName } from "@/components/ui/utils.js"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
-
-/** Composables */
-import { useSettings } from "@/composables/settings.js"
-const { settings } = useSettings()
+import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -13,12 +11,16 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const indicateWalletActivity = computed(() => settings.value?.developer?.indicateWalletActivity)
+let loggerService = null
+let settingService = null
+
+const indicateFailures = ref(DEFAULT_SETTINGS?.developer?.indicateFailures)
+const showNode = ref(DEFAULT_SETTINGS?.appearance?.showNode)
+
 const highlightColor = ref("")
 const isLogsHighlighted = ref(false)
 const INDICATION_DURATION = 5_000
 let highlightTimer = null
-let loggerService = null
 
 function setHighlightColor(color) {
 	if (highlightTimer) {
@@ -34,6 +36,7 @@ function setHighlightColor(color) {
 		highlightTimer = null
 	}, INDICATION_DURATION)
 }
+
 function onLogAdded(log) {
 	switch (log.level.toUpperCase()) {
 		case "WARN":
@@ -48,26 +51,49 @@ function onLogAdded(log) {
 	}
 }
 
+function onSettingUpdate(setting) {
+	switch (setting.key) {
+		case "indicateFailures":
+			indicateFailures.value = setting.value
+			break;
+		case "showNode":
+			showNode.value = setting.value
+			break;
+	
+		default:
+			break;
+	}
+}
+
 const handleOpenPopup = target => {
 	if (!appStore.isLogined) return
 	popupStore.open(target)
 }
 
 watch(
-	() => indicateWalletActivity.value,
+	() => indicateFailures.value,
 	() => {
-		if (!indicateWalletActivity.value && loggerService) {
+		if (!indicateFailures.value && loggerService) {
 			loggerService.dispose()
-		} else if (indicateWalletActivity.value) {
+		} else if (indicateFailures.value) {
 			loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
 		}
 	}
 )
 
-onMounted(() => {
-	if (indicateWalletActivity.value) {
+onMounted(async () => {
+	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
+	indicateFailures.value = (await settingService.getSetting("indicateFailures"))?.value
+	showNode.value = (await settingService.getSetting("showNode"))?.value
+	
+	if (indicateFailures.value) {
 		loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
 	}
+})
+
+onBeforeUnmount(() => {
+	loggerService.dispose()
+	settingService.dispose()
 })
 </script>
 
@@ -104,7 +130,7 @@ onMounted(() => {
 				</Text>
 
 				<Text
-					v-if="settings.appearance.showNode"
+					v-if="showNode"
 					size="13"
 					weight="600"
 					color="tertiary"

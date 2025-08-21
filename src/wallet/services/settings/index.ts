@@ -1,0 +1,202 @@
+import type { EventMessage, RequestMessage, ResponseMessage } from "@/wallet/base/port-service/messages";
+import { Service } from "@/wallet/base/port-service/service";
+import type { ILogs } from "@/wallet/services/logger/client";
+import { EntityStorage, StorageType } from "@/wallet/storage";
+import { Lock, } from "@/wallet/utils";
+import {
+    SETTING_SERVICE_NAME,
+    Setting,
+    type SettingValue,
+    SettingServiceMethod,
+    type GetSettingsRequest,
+    GetSettingsResponse,
+    type GetSettingRequest,
+    GetSettingResponse,
+    type ResetSettingsRequest,
+    ResetSettingsResponse,
+    type UpdateSettingRequest,
+    UpdateSettingResponse,
+    SettingServiceEvent,
+    SettingServiceEventMessage,
+} from "./client";
+import { DEFAULT_SETTINGS } from "./defaults";
+
+export class SettingService extends Service {
+    public readonly onSettingUpdated: ((setting: Setting) => void)[] = [];
+
+    private readonly settings: EntityStorage<SettingValue>;
+    private initialized = false;
+    private initPromise: Promise<void>;
+    private readonly lock = new Lock();
+
+    constructor(
+        public readonly logger: ILogs,
+        emit: (event: EventMessage) => void,
+    ) {
+        super(SETTING_SERVICE_NAME, logger, emit);
+        this.settings = new EntityStorage("azguard:settings", StorageType.Local);
+        this.initPromise = this.initDefaultSettings();
+    }
+
+    public async process(request: RequestMessage): Promise<ResponseMessage | undefined> {
+        switch(request.method) {
+            case SettingServiceMethod.GetSettings: {
+                const _request = request as GetSettingsRequest;
+                try {
+                    const res = await this.getSettings();
+                    return new GetSettingsResponse(_request, res);
+                }
+                catch (error: any) {
+                    return new GetSettingsResponse(_request, undefined, error.message);
+                }
+            }
+            case SettingServiceMethod.GetSetting: {
+                const _request = request as GetSettingRequest;
+                try {
+                    const setting = await this.getSetting(_request.key);
+                    return new GetSettingResponse(_request, setting);
+                }
+                catch (error: any) {
+                    return new GetSettingResponse(_request, undefined, error.message);
+                }
+            }
+            case SettingServiceMethod.ResetSettings: {
+                const _request = request as ResetSettingsRequest;
+                try {
+                    await this.resetSettings();
+
+                    return new ResetSettingsResponse(_request);
+                }
+                catch (error: any) {
+                    return new ResetSettingsResponse(_request, error.message);
+                }
+            }
+            case SettingServiceMethod.UpdateSetting: {
+                const _request = request as UpdateSettingRequest;
+                try {
+                    await this.updateSetting(_request.key, _request.value);
+
+                    return new UpdateSettingResponse(_request);
+                }
+                catch (error: any) {
+                    return new UpdateSettingResponse(_request, error.message);
+                }
+            }
+            default: {
+                this.logError(`Invalid request method ${request.method}.`);
+                return undefined;
+            }                
+        }
+    }
+
+    public async initDefaultSettings(): Promise<void> {
+        for (const key of Object.keys(DEFAULT_SETTINGS)) {
+            const exists = await this.settings.contains(key);
+            if (!exists) {
+                await this.settings.set(key, DEFAULT_SETTINGS[key]);
+            }
+            switch (key) {
+                case "sessionTtl": {
+                    const setting = new Setting(key, DEFAULT_SETTINGS[key]);
+                    for (const emit of this.onSettingUpdated) {
+                        try {emit(setting)} catch {}
+                    }
+                    break;
+                }
+                case "debugMode": {
+                    const value = await this.settings.get(key);
+                    this.logger.setDebugMode(value as boolean);
+                    break;
+                }
+            
+                default:
+                    break;
+            }
+        }
+
+        this.initialized = true;
+    }
+
+    private async ensureInitialized() {
+        if (!this.initialized) {
+            await this.initPromise;
+        }
+    }
+
+    public async getSettings(): Promise<Setting[]> {
+        await this.ensureInitialized();
+
+        return (await this.settings.getAll()).map(([key, value]) => new Setting(key, value));
+    }
+
+    public async getSetting(key: string): Promise<Setting> {
+        await this.ensureInitialized();
+        
+        const value = await this.settings.get(key);
+        if (value === undefined) {
+            throw new Error("Unknown key");
+        }
+
+        return new Setting(key, value);
+    }
+
+    public async updateSetting(key: string, value: SettingValue) {
+        await this.ensureInitialized();
+        
+        await this.lock.enter();
+
+        try {
+            const _setting = await this.getSetting(key);
+            if (_setting?.value === value) return;
+
+            await this.settings.set(key, value)
+
+            if (key === "debugMode") {
+                this.logger.setDebugMode(value as boolean);
+            }
+
+            const setting = new Setting(key, value)
+            this.emit(new SettingServiceEventMessage(
+                SettingServiceEvent.SettingUpdated,
+                setting
+            ));
+            for (const emit of this.onSettingUpdated) {
+                try {emit(setting)} catch {}
+            }
+        } catch {
+            this.logError(`Failed to update setting ${key} to ${value}`);
+            throw new Error("Failed to update setting");
+        } finally {
+            this.lock.leave();
+        }
+    }
+
+    public async resetSettings(): Promise<void> {
+        await this.lock.enter();
+
+        try {
+            const keys = await this.settings.getKeys();
+            for (const key of keys) {
+                await this.settings.delete(key);
+            }
+
+            for (const key of Object.keys(DEFAULT_SETTINGS)) {
+                await this.settings.set(key, DEFAULT_SETTINGS[key]);
+
+                const setting = new Setting(key, DEFAULT_SETTINGS[key]);
+                this.emit(new SettingServiceEventMessage(
+                    SettingServiceEvent.SettingUpdated,
+                    setting
+                ));
+                for (const emit of this.onSettingUpdated) {
+                    try {emit(setting)} catch {}
+                }
+            }
+        } catch (err) {
+            this.logError(["Failed to reset settings", err]);
+            throw new Error("Failed to reset settings");
+        } finally {
+            this.lock.leave();
+        }
+    }
+}

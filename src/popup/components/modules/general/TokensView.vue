@@ -4,12 +4,7 @@ import TokenCard from "./TokenCard.vue"
 import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
 
 /** Utils */
-import { managers } from "@/utils/core.js"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-
-/** Composables */
-import { useSettings } from "@/composables/settings.js"
-const { settings } = useSettings()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

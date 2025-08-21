@@ -7,14 +7,13 @@
 </route>
 
 <script setup>
-/** UI */
-import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
-
 /** Composables */
 import { checkNotificationsForShow } from "@/composables/notification"
 
 /** Utils */
 import { AccountServiceClient } from "@/wallet/services/account/client"
+import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 import { initTokenService, initTransactionService, managers } from "@/utils/core"
 import { sleep } from "@/wallet/utils"
 
@@ -24,12 +23,15 @@ import { usePopupStore } from "@/stores/popup.store.ts"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const route = useRoute()
 const router = useRouter()
 
 if (appStore.isLogined) {
 	router.go(-1)
 }
+
+const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
+const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.appearance?.sidePanel)
+let settingService = null
 
 const inputElement = useTemplateRef("inputElement")
 const password = ref("")
@@ -100,8 +102,45 @@ const onKeydown = e => {
 	if (e.key === "Enter") handleUnlockWallet()
 }
 
-onMounted(() => {
+function onSettingUpdate(setting) {
+	if (setting.key === "theme") {
+		theme.value = setting.value
+	}
+}
+
+async function handleSwitchTheme () {
+	try {
+		const newTheme = theme.value === "dark" ? "light" : "dark"
+		await settingService.updateSetting("theme", newTheme)
+		theme.value = newTheme
+	} catch (err) {
+		console.error(`Failed theme updating ${err}`);
+	}
+}
+
+async function handleSwitchAppView () {
+	try {
+		await settingService.updateSetting("sidePanel", !isSidePanelEnabled.value)
+		isSidePanelEnabled.value = !isSidePanelEnabled.value
+		if (isSidePanelEnabled.value) {
+			const currentWindow = await chrome.windows.getCurrent()
+			chrome.sidePanel.open({
+				windowId: currentWindow.id,
+			})			
+		}
+
+		window.close()
+	} catch (err) {
+		console.error(`Failed side panel updating ${err}`);
+	}
+}
+
+onMounted(async () => {
 	inputElement.value.inputEl.focus()
+
+	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
+	theme.value = (await settingService.getSetting("theme"))?.value
+	isSidePanelEnabled.value = (await settingService.getSetting("sidePanel"))?.value
 
 	document.addEventListener("keydown", onKeydown)
 })
@@ -126,6 +165,23 @@ const handleSelectProfile = () => {
 
 <template>
 	<Flex direction="column" jusitfy="between" :class="$style.wrapper">
+		<Flex align="center" justify="end" gap="4" wide :class="$style.settings">
+			<Icon
+				@click="handleSwitchTheme"
+				:name="theme === 'dark' ? 'sun' : 'moon'"
+				size="16"
+				color="tertiary"
+				:class="$style.icon"
+			/>
+			<Icon
+				@click="handleSwitchAppView"
+				name="dock-right"
+				size="16"
+				color="tertiary"
+				:class="$style.icon"
+			/>
+		</Flex>
+
 		<Flex direction="column" align="center" gap="40" style="flex: 1">
 			<Flex align="center" justify="center" :class="$style.lock_badge">
 				<Icon name="logo" size="40" :class="$style.logo_icon" />
@@ -222,6 +278,25 @@ const handleSelectProfile = () => {
 	border-top-right-radius: 24px;
 
 	padding: 80px 24px 24px 24px;
+}
+
+.settings {
+	position: absolute;
+	top: 64px;
+	right: 16px;
+
+	.icon {
+		box-sizing: content-box;
+		border-radius: 50%;
+		cursor: pointer;
+
+		padding: 4px;
+
+		&:hover {
+			background: var(--gray-10);
+			fill: var(--txt-primary);
+		}
+	}
 }
 
 .password_input {

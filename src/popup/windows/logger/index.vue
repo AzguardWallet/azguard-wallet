@@ -1,28 +1,37 @@
 <script setup>
-/** Vendor */
-import { onMounted } from "vue"
-
 /** Components */
 import LogsViewer from "@/components/ui/JsonViewer/LogsViewer.vue"
 
 /** Utils */
-import { LoggerServiceClient } from "@/wallet/services/logger/client"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
 
-// const logs = ref([])
-// const onLogAdded = (log) => {
-//     logs.value.push(log)
-// }
-// let loggerService = null
-onBeforeMount(async () => {
-    // loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
-	// logs.value = await loggerService.getLogs()
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+const appStore = useAppStore()
+
+let profileService
+
+function onActiveProfileChanged(profile) {
+	if (!profile) {
+		chrome.windows.getCurrent(window => {
+			chrome.windows.remove(window.id)
+		})
+	}
+}
+
+function onClose() {
+	profileService.dispose()
+	profileService = null
+	appStore.loggerWindowId = null
+}
+
+onMounted(() => {
+	profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, onActiveProfileChanged)
+	window.addEventListener("beforeunload", onClose)
 })
-onMounted(async () => {
-    // const loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
-	// logs.value = await loggerService.getLogs()
-})
-onBeforeUnmount(() => {
-    // loggerService.dispose()
+
+onUnmounted(() => {
+	window.removeEventListener("beforeunload", onClose)
 })
 </script>
 
@@ -34,7 +43,6 @@ onBeforeUnmount(() => {
 		gap="12"
 		:class="[$style.wrapper, $style.json_viewer]"
 	>
-		<!-- <LogsViewer :logs=logs /> -->
          <LogsViewer />
 	</Flex>
 </template>

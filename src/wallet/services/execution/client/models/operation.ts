@@ -1,4 +1,4 @@
-import { CallAction, EncodedCallAction, FeeSettings, IAction } from ".";
+import type { CallAction, EncodedCallAction, FeeSettings, IAction } from ".";
 
 export enum OperationKind {
     GetCompleteAddress = "get_complete_address",

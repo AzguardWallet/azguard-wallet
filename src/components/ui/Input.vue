@@ -13,6 +13,9 @@ const props = defineProps({
 	type: {
 		type: String,
 	},
+	subtype: {
+		type: String,
+	},
 	max: {
 		type: [String, Number],
 	},
@@ -99,7 +102,7 @@ const getInputType = computed(() => {
 	return "text"
 })
 
-const handleInput = () => {
+const handleInput = (event) => {
 	if (props.disabled) return
 
 	if (!!props.maxLength) {
@@ -121,6 +124,20 @@ const handleInput = () => {
 			"update:modelValue",
 			Number.isNaN(Number.parseFloat(text.value)) ? text.value : Number.parseFloat(text.value),
 		)
+	} else if (props.subtype === "int") {
+		const value = event.target.value.replace(/[^\d]/g, "")
+		let res = value ? Number.parseInt(text.value, 10) : 0
+		text.value = value ? value : 0
+		
+		if (props.max) {
+			const max = Number(props.max)
+			if (res > max) {
+				res = max
+				text.value = max
+			}
+		}
+		
+		emit("update:modelValue", res)
 	} else {
 		emit("update:modelValue", text.value)
 	}

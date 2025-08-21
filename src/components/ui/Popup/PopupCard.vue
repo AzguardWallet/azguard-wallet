@@ -1,7 +1,7 @@
 <script setup>
-/** Composables */
-import { useSettings } from "@/composables/settings.js"
-const { settings } = useSettings()
+/** Utils */
+import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 
 const props = defineProps({
 	large: {
@@ -13,12 +13,24 @@ const props = defineProps({
 	},
 })
 
-const showFullscreen = ref(settings.value.appearance.showPopupFullscreen)
+let settingService = null
+const showFullscreen = ref(DEFAULT_SETTINGS?.appearance?.showPopupFullscreen)
 
-onMounted(() => {
+function onSettingUpdate(setting) {
+	if (setting.key === "showPopupFullscreen") {
+		showFullscreen.value = setting.value
+	}
+}
+
+onMounted(async () => {
+	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
 	if (window.innerHeight > 600) {
 		showFullscreen.value = true
 	}
+})
+
+onBeforeUnmount(() => {
+	settingService.dispose()
 })
 </script>
 

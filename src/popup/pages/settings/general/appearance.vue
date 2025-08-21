@@ -13,67 +13,108 @@ import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown"
 
+/** Utils */
+import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
+
 /** Composables */
-import { useSettings } from "@/composables/settings.js"
-const { settings, updateSettings } = useSettings()
+import { useToast } from "@/composables/toast"
+const { openToast } = useToast()
 
-const theme = computed(() => settings.value?.appearance?.theme)
+let settingService = null
+const isLoading = ref(true)
+const theme = ref(DEFAULT_SETTINGS?.theme || "dark")
+const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.sidePanel)
+const isShowNodeNameEnabled = ref(DEFAULT_SETTINGS?.showNode)
+const isShowPopupFullscreen = ref(DEFAULT_SETTINGS?.showPopupFullscreen)
+const isAnimationsDisabled = ref(DEFAULT_SETTINGS?.disableAnimations)
+const settings = {
+	theme: {
+		title: "",
+		description: "",
+		model: theme,
+	},
+	sidePanel: {
+		title: "Open as Side Panel",
+		description: "Open as side panel instead of popup",
+		model: isSidePanelEnabled,
+	},
+	showNode: {
+		title: "Show Node name",
+		description: "Always show node name in the header",
+		model: isShowNodeNameEnabled,
+	},
+	showPopupFullscreen: {
+		title: "Full-height popups",
+		description: "Open popups to to the full height",
+		model: isShowPopupFullscreen,
+	},
+	disableAnimations: {
+		title: "Disable animations",
+		description: "Minimize the use of animations",
+		model: isAnimationsDisabled,
+	},
+}
 
-const isSidePanelEnabled = ref(settings.value?.appearance?.sidePanel)
-watch(
-	() => isSidePanelEnabled.value,
-	async () => {
-		updateSettings("appearance", "sidePanel", isSidePanelEnabled.value)
+async function updateSetting (key, value) {
+	if (!settings[key]) return
+	if (settings[key].model.value === value) return
 
-		chrome.sidePanel.setPanelBehavior({
-			openPanelOnActionClick: settings.value.appearance.sidePanel,
-		})
+	try {
+		await settingService.updateSetting(key, value)
+		applySetting(key, value)
+	} catch (err) {
+		openToast({ label: "Failed to update setting", icon: "warning" })
+	}
+}
 
-		if (isSidePanelEnabled.value) {
-			const currentWindow = await chrome.windows.getCurrent()
-			chrome.sidePanel.open({
-				windowId: currentWindow.id,
-			})
+async function applySetting(key, value) {
+	settings[key].model.value = value
+
+	switch (key) {
+		case "sidePanel":
+			if (value) {
+				const currentWindow = await chrome.windows.getCurrent()
+				chrome.sidePanel.open({
+					windowId: currentWindow.id,
+				})
+			}
+			
 			window.close()
-		} else {
-			window.close()
+			break;
+	
+		default:
+			break;
+	}
+}
+
+function onSettingUpdate(setting) {
+	if (settings[setting.key]) {
+		if (settings[setting.key].model.value !== setting.value) {
+			applySetting(setting.key, setting.value)
 		}
-	},
-)
+	}
+}
 
-const isShowNodeNameEnabled = ref(settings.value?.appearance?.showNode)
-watch(
-	() => isShowNodeNameEnabled.value,
-	async () => {
-		updateSettings("appearance", "showNode", isShowNodeNameEnabled.value)
-	},
-)
-
-const isShowPopupFullscreen = ref(settings.value?.appearance?.showPopupFullscreen)
-watch(
-	() => isShowPopupFullscreen.value,
-	async () => {
-		updateSettings("appearance", "showPopupFullscreen", isShowPopupFullscreen.value)
-	},
-)
-
-const isAnimationsDisabled = ref(settings.value?.appearance?.disableAnimations)
-watch(
-	() => isAnimationsDisabled.value,
-	async () => {
-		updateSettings("appearance", "disableAnimations", isAnimationsDisabled.value)
-
-		if (isAnimationsDisabled.value) {
-			document.querySelector("html").classList.add("noanimations")
-		} else {
-			document.querySelector("html").classList.remove("noanimations")
+onMounted(async () => {
+	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
+	const _settings = await settingService.getSettings()
+	_settings.forEach(s => {
+		if (settings[s.key]) {
+			settings[s.key].model.value = s.value
 		}
-	},
-)
+	})
+
+	isLoading.value = false
+})
+
+onBeforeUnmount(() => {
+	settingService.dispose()
+})
 </script>
 
 <template>
-	<Flex v-if="settings" direction="column" gap="20" :class="$style.wrapper">
+	<Flex v-if="!isLoading" direction="column" gap="20" :class="$style.wrapper">
 		<Breadcrumbs />
 
 		<Flex direction="column" gap="24">
@@ -96,25 +137,25 @@ watch(
 								color="primary"
 							/>
 							<Text size="13" weight="600" color="primary" style="text-transform: capitalize">
-								{{ settings.appearance.theme }}
+								{{ theme }}
 							</Text>
 						</DropdownTrigger>
 					</template>
 
 					<template #popup>
-						<DropdownItem @click="updateSettings('appearance', 'theme', 'dark')">
+						<DropdownItem @click="updateSetting('theme', 'dark')">
 							<Flex align="center" gap="8">
 								<Icon :name="theme === 'dark' ? 'check' : ''" size="14" color="primary" />
 								Dark
 							</Flex>
 						</DropdownItem>
-						<DropdownItem @click="updateSettings('appearance', 'theme', 'light')">
+						<DropdownItem @click="updateSetting('theme', 'light')">
 							<Flex align="center" gap="8">
 								<Icon :name="theme === 'light' ? 'check' : ''" size="14" color="primary" />
 								Light
 							</Flex>
 						</DropdownItem>
-						<DropdownItem @click="updateSettings('appearance', 'theme', 'system')">
+						<DropdownItem @click="updateSetting('theme', 'system')">
 							<Flex align="center" gap="8">
 								<Icon :name="theme === 'system' ? 'check' : ''" size="14" color="primary" />
 								System
@@ -124,40 +165,16 @@ watch(
 				</Dropdown>
 			</Flex>
 
-			<Flex justify="between">
+			<Flex v-for="sk in Object.keys(settings).filter(sk => sk !== 'theme')" justify="between">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Open as Side Panel </Text>
-					<Text size="12" weight="500" color="tertiary"> Open as side panel instead of popup </Text>
+					<Text size="13" weight="600" color="primary"> {{ settings[sk].title }} </Text>
+					<Text size="12" weight="500" color="tertiary"> {{ settings[sk].description }} </Text>
 				</Flex>
 
-				<Toggle v-model="isSidePanelEnabled" />
-			</Flex>
-
-			<Flex justify="between">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Show Node name </Text>
-					<Text size="12" weight="500" color="tertiary"> Always show node name in the header </Text>
-				</Flex>
-
-				<Toggle v-model="isShowNodeNameEnabled" />
-			</Flex>
-
-			<Flex justify="between">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Full-height popups </Text>
-					<Text size="12" weight="500" color="tertiary"> Open popups to to the full height </Text>
-				</Flex>
-
-				<Toggle v-model="isShowPopupFullscreen" />
-			</Flex>
-
-			<Flex justify="between">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Disable animations </Text>
-					<Text size="12" weight="500" color="tertiary"> Minimize the use of animations </Text>
-				</Flex>
-
-				<Toggle v-model="isAnimationsDisabled" />
+				<Toggle
+					@update:modelValue="updateSetting(sk, $event)"
+					:modelValue="settings[sk].model.value"
+				/>
 			</Flex>
 		</Flex>
 

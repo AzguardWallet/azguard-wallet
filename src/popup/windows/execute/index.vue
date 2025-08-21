@@ -25,8 +25,8 @@ import { TxOrigin, OriginType } from "@/wallet/services/transaction/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-
 const appStore = useAppStore()
+
 const profile = computed(() => appStore.profile)
 
 const router = useRouter()

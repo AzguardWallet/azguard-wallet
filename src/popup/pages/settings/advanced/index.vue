@@ -11,18 +11,17 @@
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
+import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
+import { debounce } from "@/utils/general"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
-import { useSettings } from "@/composables/settings.js"
 const { openToast } = useToast()
-const { settings, updateSettings } = useSettings()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -32,8 +31,100 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const isDeveloperModeEnabled = ref(settings.value?.developer?.advancedMode)
-const indicateWalletActivity = ref(settings.value?.developer?.indicateWalletActivity)
+let settingService = null
+let profileService = null
+const isLoading = ref(true)
+
+const MAX_SESSION_TTL = 1440
+const sessionTtl = ref(DEFAULT_SETTINGS?.sessionTtl)
+const sessionTtlMinutes = ref(0)
+const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developerMode)
+const isIndicationFailuresEnabled = ref(DEFAULT_SETTINGS?.indicateFailures)
+const isDebugModeEnabled = ref(DEFAULT_SETTINGS?.debugMode)
+
+const settings = {
+	sessionTtl: {
+		title: "Auto-lock Timeout",
+		description: "Automatic wallet locking (minutes)",
+		model: sessionTtl,
+		visible: ref(true),
+	},
+	developerMode: {
+		title: "Developer Mode",
+		description: "Access to entity metadata, etc",
+		model: isDeveloperModeEnabled,
+		visible: ref(true),
+	},
+	indicateFailures: {
+		title: "Indicate Failures",
+		description: "Highlight errors and warnings in the header",
+		model: isIndicationFailuresEnabled,
+		visible: isDeveloperModeEnabled,
+	},
+	debugMode: {
+		title: "Debug Mode",
+		description: "Collect debug level logs",
+		model: isDebugModeEnabled,
+		visible: isDeveloperModeEnabled,
+	},
+}
+
+const notification = reactive({
+	show: false,
+	text: "",
+})
+function fillNotification(text) {
+	if (!text) {
+		notification.show = false
+		notification.text = ""
+		return
+	}
+
+	notification.show = true
+	notification.text = text
+}
+
+async function updateSetting(key, value) {
+	if (!settings[key]) return
+	if (settings[key].model.value === value) return
+
+	try {
+		await settingService.updateSetting(key, value)
+		applySetting(key, value)
+
+		if (key === "sessionTtl") {
+			await profileService.refreshSession()
+			openToast({ label: "Auto-lock timeout updated", icon: "info" }, 1_500)
+		}
+	} catch (err) {
+		openToast({ label: "Failed to update setting", icon: "warning" })
+	}
+}
+
+async function applySetting(key, value) {
+	settings[key].model.value = value
+
+	switch (key) {
+		case "developerMode":
+			updateSetting("indicateFailures", value)
+			if (!value) {
+				updateSetting("debugMode", value)
+			}
+			
+			break;
+	
+		default:
+			break;
+	}
+}
+
+function onSettingUpdate(setting) {
+	if (settings[setting.key]) {
+		if (settings[setting.key].model.value !== setting.value) {
+			applySetting(setting.key, setting.value)
+		}
+	}
+}
 
 const handleFullReset = () => {
 	cacheStore.confirm.description = "You want to completely delete all local data - settings and so on"
@@ -52,58 +143,98 @@ const handleFullReset = () => {
 }
 
 watch(
-	() => isDeveloperModeEnabled.value,
-	async () => {
-		updateSettings("developer", "advancedMode", isDeveloperModeEnabled.value)
-		if (!indicateWalletActivity.value) {
-			indicateWalletActivity.value = true
+	() => sessionTtlMinutes.value,
+	debounce(() => {
+		updateSetting("sessionTtl", sessionTtlMinutes.value * 60 * 1_000)
+		switch (sessionTtlMinutes.value) {
+			case 0:
+				fillNotification("'0' means the wallet will never be locked automatically")
+				break;
+			case MAX_SESSION_TTL:
+				fillNotification("This is the maximum session time. Use 0 to disable auto-lock.")
+				break;
+			
+			default:
+				fillNotification("")
+				break;
 		}
-	},
+	}, 300)
 )
-watch(
-	() => indicateWalletActivity.value,
-	async () => {
-		updateSettings("developer", "indicateWalletActivity", indicateWalletActivity.value)
-	},
-)
+
+onBeforeMount(async () => {
+	profileService = new ProfileServiceClient()
+	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
+	const _settings = await settingService.getSettings()
+	_settings.forEach(s => {
+		if (settings[s.key]) {
+			settings[s.key].model.value = s.value
+		}
+	})
+
+	sessionTtlMinutes.value = String(sessionTtl.value / 1_000 / 60)
+
+	isLoading.value = false
+})
+
+onBeforeUnmount(() => {
+	settingService.dispose()
+	profileService.dispose()
+})
 </script>
 
 <template>
 	<Flex direction="column" gap="32" :class="$style.wrapper">
 		<Breadcrumbs />
 
-		<Flex justify="between">
-			<Flex direction="column" gap="6">
-				<Text size="13" weight="600" color="primary"> Developer Mode </Text>
-				<Text size="12" weight="500" color="tertiary"> Access to entity metadata, etc </Text>
-			</Flex>
+		<Banner v-if="isLoading" isLoading> Fetching settings </Banner>
 
-			<Toggle v-model="isDeveloperModeEnabled" />
-		</Flex>
-
-		<Flex
-			v-if="isDeveloperModeEnabled"
-			direction="column"
-			gap="24"
-		>
-			<Flex justify="between">
+		<template v-if="!isLoading">
+			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Indicate failures </Text>
-					<Text size="12" weight="500" color="tertiary"> Highlight errors and warnings in header </Text>
+					<Flex align="center" gap="6">
+						<Text size="13" weight="600" color="primary"> {{ settings.sessionTtl.title }} </Text>
+						<Tooltip
+							v-if="notification.show"
+						>
+							<Icon name="info" color="secondary" size="14" />
+
+							<template #content>
+								<Flex align="center" :class="$style.tooltip">
+									<Text size="12" color="secondary"> {{ notification.text }} </Text>
+								</Flex>
+							</template>
+						</Tooltip>
+					</Flex>				
+					<Text size="12" weight="500" color="tertiary"> {{ settings.sessionTtl.description }} </Text>
 				</Flex>
 
-				<Toggle v-model="indicateWalletActivity" />
+				<Input
+					v-model="sessionTtlMinutes"
+					type="text"
+					subtype="int"
+					:max="MAX_SESSION_TTL"
+					placeholder="30"
+					:class="$style.input"
+				/>
 			</Flex>
+			<Flex
+				v-for="sk in Object.keys(settings).filter(sk => sk !== 'sessionTtl')"
+				align="center"
+				justify="between"
+			>
+				<template v-if="settings[sk].visible.value">
+					<Flex direction="column" justify="center" gap="6">
+						<Text size="13" weight="600" color="primary"> {{ settings[sk].title }} </Text>
+						<Text size="12" weight="500" color="tertiary"> {{ settings[sk].description }} </Text>
+					</Flex>
 
-			<!-- <Flex direction="column" gap="12">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary"> Full storage reset </Text>
-					<Text size="12" weight="500" height="140" color="tertiary"> All local data will be deleted </Text>
-				</Flex>
-
-				<Button @click="handleFullReset" type="red" size="small" disabled> Full Reset </Button>
-			</Flex> -->
-		</Flex>
+					<Toggle
+						@update:modelValue="updateSetting(sk, $event)"
+						:modelValue="settings[sk].model.value"
+					/>
+				</template>
+			</Flex>
+		</template>
 
 		<Navigation />
 	</Flex>
@@ -125,31 +256,17 @@ watch(
 	padding: 20px 24px 80px 24px;
 }
 
-.item {
-	border-radius: 12px;
-	box-shadow: inset 0 0 0 1px var(--gray-10);
-	cursor: pointer;
+.tooltip {
+	max-width: 200px;
 
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--gray-3);
-
-		& .item_icon {
-			transform: rotate(-90deg) translateY(3px);
-		}
-	}
-
-	&:active {
-		background: var(--gray-5);
+	* {
+		line-height: 1.2;
 	}
 }
-
-.item_icon {
-	transform: rotate(-90deg);
-
-	transition: transform 0.2s var(--bezier);
+.input {
+	width: 60px;
+	* {
+		text-align: center;
+	}
 }
 </style>

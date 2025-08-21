@@ -54,7 +54,6 @@ import {
     TxOrigin,
     TxTransfer,
 } from "@/wallet/services/transaction/client";
-import { type ILogs, LogLevel } from "@/wallet/services/logger/client";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import { decodeFromAbiPatched } from "@/wallet/utils/abi-decoder";
 import type { Fn } from "@/wallet/utils/fn";
@@ -62,6 +61,7 @@ import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import { TaskService } from "@/wallet/services/task";
 import { WrappedTask } from "@/wallet/services/task/wrapped-task";
 import { ExecuteOperationContent, StepContent, TransferContent } from "@/wallet/services/task/client";
+import type { ILogs } from "@/wallet/services/logger/client";
 import {
     EXECUTION_SERVICE_NAME,
     ExecutionServiceMethod,
@@ -887,7 +887,7 @@ export class ExecutionService extends Service {
                 }
             }
         }
-
+        
         for (const [promise, i, types] of utility) {
             const { result: values } = await promise;
             try {
@@ -1018,7 +1018,7 @@ export class ExecutionService extends Service {
         artifacts: Map<string, ContractArtifact>,
         args: HashedValues[],
         calls: AzguardFunctionCall[],
-        txCalls: TxCall[],
+        txCalls: TxCall[]
     ) {
         for (const action of actions) {
             switch (action.kind) {

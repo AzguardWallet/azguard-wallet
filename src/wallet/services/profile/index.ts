@@ -1,6 +1,9 @@
 import { Fr } from "@aztec/foundation/fields";
 import type { RequestMessage, ResponseMessage, EventMessage } from "@/wallet/base/port-service/messages";
 import { Service } from "@/wallet/base/port-service/service";
+import type { SettingService } from "@/wallet/services/settings";
+import type { Setting } from "@/wallet/services/settings/client";
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults";
 import type { ILogs } from "@/wallet/services/logger/client";
 import { EntityStorage, SimpleStorage, StorageType } from "@/wallet/storage";
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
@@ -63,7 +66,6 @@ type ActiveSession = {
 }
 
 const encryptionGuard = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
-const sessionTtl = 1800_000; // 30 minutes. TODO: configure it in settings
 
 export class ProfileService extends Service {
     public readonly onProfileDeleted: ((profileId: string) => void)[] = [];
@@ -71,16 +73,19 @@ export class ProfileService extends Service {
 
     private readonly profiles: EntityStorage<ProfileDto>;
     private readonly session: SimpleStorage<SessionDto>;
+    private sessionTtl: number = DEFAULT_SETTINGS.sessionTtl as number;
     private readonly lock = new Lock();
 
     private initPromise?: Promise<void>;
     private activeSession?: ActiveSession;
 
     constructor(
+        private readonly settings: SettingService,
         public readonly logger: ILogs,
         emit: (event: EventMessage) => void
     ) {
         super(PROFILE_SERVICE_NAME, logger, emit);
+        this.settings.onSettingUpdated.push(this.onSettingUpdated);
         this.profiles = new EntityStorage('azguard:core:profiles', StorageType.Local);
         this.session = new SimpleStorage('azguard:core:profiles', StorageType.Session);
         this.initPromise = this.initSession();
@@ -553,10 +558,13 @@ export class ProfileService extends Service {
     private async initSession() {
         try {
             await this.lock.enter();
+
+            const setting = await this.settings.getSetting("sessionTtl");
+            this.sessionTtl = Number(setting.value);
             
             const session = await this.session.get('active_profile');
             if (session) {
-                if (session.since + sessionTtl > Date.now()) {
+                if (session.since + this.sessionTtl > Date.now() || !this.sessionTtl) {
                     const profile = await this.profiles.get(session.profile);
                     if (profile) {
                         const passhash = Buffer.from(session.passhash, 'base64');
@@ -615,7 +623,7 @@ export class ProfileService extends Service {
 
     private async _getSession(): Promise<ActiveSession | undefined> {
         if (this.activeSession) {
-            if (this.activeSession.session.since + sessionTtl > Date.now()) {
+            if (this.activeSession.session.since + this.sessionTtl > Date.now() || !this.sessionTtl) {
                 return this.activeSession;
             }
 
@@ -707,6 +715,12 @@ export class ProfileService extends Service {
         catch (error) {
             this.logDebug("Failed to decrypt payload", error);
             return undefined;
+        }
+    }
+
+    private readonly onSettingUpdated = (setting: Setting) => {
+        if (setting.key === "sessionTtl" && typeof setting.value === "number") {
+            this.sessionTtl = setting.value;
         }
     }
 }

@@ -75,7 +75,7 @@ export class TokenBalanceServiceClient extends ServiceClient {
 				}
 				break
 			default:
-				this.logError(`Unexpected event type ${message.event}.`)
+				this.logError(`Unexpected event type ${message.event}.`);
 				break
 		}
 	}

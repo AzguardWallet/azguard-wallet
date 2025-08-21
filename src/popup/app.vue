@@ -12,10 +12,8 @@ import { isPrefersDarkScheme } from "@/utils/general"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
-
-/** Composables */
-import { useSettings } from "@/composables/settings.js"
-const { settings, syncLocalSettings } = useSettings()
+import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -25,35 +23,43 @@ const popupStore = usePopupStore()
 
 /** Update theme */
 const root = document.querySelector("html")
-const theme = computed(() => settings.value.appearance?.theme)
-watch(
-	() => theme.value,
-	() => {
-		if (theme.value === "system") {
-			root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
-		} else {
-			root.setAttribute("theme", theme.value)
-		}
-	},
-)
+const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", event => {
 	if (theme.value === "system") root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
 })
-
-watch(
-	() => settings.value,
-	() => {
-		if (settings.value.appearance.disableAnimations) {
-			document.querySelector("html").classList.add("noanimations")
-		}
-	},
-)
 
 import LogoIcon from "@/assets/logo.svg?raw"
 
 const route = useRoute()
 const router = useRouter()
+
+let settingService = null
 const intervalId = ref(null)
+
+const settingHandlers = {
+	theme(value) {
+		theme.value = value
+		if (value === "system") {
+			root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
+		} else {
+			root.setAttribute("theme", value)
+		}
+	},
+	disableAnimations(value) {
+		root.classList.toggle("noanimations", Boolean(value))
+	},
+	sidePanel(value) {
+		chrome.sidePanel.setPanelBehavior({
+			openPanelOnActionClick: Boolean(value)
+		})
+	}
+}
+function applySetting(setting) {
+	const handler = settingHandlers[setting.key];
+	if (typeof handler === "function") {
+		handler(setting.value);
+	}
+}
 
 const initNetworks = async () => {
 	managers.network = new NetworkServiceClient()
@@ -216,21 +222,16 @@ const loadProfile = async () => {
 
 	appStore.isSessionChecked = true
 }
-const init = async () => {
-	/**
-	 * Settings: theme, side panel, ...
-	 */
-	await syncLocalSettings()
 
-	/**
-	 * Wallet init: active profile, etc
-	 */
-	loadProfile()
-}
 
 onBeforeMount(async () => {
 	await router.isReady()
-	init()
+
+	settingService = new SettingServiceClient(undefined, undefined, applySetting)
+	const settings = await settingService.getSettings()
+	settings.forEach(applySetting)
+
+	loadProfile()
 })
 
 onMounted(async () => {
@@ -290,6 +291,9 @@ watch(
 
 onBeforeUnmount(() => {
 	clearInterval(intervalId)
+	// if (settingService) {
+		settingService.dispose()
+	// }
 })
 </script>
 
