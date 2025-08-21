@@ -20,18 +20,18 @@ export abstract class Service {
     }
 
     protected logDebug(...args: any[]) {
-        this.log(LogLevel.Debug, args);
+        this.log(LogLevel.Debug, ...args);
     }
 
     protected logInfo(...args: any[]) {
-        this.log(LogLevel.Info, args);
+        this.log(LogLevel.Info, ...args);
     }
 
     protected logWarn(...args: any[]) {
-        this.log(LogLevel.Warning, args);
+        this.log(LogLevel.Warning, ...args);
     }
 
     protected logError(...args: any[]) {
-        this.log(LogLevel.Error, args);
+        this.log(LogLevel.Error, ...args);
     }
 }

@@ -23,6 +23,7 @@ import { sleep } from "./utils";
 import { ensureOffscreenRunning } from "./utils/offscreen";
 import { jsonSanitize } from "./utils/serialization";
 import { TaskService } from "./services/task";
+import { NoteService } from "./services/note";
 
 export async function init() {
     loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
@@ -80,6 +81,7 @@ const transactionService = new TransactionService(
     broadcast,
 );
 const accountStateService = new AccountStateService(networkService, logs, broadcast);
+const noteService = new NoteService(networkService, logs, broadcast);
 const authRegistryService = new AuthRegistryService(
     networkService,
     taskService,
@@ -159,6 +161,7 @@ const services = new Map<string, Service>([
     [rpcService.name, rpcService],
     [walletConnectService.name, walletConnectService],
     [accountStateService.name, accountStateService],
+    [noteService.name, noteService],
     [authRegistryService.name, authRegistryService],
     [taskService.name, taskService],
     [loggerService.name, loggerService],

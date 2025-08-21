@@ -28,7 +28,7 @@ export abstract class ServiceClient {
         this.connection = this.connect();
     }
 
-    protected log(level: LogLevel, args: any[]) {
+    protected log(level: LogLevel, ...args: any[]) {
         return this.logger.addLog(
             level,
             args,
@@ -38,19 +38,19 @@ export abstract class ServiceClient {
     }
 
     protected logDebug(...args: any[]) {
-        return this.log(LogLevel.Debug, args);
+        return this.log(LogLevel.Debug, ...args);
     }
 
     protected logInfo(...args: any[]) {
-        return this.log(LogLevel.Info, args);
+        return this.log(LogLevel.Info, ...args);
     }
 
     protected logWarn(...args: any[]) {
-        return this.log(LogLevel.Warning, args);
+        return this.log(LogLevel.Warning, ...args);
     }
 
     protected logError(...args: any[]) {
-        return this.log(LogLevel.Error, args);
+        return this.log(LogLevel.Error, ...args);
     }
 
     protected abstract onEvent(message: EventMessage): void;
