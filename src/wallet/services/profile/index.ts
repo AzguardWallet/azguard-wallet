@@ -558,12 +558,12 @@ export class ProfileService extends Service {
     private async initSession() {
         try {
             await this.lock.enter();
+
+            const setting = await this.settings.getSetting("sessionTtl");
+            this.sessionTtl = Number(setting.value);
             
             const session = await this.session.get('active_profile');
             if (session) {
-                const setting = await this.settings.getSetting("sessionTtl");
-                this.sessionTtl = Number(setting.value);
-
                 if (session.since + this.sessionTtl > Date.now() || !this.sessionTtl) {
                     const profile = await this.profiles.get(session.profile);
                     if (profile) {
