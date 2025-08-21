@@ -292,7 +292,7 @@ watch(
 
 onBeforeUnmount(() => {
 	clearInterval(intervalId)
-	settingService.dispose()
+	settingService?.dispose()
 })
 </script>
 

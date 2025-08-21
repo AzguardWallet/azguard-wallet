@@ -558,6 +558,9 @@ export class ProfileService extends Service {
     private async initSession() {
         try {
             await this.lock.enter();
+
+            const setting = await this.settings.getSetting("sessionTtl");
+            this.sessionTtl = Number(setting.value);
             
             const session = await this.session.get('active_profile');
             if (session) {

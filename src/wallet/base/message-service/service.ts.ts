@@ -34,19 +34,19 @@ export abstract class Service<TMethod, TEvent> {
     }
     
     protected logDebug(...args: any[]) {
-        return this.log(LogLevel.Debug, args);
+        return this.log(LogLevel.Debug, ...args);
     }
 
     protected logInfo(...args: any[]) {
-        return this.log(LogLevel.Info, args);
+        return this.log(LogLevel.Info, ...args);
     }
 
     protected logWarn(...args: any[]) {
-        return this.log(LogLevel.Warning, args);
+        return this.log(LogLevel.Warning, ...args);
     }
 
     protected logError(...args: any[]) {
-        return this.log(LogLevel.Error, args);
+        return this.log(LogLevel.Error, ...args);
     }
     
     public start() {
