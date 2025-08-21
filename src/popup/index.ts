@@ -95,5 +95,39 @@ router.beforeEach(async (to, from, next) => {
 createApp(App).use(router).use(createPinia()).mount("#app")
 
 self.onerror = (message, source, lineno, colno, error) => {
-	console.info(`Error: ${message}\nSource: ${source}\nLine: ${lineno}\nColumn: ${colno}\nError object: ${error}`)
+	const args: string[] = []
+	if (message !== undefined) args.push(`Message: ${message}`)
+	if (source !== undefined) args.push(`Source: ${source}`)
+	if (lineno !== undefined) args.push(`Line: ${lineno}`)
+	if (colno !== undefined) args.push(`Column: ${colno}`)
+	if (error !== undefined) args.push(error?.stack || String(error))
+
+	loggerService.addLog(
+		LogLevel.Error,
+		args,
+		undefined,
+		LogOrigin.UI
+	)
+
+	return false
+}
+
+self.onunhandledrejection = (event: PromiseRejectionEvent) => {
+	const args: string[] = []
+
+	args.push("Unhandled Promise rejection:");
+	if (event.reason !== undefined) {
+		if (event.reason instanceof Error) {
+			args.push(event.reason.stack || String(event.reason))
+		} else {
+			args.push(String(event.reason))
+		}
+	}
+
+	loggerService.addLog(
+		LogLevel.Error,
+		args,
+		undefined,
+		LogOrigin.UI
+	)
 }

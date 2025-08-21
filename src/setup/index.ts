@@ -13,9 +13,3 @@ const router = createRouter({
 const app = createApp(App)
 
 app.use(router).mount("#app")
-
-self.onerror = (message, source, lineno, colno, error) => {
-	console.info(
-		`Error: ${message}\nSource: ${source}\nLine: ${lineno}\nColumn: ${colno}\nError object: ${error}`
-	)
-}
