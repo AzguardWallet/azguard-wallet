@@ -234,7 +234,7 @@ onMounted(async () => {
 						</Button>
 
 						<template #popup>
-							<DropdownItem @click="handleExportContacts">
+							<DropdownItem @click="handleExportContacts" :disabled="!contacts.length">
 								<Flex align="center" gap="8">
 									<Icon name="download-outline" size="14" color="secondary" />
 									Export contacts
