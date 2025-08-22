@@ -322,17 +322,19 @@ function exportLogsToCSV() {
 		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
 		const url = URL.createObjectURL(blob)
 
-		const link = document.createElement("a")
-		link.setAttribute("href", url)
-		link.setAttribute("download", `AzguardWalletLogs_${new Date(Date.now()).toISOString()}.csv`)
-		link.style.display = "none"
-		document.body.appendChild(link)
-		link.click()
-		document.body.removeChild(link)
-
-		URL.revokeObjectURL(url)
-
-		openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
+		chrome.downloads.download({
+			url,
+			filename: `AzguardWalletLogs_${Math.floor(Date.now() / 1000)}.csv`,
+			saveAs: true,
+		}, () => {
+			if (chrome.runtime.lastError) {
+				console.error("Download failed:", chrome.runtime.lastError.message);
+				openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
+			} else {
+				openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
+			}
+			URL.revokeObjectURL(url)
+		})
 	} catch (err) {
 		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
 		console.error(err);
