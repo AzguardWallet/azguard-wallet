@@ -26,9 +26,9 @@ pxeService.start();
 chrome.runtime.sendMessage(OFFSCREEN_READY_MESSAGE);
 
 self.onerror = (message, source, lineno, colno, error) => {
-    const args: string[] = []
-    if (message !== undefined) args.push(`Message: ${message}`)
-    if (source !== undefined) args.push(`Source: ${source}`)
+    const args: any[] = []
+    if (message !== undefined) args.push(message)
+    if (source !== undefined) args.push(source)
     if (lineno !== undefined) args.push(`Line: ${lineno}`)
     if (colno !== undefined) args.push(`Column: ${colno}`)
     if (error !== undefined) args.push(error?.stack || String(error))
