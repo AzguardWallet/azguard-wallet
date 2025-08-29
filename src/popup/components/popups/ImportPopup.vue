@@ -159,6 +159,15 @@ const handleImportPublicKey = async () => {
 	}
 }
 
+const handleImportPasskey = async () => {
+	try {
+		const profile = await managers.profile.importPasskey(profileName.value.trim())
+		await completeImport(profile)
+	} catch (error) {
+		fillError("unknown", error)
+	}
+}
+
 const handleBack = () => {
 	selectedImportOption.value = null
 
@@ -238,6 +247,13 @@ watch(
 					<SettingItem
 						@click="selectedImportOption = 'public_key'"
 						title="Encrypted Key"
+						icon="key"
+						iconBgColor="blue"
+						chevron
+					/>
+					<SettingItem
+						@click="handleImportPasskey"
+						title="Passkey (WebAuthn)"
 						icon="key"
 						iconBgColor="blue"
 						chevron

@@ -30,16 +30,15 @@ const isAllowedToContinue = computed(() => {
 
 	return true
 })
-const handleCreateProfile = async () => {
-	if (!isAllowedToContinue.value) return
+const handleCreateProfile = async (mode: "password" | "passkey" = "password") => {
 
 	isCreatingProfile.value = true
 
 	const profiles = await managers.profile.getProfiles()
-	const profile = await managers.profile.createProfile(
-		`My Profile${profiles.length ? ` ${profiles.length}` : ''}`,
-		walletPassword.value
-	)
+	const name = `My Profile${profiles.length ? ` ${profiles.length}` : ''}`
+	const profile = mode === "passkey"
+		? await managers.profile.createPasskeyProfile(name)
+		: await managers.profile.createProfile(name, walletPassword.value)
 
 	while (!appStore.isLogined) {
 		await sleep(100) // wait for services initialization
@@ -135,6 +134,16 @@ onUnmounted(() => {
 						:loading="isCreatingProfile"
 					>
 						Create
+					</Button>
+					<Button
+						@click="handleCreateProfile('passkey')"
+						type="secondary"
+						size="medium"
+						wide
+						:disabled="isCreatingProfile"
+						:loading="isCreatingProfile"
+					>
+						Create with Passkey
 					</Button>
 					<Button @click="handleCancel" type="secondary" size="medium" wide :disabled="isCreatingProfile">
 						Cancel

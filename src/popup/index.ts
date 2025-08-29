@@ -77,7 +77,7 @@ router.beforeEach(async (to, from, next) => {
 		}
 	}
 
-	if (!appStore.profile && to.name !== "popup-register") {
+	if (to.meta.requiresProfile !== false && !appStore.profile && to.name !== "popup-register") {
 		const profiles = await managers.profile.getProfiles()
 		if (profiles.length) {
 			appStore.profile = profiles[0]

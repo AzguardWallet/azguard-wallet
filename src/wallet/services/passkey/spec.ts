@@ -1,0 +1,45 @@
+export const PASSKEY_SERVICE_NAME = "passkey";
+export const PASSKEY_PRF_LABEL = "azguard:profile:v1";
+
+export type PasskeyCredentialData = { id: string; prf: string }; // base64 fields
+
+export type PendingPasskeyRequest = { mode: "create" | "get"; credentialId?: string };
+
+import type { PasskeyCredential } from "./credential";
+
+export type PasskeyRequestPromise = {
+    resolve: (r: PasskeyCredential) => void;
+    reject: (reason: string) => void;
+    request: PendingPasskeyRequest;
+};
+
+export type Methods = {
+    /** Creates a new WebAuthn credential and returns a PasskeyCredential helper. */
+    createKey(): PasskeyCredential;
+
+    /**
+     * Retrieves a PasskeyCredential for a credential; if omitted, picks any existing.
+     * @param credentialId Optional WebAuthn credential id (base64url encoded).
+     */
+    getKey(credentialId?: string): PasskeyCredential;
+
+    /**
+     * Returns details for the pending request so the window can proceed.
+     * @param requestId Pending request identifier.
+     */
+    getPendingRequest(requestId: string): PendingPasskeyRequest;
+
+    /**
+     * Resolves a pending request, completing the promise.
+     * @param requestId Pending request identifier.
+     * @param result Credential data containing the credential id and PRF output (base64 strings).
+     */
+    resolvePasskeyRequest(requestId: string, result: PasskeyCredentialData): void;
+
+    /**
+     * Rejects a pending request with a reason.
+     * @param requestId Pending request identifier.
+     * @param reason Human-readable reason for rejection.
+     */
+    rejectPasskeyRequest(requestId: string, reason: string): void;
+};

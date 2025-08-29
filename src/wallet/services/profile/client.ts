@@ -28,8 +28,16 @@ export class ProfileServiceClient extends ServiceClient<Methods, Events> impleme
         return this.request("createProfile", name, password);
     }
 
+    public createPasskeyProfile(name: string): Promise<ProfileInfo> {
+        return this.request("createPasskeyProfile", name);
+    }
+
     public unlockProfile(id: string, password: string): Promise<ProfileInfo> {
         return this.request("unlockProfile", id, password);
+    }
+
+    public unlockPasskeyProfile(id: string): Promise<ProfileInfo> {
+        return this.request("unlockPasskeyProfile", id);
     }
 
     public lockActiveProfile(): Promise<void> {
@@ -62,6 +70,10 @@ export class ProfileServiceClient extends ServiceClient<Methods, Events> impleme
 
     public importMnemonic(name: string, mnemonic: string[], password: string): Promise<ProfileInfo> {
         return this.request("importMnemonic", name, mnemonic, password);
+    }
+
+    public importPasskey(name: string): Promise<ProfileInfo> {
+        return this.request("importPasskey", name);
     }
 
     public exportEncrypted(id: string): Promise<string> {

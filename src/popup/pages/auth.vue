@@ -43,11 +43,14 @@ const password = ref("")
 const isWrongPassword = ref(false)
 const isPasswordType = ref(true)
 
+const isPasskeyProfile = computed(() => appStore.profile?.authType === "passkey")
+
 const handlePasswordInput = () => {
 	if (isWrongPassword.value) isWrongPassword.value = false
 }
 
 const isAllowedToContinue = computed(() => {
+	if (isPasskeyProfile.value) return true
 	if (!password.value.length) return
 	if (isWrongPassword.value) return
 
@@ -62,7 +65,9 @@ const handleUnlockWallet = async () => {
 		let activeProfile
 		try {
 			isAwaitingResponse.value = true
-			activeProfile = await managers.profile.unlockProfile(appStore.profile.id, password.value)
+			activeProfile = isPasskeyProfile.value
+				? await managers.profile.unlockPasskeyProfile(appStore.profile.id)
+				: await managers.profile.unlockProfile(appStore.profile.id, password.value)
 			while (!appStore.isLogined) {
 				await sleep(100) // wait for services initialization
 			}
@@ -142,7 +147,9 @@ async function handleSwitchAppView () {
 }
 
 onMounted(async () => {
-	inputElement.value.inputEl.focus()
+	if (!isPasskeyProfile.value) {
+		inputElement.value.inputEl.focus()
+	}
 
 	theme.value = await configService.getValue("theme")
 	isSidePanelEnabled.value = await configService.getValue("sidePanel")
@@ -218,14 +225,17 @@ const handleSelectProfile = () => {
 					/>
 				</Flex>
 
-				<Text size="24" weight="600" color="primary" style="line-height: 16px"> Password required </Text>
+				<Text size="24" weight="600" color="primary" style="line-height: 16px">
+					{{ isPasskeyProfile ? 'Passkey required' : 'Password required' }}
+				</Text>
 				<Text size="14" weight="500" color="tertiary" align="center" height="140">
-					Enter your profile password to continue
+					{{ isPasskeyProfile ? 'Use your passkey to continue' : 'Enter your profile password to continue' }}
 				</Text>
 			</Flex>
 
 			<Flex wide direction="column" gap="24">
 				<Input
+					v-if="!isPasskeyProfile"
 					ref="inputElement"
 					v-model="password"
 					@input="handlePasswordInput"

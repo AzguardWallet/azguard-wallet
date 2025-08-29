@@ -11,6 +11,7 @@ export default {
 	version: `${major}.${minor}.${patch}.${label}`,
 	version_name: version,
 	manifest_version: 3,
+	host_permissions: ["https://azguardwallet.io/"],
 	action: {
 		default_popup: "src/popup/index.html#/popup/general",
 	},

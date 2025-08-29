@@ -1,0 +1,35 @@
+import { ServiceSpec } from "@/wallet/base";
+import { ServiceClient } from "@/wallet/base/background";
+import { LoggerServiceClient } from "@/wallet/services/logger/client";
+import { PASSKEY_SERVICE_NAME, Methods, PendingPasskeyRequest, PasskeyCredentialData } from "./spec";
+import { PasskeyCredential } from "./credential";
+
+export * from "./spec";
+
+export class PasskeyServiceClient extends ServiceClient<Methods> implements ServiceSpec<Methods> {
+    public constructor(name?: string) {
+        super(PASSKEY_SERVICE_NAME, new LoggerServiceClient(), name);
+    }
+
+    public createKey(): Promise<PasskeyCredential> {
+        return this.request("createKey");
+    }
+
+    public getKey(credentialId?: string): Promise<PasskeyCredential> {
+        return this.request("getKey", credentialId);
+    }
+
+    public getPendingRequest(requestId: string): Promise<PendingPasskeyRequest> {
+        return this.request("getPendingRequest", requestId);
+    }
+
+    public resolvePasskeyRequest(requestId: string, result: PasskeyCredentialData): Promise<void> {
+        return this.request("resolvePasskeyRequest", requestId, result);
+    }
+
+    public rejectPasskeyRequest(requestId: string, reason: string): Promise<void> {
+        return this.request("rejectPasskeyRequest", requestId, reason);
+    }
+}
+
+

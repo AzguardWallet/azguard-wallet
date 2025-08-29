@@ -4,11 +4,15 @@ export const PROFILE_SERVICE_NAME = "profile";
 
 export const ENCRYPTION_GUARD = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
 
+export type AuthType = "password" | "passkey";
+
 export type ProfileInfo = {
     /** Randomly generated id. */
     id: string;
     /** Display name. */
     name: string;
+    /** Authentication type. */
+    authType: AuthType;
 };
 
 export type Profile = ProfileInfo & {
@@ -16,6 +20,8 @@ export type Profile = ProfileInfo & {
     guard: string;
     /** Encrypted master secret. */
     secret: string;
+    /** WebAuthn credential identifier (for passkey profiles). */
+    credentialId?: string;
 };
 
 export type Session = {
@@ -55,11 +61,23 @@ export type Methods = {
     createProfile(name: string, password: string): ProfileInfo;
 
     /**
+     * Creates and returns a new passkey-backed profile.
+     * @param name Display name.
+     */
+    createPasskeyProfile(name: string): ProfileInfo;
+
+    /**
      * Unlocks a profile with the specified id.
      * @param id Profile id.
      * @param password Profile password.
      */
     unlockProfile(id: string, password: string): ProfileInfo;
+
+    /**
+     * Unlocks a passkey-backed profile with the specified id.
+     * @param id Profile id.
+     */
+    unlockPasskeyProfile(id: string): ProfileInfo;
 
     /**
      * Locks active profile, closing active session.
@@ -107,6 +125,12 @@ export type Methods = {
      * @param password Password to encrypt the secret.
      */
     importPlain(name: string, secret: string, password: string): ProfileInfo;
+
+    /**
+     * Imports a passkey-backed profile using an existing credential and signs in.
+     * @param name Display name.
+     */
+    importPasskey(name: string): ProfileInfo;
 
     /**
      * Imports profile from 24-words mnemonic phrase, representing plain secret, and signs in.

@@ -1,7 +1,7 @@
 import { Fr } from "@aztec/foundation/fields";
 import { ConfigProp, IConfig } from "@/wallet/config";
 import { ILogger } from "@/wallet/logger";
-import { ServiceSpec } from "@/wallet/base";
+import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { EntityStorage, StorageType, ValueStorage } from "@/wallet/storage";
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
@@ -9,6 +9,7 @@ import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getEntropy, getMnemonic } from "@/wallet/utils/mnemonic";
 import { EncryptionKey } from "./encryption/encryption-key";
+import { PasskeyService } from "@/wallet/services/passkey/service";
 import {
     PROFILE_SERVICE_NAME,
     ENCRYPTION_GUARD,
@@ -18,6 +19,7 @@ import {
     ActiveSession,
     Events,
     Methods,
+    AuthType,
 } from "./spec";
 
 export * from "./spec";
@@ -34,6 +36,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     private readonly profiles: EntityStorage<Profile>;
     private readonly session: ValueStorage<Session>;
     private sessionTtl: number;
+    private passkeys: PasskeyService = null!;
 
     private activeSession?: ActiveSession;
 
@@ -45,7 +48,9 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         config.onUpdate.add(this.onConfigUpdated);
     }
 
-    protected async init() {
+    protected async init(services: ServiceCollection) {
+        this.passkeys = services.get(PasskeyService.name);
+
         // TODO: remove this at some point
         // migration
         const entries = await this.profiles.getAll();
@@ -54,6 +59,16 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             for (const [id, profile] of entries) {
                 profile.id = id;
                 await this.profiles.set(id, profile);
+            }
+        }
+
+        if (entries.some(x => x[1].authType === undefined)) {
+            this.logInfo("Migrate profiles: adding authType for password profiles");
+            for (const [id, profile] of entries) {
+                if (profile.authType === undefined) {
+                    profile.authType = "password";
+                    await this.profiles.set(id, profile);
+                }
             }
         }
 
@@ -118,6 +133,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             const profile: Profile = {
                 id,
                 name,
+                authType: "password",
                 guard: Buffer.from(guard.buffer).toString("base64"),
                 secret: Buffer.from(secret.buffer).toString("base64"),
             };
@@ -144,6 +160,9 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             if (!profile) {
                 throw new Error("Invalid profile id");
             }
+            if (profile.authType === "passkey") {
+                throw new Error("Profile requires passkey");
+            }
 
             const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), key);
             if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
@@ -156,6 +175,85 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         } finally {
             this.lock.leave();
         }
+    }
+
+    public async createPasskeyProfile(name: string): Promise<ProfileInfo> {
+        await this.ensureInitialized();
+        const credential = await this.passkeys.createKey();
+        const passhash = await credential.derivePasshash();
+        const key = await EncryptionKey.fromPasshash(passhash);
+        const master = await credential.deriveMasterSecret();
+        const guard = await key.encrypt(ENCRYPTION_GUARD);
+        const secret = await key.encrypt(master);
+        try {
+            await this.lock.enter();
+
+            let id: string;
+            do {
+                id = getRandomHex(8);
+            } while (await this.profiles.contains(id));
+
+            const profile: Profile = {
+                id,
+                name,
+                authType: "passkey",
+                guard: Buffer.from(guard.buffer).toString("base64"),
+                secret: Buffer.from(secret.buffer).toString("base64"),
+                credentialId: credential.id,
+            };
+            await this.profiles.set(id, profile);
+
+            this.emit("onProfileAdded", this.getProfileInfo(profile));
+
+            await this._openSession(id, profile, key, passhash);
+
+            return profile;
+        } finally {
+            this.lock.leave();
+        }
+    }
+
+    public async unlockPasskeyProfile(id: string): Promise<ProfileInfo> {
+        await this.ensureInitialized();
+        try {
+            await this.lock.enter();
+
+            const profile = await this.profiles.get(id);
+            if (!profile) {
+                throw new Error("Invalid profile id");
+            }
+            if (profile.authType === "password") {
+                throw new Error("Profile requires password");
+            }
+            if (!profile.credentialId) {
+                throw new Error("Missing credentialId");
+            }
+
+            const credential = await this.passkeys.getKey(profile.credentialId);
+            const passhash = await credential.derivePasshash();
+            const key = await EncryptionKey.fromPasshash(passhash);
+            const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), key);
+            if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
+                throw new Error("Invalid passkey credential");
+            }
+
+            await this._openSession(id, profile, key, passhash);
+
+            return this.getProfileInfo(profile);
+        } finally {
+            this.lock.leave();
+        }
+    }
+
+    public async importPasskey(name: string): Promise<ProfileInfo> {
+        await this.ensureInitialized();
+        const credential = await this.passkeys.getKey();
+        const passhash = await credential.derivePasshash();
+        const key = await EncryptionKey.fromPasshash(passhash);
+        const master = await credential.deriveMasterSecret();
+        const guard = await key.encrypt(ENCRYPTION_GUARD);
+        const secret = await key.encrypt(master);
+        return await this.importProfile(name, guard, secret, key, passhash, "passkey", credential.id);
     }
 
     public async lockActiveProfile(): Promise<void> {
@@ -214,6 +312,9 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             const profile = await this.profiles.get(id);
             if (!profile) {
                 throw new Error("Invalid profile id");
+            }
+            if (profile.authType === "passkey") {
+                throw new Error("Operation not supported for passkey profile");
             }
 
             const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), oldKey);
@@ -286,7 +387,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         if (_plainSecret.byteLength !== 32) {
             throw new Error("Invalid secret length");
         }
-        return await this.importProfile(name, guard, _secret, key, passhash);
+        return await this.importProfile(name, guard, _secret, key, passhash, "password");
     }
 
     public async importPlain(name: string, secret: string, password: string): Promise<ProfileInfo> {
@@ -299,7 +400,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             throw new Error("Invalid secret length");
         }
         const _secret = await key.encrypt(_plainSecret);
-        return await this.importProfile(name, guard, _secret, key, passhash);
+        return await this.importProfile(name, guard, _secret, key, passhash, "password");
     }
 
     public async importMnemonic(name: string, mnemonic: string[], password: string): Promise<ProfileInfo> {
@@ -308,7 +409,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         const key = await EncryptionKey.fromPasshash(passhash);
         const guard = await key.encrypt(ENCRYPTION_GUARD);
         const _secret = await key.encrypt(await getEntropy(mnemonic));
-        return await this.importProfile(name, guard, _secret, key, passhash);
+        return await this.importProfile(name, guard, _secret, key, passhash, "password");
     }
 
     public async exportEncrypted(id: string): Promise<string> {
@@ -436,7 +537,13 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         secret: Uint8Array<ArrayBuffer>,
         key: EncryptionKey,
         passhash: ArrayBuffer,
+        authType: AuthType,
+        credentialId?: string,
     ): Promise<Profile> {
+        if (authType === "passkey" && !credentialId) {
+            throw new Error("Missing credentialId");
+        }
+
         try {
             await this.lock.enter();
 
@@ -448,8 +555,10 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             const profile: Profile = {
                 id,
                 name,
+                authType,
                 guard: Buffer.from(guard.buffer).toString("base64"),
                 secret: Buffer.from(secret.buffer).toString("base64"),
+                credentialId,
             };
             await this.profiles.set(id, profile);
 
@@ -475,7 +584,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     private getProfileInfo(profile: Profile): ProfileInfo {
-        return { id: profile.id, name: profile.name };
+        return { id: profile.id, name: profile.name, authType: profile.authType };
     }
 
     private readonly onConfigUpdated = (prop: ConfigProp) => {
