@@ -88,7 +88,7 @@ watch(
 		if (!props.show) {
 			document.removeEventListener("keydown", onKeydown)
 
-			accountStateClientService.dispose()
+			accountStateClientService.disconnect()
 			accountStateClientService = null
 			senderAddress.value = ""
 		} else {

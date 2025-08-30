@@ -4,7 +4,7 @@ import BN from "bignumber.js"
 import { DateTime } from "luxon"
 
 /** Services */
-import { OriginType, TxStatus } from "@/wallet/services/transaction/client/models"
+import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"

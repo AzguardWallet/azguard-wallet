@@ -184,8 +184,14 @@ const onBalanceDeleted = (balance) => {
 		return f
 	})
 }
-const fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
-const tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined,	onBalanceAdded, onBalanceUpdated, onBalanceDeleted)
+const fpcService = new FpcServiceClient()
+fpcService.onFpcAdded.add(onFpcAdded)
+fpcService.onFpcDeleted.add(onFpcDeleted)
+fpcService.onFpcUpdated.add(onFpcUpdated)
+const tokenBalanceService = new TokenBalanceServiceClient()
+tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
+tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
+tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
 watch(
 	() => [appStore.network, appStore.account],
 	() => {
@@ -193,11 +199,13 @@ watch(
 	},
 )
 onMounted(() => {
+	fpcService.connect()
+	tokenBalanceService.connect()
 	if (appStore.network && appStore.account) fetchFpcs()
 })
 onBeforeUnmount(() => {
-	fpcService.dispose()
-	tokenBalanceService.dispose()
+	fpcService.disconnect()
+	tokenBalanceService.disconnect()
 })
 </script>
 

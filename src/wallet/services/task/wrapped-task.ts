@@ -1,6 +1,5 @@
-import { TaskService } from "./index";
-import { ITaskContent, ITaskResult, EmptyResult, TaskStatus, Task } from "./client/models";
-import { TxOrigin } from "@/wallet/services/transaction/client";
+import { TxOrigin } from "@/wallet/services/transaction/spec";
+import { TaskService, ITaskContent, ITaskResult, EmptyResult, TaskStatus, Task } from "./service";
 
 export class WrappedTask {
     constructor(
@@ -34,7 +33,7 @@ export class WrappedTask {
     }
 
     public get task(): Task {
-        return this.taskService.getTask(this.id);
+        return this.taskService.getTaskSync(this.id);
     }
 
     public get status(): TaskStatus {

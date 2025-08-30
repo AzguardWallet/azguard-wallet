@@ -69,12 +69,12 @@ watch(
 		if (!props.show) {
 			document.removeEventListener("keydown", onKeydown)
 
-			profileService.dispose()
+			profileService.disconnect()
 			profileService = null
 			nameTerm.value = ""
 			isStartedEditing.value = false
 		} else {
-			profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, undefined)
+			profileService = new ProfileServiceClient()
 			nameTerm.value = appStore.profile?.name
 
 			document.addEventListener("keydown", onKeydown)

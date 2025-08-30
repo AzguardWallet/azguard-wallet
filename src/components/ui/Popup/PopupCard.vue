@@ -1,7 +1,7 @@
 <script setup>
 /** Utils */
-import { SettingServiceClient } from "@/wallet/services/settings/client"
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
+import { Config } from "@/wallet/config"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 const props = defineProps({
 	large: {
@@ -13,8 +13,10 @@ const props = defineProps({
 	},
 })
 
-let settingService = null
-const showFullscreen = ref(DEFAULT_SETTINGS?.appearance?.showPopupFullscreen)
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(onSettingUpdate)
+
+const showFullscreen = ref(new Config().showPopupFullscreen)
 
 function onSettingUpdate(setting) {
 	if (setting.key === "showPopupFullscreen") {
@@ -23,14 +25,14 @@ function onSettingUpdate(setting) {
 }
 
 onMounted(async () => {
-	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
+	showFullscreen.value = await configService.getValue("showPopupFullscreen");
 	if (window.innerHeight > 600) {
 		showFullscreen.value = true
 	}
 })
 
 onBeforeUnmount(() => {
-	settingService.dispose()
+	configService.disconnect()
 })
 </script>
 

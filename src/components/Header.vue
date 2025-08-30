@@ -1,9 +1,10 @@
 <script setup>
 /** Utils */
 import { getChainName } from "@/components/ui/utils.js"
-import { LoggerServiceClient } from "@/wallet/services/logger/client"
-import { SettingServiceClient } from "@/wallet/services/settings/client"
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
+import { Config } from "@/wallet/config"
+import { LogLevel } from "@/wallet/logger"
+import { LogViewerServiceClient } from "@/wallet/services/log-viewer/client"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -11,11 +12,15 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-let loggerService = null
-let settingService = null
+const logViewerService = new LogViewerServiceClient()
+logViewerService.onLog.add(onLogAdded)
 
-const indicateFailures = ref(DEFAULT_SETTINGS?.developer?.indicateFailures)
-const showNode = ref(DEFAULT_SETTINGS?.appearance?.showNode)
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(onSettingUpdate)
+
+const defaultConfig = new Config()
+const indicateFailures = ref(defaultConfig.indicateFailures)
+const showNode = ref(defaultConfig.showNode)
 
 const highlightColor = ref("")
 const isLogsHighlighted = ref(false)
@@ -38,11 +43,11 @@ function setHighlightColor(color) {
 }
 
 function onLogAdded(log) {
-	switch (log.level.toUpperCase()) {
-		case "WARN":
+	switch (log.level) {
+		case LogLevel.Warn:
 			setHighlightColor("var(--yellow)")
 			break;
-		case "ERROR":
+		case LogLevel.Error:
 			setHighlightColor("var(--red)")
 			break;
 
@@ -73,27 +78,26 @@ const handleOpenPopup = target => {
 watch(
 	() => indicateFailures.value,
 	() => {
-		if (!indicateFailures.value && loggerService) {
-			loggerService.dispose()
-		} else if (indicateFailures.value) {
-			loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
+		if (!indicateFailures.value) {
+			logViewerService.disconnect()
+		} else {
+			logViewerService.connect()
 		}
 	}
 )
 
 onMounted(async () => {
-	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
-	indicateFailures.value = (await settingService.getSetting("indicateFailures"))?.value
-	showNode.value = (await settingService.getSetting("showNode"))?.value
+	indicateFailures.value = await configService.getValue("indicateFailures")
+	showNode.value = await configService.getValue("showNode")
 	
 	if (indicateFailures.value) {
-		loggerService = new LoggerServiceClient(undefined, undefined, onLogAdded)
+		logViewerService.connect()
 	}
 })
 
 onBeforeUnmount(() => {
-	loggerService.dispose()
-	settingService.dispose()
+	logViewerService.disconnect()
+	configService.disconnect()
 })
 </script>
 

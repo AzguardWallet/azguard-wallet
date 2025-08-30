@@ -145,14 +145,15 @@ const onFpcDeleted = (fpc) => {
 		openToast({ label: "Selected FPC was deleted" })
 	}
 }
-const fpcService = new FpcServiceClient(undefined, undefined, undefined, onFpcUpdated, onFpcDeleted)
-const tokenBalanceService = new TokenBalanceServiceClient(
-	undefined,
-	undefined,
-	onBalanceAdded,
-	onBalanceUpdated,
-	onBalanceDeleted,
-)
+
+const fpcService = new FpcServiceClient()
+fpcService.onFpcDeleted.add(onFpcDeleted)
+fpcService.onFpcUpdated.add(onFpcUpdated)
+
+const tokenBalanceService = new TokenBalanceServiceClient()
+tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
+tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
+tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
 
 const saveSelectedMethod = async (method) => {
 	const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
@@ -306,12 +307,14 @@ watch(
 )
 
 onBeforeMount(async () => {
+	fpcService.connect()
+	tokenBalanceService.connect()
 	await init()
 })
 onBeforeUnmount(() => {
+	fpcService.disconnect()
+	tokenBalanceService.disconnect()
 	cacheStore.feePaymentMethods = cacheStore.feePaymentMethods.filter(m => m.id !== methodId)
-	fpcService.dispose()
-	tokenBalanceService.dispose()
 })
 </script>
 

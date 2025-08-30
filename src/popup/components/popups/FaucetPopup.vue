@@ -137,7 +137,7 @@ const handleMint = async () => {
 			appStore.mintingTokens.remove(mintingAddress, mintingTokenId.value)
 			appStore.tokensAwaitingBalanceRefresh.add(mintingAddress, mintingTokenId.value)
 		} else {
-			const allTokens = await managers.token?.getTokens()
+			const allTokens = await managers.token?.getTokens(appStore.profile.id, appStore.network.chainId)
 			const newToken = allTokens.find(t => t.symbol === symbol && t.name === name)
 			
 			if (newToken) {

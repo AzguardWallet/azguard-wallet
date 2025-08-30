@@ -1,271 +1,116 @@
-import { BarretenbergSync } from "@aztec/bb.js"
-import { type EventMessage, type IMessage, MessageType, type RequestMessage } from "./base/port-service/messages";
-import type { Service } from "./base/port-service/service";
-import { AccountService } from "./services/account";
-import { NetworkService } from "./services/network";
-import { ProfileService } from "./services/profile";
-import { WalletConnectService } from "./services/wallet-connect";
-import { TokenService } from "./services/token";
-import { TokenBalanceService } from "./services/token-balance";
-import { TransactionService } from "./services/transaction";
-import { ExecutionService } from "./services/execution";
-import { FaucetService } from "./services/faucet";
-import { FpcService } from "./services/fpc";
-import { AccountStateService } from "./services/account-state";
-import { AuthRegistryService } from "./services/auth-registry";
-import { RpcService } from "./services/rpc";
-import { DappSessionService } from "./services/dapp-session";
-import { DappInteractionService } from "./services/dapp-interaction";
-import { LoggerService } from "./services/logger";
-import { SettingService } from "./services/settings";
-import { LOGGER_SERVICE_NAME } from "./services/logger/client";
-import { InMemoryLogs, LogLevel } from "./services/logger/client";
+import "@/utils/console-sniffer";
+import { BarretenbergSync } from "@aztec/bb.js";
+import { ServiceCollection } from "./base";
+import { ConfigStore } from "./config";
+import { consoleMethods, LoggerStore, LogLevel } from "./logger";
+import { AccountService } from "./services/account/service";
+import { AccountStateService } from "./services/account-state/service";
+import { AuthRegistryService } from "./services/auth-registry/service";
+import { ConfigService } from "./services/config/service";
+import { DappInteractionService } from "./services/dapp-interaction/service";
+import { DappSessionService } from "./services/dapp-session/service";
+import { ExecutionService } from "./services/execution/service";
+import { FaucetService } from "./services/faucet/service";
+import { FpcService } from "./services/fpc/service";
+import { LogViewerService } from "./services/log-viewer/service";
+import { LoggerService } from "./services/logger/service";
+import { NetworkService } from "./services/network/service";
+import { NoteService } from "./services/note/service";
+import { ProfileService } from "./services/profile/service";
+import { RpcService } from "./services/rpc/service";
+import { TaskService } from "./services/task/service";
+import { TokenService } from "./services/token/service";
+import { TokenBalanceService } from "./services/token-balance/service";
+import { TransactionService } from "./services/transaction/service";
+import { WalletConnectService } from "./services/wallet-connect/service";
 import { sleep } from "./utils";
-import { ensureOffscreenRunning } from "./utils/offscreen";
-import { jsonSanitize } from "./utils/serialization";
-import { TaskService } from "./services/task";
-import { NoteService } from "./services/note";
+import { getErrorData, getErrorMessage } from "./utils/errors";
 
-export async function init() {
-    loggerService.addLog(LogLevel.Debug, "Init BarretenbergSync...")
+const config = new ConfigStore();
+const logger = new LoggerStore(config);
+const services = new ServiceCollection();
+logger.log("wallet", LogLevel.Info, "Service worker started");
+
+const initRuntime = () => {
+    // catch console
+    for (const [method, level] of consoleMethods) {
+        (self as any)[`on${method}`] = (...args: any[]) => {
+            logger.log("wallet", level, ...args);
+        };
+    }
+    // catch unhandled errors
+    self.onunhandledrejection = (e: PromiseRejectionEvent) => {
+        logger.log("wallet", LogLevel.Error, getErrorData(e.reason));
+    };
+    // chrome.runtime.onInstalled.addListener(async opt => {
+    //     if (opt.reason === "install") {
+    //         chrome.tabs.create({
+    //             active: true,
+    //             url: chrome.runtime.getURL("src/setup/index.html?type=install"),
+    //         });
+    //     }
+    //     if (opt.reason === "update") {
+    //         chrome.tabs.create({
+    //             active: true,
+    //             url: chrome.runtime.getURL("src/setup/index.html?type=update"),
+    //         });
+    //     }
+    // });
+    chrome.runtime.setUninstallURL("https://azguardwallet.io/forms/uninstall");
+    logger.log("wallet", LogLevel.Info, "Runtime configured");
+}
+
+const initConfig = async () => {
+    await config.load();
+    logger.log("wallet", LogLevel.Info, "Config loaded");
+};
+
+const initBarretenberg = async () => {
     await BarretenbergSync.initSingleton(process.env.BB_WASM_PATH);
-    loggerService.addLog(LogLevel.Debug, "BarretenbergSync inited.")
-}
+    logger.log("wallet", LogLevel.Info, "Barretenberg initialized");
+};
 
-export function start() {
-    if (isRunning) return;
-    loggerService.addLog(LogLevel.Debug, "Start wallet...")
-    chrome.runtime.onConnect.addListener(onConnect);
-    ensureOffscreenRunning(); // ff
-    isRunning = true;
-    worker = runWorker();
-    loggerService.addLog(LogLevel.Debug, "Wallet started.")
-}
+const runServices = async () => {
+    await Promise.all([initConfig(), initBarretenberg()]);
 
-export async function stop() {
-    if (!isRunning) return;
-    loggerService.addLog(LogLevel.Warning, "Stop wallet...")
-    isRunning = false;
-    chrome.runtime.onConnect.removeListener(onConnect);
-    while (ports.length) {
-        loggerService.addLog(LogLevel.Debug, "Drop client...")
-        ports.pop()!.disconnect();
-        loggerService.addLog(LogLevel.Debug, `Client dropped. Total: ${ports.length}.`)
-    }
-    await worker;
-    loggerService.addLog(LogLevel.Warning, "Wallet stopped.")
-}
+    services.add(new AccountService(logger));
+    services.add(new AccountStateService(logger));
+    services.add(new AuthRegistryService(logger));
+    services.add(new ConfigService(config, logger));
+    services.add(new DappInteractionService(logger));
+    services.add(new DappSessionService(logger));
+    services.add(new ExecutionService(logger));
+    services.add(new FaucetService(logger));
+    services.add(new FpcService(logger));
+    services.add(new LogViewerService(logger));
+    services.add(new LoggerService(logger));
+    services.add(new NetworkService(logger));
+    services.add(new NoteService(logger));
+    services.add(new ProfileService(config, logger));
+    services.add(new RpcService(logger));
+    services.add(new TaskService(logger));
+    services.add(new TokenService(logger));
+    services.add(new TokenBalanceService(logger));
+    services.add(new TransactionService(logger));
+    services.add(new WalletConnectService(logger));
 
-// logs
-const logs = new InMemoryLogs();
+    await services.start();
+    logger.log("wallet", LogLevel.Info, "Services started");
+};
 
-// services
-const settingService = new SettingService(logs, broadcast)
-const loggerService = new LoggerService(logs, broadcast);
-const profileService = new ProfileService(settingService, logs, broadcast);
-const taskService = new TaskService(profileService, logs, broadcast);
-const networkService = new NetworkService(profileService, logs, broadcast);
-const accountService = new AccountService(profileService, networkService, logs, broadcast);
-const tokenService = new TokenService(
-    profileService,
-    networkService,
-    accountService,
-    taskService,
-    logs,
-    broadcast,
-);
-const fpcService = new FpcService(profileService, networkService, logs, broadcast);
-const transactionService = new TransactionService(
-    profileService,
-    accountService,
-    networkService,
-    logs,
-    broadcast,
-);
-const accountStateService = new AccountStateService(networkService, logs, broadcast);
-const noteService = new NoteService(networkService, logs, broadcast);
-const authRegistryService = new AuthRegistryService(
-    networkService,
-    taskService,
-    transactionService,
-    logs,
-    broadcast,
-);
-const executionService = new ExecutionService(
-    profileService,
-    networkService,
-    accountService,
-    tokenService,
-    fpcService,
-    transactionService,
-    authRegistryService,
-    taskService,
-    logs,
-    broadcast
-);
-authRegistryService.executionService = executionService; // TODO: implement DI
-const tokenBalanceService = new TokenBalanceService(
-    profileService,
-    networkService,
-    accountService,
-    tokenService,
-    transactionService,
-    executionService,
-    taskService,
-    logs,
-    broadcast,
-);
-const faucetService = new FaucetService(
-    profileService,
-    networkService,
-    accountService,
-    executionService,
-    transactionService,
-    taskService,
-    logs,
-    broadcast,
-);
-const dappSessionService = new DappSessionService(profileService, logs, broadcast);
-const dappInteractionService = new DappInteractionService(
-    profileService,
-    networkService,
-    accountService,
-    dappSessionService,
-    executionService,
-    logs,
-    broadcast,
-);
-const rpcService = new RpcService(
-    dappSessionService,
-    dappInteractionService,
-    logs,
-    broadcast,
-);
-const walletConnectService = new WalletConnectService(
-    dappSessionService,
-    dappInteractionService,
-    logs,
-    broadcast,
-);
-
-const services = new Map<string, Service>([
-    [profileService.name, profileService],
-    [networkService.name, networkService],
-    [accountService.name, accountService],
-    [tokenService.name, tokenService],
-    [tokenBalanceService.name, tokenBalanceService],
-    [fpcService.name, fpcService],
-    [transactionService.name, transactionService],
-    [executionService.name, executionService],
-    [faucetService.name, faucetService],
-    [dappSessionService.name, dappSessionService],
-    [dappInteractionService.name, dappInteractionService],
-    [rpcService.name, rpcService],
-    [walletConnectService.name, walletConnectService],
-    [accountStateService.name, accountStateService],
-    [noteService.name, noteService],
-    [authRegistryService.name, authRegistryService],
-    [taskService.name, taskService],
-    [loggerService.name, loggerService],
-    [settingService.name, settingService]
-]);
-
-// state
-const ports: chrome.runtime.Port[] = [];
-let worker = Promise.resolve();
-let isRunning = false;
-
-function onConnect(port: chrome.runtime.Port) {
-    loggerService.addLog(LogLevel.Debug, "onConnect...");
-    port.onDisconnect.addListener(onDisconnect);
-    port.onMessage.addListener(onMessage);
-    ports.push(port);
-    loggerService.addLog(LogLevel.Debug, `Client connected. Total: ${ports.length}.`);
-}
-
-function onDisconnect(port: chrome.runtime.Port) {
-    loggerService.addLog(LogLevel.Debug, "onDisconnect...");
-    for (let i = ports.length - 1; i >= 0; i--) {
-        if (ports[i] === port) {
-            port.onDisconnect.removeListener(onDisconnect);
-            port.onMessage.removeListener(onMessage);
-            ports.splice(i, 1);
-            loggerService.addLog(LogLevel.Debug, `Client disconnected. Total: ${ports.length}.`);
-        }
-    }
-}
-
-async function onMessage(message: IMessage, client: chrome.runtime.Port) {
-    if (typeof message.type !== "number") return; // crutch for crx
-    const isLoggerMessage = message.service === LOGGER_SERVICE_NAME; // don't log logger's messages
-
-    if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Message received", message], message.service);
-    if (message.type !== MessageType.Request) {
-        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Invalid message"], message.service);
-        client.disconnect();
-        return;
-    }
-    const request = message as RequestMessage;
-    const service = services.get(request.service);
-    if (!service) {
-        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Service is not registered", request.service], message.service);
-        client.disconnect();
-        return;
-    }
-    const response = await service.process(request);
-    if (!response) {
-        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, [`Service ${request.service} doesn't have method ${request.method}`], message.service);
-        client.disconnect();
-        return;
-    }
-    if (!isLoggerMessage) {
-        if (response.error === undefined) {
-            loggerService.addLogWithMeta(LogLevel.Debug, ["Request processed", request.requestId, response.result], message.service);
-        }
-        else {
-            loggerService.addLogWithMeta(LogLevel.Debug, ["Request failed", request.requestId, response.error], message.service);
-        }
-    }
-
-    send(client, response);
-}
-
-async function runWorker() {
-    while (isRunning) {
+const runHeartbit = async () => {
+    while (true) {
         try {
-            await chrome.storage.session.set({"azguard:core:liveness": Date.now()});
+            await chrome.storage.session.set({ "azguard:liveness": Date.now() });
+        } catch (error) {
+            logger.log("wallet", LogLevel.Error, "Heartbit failed", getErrorMessage(error));
         }
-        catch (error) {
-            loggerService.addLog(LogLevel.Error, "Wallet worker failed", error);
-        }
-        await sleep(10000);
+        await sleep(10_000);
     }
-}
+};
 
-function broadcast(event: EventMessage) {
-    const isLoggerMessage = event.service === LOGGER_SERVICE_NAME;
-    try {
-        for (const port of ports) {
-            if (port.name === event.service) {
-                send(port, event);
-            }
-        }
-        
-        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Event broadcasted.", event], event.service);
-    }
-    catch (error) {
-        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Failed to broadcast event", error], event.service);
-    }
-}
+initRuntime();
+runServices();
+runHeartbit();
 
-function send(port: chrome.runtime.Port, message: IMessage) {
-    const isLoggerMessage = message.service === LOGGER_SERVICE_NAME;
-    try {
-        port.postMessage(jsonSanitize(message));
-
-        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Debug, ["Message sent", message], message.service);
-    }
-    catch (error) {
-        if (!isLoggerMessage) loggerService.addLogWithMeta(LogLevel.Error, ["Failed to send message", error], message.service);
-    }
-}
+export {};

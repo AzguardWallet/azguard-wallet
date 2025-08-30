@@ -34,6 +34,7 @@ import {
     TxContext,
     TxExecutionRequest,
 } from '@aztec/stdlib/tx';
+import { ILogger, LogLevel } from '@/wallet/logger';
 import {
     getMulticallEntrypointAddress,
     getMulticallEntrypointFn,
@@ -47,6 +48,7 @@ const SETUP_CHUNK_SIZE = 2;
 const CHUNK_SIZE = 4;
 
 export class AzguardV0 implements IAccountContract {
+    public readonly name = "azguard-v0";
     public readonly address: AztecAddress;
     
     constructor(
@@ -54,11 +56,12 @@ export class AzguardV0 implements IAccountContract {
         private readonly signingKey: GrumpkinScalar,
         private readonly signingPubKey: PublicKey,
         private readonly instance: ContractInstanceWithAddress,
+        private readonly logger: ILogger,
     ) {
         this.address = this.instance.address;
     }
 
-    public static async new(secret: Fr): Promise<AzguardV0> {
+    public static async new(secret: Fr, logger: ILogger): Promise<AzguardV0> {
         const keys = await deriveKeys(secret);
         const signingKey = sha512ToGrumpkinScalar([secret, 257]);
         const signingPubKey = await new Schnorr().computePublicKey(signingKey);
@@ -70,13 +73,13 @@ export class AzguardV0 implements IAccountContract {
                 salt: Fr.zero(),
             }
         );
-        return new AzguardV0(secret, signingKey, signingPubKey, instance);
+        return new AzguardV0(secret, signingKey, signingPubKey, instance, logger);
     }
 
     public async ensureRegistered(pxe: PXE): Promise<void> {
         const accounts = await pxe.getRegisteredAccounts();
         if (!accounts.find(x => x.address.toString() === this.address.toString())) {
-            console.debug('register account...');
+            this.logger.log(this.name, LogLevel.Debug, 'register account...');
             await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
         }
     }
@@ -186,16 +189,16 @@ export class AzguardV0 implements IAccountContract {
         
         const accounts = await pxe.getRegisteredAccounts();
         if (!accounts.find(x => x.address.toString() === this.address.toString())) {
-            console.debug('register account...');
+            this.logger.log(this.name, LogLevel.Debug, 'register account...');
             await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
         }
         const contractMetadata = await pxe.getContractMetadata(this.address);
         if (!contractMetadata.contractInstance) {
-            console.debug('register contract...');
+            this.logger.log(this.name, LogLevel.Debug, 'register contract...');
             await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
         }
         if (!contractMetadata.isContractInitialized) {
-            console.debug('initialize account contract instance...');
+            this.logger.log(this.name, LogLevel.Debug, 'initialize account contract instance...');
             return await this._withInitialization(request);
         }
 
@@ -300,16 +303,16 @@ export class AzguardV0 implements IAccountContract {
         
         const accounts = await pxe.getRegisteredAccounts();
         if (!accounts.find(x => x.address.toString() === this.address.toString())) {
-            console.debug('register account...');
+            this.logger.log(this.name, LogLevel.Debug, 'register account...');
             await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
         }
         const contractMetadata = await pxe.getContractMetadata(this.address);
         if (!contractMetadata.contractInstance) {
-            console.debug('register contract...');
+            this.logger.log(this.name, LogLevel.Debug, 'register contract...');
             await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
         }
         if (!contractMetadata.isContractInitialized) {
-            console.debug('initialize account contract instance...');
+            this.logger.log(this.name, LogLevel.Debug, 'initialize account contract instance...');
             return await this._withInitialization(request);
         }
 

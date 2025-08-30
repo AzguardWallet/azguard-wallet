@@ -82,7 +82,7 @@ const handleCreateToken = async () => {
 	isLoadingParseResult.value = true
 
 	try {
-		const parsingResult = await managers.token.parseInterface(contractAddressTerm.value)
+		const parsingResult = await managers.token.parseTokenInterface(appStore.network.id, contractAddressTerm.value)
 
 		if (!parsingResult.isComplete) {
 			isLoadingParseResult.value = false
@@ -108,7 +108,7 @@ const handleCreateToken = async () => {
 			return
 		}
 
-		const newToken = await managers.token.addToken(parsingResult)
+		const newToken = await managers.token.addToken(appStore.profile.id, appStore.network.id, appStore.account.address, parsingResult)
 		appStore.tokensAwaitingBalanceRefresh.add(appStore.account.address, newToken?.id)
 
 		isAddingNewToken.value = false
@@ -131,7 +131,7 @@ const handleSaveToken = async () => {
 	isSavingToken.value = true
 
 	try {
-		const newToken = await managers.token.addToken(rawToken.value)
+		const newToken = await managers.token.addToken(appStore.profile.id, appStore.network.id, appStore.account.address, rawToken.value)
 		
 		appStore.tokensAwaitingBalanceRefresh.add(appStore.account.address, newToken?.id)
 		await appStore.syncBalances()
@@ -159,7 +159,7 @@ watch(
 
 			error.value = null
 		} else {
-			const rawTokens = await managers.token?.getTokens()
+			const rawTokens = await managers.token?.getTokens(appStore.profile.id, appStore.network.chainId)
 			tokens.value = rawTokens?.length ? rawTokens.filter(t => t.chainId === appStore.network.chainId) : []
 
 			if (cacheStore.preselectedTokenAddressToAdd) {

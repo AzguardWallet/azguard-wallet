@@ -14,9 +14,9 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
-import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { Config } from "@/wallet/config"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 import { debounce } from "@/utils/general"
 
 /** Composables */
@@ -31,16 +31,19 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-let settingService = null
-let profileService = null
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(onSettingUpdate)
+
+const profileService = new ProfileServiceClient()
 const isLoading = ref(true)
 
+const defaultConfig = new Config()
 const MAX_SESSION_TTL = 1440
-const sessionTtl = ref(DEFAULT_SETTINGS?.sessionTtl)
+const sessionTtl = ref(defaultConfig.sessionTtl)
 const sessionTtlMinutes = ref(0)
-const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developerMode)
-const isIndicationFailuresEnabled = ref(DEFAULT_SETTINGS?.indicateFailures)
-const isDebugModeEnabled = ref(DEFAULT_SETTINGS?.debugMode)
+const isDeveloperModeEnabled = ref(defaultConfig.developerMode)
+const isIndicationFailuresEnabled = ref(defaultConfig.indicateFailures)
+const isDebugModeEnabled = ref(defaultConfig.debugMode)
 
 const settings = {
 	sessionTtl: {
@@ -89,7 +92,7 @@ async function updateSetting(key, value) {
 	if (settings[key].model.value === value) return
 
 	try {
-		await settingService.updateSetting(key, value)
+		await configService.setValue(key, value)
 		applySetting(key, value)
 
 		if (key === "sessionTtl") {
@@ -162,9 +165,7 @@ watch(
 )
 
 onBeforeMount(async () => {
-	profileService = new ProfileServiceClient()
-	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
-	const _settings = await settingService.getSettings()
+	const _settings = await configService.getProps()
 	_settings.forEach(s => {
 		if (settings[s.key]) {
 			settings[s.key].model.value = s.value
@@ -177,8 +178,8 @@ onBeforeMount(async () => {
 })
 
 onBeforeUnmount(() => {
-	settingService.dispose()
-	profileService.dispose()
+	configService.disconnect()
+	profileService.disconnect()
 })
 </script>
 

@@ -8,8 +8,8 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { managers } from "@/utils/core.js"
-import { SettingServiceClient } from "@/wallet/services/settings/client"
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
+import { Config } from "@/wallet/config"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
@@ -25,8 +25,10 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.menu?.order
 })
 
-let settingService = null
-const isDeveloperModeEnabled = ref(DEFAULT_SETTINGS?.developer?.developerMode)
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(onSettingUpdate)
+
+const isDeveloperModeEnabled = ref(new Config().developerMode)
 
 function onSettingUpdate(setting) {
 	if (setting.key === "developerMode") {
@@ -62,12 +64,11 @@ const handleOpenLogs = async () => {
 }
 
 onMounted(async () => {
-	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
-	isDeveloperModeEnabled.value = (await settingService.getSetting("developerMode"))?.value
+	isDeveloperModeEnabled.value = await configService.getValue("developerMode")
 })
 
 onBeforeUnmount(() => {
-	settingService.dispose()
+	configService.disconnect()
 })
 </script>
 

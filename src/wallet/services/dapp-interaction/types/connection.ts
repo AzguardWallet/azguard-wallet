@@ -1,13 +1,13 @@
-import { DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/client";
+import { DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/spec";
 
 export type ConnectionParams = {
-    dappMetadata: DappMetadata,
-    requiredPermissions: DappPermissions[],
-    optionalPermissions?: DappPermissions[],
+    dappMetadata: DappMetadata;
+    requiredPermissions: DappPermissions[];
+    optionalPermissions?: DappPermissions[];
 };
 
 export type DappSessionInfo = {
-    id: string,
-    permissions: DappPermissions[],
-    accounts: string[],
+    id: string;
+    permissions: DappPermissions[];
+    accounts: string[];
 };

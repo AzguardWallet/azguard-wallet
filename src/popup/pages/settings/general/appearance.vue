@@ -14,20 +14,23 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown"
 
 /** Utils */
-import { SettingServiceClient } from "@/wallet/services/settings/client"
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
+import { Config } from "@/wallet/config"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
 
-let settingService = null
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(onSettingUpdate)
+
 const isLoading = ref(true)
-const theme = ref(DEFAULT_SETTINGS?.theme || "dark")
-const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.sidePanel)
-const isShowNodeNameEnabled = ref(DEFAULT_SETTINGS?.showNode)
-const isShowPopupFullscreen = ref(DEFAULT_SETTINGS?.showPopupFullscreen)
-const isAnimationsDisabled = ref(DEFAULT_SETTINGS?.disableAnimations)
+const defaultConfig = new Config()
+const theme = ref(defaultConfig.theme)
+const isSidePanelEnabled = ref(defaultConfig.sidePanel)
+const isShowNodeNameEnabled = ref(defaultConfig.showNode)
+const isShowPopupFullscreen = ref(defaultConfig.showPopupFullscreen)
+const isAnimationsDisabled = ref(defaultConfig.disableAnimations)
 const settings = {
 	theme: {
 		title: "",
@@ -61,7 +64,7 @@ async function updateSetting (key, value) {
 	if (settings[key].model.value === value) return
 
 	try {
-		await settingService.updateSetting(key, value)
+		await configService.setValue(key, value)
 		applySetting(key, value)
 	} catch (err) {
 		openToast({ label: "Failed to update setting", icon: "warning" })
@@ -97,8 +100,7 @@ function onSettingUpdate(setting) {
 }
 
 onMounted(async () => {
-	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
-	const _settings = await settingService.getSettings()
+	const _settings = await configService.getProps()
 	_settings.forEach(s => {
 		if (settings[s.key]) {
 			settings[s.key].model.value = s.value
@@ -109,7 +111,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-	settingService.dispose()
+	configService.disconnect()
 })
 </script>
 

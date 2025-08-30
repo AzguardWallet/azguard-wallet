@@ -71,10 +71,10 @@ async function fetchAccounts() {
 		const networks = await networkServiceClient.getNetworks(+chainId)
 		if (networks.length) {
 			const network = networks[0]
-			const accountServiceClient = new AccountServiceClient(appStore.profile, network)
+			const accountServiceClient = new AccountServiceClient()
 
 			for (const address of accMap[chainId]) {
-				const account = await accountServiceClient.getAccount(address)
+				const account = await accountServiceClient.getAccount(appStore.profile.id, network.chainId, address)
 				if (account) {
 					accounts.value.push(account)
 				}

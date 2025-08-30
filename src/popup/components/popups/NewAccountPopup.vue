@@ -39,7 +39,7 @@ const isAvailableToCreateAccount = computed(() => {
 const handleCreateAccount = async () => {
 	if (!isAvailableToCreateAccount.value) return
 
-	const account = await managers.account.createAccount(AccountType.Azguard_v0, name.value.trim())
+	const account = await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Azguard_v0, name.value.trim())
 
 	appStore.account = account
 	appStore.accounts.push(account)

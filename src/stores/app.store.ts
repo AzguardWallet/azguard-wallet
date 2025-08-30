@@ -81,7 +81,7 @@ export const useAppStore = defineStore("app", () => {
 	const changeAccountVisibility = async (acc: Account, value: boolean) => {
 		const accIdx = accounts.value.findIndex(a => acc.address === a.address)
 
-		await managers.account.changeAccountVisibility(acc.address, value)
+		await managers.account.changeAccountVisibility(profile.value.id, network.value.id, acc.address, value)
 		accounts.value[accIdx] = { ...acc, visible: value }
 
 		if (!value) {
@@ -96,7 +96,7 @@ export const useAppStore = defineStore("app", () => {
 	const updateAccount = async (address: string, name: string) => {
 		const accIdx = accounts.value.findIndex(a => address === a.address)
 
-		await managers.account.changeAccountName(address, name)
+		await managers.account.changeAccountName(profile.value.id, network.value.id, address, name)
 
 		const updatedAccount = { ...accounts.value[accIdx], name: name }
 		accounts.value[accIdx] = updatedAccount
@@ -117,7 +117,7 @@ export const useAppStore = defineStore("app", () => {
 		if (tokenIdx === -1) tokens.value.push(token)
 	}
 	const syncLocalTokens = async () => {
-		const rawTokens = await managers.token?.getTokens()
+		const rawTokens = await managers.token?.getTokens(profile.value.id, network.value.chainId)
 		tokens.value = rawTokens?.length ? rawTokens.filter(t => t.chainId == network.value.chainId) : []
 	}
 
@@ -172,7 +172,8 @@ export const useAppStore = defineStore("app", () => {
 		}
 	}
 	const initBalanceListeners = () => {
-		managers.balance.onTokenBalanceUpdated = newBalance => {
+		// TODO: make sure to not add duplicated listeners
+		managers.balance.onTokenBalanceUpdated.add(newBalance => {
 			const tokens_ = tokens.value.filter(t => t.name === newBalance.token.name && t.symbol === newBalance.token.symbol && t.chainId === newBalance.token.chainId)
 			tokens_.forEach(t => {
 				tokensAwaitingBalanceRefresh.value.remove(newBalance.account, t.id)
@@ -184,7 +185,7 @@ export const useAppStore = defineStore("app", () => {
 			} else {
 				balances.value[oldBalanceIdx] = newBalance
 			}
-		}
+		})
 	}
 
 	const network = ref()
