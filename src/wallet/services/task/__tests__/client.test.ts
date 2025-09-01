@@ -1,88 +1,100 @@
-// import { expect, test, vi, beforeEach, afterEach } from "vitest";
-// import { TASK_SERVICE_NAME, TaskServiceClient, TaskServiceMethod } from "..";
-// import { TaskServiceEvent, TaskServiceEventMessage } from "../events";
-// import { TaskStatus, StepContent } from "../models";
-// import { createChromePortFixture, ChromePortFixture } from "./chrome-port.fixture";
-// import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
+import { expect, test, vi } from "vitest";
+import { EventMessage, MessageType } from "@/wallet/base/messages";
+import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
+import { emitPortMessage, capturePortMessage } from "../../../../../tests/vitest.setup";
+import { TASK_SERVICE_NAME, TaskServiceClient, TaskStatus, StepContent, Task, Events } from "../client";
 
-// let portFixture: ChromePortFixture;
+const eventMessage = <T extends keyof Events>(event: T, payload: Events[T]): EventMessage<Events> => ({
+    type: MessageType.Event,
+    content: {
+        event,
+        payload,
+    },
+});
 
-// beforeEach(() => {
-//     portFixture = createChromePortFixture();
-// });
+const createMockTask = () =>
+    ({
+        id: "12345678",
+        content: new StepContent("Test Step"),
+        status: TaskStatus.Processing,
+        createdAt: Date.now(),
+        startedAt: Date.now(),
+        subtasks: [],
+        origin: { type: OriginType.UI } satisfies TxOrigin,
+        parentId: undefined,
+        finishedAt: undefined,
+        result: undefined,
+        error: undefined,
+    } satisfies Task);
 
-// afterEach(() => {
-//     portFixture.cleanup();
-// });
+test("handles task created event", async () => {
+    const client = new TaskServiceClient();
+    await client.connect();
 
-// const createMockTask = () => ({
-//     id: "12345678",
-//     content: new StepContent("Test Step"),
-//     status: TaskStatus.Processing,
-//     createdAt: Date.now(),
-//     startedAt: Date.now(),
-//     subtasks: [],
-//     origin: new TxOrigin(OriginType.UI),
-//     parent: undefined,
-//     finishedAt: undefined,
-//     result: undefined,
-//     error: undefined,
-// });
+    const onTaskCreated = vi.fn();
+    client.onTaskCreated.add(onTaskCreated);
+    const task = createMockTask();
 
-// test("handles task created event", () => {
-//     const onTaskCreated = vi.fn();
-//     new TaskServiceClient(undefined, undefined, onTaskCreated);
-//     const task = createMockTask();
+    emitPortMessage(TASK_SERVICE_NAME, eventMessage("onTaskCreated", task));
 
-//     portFixture.emitMessage(new TaskServiceEventMessage(TaskServiceEvent.TaskCreated, task));
+    expect(onTaskCreated).toHaveBeenCalledWith(task);
+});
 
-//     expect(onTaskCreated).toHaveBeenCalledWith(task);
-// });
+test("handles task updated event", async () => {
+    const client = new TaskServiceClient();
+    await client.connect();
 
-// test("handles task updated event", () => {
-//     const onTaskUpdated = vi.fn();
-//     new TaskServiceClient(undefined, undefined, undefined, onTaskUpdated);
-//     const task = createMockTask();
+    const onTaskUpdated = vi.fn();
+    client.onTaskUpdated.add(onTaskUpdated);
+    const task = createMockTask();
 
-//     portFixture.emitMessage(new TaskServiceEventMessage(TaskServiceEvent.TaskUpdated, task));
+    emitPortMessage(TASK_SERVICE_NAME, eventMessage("onTaskUpdated", task));
 
-//     expect(onTaskUpdated).toHaveBeenCalledWith(task);
-// });
+    expect(onTaskUpdated).toHaveBeenCalledWith(task);
+});
 
-// test("handles task deleted event", () => {
-//     const onTaskDeleted = vi.fn();
-//     new TaskServiceClient(undefined, undefined, undefined, undefined, onTaskDeleted);
-//     const task = createMockTask();
+test("handles task deleted event", async () => {
+    const client = new TaskServiceClient();
+    await client.connect();
 
-//     portFixture.emitMessage(new TaskServiceEventMessage(TaskServiceEvent.TaskDeleted, task));
+    const onTaskDeleted = vi.fn();
+    client.onTaskDeleted.add(onTaskDeleted);
+    const task = createMockTask();
 
-//     expect(onTaskDeleted).toHaveBeenCalledWith(task);
-// });
+    emitPortMessage(TASK_SERVICE_NAME, eventMessage("onTaskDeleted", task));
 
-// test("makes get task request", async () => {
-//     const client = new TaskServiceClient();
-//     const taskId = "test-id";
+    expect(onTaskDeleted).toHaveBeenCalledWith(task);
+});
 
-//     client.getTask(taskId);
+test("makes get task request", async () => {
+    const client = new TaskServiceClient();
+    const taskId = "test-id";
 
-//     expect(portFixture.captureMessage).toHaveBeenCalledWith(
-//         expect.objectContaining({
-//             taskId,
-//             method: TaskServiceMethod.GetTask,
-//             service: TASK_SERVICE_NAME,
-//         }),
-//     );
-// });
+    client.getTask(taskId);
 
-// test("makes get all tasks request", async () => {
-//     const client = new TaskServiceClient();
+    expect(capturePortMessage(TASK_SERVICE_NAME)).toHaveBeenCalledWith(
+        expect.objectContaining({
+            type: MessageType.Request,
+            content: expect.objectContaining({
+                method: "getTask",
+                params: { 0: taskId },
+            }),
+        }),
+    );
+});
 
-//     client.getTasks();
+test("makes get all tasks request", async () => {
+    const client = new TaskServiceClient();
 
-//     expect(portFixture.captureMessage).toHaveBeenCalledWith(
-//         expect.objectContaining({
-//             method: TaskServiceMethod.GetAllTasks,
-//             service: TASK_SERVICE_NAME,
-//         }),
-//     );
-// });
+    client.getTasks();
+
+    expect(capturePortMessage(TASK_SERVICE_NAME)).toHaveBeenCalledWith(
+        expect.objectContaining({
+            type: MessageType.Request,
+            content: expect.objectContaining({
+                method: "getTasks",
+                params: {},
+            }),
+        }),
+    );
+});

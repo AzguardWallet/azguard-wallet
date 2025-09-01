@@ -1,7 +1,3 @@
-export const storage = chrome.storage;
-
-export type StorageArea = chrome.storage.StorageArea;
-
 export enum StorageType {
     Local,
     Session,
