@@ -25,7 +25,7 @@ function onActiveProfileChanged(profile) {
 }
 
 function onClose() {
-	profileService.disconnect()
+	profileService?.disconnect()
 	profileService = null
 }
 

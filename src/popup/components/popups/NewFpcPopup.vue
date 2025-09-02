@@ -1,13 +1,12 @@
 <script setup>
 /** Components */
-import { Dropdown, DropdownDivider, DropdownItem } from "@/components/ui/Dropdown"
+import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
 import { isValidHex } from "@/utils/string"
 
 /** Services */
@@ -52,7 +51,7 @@ const notAllowedFpcNames = computed(() => fpcs.value.map(n => n.name))
 const isAlreadyExist = computed(() => notAllowedFpcNames.value.includes(nameTerm.value))
 const isValidAddress = computed(() => isValidHex(fpcAddressTerm.value))
 const isAvailableToAddFpc = computed(() => {
-	if (!nameTerm.value.length) return
+	if (!nameTerm.value.replace(/\s/g, '').length) return
 	if (!isValidAddress.value) return
 	if (selectedFpcType.value === null) return
 	if (isAlreadyExist.value) return
@@ -288,10 +287,6 @@ const onKeydown = e => {
 					>
 						Add FPC
 					</Button>
-
-					<!-- <Text size="12" weight="500" color="tertiary" height="140" align="center" style="padding: 0 20px">
-						We will check the availability of the specified RPC before adding it
-					</Text> -->
 				</Flex>
 			</Flex>
 		</PopupCard>
@@ -301,63 +296,6 @@ const onKeydown = e => {
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
-}
-
-.network {
-	border-radius: 12px;
-	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
-
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--gray-3);
-
-		& .icons {
-			opacity: 1;
-		}
-	}
-
-	&:active {
-		background: var(--gray-5);
-	}
-}
-
-.icons {
-	opacity: 0;
-
-	transition: all 0.2s var(--bezier);
-}
-
-.item {
-	height: 30px;
-
-	border-radius: 8px;
-	box-shadow: inset 0 0 0 2px var(--gray-5);
-	cursor: pointer;
-
-	padding: 0 16px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		box-shadow: inset 0 0 0 2px var(--gray-10);
-	}
-
-	&:active {
-		background: var(--gray-5);
-	}
-
-	&.selected {
-		background: var(--green);
-	}
-
-	&.disabled {
-		opacity: 0.5;
-		pointer-events: none;
-	}
 }
 
 .shake {

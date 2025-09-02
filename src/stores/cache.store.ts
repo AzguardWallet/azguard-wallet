@@ -5,6 +5,7 @@ export const useCacheStore = defineStore("cache", () => {
 
 	const networkToEditIdx = ref()
 	const accountToEditIdx = ref()
+	const contactToEditIdx = ref()
 	const tokenToEditIdx = ref()
 	const fpcToEditIdx = ref()
 
@@ -12,6 +13,7 @@ export const useCacheStore = defineStore("cache", () => {
 	const activeTxHash = ref()
 	const activeNote = ref()
 	const preselectedBalanceType = ref("private")
+	const preselectedContactToSend = ref(null)
 	const preselectedTokenAddressToAdd = ref()
 
 	const proposedNetworks = ref([])
@@ -22,10 +24,15 @@ export const useCacheStore = defineStore("cache", () => {
 
 	const importType = ref("")
 
+	const importContact = ref(null)
+	const importContacts = ref([])
+    const importPromise = ref(null)
+
 	return {
 		confirm,
 		networkToEditIdx,
 		accountToEditIdx,
+		contactToEditIdx,
 		tokenToEditIdx,
 		fpcToEditIdx,
 		activeTokenIdx,
@@ -34,9 +41,13 @@ export const useCacheStore = defineStore("cache", () => {
 		proposedNetworks,
 		selectedNetwork,
 		preselectedBalanceType,
+		preselectedContactToSend,
 		preselectedTokenAddressToAdd,
 		feePaymentMethods,
 		claimParameters,
 		importType,
+		importContact,
+		importContacts,
+		importPromise,
 	}
 })

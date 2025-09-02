@@ -29,7 +29,7 @@ export default {
 			run_at: "document_start",
 		},
 	],
-	permissions: ["offscreen", "storage", "sidePanel", "unlimitedStorage"],
+	permissions: ["downloads", "offscreen", "storage", "sidePanel", "unlimitedStorage"],
 	content_security_policy: {
 		extension_pages: "script-src 'self' 'wasm-unsafe-eval'",
 	},

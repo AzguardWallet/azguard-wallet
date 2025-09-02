@@ -33,6 +33,8 @@ const appStore = useAppStore()
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
+const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
+
 const fpcs = ref([])
 const balances = ref([])
 const tokens = computed(() => new Map(balances.value?.map(b => [b.token.contract, b.token])))
@@ -125,7 +127,7 @@ const handleDelete = (fpc) => {
 	cacheStore.confirm.callback = async () => {
 		await fpcService.deleteFpc(fpc.id)
 
-		const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+		const fpms = (await chrome.storage.local.get(FEE_METHOD_LS_KEY))[FEE_METHOD_LS_KEY] || {}
 		if (Object.keys(fpms).length) {
 			for (const [account, data] of Object.entries(fpms)) {
 				if (data.fpc?.id === fpc.id) {
@@ -133,7 +135,7 @@ const handleDelete = (fpc) => {
 				}
 			}
 
-			await chrome.storage.local.set({ "azguard:ui:feePaymentMethods": fpms })
+			await chrome.storage.local.set({ [FEE_METHOD_LS_KEY]: fpms })
 		}
 
 		openToast({ label: "FPC is deleted" })

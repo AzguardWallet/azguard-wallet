@@ -61,7 +61,7 @@ export type Methods = {
     deleteNetwork(id: string): Network;
 
     /**
-     * Deletes node with the specified id.
+     * Set the node with the specified id as the default node within the same chain.
      * @param id Node id.
      */
     setDefault(id: string): Network;

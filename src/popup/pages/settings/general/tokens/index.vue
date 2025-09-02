@@ -11,10 +11,8 @@
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
-import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
@@ -30,13 +28,6 @@ import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
-
-const handleSelectNetwork = target => {
-	if (appStore.network.id === target.id) return
-	managers.network.setDefault(appStore.network.id)
-	appStore.network = target
-	chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
-}
 
 const handleEdit = target => {
 	cacheStore.tokenToEditIdx = target.id

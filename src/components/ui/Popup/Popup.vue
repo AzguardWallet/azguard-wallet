@@ -29,13 +29,17 @@ watch(
 			trap = focusTrap.createFocusTrap(popupEl.value?.wrapper, {
 				initialFocus: false,
 				allowOutsideClick: true,
+				fallbackFocus: popupEl.value?.wrapper,
 			})
 			trap.activate()
 		} else {
 			await nextTick()
-			trap.deactivate()
+			if (trap?.active) {
+				trap.deactivate()
+			}
 		}
 	},
+	{ flush: 'post' }
 )
 </script>
 

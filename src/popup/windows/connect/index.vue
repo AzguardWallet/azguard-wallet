@@ -346,7 +346,7 @@ const packPermissions = permissions => {
 </script>
 
 <template>
-	<Flex direction="column" justify="between" :class="$style.wrapper">
+	<Flex v-if="appStore.isLogined" direction="column" justify="between" :class="$style.wrapper">
 		<Flex direction="column" gap="16">
 			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
 				<Text size="16" weight="600" color="primary">Connection request</Text>
@@ -665,10 +665,12 @@ const packPermissions = permissions => {
 }
 
 .proposal_expired_content {
+	width: 90%;
 	background-color: var(--card-bg);
 	padding: 12px;
 	border-radius: 8px;
 	text-align: center;
+	line-height: 1.2;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 	z-index: 1001;
 }

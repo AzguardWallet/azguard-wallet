@@ -33,6 +33,6 @@ export function getChainName(chainId) {
 		case 31337:
 			return "Sandbox"
 		default:
-			return `Aztec:${chainId}`
+			return `Aztec:${chainId ?? ''}`
 	}
 }

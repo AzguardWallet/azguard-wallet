@@ -42,6 +42,8 @@ const props = defineProps({
 	},
 })
 
+const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
+
 const settings = defineModel()
 
 const methodId = getRandomHex(6)
@@ -156,9 +158,9 @@ tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
 tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
 
 const saveSelectedMethod = async (method) => {
-	const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+	const fpms = (await chrome.storage.local.get(FEE_METHOD_LS_KEY))[FEE_METHOD_LS_KEY] || {}
 	fpms[props.account.address] = method
-	chrome.storage.local.set({ "azguard:ui:feePaymentMethods": fpms })
+	chrome.storage.local.set({ [FEE_METHOD_LS_KEY]: fpms })
 
 	if (method.type === "fpc") {
 		cacheStore.feePaymentMethods.push({
@@ -177,12 +179,12 @@ const init = async () => {
 			methods.value[0].balance = feeJuiceBalance.value
 			methods.value[1].balance = feeJuiceBalance.value
 
-			const fpms = (await chrome.storage.local.get("azguard:ui:feePaymentMethods"))["azguard:ui:feePaymentMethods"] || {}
+			const fpms = (await chrome.storage.local.get(FEE_METHOD_LS_KEY))[FEE_METHOD_LS_KEY] || {}
 			if (fpms[props.account.address]) {
 				selectedMethod.value = fpms[props.account.address]
 			} else {
 				const fpcs = (await fpcService.getFpcs(props.network.chainId))?.filter(f => f.type === FpcType.DefaultSponsoredFpc)
-				if (fpcs.length) {
+				if (fpcs?.length) {
 					selectedMethod.value = {
 						...methods.value[2],
 						fpc: fpcs[0],

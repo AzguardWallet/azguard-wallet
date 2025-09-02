@@ -7,6 +7,7 @@ import { AccountService } from "./services/account/service";
 import { AccountStateService } from "./services/account-state/service";
 import { AuthRegistryService } from "./services/auth-registry/service";
 import { ConfigService } from "./services/config/service";
+import { ContactService } from "./services/contact/service";
 import { DappInteractionService } from "./services/dapp-interaction/service";
 import { DappSessionService } from "./services/dapp-session/service";
 import { ExecutionService } from "./services/execution/service";
@@ -77,6 +78,7 @@ const runServices = async () => {
     services.add(new AccountStateService(logger));
     services.add(new AuthRegistryService(logger));
     services.add(new ConfigService(config, logger));
+    services.add(new ContactService(logger));
     services.add(new DappInteractionService(logger));
     services.add(new DappSessionService(logger));
     services.add(new ExecutionService(logger));

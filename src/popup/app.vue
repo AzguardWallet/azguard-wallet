@@ -79,7 +79,18 @@ const initNetworks = async () => {
 		const localActiveNetworkId = activeNetworkResult["azguard:ui:activeNetwork"]
 		appStore.network = appStore.networks.find(n => n.id === localActiveNetworkId)
 	}
-	appStore.network ??= appStore.networks.find(n => n.isDefault)
+
+	const key = `azguard:ui:lastActiveNetwork@${appStore.profile?.id}`
+	const lastActiveNetworkId = (await chrome.storage.local.get(key))[key]
+	
+	if (lastActiveNetworkId) {
+		appStore.network = appStore.networks.find(n => n.id === lastActiveNetworkId)
+	}
+	if (!appStore.network) {
+		appStore.network = appStore.networks.find(n => n.isDefault)
+		chrome.storage.local.set({ [key]: appStore.network.id })
+	}
+
 	managers.network.setDefault(appStore.network.id)
 	appStore.syncNetworkStatus()
 }
@@ -143,6 +154,7 @@ watch(
 				onTokenAdded: appStore.onTokenAdded,
 			})
 			await appStore.syncLocalTokens()
+			await appStore.syncTransactions()
 		} else {
 			await appStore.setupActiveAccount()
 
