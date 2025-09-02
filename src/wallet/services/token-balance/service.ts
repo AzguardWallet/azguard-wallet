@@ -79,6 +79,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     }
 
     public async getTokenBalances(tokenId?: number, accountAddress?: string): Promise<TokenBalanceInfo[]> {
+        await this.ensureInitialized();
         return (await this.balances.getValues())
             .filter(x => tokenId === undefined || x.token === tokenId)
             .filter(x => accountAddress === undefined || x.account === accountAddress)

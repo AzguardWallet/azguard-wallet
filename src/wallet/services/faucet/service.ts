@@ -78,6 +78,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
         amount: string,
         feeSettings: FeeSettings,
     ) {
+        await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Profile locked");

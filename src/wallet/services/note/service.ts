@@ -49,7 +49,7 @@ export class NoteService extends Service<Methods> implements ServiceSpec<Methods
         }
     }
 
-    public async parseNote(network: Network, note: UniqueNote): Promise<Note> {
+    private async parseNote(network: Network, note: UniqueNote): Promise<Note> {
         try {
             const contract = note.contractAddress.toString();
             let contractNotes = this.contractNotesCache.get(contract);
@@ -123,7 +123,7 @@ export class NoteService extends Service<Methods> implements ServiceSpec<Methods
         }
     }
 
-    parseNoteContent(note: UniqueNote, type: ContractNote): Record<string, string> {
+    private parseNoteContent(note: UniqueNote, type: ContractNote): Record<string, string> {
         type.fields.sort((a, b) => a.index - b.index);
         const content: Record<string, string> = {};
         for (let i = 0; i < type.fields.length; i++) {

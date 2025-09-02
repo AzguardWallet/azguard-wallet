@@ -30,10 +30,6 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
     }
 
     protected async init(services: ServiceCollection) {
-        this.profileService = services.get(ProfileService.name);
-        this.profileService.onActiveProfileChanged.add(this.onActiveProfileChanged);
-        this.profileService.onProfileDeleted.add(this.onProfileDeleted);
-
         // TODO: remove this at some point
         // migration
         const entries = await this.storage.getAll();
@@ -46,6 +42,10 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             await (new ValueStorage("azguard:core:networks", StorageType.Local)).delete();
             await (new ValueStorage("azguard:core:dappSessions", StorageType.Local)).delete();
         }
+
+        this.profileService = services.get(ProfileService.name);
+        this.profileService.onActiveProfileChanged.add(this.onActiveProfileChanged);
+        this.profileService.onProfileDeleted.add(this.onProfileDeleted);
     }
 
     public async getOrInitNetworks(): Promise<Network[]> {

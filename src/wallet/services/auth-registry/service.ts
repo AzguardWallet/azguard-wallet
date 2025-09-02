@@ -130,6 +130,7 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         enabled: boolean,
         feeSettings: FeeSettings,
     ): Promise<void> {
+        await this.ensureInitialized();
         const task = this.taskService.startNewTask(new StepContent(`${enabled ? "Enable" : "Disable"} auth registry`));
         try {
             const txHash = await this.executionService.executeSendTransaction(
@@ -154,6 +155,7 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
     }
 
     public async syncRegistry(networkId: string, account: string): Promise<void> {
+        await this.ensureInitialized();
         const task = this.taskService.startNewTask(new StepContent("Sync auth registry"));
         try {
             const network = await this.networkService.getNetwork(networkId);

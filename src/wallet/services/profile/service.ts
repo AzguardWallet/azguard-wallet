@@ -97,6 +97,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     public async getProfiles(): Promise<ProfileInfo[]> {
+        await this.ensureInitialized();
         return (await this.profiles.getValues()).map(this.getProfileInfo);
     }
 
@@ -311,6 +312,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     public async exportEncrypted(id: string): Promise<string> {
+        await this.ensureInitialized();
         const profile = await this.profiles.get(id);
         if (!profile) {
             throw new Error("Invalid profile id");
@@ -319,6 +321,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     public async exportPlain(id: string, password: string): Promise<string> {
+        await this.ensureInitialized();
         const passhash = await EncryptionKey.getPasshash(password);
         const key = await EncryptionKey.fromPasshash(passhash);
         const profile = await this.profiles.get(id);
@@ -337,6 +340,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     public async exportMnemonic(id: string, password: string): Promise<string[]> {
+        await this.ensureInitialized();
         const passhash = await EncryptionKey.getPasshash(password);
         const key = await EncryptionKey.fromPasshash(passhash);
         const profile = await this.profiles.get(id);

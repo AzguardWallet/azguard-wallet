@@ -114,6 +114,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
     }
 
     public async execute(params: ExecutionParams, cancellationToken?: string): Promise<ExecutionResult> {
+        await this.ensureInitialized();
         const session = await this.validateSession(params);
         const payload: ExecutionPayload = { params, session };
         if (!(await this.isConfirmationNeeded(payload))) {

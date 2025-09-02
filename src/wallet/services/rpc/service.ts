@@ -59,11 +59,11 @@ export class RpcService extends Service<Methods, Events> implements ServiceSpec<
         }
     }
 
-    public getWalletInfo(): [string, WalletInfo] {
+    private getWalletInfo(): [string, WalletInfo] {
         return ["", AzguardWalletInfo];
     }
 
-    public async getSession(id: string): Promise<[string, DappSessionInfo | null]> {
+    private async getSession(id: string): Promise<[string, DappSessionInfo | null]> {
         try {
             const session = await this.dappSessions.getDappSession(id);
             return [session.id, this.sessionInfo(session)];
@@ -72,7 +72,7 @@ export class RpcService extends Service<Methods, Events> implements ServiceSpec<
         }
     }
 
-    public async closeSession(id: string): Promise<[string, DappSessionInfo | null]> {
+    private async closeSession(id: string): Promise<[string, DappSessionInfo | null]> {
         try {
             const session = await this.dappSessions.deleteDappSession(id);
             return [session.id, this.sessionInfo(session)];
@@ -81,12 +81,12 @@ export class RpcService extends Service<Methods, Events> implements ServiceSpec<
         }
     }
 
-    public async connect(params: ConnectionParams): Promise<[string, DappSessionInfo]> {
+    private async connect(params: ConnectionParams): Promise<[string, DappSessionInfo]> {
         const session = await this.dappInteractions.connect(params);
         return [session.id, session];
     }
 
-    public async execute(params: ExecutionParams): Promise<[string, OperationResult[]]> {
+    private async execute(params: ExecutionParams): Promise<[string, OperationResult[]]> {
         const operationResults = await this.dappInteractions.execute(params);
         return [params.sessionId, operationResults];
     }

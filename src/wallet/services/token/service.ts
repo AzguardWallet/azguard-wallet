@@ -99,6 +99,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         tokenInterface: TokenInterface,
         parentTask?: WrappedTask,
     ): Promise<TokenInfo> {
+        await this.ensureInitialized();
         const stepContent = new StepContent("Adding token");
         const task = parentTask ? parentTask.startSubtask(stepContent) : this.tasks.startNewTask(stepContent);
 
@@ -151,6 +152,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         tokenId: number,
         tokenInterface: TokenInterface,
     ): Promise<TokenInfo> {
+        await this.ensureInitialized();
         const stepContent = new StepContent("Updating token");
         const task = this.tasks.startNewTask(stepContent);
 
@@ -220,6 +222,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     }
 
     public async getTokenInterface(networkId: string, tokenId: number): Promise<TokenInterface> {
+        await this.ensureInitialized();
         const token = await this.tokens.get(`${tokenId}`);
         if (!token) {
             throw new Error("unknown token id");
@@ -315,6 +318,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         contract: string,
         parentTask?: WrappedTask,
     ): Promise<TokenInterface> {
+        await this.ensureInitialized();
         const stepContent = new StepContent("Parsing token interface");
         const task = parentTask ? parentTask.startSubtask(stepContent) : this.tasks.startNewTask(stepContent);
 

@@ -28,9 +28,6 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
     }
 
     protected async init(services: ServiceCollection): Promise<void> {
-        this.profileService = services.get(ProfileService.name);
-        this.profileService.onProfileDeleted.add(this.onProfileDeleted);
-
         // TODO: remove this at some point
         // migration
         const entries = await this.storage.getAll();
@@ -41,20 +38,26 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
                 await this.storage.set(address, account);
             }
         }
+
+        this.profileService = services.get(ProfileService.name);
+        this.profileService.onProfileDeleted.add(this.onProfileDeleted);
     }
 
     public async getAccounts(profileId: string, chainId: number, all?: boolean): Promise<Account[]> {
+        await this.ensureInitialized();
         return (await this.storage.getValues()).filter(
             x => x.profileId === profileId && x.chainId === chainId && (all || x.visible),
         );
     }
 
     public async getAccount(profileId: string, chainId: number, address: string): Promise<Account | undefined> {
+        await this.ensureInitialized();
         const account = await this.storage.get(address);
         return account?.profileId === profileId && account.chainId === chainId ? account : undefined;
     }
 
     public async createAccount(profileId: string, chainId: number, type: AccountType, name: string): Promise<Account> {
+        await this.ensureInitialized();
         const accounts = (await this.storage.getValues()).filter(
             x => x.profileId === profileId && x.chainId === chainId,
         );
@@ -119,6 +122,7 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
     }
 
     public async getAccountContract(profileId: string, chainId: number, address: string): Promise<IAccountContract> {
+        await this.ensureInitialized();
         const account = await this.storage.get(address);
         if (account?.profileId !== profileId || account.chainId !== chainId) {
             throw new Error("unknown account address");

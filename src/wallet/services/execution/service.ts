@@ -345,7 +345,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return results;
     }
 
-    async executeGetCompleteAddress(op: GetCompleteAddressOperation): Promise<CompleteAddress> {
+    private async executeGetCompleteAddress(op: GetCompleteAddressOperation): Promise<CompleteAddress> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -355,7 +355,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return await account.getCompleteAddress();
     }
 
-    async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
+    private async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
         const addressNum = AztecAddress.fromString(op.address).toBigInt();
         if (addressNum >= 0 && addressNum <= 6) {
             // ignore protocol contracts registration,
@@ -394,12 +394,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         await this.pxeService.registerContract(network, instance, artifact);
     }
 
-    async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
+    private async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
         await this.pxeService.registerSender(network, AztecAddress.fromString(op.address));
     }
 
-    async executeRegisterToken(op: RegisterTokenOperation, parentTask?: WrappedTask): Promise<void> {
+    private async executeRegisterToken(op: RegisterTokenOperation, parentTask?: WrappedTask): Promise<void> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -416,7 +416,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti, parentTask);
     }
 
-    async withFeePayment(
+    private async withFeePayment(
         op: SendTransactionOperation,
         parentTask?: WrappedTask,
     ): Promise<[SendTransactionOperation, GasSettings, boolean]> {
@@ -584,11 +584,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
     }
 
-    async executeSendTransaction(
+    public async executeSendTransaction(
         op: SendTransactionOperation,
         origin: TxOrigin,
         parentTask?: WrappedTask,
     ): Promise<string> {
+        await this.ensureInitialized();
         const [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op, parentTask);
 
         const [txRequest, pxe, account, network, nonce, txCalls, txSetup] = await this.processTx(
@@ -625,7 +626,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return tx.hash;
     }
 
-    async executeSimulateTransaction(op: SimulateTransactionOperation): Promise<unknown> {
+    private async executeSimulateTransaction(op: SimulateTransactionOperation): Promise<unknown> {
         const [txRequest, pxe, account] = await this.processTx(op);
         const simulatedTx = await pxe.simulateTx(
             txRequest, // txRequest
@@ -642,7 +643,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         };
     }
 
-    async executeSimulateUtility(op: SimulateUtilityOperation): Promise<AbiDecoded> {
+    private async executeSimulateUtility(op: SimulateUtilityOperation): Promise<AbiDecoded> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -673,7 +674,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return result;
     }
 
-    async executeSimulateViews(op: SimulateViewsOperation): Promise<{ encoded: Fr[][]; decoded: AbiDecoded[] }> {
+    public async executeSimulateViews(op: SimulateViewsOperation): Promise<{ encoded: Fr[][]; decoded: AbiDecoded[] }> {
+        await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -915,7 +917,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return result;
     }
 
-    async processTx(
+    private async processTx(
         op: {
             networkId: string;
             accountAddress: string;
@@ -1021,7 +1023,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return [txRequest, pxe, account, network, nonce, txCalls, txSetup];
     }
 
-    async processTxActions(
+    private async processTxActions(
         actions: IAction[],
         capsules: Capsule[],
         authwits: AuthWitness[],
@@ -1279,7 +1281,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     /**
      * Wrapper around pxe.simulateTx with task tracking.
      */
-    async simulateTxRequest(
+    private async simulateTxRequest(
         pxe: PXE,
         txRequest: TxExecutionRequest,
         simulatePublic: boolean,
@@ -1314,7 +1316,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     /**
      * Wrapper around pxe.proveTx with task tracking.
      */
-    async proveTxRequest(
+    private async proveTxRequest(
         pxe: PXE,
         txRequest: TxExecutionRequest,
         privateExecutionResult?: PrivateExecutionResult,
@@ -1338,7 +1340,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     /**
      * Wrapper around pxe.sendTx with task tracking.
      */
-    async sendProvedTx(pxe: PXE, tx: Tx, parentTask?: WrappedTask): Promise<TxHash> {
+    private async sendProvedTx(pxe: PXE, tx: Tx, parentTask?: WrappedTask): Promise<TxHash> {
         let txHash: TxHash;
         const sendingStep = new StepContent("Sending transaction");
         const sendingTask = parentTask
@@ -1354,7 +1356,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return txHash;
     }
 
-    async getCallMessageHash(
+    private async getCallMessageHash(
         content: CallAuthwitContent,
         nodeInfo: NodeInfo,
         instances: Map<string, ContractInstanceWithAddress>,
@@ -1394,7 +1396,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         );
     }
 
-    async getEncodedCallMessageHash(
+    private async getEncodedCallMessageHash(
         content: EncodedCallAuthwitContent,
         nodeInfo: NodeInfo,
         instances: Map<string, ContractInstanceWithAddress>,
@@ -1459,7 +1461,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         );
     }
 
-    async getIntentMessageHash(content: IntentAuthwitContent, nodeInfo: NodeInfo): Promise<Fr> {
+    private async getIntentMessageHash(content: IntentAuthwitContent, nodeInfo: NodeInfo): Promise<Fr> {
         return await computeAuthWitMessageHash(
             {
                 consumer: AztecAddress.fromString(content.consumer),
