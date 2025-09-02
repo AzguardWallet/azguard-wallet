@@ -95,7 +95,7 @@ const fetchFpcs = async () => {
 	try {
 		const allFpcs = await fpcService.getFpcs(appStore.network.chainId)
 		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
-		fpcs.value = allFpcs.map(f => prepareFpc(f))
+		fpcs.value = allFpcs ? allFpcs.map(f => prepareFpc(f)) : []
 	} catch (err) {
 		error.value = err
 	} finally {
@@ -226,7 +226,7 @@ onBeforeUnmount(() => {
 		</Tooltip>
 
 		<Banner v-else-if="!fpcs.length" wide>
-			Get started by adding your first Fee Payment Contract
+			No FPC found, get started by adding new Fee Payment Contract
 		</Banner>
 
 		<Flex v-else direction="column" gap="16">

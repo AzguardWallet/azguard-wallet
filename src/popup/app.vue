@@ -64,6 +64,9 @@ function applySetting(setting) {
 }
 
 const initNetworks = async () => {
+	appStore.networks = []
+	appStore.network = null
+	
 	managers.network = new NetworkServiceClient()
 	appStore.networks = (await managers.network.getOrInitNetworks()).sort((a, b) => {
 		const aPos = getChainPosition(a.chainId)

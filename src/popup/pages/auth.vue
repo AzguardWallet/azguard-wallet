@@ -161,7 +161,6 @@ watch(
 )
 
 const handleSelectProfile = () => {
-	if (appStore.profiles.length === 1) return
 	popupStore.open("select_profile")
 }
 </script>
@@ -197,16 +196,15 @@ const handleSelectProfile = () => {
 			</Flex>
 
 			<Flex align="center" direction="column" gap="16">
-				<Flex align="center" gap="6" :class="$style.profile_badge">
+				<Flex @click="handleSelectProfile" align="center" gap="6" :class="$style.profile_badge">
 					<Icon name="user" size="14" color="tertiary" />
 					<Text size="13" weight="600" color="primary">{{ appStore.profile.name }}</Text>
-					<!-- <Icon
-						v-if="appStore.profiles.length > 1"
+					<Icon
 						name="chevron"
 						size="12"
 						color="tertiary"
 						:class="$style.chevron_icon"
-					/> -->
+					/>
 				</Flex>
 
 				<Text size="24" weight="600" color="primary" style="line-height: 16px"> Password required </Text>
