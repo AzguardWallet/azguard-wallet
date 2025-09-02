@@ -1,6 +1,6 @@
 export class Config {
     // Appearance
-    theme: "dark" | "light" = "dark";
+    theme: "dark" | "light" | "system" = "dark";
     sidePanel: boolean = false;
     showNode: boolean = true;
     showPopupFullscreen: boolean = false;
