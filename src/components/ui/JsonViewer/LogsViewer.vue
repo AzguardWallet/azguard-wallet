@@ -141,10 +141,15 @@ function isLogInclude(log) {
 function getDisplayName(kind, value) {
 	switch (kind) {
 		case "source":
-			if (value === "fpc" || value === "pxe" || value === "rpc") return value.toUpperCase()
 			if (value === "undefined") return `(${value})`
 
-			return value.split("-").map(v => capitalize(v)).join(" ")
+			return value.split("-")
+				.map(v => {
+					if (v === "fpc" || v === "pxe" || v === "rpc") return v.toUpperCase()
+
+					return capitalize(v)
+				})
+				.join(" ")
 		default:
 			return capitalize(value.toLowerCase())
 	}
@@ -482,7 +487,7 @@ onBeforeUnmount(() => {
 				:open="popovers[p]"
 				@on-close="onPopoverClose(p)"
 				side="left"
-				:width="p === 'source' ? '160' : '136'"
+				:width="p === 'source' ? '200' : '136'"
 			>
 				<Flex
 					@click="handleOpenPopover(p)"

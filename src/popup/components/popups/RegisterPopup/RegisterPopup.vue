@@ -41,7 +41,6 @@ const handleCreateProfile = async () => {
 		walletPassword.value
 	)
 
-	// const profile = await managers.profile.createProfile("My Profile", walletPassword.value)
 	while (!appStore.isLogined) {
 		await sleep(100) // wait for services initialization
 	}

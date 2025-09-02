@@ -21,7 +21,11 @@ const props = defineProps({
 	displaceIdx: Number,
 })
 
-let profileService = null
+const profileService = new ProfileServiceClient()
+profileService.onProfileAdded.add(onProfileAddedOrUpdated)
+profileService.onProfileUpdated.add(onProfileAddedOrUpdated)
+profileService.onProfileDeleted.add(onProfileDeleted)
+
 const profiles = ref([])
 const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.select_profile?.order
@@ -57,14 +61,9 @@ watch(
 	async () => {
 		if (!props.show) {
 			profileService?.disconnect()
-			
-			profileService = null
+
 			profiles.value = []
 		} else {
-			profileService = new ProfileServiceClient() // undefined, undefined, onProfileAddedOrUpdated, onProfileAddedOrUpdated, onProfileDeleted, undefined
-			profileService.onProfileAdded.add(onProfileAddedOrUpdated)
-			profileService.onProfileUpdated.add(onProfileAddedOrUpdated)
-			profileService.onProfileDeleted.add(onProfileDeleted)
 			profileService.connect()
 
 			profiles.value = await profileService.getProfiles()
