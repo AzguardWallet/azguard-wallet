@@ -38,10 +38,10 @@ const handleCreateProfile = async () => {
 		await sleep(100) // wait for services initialization
 	}
 
-	managers.account = new AccountServiceClient(profile, appStore.network)
+	managers.account = new AccountServiceClient()
 
 	appStore.profile = profile
-	appStore.accounts = await managers.account.getAccounts(true)
+	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 	initTokenService({
 		profile: appStore.profile,

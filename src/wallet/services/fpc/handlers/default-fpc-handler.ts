@@ -10,8 +10,8 @@ import {
     CallAction,
     CallAuthwitContent,
     IAction,
-} from "@/wallet/services/execution/client";
-import { FpcInfo, FpcType } from "../client";
+} from "@/wallet/services/execution/spec";
+import { FpcInfo, FpcType } from "../spec";
 import { IFpcHandler } from ".";
 
 export class DefaultFpcHandler implements IFpcHandler {

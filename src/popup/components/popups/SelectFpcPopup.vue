@@ -65,8 +65,13 @@ const init = async () => {
 	error.value = ""
 
 	try {
-		fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
-		tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined, onBalanceAdded, undefined, onBalanceDeleted)
+		fpcService = new FpcServiceClient()
+		fpcService.onFpcAdded.add(onFpcAdded)
+		fpcService.onFpcDeleted.add(onFpcDeleted)
+		fpcService.onFpcUpdated.add(onFpcUpdated)
+		tokenBalanceService = new TokenBalanceServiceClient()
+		tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
+		tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
 		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
 		allFpcs.value = await fpcService.getFpcs(appStore.network.chainId)
 	}

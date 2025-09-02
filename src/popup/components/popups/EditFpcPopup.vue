@@ -95,14 +95,17 @@ watch(
 		if (!props.show) {
 			document.removeEventListener("keydown", onKeydown)
 
-			fpcService.dispose()
+			fpcService.disconnect()
 			fpcService = null
 			fpcToEdit.value = null
 			fpcs.value = []
 			nameTerm.value = ""
 			isStartedEditing.value = false
 		} else {
-			fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
+			fpcService = new FpcServiceClient()
+			fpcService.onFpcAdded.add(onFpcAdded)
+			fpcService.onFpcDeleted.add(onFpcDeleted)
+			fpcService.onFpcUpdated.add(onFpcUpdated)
 			fpcToEdit.value = await fpcService.getFpc(cacheStore.fpcToEditIdx)
 			if (!fpcToEdit.value) {
 				emit("onClose")

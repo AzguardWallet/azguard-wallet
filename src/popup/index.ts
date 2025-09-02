@@ -1,21 +1,19 @@
-import { LogLevel, LogOrigin } from "@/wallet/services/logger/client/models"
-import { LoggerServiceClient } from "@/wallet/services/logger/client";
-const loggerService = new LoggerServiceClient()
-function patchConsoleMethods() {
-    for (const level of Object.values(LogLevel)) {
-        const cbName = `on${level}`;
+import { consoleMethods, LogLevel } from "@/wallet/logger"
+import { LoggerServiceClient } from "@/wallet/services/logger/client"
+import { getErrorData } from "@/wallet/utils/errors"
 
-        (window as any)[cbName] = (...args: any[]) => {
-            loggerService.addLog(
-                level,
-                args,
-                undefined,
-                LogOrigin.UI
-            );
-        };
-    }
+// catch console
+const logger = new LoggerServiceClient()
+for (const [method, level] of consoleMethods) {
+	;(self as any)[`on${method}`] = (...args: any[]) => {
+		logger.log("ui", level, ...args)
+	}
 }
-patchConsoleMethods()
+
+// catch unhandled errors
+self.onunhandledrejection = (e: PromiseRejectionEvent) => {
+	logger.log("ui", LogLevel.Error, getErrorData(e.reason))
+}
 
 import { createPinia } from "pinia"
 import { createApp } from "vue"
@@ -26,17 +24,17 @@ import "@/assets/styles/_base.scss"
 import "./index.scss"
 
 /** Configure BigNumber format */
-import BigNumber from "bignumber.js";
+import BigNumber from "bignumber.js"
 import { getDecimalSeparator, getThousandSeparator } from "@/utils/amount.js"
 
 BigNumber.config({
 	DECIMAL_PLACES: 100,
-    FORMAT: {
-        decimalSeparator: getDecimalSeparator(),
-        groupSeparator: getThousandSeparator(),
-        groupSize: 3,
-    },
-});
+	FORMAT: {
+		decimalSeparator: getDecimalSeparator(),
+		groupSeparator: getThousandSeparator(),
+		groupSize: 3,
+	},
+})
 
 import { managers } from "@/utils/core.js"
 
@@ -93,7 +91,3 @@ router.beforeEach(async (to, from, next) => {
 })
 
 createApp(App).use(router).use(createPinia()).mount("#app")
-
-self.onerror = (message, source, lineno, colno, error) => {
-	console.info(`Error: ${message}\nSource: ${source}\nLine: ${lineno}\nColumn: ${colno}\nError object: ${error}`)
-}

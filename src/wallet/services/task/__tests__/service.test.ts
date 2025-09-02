@@ -1,43 +1,72 @@
-import { expect, test, vi, beforeEach, afterEach, describe } from "vitest";
-import { TaskService, TASK_RETENTION_PERIOD_MS } from "../index";
-import { StepContent, TaskStatus, ContentKind, Task, EmptyResult, ITaskResult, ResultKind } from "../client/models";
-import { TaskServiceEvent } from "../client/events";
-import { InMemoryLogs } from "@/wallet/services/logger/client";
+import { expect, test, vi, describe } from "vitest";
+import { ServiceCollection } from "@/wallet/base";
+import { DummyLogger } from "@/wallet/logger";
+import { ProfileInfo, ProfileService } from "@/wallet/services/profile/service";
 import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
-import { ProfileService } from "@/wallet/services/profile";
+import { EventHandler } from "@/wallet/utils/event-handler";
+import {
+    TaskService,
+    TASK_RETENTION_PERIOD_MS,
+    StepContent,
+    TaskStatus,
+    ContentKind,
+    EmptyResult,
+    ITaskResult,
+    ResultKind,
+    Events,
+} from "../service";
 
 class TestResult implements ITaskResult {
     public readonly kind = ResultKind.Empty;
     constructor(public readonly testData: string) {}
 }
 
-const createTestSetup = () => {
-    const emitMock = vi.fn();
-    const profileMock = {
-        onActiveProfileChanged: [] as ((id?: string) => void)[],
+const createTestSetup = async () => {
+    const profileServiceMock = {
+        name: ProfileService.name,
+        onActiveProfileChanged: new EventHandler<ProfileInfo>(),
+        start: vi.fn(),
     } as unknown as ProfileService;
-    const logs = new InMemoryLogs();
-    const service = new TaskService(profileMock, logs, emitMock);
 
-    const switchToProfile = (id?: string) => {
-        profileMock.onActiveProfileChanged.forEach(cb => cb(id));
-    };
+    const taskService = new TaskService(new DummyLogger());
+    const onTaskCreatedMock = vi.fn();
+    taskService.onTaskCreated.add(onTaskCreatedMock);
+    const onTaskDeletedMock = vi.fn();
+    taskService.onTaskDeleted.add(onTaskDeletedMock);
+    const onTaskUpdatedMock = vi.fn();
+    taskService.onTaskUpdated.add(onTaskUpdatedMock);
+
+    const services = new ServiceCollection();
+    services.add(profileServiceMock);
+    services.add(taskService);
+    await services.start();
 
     const rootStepContent = new StepContent("Root Task");
     const stepOne = new StepContent("Step One", 1000);
     const stepTwo = new StepContent("Step Two", 2000);
 
-    const expectEvent = (event: TaskServiceEvent, task: Task) => {
-        expect(emitMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                event,
-                task,
-            }),
-        );
+    const expectEvent = <T extends keyof Events>(event: T, payload: Events[T]) => {
+        switch (event) {
+            case "onTaskCreated":
+                expect(onTaskCreatedMock).toHaveBeenCalledWith(payload);
+                break;
+            case "onTaskDeleted":
+                expect(onTaskDeletedMock).toHaveBeenCalledWith(payload);
+                break;
+            case "onTaskUpdated":
+                expect(onTaskUpdatedMock).toHaveBeenCalledWith(payload);
+                break;
+            default:
+                throw new Error("Invalid event");
+        }
+    };
+
+    const switchToProfile = (profile?: ProfileInfo) => {
+        profileServiceMock.onActiveProfileChanged.invoke(profile);
     };
 
     return {
-        service,
+        service: taskService,
         rootStepContent,
         stepOne,
         stepTwo,
@@ -46,59 +75,51 @@ const createTestSetup = () => {
     };
 };
 
-beforeEach(() => {
-    vi.useFakeTimers();
-});
-
-afterEach(() => {
-    vi.useRealTimers();
-});
-
 describe("Task Tree Implementation", () => {
     describe("Task Creation and Structure", () => {
-        test("should create pending root task", () => {
-            const { service, rootStepContent, expectEvent } = createTestSetup();
+        test("should create pending root task", async () => {
+            const { service, rootStepContent, expectEvent } = await createTestSetup();
 
             const pendingTask = service.createNewTask(rootStepContent);
 
-            expect(pendingTask.task.parent).toBeUndefined();
+            expect(pendingTask.task.parentId).toBeUndefined();
             expect(pendingTask.task.content.kind).toBe(ContentKind.Step);
             expect(pendingTask.task.status).toBe(TaskStatus.Pending);
             expect(pendingTask.task.startedAt).toBeUndefined();
-            expectEvent(TaskServiceEvent.TaskCreated, pendingTask.task);
+            expectEvent("onTaskCreated", pendingTask.task);
         });
 
-        test("should create processing root task", () => {
-            const { service, rootStepContent, expectEvent } = createTestSetup();
+        test("should create processing root task", async () => {
+            const { service, rootStepContent, expectEvent } = await createTestSetup();
 
             const processingTask = service.startNewTask(rootStepContent);
 
             expect(processingTask.task.status).toBe(TaskStatus.Processing);
             expect(processingTask.task.startedAt).toBeDefined();
             expect(processingTask.task.startedAt).toBeGreaterThanOrEqual(processingTask.task.createdAt);
-            expectEvent(TaskServiceEvent.TaskCreated, processingTask.task);
+            expectEvent("onTaskCreated", processingTask.task);
         });
 
-        test("should create subtasks and maintain parent-child relationships", () => {
-            const { service, rootStepContent, stepOne, stepTwo, expectEvent } = createTestSetup();
+        test("should create subtasks and maintain parent-child relationships", async () => {
+            const { service, rootStepContent, stepOne, stepTwo, expectEvent } = await createTestSetup();
 
             const parentTask = service.createNewTask(rootStepContent);
             const childOne = parentTask.createSubtask(stepOne);
             const childTwo = parentTask.createSubtask(stepTwo);
 
-            expect(childOne.task.parent).toBe(parentTask.task);
-            expect(childTwo.task.parent).toBe(parentTask.task);
+            expect(childOne.task.parentId).toBe(parentTask.task.id);
+            expect(childTwo.task.parentId).toBe(parentTask.task.id);
             expect(parentTask.task.subtasks).toHaveLength(2);
             expect(parentTask.task.subtasks).toContainEqual(childOne.task);
             expect(parentTask.task.subtasks).toContainEqual(childTwo.task);
 
-            expectEvent(TaskServiceEvent.TaskCreated, childOne.task);
-            expectEvent(TaskServiceEvent.TaskCreated, childTwo.task);
-            expectEvent(TaskServiceEvent.TaskUpdated, parentTask.task);
+            expectEvent("onTaskCreated", childOne.task);
+            expectEvent("onTaskCreated", childTwo.task);
+            expectEvent("onTaskUpdated", parentTask.task);
         });
 
-        test("should handle creation errors", () => {
-            const { service, rootStepContent, stepOne } = createTestSetup();
+        test("should handle creation errors", async () => {
+            const { service, rootStepContent, stepOne } = await createTestSetup();
 
             const completedParent = service.startNewTask(rootStepContent);
             completedParent.complete();
@@ -110,15 +131,15 @@ describe("Task Tree Implementation", () => {
             expect(() => service.createNewTask(stepOne, "non-existent")).toThrow("Invalid task id: non-existent");
         });
 
-        test("should return root tasks from getTasks", () => {
-            const { service } = createTestSetup();
+        test("should return root tasks from getTasks", async () => {
+            const { service } = await createTestSetup();
 
             const rootTask = service.createNewTask(new StepContent("Root"));
             rootTask.createSubtask(new StepContent("Step One"));
             const stepTwoTask = rootTask.createSubtask(new StepContent("Step Two"));
             stepTwoTask.createSubtask(new StepContent("Step Two A"));
 
-            const rootTasks = service.getTasks();
+            const rootTasks = await service.getTasks();
 
             expect(rootTasks).toMatchObject([
                 {
@@ -134,9 +155,9 @@ describe("Task Tree Implementation", () => {
             ]);
         });
 
-        test("should propagate origin to subtasks", () => {
-            const { service } = createTestSetup();
-            const origin = new TxOrigin(OriginType.UI);
+        test("should propagate origin to subtasks", async () => {
+            const { service } = await createTestSetup();
+            const origin: TxOrigin = { type: OriginType.UI };
 
             const rootTask = service.createNewTask(new StepContent("Root"), undefined, origin);
             const subtask = rootTask.createSubtask(new StepContent("Subtask"));
@@ -148,19 +169,19 @@ describe("Task Tree Implementation", () => {
     });
 
     describe("Task Status Management", () => {
-        test("should start task and change status from Pending to Processing", () => {
-            const { service, expectEvent } = createTestSetup();
+        test("should start task and change status from Pending to Processing", async () => {
+            const { service, expectEvent } = await createTestSetup();
 
             const pendingTask = service.createNewTask(new StepContent("Pending Task"));
             pendingTask.start();
 
             expect(pendingTask.task.status).toBe(TaskStatus.Processing);
             expect(pendingTask.task.startedAt).toBeDefined();
-            expectEvent(TaskServiceEvent.TaskUpdated, pendingTask.task);
+            expectEvent("onTaskUpdated", pendingTask.task);
         });
 
-        test("should throw error when starting non-pending task", () => {
-            const { service, stepOne } = createTestSetup();
+        test("should throw error when starting non-pending task", async () => {
+            const { service, stepOne } = await createTestSetup();
 
             const alreadyStartedTask = service.startNewTask(stepOne);
 
@@ -169,8 +190,8 @@ describe("Task Tree Implementation", () => {
             );
         });
 
-        test("wrapper should provide status and completion queries", () => {
-            const { service, rootStepContent } = createTestSetup();
+        test("wrapper should provide status and completion queries", async () => {
+            const { service, rootStepContent } = await createTestSetup();
 
             const task = service.createNewTask(rootStepContent);
             expect(task.status).toBe(TaskStatus.Pending);
@@ -187,8 +208,8 @@ describe("Task Tree Implementation", () => {
     });
 
     describe("Task Completion Scenarios", () => {
-        test("should complete task with default result", () => {
-            const { service, rootStepContent, expectEvent } = createTestSetup();
+        test("should complete task with default result", async () => {
+            const { service, rootStepContent, expectEvent } = await createTestSetup();
 
             const rootTask = service.startNewTask(rootStepContent);
             rootTask.complete();
@@ -196,11 +217,11 @@ describe("Task Tree Implementation", () => {
             expect(rootTask.task.finishedAt).toBeDefined();
             expect(rootTask.task.result).toBeInstanceOf(EmptyResult);
             expect(rootTask.task.status).toBe(TaskStatus.Completed);
-            expectEvent(TaskServiceEvent.TaskUpdated, rootTask.task);
+            expectEvent("onTaskUpdated", rootTask.task);
         });
 
-        test("should complete task with custom result", () => {
-            const { service, rootStepContent } = createTestSetup();
+        test("should complete task with custom result", async () => {
+            const { service, rootStepContent } = await createTestSetup();
 
             const rootTask = service.startNewTask(rootStepContent);
             const customResult = new TestResult("test data");
@@ -209,8 +230,8 @@ describe("Task Tree Implementation", () => {
             expect(rootTask.task.result).toBe(customResult);
         });
 
-        test("should fail task with error", () => {
-            const { service, rootStepContent, expectEvent } = createTestSetup();
+        test("should fail task with error", async () => {
+            const { service, rootStepContent, expectEvent } = await createTestSetup();
 
             const task = service.startNewTask(rootStepContent);
             const error = "Validation failed";
@@ -220,11 +241,11 @@ describe("Task Tree Implementation", () => {
             expect(task.task.error).toBe(error);
             expect(task.task.result).toBeUndefined();
             expect(task.task.status).toBe(TaskStatus.Failed);
-            expectEvent(TaskServiceEvent.TaskUpdated, task.task);
+            expectEvent("onTaskUpdated", task.task);
         });
 
-        test("should throw error when completing task with unfinished subtasks", () => {
-            const { service, rootStepContent, stepOne } = createTestSetup();
+        test("should throw error when completing task with unfinished subtasks", async () => {
+            const { service, rootStepContent, stepOne } = await createTestSetup();
 
             const parentTask = service.startNewTask(rootStepContent);
             const childTask = parentTask.createSubtask(stepOne);
@@ -240,16 +261,16 @@ describe("Task Tree Implementation", () => {
             );
         });
 
-        test("should throw error when completing non-existent task", () => {
-            const { service } = createTestSetup();
+        test("should throw error when completing non-existent task", async () => {
+            const { service } = await createTestSetup();
 
             expect(() => service.completeTask("non-existent")).toThrow("Invalid task id: non-existent");
             expect(() => service.failTask("non-existent", "error")).toThrow("Invalid task id: non-existent");
             expect(() => service.cancelTask("non-existent")).toThrow("Invalid task id: non-existent");
         });
 
-        test("should throw error when completing already finished task", () => {
-            const { service, rootStepContent } = createTestSetup();
+        test("should throw error when completing already finished task", async () => {
+            const { service, rootStepContent } = await createTestSetup();
 
             const completedTask = service.startNewTask(rootStepContent);
             completedTask.complete();
@@ -261,8 +282,8 @@ describe("Task Tree Implementation", () => {
             expect(() => completedTask.cancel()).toThrow(`Cannot finish already finished task ${completedTask.id}`);
         });
 
-        test("should cancel pending and processing tasks", () => {
-            const { service, rootStepContent, stepOne, expectEvent } = createTestSetup();
+        test("should cancel pending and processing tasks", async () => {
+            const { service, rootStepContent, stepOne, expectEvent } = await createTestSetup();
 
             const pendingTask = service.createNewTask(rootStepContent);
             const processingTask = service.startNewTask(stepOne);
@@ -275,12 +296,12 @@ describe("Task Tree Implementation", () => {
             expect(processingTask.task.status).toBe(TaskStatus.Cancelled);
             expect(processingTask.task.finishedAt).toBeDefined();
 
-            expectEvent(TaskServiceEvent.TaskUpdated, pendingTask.task);
-            expectEvent(TaskServiceEvent.TaskUpdated, processingTask.task);
+            expectEvent("onTaskUpdated", pendingTask.task);
+            expectEvent("onTaskUpdated", processingTask.task);
         });
 
-        test("should throw error when completing or failing pending tasks", () => {
-            const { service, rootStepContent } = createTestSetup();
+        test("should throw error when completing or failing pending tasks", async () => {
+            const { service, rootStepContent } = await createTestSetup();
 
             const pendingTask = service.createNewTask(rootStepContent);
 
@@ -294,8 +315,8 @@ describe("Task Tree Implementation", () => {
     });
 
     describe("Cleanup with Complex Tree Structures", () => {
-        test("should cleanup expired tasks and keep active tasks", () => {
-            const { service, rootStepContent, stepOne, stepTwo, expectEvent } = createTestSetup();
+        test("should cleanup expired tasks and keep active tasks", async () => {
+            const { service, rootStepContent, stepOne, stepTwo, expectEvent } = await createTestSetup();
 
             const completedRoot = service.startNewTask(rootStepContent);
             const cancelledChild = completedRoot.startSubtask(stepOne);
@@ -310,50 +331,50 @@ describe("Task Tree Implementation", () => {
 
             vi.setSystemTime(Date.now() + TASK_RETENTION_PERIOD_MS + 1000);
 
-            service.getTasks();
+            await service.getTasks();
 
-            expect(() => service.getTask(completedRoot.id)).toThrow("Invalid task id");
-            expect(() => service.getTask(cancelledChild.id)).toThrow("Invalid task id");
-            expect(service.getTask(activeRoot.id)).toBeDefined();
-            expectEvent(TaskServiceEvent.TaskDeleted, completedRootTask);
-            expectEvent(TaskServiceEvent.TaskDeleted, cancelledChildTask);
+            expect(() => service.getTaskSync(completedRoot.id)).toThrow("Invalid task id");
+            expect(() => service.getTaskSync(cancelledChild.id)).toThrow("Invalid task id");
+            expect(service.getTaskSync(activeRoot.id)).toBeDefined();
+            expectEvent("onTaskDeleted", completedRootTask);
+            expectEvent("onTaskDeleted", cancelledChildTask);
         });
 
-        test("should throw error when requesting task that has been deleted", () => {
-            const { service, rootStepContent } = createTestSetup();
+        test("should throw error when requesting task that has been deleted", async () => {
+            const { service, rootStepContent } = await createTestSetup();
 
             const task = service.startNewTask(rootStepContent);
             task.complete();
             vi.setSystemTime(Date.now() + TASK_RETENTION_PERIOD_MS + 1000);
 
-            expect(() => service.getTask(task.id)).toThrow(`Task ${task.id} has been expired`);
+            expect(() => service.getTaskSync(task.id)).toThrow(`Task ${task.id} has been expired`);
         });
     });
     describe("Profile-driven task cleanup", () => {
-        test("clears tasks when switching to a different profile", () => {
-            const { service, switchToProfile } = createTestSetup();
+        test("clears tasks when switching to a different profile", async () => {
+            const { service, switchToProfile } = await createTestSetup();
 
-            switchToProfile("A");
+            switchToProfile({ id: "A", name: "A" });
             service.createNewTask(new StepContent("T1"));
             service.createNewTask(new StepContent("T2"));
-            expect(service.getTasks().length).toBe(2);
+            expect((await service.getTasks()).length).toBe(2);
 
             // Switch to a different profile - should clear
-            switchToProfile("B");
-            expect(service.getTasks().length).toBe(0);
+            switchToProfile({ id: "B", name: "B" });
+            expect((await service.getTasks()).length).toBe(0);
         });
 
-        test("keeps tasks when switching to the same profile", () => {
-          const { service, switchToProfile } = createTestSetup();
+        test("keeps tasks when switching to the same profile", async () => {
+            const { service, switchToProfile } = await createTestSetup();
 
-          switchToProfile("A");
-          service.createNewTask(new StepContent("T1"));
-          service.createNewTask(new StepContent("T2"));
-          expect(service.getTasks().length).toBe(2);
+            switchToProfile({ id: "A", name: "A" });
+            service.createNewTask(new StepContent("T1"));
+            service.createNewTask(new StepContent("T2"));
+            expect((await service.getTasks()).length).toBe(2);
 
-          // Set to the same profile - no clearing
-          switchToProfile("A");
-          expect(service.getTasks().length).toBe(2);
+            // Set to the same profile - no clearing
+            switchToProfile({ id: "A", name: "A" });
+            expect((await service.getTasks()).length).toBe(2);
         });
-      });
+    });
 });

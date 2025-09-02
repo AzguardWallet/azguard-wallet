@@ -1,5 +1,6 @@
-import { RpcServiceClient } from "@/wallet/services/rpc/client";
+import { RpcServiceClient, GenericRpcEvent } from "@/wallet/services/rpc/client";
 import { sleep } from "@/wallet/utils";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { MServer } from "./messenger/server";
 import {
     ProxyMessageType,
@@ -11,32 +12,29 @@ import {
 import { CHANNEL } from "./utils";
 
 export class ProxyServer {
+    #messenger: MServer<IProxyMessage>;
+    #service: RpcServiceClient;
     #connected: boolean = false;
-    #service: RpcServiceClient = null!;
-    #messenger: MServer<IProxyMessage> = null!;
     readonly #sessionClients: Map<string, string[]> = new Map();
-    
+
     public constructor() {
-        this.#service = new RpcServiceClient(
-            this.#onServiceConnected,
-            this.#onServiceDisconnected,
-            this.#onServiceGenericEvent,
-        );
-        this.#messenger = new MServer<IProxyMessage>(
-            CHANNEL,
-            this.#onInpageMessage,
-        );
+        this.#messenger = new MServer(CHANNEL, this.#onInpageMessage);
+        this.#service = new RpcServiceClient();
+        this.#service.onConnected.add(this.#onServiceConnected);
+        this.#service.onDisconnected.add(this.#onServiceDisconnected);
+        this.#service.onGenericEvent.add(this.#onServiceGenericEvent);
+        this.#service.connect();
     }
 
     readonly #onServiceConnected = () => {
         this.#connected = true;
-    }
+    };
 
     readonly #onServiceDisconnected = () => {
         this.#connected = false;
-    }
+    };
 
-    readonly #onServiceGenericEvent = async (event: string, payload: [string, any]) => {
+    readonly #onServiceGenericEvent = async ({ event, payload }: GenericRpcEvent) => {
         const [_session, _payload] = payload;
         if (_session) {
             const clients = this.#sessionClients.get(_session);
@@ -44,13 +42,12 @@ export class ProxyServer {
                 for (const client of clients) {
                     try {
                         await this.#messenger.send(client, new ProxyEventMessage(event, _payload));
-                    }
-                    catch {}
+                    } catch {}
                 }
             }
         }
-    }
-    
+    };
+
     readonly #onInpageMessage = async (client: string, message: IProxyMessage) => {
         if (message.type != ProxyMessageType.Request) {
             return;
@@ -72,10 +69,9 @@ export class ProxyServer {
                 clients.push(client);
             }
             response = new ProxyResponseMessage(requestId, _result);
-        }
-        catch (error) {
-            response = new ProxyResponseMessage(requestId, undefined, (error as Error)?.message ?? error as string ?? "Unknown error");
+        } catch (error) {
+            response = new ProxyResponseMessage(requestId, undefined, getErrorMessage(error));
         }
         await this.#messenger.send(client, response);
-    }
+    };
 }

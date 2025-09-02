@@ -1,7 +1,7 @@
 import { ContractArtifact } from "@aztec/stdlib/abi";
 import { Gas } from "@aztec/stdlib/gas";
-import { CallAction, IAction } from "@/wallet/services/execution/client";
-import { FpcInfo } from "../client";
+import { CallAction, IAction } from "@/wallet/services/execution/spec";
+import { FpcInfo } from "../spec";
 import { IFpcHandler } from ".";
 
 export class DefaultSponsoredFpcHandler implements IFpcHandler {

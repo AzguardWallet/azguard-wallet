@@ -9,7 +9,6 @@ const path = "src/offscreen/index.html";
 const offscreenUrl = chrome.runtime.getURL(path);
 const onOffscreenReady = (message: any) => {
     if (message === OFFSCREEN_READY_MESSAGE) {
-        console.debug("Offscreen ready");
         chrome.runtime.onMessage.removeListener(onOffscreenReady);
         clearTimeout(offscreenTimeout);
         resolveOffscreenPromise();
@@ -18,7 +17,6 @@ const onOffscreenReady = (message: any) => {
     return false;
 }
 const onOffscreenTimeout = () => {
-    console.debug("Offscreen timeout");
     chrome.runtime.onMessage.removeListener(onOffscreenReady);
     rejectOffscreenPromise("Offscreen is not responding");
     offscreenPromise = null;
@@ -39,7 +37,6 @@ export async function ensureOffscreenRunning() {
             resolveOffscreenPromise = resolve;
             rejectOffscreenPromise = reject;
         });
-        console.debug("Creating offscreen...");
         offscreenTimeout = setTimeout(onOffscreenTimeout, 5000);
         chrome.runtime.onMessage.addListener(onOffscreenReady);
         chrome.offscreen.createDocument({

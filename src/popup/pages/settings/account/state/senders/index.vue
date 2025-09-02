@@ -79,7 +79,9 @@ const onSenderAdded = (sender) => {
 const onSenderDeleted = (sender) => {
 	senders.value = senders.value.filter((s) => s !== sender)
 }
-const accountStateClientService = new AccountStateServiceClient(undefined, undefined, onSenderAdded, onSenderDeleted)
+const accountStateClientService = new AccountStateServiceClient()
+accountStateClientService.onSenderAdded.add(onSenderAdded)
+accountStateClientService.onSenderDeleted.add(onSenderDeleted)
 watch(
 	() => appStore.network,
 	() => {
@@ -87,10 +89,11 @@ watch(
 	},
 )
 onMounted(() => {
+	accountStateClientService.connect()
 	if (appStore.network) fetchSenders()
 })
 onBeforeUnmount(() => {
-	accountStateClientService.dispose()
+	accountStateClientService.disconnect()
 })
 </script>
 

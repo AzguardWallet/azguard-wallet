@@ -1,6 +1,6 @@
 <script setup>
 /** Vendor */
-import { onMounted, ref, watch, withDirectives } from "vue"
+import { onMounted, ref } from "vue"
 import { EditorView } from "codemirror"
 import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state"
 import { keymap, highlightActiveLine, Decoration } from "@codemirror/view"
@@ -12,9 +12,10 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 import Popover from "@/components/ui/Popover.vue"
 
 /** Utils */
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
-import { LoggerServiceClient } from "@/wallet/services/logger/client"
-import { SettingServiceClient } from "@/wallet/services/settings/client"
+import { Config } from "@/wallet/config"
+import { LogLevel } from "@/wallet/logger"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
+import { LogViewerServiceClient } from "@/wallet/services/log-viewer/client"
 import { capitalize } from "@/utils/string"
 
 /** Composables */
@@ -27,26 +28,67 @@ import { createLoggerTheme } from "./creator.js"
 const editorRef = ref(null)
 let view = null
 
-let loggerService = null
-let settingService = null
+const logViewerService = new LogViewerServiceClient()
+logViewerService.onLog.add(onLogAdded)
+
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(onSettingUpdate)
+
 const logs = ref([])
 
 function getLogLevelName(level) {
-	return level?.toLowerCase() === "log"
-		? "INFO"
-		: level
+	switch (level) {
+		case LogLevel.Debug:
+			return "DEBUG"
+		case LogLevel.Info:
+			return "INFO"
+		case LogLevel.Warn:
+			return "WARN"
+		case LogLevel.Error:
+			return "ERROR"
+		default:
+			return level
+	}
 }
 
-const sources = ["account", "account-state", "dapp-interaction", "dapp-session", "execution", "faucet", "fpc", "logger", "network", "profile", "pxe", "rpc", "setting", "task", "token", "token-balance", "transaction", "wallet-connect", "undefined"]
+const sources = [
+	"account",
+	"account-state",
+	"auth-registry",
+	"config",
+	"dapp-interaction",
+	"dapp-session",
+	"execution",
+	"faucet",
+	"fpc",
+	"log-viewer",
+	"logger",
+	"network",
+	"note",
+	"profile",
+	"pxe",
+	"rpc",
+	"task",
+	"token",
+	"token-balance",
+	"transaction",
+	"wallet-connect",
+]
+	.flatMap(x => [x, `${x}-client`])
+	.concat(["wallet", "ui"])
 const allowedSources = computed(() => new Set(Object.keys(filters.source).filter(k => filters.source[k])))
-const origins = ["UI", "OF", "BG"]
-const allowedOrigins = computed(() => new Set(Object.keys(filters.origin).filter(k => filters.origin[k])))
 const levels = ["DEBUG", "INFO", "WARN", "ERROR"]
-const allowedLevels = computed(() => new Set(Object.keys(filters.level).filter(k => filters.level[k]).map(l => getLogLevelName(l).toUpperCase())))
+const allowedLevels = computed(
+	() =>
+		new Set(
+			Object.keys(filters.level)
+				.filter(k => filters.level[k])
+				.map(l => getLogLevelName(l)),
+		),
+)
 const allOptionsSelected = computed(() => {
 	return {
 		source: allowedSources.value?.size === sources.length,
-		origin: allowedOrigins.value?.size === origins.length,
 		level: allowedLevels.value?.size === levels.length,
 	}
 })
@@ -56,7 +98,7 @@ const filteredLogs = computed(() => logs.value.filter(log => isLogInclude(log)))
 const AUTO_SCROLL_TIMEOUT_MS = 30_000
 const SCROLL_DISABLE_THRESHOLD = 20
 const MAX_LOGS_DIFF = 100
-const maxLogsCount = ref(DEFAULT_SETTINGS?.developer?.debugMode ? 10_000 : 1_000)
+const maxLogsCount = ref(new Config().debugMode ? 10_000 : 1_000)
 
 const shouldAutoScroll = ref(true)
 const showScrollBtn = ref(false)
@@ -64,20 +106,18 @@ let scrollTimeout = null
 
 const popovers = reactive({
 	source: false,
-	origin: false,
 	level: false,
 })
 const filters = reactive({
-	source: sources.reduce((acc, b) => ( {...acc, [b]: true} ), {}),
-	origin: origins.reduce((acc, b) => ( {...acc, [b]: true} ), {}),
-	level: levels.reduce((acc, b) => ( {...acc, [b]: true} ), {}),
+	source: sources.reduce((acc, b) => ({ ...acc, [b]: true }), {}),
+	level: levels.reduce((acc, b) => ({ ...acc, [b]: true }), {}),
 })
 const searchTerm = ref("")
 
-const handleOpenPopover = (name) => {
+const handleOpenPopover = name => {
 	popovers[name] = true
 }
-const onPopoverClose = (name) => {
+const onPopoverClose = name => {
 	popovers[name] = false
 	if (name === "source") {
 		searchTerm.value = ""
@@ -89,17 +129,14 @@ function updateFilter(filter, value) {
 }
 function handleSelectAll(filter) {
 	const value = allOptionsSelected.value[filter]
-	Object.keys(filters[filter]).forEach(f => filters[filter][f] = !value)
+	Object.keys(filters[filter]).forEach(f => (filters[filter][f] = !value))
 	updateEditorContent()
 }
 function isLogInclude(log) {
-	const sourceOk = log.source
-		? allowedSources.value.has(log.source)
-		: !!filters.source.undefined
-    const originOk = allowedOrigins.value.has(log.origin)
-    const levelOk = allowedLevels.value.has(getLogLevelName(log.level).toUpperCase())
+	const sourceOk = allowedSources.value.has(log.source)
+	const levelOk = allowedLevels.value.has(getLogLevelName(log.level))
 
-    return sourceOk && originOk && levelOk
+	return sourceOk && levelOk
 }
 function getDisplayName(kind, value) {
 	switch (kind) {
@@ -108,22 +145,19 @@ function getDisplayName(kind, value) {
 			if (value === "undefined") return `(${value})`
 
 			return value.split("-").map(v => capitalize(v)).join(" ")
-		case "origin":
-			return value.toUpperCase()
-	
 		default:
 			return capitalize(value.toLowerCase())
 	}
 }
 
-const onLogAdded = (log) => {
+function onLogAdded(log) {
 	logs.value.push(log)
 
 	if (logs.value.length > maxLogsCount.value + MAX_LOGS_DIFF) {
 		logs.value.splice(0, MAX_LOGS_DIFF)
 	}
 
-	if(!isLogInclude(log)) return;
+	if (!isLogInclude(log)) return
 
 	if (view) {
 		const doc = view.state.doc
@@ -133,8 +167,8 @@ const onLogAdded = (log) => {
 				changes: {
 					from: doc.line(1).from,
 					to: doc.line(MAX_LOGS_DIFF).to + 1,
-					insert: ""
-				}
+					insert: "",
+				},
 			})
 		}
 
@@ -142,8 +176,8 @@ const onLogAdded = (log) => {
 		view.dispatch({
 			changes: {
 				from: doc.length,
-				insert: newLine
-			}
+				insert: newLine,
+			},
 		})
 
 		if (shouldAutoScroll.value) {
@@ -190,7 +224,7 @@ function scrollToBottom() {
 	view.dispatch({
 		effects: EditorView.scrollIntoView(linePos, {
 			y: "end",
-		})
+		}),
 	})
 
 	showScrollBtn.value = false
@@ -205,34 +239,31 @@ function formatArg(arg) {
 
 	if (typeof arg === "object") {
 		try {
-			return JSON.stringify(arg);
+			return JSON.stringify(arg)
 		} catch {
-			return String(arg);
+			return String(arg)
 		}
 	}
 
 	return arg
 }
 function formatSingleLog(log) {
-	const date = new Date(log.ts)
-	const time = `${date.toTimeString().slice(0, 8)}.${date.getMilliseconds().toString().padStart(3, '0')}`
-	const level = log.level?.toUpperCase()
+	const date = new Date(log.timestamp)
+	const time = `${date.toTimeString().slice(0, 8)}.${date.getMilliseconds().toString().padStart(3, "0")}`
 
-	let args
-	if (!log.args) {
-		args = ""
-	} else if (Array.isArray(log.args) && log.args?.length) {
-		args = log.args.map(formatArg).filter(Boolean).join(", ")
+	let data
+	if (!log.data) {
+		data = ""
+	} else if (Array.isArray(log.data) && log.data?.length) {
+		data = log.data.map(formatArg).filter(x => x !== undefined).join(" ")
 	} else {
-		args = formatArg(log.args)
+		data = formatArg(log.data)
 	}
 
-	return `[${time}] [${log.origin}]${log.source ? ` [${log.source}]` : ""} ${getLogLevelName(level)}: ${args}`
+	return `[${time}] [${log.source}] ${getLogLevelName(log.level)}: ${data}`
 }
 function formatLogs(logs) {
-	return logs
-		.map(log => formatSingleLog(log))
-		.join("\n")
+	return logs.map(log => formatSingleLog(log)).join("\n")
 }
 function buildLogDecorations(doc) {
 	const builder = new RangeSetBuilder()
@@ -256,19 +287,19 @@ function buildLogDecorations(doc) {
 	return builder.finish()
 }
 const logDecorationsField = StateField.define({
-    create(state) {
-        return buildLogDecorations(state.doc)
-    },
+	create(state) {
+		return buildLogDecorations(state.doc)
+	},
 
-    update(decorations, transaction) {
-        if (transaction.docChanged) {
-            return buildLogDecorations(transaction.newDoc)
-        }
+	update(decorations, transaction) {
+		if (transaction.docChanged) {
+			return buildLogDecorations(transaction.newDoc)
+		}
 
-        return decorations
-    },
+		return decorations
+	},
 
-    provide: f => EditorView.decorations.from(f)
+	provide: f => EditorView.decorations.from(f),
 })
 
 function updateEditorContent() {
@@ -284,7 +315,7 @@ function updateEditorContent() {
 			from: 0,
 			to: currentDoc.length,
 			insert: newDoc,
-		}
+		},
 	})
 
 	requestAnimationFrame(() => {
@@ -295,29 +326,25 @@ function updateEditorContent() {
 function exportLogsToCSV() {
 	try {
 		const rows = logs.value.map(log => {
-			const time = new Date(log.ts).toISOString()
-			const origin = log.origin ?? ""
-			const source = log.source ?? ""
-			const level = log.level ?? ""
+			const time = new Date(log.timestamp).toISOString()
+			const source = log.source
+			const level = getLogLevelName(log.level)
 
-			let args
-			if (!log.args) {
-				args = ""
-			} else if (Array.isArray(log.args) && log.args?.length) {
-				args = log.args.map(formatArg).filter(Boolean).join(", ")
+			let data
+			if (!log.data) {
+				data = ""
+			} else if (Array.isArray(log.data) && log.data?.length) {
+				data = log.data.map(formatArg).filter(x => x !== undefined).join(" ")
 			} else {
-				args = formatArg(log.args)
+				data = formatArg(log.data)
 			}
 
-			return [time, origin, source, level, args]
+			return [time, source, level, data]
 		})
 
-		const csvContent = [
-			["time", "origin", "source", "level", "args"],
-			...rows
-		].map(row =>
-			row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
-		).join("\n")
+		const csvContent = [["time", "source", "level", "data"], ...rows]
+			.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(","))
+			.join("\n")
 
 		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
 		const url = URL.createObjectURL(blob)
@@ -335,28 +362,63 @@ function exportLogsToCSV() {
 		openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
 	} catch (err) {
 		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
-		console.error(err);
+		console.error(err)
 	}
 }
 async function handleClearLogs() {
 	try {
-		loggerService.onLogAdded = null
-		await loggerService.clearLogs()
-		loggerService.onLogAdded = onLogAdded
+		logViewerService.onLog.remove(onLogAdded)
+		await logViewerService.clearLogs()
+		logViewerService.onLog.add(onLogAdded)
 
 		logs.value = []
 		await nextTick()
 		updateEditorContent()
 	} catch (err) {
 		openToast({ label: "Failed to clear logs", icon: "warning" }, 2_000)
-		console.error(err);
+		console.error(err)
+	}
+}
+
+async function getLogs() {
+	const res = []
+	while (true) {
+		const logs = await fetchLogs(1024, res.at(-1)?.id)
+		res.push(...logs)
+		if (
+			logs.length !== 1024 &&
+			logs.length !== 256 &&
+			logs.length !== 64 &&
+			logs.length !== 16 &&
+			logs.length !== 4 &&
+			logs.length !== 1
+		) {
+			break
+		}
+	}
+	return res
+}
+
+async function fetchLogs(cnt, fromId) {
+	try {
+		const fetch = logViewerService.getLogs(cnt, fromId)
+		const timeout = new Promise((_, reject) => {
+			setTimeout(() => reject("Logs fetch timeout"), 500)
+		})
+		await Promise.race([fetch, timeout])
+		return await fetch
+	} catch {
+		if (cnt === 1) {
+			throw new Error("Failed to fetch logs")
+		}
+		return await fetchLogs(cnt / 4, fromId)
 	}
 }
 
 async function onSettingUpdate(setting) {
 	if (setting.key === "debugMode") {
 		maxLogsCount.value = setting.value ? 10_000 : 1_000
-		logs.value = await loggerService.getLogs()
+		logs.value = await getLogs()
 		updateEditorContent()
 	}
 }
@@ -364,11 +426,9 @@ async function onSettingUpdate(setting) {
 onMounted(async () => {
 	await nextTick()
 
-	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
-
-	loggerService = new LoggerServiceClient(undefined, undefined)
-	logs.value = await loggerService.getLogs()
-	loggerService.onLogAdded = onLogAdded
+	maxLogsCount.value = (await configService.getValue("debugMode")) ? 10_000 : 1_000
+	
+	logs.value = await getLogs()
 
 	view = new EditorView({
 		parent: editorRef.value,
@@ -380,8 +440,8 @@ onMounted(async () => {
 				highlightActiveLine(),
 				EditorState.readOnly.of(true),
 				logDecorationsField,
-			]
-		})
+			],
+		}),
 	})
 
 	view.scrollDOM?.addEventListener("scroll", updateShouldAutoScroll)
@@ -395,16 +455,19 @@ onMounted(async () => {
 	})
 
 	document.addEventListener("focusin", e => {
-		if ((e.target)?.closest(".cm-panel.cm-search")) {
+		if (e.target?.closest(".cm-panel.cm-search")) {
 			disableAutoScroll()
 		}
 	})
 
-	requestAnimationFrame(() => { scrollToBottom() })
+	requestAnimationFrame(() => {
+		scrollToBottom()
+	})
 })
 
 onBeforeUnmount(() => {
-	loggerService.dispose()
+	logViewerService.disconnect()
+	configService.disconnect()
 
 	clearTimeout(scrollTimeout)
 	view?.scrollDOM?.removeEventListener("scroll", updateShouldAutoScroll)
@@ -421,12 +484,14 @@ onBeforeUnmount(() => {
 				side="left"
 				:width="p === 'source' ? '160' : '136'"
 			>
-				<Flex @click="handleOpenPopover(p)" align="center" gap="4" :class="[$style.filter_button, !allOptionsSelected[p] && $style.filter_button_active]">
-					<Icon
-						:name="allOptionsSelected[p] ? 'filter-outline' : 'filter'"
-						size="14"
-					/>
-					
+				<Flex
+					@click="handleOpenPopover(p)"
+					align="center"
+					gap="4"
+					:class="[$style.filter_button, !allOptionsSelected[p] && $style.filter_button_active]"
+				>
+					<Icon :name="allOptionsSelected[p] ? 'filter-outline' : 'filter'" size="14" />
+
 					<Text size="12"> {{ capitalize(p) }} </Text>
 				</Flex>
 
@@ -435,9 +500,21 @@ onBeforeUnmount(() => {
 						<Flex direction="column" gap="8" wide :class="$style.filter_content_title">
 							<Text size="12" color="tertiary"> {{ `Filter by log ${p}` }} </Text>
 
-							<Input v-if="p === 'source'" v-model="searchTerm" size="mini" placeholder="Search" autofocus :class="$style.filter_content_input" />
+							<Input
+								v-if="p === 'source'"
+								v-model="searchTerm"
+								size="mini"
+								placeholder="Search"
+								autofocus
+								:class="$style.filter_content_input"
+							/>
 						</Flex>
-						<Flex align="start" direction="column" gap="4" :class="p === 'source' && $style.filter_items_wrapper">
+						<Flex
+							align="start"
+							direction="column"
+							gap="4"
+							:class="p === 'source' && $style.filter_items_wrapper"
+						>
 							<Flex
 								v-if="!searchTerm"
 								@click="handleSelectAll(p)"
@@ -452,18 +529,22 @@ onBeforeUnmount(() => {
 							</Flex>
 
 							<Flex
-								v-if="p === 'source' ? Object.keys(filters[p])?.filter(s => s.includes(searchTerm?.toLowerCase()))?.length : Object.keys(filters[p])?.length"
-								v-for="k in p === 'source' ? Object.keys(filters[p])?.filter(s => s.includes(searchTerm?.toLowerCase())) : Object.keys(filters[p])"
+								v-if="
+									p === 'source'
+										? Object.keys(filters[p])?.filter(s => s.includes(searchTerm?.toLowerCase()))
+												?.length
+										: Object.keys(filters[p])?.length
+								"
+								v-for="k in p === 'source'
+									? Object.keys(filters[p])?.filter(s => s.includes(searchTerm?.toLowerCase()))
+									: Object.keys(filters[p])"
 								@click="updateFilter(p, k)"
 								align="center"
 								gap="8"
 								wide
 								:class="[$style.filter_content_item, !filters[p][k] && $style.inactive]"
 							>
-								<Icon
-									:name="filters[p][k] ? 'check-circle' : 'circle'"
-									size="12"
-								/>
+								<Icon :name="filters[p][k] ? 'check-circle' : 'circle'" size="12" />
 
 								<Text size="12">
 									{{ getDisplayName(p, k) }}
@@ -479,25 +560,19 @@ onBeforeUnmount(() => {
 
 			<Dropdown>
 				<Flex align="center" gap="4" :class="$style.filter_button">
-					<Icon
-						name="dots"
-						size="14"
-					/>
+					<Icon name="dots" size="14" />
 				</Flex>
 
 				<template #popup>
 					<DropdownItem @click="exportLogsToCSV" :class="$style.filter_content_item">
 						<Flex align="center" gap="8">
-							<Icon
-								name="download-outline"
-								size="12"
-							/>
+							<Icon name="download-outline" size="12" />
 							<Text size="12">Export logs to CSV</Text>
 						</Flex>
 					</DropdownItem>
 					<DropdownItem @click="handleClearLogs" :class="$style.filter_content_item">
 						<Flex align="center" gap="6">
-							<Icon name="close" size="14" style="padding-right: 4px;" />
+							<Icon name="close" size="14" style="padding-right: 4px" />
 							Clear logs
 						</Flex>
 					</DropdownItem>
@@ -505,18 +580,8 @@ onBeforeUnmount(() => {
 			</Dropdown>
 		</Flex>
 
-		<Flex
-			v-if="showScrollBtn"
-			@click="scrollToBottom"
-			align="center"
-			:class="$style.scroll_btn"
-		>
-			<Icon
-				name="arrow-right"
-				size="24"
-				rotate="90"
-				color="tertiary"
-			/>
+		<Flex v-if="showScrollBtn" @click="scrollToBottom" align="center" :class="$style.scroll_btn">
+			<Icon name="arrow-right" size="24" rotate="90" color="tertiary" />
 		</Flex>
 
 		<div ref="editorRef" :class="$style.logs_viewer" />
@@ -559,7 +624,7 @@ onBeforeUnmount(() => {
 
 	&:hover {
 		border-color: var(--txt-tertiary);
-		
+
 		* {
 			color: var(--txt-primary);
 			fill: var(--txt-primary);
@@ -574,7 +639,6 @@ onBeforeUnmount(() => {
 		* {
 			fill: var(--blue);
 		}
-		
 	}
 }
 

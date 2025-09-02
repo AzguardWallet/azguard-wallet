@@ -1,22 +1,22 @@
-import { Fr } from '@aztec/foundation/fields';
-import { FunctionSelector } from '@aztec/stdlib/abi';
-import type { AuthWitness } from '@aztec/stdlib/auth-witness';
-import { AztecAddress } from '@aztec/stdlib/aztec-address';
-import type { CompleteAddress } from '@aztec/stdlib/contract';
-import type { PXE } from '@aztec/stdlib/interfaces/client';
-import type { Capsule, HashedValues, TxExecutionRequest } from '@aztec/stdlib/tx';
+import { Fr } from "@aztec/foundation/fields";
+import { FunctionSelector } from "@aztec/stdlib/abi";
+import type { AuthWitness } from "@aztec/stdlib/auth-witness";
+import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import type { CompleteAddress } from "@aztec/stdlib/contract";
+import type { PXE } from "@aztec/stdlib/interfaces/client";
+import type { Capsule, HashedValues, TxExecutionRequest } from "@aztec/stdlib/tx";
 
-export * from './azguard-v0';
+export * from "./azguard-v0";
 
 export interface IAccountContract {
-    readonly address: AztecAddress,
+    readonly address: AztecAddress;
 
     ensureRegistered(pxe: PXE): Promise<void>;
 
     getCompleteAddress(): Promise<CompleteAddress>;
 
     buildAuthWitness(messageHash: Fr): Promise<AuthWitness>;
-    
+
     buildTxExecutionRequest(
         pxe: PXE,
         setup: AzguardFunctionCall[],
@@ -45,10 +45,10 @@ export class AzguardFunctionCall {
             this.args_hash,
             new Fr(this.is_public),
             new Fr(this.is_static),
-        ]
+        ];
     }
 
     public static empty(): AzguardFunctionCall {
-        return new AzguardFunctionCall(AztecAddress.zero(), FunctionSelector.empty(), Fr.zero(), false, false); 
+        return new AzguardFunctionCall(AztecAddress.zero(), FunctionSelector.empty(), Fr.zero(), false, false);
     }
 }

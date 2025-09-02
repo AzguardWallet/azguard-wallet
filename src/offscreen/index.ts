@@ -1,26 +1,29 @@
-import { LogLevel, LogOrigin } from "@/wallet/services/logger/client/models"
+import { ServiceCollection } from "@/wallet/base";
+import { consoleMethods, LogLevel } from "@/wallet/logger";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
-import { PxeService } from "@/wallet/services/pxe";
+import { PxeService } from "@/wallet/services/pxe/service";
+import { getErrorData } from "@/wallet/utils/errors";
 import { OFFSCREEN_READY_MESSAGE } from "@/wallet/utils/offscreen";
 
-const loggerService = new LoggerServiceClient()
-function patchConsoleMethods() {
-    for (const level of Object.values(LogLevel)) {
-        const cbName = `on${level}`;
-
-        (window as any)[cbName] = (...args: any[]) => {
-            loggerService.addLog(
-                level,
-                args,
-                "pxe",
-                LogOrigin.OF
-            );
-        };
-    }
+// catch console
+const logger = new LoggerServiceClient();
+for (const [method, level] of consoleMethods) {
+    (self as any)[`on${method}`] = (...args: any[]) => {
+        logger.log("pxe", level, ...args);
+    };
 }
-patchConsoleMethods()
 
-const pxeService = new PxeService();
-pxeService.start();
+// catch unhandled errors
+self.onunhandledrejection = (e: PromiseRejectionEvent) => {
+    logger.log("pxe", LogLevel.Error, getErrorData(e.reason));
+};
 
+// run services
+const services = new ServiceCollection();
+services.add(new PxeService());
+services.start();
+
+// notify bg
 chrome.runtime.sendMessage(OFFSCREEN_READY_MESSAGE);
+
+export {};

@@ -1,7 +1,7 @@
 import type { Fr } from "@aztec/foundation/fields";
 import type { Gas } from "@aztec/stdlib/gas";
-import type { IAction } from "@/wallet/services/execution/client";
-import type { FpcInfo } from "./client";
+import type { IAction } from "@/wallet/services/execution/spec";
+import type { FpcInfo } from "./spec";
 import type { IFpcHandler } from "./handlers";
 
 export class Fpc {

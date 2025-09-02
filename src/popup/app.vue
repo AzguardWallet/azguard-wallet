@@ -9,11 +9,11 @@ import GlobalLoader from "@/components/ui/GlobalLoader.vue"
 import { getChainPosition } from "@/components/ui/utils"
 import { managers, initTokenService, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"
+import { Config } from "@/wallet/config"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
-import { SettingServiceClient } from "@/wallet/services/settings/client"
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -23,7 +23,7 @@ const popupStore = usePopupStore()
 
 /** Update theme */
 const root = document.querySelector("html")
-const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
+const theme = ref(new Config().theme)
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", event => {
 	if (theme.value === "system") root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
 })
@@ -33,7 +33,9 @@ import LogoIcon from "@/assets/logo.svg?raw"
 const route = useRoute()
 const router = useRouter()
 
-let settingService = null
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(applySetting)
+
 const intervalId = ref(null)
 
 const settingHandlers = {
@@ -80,13 +82,13 @@ const initNetworks = async () => {
 }
 
 const initAccount = async () => {
-	managers.account = new AccountServiceClient(appStore.profile, appStore.network)
-	appStore.accounts = await managers.account.getAccounts(true)
+	managers.account = new AccountServiceClient()
+	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 	/** temp */
 	if (!appStore.accounts.length) {
-		await managers.account.createAccount(AccountType.Azguard_v0, "Account")
-		appStore.accounts = await managers.account.getAccounts(true)
+		await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Azguard_v0, "Account")
+		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 	}
 
 	await appStore.setupActiveAccount()
@@ -96,13 +98,11 @@ const initAccount = async () => {
 const uploadDappSessions = async () => {
 	appStore.dappSessions = await managers.dappSession.getDappSessions()
 }
-const dappSessionServiceClient = new DappSessionServiceClient(
-	undefined,
-	undefined,
-	uploadDappSessions,
-	uploadDappSessions,
-	uploadDappSessions,
-)
+const dappSessionServiceClient = new DappSessionServiceClient()
+dappSessionServiceClient.onDappSessionAdded.add(uploadDappSessions)
+dappSessionServiceClient.onDappSessionDeleted.add(uploadDappSessions)
+dappSessionServiceClient.onDappSessionUpdated.add(uploadDappSessions)
+dappSessionServiceClient.connect()
 
 /** todo: ref */
 watch(
@@ -125,12 +125,12 @@ watch(
 
 		appStore.syncNetworkStatus()
 
-		managers.account = new AccountServiceClient(appStore.profile, appStore.network)
-		appStore.accounts = await managers.account.getAccounts(true)
+		managers.account = new AccountServiceClient()
+		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 		if (!appStore.accounts.length) {
-			await managers.account.createAccount(AccountType.Azguard_v0, "Account")
-			appStore.accounts = await managers.account.getAccounts(true)
+			await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Azguard_v0, "Account")
+			appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 			await appStore.setupActiveAccount()
 
 			initTokenService({
@@ -159,8 +159,8 @@ watch(
 )
 
 const loadProfile = async () => {
-	// TODO: set event handlers in client's constructor instead
-	managers.profile.onActiveProfileChanged = async profile => {
+	// TODO: make sure to not add duplicated listeners
+	managers.profile.onActiveProfileChanged.add(async profile => {
 		if (profile) {
 			appStore.profile = profile
 
@@ -177,7 +177,7 @@ const loadProfile = async () => {
 			appStore.isLogined = false
 			router.push("/popup/auth")
 		}
-	}
+	})
 
 	appStore.profiles = await managers.profile.getProfiles()
 	const activeProfile = await managers.profile.getActiveProfile()
@@ -227,8 +227,7 @@ const loadProfile = async () => {
 onBeforeMount(async () => {
 	await router.isReady()
 
-	settingService = new SettingServiceClient(undefined, undefined, applySetting)
-	const settings = await settingService.getSettings()
+	const settings = await configService.getProps()
 	settings.forEach(applySetting)
 
 	loadProfile()
@@ -238,7 +237,7 @@ onMounted(async () => {
 	/** DevTools Warnings -> Logo + Scam Prevention */
 	const svgDataUrl = `data:image/svg+xml;base64,${btoa(LogoIcon)}`
 
-	console.log(
+	console._log(
 		"%c ",
 		`
 			background-image: url(${svgDataUrl});
@@ -254,12 +253,12 @@ onMounted(async () => {
 	const styleTitle = "color: #fff; font-family: sans-serif; font-size: 10em;"
 	const styleText =
 		"color: #fff; font-family: sans-serif; font-size: 2em; padding: 40px; border-radius: 24px; border: 2px solid orange; background: #1f1f1f; line-height: 160%"
-	console.log("%cHold up!", styleTitle)
-	console.log(
+	console._log("%cHold up!", styleTitle)
+	console._log(
 		"%cIf someone asks you to do something in this interface (DevTools), 100% they are trying to scam you. If you don't know what you are doing, close this window (cross in the upper right corner).",
 		styleText,
 	)
-	console.log("%cYou can report a scam through the form: https://azguardwallet.io/forms/report-scam", styleText)
+	console._log("%cYou can report a scam through the form: https://azguardwallet.io/forms/report-scam", styleText)
 	/****************** */
 
 	intervalId.value = window.setInterval(() => {
@@ -291,9 +290,7 @@ watch(
 
 onBeforeUnmount(() => {
 	clearInterval(intervalId)
-	// if (settingService) {
-		settingService.dispose()
-	// }
+	configService.disconnect()
 })
 </script>
 

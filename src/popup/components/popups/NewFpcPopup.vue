@@ -131,10 +131,10 @@ watch(
 	() => props.show,
 	async () => {
 		if (!props.show) {
-			fpcService.dispose()
+			fpcService.disconnect()
 			fpcService = null
 			fpcs.value = []
-			tokenBalanceService.dispose()
+			tokenBalanceService.disconnect()
 			tokenBalanceService = null
 			balances.value = []
 			selectedFpcType.value = null
@@ -143,9 +143,15 @@ watch(
 
 			document.removeEventListener("keydown", onKeydown)
 		} else {
-			fpcService = new FpcServiceClient(undefined, undefined, onFpcAdded, onFpcUpdated, onFpcDeleted)
+			fpcService = new FpcServiceClient()
+			fpcService.onFpcAdded.add(onFpcAdded)
+			fpcService.onFpcDeleted.add(onFpcDeleted)
+			fpcService.onFpcUpdated.add(onFpcUpdated)
 			fpcs.value = await fpcService.getFpcs(appStore.network.chainId)
-			tokenBalanceService = new TokenBalanceServiceClient(undefined, undefined, onBalanceAdded, undefined, onBalanceDeleted)
+
+			tokenBalanceService = new TokenBalanceServiceClient()
+			tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
+			tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
 			balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
 
 			document.addEventListener("keydown", onKeydown)

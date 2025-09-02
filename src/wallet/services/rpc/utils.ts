@@ -1,4 +1,4 @@
-import { DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/client";
+import { DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/spec";
 import {
     OperationKind,
     ActionKind,
@@ -27,7 +27,7 @@ import {
     EncodedCallAuthwitContent,
     IntentAuthwitContent,
     MessageHashAuthwitContent,
-} from "@/wallet/services/dapp-interaction/types";
+} from "@/wallet/services/dapp-interaction/spec";
 import { RpcEvent /*, RpcMethod*/ } from "./types";
 
 export function parseConnectionParams(data: any): ConnectionParams {
@@ -217,8 +217,7 @@ function parseSimulateViewsOperation(data: any): SimulateViewsOperation {
     return {
         kind: OperationKind.SimulateViews,
         account: parseAccountProp(data, "account"),
-        calls: parseArrayProp(data, "calls", parseAction)
-            .filter(x => x.kind === "call" || x.kind === "encoded_call"),
+        calls: parseArrayProp(data, "calls", parseAction).filter(x => x.kind === "call" || x.kind === "encoded_call"),
     };
 }
 

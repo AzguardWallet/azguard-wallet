@@ -20,13 +20,15 @@ function onActiveProfileChanged(profile) {
 }
 
 function onClose() {
-	profileService.dispose()
+	profileService.disconnect()
 	profileService = null
 	appStore.loggerWindowId = null
 }
 
 onMounted(() => {
-	profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, onActiveProfileChanged)
+	profileService = new ProfileServiceClient()
+	profileService.onActiveProfileChanged.add(onActiveProfileChanged)
+	profileService.connect()
 	window.addEventListener("beforeunload", onClose)
 })
 

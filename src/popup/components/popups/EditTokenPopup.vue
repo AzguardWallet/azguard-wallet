@@ -77,7 +77,7 @@ const handleSaveToken = async () => {
 	isUpdatingTokenInterface.value = true
 
 	try {
-		const updatedToken = await managers.token.updateToken(cacheStore.tokenToEditIdx, rawToken.value)
+		const updatedToken = await managers.token.updateToken(appStore.profile.id, appStore.network.id, appStore.account.address, cacheStore.tokenToEditIdx, rawToken.value)
 
 		const updatedTokenIdx = appStore.tokens.findLastIndex(t => t.id == cacheStore.tokenToEditIdx)
 		appStore.tokens[updatedTokenIdx] = updatedToken
@@ -108,7 +108,7 @@ watch(
 		} else {
 			try {
 				isAwaitingTokenInterface.value = true
-				const tokenInterface = await managers.token.getInterface(cacheStore.tokenToEditIdx)
+				const tokenInterface = await managers.token.getTokenInterface(appStore.network.id, cacheStore.tokenToEditIdx)
 
 				rawToken.value = { ...tokenInterface }
 				rawTokenForReset.value = { ...tokenInterface }

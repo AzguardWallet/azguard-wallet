@@ -11,9 +11,9 @@
 import { checkNotificationsForShow } from "@/composables/notification"
 
 /** Utils */
+import { Config } from "@/wallet/config"
 import { AccountServiceClient } from "@/wallet/services/account/client"
-import { SettingServiceClient } from "@/wallet/services/settings/client"
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { initTokenService, initTransactionService, managers } from "@/utils/core"
 import { sleep } from "@/wallet/utils"
 
@@ -29,9 +29,12 @@ if (appStore.isLogined) {
 	router.go(-1)
 }
 
-const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
-const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.appearance?.sidePanel)
-let settingService = null
+const defaultConfig = new Config()
+const theme = ref(defaultConfig.theme)
+const isSidePanelEnabled = ref(defaultConfig.sidePanel)
+
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(onSettingUpdate)
 
 const inputElement = useTemplateRef("inputElement")
 const password = ref("")
@@ -74,7 +77,7 @@ const handleUnlockWallet = async () => {
 		password.value = ""
 
 		appStore.profile = activeProfile
-		managers.account = new AccountServiceClient(appStore.profile, appStore.network)
+		managers.account = new AccountServiceClient()
 
 		initTokenService({
 			profile: appStore.profile,
@@ -111,7 +114,7 @@ function onSettingUpdate(setting) {
 async function handleSwitchTheme () {
 	try {
 		const newTheme = theme.value === "dark" ? "light" : "dark"
-		await settingService.updateSetting("theme", newTheme)
+		await configService.setValue("theme", newTheme)
 		theme.value = newTheme
 	} catch (err) {
 		console.error(`Failed theme updating ${err}`);
@@ -120,7 +123,7 @@ async function handleSwitchTheme () {
 
 async function handleSwitchAppView () {
 	try {
-		await settingService.updateSetting("sidePanel", !isSidePanelEnabled.value)
+		await configService.setValue("sidePanel", !isSidePanelEnabled.value)
 		isSidePanelEnabled.value = !isSidePanelEnabled.value
 		if (isSidePanelEnabled.value) {
 			const currentWindow = await chrome.windows.getCurrent()
@@ -138,13 +141,13 @@ async function handleSwitchAppView () {
 onMounted(async () => {
 	inputElement.value.inputEl.focus()
 
-	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
-	theme.value = (await settingService.getSetting("theme"))?.value
-	isSidePanelEnabled.value = (await settingService.getSetting("sidePanel"))?.value
+	theme.value = await configService.getValue("theme")
+	isSidePanelEnabled.value = await configService.getValue("sidePanel")
 
 	document.addEventListener("keydown", onKeydown)
 })
 onBeforeUnmount(() => {
+	configService.disconnect()
 	document.removeEventListener("keydown", onKeydown)
 })
 

@@ -25,13 +25,18 @@ function onActiveProfileChanged(profile) {
 }
 
 function onClose() {
-	profileService.dispose()
+	profileService.disconnect()
 	profileService = null
 }
 
 onMounted(async () => {
-	payload.value = await new DappInteractionServiceClient().getInteractionPayload(requestId)
-	profileService = new ProfileServiceClient(undefined, undefined, undefined, undefined, undefined, onActiveProfileChanged)
+	const client = new DappInteractionServiceClient()
+	payload.value = await client.getInteractionPayload(requestId)
+	client.disconnect()
+
+	profileService = new ProfileServiceClient()
+	profileService.onActiveProfileChanged.add(onActiveProfileChanged)
+	await profileService.connect()
 	
 	window.addEventListener("beforeunload", onClose)
 })

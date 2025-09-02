@@ -16,23 +16,23 @@ const onDisconnected = () => {
 	isBackgroundConnected.value = false
 }
 
-const profileService = new ProfileServiceClient(onConnected, onDisconnected)
+const profileService = new ProfileServiceClient()
+profileService.onConnected.add(onConnected)
+profileService.onDisconnected.add(onDisconnected)
+profileService.connect()
 const walletConnectService = new WalletConnectServiceClient()
+walletConnectService.connect()
 const dappSessionSevice = new DappSessionServiceClient()
+dappSessionSevice.connect()
 const balanceService = new TokenBalanceServiceClient()
+balanceService.connect()
 const accountStateClientService = new AccountStateServiceClient()
+accountStateClientService.connect()
 
 const faucetService = new FaucetServiceClient()
-const executionService = new ExecutionServiceClient(
-	null,
-	null,
-	tx => {
-		// console.log(tx)
-	},
-	tx => {
-		// console.log(tx)
-	},
-)
+faucetService.connect()
+const executionService = new ExecutionServiceClient()
+executionService.connect()
 
 export const managers = {
 	profile: profileService,
@@ -49,25 +49,23 @@ export const managers = {
 
 export const initTokenService = ({ profile, network, account, onTokenAdded, onTokenUpdated, onTokenDeleted }) => {
 	try {
-		if (managers.token) managers.token.dispose()
-		managers.token = new TokenServiceClient(
-			profile,
-			network,
-			account,
-			null,
-			null,
-			onTokenAdded,
-			onTokenUpdated,
-			onTokenDeleted,
-		)
+		if (managers.token) managers.token.disconnect()
+		managers.token = new TokenServiceClient()
+		managers.token.onTokenAdded.add(onTokenAdded)
+		managers.token.onTokenDeleted.add(onTokenDeleted)
+		managers.token.onTokenUpdated.add(onTokenUpdated)
+		managers.token.connect()
 	} catch (error) {
 		console.error(error)
 	}
 }
 
 export const initTransactionService = (onTransactionAdded, onTransactionUpdated) => {
-	if (managers.transaction) managers.transaction.dispose()
-	managers.transaction = new TransactionServiceClient(null, null, onTransactionAdded, onTransactionUpdated)
+	if (managers.transaction) managers.transaction.disconnect()
+	managers.transaction = new TransactionServiceClient()
+	managers.transaction.onTransactionAdded.add(onTransactionAdded)
+	managers.transaction.onTransactionUpdated.add(onTransactionUpdated)
+	managers.transaction.connect()
 }
 
 const sentinelPath = "azguard:ui:sentinel"

@@ -15,7 +15,7 @@ export default {
 		default_popup: "src/popup/index.html#/popup/general",
 	},
 	background: {
-		service_worker: "src/background/index.ts",
+		service_worker: "src/wallet/index.ts",
 		type: "module",
 	},
 	side_panel: {

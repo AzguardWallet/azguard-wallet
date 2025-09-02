@@ -11,8 +11,8 @@
 import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
 
 /** Utils */
-import { SettingServiceClient } from "@/wallet/services/settings/client"
-import { DEFAULT_SETTINGS } from "@/wallet/services/settings/defaults"
+import { Config } from "@/wallet/config"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -20,9 +20,12 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
-const theme = ref(DEFAULT_SETTINGS?.appearance?.theme || "dark")
-const isSidePanelEnabled = ref(DEFAULT_SETTINGS?.appearance?.sidePanel)
-let settingService = null
+const defaultConfig = new Config()
+const theme = ref(defaultConfig.theme)
+const isSidePanelEnabled = ref(defaultConfig.sidePanel)
+
+const configService = new ConfigServiceClient()
+configService.onUpdate.add(onSettingUpdate)
 
 function onSettingUpdate(setting) {
 	if (setting.key === "theme") {
@@ -42,7 +45,7 @@ const handleOpen = target => {
 async function handleSwitchTheme () {
 	try {
 		const newTheme = theme.value === "dark" ? "light" : "dark"
-		await settingService.updateSetting("theme", newTheme)
+		await configService.setValue("theme", newTheme)
 		theme.value = newTheme
 	} catch (err) {
 		console.error(`Failed theme updating ${err}`);
@@ -51,7 +54,7 @@ async function handleSwitchTheme () {
 
 async function handleSwitchAppView () {
 	try {
-		await settingService.updateSetting("sidePanel", !isSidePanelEnabled.value)
+		await configService.setValue("sidePanel", !isSidePanelEnabled.value)
 		isSidePanelEnabled.value = !isSidePanelEnabled.value
 		if (isSidePanelEnabled.value) {
 			const currentWindow = await chrome.windows.getCurrent()
@@ -67,14 +70,13 @@ async function handleSwitchAppView () {
 	}
 }
 
-onMounted(async () => {
-	settingService = new SettingServiceClient(undefined, undefined, onSettingUpdate)
-	theme.value = (await settingService.getSetting("theme"))?.value
-	isSidePanelEnabled.value = (await settingService.getSetting("sidePanel"))?.value
+onMounted(async () => {	
+	theme.value = await configService.getValue("theme")
+	isSidePanelEnabled.value = await configService.getValue("sidePanel")
 })
 
 onBeforeUnmount(() => {
-	settingService.dispose()
+	configService.disconnect()
 })
 </script>
 

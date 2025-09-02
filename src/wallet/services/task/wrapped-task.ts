@@ -1,6 +1,6 @@
-import { TaskService } from "./index";
-import { ITaskContent, ITaskResult, EmptyResult, TaskStatus, Task } from "./client/models";
-import { TxOrigin } from "@/wallet/services/transaction/client";
+import { TxOrigin } from "@/wallet/services/transaction/spec";
+import { getErrorMessage } from "@/wallet/utils/errors";
+import { TaskService, ITaskContent, ITaskResult, EmptyResult, TaskStatus, Task } from "./service";
 
 export class WrappedTask {
     constructor(
@@ -26,7 +26,7 @@ export class WrappedTask {
     }
 
     public fail(error: unknown): void {
-        this.taskService.failTask(this.id, (error as Error)?.message ?? (error as string) ?? "Unknown error");
+        this.taskService.failTask(this.id, getErrorMessage(error));
     }
 
     public cancel(): void {
@@ -34,7 +34,7 @@ export class WrappedTask {
     }
 
     public get task(): Task {
-        return this.taskService.getTask(this.id);
+        return this.taskService.getTaskSync(this.id);
     }
 
     public get status(): TaskStatus {

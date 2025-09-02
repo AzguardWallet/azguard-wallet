@@ -1,12 +1,12 @@
-import { storage, type StorageArea, StorageType } from ".";
+import { StorageType } from ".";
 
 export class EntityStorage<T> {
-    private readonly storage: StorageArea;
+    private readonly storage: chrome.storage.StorageArea;
     private readonly root: string;
 
     constructor(root: string, type: StorageType = StorageType.Local) {
         this.root = root;
-        this.storage = type === StorageType.Local ? storage.local : storage.session;
+        this.storage = type === StorageType.Local ? chrome.storage.local : chrome.storage.session;
     }
 
     public async getVersion(): Promise<number> {

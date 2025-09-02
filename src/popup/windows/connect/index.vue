@@ -71,8 +71,8 @@ const initAccounts = async () => {
 				set.add(chainId)
 				const network = networks.value.find(x => x.chainId === chainId)
 				if (network) {
-					const accountClient = new AccountServiceClient(profile.value, network)
-					const _accounts = await accountClient.getAccounts(true)
+					const accountClient = new AccountServiceClient()
+					const _accounts = await accountClient.getAccounts(profile.value.id, network.chainId, true)
 					res.push(..._accounts.toSorted((a, b) => a.index - b.index))
 				}
 			}
@@ -181,16 +181,13 @@ const closeWindow = interactionCompleted => {
 	})
 }
 
-const profileService = new ProfileServiceClient(
-	undefined,
-	undefined,
-	undefined,
-	undefined,
-	undefined,
-	onActiveProfileChanged,
-)
+const profileService = new ProfileServiceClient()
+profileService.onActiveProfileChanged.add(onActiveProfileChanged)
+
 const sessionService = new DappSessionServiceClient()
-const interactionService = new DappInteractionServiceClient(undefined, undefined, onInteractionCancelled)
+
+const interactionService = new DappInteractionServiceClient()
+interactionService.onInteractionCancelled.add(onInteractionCancelled)
 
 watch(
 	() => [appStore.profile, appStore.networks],
@@ -211,12 +208,18 @@ onBeforeMount(async () => {
 })
 
 onMounted(async () => {
+	profileService.connect()
+	sessionService.connect()
+	interactionService.connect()
 	await initRequest()
 	await initAccounts()
 	window.addEventListener("beforeunload", reject)
 })
 
 onUnmounted(() => {
+	profileService.disconnect()
+	sessionService.disconnect()
+	interactionService.disconnect()
 	window.removeEventListener("beforeunload", reject)
 })
 

@@ -21,7 +21,7 @@ import {
 	OperationKind,
 } from "@/wallet/services/execution/client"
 import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
-import { TxOrigin, OriginType } from "@/wallet/services/transaction/client"
+import { OriginType } from "@/wallet/services/transaction/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -72,7 +72,8 @@ const init = async () => {
 			// TODO: redirect to sign in page with preconfigured profile id
 			throw new Error("Sign in with another profile")
 		}
-		const networkClient = new NetworkServiceClient()
+		const accountService = new AccountServiceClient()
+		const networkService = new NetworkServiceClient()
 		const _accounts = []
 		const _operations = []
 		for (const op of payload.value.params.operations) {
@@ -80,7 +81,7 @@ const init = async () => {
 				case OperationKind.RegisterContract:
 				case OperationKind.RegisterSender: {
 					const [_, chainId] = op.chain.split(":")
-					const networks = await networkClient.getNetworks(+chainId)
+					const networks = await networkService.getNetworks(+chainId)
 					if (networks.length === 0) {
 						throw new Error("Network no longer exist")
 					}
@@ -99,12 +100,12 @@ const init = async () => {
 				case OperationKind.SimulateUtility:
 				case OperationKind.SimulateViews: {
 					const [_, chainId, address] = op.account.split(":")
-					const networks = await networkClient.getNetworks(+chainId)
+					const networks = await networkService.getNetworks(+chainId)
 					if (networks.length === 0) {
 						throw new Error("Network no longer exist")
 					}
 					const network = networks.find(x => x.isDefault) || networks[0]
-					const account = await new AccountServiceClient(profile.value, network).getAccount(address)
+					const account = await accountService.getAccount(profile.value.id, network.chainId, address)
 					if (!account) {
 						throw new Error("Account no longer exist")
 					}
@@ -131,6 +132,8 @@ const init = async () => {
 		session.value = payload.value.session
 		operations.value = _operations
 		accounts.value = _accounts
+		accountService.disconnect()
+		networkService.disconnect()
 	} catch (error) {
 		console.error(error)
 		fillError("Something went wrong")
@@ -160,11 +163,11 @@ const approve = async () => {
 	}
 	try {
 		isLoading.value = true
-		await profileService.refreshSession();
-		const results = await executionService.executeOperations(
-			operations.value,
-			new TxOrigin(OriginType.DAPP, session.value.dappMetadata.name ?? "Unknown dapp"),
-		)
+		await profileService.refreshSession()
+		const results = await executionService.executeOperations(operations.value, {
+			type: OriginType.DAPP,
+			name: session.value.dappMetadata.name ?? "Unknown dapp",
+		})
 		interactionService.resolveInteraction(requestId.value, results)
 		closeWindow(true)
 	} catch (error) {
@@ -188,15 +191,12 @@ const closeWindow = interactionCompleted => {
 	})
 }
 
-const profileService = new ProfileServiceClient(
-	undefined,
-	undefined,
-	undefined,
-	undefined,
-	undefined,
-	onActiveProfileChanged,
-)
-const interactionService = new DappInteractionServiceClient(undefined, undefined, onInteractionCancelled)
+const profileService = new ProfileServiceClient()
+profileService.onActiveProfileChanged.add(onActiveProfileChanged)
+
+const interactionService = new DappInteractionServiceClient()
+interactionService.onInteractionCancelled.add(onInteractionCancelled)
+
 const executionService = new ExecutionServiceClient()
 
 onBeforeMount(async () => {
@@ -211,11 +211,17 @@ onBeforeMount(async () => {
 })
 
 onMounted(async () => {
+	profileService.connect()
+	interactionService.connect()
+	executionService.connect()
 	await init()
 	window.addEventListener("beforeunload", reject)
 })
 
 onUnmounted(() => {
+	profileService.disconnect()
+	interactionService.disconnect()
+	executionService.disconnect()
 	window.removeEventListener("beforeunload", reject)
 })
 
