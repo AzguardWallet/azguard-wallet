@@ -46,6 +46,17 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     protected async init() {
+        // TODO: remove this at some point
+        // migration
+        const entries = await this.profiles.getAll();
+        if (entries.some(x => x[0] !== x[1].id)) {
+            this.logInfo("Migrate profiles");
+            for (const [id, profile] of entries) {
+                profile.id = id;
+                await this.profiles.set(id, profile);
+            }
+        }
+
         const session = await this.session.get();
         if (!session) {
             return;

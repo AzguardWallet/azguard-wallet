@@ -3,7 +3,7 @@ import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
-import { EntityStorage, StorageType } from "@/wallet/storage";
+import { EntityStorage, StorageType, ValueStorage } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
@@ -33,6 +33,19 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
         this.profileService = services.get(ProfileService.name);
         this.profileService.onActiveProfileChanged.add(this.onActiveProfileChanged);
         this.profileService.onProfileDeleted.add(this.onProfileDeleted);
+
+        // TODO: remove this at some point
+        // migration
+        const entries = await this.storage.getAll();
+        if (entries.some(x => x[0] !== x[1].id)) {
+            this.logInfo("Migrate networks");
+            for (const [id, network] of entries) {
+                network.id = id;
+                await this.storage.set(id, network);
+            }
+            await (new ValueStorage("azguard:core:networks", StorageType.Local)).delete();
+            await (new ValueStorage("azguard:core:dappSessions", StorageType.Local)).delete();
+        }
     }
 
     public async getOrInitNetworks(): Promise<Network[]> {
