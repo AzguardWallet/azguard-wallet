@@ -74,8 +74,31 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     public constructor() {
         super(PXE_SERVICE_NAME, new LoggerServiceClient());
+    }
+
+    protected async init() {
+        // delete orhpan PXE DBs
+        const dbs = await indexedDB.databases();
+        const pxes = dbs.filter(x => x.name?.startsWith("pxe/"));
+        if (pxes.length) {
+            const profiles = await this.profiles.getProfiles();
+            for (let i = pxes.length - 1; i >= 0; i--) {
+                if (!profiles.some(x => pxes[i].name!.startsWith(`pxe/${x.id}/`))) {
+                    const _ = indexedDB.deleteDatabase(pxes[i].name!);
+                    pxes.splice(i, 1);
+                }
+            }
+            if (!pxes.length) {
+                const keyval = dbs.find(x => x.name === "keyval-store")
+                if (keyval) {
+                    const _ = indexedDB.deleteDatabase(keyval.name!);
+                }
+            }
+        }
+        
         this.profiles.onProfileDeleted.add(this.onProfileDeleted);
         this.profiles.onActiveProfileChanged.add(this.onActiveProfileChanged);
+        const _ = this.profiles.connect();
     }
 
     public async getContractClassMetadata(network: Network, id: Fr): Promise<ContractClassMetadata> {
