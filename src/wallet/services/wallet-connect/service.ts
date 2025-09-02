@@ -14,6 +14,7 @@ import {
 } from "@/wallet/services/dapp-interaction/service";
 import { AzguardWalletInfo, RpcMethod } from "@/wallet/services/rpc/types";
 import { parseExecutionParams, parseConnectionParams } from "@/wallet/services/rpc/utils";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { sleep } from "@/wallet/utils/sleep";
 import { Methods, WALLET_CONNECT_SERVICE_NAME } from "./spec";
 
@@ -75,7 +76,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
                 this.logDebug("Wallet connect service initialized");
                 break;
             } catch (error) {
-                this.logError("Failed to initialize wallet connect service. Retry...", error);
+                this.logError("Failed to initialize wallet connect service. Retry...", getErrorMessage(error));
                 await sleep(1000);
             }
         }
@@ -141,7 +142,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
             });
             dappSession = await this.dappInteractions.connect(params, payload.params.id.toString());
         } catch (error) {
-            this.logDebug("WC: session proposal rejected", error);
+            this.logDebug("WC: session proposal rejected", getErrorMessage(error));
             this.rejectSession(payload.id);
             return;
         }
@@ -158,7 +159,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
                 ),
             });
         } catch (error) {
-            this.logDebug("WC: session approval failed", error);
+            this.logDebug("WC: session approval failed", getErrorMessage(error));
             this.dappSessions.deleteDappSession(dappSession.id);
             this.rejectSession(payload.id);
             return;
@@ -167,7 +168,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
         try {
             await this.dappSessions.upgradeDappSession(dappSession.id, wcSession.topic, wcSession.expiry * 1000);
         } catch (error) {
-            this.logDebug("WC: session upgrade failed", error);
+            this.logDebug("WC: session upgrade failed", getErrorMessage(error));
             this.dappSessions.deleteDappSession(dappSession.id);
             this.disconnectSession(wcSession.topic);
             return;
@@ -212,8 +213,9 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
                 }
             }
         } catch (error) {
-            this.logDebug("WC: session request failed", error);
-            this.rejectRequest(payload, (error as Error)?.message ?? (error as string) ?? "Unknown error");
+            const errorMessage = getErrorMessage(error);
+            this.logDebug("WC: session request failed", errorMessage);
+            this.rejectRequest(payload, errorMessage);
         }
     };
 
@@ -300,7 +302,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
                 });
             }
         } catch (error) {
-            this.logError("Failed to update WC session", error);
+            this.logError("Failed to update WC session", getErrorMessage(error));
         }
     };
 
@@ -318,7 +320,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
                 });
             }
         } catch (error) {
-            this.logError("Failed to disconnect WC session", error);
+            this.logError("Failed to disconnect WC session", getErrorMessage(error));
         }
     };
 

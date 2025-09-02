@@ -1,4 +1,5 @@
 import { TxOrigin } from "@/wallet/services/transaction/spec";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { TaskService, ITaskContent, ITaskResult, EmptyResult, TaskStatus, Task } from "./service";
 
 export class WrappedTask {
@@ -25,7 +26,7 @@ export class WrappedTask {
     }
 
     public fail(error: unknown): void {
-        this.taskService.failTask(this.id, (error as Error)?.message ?? (error as string) ?? "Unknown error");
+        this.taskService.failTask(this.id, getErrorMessage(error));
     }
 
     public cancel(): void {

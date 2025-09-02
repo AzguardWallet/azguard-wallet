@@ -54,6 +54,7 @@ import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { Network } from "@/wallet/services/network/client";
 import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/client";
 import { Lock } from "@/wallet/utils";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
 
 export * from "./spec";
@@ -354,7 +355,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             }
             return await ContractArtifactSchema.parseAsync(artifact);
         } catch (error: unknown) {
-            this.logError("Failed to parse artifact from registry", error);
+            this.logError("Failed to parse artifact from registry", getErrorMessage(error));
             return undefined;
         }
     }
@@ -370,7 +371,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             }
             return await ContractInstanceWithAddressSchema.parseAsync(instance);
         } catch (error: unknown) {
-            this.logError("Failed to parse instance from registry", error);
+            this.logError("Failed to parse instance from registry", getErrorMessage(error));
             return undefined;
         }
     }
@@ -383,12 +384,14 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         try {
             const data = await fetch(`${registryUrl}${path}`);
             if (!data.ok) {
-                this.logDebug("Failed to get artifact from public registry", data.status, data.statusText);
+                if (data.status !== 404) {
+                    this.logDebug("Failed to get artifact from public registry", data.status, data.statusText);
+                }
                 return undefined;
             }
             return await data.json();
         } catch (error: unknown) {
-            this.logError("Failed to get artifact from public registry", error);
+            this.logError("Failed to get artifact from public registry", getErrorMessage(error));
             return undefined;
         }
     }

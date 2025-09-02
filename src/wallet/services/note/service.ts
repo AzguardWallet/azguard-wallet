@@ -7,6 +7,7 @@ import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { NetworkService, Network } from "@/wallet/services/network/service";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, Note, NOTE_SERVICE_NAME } from "./spec";
 
 export * from "./spec";
@@ -44,7 +45,7 @@ export class NoteService extends Service<Methods> implements ServiceSpec<Methods
             }
             return res;
         } catch (error) {
-            this.logError("Failed to fetch incoming notes", error);
+            this.logError("Failed to fetch incoming notes", getErrorMessage(error));
             throw new Error("PXE request failed");
         }
     }
@@ -109,11 +110,7 @@ export class NoteService extends Service<Methods> implements ServiceSpec<Methods
                 content,
             };
         } catch (error) {
-            this.logError(
-                "Failed to parse note",
-                (error as Error)?.message ?? (error as string) ?? "unknown error",
-                note,
-            );
+            this.logError("Failed to parse note", note, getErrorMessage(error));
             return {
                 contract: note.contractAddress.toString(),
                 storageSlot: note.storageSlot.toString(),

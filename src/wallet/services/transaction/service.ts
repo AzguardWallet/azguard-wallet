@@ -8,6 +8,7 @@ import { ProfileService } from "@/wallet/services/profile/service";
 import { StepContent, WrappedTask } from "@/wallet/services/task/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { Tx, TRANSACTION_SERVICE_NAME, TxOrigin, TxCall, TxStatus, Methods, Events } from "./spec";
 
@@ -121,7 +122,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                         const end = Date.now();
                         this.logDebug(`Transactions synced in ${end - start}ms`);
                     } catch (error) {
-                        this.logError("Failed to sync transaction status.", error);
+                        this.logError("Failed to sync transaction status.", getErrorMessage(error));
                     }
                 }
             }

@@ -18,9 +18,10 @@ import {
     EncodedCallAction,
     SimulateViewsOperation,
 } from "@/wallet/services/execution/service";
+import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/service";
 import { TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
 import type { ViewFn } from "@/wallet/utils/fn";
-import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/service";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { TOKEN_BALANCE_SERVICE_NAME, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec";
 
 export * from "./spec";
@@ -215,7 +216,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                         this.logDebug(`Token balances synced in ${end - start}ms`);
                     }
                 } catch (error) {
-                    this.logError("Failed to sync token balances.", error);
+                    this.logError("Failed to sync token balances.", getErrorMessage(error));
                 }
             }
             await sleep(1000);
@@ -377,9 +378,8 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
             const stop = Date.now();
             this.logDebug(`Synced in ${stop - start}ms`);
         } catch (error) {
-            this.logError("Failed to sync", error);
-
-            const errorMessage = (error as Error)?.message ?? (error as string) ?? "Sync failed";
+            const errorMessage = getErrorMessage(error);
+            this.logError("Failed to sync", errorMessage);
             for (const tb of tbs) {
                 const taskId = this.pendingTasks.get(tb.id)!;
                 const task = this.taskService.getTaskSync(taskId);

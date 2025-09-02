@@ -65,6 +65,7 @@ import {
 import { ILogger } from "@/wallet/logger";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import {
     EXECUTION_SERVICE_NAME,
     Methods,
@@ -337,9 +338,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 results.push(new OkOperationResult(result));
             } catch (error) {
                 operationTask.fail(error);
-                results.push(
-                    new FailedOperationResult((error as Error)?.message ?? (error as string) ?? "Unknown error"),
-                );
+                results.push(new FailedOperationResult(getErrorMessage(error)));
             }
         }
         return results;
@@ -813,11 +812,15 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 ),
                             );
                         } catch (error) {
-                            this.logError("Failed to decode utility call args", fn.parameters, _call.args, error);
+                            const errorMessage = getErrorMessage(error);
+                            this.logError(
+                                "Failed to decode utility call args",
+                                fn.parameters,
+                                _call.args,
+                                errorMessage,
+                            );
                             throw new Error(
-                                `Failed to decode utility "encoded_call" args: ${
-                                    (error as Error)?.message
-                                }. Try to use "call" instead.`,
+                                `Failed to decode utility "encoded_call" args: ${errorMessage}. Try to use "call" instead.`,
                             );
                         }
                         utility.push([
@@ -890,7 +893,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 try {
                     result.decoded[i] = decodeFromAbiPatched(types, values);
                 } catch (error) {
-                    this.logError("Failed to decode simulation results", types, values, error);
+                    this.logError("Failed to decode simulation results", types, values, getErrorMessage(error));
                 }
             }
         }
@@ -909,7 +912,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     [values], // TODO: change to "ensureArray(values)" when aztec supports multi-type decoding
                 );
             } catch (error) {
-                this.logError("Failed to encode utility simulation results", types, values, error);
+                this.logError("Failed to encode utility simulation results", types, values, getErrorMessage(error));
             }
             result.decoded[i] = values;
         }

@@ -399,7 +399,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 this.emit("onActiveProfileChanged", undefined);
             }
         } catch (error) {
-            this.logError("Failed to close profile session", error);
+            this.logError("Failed to close profile session", getErrorMessage(error));
         }
     }
 
