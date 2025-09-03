@@ -64,8 +64,6 @@ watch(
 
 			profiles.value = []
 		} else {
-			profileService.connect()
-
 			profiles.value = await profileService.getProfiles()
 		}
 	},

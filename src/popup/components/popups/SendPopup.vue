@@ -266,7 +266,6 @@ watch(
 			initSendType()
 			initReceiverType()
 
-			contactService.connect()
 			contacts.value = await contactService.getContacts()
 
 			if (route.params.id) {

@@ -13,8 +13,10 @@ import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const router = useRouter()
@@ -62,6 +64,15 @@ const handleOpenLogs = async () => {
 	const window = await chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
 	appStore.loggerWindowId = window.id
 }
+
+watch(
+	() => cacheStore.menuFailureIndicatorColor,
+	() => {
+		if (cacheStore.menuFailureIndicatorColor) {
+			console.log("cacheStore.menuFailureIndicatorColor ", cacheStore.menuFailureIndicatorColor);			
+		}
+	}
+)
 
 onMounted(async () => {
 	isDeveloperModeEnabled.value = await configService.getValue("developerMode")
@@ -118,7 +129,11 @@ onBeforeUnmount(() => {
 						icon="logs"
 						iconBgColor="var(--gray)"
 						chevron
-					/>
+					>
+						<template v-if="cacheStore.menuFailureIndicatorColor" #dot>
+							<div :class="$style.dot_indicator" :style="{ background: cacheStore.menuFailureIndicatorColor }" />
+						</template>
+					</SettingItem>
 					<SettingItem
 						@click="handleNavigation('/popup/settings')"
 						title="Settings"
@@ -144,5 +159,14 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.dot_indicator {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
 }
 </style>

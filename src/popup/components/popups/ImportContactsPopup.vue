@@ -67,7 +67,7 @@ function handleEditContact(contact) {
 	popupStore.open("edit_contact")
 }
 function handleResolve() {
-	cacheStore.importPromise?.resolve(importContacts.value)
+	cacheStore.importPromise?.resolve(importContacts.value.filter(c => c.selected))
 	emit("onClose")
 }
 function handleReject() {
@@ -93,8 +93,6 @@ watch(
 	() => props.show,
 	async () => {
 		if (props.show) {
-			contactService.connect()
-
 			contacts.value = await contactService.getContacts()
 			contactsByName.value = new Map()
 			contactsByAddress.value = new Map()

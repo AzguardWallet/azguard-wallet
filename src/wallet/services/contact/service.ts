@@ -67,13 +67,14 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
             do { id = getRandomHex(8); }
             while (await this.storage.contains(id));
 
+            const _color = color && contactColors.includes(color) ? color : getRandomElement(contactColors)
             const contact: Contact = {
                 id,
                 profileId: profile.id,
                 name,
                 address,
                 abbr: this._getAbbreviation(name),
-                color: color ?? getRandomElement(contactColors)
+                color: _color
             }
 
             await this.storage.set(contact.id, contact)
@@ -154,70 +155,54 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
         const importedContacts = JSON.parse(data);
         const results: Contact[] = [];
         
-        // const existingContacts  = (await this.storage.getValues()).filter(c => c.profileId === profile.id);
-        // const contactsByAddress = new Map<string, Contact>();
-        // const contactsByName = new Map<string, Contact>();
+        const existingContacts  = (await this.storage.getValues()).filter(c => c.profileId === profile.id);
+        const contactsByAddress = new Map<string, Contact>();
+        const contactsByName = new Map<string, Contact>();
         
-        // existingContacts.forEach(contact => {
-        //     contactsByAddress.set(contact.address, contact);
-        //     contactsByName.set(contact.name, contact);
-        // });
+        existingContacts.forEach(contact => {
+            contactsByAddress.set(contact.address, contact);
+            contactsByName.set(contact.name, contact);
+        });
 
-        // for (const _c of importedContacts) {
-        //     try {
-        //         let contact: Contact;
+        for (const _c of importedContacts) {
+            try {
+                let contact: Contact;
 
-        //         const existingByAddress = contactsByAddress.get(_c.address);
-        //         const existingByName = contactsByName.get(_c.name);
+                const existingByAddress = contactsByAddress.get(_c.address);
+                const existingByName = contactsByName.get(_c.name);
 
-        //         if (existingByAddress) {
-        //             contact = await this.updateContact(
-        //                 existingByAddress.id,
-        //                 _c.name,
-        //                 _c.address
-        //             );
+                if (existingByAddress) {
+                    contact = await this.updateContact(
+                        existingByAddress.id,
+                        _c.name,
+                        _c.address
+                    );
                     
-        //             // this.logDebug(`Updated existing contact by address: ${importedContact.address}`);
-        //         } else if (existingByName) {
-        //             // Если контакт с таким именем уже существует - обновляем его
-        //             contact = await this.updateContact(
-        //                 existingByName.id,
-        //                 importedContact.name,
-        //                 importedContact.address
-        //             );
+                    this.logDebug(`Updated existing contact by address: ${_c.address}`);
+                } else if (existingByName) {
+                    contact = await this.updateContact(
+                        existingByName.id,
+                        _c.name,
+                        _c.address
+                    );
                     
-        //             this.logDebug(`Updated existing contact by name: ${importedContact.name}`);
-        //         } else {
-        //             // Создаем новый контакт
-        //             contact = await this.addContact(
-        //                 importedContact.name,
-        //                 importedContact.address,
-        //                 importedContact.color || this._getRandomColor()
-        //             );
+                    this.logDebug(`Updated existing contact by name: ${_c.name}`);
+                } else {
+                    const _color = _c.color && contactColors.includes(_c.color) ? _c.color : getRandomElement(contactColors)
+                    contact = await this.addContact(
+                        _c.name,
+                        _c.address,
+                        _color
+                    );
                     
-        //             this.logDebug(`Added new contact: ${importedContact.name}`);
-        //         }
+                    this.logDebug(`Added new contact: ${_c.name} - ${_c.address}`);
+                }
 
-        //         if (addresses.includes(_c.address)) {
-        //             const _contact = contacts.find(c => c.address === _c.address);
-        //             await this.storage.set(contactId, newContact);
-        //         } else if (names.includes(_c.name)) {
-        //             contact = contacts.find(c => c.name === _c.name);
-        //         } else {
-        //             contact = await this.addContact(
-        //                 _c.name,
-        //                 _c.address,
-        //                 contactColors.includes(_c.color)
-        //                     ? _c.color
-        //                     : null
-        //             );
-        //         }
-
-        //         results.push(contact!);
-        //     } catch (error) {
-        //         this.logError(`Failed to import contact ${_c.name}`, getErrorMessage(error));
-        //     }
-        // }
+                results.push(contact!);
+            } catch (error) {
+                this.logError(`Failed to import contact ${_c.name} - ${_c.address}`, getErrorMessage(error));
+            }
+        }
         
         return results;
     }

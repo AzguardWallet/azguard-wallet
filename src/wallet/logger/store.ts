@@ -42,7 +42,7 @@ export class LoggerStore implements ILoggerStore {
     private readonly onConfigUpdate = (prop: ConfigProp) => {
         if (prop.key === "debugMode") {
             this.logLevel = prop.value ? LogLevel.Debug : LogLevel.Info;
-            this.logs.resize(this.logLevel === LogLevel.Debug ? 10_000 : 1000);
+            this.logs.resize(this.logLevel === LogLevel.Debug ? 10_000 : 1_000);
         }
     };
 }

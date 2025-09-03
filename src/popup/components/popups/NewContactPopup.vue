@@ -110,7 +110,6 @@ watch(
 
 			document.removeEventListener("keydown", onKeydown)
 		} else {
-			contactService.connect()
 			contacts.value = await contactService.getContacts()
 
 			document.addEventListener("keydown", onKeydown)

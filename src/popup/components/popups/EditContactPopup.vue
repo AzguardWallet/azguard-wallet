@@ -105,10 +105,8 @@ const handleUpdateContact = async () => {
 		} else {
 			await contactService.updateContact(
 				contactToEdit.value.id,
-				{
-					name: nameTerm.value.trim(),
-					address: contactAddressTerm.value,
-				}
+				nameTerm.value.trim(),
+				contactAddressTerm.value,
 			)
 
 			openToast({ label: "Contact is updated" })
@@ -146,8 +144,6 @@ watch(
 
 			document.removeEventListener("keydown", onKeydown)
 		} else {
-			contactService.connect()
-
 			contacts.value = await contactService.getContacts()
 			contactToEdit.value = cacheStore.importContact ? cacheStore.importContact : contacts.value.find(c => c.id === cacheStore.contactToEditIdx)
 			nameTerm.value = contactToEdit.value?.name

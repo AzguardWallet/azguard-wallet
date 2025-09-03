@@ -52,22 +52,27 @@ const slots = defineSlots()
 	>
 		<Flex wide align="center" justify="between" gap="16">
 			<Flex align="center" gap="12" wide>
-				<!-- Icon by prop or slot -->
-				<template v-if="!slots.icon">
-					<Icon
-						v-if="icon && !loading"
-						:name="icon"
-						size="16"
-						:color="iconFillColor"
-						:class="[$style.icon, $style[iconBgColor]]"
-					/>
-					<div v-else-if="icon && loading" :class="$style.icon">
-						<Spinner size="16" color="--txt-primary" />
-					</div>
-				</template>
-				<template v-else>
-					<slot name="icon" />
-				</template>
+				<div :class="$style.icon_wrapper">
+					<!-- Dot -->
+      				<slot name="dot" />
+
+					<!-- Icon by prop or slot -->
+					<template v-if="!slots.icon">
+						<Icon
+							v-if="icon && !loading"
+							:name="icon"
+							size="16"
+							:color="iconFillColor"
+							:class="[$style.icon, $style[iconBgColor]]"
+						/>
+						<div v-else-if="icon && loading" :class="$style.icon">
+							<Spinner size="16" color="--txt-primary" />
+						</div>
+					</template>
+					<template v-else>
+						<slot name="icon" />
+					</template>
+				</div>
 
 				<!-- Labels: Title & Description -->
 				<Flex direction="column" gap="4" wide>
@@ -166,6 +171,13 @@ const slots = defineSlots()
 		cursor: default;
 		background: var(--gray-3);
 	}
+}
+
+.icon_wrapper {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .icon {

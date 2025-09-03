@@ -28,6 +28,8 @@ export const useCacheStore = defineStore("cache", () => {
 	const importContacts = ref([])
     const importPromise = ref(null)
 
+	const menuFailureIndicatorColor = ref()
+
 	return {
 		confirm,
 		networkToEditIdx,
@@ -49,5 +51,6 @@ export const useCacheStore = defineStore("cache", () => {
 		importContact,
 		importContacts,
 		importPromise,
+		menuFailureIndicatorColor,
 	}
 })

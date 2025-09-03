@@ -144,15 +144,13 @@ async function handleImportContacts() {
 
 								try {
 									if (idx === -1) {
-										await contactService.addContact(_c.name, _c.address)
+										await contactService.addContact(_c.name, _c.address, _c.color)
 									} else {
 										const contact = contacts.value[idx]
 										await contactService.updateContact(
 											contact.id,
-											{
-												name: _c.name,
-												address: _c.address,
-											}
+											_c.name,
+											_c.address,
 										)
 									}
 								} catch (err) {
@@ -170,7 +168,7 @@ async function handleImportContacts() {
 									console.error(`Failed to ${e.operation} contact ${e.name} ${e.address}`, e.error);
 								}
 
-								openToast({ label: "Import ended with errors", icon: "waring" })
+								openToast({ label: "Import ended with errors", icon: "warning" })
 							} else {
 								openToast({ label: "Import competed successfully", icon: "info" })
 							}
@@ -200,7 +198,6 @@ async function handleImportContacts() {
 }
 
 onMounted(async () => {
-	contactService.connect()
 	contacts.value = await contactService.getContacts()
 })
 onBeforeUnmount(() => {

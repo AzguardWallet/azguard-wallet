@@ -331,37 +331,6 @@ function updateEditorContent() {
 
 function exportLogsToCSV() {
 	try {
-		const csvContent = [
-			["time", "origin", "source", "level", "args"],
-			...rows
-		].map(row =>
-			row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
-		).join("\n")
-
-		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-		const url = URL.createObjectURL(blob)
-
-		chrome.downloads.download({
-			url,
-			filename: `AzguardWalletLogs_${Math.floor(Date.now() / 1000)}.csv`,
-			saveAs: true,
-		}, () => {
-			if (chrome.runtime.lastError) {
-				console.error("Download failed:", chrome.runtime.lastError.message);
-				openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
-			} else {
-				openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
-			}
-			URL.revokeObjectURL(url)
-		})
-	} catch (err) {
-		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
-		console.error(err);
-	}
-}
-
-function exportLogsToCSV() {
-	try {
 		const rows = logs.value.map(log => {
 			const time = new Date(log.timestamp).toISOString()
 			const source = log.source
