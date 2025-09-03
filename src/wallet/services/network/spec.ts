@@ -77,7 +77,7 @@ export type Events = {
     /** Emitted when a new node is added */
     onNetworkAdded: Network;
     /** Emitted when an existing node is updated */
-    onNetworkUpdatd: Network;
+    onNetworkUpdated: Network;
     /** Emitted when an existing node is deleted */
     onNetworkDeleted: Network;
     /** Emitted when a default node for a given chain is changed */

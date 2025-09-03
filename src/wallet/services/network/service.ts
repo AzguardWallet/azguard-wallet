@@ -15,7 +15,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
     public static name = NETWORK_SERVICE_NAME;
 
     public readonly onNetworkAdded = new EventHandler<Network>();
-    public readonly onNetworkUpdatd = new EventHandler<Network>();
+    public readonly onNetworkUpdated = new EventHandler<Network>();
     public readonly onNetworkDeleted = new EventHandler<Network>();
     public readonly onDefaultNetworkChanged = new EventHandler<Network>();
 
@@ -155,7 +155,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             network.rpcUrl = rpcUrl;
             network.chainId = chainId;
             await this.storage.set(id, network);
-            this.emit("onNetworkUpdatd", network);
+            this.emit("onNetworkUpdated", network);
             return network;
         } finally {
             this.lock.leave();
