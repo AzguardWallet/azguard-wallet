@@ -329,6 +329,20 @@ function updateEditorContent() {
 	})
 }
 
+function scrollToTargetLog(targetLogId) {
+	if (!view) return
+	const idx = logs.value.findIndex(l => l.id === targetLogId)
+	if (idx === -1) return
+
+	const textBefore = formatLogs(logs.value.slice(0, idx))
+	const pos = textBefore.length + 1
+	
+	view.dispatch({
+		effects: EditorView.scrollIntoView(pos, { y: "center" }),
+		selection: { anchor: pos },
+	})
+}
+
 function exportLogsToCSV() {
 	try {
 		const rows = logs.value.map(log => {
@@ -468,9 +482,16 @@ onMounted(async () => {
 		}
 	})
 
-	requestAnimationFrame(() => {
-		scrollToBottom()
-	})
+	const params = new URLSearchParams(window.location.search)
+	const targetLogId = params.get("logId")
+	if (targetLogId) {		
+		scrollToTargetLog(+targetLogId)
+		disableAutoScroll()
+	} else {
+		requestAnimationFrame(() => {
+			scrollToBottom()
+		})
+	}
 })
 
 onBeforeUnmount(() => {

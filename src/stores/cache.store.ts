@@ -28,7 +28,7 @@ export const useCacheStore = defineStore("cache", () => {
 	const importContacts = ref([])
     const importPromise = ref(null)
 
-	const menuFailureIndicatorColor = ref()
+	const failureLog = ref()
 
 	return {
 		confirm,
@@ -51,6 +51,6 @@ export const useCacheStore = defineStore("cache", () => {
 		importContact,
 		importContacts,
 		importPromise,
-		menuFailureIndicatorColor,
+		failureLog,
 	}
 })

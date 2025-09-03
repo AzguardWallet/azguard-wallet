@@ -16,13 +16,16 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
+import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 
 const handleOpenLogs = async () => {
 	if (appStore.loggerWindowId) {
 		try {
 			const win = await chrome.windows.get(appStore.loggerWindowId)
 			chrome.windows.update(win.id, { focused: true })
+			cacheStore.failureLog = null
 			return
 		} catch (error) {
 			appStore.loggerWindowId = null
@@ -30,7 +33,12 @@ const handleOpenLogs = async () => {
 	}
 
 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
+	if (cacheStore.failureLog?.id) {
+		url.searchParams.set("logId", cacheStore.failureLog.id)
+	}
+
 	const window = await chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
+	cacheStore.failureLog = null
 	appStore.loggerWindowId = window.id
 }
 </script>
@@ -56,7 +64,11 @@ const handleOpenLogs = async () => {
 				icon="logs"
 				iconBgColor="var(--gray)"
 				chevron
-			/>
+			>
+				<template v-if="cacheStore.failureLog?.color" #dot>
+					<div :class="$style.dot_indicator" :style="{ background: cacheStore.failureLog.color }" />
+				</template>
+			</SettingItem>
 		</ItemsContainer>
 
 		<ItemsContainer title="Interface">
@@ -109,5 +121,14 @@ const handleOpenLogs = async () => {
 	transform: rotate(-90deg);
 
 	transition: transform 0.2s var(--bezier);
+}
+
+.dot_indicator {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
 }
 </style>

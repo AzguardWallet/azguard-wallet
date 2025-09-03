@@ -54,6 +54,7 @@ const handleOpenLogs = async () => {
 		try {
 			const win = await chrome.windows.get(appStore.loggerWindowId)
 			chrome.windows.update(win.id, { focused: true })
+			cacheStore.failureLog = null
 			return
 		} catch (error) {
 			appStore.loggerWindowId = null
@@ -61,18 +62,14 @@ const handleOpenLogs = async () => {
 	}
 
 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
+	if (cacheStore.failureLog?.id) {
+		url.searchParams.set("logId", cacheStore.failureLog.id)
+	}
+
 	const window = await chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
 	appStore.loggerWindowId = window.id
+	cacheStore.failureLog = null
 }
-
-watch(
-	() => cacheStore.menuFailureIndicatorColor,
-	() => {
-		if (cacheStore.menuFailureIndicatorColor) {
-			console.log("cacheStore.menuFailureIndicatorColor ", cacheStore.menuFailureIndicatorColor);			
-		}
-	}
-)
 
 onMounted(async () => {
 	isDeveloperModeEnabled.value = await configService.getValue("developerMode")
@@ -130,8 +127,8 @@ onBeforeUnmount(() => {
 						iconBgColor="var(--gray)"
 						chevron
 					>
-						<template v-if="cacheStore.menuFailureIndicatorColor" #dot>
-							<div :class="$style.dot_indicator" :style="{ background: cacheStore.menuFailureIndicatorColor }" />
+						<template v-if="cacheStore.failureLog?.color" #dot>
+							<div :class="$style.dot_indicator" :style="{ background: cacheStore.failureLog.color }" />
 						</template>
 					</SettingItem>
 					<SettingItem

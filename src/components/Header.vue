@@ -33,7 +33,7 @@ let headerIndicateTimer = null
 const MENU_INDICATION_DURATION = 60_000
 let menuIndicateTimer = null
 
-function handleWalletFailure(color) {
+function handleWalletFailure(color, logId) {
 	// Header
 	if (headerIndicateTimer) {
 		clearTimeout(headerIndicateTimer)
@@ -52,10 +52,13 @@ function handleWalletFailure(color) {
 		clearTimeout(menuIndicateTimer)
 		menuIndicateTimer = null
 	}
-	cacheStore.menuFailureIndicatorColor = color
+	cacheStore.failureLog = {
+		id: logId,
+		color,
+	}
 
 	menuIndicateTimer = setTimeout(() => {
-		cacheStore.menuFailureIndicatorColor = null
+		cacheStore.failureLog = null
 		menuIndicateTimer = null
 	}, MENU_INDICATION_DURATION)
 }
@@ -63,10 +66,10 @@ function handleWalletFailure(color) {
 function onLogAdded(log) {
 	switch (log.level) {
 		case LogLevel.Warn:
-			handleWalletFailure("var(--yellow)")
+			handleWalletFailure("var(--yellow)", log.id)
 			break;
 		case LogLevel.Error:
-			handleWalletFailure("var(--red)")
+			handleWalletFailure("var(--red)", log.id)
 			break;
 
 		default:
