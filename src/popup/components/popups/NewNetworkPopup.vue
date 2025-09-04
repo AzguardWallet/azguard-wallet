@@ -35,7 +35,7 @@ const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
 const isUrlHasError = ref(false)
 
 const isNameAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value))
-const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value))
+const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value.endsWith("/") ? urlTerm.value.slice(0, -1) : urlTerm.value))
 
 const isAvailableToCreateNetwork = computed(() => {
 	if (!nameTerm.value.length) return

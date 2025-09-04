@@ -67,7 +67,7 @@ const selectedSendType = ref("private")
 const selectedReceiverType = ref("private")
 const initSendType = () => {
 	if (!activeToken.value) return
-	if (activeToken.value.hasPrivateTransfers && activeToken.value.hasPublicTransfers) {
+	if (cacheStore.preselectedBalanceType && activeToken.value.hasPrivateTransfers && activeToken.value.hasPublicTransfers) {
 		selectedSendType.value = cacheStore.preselectedBalanceType
 	}
 
@@ -81,8 +81,8 @@ const initSendType = () => {
 }
 const initReceiverType = () => {
 	if (!activeToken.value) return
-	if (activeToken.value.hasPrivateBalances && activeToken.value.hasPublicBalances) {
-		selectedReceiverType.value = "private"
+	if (cacheStore.preselectedBalanceType && activeToken.value.hasPrivateBalances && activeToken.value.hasPublicBalances) {
+		selectedReceiverType.value = cacheStore.preselectedBalanceType
 	}
 
 	if (!activeToken.value.hasPrivateTransfers) {
