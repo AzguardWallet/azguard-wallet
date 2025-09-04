@@ -36,7 +36,8 @@ const handleSelectProfile = profile => {
 	emit("onClose")
 }
 
-const handleProfileCreated = () => {
+const handleProfileCreated = async () => {
+	appStore.profiles = await managers.profile.getProfiles()
 	emit("onClose")
 }
 
