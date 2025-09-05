@@ -26,8 +26,6 @@ const dappSessionSevice = new DappSessionServiceClient()
 dappSessionSevice.connect()
 const balanceService = new TokenBalanceServiceClient()
 balanceService.connect()
-const accountStateClientService = new AccountStateServiceClient()
-accountStateClientService.connect()
 
 const faucetService = new FaucetServiceClient()
 faucetService.connect()
@@ -44,7 +42,6 @@ export const managers = {
 	faucet: faucetService,
 	transaction: null,
 	token: null,
-	accountState: accountStateClientService,
 }
 
 export const initTokenService = ({ profile, network, account, onTokenAdded, onTokenUpdated, onTokenDeleted }) => {

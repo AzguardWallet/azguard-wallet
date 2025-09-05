@@ -11,11 +11,11 @@
 /** Components */
 import Navigation from "../../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
-import { managers } from "@/utils/core.js"
+import { NoteServiceClient } from "@/wallet/services/note/client"
+import { trimAddress } from "@/utils/string"
+import { getColorFromAddress } from "@/components/ui/utils.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -30,6 +30,7 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const notes = ref([])
+const noteService = new NoteServiceClient()
 const isFetchingNotes = ref(false)
 const error = ref()
 const isErrorOccurred = computed(() => !!error.value)
@@ -38,14 +39,31 @@ const fetchNotes = async isRefetching => {
 	isFetchingNotes.value = true
 
 	try {
-		notes.value = await managers.accountState.getNotes(appStore.network.id, appStore.account.address)
+		notes.value = await noteService.getNotes(appStore.network.id, appStore.account.address)
+		notes.value.forEach(n => n.showingContent = parseNoteContent(n))
+		notes.value.sort((a, b) => {
+			const contractCompare = a.contract.localeCompare(b.contract)
+			if (contractCompare !== 0 || !(a.location && b.location)) return contractCompare
+
+			return a.location.localeCompare(b.location)
+		})		
 	} catch (err) {
 		error.value = err
-
-		isFetchingNotes.value = false
 	} finally {
 		isFetchingNotes.value = false
 	}
+}
+
+function parseNoteContent(note) {
+	if (!note.content) return null
+
+	const allowed = ["value", "amount", "token_id", "expiry_block_number", "remaining_txs", "points"]
+
+	const filtered = Object.fromEntries(
+		Object.entries(note.content).filter(([key]) => allowed.includes(key))
+	)
+
+	return Object.keys(filtered).length > 0 ? filtered : note.content
 }
 
 const handleOpenNotePopup = note => {
@@ -53,16 +71,20 @@ const handleOpenNotePopup = note => {
 	popupStore.open("note")
 }
 
-onMounted(async () => {
-	if (appStore.network && appStore.isLogined) fetchNotes()
-})
-
 watch(
 	() => appStore.account,
 	() => {
 		fetchNotes()
 	},
 )
+
+onMounted(async () => {
+	if (appStore.network && appStore.isLogined) fetchNotes()
+})
+
+onBeforeUnmount(() => {
+	noteService.disconnect()
+})
 </script>
 
 <template>
@@ -83,17 +105,32 @@ watch(
 			</Tooltip>
 
 			<Flex v-else-if="notes.length" direction="column" gap="8">
-				<Flex v-for="note in notes" @click="handleOpenNotePopup(note)" justify="between" :class="$style.card">
-					<Flex gap="10">
-						<Icon name="zap" size="16" color="tertiary" />
+				<Flex v-for="note in notes" @click="handleOpenNotePopup(note)" direction="column" gap="6" :class="$style.card">
+					<Flex align="center" justify="between" gap="12" wide>
+						<Text size="14" weight="600" color="primary" :class="$style.row"> {{ note.type ?? 'Custom Note' }} </Text>
 
-						<Flex direction="column" gap="8">
-							<Text size="14" weight="600" color="primary"> Note </Text>
-							<Text size="13" weight="600" color="tertiary"> Contract - {{ note.contractAddress.substring(0, 10) }}..{{ note.contractAddress.substring(60) }} </Text>
+						<Flex
+							align="center"
+							gap="6"
+							:class="$style.badge"
+							:style="{ background: `var(--${getColorFromAddress(note.contract)})` }"
+						>
+							<Text size="11" weight="600"> {{ trimAddress(note.contract, 4, 4) }} </Text>
 						</Flex>
 					</Flex>
 
-					<Icon name="arrow-narrow-up-right" size="12" color="tertiary" />
+					<Text v-if="note.location" size="13" weight="600" color="tertiary" :class="$style.row"> {{ note.location }} </Text>
+
+					<div :class="$style.divider" />
+
+					<Flex v-if="!!note.showingContent" v-for="[k, v] in Object.entries(note.showingContent)" align="center" gap="4" wide :class="$style.content">
+						<Text size="13" color="tertiary"> {{ `${k}:` }} </Text>
+						<Text size="13" color="tertiary" weight="600"> {{ v }} </Text>
+					</Flex>
+
+					<Flex v-else v-for="el in note.rawContent" align="center" gap="4" wide :class="$style.content">
+						<Text size="13" color="tertiary" weight="600"> {{ el }} </Text>
+					</Flex>
 				</Flex>
 			</Flex>
 
@@ -140,6 +177,43 @@ watch(
 
 	&:active {
 		background: var(--gray-5);
+	}
+}
+
+.badge {
+	border-radius: 6px;
+	padding: 2px 4px;
+	color: var(--txt-inverse);
+}
+
+.divider {
+	width: 100%;
+	height: 1px;
+
+	margin: 4px 0;
+	
+	background: linear-gradient(
+		to right,
+		transparent 0%,
+		var(--gray-20) 20%,
+		var(--gray-20) 80%,
+		transparent 100%
+	);
+}
+
+.row {
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.content {
+	max-width: 100%;
+
+	& span:last-child {
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
 	}
 }
 </style>

@@ -11,11 +11,9 @@
 /** Components */
 import Navigation from "../../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
-import { managers } from "@/utils/core.js"
+import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -25,6 +23,7 @@ const { openToast } = useToast()
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+const accountStateService = new AccountStateServiceClient()
 const contracts = ref([])
 const searchTerm = ref()
 const filteredContracts = computed(() =>
@@ -40,7 +39,7 @@ const fetchContracts = async isRefetching => {
 	isFetchingContracts.value = true
 
 	try {
-		contracts.value = await managers.accountState.getContracts(appStore.network.id, appStore.account.address)
+		contracts.value = await accountStateService.getContracts(appStore.network.id)
 	} catch (err) {
 		error.value = err
 	} finally {
@@ -48,16 +47,20 @@ const fetchContracts = async isRefetching => {
 	}
 }
 
-onMounted(async () => {
-	if (appStore.network && appStore.isLogined) fetchContracts()
-})
-
 watch(
 	() => appStore.account,
 	() => {
 		fetchContracts()
 	},
 )
+
+onMounted(async () => {
+	if (appStore.network && appStore.isLogined) fetchContracts()
+})
+
+onBeforeUnmount(() => {
+	accountStateService.disconnect()
+})
 </script>
 
 <template>

@@ -44,7 +44,7 @@ const slots = defineSlots()
 <template>
 	<component
 		:is="(to && !external && 'router-link') || (to && external && 'a') || 'div'"
-		:to="!disabled && to && !external ? to : null"
+		:to="!disabled && to && !external ? to : ''"
 		:href="external ? to : null"
 		:target="external ? '_blank' : null"
 		:class="[$style.wrapper, $style[size], raw && $style.raw, icon && $style.withIcon, disabled && $style.disabled]"

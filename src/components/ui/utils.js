@@ -1,3 +1,19 @@
+export const colors = ["blue", "green", "mint", "neutral-mint", "orange", "yellow", "red", "purple", "gray", "sand"]
+
+export function getColorFromAddress(address) {
+	if (!address) return colors[0]
+
+	const clean = address.startsWith("0x") ? address.slice(2) : address
+	let hash = 0
+	for (let i = 0; i < clean.length; i++) {
+		hash = (hash + clean.charCodeAt(i)) % 2147483647
+	}
+
+	const index = hash % colors.length
+
+	return colors[index]
+}
+
 export function getChainPosition(chainId) {
 	switch (chainId) {
 		case 11155111:
