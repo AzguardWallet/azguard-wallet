@@ -244,8 +244,7 @@ export const useAppStore = defineStore("app", () => {
 	const syncTransactions = async () => {
 		if (!account.value || !managers.transaction) return
 		
-		transactions.value = (await managers.transaction.getTransactions(account.value))
-			.filter(t => t.account === account.value?.address)
+		transactions.value = (await managers.transaction.getTransactions(account.value?.address))
 			.sort((a, b) => b.updatedAt - a.updatedAt)
 	}
 
