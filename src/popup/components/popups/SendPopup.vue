@@ -396,10 +396,13 @@ const onKeydown = e => {
 											:class="$style.contact"
 											wide
 										>
-											<Flex align="center" justify="center" :class="$style.contact_avatar" :style="{ backgroundColor: `var(--${c.color})`}">
+											<Flex v-if="c.abbr" align="center" justify="center" :class="$style.contact_avatar" :style="{ backgroundColor: `var(--${c.color})`}">
 												<Text size="10" weight="600" color="primary">
 													{{ c.abbr }}
 												</Text>
+											</Flex>
+											<Flex v-else align="center" justify="center">
+												<Icon name="vault" size="28" scale="1.2" color="secondary" />
 											</Flex>
 
 											<Flex direction="column" gap="4" wide>
