@@ -1,5 +1,9 @@
-import { ContractArtifactSchema } from "@aztec/stdlib/abi";
-import { ContractClassWithIdSchema, ContractInstanceWithAddressSchema, ProtocolContractAddressesSchema } from "@aztec/stdlib/contract";
+import { AbiTypeSchema, ContractArtifactSchema, EventSelector } from "@aztec/stdlib/abi";
+import {
+    ContractClassWithIdSchema,
+    ContractInstanceWithAddressSchema,
+    ProtocolContractAddressesSchema,
+} from "@aztec/stdlib/contract";
 import { ContractClassMetadata, ContractMetadata, PXEInfo } from "@aztec/stdlib/interfaces/client";
 import { ZodFor } from "@aztec/foundation/schemas";
 import z from "zod";
@@ -17,8 +21,14 @@ export const ContractMetadataSchema = z.object({
     isContractInitialized: z.boolean(),
     isContractPubliclyDeployed: z.boolean(),
 }) satisfies ZodFor<ContractMetadata>;
-  
+
 export const PXEInfoSchema = z.object({
     pxeVersion: z.string(),
     protocolContractAddresses: ProtocolContractAddressesSchema,
 }) satisfies ZodFor<PXEInfo>;
+
+export const EventMetadataDefinitionSchema = z.object({
+    eventSelector: EventSelector.schema,
+    abiType: AbiTypeSchema,
+    fieldNames: z.array(z.string()),
+});
