@@ -8,7 +8,7 @@ export * from "./spec";
 
 export class NetworkServiceClient extends ServiceClient<Methods, Events> implements ServiceSpec<Methods, Events> {
     public readonly onNetworkAdded = new EventHandler<Network>();
-    public readonly onNetworkUpdatd = new EventHandler<Network>();
+    public readonly onNetworkUpdated = new EventHandler<Network>();
     public readonly onNetworkDeleted = new EventHandler<Network>();
     public readonly onDefaultNetworkChanged = new EventHandler<Network>();
 

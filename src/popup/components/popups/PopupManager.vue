@@ -32,6 +32,9 @@ import EditFpcPopup from "./EditFpcPopup.vue"
 import SelectFpcPopup from "./SelectFpcPopup.vue"
 import EditClaimParametersPopup from "./EditClaimParametersPopup.vue"
 import NewSenderPopup from "./NewSenderPopup.vue"
+import NewContactPopup from "./NewContactPopup.vue"
+import EditContactPopup from "./EditContactPopup.vue"
+import ImportContactsPopup from "./ImportContactsPopup.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -77,4 +80,7 @@ const popupStore = usePopupStore()
 	<SelectFpcPopup :show="popupStore.isOpened('select_fpc')" :payload="popupStore.getPayload('select_fpc')" @onClose="popupStore.close('select_fpc')" />
 	<EditClaimParametersPopup :show="popupStore.isOpened('edit_claim_parameters')" :payload="popupStore.getPayload('edit_claim_parameters')" @onClose="popupStore.close('edit_claim_parameters')" />
 	<NewSenderPopup :show="popupStore.isOpened('new_sender')" @onClose="popupStore.close('new_sender')" />
+	<NewContactPopup :show="popupStore.isOpened('new_contact')" @onClose="popupStore.close('new_contact')" />
+	<EditContactPopup :show="popupStore.isOpened('edit_contact')" @onClose="popupStore.close('edit_contact')" />
+	<ImportContactsPopup :show="popupStore.isOpened('import_contacts')" @onClose="popupStore.close('import_contacts')" />
 </template>

@@ -162,7 +162,7 @@ const handleImportPublicKey = async () => {
 const handleBack = () => {
 	selectedImportOption.value = null
 
-	profileName.value = "My Profile"
+	profileName.value = ""
 	privateKey.value = null
 	publicKey.value = null
 	seedPhrase.value = null
@@ -176,11 +176,11 @@ const handleBack = () => {
 
 watch(
 	() => props.show,
-	() => {
+	async () => {
 		if (!props.show) {
 			selectedImportOption.value = null
 
-			profileName.value = "My Profile"
+			profileName.value = ""
 			privateKey.value = null
 			publicKey.value = null
 			seedPhrase.value = null
@@ -190,6 +190,9 @@ watch(
 			hideCredentials.value = true
 			
 			fillError()
+		} else {
+			const profiles = await managers.profile.getProfiles()
+			profileName.value = `My Profile${profiles?.length ? ` ${profiles?.length}` : ''}`
 		}
 	},
 )

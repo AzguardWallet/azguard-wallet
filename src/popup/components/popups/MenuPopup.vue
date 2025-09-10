@@ -13,8 +13,10 @@ import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const router = useRouter()
@@ -52,6 +54,7 @@ const handleOpenLogs = async () => {
 		try {
 			const win = await chrome.windows.get(appStore.loggerWindowId)
 			chrome.windows.update(win.id, { focused: true })
+			cacheStore.failureLog = null
 			return
 		} catch (error) {
 			appStore.loggerWindowId = null
@@ -59,8 +62,13 @@ const handleOpenLogs = async () => {
 	}
 
 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
+	if (cacheStore.failureLog?.id) {
+		url.searchParams.set("logId", cacheStore.failureLog.id)
+	}
+
 	const window = await chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
 	appStore.loggerWindowId = window.id
+	cacheStore.failureLog = null
 }
 
 onMounted(async () => {
@@ -99,7 +107,14 @@ onBeforeUnmount(() => {
 						iconBgColor="transparent"
 						:disabled="appStore.profiles.length === 1"
 					/> -->
-					<SettingItem title="Contacts" icon="contacts" iconBgColor="var(--green)" chevron disabled />
+					<SettingItem
+						@click="emit('onClose')"
+						to="/popup/settings/general/contacts"
+						title="Contacts"
+						icon="contacts"
+						iconBgColor="blue"
+						chevron
+					/>
 				</ItemsContainer>
 
 				<ItemsContainer title="Other">
@@ -111,7 +126,11 @@ onBeforeUnmount(() => {
 						icon="logs"
 						iconBgColor="var(--gray)"
 						chevron
-					/>
+					>
+						<template v-if="cacheStore.failureLog?.color" #dot>
+							<div :class="$style.dot_indicator" :style="{ background: cacheStore.failureLog.color }" />
+						</template>
+					</SettingItem>
 					<SettingItem
 						@click="handleNavigation('/popup/settings')"
 						title="Settings"
@@ -137,5 +156,14 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.dot_indicator {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
 }
 </style>

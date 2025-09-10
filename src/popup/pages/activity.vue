@@ -14,13 +14,6 @@ import Navigation from "../components/Navigation.vue"
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
-
-// import { managers } from "@/utils/core.js"
-// console.log('appStore.account', appStore.account?.address);
-
-// const txs = await managers.transaction.getTransactions(appStore.account?.address)
-// console.log('txs', txs);
-
 </script>
 
 <template>

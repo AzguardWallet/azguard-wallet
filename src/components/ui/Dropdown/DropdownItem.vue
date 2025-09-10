@@ -42,6 +42,7 @@ defineProps({
 .wrapper.disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
+	pointer-events: none;
 }
 
 .wrapper:hover {

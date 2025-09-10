@@ -61,7 +61,7 @@ export type Methods = {
     deleteNetwork(id: string): Network;
 
     /**
-     * Deletes node with the specified id.
+     * Set the node with the specified id as the default node within the same chain.
      * @param id Node id.
      */
     setDefault(id: string): Network;
@@ -77,7 +77,7 @@ export type Events = {
     /** Emitted when a new node is added */
     onNetworkAdded: Network;
     /** Emitted when an existing node is updated */
-    onNetworkUpdatd: Network;
+    onNetworkUpdated: Network;
     /** Emitted when an existing node is deleted */
     onNetworkDeleted: Network;
     /** Emitted when a default node for a given chain is changed */

@@ -8,8 +8,10 @@ import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const logViewerService = new LogViewerServiceClient()
@@ -24,31 +26,50 @@ const showNode = ref(defaultConfig.showNode)
 
 const highlightColor = ref("")
 const isLogsHighlighted = ref(false)
-const INDICATION_DURATION = 5_000
-let highlightTimer = null
 
-function setHighlightColor(color) {
-	if (highlightTimer) {
-		clearTimeout(highlightTimer)
-		highlightTimer = null
+const HEADER_INDICATION_DURATION = 5_000
+let headerIndicateTimer = null
+
+const MENU_INDICATION_DURATION = 60_000
+let menuIndicateTimer = null
+
+function handleWalletFailure(color, logId) {
+	// Header
+	if (headerIndicateTimer) {
+		clearTimeout(headerIndicateTimer)
+		headerIndicateTimer = null
 	}
-
 	highlightColor.value = color
 	isLogsHighlighted.value = true
 
-	highlightTimer = setTimeout(() => {
+	headerIndicateTimer = setTimeout(() => {
 		isLogsHighlighted.value = false
-		highlightTimer = null
-	}, INDICATION_DURATION)
+		headerIndicateTimer = null
+	}, HEADER_INDICATION_DURATION)
+
+	// Menu
+	if (menuIndicateTimer) {
+		clearTimeout(menuIndicateTimer)
+		menuIndicateTimer = null
+	}
+	cacheStore.failureLog = {
+		id: logId,
+		color,
+	}
+
+	menuIndicateTimer = setTimeout(() => {
+		cacheStore.failureLog = null
+		menuIndicateTimer = null
+	}, MENU_INDICATION_DURATION)
 }
 
 function onLogAdded(log) {
 	switch (log.level) {
 		case LogLevel.Warn:
-			setHighlightColor("var(--yellow)")
+			handleWalletFailure("var(--yellow)", log.id)
 			break;
 		case LogLevel.Error:
-			setHighlightColor("var(--red)")
+			handleWalletFailure("var(--red)", log.id)
 			break;
 
 		default:

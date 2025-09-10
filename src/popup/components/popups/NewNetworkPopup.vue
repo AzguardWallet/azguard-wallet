@@ -35,7 +35,7 @@ const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
 const isUrlHasError = ref(false)
 
 const isNameAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value))
-const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value))
+const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value.endsWith("/") ? urlTerm.value.slice(0, -1) : urlTerm.value))
 
 const isAvailableToCreateNetwork = computed(() => {
 	if (!nameTerm.value.length) return
@@ -57,8 +57,8 @@ const handleCreateNetwork = async () => {
 
 		/** todo: ref */
 		appStore.network = network
-		managers.network.setDefault(appStore.network.id)
-		chrome.storage.local.set({ "azguard:ui:activeNetwork": appStore.network.id })
+		managers.network.setDefault(network.id)
+		chrome.storage.local.set({ [`azguard:ui:lastActiveNetwork@${appStore.profile.id}`]: network.id })
 
 		appStore.networks = await managers.network.getNetworks()
 
@@ -109,7 +109,8 @@ const onKeydown = e => {
 					label="Name"
 					placeholder="My node"
 					autofocus
-					:maxLength="64"
+					sanitize
+					:maxLength="25"
 					v-model="nameTerm"
 				>
 					<template #right>

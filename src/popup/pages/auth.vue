@@ -29,6 +29,8 @@ if (appStore.isLogined) {
 	router.go(-1)
 }
 
+const LAST_ACTIVE_PROFILE_KEY = "azguard:ui:lastActiveProfile"
+
 const defaultConfig = new Config()
 const theme = ref(defaultConfig.theme)
 const isSidePanelEnabled = ref(defaultConfig.sidePanel)
@@ -77,6 +79,7 @@ const handleUnlockWallet = async () => {
 		password.value = ""
 
 		appStore.profile = activeProfile
+		chrome.storage.local.set({ [LAST_ACTIVE_PROFILE_KEY]: activeProfile?.id })
 		managers.account = new AccountServiceClient()
 
 		initTokenService({
@@ -144,6 +147,14 @@ onMounted(async () => {
 	theme.value = await configService.getValue("theme")
 	isSidePanelEnabled.value = await configService.getValue("sidePanel")
 
+	const lastActiveProfileId = (await chrome.storage.local.get(LAST_ACTIVE_PROFILE_KEY))[LAST_ACTIVE_PROFILE_KEY]
+	if (lastActiveProfileId) {
+		const profile = (await managers.profile.getProfiles())?.find(p => p.id === lastActiveProfileId)
+		if (profile) {
+			appStore.profile = profile
+		}
+	}
+	
 	document.addEventListener("keydown", onKeydown)
 })
 onBeforeUnmount(() => {
@@ -161,7 +172,6 @@ watch(
 )
 
 const handleSelectProfile = () => {
-	if (appStore.profiles.length === 1) return
 	popupStore.open("select_profile")
 }
 </script>
@@ -197,16 +207,15 @@ const handleSelectProfile = () => {
 			</Flex>
 
 			<Flex align="center" direction="column" gap="16">
-				<Flex align="center" gap="6" :class="$style.profile_badge">
+				<Flex @click="handleSelectProfile" align="center" gap="6" :class="$style.profile_badge">
 					<Icon name="user" size="14" color="tertiary" />
 					<Text size="13" weight="600" color="primary">{{ appStore.profile.name }}</Text>
-					<!-- <Icon
-						v-if="appStore.profiles.length > 1"
+					<Icon
 						name="chevron"
 						size="12"
 						color="tertiary"
 						:class="$style.chevron_icon"
-					/> -->
+					/>
 				</Flex>
 
 				<Text size="24" weight="600" color="primary" style="line-height: 16px"> Password required </Text>

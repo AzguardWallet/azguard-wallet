@@ -56,6 +56,7 @@ const sources = [
 	"account-state",
 	"auth-registry",
 	"config",
+	"contact",
 	"dapp-interaction",
 	"dapp-session",
 	"execution",
@@ -141,10 +142,15 @@ function isLogInclude(log) {
 function getDisplayName(kind, value) {
 	switch (kind) {
 		case "source":
-			if (value === "fpc" || value === "pxe" || value === "rpc") return value.toUpperCase()
 			if (value === "undefined") return `(${value})`
 
-			return value.split("-").map(v => capitalize(v)).join(" ")
+			return value.split("-")
+				.map(v => {
+					if (v === "fpc" || v === "pxe" || v === "rpc") return v.toUpperCase()
+
+					return capitalize(v)
+				})
+				.join(" ")
 		default:
 			return capitalize(value.toLowerCase())
 	}
@@ -323,6 +329,20 @@ function updateEditorContent() {
 	})
 }
 
+function scrollToTargetLog(targetLogId) {
+	if (!view) return
+	const idx = logs.value.findIndex(l => l.id === targetLogId)
+	if (idx === -1) return
+
+	const textBefore = formatLogs(logs.value.slice(0, idx))
+	const pos = textBefore.length + 1
+	
+	view.dispatch({
+		effects: EditorView.scrollIntoView(pos, { y: "center" }),
+		selection: { anchor: pos },
+	})
+}
+
 function exportLogsToCSV() {
 	try {
 		const rows = logs.value.map(log => {
@@ -349,17 +369,19 @@ function exportLogsToCSV() {
 		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
 		const url = URL.createObjectURL(blob)
 
-		const link = document.createElement("a")
-		link.setAttribute("href", url)
-		link.setAttribute("download", `AzguardWalletLogs_${new Date(Date.now()).toISOString()}.csv`)
-		link.style.display = "none"
-		document.body.appendChild(link)
-		link.click()
-		document.body.removeChild(link)
-
-		URL.revokeObjectURL(url)
-
-		openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
+		chrome.downloads.download({
+			url,
+			filename: `AzguardWalletLogs_${Math.floor(Date.now() / 1000)}.csv`,
+			saveAs: true,
+		}, () => {
+			if (chrome.runtime.lastError) {
+				console.error("Download failed:", chrome.runtime.lastError.message);
+				openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
+			} else {
+				openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
+			}
+			URL.revokeObjectURL(url)
+		})
 	} catch (err) {
 		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
 		console.error(err)
@@ -460,9 +482,16 @@ onMounted(async () => {
 		}
 	})
 
-	requestAnimationFrame(() => {
-		scrollToBottom()
-	})
+	const params = new URLSearchParams(window.location.search)
+	const targetLogId = params.get("logId")
+	if (targetLogId) {		
+		scrollToTargetLog(+targetLogId)
+		disableAutoScroll()
+	} else {
+		requestAnimationFrame(() => {
+			scrollToBottom()
+		})
+	}
 })
 
 onBeforeUnmount(() => {
@@ -482,7 +511,7 @@ onBeforeUnmount(() => {
 				:open="popovers[p]"
 				@on-close="onPopoverClose(p)"
 				side="left"
-				:width="p === 'source' ? '160' : '136'"
+				:width="p === 'source' ? '200' : '136'"
 			>
 				<Flex
 					@click="handleOpenPopover(p)"

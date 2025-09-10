@@ -11,8 +11,8 @@ export function useOutside(el, onOutsidePressCallback) {
 	const handler = (e) => {
 		/** resolve collisions */
 		if (
-			element.parentNode.closest("div[data-outside]") &&
-			element.parentNode.closest("div[data-outside]").id !==
+			element.parentNode?.closest("div[data-outside]") &&
+			element.parentNode?.closest("div[data-outside]").id !==
 				e.target.parentNode.id
 		)
 			return

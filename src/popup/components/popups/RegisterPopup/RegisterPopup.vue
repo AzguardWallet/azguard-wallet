@@ -11,6 +11,8 @@ import { sleep } from "@/wallet/utils"
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+const emit = defineEmits(["onProfileCreated"])
+
 const router = useRouter()
 
 const walletPassword = ref<string>("")
@@ -33,7 +35,12 @@ const handleCreateProfile = async () => {
 
 	isCreatingProfile.value = true
 
-	const profile = await managers.profile.createProfile("My Profile", walletPassword.value)
+	const profiles = await managers.profile.getProfiles()
+	const profile = await managers.profile.createProfile(
+		`My Profile${profiles.length ? ` ${profiles.length}` : ''}`,
+		walletPassword.value
+	)
+
 	while (!appStore.isLogined) {
 		await sleep(100) // wait for services initialization
 	}
@@ -58,6 +65,8 @@ const handleCreateProfile = async () => {
 	})
 	
 	await setSentinel()
+
+	emit("onProfileCreated")
 
 	router.push("/popup/general")
 

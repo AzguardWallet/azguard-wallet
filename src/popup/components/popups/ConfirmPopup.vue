@@ -4,10 +4,8 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Store */
-import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store.ts"
-const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
@@ -49,7 +47,7 @@ watch(
 <template>
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.confirm?.order">
 		<PopupCard :displaceIdx>
-			<Flex wide direction="column" gap="32" :class="$style.wrapper">
+			<Flex direction="column" gap="32" :class="$style.wrapper" wide>
 				<Flex align="center" direction="column" gap="12">
 					<Flex direction="column" align="center" gap="12">
 						<Icon name="warning" size="18" color="orange" />
@@ -58,7 +56,7 @@ watch(
 						</Text>
 					</Flex>
 
-					<Text size="14" weight="500" color="body" height="140" align="center">
+					<Text size="14" weight="500" color="body" height="140" align="center" :class="$style.description">
 						{{ cacheStore.confirm.description }}
 					</Text>
 				</Flex>
@@ -91,5 +89,10 @@ watch(
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.description {
+	max-width: 100%;
+	word-wrap: break-word;
 }
 </style>

@@ -3,7 +3,7 @@ export class Config {
     theme: "dark" | "light" | "system" = "dark";
     sidePanel: boolean = false;
     showNode: boolean = true;
-    showPopupFullscreen: boolean = false;
+    showPopupFullscreen: boolean = true;
     disableAnimations: boolean = false;
 
     // Wallet
