@@ -186,6 +186,7 @@ watch(
 					label="Contract address"
 					placeholder="0x"
 					autofocus
+					sanitize
 					:disabled="isLoadingParseResult || !isCompleted || isAddingNewToken"
 				>
 					<template #suffix>

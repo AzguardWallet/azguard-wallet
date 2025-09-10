@@ -4,7 +4,7 @@ import BN from "bignumber.js"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
-import { capitalize } from "@/utils/string.js"
+import { capitalize } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"

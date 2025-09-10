@@ -166,8 +166,9 @@ watch(
 							align="center"
 							justify="between"
 							:class="$style.contact"
+							wide
 						>
-							<Flex align="center" gap="10">
+							<Flex align="center" gap="10" wide>
 								<Icon
 									:name="
 										c.selected
@@ -182,9 +183,9 @@ watch(
 									"
 								/>
 
-								<Flex direction="column" gap="4">
-									<Flex align="center" gap="10">
-										<Text size="14" weight="600" :color="c.duplicateName ? 'orange' : 'primary'">
+								<Flex direction="column" gap="4" wide>
+									<Flex align="center" gap="10" wide>
+										<Text size="14" weight="600" :color="c.duplicateName ? 'orange' : 'primary'" :class="$style.title">
 											{{ c.name }}
 										</Text>
 									</Flex>
@@ -277,6 +278,17 @@ watch(
 	&:active {
 		background: var(--gray-5);
 	}
+}
+
+.title {
+	min-width: 100%;
+	width: 0;
+
+	line-height: 16px !important;
+
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
 }
 
 .icon_btn {

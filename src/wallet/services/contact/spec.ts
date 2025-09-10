@@ -2,46 +2,20 @@ export const CONTACT_SERVICE_NAME = "contact";
 
 export const contactColors = ["blue", "green", "mint", "neutral-mint", "orange", "yellow", "red", "purple", "gray", "sand"]
 
-export class Contact {
-	/**
-	 * Creates Contact.
-	 * @param id Randomly generated contact id.
-     * @param profileId Profile id.
-	 * @param name Contact name.
-	 * @param address Contact address.
-	 * @param abbr Contact name abbreviation (1–2 letters).
-	 * @param color Contact abbr color.
-	 */
-	constructor(
-		public readonly id: string,
-        public readonly profileId: string,
-		public readonly name: string,
-		public readonly address: string,
-		public readonly abbr: string,
-		public readonly color: string,
-	) {}
-}
-
-// export enum NodeStatus {
-//     Active,
-//     Inactive,
-//     InvalidChain,
-// }
-
-// export type Network = {
-//     /** Randomly generated id. */
-//     id: string;
-//     /** Profile id. */
-//     profileId: string;
-//     /** Display name. */
-//     name: string;
-//     /** RPC URL. */
-//     rpcUrl: string;
-//     /** Chain id, automatically determined from the RPC. */
-//     chainId: number;
-//     /** Whether or not this node is default for the given chain */
-//     isDefault: boolean;
-// };
+export type Contact = {
+    /** Randomly generated contact id. */
+    id: string,
+    /** Profile id. */
+    profileId: string,
+    /** Contact name. */
+    name: string,
+    /** Contact address. */
+    address: string,
+    /** Contact name abbreviation (1–2 letters). */
+    abbr: string,
+    /** Contact abbr color. */
+    color: string,
+};
 
 export type Methods = {
     /**

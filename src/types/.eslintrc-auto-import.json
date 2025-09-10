@@ -81,6 +81,7 @@
     "readonly": true,
     "ref": true,
     "resolveComponent": true,
+    "sanitizeString": true,
     "setSentinel": true,
     "shallowReactive": true,
     "shallowReadonly": true,

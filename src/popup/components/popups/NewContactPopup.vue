@@ -143,7 +143,8 @@ const onKeydown = e => {
 					label="Name"
 					placeholder="New contact"
 					autofocus
-					:maxLength="64"
+					sanitize
+					:maxLength="25"
 					v-model="nameTerm"
 				>
 					<template #right>
@@ -159,6 +160,7 @@ const onKeydown = e => {
 				<Input
 					label="Address"
 					placeholder="0x15c4ac6afcffdf59aa8a1fb3317ff0c86aee3eb02f9e52c3612e1163d4701446"
+					sanitize
 					v-model="contactAddressTerm"
 				>
 					<template #right>

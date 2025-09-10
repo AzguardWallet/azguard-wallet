@@ -1,8 +1,9 @@
 <script setup>
-/**
- * Vendor
- */
+/** Vendor */
 import { ref, watch, computed } from "vue"
+
+/** Utils */
+import { sanitizeString } from "@/utils/string"
 
 const emit = defineEmits(["update:modelValue", "focus", "blur", "maxLengthReached"])
 const props = defineProps({
@@ -15,6 +16,10 @@ const props = defineProps({
 	},
 	subtype: {
 		type: String,
+	},
+	sanitize: {
+		type: Boolean,
+		default: false,
 	},
 	max: {
 		type: [String, Number],
@@ -104,6 +109,8 @@ const getInputType = computed(() => {
 
 const handleInput = (event) => {
 	if (props.disabled) return
+
+	text.value = props.sanitize ? sanitizeString(text.value, props.maxLength) : text.value
 
 	if (!!props.maxLength) {
 		fillWarning()
