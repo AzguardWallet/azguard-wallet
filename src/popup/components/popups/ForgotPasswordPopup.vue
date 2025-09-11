@@ -35,15 +35,15 @@ const handleImport = () => {
 				<Flex align="center" direction="column" gap="12">
 					<Flex align="center" gap="6">
 						<Icon name="help" size="18" color="primary" />
-						<Text size="16" weight="600" color="primary"> Forgot Password </Text>
+						<Text size="16" weight="600" color="primary"> Authorization Issues </Text>
 					</Flex>
 
 					<Text size="14" weight="500" color="body" height="140" align="center" style="padding: 0 12px">
-						Choose from the following options to restore or reset your profile
+						If the password is lost, reset the profile. For other auth problems, contact us.
 					</Text>
 				</Flex>
 
-				<ItemsContainer title="Possible Solutions">
+				<ItemsContainer title="Reset Profile">
 					<SettingItem
 						@click="popupStore.open('reset')"
 						title="Reset Profile"
@@ -51,14 +51,14 @@ const handleImport = () => {
 						iconBgColor="red"
 						chevron
 					/>
-					<SettingItem
+					<!-- <SettingItem
 						title="Profile Recovery"
 						description="Currently Unavailable"
 						icon="restart"
 						iconBgColor="blue"
 						chevron
 						disabled
-					/>
+					/> -->
 				</ItemsContainer>
 
 				<ItemsContainer
