@@ -396,7 +396,7 @@ const packPermissions = permissions => {
 				</Flex>
 
 				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<img width="48" height="48" src="@/assets/logo.png" />
+					<img width="48" height="48" src="@/assets/logo_lg.png" />
 
 					<Text size="13" weight="600" color="primary">Azguard Wallet</Text>
 				</Flex>
