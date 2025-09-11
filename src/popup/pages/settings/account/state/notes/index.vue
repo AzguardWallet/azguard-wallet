@@ -30,10 +30,24 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const notes = ref([])
+const filteredNotes = computed(() => {
+	const term = searchTerm.value.trim().toLowerCase()
+  	if (!term) return notes.value
+
+	return notes.value.filter(n =>
+		n.contract.toLowerCase().includes(term) ||
+		((n.type ? n.type : 'custom note').toLowerCase().includes(term)) ||
+		(n.location && n.location.toLowerCase().includes(term))
+	)
+})
 const noteService = new NoteServiceClient()
 const isFetchingNotes = ref(false)
+
 const error = ref()
 const isErrorOccurred = computed(() => !!error.value)
+
+const searchTerm = ref("")
+
 const fetchNotes = async isRefetching => {
 	if (isRefetching) openToast({ label: "Fetching notes again", icon: "zap" })
 	isFetchingNotes.value = true
@@ -92,6 +106,14 @@ onBeforeUnmount(() => {
 		<Breadcrumbs />
 
 		<Flex direction="column" gap="16">
+			<Input
+				v-model="searchTerm"
+				icon="search"
+				placeholder="Search by type, contract or location"
+				clearable
+				@clear="searchTerm = ''"
+			/>
+
 			<Banner v-if="isFetchingNotes" isLoading> Fetching notes </Banner>
 
 			<Tooltip v-else-if="isErrorOccurred" wide>
@@ -103,9 +125,9 @@ onBeforeUnmount(() => {
 					{{ error }}
 				</template>
 			</Tooltip>
-
-			<Flex v-else-if="notes.length" direction="column" gap="8">
-				<Flex v-for="note in notes" @click="handleOpenNotePopup(note)" direction="column" gap="6" :class="$style.card">
+			
+			<Flex v-else-if="filteredNotes.length" direction="column" gap="8">
+				<Flex v-for="note in filteredNotes" @click="handleOpenNotePopup(note)" direction="column" gap="6" :class="$style.card">
 					<Flex align="center" justify="between" gap="12" wide>
 						<Text size="14" weight="600" color="primary" :class="$style.row"> {{ note.type ?? 'Custom Note' }} </Text>
 
@@ -132,6 +154,10 @@ onBeforeUnmount(() => {
 						<Text size="13" color="tertiary" weight="600"> {{ el }} </Text>
 					</Flex>
 				</Flex>
+			</Flex>
+
+			<Flex v-else-if="filteredNotes.length === 0 && searchTerm" align="center" justify="center" gap="8" :style="{marginTop: '24px'}">
+				<Text size="13" weight="600" color="tertiary"> No notes found </Text>
 			</Flex>
 
 			<Banner v-else> So far, it's empty </Banner>

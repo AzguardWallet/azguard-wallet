@@ -81,7 +81,14 @@ onBeforeUnmount(() => {
 			</Tooltip>
 
 			<Flex v-else-if="contracts.length" direction="column" gap="8">
-				<Input v-model="searchTerm" icon="search" placeholder="Search through contracts" clearable />
+				<Input
+					v-model="searchTerm"
+					icon="search"
+					placeholder="Search through contracts"
+					clearable
+					@clear="searchTerm = ''"
+				/>
+				
 				<Flex v-for="contract in filteredContracts" justify="between" :class="$style.card">
 					<Flex gap="10">
 						<Icon name="zap" size="16" color="tertiary" />
