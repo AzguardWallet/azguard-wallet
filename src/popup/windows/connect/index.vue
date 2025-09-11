@@ -48,13 +48,36 @@ const initRequest = async () => {
 		requestId.value = router.currentRoute.value.query.requestId
 		payload.value = await interactionService.getInteractionPayload(requestId.value)
 		dapp.value = payload.value.params.dappMetadata
+
+		if (dapp.value.logo) {
+			dapp.value.loadingLogo = true
+			try {
+				dapp.value.logoBlobUrl = await loadImageBlob(dapp.value.logo)
+			} finally {
+				dapp.value.loadingLogo = false
+			}
+		}
+		
 		permissions.value = unpackPermissions(
 			payload.value.params.requiredPermissions ?? [],
 			payload.value.params.optionalPermissions ?? [],
 		)
 	} catch (error) {
-		console.error(error)
+		console.error(error.message ?? error.stact)
 		fillError("Something went wrong")
+	}
+}
+
+async function loadImageBlob(url) {
+	try {
+		const res = await fetch(url, { mode: 'cors' })
+		if (!res.ok) return null
+
+		const blob = await res.blob()
+
+		return URL.createObjectURL(blob)
+	} catch {
+		return null
 	}
 }
 
@@ -353,7 +376,9 @@ const packPermissions = permissions => {
 			</Flex>
 			<Flex align="center" justify="center" gap="20">
 				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<img v-if="dapp?.icon" width="48" height="48" :src="dapp?.icon" />
+					<Icon v-if="dapp.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
+
+					<img v-else-if="dapp?.logoBlobUrl" width="48" height="48" :src="dapp?.logoBlobUrl" />
 
 					<Icon v-else name="dapp" size="48" color="blue" />
 

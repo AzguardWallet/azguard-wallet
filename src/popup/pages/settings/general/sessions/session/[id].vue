@@ -52,7 +52,27 @@ const fetchSession = async () => {
 		return
 	}
 
-	session.value.imageLoaded = !!session.value.dappMetadata.logo
+	if (session.value.dappMetadata.logo) {
+		session.value.loadingLogo = true
+		try {
+			session.value.dappMetadata.logoBlobUrl = await loadImageBlob(session.value.dappMetadata.logo)
+		} finally {
+			session.value.loadingLogo = false
+		}
+	}
+}
+
+async function loadImageBlob(url) {
+	try {
+		const res = await fetch(url, { mode: 'cors' })
+		if (!res.ok) return null
+
+		const blob = await res.blob()
+
+		return URL.createObjectURL(blob)
+	} catch {
+		return null
+	}
 }
 
 async function fetchAccounts() {
@@ -95,10 +115,6 @@ async function fetchSessionParams() {
 	events.value = [...new Set(events.value)]
 }
 
-const onImageError = () => {
-	session.value.imageLoaded = false
-}
-
 const handleDropSession = () => {
 	dappSessionServiceClient.deleteDappSession(session.value.id)
 	router.push("/popup/settings/general/sessions")
@@ -119,21 +135,20 @@ onMounted(async () => {
 </script>
 
 <template>
-	<Flex direction="column" justify="between" :class="$style.wrapper">
+	<Flex v-if="session" direction="column" justify="between" :class="$style.wrapper">
 		<Flex direction="column" gap="20">
 			<Breadcrumbs />
 
 			<Flex direction="column" justify="between" :class="$style.session">
 				<Flex justify="between">
 					<Flex align="start" justify="start">
+						<Icon v-if="session.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
 						<img
-							v-if="session?.imageLoaded"
-							:src="session?.dappMetadata.logo"
-							@error="onImageError()"
+							v-else-if="session.dappMetadata.logoBlobUrl"
+							:src="session.dappMetadata.logoBlobUrl"
 							width="48"
 							height="48"
 						/>
-
 						<Icon v-else name="dapp" size="48" color="blue" />
 					</Flex>
 
@@ -143,10 +158,10 @@ onMounted(async () => {
 				<Flex justify="between" align="end">
 					<Flex direction="column" gap="6">
 						<Text size="13" weight="600" color="primary">
-							{{ session?.dappMetadata.name ?? "Unknown dapp" }}
+							{{ session.dappMetadata.name ?? "Unknown dapp" }}
 						</Text>
 						<Text size="12" weight="600" color="tertiary" selectable>
-							{{ session?.dappMetadata.url }}
+							{{ session.dappMetadata.url }}
 						</Text>
 					</Flex>
 				</Flex>
