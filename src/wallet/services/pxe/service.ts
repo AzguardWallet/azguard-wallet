@@ -33,6 +33,7 @@ import {
     type ContractClassMetadata,
     type ContractMetadata,
     createAztecNodeClient,
+    EventMetadataDefinition,
     type PXE,
     PXEInfo,
 } from "@aztec/stdlib/interfaces/client";
@@ -46,6 +47,8 @@ import {
     TxSimulationResult,
     UtilitySimulationResult,
     TxHash,
+    TxReceipt,
+    TxProfileResult,
 } from "@aztec/stdlib/tx";
 import z from "zod";
 import { ServiceSpec } from "@/wallet/base";
@@ -56,6 +59,7 @@ import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/cli
 import { Lock } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
+import { EventMetadataDefinitionSchema } from "@/wallet/utils/schemas";
 
 export * from "./spec";
 
@@ -89,13 +93,13 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
                 }
             }
             if (!pxes.length) {
-                const keyval = dbs.find(x => x.name === "keyval-store")
+                const keyval = dbs.find(x => x.name === "keyval-store");
                 if (keyval) {
                     const _ = indexedDB.deleteDatabase(keyval.name!);
                 }
             }
         }
-        
+
         this.profiles.onProfileDeleted.add(this.onProfileDeleted);
         this.profiles.onActiveProfileChanged.add(this.onActiveProfileChanged);
         const _ = this.profiles.connect();
@@ -295,6 +299,60 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         return await pxe.updateContract(
             await AztecAddress.schema.parseAsync(contractAddress),
             await ContractArtifactSchema.parseAsync(artifact),
+        );
+    }
+
+    public async registerContractClass(network: Network, artifact: ContractArtifact): Promise<void> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.registerContractClass(await ContractArtifactSchema.parseAsync(artifact));
+    }
+
+    public async getTxReceipt(network: Network, txHash: TxHash): Promise<TxReceipt> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.getTxReceipt(await TxHash.schema.parseAsync(txHash));
+    }
+
+    public async getPrivateEvents(
+        network: Network,
+        contractAddress: AztecAddress,
+        eventMetadata: EventMetadataDefinition,
+        from: number,
+        numBlocks: number,
+        recipients: AztecAddress[],
+    ): Promise<unknown[]> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.getPrivateEvents(
+            await AztecAddress.schema.parseAsync(contractAddress),
+            await EventMetadataDefinitionSchema.parseAsync(eventMetadata),
+            from,
+            numBlocks,
+            await z.array(AztecAddress.schema).parseAsync(recipients),
+        );
+    }
+
+    public async getPublicEvents(
+        network: Network,
+        eventMetadata: EventMetadataDefinition,
+        from: number,
+        limit: number,
+    ): Promise<unknown[]> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.getPublicEvents(await EventMetadataDefinitionSchema.parseAsync(eventMetadata), from, limit);
+    }
+
+    public async profileTx(
+        network: Network,
+        txRequest: TxExecutionRequest,
+        profileMode: "gates" | "execution-steps" | "full",
+        skipProofGeneration?: boolean,
+        msgSender?: AztecAddress,
+    ): Promise<TxProfileResult> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.profileTx(
+            await TxExecutionRequest.schema.parseAsync(txRequest),
+            profileMode,
+            skipProofGeneration,
+            await AztecAddress.schema.optional().parseAsync(msgSender),
         );
     }
 

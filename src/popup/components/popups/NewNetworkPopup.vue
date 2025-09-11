@@ -109,7 +109,8 @@ const onKeydown = e => {
 					label="Name"
 					placeholder="My node"
 					autofocus
-					:maxLength="64"
+					sanitize
+					:maxLength="25"
 					v-model="nameTerm"
 				>
 					<template #right>

@@ -17,7 +17,7 @@ import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 /** Utils */
 import { ContactServiceClient } from "@/wallet/services/contact/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { trimAddress } from "@/utils/string"
+import { sanitizeString, trimAddress } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -67,7 +67,7 @@ function handleEditContact(contact) {
 function handleDeleteContact(contact) {
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.confirm_text = "Yes, delete contact"
-	cacheStore.confirm.title = `Delete contact "${contact.name}"?`
+	cacheStore.confirm.description = `Delete contact "${contact.name}"?`
 	cacheStore.confirm.callback = async () => {
 		await contactService.deleteContact(contact.id)
 		openToast({ label: "Contact successfully deleted" })
@@ -122,11 +122,16 @@ async function handleImportContacts() {
 			if (file) {
 				const data = await file.text()
 				const importedContacts = JSON.parse(data)
+					.map(c => ({
+						...c,
+						name: sanitizeString(c.name, 20),
+						address: sanitizeString(c.address, 66),
+					}))
+					.filter(c => !!c.name && !!c.address)
+
 				if (importedContacts?.length) {
 					for (const _c of importedContacts) {
-						if (_c.name && _c.address) {
-							cacheStore.importContacts.push(_c)
-						}
+						cacheStore.importContacts.push(_c)
 					}
 
 					const importPromise = new Promise((resolve, reject) => {
@@ -138,26 +143,38 @@ async function handleImportContacts() {
 					try {
 						const res = await importPromise;
 						if (res.length) {
+							const contactsByAddress = new Map()
+							const contactsByName = new Map()
+							contacts.value.forEach(c => {
+								contactsByAddress.set(c.address, c);
+								contactsByName.set(c.name, c);
+							});
+
 							const errors = []
 							for (const _c of res) {
-								const idx = contacts.value.findIndex(c => c.name === _c.name || c.address === _c.address)
-
+								const existingByAddress = contactsByAddress.get(_c.address);
+								const existingByName = contactsByName.get(_c.name);
 								try {
-									if (idx === -1) {
-										await contactService.addContact(_c.name, _c.address, _c.color)
-									} else {
-										const contact = contacts.value[idx]
+									if (existingByAddress) {
 										await contactService.updateContact(
-											contact.id,
+											existingByAddress.id,
 											_c.name,
 											_c.address,
 										)
+									} else if (existingByName) {
+										await contactService.updateContact(
+											existingByName.id,
+											_c.name,
+											_c.address,
+										)
+									} else {
+										await contactService.addContact(_c.name, _c.address, _c.color)
 									}
 								} catch (err) {
 									errors.push({
 										name: _c.name,
 										address: _c.address,
-										operation: idx === -1 ? "create" : "update",
+										operation: existingByAddress || existingByName ? "update" : "create",
 										error: err,
 									})
 								}
@@ -183,7 +200,7 @@ async function handleImportContacts() {
 				}
 			}
 		} catch (err) {
-			console.error("Error occurred during import", err);
+			console.error("Error occurred during import", err.message ?? err.stack);
 			
 			openToast({ label: "Error occurred during import", icon: "warning" })
 		} finally {

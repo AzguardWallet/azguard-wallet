@@ -206,6 +206,7 @@ const onKeydown = e => {
 					label="Token Name"
 					placeholder="Name"
 					v-model="tokenNameTerm"
+					sanitize
 					:maxLength="32"
 					:disabled="isPreselected"
 					@focus="error = null"
@@ -216,6 +217,7 @@ const onKeydown = e => {
 					label="Token Symbol"
 					placeholder="Symbol"
 					v-model="tokenSymbolTerm"
+					sanitize
 					:maxLength="32"
 					:disabled="isPreselected"
 					@focus="error = null"

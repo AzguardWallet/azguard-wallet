@@ -88,7 +88,8 @@ const onKeydown = e => {
 					ref="inputEl"
 					label="Account name"
 					placeholder="My Account"
-					:maxLength="64"
+					sanitize
+					:maxLength="25"
 					v-model="name"
 				>
 					<template #right>

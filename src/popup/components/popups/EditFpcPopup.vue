@@ -166,7 +166,8 @@ const onKeydown = e => {
 					placeholder="My FPC"
 					v-model="nameTerm"
 					autofocus
-					:maxLength="64"
+					sanitize
+					:maxLength="25"
 					@input="isStartedEditing = true"
 				>
 					<template #right>

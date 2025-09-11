@@ -61,7 +61,7 @@ export class PXEProxy implements PXE {
         return this.pxeService.removeSender(this.network, address);
     }
     registerContractClass(artifact: ContractArtifact): Promise<void> {
-        throw new Error("Method not implemented.");
+        return this.pxeService.registerContractClass(this.network, artifact);
     }
     registerContract(contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact }): Promise<void> {
         return this.pxeService.registerContract(this.network, contract.instance, contract.artifact);
@@ -99,13 +99,13 @@ export class PXEProxy implements PXE {
         skipProofGeneration?: boolean,
         msgSender?: AztecAddress,
     ): Promise<TxProfileResult> {
-        throw new Error("Method not implemented.");
+        return this.pxeService.profileTx(this.network, txRequest, profileMode, skipProofGeneration, msgSender);
     }
     sendTx(tx: Tx): Promise<TxHash> {
         return this.pxeService.sendTx(this.network, tx);
     }
     getTxReceipt(txHash: TxHash): Promise<TxReceipt> {
-        throw new Error("Method not implemented.");
+        return this.pxeService.getTxReceipt(this.network, txHash);
     }
     getTxEffect(txHash: TxHash): Promise<IndexedTxEffect | undefined> {
         throw new Error("Method not implemented.");
@@ -166,16 +166,23 @@ export class PXEProxy implements PXE {
     getContractClassMetadata(id: Fr, includeArtifact?: boolean): Promise<ContractClassMetadata> {
         return this.pxeService.getContractClassMetadata(this.network, id);
     }
-    getPrivateEvents<T>(
+    async getPrivateEvents<T>(
         contractAddress: AztecAddress,
         eventMetadata: EventMetadataDefinition,
         from: number,
         numBlocks: number,
         recipients: AztecAddress[],
     ): Promise<T[]> {
-        throw new Error("Method not implemented.");
+        return (await this.pxeService.getPrivateEvents(
+            this.network,
+            contractAddress,
+            eventMetadata,
+            from,
+            numBlocks,
+            recipients,
+        )) as T[];
     }
-    getPublicEvents<T>(eventMetadata: EventMetadataDefinition, from: number, limit: number): Promise<T[]> {
-        throw new Error("Method not implemented.");
+    async getPublicEvents<T>(eventMetadata: EventMetadataDefinition, from: number, limit: number): Promise<T[]> {
+        return (await this.pxeService.getPublicEvents(this.network, eventMetadata, from, limit)) as T[];
     }
 }

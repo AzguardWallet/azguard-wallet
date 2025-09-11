@@ -4,6 +4,7 @@ import { ILogger } from "@/wallet/logger";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, getRandomElement, Lock } from "@/wallet/utils";
+import { sanitizeString } from "@/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Contact, CONTACT_SERVICE_NAME, contactColors, Events, Methods } from "./spec";
@@ -32,6 +33,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
     }
 
     public async getContacts(): Promise<Contact[]> {
+        await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Profile locked");
@@ -41,13 +43,14 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
     }
     
     public async getContact(contactId: string): Promise<Contact> {
+        await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Profile locked");
         }
 
         const contact = await this.storage.get(contactId);
-        if (!contact) {
+        if (contact?.profileId !== profile.id) {
             throw new Error("invalid id");
         }
 
@@ -55,6 +58,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
     }
 
     public async addContact(name: string, address: string, color?: string): Promise<Contact> {
+        await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Profile locked");
@@ -88,12 +92,18 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
     }
 
     public async updateContact(contactId: string, name?: string, address?: string): Promise<Contact> {
+        await this.ensureInitialized();
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
         try {
             await this.lock.enter();
                 
             const contact = await this.storage.get(contactId);
-            if (!contact) {
-                throw new Error("Invalid id");
+            if (contact?.profileId !== profile.id) {
+                throw new Error("invalid id");
             }
 
             const newContact = {
@@ -115,12 +125,18 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
     }
         
     public async deleteContact(contactId: string): Promise<Contact> {
+        await this.ensureInitialized();
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
         try {
             await this.lock.enter();
                
             const contact = await this.storage.get(contactId);
-            if (!contact) {
-                throw new Error("Invalid id");
+            if (contact?.profileId !== profile.id) {
+                throw new Error("invalid id");
             }
 
             this.logDebug(`Remove contact #${contact.id} - ${contact.name}`);
@@ -147,60 +163,71 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
     }
 
     public async importContacts(data: string): Promise<Contact[]> {
+        await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Profile locked");
         }
 
-        const importedContacts = JSON.parse(data);
         const results: Contact[] = [];
-        
-        const existingContacts  = (await this.storage.getValues()).filter(c => c.profileId === profile.id);
-        const contactsByAddress = new Map<string, Contact>();
-        const contactsByName = new Map<string, Contact>();
-        
-        existingContacts.forEach(contact => {
-            contactsByAddress.set(contact.address, contact);
-            contactsByName.set(contact.name, contact);
-        });
 
-        for (const _c of importedContacts) {
-            try {
-                let contact: Contact;
+        type importedContact = { name: string; address: string; [key: string]: any; }
+        const importedContacts = JSON.parse(data)
+        .map((c: importedContact) => ({
+            ...c,
+            name: sanitizeString(c.name, 20),
+            address: sanitizeString(c.address, 66),
+        }))
+        .filter((c: importedContact) => !!c.name && !!c.address);
 
-                const existingByAddress = contactsByAddress.get(_c.address);
-                const existingByName = contactsByName.get(_c.name);
+        if (importedContacts.length) {
+            const existingContacts  = (await this.storage.getValues()).filter(c => c.profileId === profile.id);
+            const contactsByAddress = new Map<string, Contact>();
+            const contactsByName = new Map<string, Contact>();
+            
+            existingContacts.forEach(contact => {
+                contactsByAddress.set(contact.address, contact);
+                contactsByName.set(contact.name, contact);
+            });
 
-                if (existingByAddress) {
-                    contact = await this.updateContact(
-                        existingByAddress.id,
-                        _c.name,
-                        _c.address
-                    );
-                    
-                    this.logDebug(`Updated existing contact by address: ${_c.address}`);
-                } else if (existingByName) {
-                    contact = await this.updateContact(
-                        existingByName.id,
-                        _c.name,
-                        _c.address
-                    );
-                    
-                    this.logDebug(`Updated existing contact by name: ${_c.name}`);
-                } else {
-                    const _color = _c.color && contactColors.includes(_c.color) ? _c.color : getRandomElement(contactColors)
-                    contact = await this.addContact(
-                        _c.name,
-                        _c.address,
-                        _color
-                    );
-                    
-                    this.logDebug(`Added new contact: ${_c.name} - ${_c.address}`);
+            for (const _c of importedContacts) {
+                try {
+                    let contact: Contact;
+
+                    const existingByAddress = contactsByAddress.get(_c.address);
+                    const existingByName = contactsByName.get(_c.name);
+
+                    if (existingByAddress) {
+                        contact = await this.updateContact(
+                            existingByAddress.id,
+                            _c.name,
+                            _c.address
+                        );
+                        
+                        this.logDebug(`Updated existing contact by address: ${_c.address}`);
+                    } else if (existingByName) {
+                        contact = await this.updateContact(
+                            existingByName.id,
+                            _c.name,
+                            _c.address
+                        );
+                        
+                        this.logDebug(`Updated existing contact by name: ${_c.name}`);
+                    } else {
+                        const _color = _c.color && contactColors.includes(_c.color) ? _c.color : getRandomElement(contactColors)
+                        contact = await this.addContact(
+                            _c.name,
+                            _c.address,
+                            _color
+                        );
+                        
+                        this.logDebug(`Added new contact: ${_c.name} - ${_c.address}`);
+                    }
+
+                    results.push(contact!);
+                } catch (error) {
+                    this.logError(`Failed to import contact ${_c.name} - ${_c.address}`, getErrorMessage(error));
                 }
-
-                results.push(contact!);
-            } catch (error) {
-                this.logError(`Failed to import contact ${_c.name} - ${_c.address}`, getErrorMessage(error));
             }
         }
         

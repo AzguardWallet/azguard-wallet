@@ -116,10 +116,11 @@ const onKeydown = e => {
 
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Input
-					v-model="senderAddress"
 					label="Sender address"
 					placeholder="0x174403baa8cd5ad87b6bc5b6db32eb430c77cae5798092c4e4755835bb4d0cb0"
 					autofocus
+					sanitize
+					v-model="senderAddress"
 				>
 					<template #right>
 						<Transition name="fade">

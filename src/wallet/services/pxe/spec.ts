@@ -10,13 +10,20 @@ import type {
     Tx,
     TxExecutionRequest,
     TxHash,
+    TxProfileResult,
     TxProvingResult,
+    TxReceipt,
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
 import type { Network } from "@/wallet/services/network/spec";
 import type { GasFees } from "@aztec/stdlib/gas";
-import type { ContractClassMetadata, ContractMetadata, PXEInfo } from "@aztec/stdlib/interfaces/client";
+import type {
+    ContractClassMetadata,
+    ContractMetadata,
+    EventMetadataDefinition,
+    PXEInfo,
+} from "@aztec/stdlib/interfaces/client";
 
 export const PXE_SERVICE_NAME = "pxe";
 
@@ -60,4 +67,22 @@ export type Methods = {
         scopes?: AztecAddress[],
     ): UtilitySimulationResult;
     updateContract(network: Network, contractAddress: AztecAddress, artifact: ContractArtifact): void;
+    registerContractClass(network: Network, artifact: ContractArtifact): void;
+    getTxReceipt(network: Network, txHash: TxHash): TxReceipt;
+    getPrivateEvents(
+        network: Network,
+        contractAddress: AztecAddress,
+        eventMetadata: EventMetadataDefinition,
+        from: number,
+        numBlocks: number,
+        recipients: AztecAddress[],
+    ): unknown[];
+    getPublicEvents(network: Network, eventMetadata: EventMetadataDefinition, from: number, limit: number): unknown[];
+    profileTx(
+        network: Network,
+        txRequest: TxExecutionRequest,
+        profileMode: "gates" | "execution-steps" | "full",
+        skipProofGeneration?: boolean,
+        msgSender?: AztecAddress,
+    ): TxProfileResult;
 };
