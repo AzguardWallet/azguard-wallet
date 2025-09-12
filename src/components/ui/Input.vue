@@ -5,7 +5,7 @@ import { ref, watch, computed } from "vue"
 /** Utils */
 import { sanitizeString } from "@/utils/string"
 
-const emit = defineEmits(["update:modelValue", "focus", "blur", "maxLengthReached"])
+const emit = defineEmits(["update:modelValue", "focus", "blur", "maxLengthReached", "clear"])
 const props = defineProps({
 	size: {
 		type: String,
@@ -204,7 +204,9 @@ const handlePaste = e => {
 }
 
 const handleClear = () => {
+	isFocused.value = false
 	text.value = null
+	emit("clear")
 	emit("blur")
 }
 </script>

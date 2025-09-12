@@ -272,7 +272,7 @@ const handleSelectProfile = () => {
 		<Flex wide justify="center">
 			<Button @click="popupStore.open('forgot_password')" type="secondary" size="mini">
 				<Icon name="info" size="16" color="tertiary" />
-				<Text color="secondary">Forgot Password</Text>
+				<Text color="secondary">Reset Profile</Text>
 			</Button>
 		</Flex>
 	</Flex>

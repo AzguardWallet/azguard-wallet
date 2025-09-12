@@ -24,19 +24,9 @@ const popupStore = usePopupStore()
 
 const router = useRouter()
 
-const dappSessions = computed(() => {
-	const arr = [...appStore.dappSessions]
-	for (let index = 0; index < arr.length; index++) {
-		const el = arr[index]
-		el.imageLoaded = !!el.dappMetadata.icon
-	}
+const dappSessions = ref([])
 
-	return arr
-})
-
-const onImageError = ds => {
-	ds.imageLoaded = false
-}
+const dappSessionServiceClient = new DappSessionServiceClient()
 
 const handleOpenConnectByURIPopup = () => {
 	if (!appStore.isLogined) return
@@ -53,7 +43,41 @@ const handleDropAllSessions = () => {
 	}
 }
 
-const dappSessionServiceClient = new DappSessionServiceClient()
+async function loadImageBlob(url) {
+	try {
+		const res = await fetch(url, { mode: 'cors' })
+		if (!res.ok) return null
+
+		const blob = await res.blob()
+
+		return URL.createObjectURL(blob)
+	} catch {
+		return null
+	}
+}
+
+watchEffect(() => {
+	const storeIds = appStore.dappSessions.map(s => s.id)
+	dappSessions.value = dappSessions.value.filter(s => storeIds.includes(s.id))
+
+	appStore.dappSessions.forEach(s => {
+		const exists = dappSessions.value.some(item => item.id === s.id)
+		if (!exists) {
+			dappSessions.value.push({...s})
+		}
+	})
+
+	dappSessions.value.forEach(async (s) => {
+		if (s.dappMetadata.logo) {
+			s.loadingLogo = true
+			try {
+				s.dappMetadata.logoBlobUrl = await loadImageBlob(s.dappMetadata.logo)
+			} finally {
+				s.loadingLogo = false
+			}
+		}
+	})
+})
 </script>
 
 <template>
@@ -105,10 +129,10 @@ const dappSessionServiceClient = new DappSessionServiceClient()
 						:class="$style.session"
 					>
 						<Flex align="center" gap="10">
-							<div v-if="ds.imageLoaded" :class="$style.avatar_container">
+							<Icon v-if="ds.loadingLogo" :loading="true" name="dapp" size="22" color="tertiary" />
+							<div v-else-if="ds.dappMetadata.logoBlobUrl" :class="$style.avatar_container">
 								<img
-									:src="ds.dappMetadata.icon"
-									@error="onImageError(ds)"
+									:src="ds.dappMetadata.logoBlobUrl"
 									:class="$style.avatar_image"
 								/>
 							</div>

@@ -89,7 +89,6 @@ watch(
 	},
 )
 onMounted(() => {
-	accountStateClientService.connect()
 	if (appStore.network) fetchSenders()
 })
 onBeforeUnmount(() => {
