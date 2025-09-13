@@ -29,6 +29,8 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
+const tokens = computed(() => appStore.tokens.sort((a, b) => a.name.localeCompare(b.name)))
+
 const handleEdit = target => {
 	cacheStore.tokenToEditIdx = target.id
 	popupStore.open("edit_token")
@@ -57,12 +59,12 @@ const handleDelete = target => {
 
 		<Flex direction="column" gap="16">
 			<Text size="13" weight="600" color="primary">
-				Tokens &nbsp;<Text color="tertiary">{{ appStore.tokens.length }} </Text>
+				Tokens &nbsp;<Text color="tertiary">{{ tokens.length }} </Text>
 			</Text>
 
 			<ItemsContainer>
 				<SettingItem
-					v-for="token in appStore.tokens"
+					v-for="token in tokens"
 					size="large"
 					:title="token.symbol"
 					:description="token.name"

@@ -14,6 +14,7 @@ const popupStore = usePopupStore()
 
 const router = useRouter()
 
+const tokens = computed(() => appStore.tokens.sort((a, b) => a.name.localeCompare(b.name)))
 const dummyAccountTokens = computed(() => {
 	return appStore.dummyTokens.filter(dt => dt.account === appStore.account.address)
 })
@@ -62,9 +63,9 @@ const dummyAccountTokens = computed(() => {
 			</Flex>
 		</Flex>
 
-		<template v-if="appStore.tokens.length || dummyAccountTokens.length">
+		<template v-if="tokens.length || dummyAccountTokens.length">
 			<ItemsContainer>
-				<TokenCard v-for="token in [...dummyAccountTokens, ...appStore.tokens]" :token />
+				<TokenCard v-for="token in [...dummyAccountTokens, ...tokens]" :token />
 			</ItemsContainer>
 		</template>
 		<template v-else>

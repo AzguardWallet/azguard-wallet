@@ -65,7 +65,7 @@ watch(
 
 			profiles.value = []
 		} else {
-			profiles.value = await profileService.getProfiles()
+			profiles.value = (await profileService.getProfiles())?.sort((a, b) => a.name.localeCompare(b.name))
 		}
 	},
 )

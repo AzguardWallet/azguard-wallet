@@ -67,6 +67,8 @@ watchEffect(() => {
 		}
 	})
 
+	dappSessions.value.sort((a, b) => a.expiry - b.expiry)
+
 	dappSessions.value.forEach(async (s) => {
 		if (s.dappMetadata.logo) {
 			s.loadingLogo = true

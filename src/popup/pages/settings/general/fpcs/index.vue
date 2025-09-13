@@ -35,7 +35,19 @@ const popupStore = usePopupStore()
 
 const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
 
-const fpcs = ref([])
+const allFpcs = ref([])
+const fpcs = computed(() => {
+	const getOrder = (type) => (type === FpcType.DefaultSponsoredFpc ? 0 : 1)
+
+	return allFpcs.value
+		?.map(f => prepareFpc(f))
+		.sort((a, b) => {
+			const typeOrder = getOrder(a.type) - getOrder(b.type)
+			return typeOrder
+				? typeOrder
+				: (a.name || "").localeCompare(b.name || "", undefined, {sensitivity: "base", numeric: true})
+		})
+})
 const balances = ref([])
 const tokens = computed(() => new Map(balances.value?.map(b => [b.token.contract, b.token])))
 const tokenContracts = computed(() => new Set(tokens.value?.keys()))
@@ -45,21 +57,29 @@ const error = ref()
 const showSearchInput = ref(false)
 const searchTerm = ref()
 const showAllFpcs = ref(true)
-const filteredFpcs = computed(() => {
-	let arr = [...fpcs.value]
-	if (!showAllFpcs.value) {
-		arr = arr.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
-	}
-	const lowTerm = searchTerm.value?.toLowerCase() || ""
-	if (!lowTerm) return arr
 
-	return arr.filter(fpc => {
+const filteredFpcs = computed(() => {
+	const lowTerm = searchTerm.value?.toLowerCase() || ""
+
+	return fpcs.value.filter(fpc => {
+		if (
+			!showAllFpcs.value &&
+			!(
+				fpc.type === FpcType.DefaultSponsoredFpc ||
+				(fpc.type === FpcType.DefaultFpc && tokenContracts.value?.has(fpc.asset))
+			)
+		) {
+			return false
+		}
+
+		if (!lowTerm) return true
+
 		return (
 			fpc.name?.toLowerCase().includes(lowTerm) ||
 			fpc.typeName?.toLowerCase().includes(lowTerm) ||
 			fpc.token?.name?.toLowerCase().includes(lowTerm) ||
 			fpc.token?.symbol?.toLowerCase().includes(lowTerm) ||
-			fpc.address  === searchTerm.value ||
+			fpc.address === searchTerm.value ||
 			fpc.asset === searchTerm.value
 		)
 	})
@@ -95,9 +115,8 @@ const fetchFpcs = async () => {
 	isLoading.value = true
 	
 	try {
-		const allFpcs = await fpcService.getFpcs(appStore.network.chainId)
+		allFpcs.value = await fpcService.getFpcs(appStore.network.chainId)
 		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
-		fpcs.value = allFpcs ? allFpcs.map(f => prepareFpc(f)) : []
 	} catch (err) {
 		error.value = err
 	} finally {
@@ -145,26 +164,26 @@ const handleDelete = (fpc) => {
 }
 
 const onFpcAdded = (fpc) => {
-	fpcs.value.push(prepareFpc(fpc))
+	allFpcs.value.push(prepareFpc(fpc))
 }
 const onFpcUpdated = (fpc) => {
-	const idx = fpcs.value.findIndex(f => f.id === fpc.id)
+	const idx = allFpcs.value.findIndex(f => f.id === fpc.id)
 
 	if (idx === -1) return
-	fpcs.value[idx] = prepareFpc(fpc)
+	allFpcs.value[idx] = prepareFpc(fpc)
 }
 const onFpcDeleted = (fpc) => {
-	fpcs.value = fpcs.value.filter(f => f.id !== fpc.id)
+	allFpcs.value = allFpcs.value.filter(f => f.id !== fpc.id)
 }
 const onBalanceAdded = (balance) => {
 	balances.value.push(balance)
 
-	fpcs.value = fpcs.value.map(f => {
+	allFpcs.value = allFpcs.value.map(f => {
 		if (f.asset === balance.token.contract) {
-			return prepareFpc({
+			return {
 				...f,
 				token: balance.token,
-			})
+			}
 		}
 		return f
 	})
@@ -176,12 +195,12 @@ const onBalanceUpdated = (balance) => {
 }
 const onBalanceDeleted = (balance) => {
 	balances.value = balances.value.filter(b => b.token.contract !== balance.token.contract)
-	fpcs.value = fpcs.value.map(f => {
+	allFpcs.value = allFpcs.value.map(f => {
 		if (f.asset === balance.token.contract) {
-			return prepareFpc({
+			return {
 				...f,
 				token: null,
-			})
+			}
 		}
 		return f
 	})
