@@ -18,6 +18,7 @@ import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 /** Utils */
 import { managers } from "@/utils/core"
 import { getChainPosition } from "@/components/ui/utils"
+import { stringCompare} from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -31,10 +32,9 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const networks = computed(() => appStore.networks.sort((a, b) => {
-	const aPos = getChainPosition(a.chainId)
-	const bPos = getChainPosition(b.chainId)
-	return aPos === bPos ? a.name.localeCompare(b.name) : aPos - bPos
+const networks = computed(() => [...appStore.networks].sort((a, b) => {
+	const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
+	return chainPos ? chainPos : stringCompare(a.name, b.name)
 }))
 
 const handleSelectNetwork = target => {

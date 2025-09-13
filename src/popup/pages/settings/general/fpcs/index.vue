@@ -20,6 +20,7 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 
 /** Utils */
 import { getChainColor } from "@/components/ui/utils.js"
+import { stringCompare} from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -45,7 +46,7 @@ const fpcs = computed(() => {
 			const typeOrder = getOrder(a.type) - getOrder(b.type)
 			return typeOrder
 				? typeOrder
-				: (a.name || "").localeCompare(b.name || "", undefined, {sensitivity: "base", numeric: true})
+				: stringCompare(a.name, b.name)
 		})
 })
 const balances = ref([])

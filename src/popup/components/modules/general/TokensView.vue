@@ -5,6 +5,7 @@ import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdow
 
 /** Utils */
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
+import { stringCompare } from "@/utils/string"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -14,7 +15,7 @@ const popupStore = usePopupStore()
 
 const router = useRouter()
 
-const tokens = computed(() => appStore.tokens.sort((a, b) => a.name.localeCompare(b.name)))
+const tokens = computed(() => [...appStore.tokens].sort((a, b) => stringCompare(a.name, b.name)))
 const dummyAccountTokens = computed(() => {
 	return appStore.dummyTokens.filter(dt => dt.account === appStore.account.address)
 })

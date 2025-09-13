@@ -14,7 +14,7 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 
 /** Utils */
 import { NoteServiceClient } from "@/wallet/services/note/client"
-import { trimAddress } from "@/utils/string"
+import { stringCompare, trimAddress } from "@/utils/string"
 import { getColorFromAddress } from "@/components/ui/utils.js"
 
 /** Composables */
@@ -56,10 +56,9 @@ const fetchNotes = async isRefetching => {
 		notes.value = await noteService.getNotes(appStore.network.id, appStore.account.address)
 		notes.value.forEach(n => n.showingContent = parseNoteContent(n))
 		notes.value.sort((a, b) => {
-			const contractCompare = a.contract.localeCompare(b.contract)
-			if (contractCompare !== 0 || !(a.location && b.location)) return contractCompare
+			const contractCompare = stringCompare(a.contract, b.contract)
 
-			return a.location.localeCompare(b.location)
+			return contractCompare ? contractCompare : stringCompare(a.location, b.location)
 		})		
 	} catch (err) {
 		error.value = err

@@ -32,7 +32,6 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 				title="Authwits"
 				description="View all authwits"
 				chevron
-				disabled
 			/>
 			<SettingItem
 				size="large"

@@ -16,6 +16,7 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
+import { stringCompare} from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -29,7 +30,7 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const tokens = computed(() => appStore.tokens.sort((a, b) => a.name.localeCompare(b.name)))
+const tokens = computed(() => [...appStore.tokens].sort((a, b) => stringCompare(a.name, b.name)))
 
 const handleEdit = target => {
 	cacheStore.tokenToEditIdx = target.id

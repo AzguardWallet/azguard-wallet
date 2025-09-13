@@ -1,6 +1,7 @@
 <script setup>
 /** Utils */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { stringCompare } from "@/utils/string"
 
 /** Components */
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
@@ -65,7 +66,7 @@ watch(
 
 			profiles.value = []
 		} else {
-			profiles.value = (await profileService.getProfiles())?.sort((a, b) => a.name.localeCompare(b.name))
+			profiles.value = (await profileService.getProfiles())?.sort((a, b) => stringCompare(a.name, b.name))
 		}
 	},
 )

@@ -17,7 +17,7 @@ import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 /** Utils */
 import { ContactServiceClient } from "@/wallet/services/contact/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { sanitizeString, trimAddress } from "@/utils/string"
+import { sanitizeString, stringCompare, trimAddress } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -30,7 +30,11 @@ const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const contacts = ref([])
-const sortedContacts = computed(() => [...contacts.value].sort((a, b) => a.abbr.localeCompare(b.abbr)))
+const sortedContacts = computed(() => [...contacts.value].sort((a, b) => {
+		const abbrPos = stringCompare(a.abbr, b.abbr)
+		return abbrPos ? abbrPos : stringCompare(a.name, b.name)
+	})
+)
 
 const contactService = new ContactServiceClient()
 contactService.onContactAdded.add(onContactAdded)

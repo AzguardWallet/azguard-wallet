@@ -10,6 +10,7 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 /** Services */
 import { managers } from "@/utils/core.js"
 import { getChainPosition } from "@/components/ui/utils"
+import { stringCompare } from "@/utils/string"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -27,10 +28,10 @@ const displaceIdx = computed(() => {
 })
 
 const router = useRouter()
-const networks = computed(() => appStore.networks.sort((a, b) => {
-	const aPos = getChainPosition(a.chainId)
-	const bPos = getChainPosition(b.chainId)
-	return aPos === bPos ? a.name.localeCompare(b.name) : aPos - bPos
+const networks = computed(() => [...appStore.networks].sort((a, b) => {
+	const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
+
+	return chainPos ? chainPos : stringCompare(a.name, b.name)
 }))
 const handleSelectNetwork = target => {
 	if (appStore.network.id !== target.id) {
