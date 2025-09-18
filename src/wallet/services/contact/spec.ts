@@ -30,6 +30,12 @@ export type Methods = {
     getContact(id: string): Contact;
 
     /**
+     * Returns a contact with the specified address.
+     * @param address Contact address.
+     */
+    getContactByAddress(address: string): Contact | undefined;
+
+    /**
      * Creates and returns a new contact.
      * @param name Display name.
      * @param address contact address.

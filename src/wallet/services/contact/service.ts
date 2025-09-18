@@ -57,6 +57,20 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
         return contact;
     }
 
+    public async getContactByAddress(contactAddress: string): Promise<Contact | undefined> {
+        await this.ensureInitialized();
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
+        const contact = (await this.storage.getValues()).filter(c => c.profileId === profile.id && c.address === contactAddress);
+
+        if (!contact.length) return undefined
+
+        return contact[0];
+    }
+
     public async addContact(name: string, address: string, color?: string): Promise<Contact> {
         await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();

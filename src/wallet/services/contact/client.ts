@@ -23,6 +23,10 @@ export class ContactServiceClient extends ServiceClient<Methods, Events> impleme
         return this.request("getContact", id);
     }
 
+    public getContactByAddress(address: string): Promise<Contact | undefined> {
+        return this.request("getContactByAddress", address);
+    }
+
     public addContact(name: string, address: string, color?: string): Promise<Contact> {
         return this.request("addContact", name, address, color);
     }

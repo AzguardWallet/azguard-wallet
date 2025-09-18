@@ -6,7 +6,7 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 import { ExecutionServiceClient } from "@/wallet/services/execution/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { FaucetServiceClient } from "@/wallet/services/faucet/client"
-import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
+import { ContactServiceClient } from "@/wallet/services/contact/client"
 
 export const isBackgroundConnected = ref(false)
 const onConnected = () => {
@@ -31,6 +31,8 @@ const faucetService = new FaucetServiceClient()
 faucetService.connect()
 const executionService = new ExecutionServiceClient()
 executionService.connect()
+const contactService = new ContactServiceClient()
+contactService.connect()
 
 export const managers = {
 	profile: profileService,
@@ -42,6 +44,7 @@ export const managers = {
 	faucet: faucetService,
 	transaction: null,
 	token: null,
+	contact: contactService,
 }
 
 export const initTokenService = ({ profile, network, account, onTokenAdded, onTokenUpdated, onTokenDeleted }) => {
