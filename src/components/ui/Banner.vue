@@ -33,12 +33,12 @@ const props = defineProps({
 			</Flex>
 
 			<Flex :direction="direction === 'horizontal' ? 'row' : 'column'" gap="8">
-				<Text size="12" weight="600" color="primary" :style="{ marginTop: direction === 'vertical' && '4px', lineHeight: '1.4' }">
+				<Text size="12" weight="600" :height="direction === 'vertical' ? '120' : '140'" color="primary" :style="{ marginTop: direction === 'vertical' && '4px' }">
 					<slot />
 					<slot name="title" />
 				</Text>
 
-				<Text size="12" weight="500" color="tertiary" :style="{ marginBottom: !action && '4px' }">
+				<Text size="12" weight="500" height="120" color="tertiary" :style="{ marginBottom: !action && '4px' }">
 					<slot name="description" />
 				</Text>
 

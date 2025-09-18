@@ -40,7 +40,6 @@ const contactService = new ContactServiceClient()
 contactService.onContactAdded.add(onContactAdded)
 contactService.onContactUpdated.add(onContactUpdated)
 contactService.onContactDeleted.add(onContactDeleted)
-
 function onContactAdded(contact) {
 	contacts.value.push(contact)
 }

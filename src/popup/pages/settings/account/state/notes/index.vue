@@ -79,9 +79,9 @@ function parseNoteContent(note) {
 	return Object.keys(filtered).length > 0 ? filtered : note.content
 }
 
-const handleOpenNotePopup = note => {
-	cacheStore.activeNote = note
-	popupStore.open("note")
+const handleOpenNote = note => {
+	cacheStore.viewerData = note
+	popupStore.open("data_viewer")
 }
 
 watch(
@@ -126,7 +126,7 @@ onBeforeUnmount(() => {
 			</Tooltip>
 			
 			<Flex v-else-if="filteredNotes.length" direction="column" gap="8">
-				<Flex v-for="note in filteredNotes" @click="handleOpenNotePopup(note)" direction="column" gap="6" :class="$style.card">
+				<Flex v-for="note in filteredNotes" @click="handleOpenNote(note)" direction="column" gap="6" :class="$style.card">
 					<Flex align="center" justify="between" gap="12" wide>
 						<Text size="14" weight="600" color="primary" :class="$style.row"> {{ note.type ?? 'Custom Note' }} </Text>
 
