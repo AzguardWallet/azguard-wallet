@@ -136,7 +136,8 @@ onBeforeUnmount(() => {
 							:class="$style.badge"
 							:style="{ background: `var(--${getColorFromAddress(note.contract)})` }"
 						>
-							<Text size="11" weight="600"> {{ trimAddress(note.contract, 4, 4) }} </Text>
+							<AddressDisplay size="11" weight="600" :address="note.contract" :formatter="(addr) => trimAddress(addr, 4, 4)" />
+							<!-- <Text size="11" weight="600"> {{ trimAddress(note.contract, 4, 4) }} </Text> -->
 						</Flex>
 					</Flex>
 

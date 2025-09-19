@@ -313,11 +313,13 @@ onBeforeUnmount(() => {
 					<Flex v-if="aw.content.kind === AuthwitContentKind.Call" direction="column" gap="8">
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Caller: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.caller }} </Text>
+							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.caller" full />
+							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.caller }} </Text> -->
 						</Flex>
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Contract: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.contract }} </Text>
+							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.contract" full />
+							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.contract }} </Text> -->
 						</Flex>
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Method: </Text>
@@ -327,11 +329,13 @@ onBeforeUnmount(() => {
 					<Flex v-else-if="aw.content.kind === AuthwitContentKind.EncodedCall" direction="column" gap="8">
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Caller: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.caller }} </Text>
+							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.caller" full />
+							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.caller }} </Text> -->
 						</Flex>
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> To: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.to }} </Text>
+							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.to" full />
+							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.to }} </Text> -->
 						</Flex>
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Selector: </Text>
@@ -341,7 +345,8 @@ onBeforeUnmount(() => {
 					<Flex v-else-if="aw.content.kind === AuthwitContentKind.Intent" direction="column" gap="8">
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Consumer: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.consumer }} </Text>
+							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.consumer" full />
+							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.consumer }} </Text> -->
 						</Flex>
 						<Flex align="start" gap="4" wide :class="[$style.content_fix_lines, $style.content_2_lines]">
 							<Text size="13" color="tertiary"> intent: </Text>

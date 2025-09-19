@@ -4,6 +4,7 @@ import { onMounted } from "vue"
 import { managers } from "@/utils/core.js"
 import { trimAddress } from "@/utils/string"
 
+const emit = defineEmits(["onAddressClick"])
 const props = defineProps({
 	address: {
 		type: String,
@@ -40,6 +41,16 @@ const displayedAddress = ref("")
 
 const showName = ref(false)
 
+const handleClick = () => {
+	showName.value = !showName.value
+
+	if (contactName.value) {
+		event.stopPropagation()
+	}
+	
+	emit("onAddressClick")
+}
+
 onMounted(async () => {
 	if (props.address) {
 		const contact = await managers.contact.getContactByAddress(props.address)
@@ -63,7 +74,7 @@ onMounted(async () => {
 
 <template>
 	<Text
-		@click="showName = !showName"
+		@click="handleClick"
 		:size="size"
 		:color="color"
 		:weight="weight"

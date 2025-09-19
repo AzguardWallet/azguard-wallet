@@ -131,7 +131,7 @@ const handleCopy = target => {
 				<Flex v-if="transfer" wide gap="4">
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.left]">
 						<Flex @click="handleCopy(transfer.from)" wide direction="column" gap="4" class="copyable">
-							<AddressDisplay size="13" weight="600" :address="transfer.to" :formatter="(addr) => trimAddress(addr, 6, 4)" />
+							<AddressDisplay @onAddressClick="handleCopy(transfer.from)" size="13" weight="600" :address="transfer.from" :formatter="(addr) => trimAddress(addr, 6, 4)" />
 							<Text size="12" weight="500" color="tertiary"> From </Text>
 						</Flex>
 
@@ -144,7 +144,7 @@ const handleCopy = target => {
 
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.right]">
 						<Flex @click="handleCopy(transfer.to)" wide direction="column" gap="4" class="copyable">
-							<AddressDisplay size="13" weight="600" :address="transfer.to" :formatter="(addr) => trimAddress(addr, 6, 4)" />
+							<AddressDisplay @onAddressClick="handleCopy(transfer.to)" size="13" weight="600" :address="transfer.to" :formatter="(addr) => trimAddress(addr, 6, 4)" />
 							<Text size="12" weight="500" color="tertiary"> Destination </Text>
 						</Flex>
 

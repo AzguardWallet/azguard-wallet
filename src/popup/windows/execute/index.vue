@@ -333,7 +333,8 @@ const showJson = () => {
 											<Text color="secondary"> call </Text>
 											{{ action.method || action.selector }}
 											<Text color="secondary"> in </Text>
-											{{ trimAddress(action.contract || action.to) }}
+											<AddressDisplay :address="action.contract || action.to" />
+											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -359,7 +360,8 @@ const showJson = () => {
 											<Text color="secondary"> call </Text>
 											{{ action.method || action.selector }}
 											<Text color="secondary"> in </Text>
-											{{ trimAddress(action.contract || action.to) }}
+											<AddressDisplay :address="action.contract || action.to" />
+											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -399,19 +401,22 @@ const showJson = () => {
 						<template v-else-if="op.kind === OperationKind.RegisterContract">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+								<AddressDisplay :address="op.address" />
+								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === OperationKind.RegisterSender">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Sender address:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+								<AddressDisplay :address="op.address" />
+								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === OperationKind.RegisterToken">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Token address:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+								<AddressDisplay :address="op.address" />
+								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === OperationKind.SimulateTransaction">
@@ -435,7 +440,8 @@ const showJson = () => {
 											<Text color="secondary"> call </Text>
 											{{ action.method || action.selector }}
 											<Text color="secondary"> in </Text>
-											{{ trimAddress(action.contract || action.to) }}
+											<AddressDisplay :address="action.contract || action.to" />
+											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -461,7 +467,8 @@ const showJson = () => {
 											<Text color="secondary"> call </Text>
 											{{ action.method || action.selector }}
 											<Text color="secondary"> in </Text>
-											{{ trimAddress(action.contract || action.to) }}
+											<AddressDisplay :address="action.contract || action.to" />
+											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -480,7 +487,8 @@ const showJson = () => {
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.contract) }}</Text>
+								<AddressDisplay :address="op.contract" />
+								<!-- <Text size="12" color="primary">{{ trimAddress(op.contract) }}</Text> -->
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Function:</Text>
@@ -501,7 +509,8 @@ const showJson = () => {
 									<Text v-for="(call, j) in op.calls" :key="`${i}:${j}`" size="12" color="primary">
 										{{ call.method || call.selector }}
 										<Text color="secondary"> in </Text>
-										{{ trimAddress(call.contract || call.to) }}
+										<AddressDisplay :address="call.contract || call.to" />
+										<!-- {{ trimAddress(call.contract || call.to) }} -->
 									</Text>
 								</Flex>
 							</Flex>
