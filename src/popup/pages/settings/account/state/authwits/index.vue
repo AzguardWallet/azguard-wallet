@@ -171,7 +171,7 @@ async function fetchAuthwits(isRefetching) {
 	isFetchingAuthwits.value = true
 
 	try {
-		authwits.value = await authwitsService.getAuthwits(appStore.account)
+		authwits.value = await authwitsService.getAuthwits(appStore.account.address)
 	} catch (err) {
 		error.value = err
 	} finally {
