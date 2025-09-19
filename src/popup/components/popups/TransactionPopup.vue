@@ -11,6 +11,7 @@ import { OriginType } from "@/wallet/services/transaction/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
+import { trimAddress } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -130,11 +131,7 @@ const handleCopy = target => {
 				<Flex v-if="transfer" wide gap="4">
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.left]">
 						<Flex @click="handleCopy(transfer.from)" wide direction="column" gap="4" class="copyable">
-							<Text size="13" weight="600" color="primary">
-								{{ transfer.from.slice(0, 6) }}
-								<Text color="dark">•••</Text>
-								{{ transfer.from.slice(-4) }}
-							</Text>
+							<AddressDisplay @onAddressClick="handleCopy(transfer.from)" size="13" weight="600" :address="transfer.from" :formatter="(addr) => trimAddress(addr, 6, 4)" />
 							<Text size="12" weight="500" color="tertiary"> From </Text>
 						</Flex>
 
@@ -147,11 +144,7 @@ const handleCopy = target => {
 
 					<Flex wide align="center" gap="12" :class="[$style.item, $style.right]">
 						<Flex @click="handleCopy(transfer.to)" wide direction="column" gap="4" class="copyable">
-							<Text size="13" weight="600" color="primary">
-								{{ transfer.to.slice(0, 6) }}
-								<Text color="dark">•••</Text>
-								{{ transfer.to.slice(-4) }}
-							</Text>
+							<AddressDisplay @onAddressClick="handleCopy(transfer.to)" size="13" weight="600" :address="transfer.to" :formatter="(addr) => trimAddress(addr, 6, 4)" />
 							<Text size="12" weight="500" color="tertiary"> Destination </Text>
 						</Flex>
 

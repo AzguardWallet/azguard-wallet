@@ -118,7 +118,8 @@ onBeforeUnmount(() => {
 					<Flex gap="10">
 						<Icon name="user" size="16" color="tertiary" />
 
-						<Text @click="handleCopyAddress(sender)" size="14" weight="600" color="secondary"> {{ trimAddress(sender, 8, 8) }} </Text>
+						<AddressDisplay @onAddressClick="handleCopyAddress(sender)" size="14" weight="600" color="secondary" :address="transfer.from" :formatter="(addr) => trimAddress(addr, 8, 8)" />
+						<!-- <Text @click="handleCopyAddress(sender)" size="14" weight="600" color="secondary"> {{ trimAddress(sender, 8, 8) }} </Text> -->
 					</Flex>
 
 					<Flex align="center" gap="8">
