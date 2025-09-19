@@ -55,7 +55,7 @@ onMounted(async () => {
 	if (props.address) {
 		const contact = await managers.contact.getContactByAddress(props.address)
 		if (contact?.name) {
-			contactName.value = contact.name
+			contactName.value = `@${contact.name}`
 			showName.value = true
 		}
 

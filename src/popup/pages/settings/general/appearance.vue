@@ -29,7 +29,6 @@ const defaultConfig = new Config()
 const theme = ref(defaultConfig.theme)
 const isSidePanelEnabled = ref(defaultConfig.sidePanel)
 const isShowNodeNameEnabled = ref(defaultConfig.showNode)
-const isShowAliases = ref(defaultConfig.showAliases)
 const isShowPopupFullscreen = ref(defaultConfig.showPopupFullscreen)
 const isAnimationsDisabled = ref(defaultConfig.disableAnimations)
 const settings = {
@@ -47,11 +46,6 @@ const settings = {
 		title: "Show Node name",
 		description: "Always show node name in the header",
 		model: isShowNodeNameEnabled,
-	},
-	showAliases: {
-		title: "Show address alias",
-		description: "Show alias if address is added to contacts",
-		model: isShowAliases,
 	},
 	showPopupFullscreen: {
 		title: "Full-height popups",
