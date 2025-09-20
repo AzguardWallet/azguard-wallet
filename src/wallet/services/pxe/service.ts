@@ -3,9 +3,8 @@ import { getPXEServiceConfig, type PXEServiceConfig } from "@aztec/pxe/config";
 import { createPXEService } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/fields";
 import { AuthRegistryContractArtifact } from "@aztec/noir-contracts.js/AuthRegistry";
-import { ContractInstanceDeployerContractArtifact } from "@aztec/noir-contracts.js/ContractInstanceDeployer";
-import { ContractClassRegistererContractArtifact } from "@aztec/noir-contracts.js/ContractClassRegisterer";
-import { EasyPrivateTokenContractArtifact } from "@aztec/noir-contracts.js/EasyPrivateToken";
+// import { ContractInstanceDeployerContractArtifact } from "@aztec/noir-contracts.js/ContractRegistry";
+// import { ContractClassRegistererContractArtifact } from "@aztec/noir-contracts.js/ContractClassRegisterer";
 import { MultiCallEntrypointContractArtifact } from "@aztec/noir-contracts.js/MultiCallEntrypoint";
 import { FeeJuiceContractArtifact } from "@aztec/noir-contracts.js/FeeJuice";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
@@ -22,7 +21,7 @@ import {
     type ContractInstanceWithAddress,
     ContractInstanceWithAddressSchema,
     getContractClassFromArtifact,
-    getContractInstanceFromDeployParams,
+    getContractInstanceFromInstantiationParams,
     CompleteAddress,
     PartialAddress,
     NodeInfo,
@@ -360,8 +359,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         for (const artifact of [
             // protocol
             AuthRegistryContractArtifact,
-            ContractInstanceDeployerContractArtifact,
-            ContractClassRegistererContractArtifact,
+            // ContractInstanceDeployerContractArtifact,
+            // ContractClassRegistererContractArtifact,
             MultiCallEntrypointContractArtifact,
             FeeJuiceContractArtifact,
             RouterContractArtifact,
@@ -370,7 +369,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             SponsoredFPCContractArtifact,
             TokenContractArtifact,
             NFTContractArtifact,
-            EasyPrivateTokenContractArtifact,
             TokenBlacklistContractArtifact,
         ]) {
             const contractClass = await getContractClassFromArtifact(artifact);
@@ -378,7 +376,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             this.knownClasses.set(contractClass.id.toString(), contractClass);
         }
 
-        const sponsoredFpcInstance = await getContractInstanceFromDeployParams(SponsoredFPCContractArtifact, {
+        const sponsoredFpcInstance = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
             salt: new Fr(SPONSORED_FPC_SALT),
         });
         this.knownInstances.set(sponsoredFpcInstance.address.toString(), sponsoredFpcInstance);

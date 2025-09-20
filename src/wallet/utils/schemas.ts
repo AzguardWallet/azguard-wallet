@@ -4,7 +4,12 @@ import {
     ContractInstanceWithAddressSchema,
     ProtocolContractAddressesSchema,
 } from "@aztec/stdlib/contract";
-import { ContractClassMetadata, ContractMetadata, PXEInfo } from "@aztec/stdlib/interfaces/client";
+import {
+    ContractClassMetadata,
+    ContractMetadata,
+    EventMetadataDefinition,
+    PXEInfo,
+} from "@aztec/stdlib/interfaces/client";
 import { ZodFor } from "@aztec/foundation/schemas";
 import z from "zod";
 
@@ -19,7 +24,7 @@ export const ContractClassMetadataSchema = z.object({
 export const ContractMetadataSchema = z.object({
     contractInstance: z.union([ContractInstanceWithAddressSchema, z.undefined()]),
     isContractInitialized: z.boolean(),
-    isContractPubliclyDeployed: z.boolean(),
+    isContractPublished: z.boolean(),
 }) satisfies ZodFor<ContractMetadata>;
 
 export const PXEInfoSchema = z.object({
@@ -31,4 +36,4 @@ export const EventMetadataDefinitionSchema = z.object({
     eventSelector: EventSelector.schema,
     abiType: AbiTypeSchema,
     fieldNames: z.array(z.string()),
-});
+}) satisfies ZodFor<EventMetadataDefinition>;
