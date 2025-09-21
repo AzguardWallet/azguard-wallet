@@ -106,6 +106,7 @@ onBeforeUnmount(() => {
 
 		<Flex direction="column" gap="16">
 			<Input
+				v-if="filteredNotes.length"
 				v-model="searchTerm"
 				icon="search"
 				placeholder="Search by type, contract or location"

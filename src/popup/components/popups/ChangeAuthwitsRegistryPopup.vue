@@ -30,9 +30,9 @@ const props = defineProps({
 const authwitsService = new AuthRegistryServiceClient()
 authwitsService.onRegistryEnabled.add(onRegistryUpdated)
 authwitsService.onRegistryDisabled.add(onRegistryUpdated)
-function onRegistryUpdated(account) {
+async function onRegistryUpdated(account) {
 	if (appStore.account?.address === account) {
-		
+		isRegistryEnabled.value = await authwitsService.getRegistryEnabled(appStore.account.address)
 	}
 }
 

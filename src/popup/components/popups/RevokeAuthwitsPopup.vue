@@ -33,9 +33,9 @@ const props = defineProps({
 const authwitsService = new AuthRegistryServiceClient()
 authwitsService.onRegistryEnabled.add(onRegistryUpdated)
 authwitsService.onRegistryDisabled.add(onRegistryUpdated)
-function onRegistryUpdated(account) {
+async function onRegistryUpdated(account) {
 	if (appStore.account?.address === account) {
-		isRegistryEnabled.value = !isRegistryEnabled.value
+		isRegistryEnabled.value = await authwitsService.getRegistryEnabled(appStore.account.address)
 	}
 }
 
@@ -90,7 +90,6 @@ async function handleRevokeAuthwits() {
 	for (const ch of chunkedAuthwits.value) {
 		try {
 			ch.status = "progress"
-			await sleep(4_000)
 			await authwitsService.revokeAuthwits(appStore.network.id, appStore.account.address, ch.ids, ch.feeSettings)
 			ch.status = "success"
 		} catch (err) {

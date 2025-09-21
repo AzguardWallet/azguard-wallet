@@ -36,53 +36,6 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const mockAddresses = [
-  "0x1e1ca9125922e3809650f6fbdabb08918591c52b5ab2072855d92d7ca802403d",
-  "0x2f2ba9236933f4810761f7facbcbb192296a63c6cbb3073966e03e8db913504e",
-  "0x3a3da9347944f5921872g8gcdcdcc2933a874d7dcc4184a77f14f9ecb024605f",
-]
-const mockAuthwitsContent = [
-    // Call
-    new CallAuthwitContent(mockAddresses[0], mockAddresses[1], "transfer", ["100"]),
-    new CallAuthwitContent(mockAddresses[1], mockAddresses[2], "approve", ["200"]),
-    new CallAuthwitContent(mockAddresses[2], mockAddresses[0], "mint", ["500"]),
-    new CallAuthwitContent(mockAddresses[0], mockAddresses[1], "transfer", ["100"]),
-    new CallAuthwitContent(mockAddresses[1], mockAddresses[2], "approve", ["200"]),
-    new CallAuthwitContent(mockAddresses[2], mockAddresses[0], "mint", ["500"]),
-    new CallAuthwitContent(mockAddresses[0], mockAddresses[1], "transfer", ["100"]),
-    new CallAuthwitContent(mockAddresses[1], mockAddresses[2], "approve", ["200"]),
-
-    // EncodedCall
-    new EncodedCallAuthwitContent(mockAddresses[0], mockAddresses[1], "0xa9059cbb", ["0x01"], "transfer", "function"),
-    new EncodedCallAuthwitContent(mockAddresses[1], mockAddresses[2], "0x095ea7b3", ["0x02"], "approve", "function"),
-    new EncodedCallAuthwitContent(mockAddresses[2], mockAddresses[0], "0x40c10f19", ["0x03"], "mint", "function"),
-    new EncodedCallAuthwitContent(mockAddresses[0], mockAddresses[1], "0xa9059cbb", ["0x01"], "transfer", "function"),
-    new EncodedCallAuthwitContent(mockAddresses[1], mockAddresses[2], "0x095ea7b3", ["0x02"], "approve", "function"),
-    new EncodedCallAuthwitContent(mockAddresses[0], mockAddresses[1], "0xa9059cbb", ["0x01"], "transfer", "function"),
-    new EncodedCallAuthwitContent(mockAddresses[1], mockAddresses[2], "0x095ea7b3", ["0x02"], "approve", "function"),
-    new EncodedCallAuthwitContent(mockAddresses[2], mockAddresses[0], "0x40c10f19", ["0x03"], "mint", "function"),
-
-    // Intent
-    new IntentAuthwitContent(mockAddresses[0], ["stake", "100"]),
-    new IntentAuthwitContent(mockAddresses[1], ["unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50"]),
-    new IntentAuthwitContent(mockAddresses[2], ["votevotevotevotevotevotevotevotevotevotevotevotevote", "proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1"]),
-    new IntentAuthwitContent(mockAddresses[0], ["stake", "100"]),
-    new IntentAuthwitContent(mockAddresses[1], ["unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50"]),
-    new IntentAuthwitContent(mockAddresses[2], ["votevotevotevotevotevotevotevotevotevotevotevotevote", "proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1"]),
-    new IntentAuthwitContent(mockAddresses[1], ["unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50", "unstake", "50"]),
-    new IntentAuthwitContent(mockAddresses[2], ["votevotevotevotevotevotevotevotevotevotevotevotevote", "proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1proposal1"]),
-
-    // MessageHash
-    new MessageHashAuthwitContent("0xabc123def4567890abc123def4567890abc123def450asdasdasdasd"),
-    new MessageHashAuthwitContent("0xdef456abc1237890def456abc1237890def456abc1237890def456abc12378900xdef456abc1237890def456abc1237890def456abc1237890def456abc12378900xdef456abc1237890def456abc1237890def456abc1237890def456abc1237890"),
-    new MessageHashAuthwitContent("0x123abc456def7890123abc456def7890123abc456def7890123abc456def78900xdef456abc1237890def456abc1237890def456abc1237890def456abc1237890"),
-    new MessageHashAuthwitContent("0xabc123def4567890abc123def4567890abc123def450asdasdasdasd"),
-    new MessageHashAuthwitContent("0xdef456abc1237890def456abc1237890def456abc1237890def456abc12378900xdef456abc1237890def456abc1237890def456abc1237890def456abc12378900xdef456abc1237890def456abc1237890def456abc1237890def456abc1237890"),
-    new MessageHashAuthwitContent("0xabc123def4567890abc123def4567890abc123def450asdasdasdasd"),
-    new MessageHashAuthwitContent("0xdef456abc1237890def456abc1237890def456abc1237890def456abc12378900xdef456abc1237890def456abc1237890def456abc1237890def456abc12378900xdef456abc1237890def456abc1237890def456abc1237890def456abc1237890"),
-    new MessageHashAuthwitContent("0x123abc456def7890123abc456def7890123abc456def7890123abc456def78900xdef456abc1237890def456abc1237890def456abc1237890def456abc1237890"),
-]
-
 const authwits = ref([])
 const filteredAuthwits = computed(() => {
 	const res = [...authwits.value].sort((a, b) => {
@@ -171,29 +124,15 @@ async function fetchAuthwits(isRefetching) {
 	isFetchingAuthwits.value = true
 
 	try {
-		authwits.value = await authwitsService.getAuthwits(appStore.account.address)
+		authwits.value = (await authwitsService.getAuthwits(appStore.account.address))?.map(aw => {
+			return {
+				...aw,
+				kindName: aw.content.kind.split("_").map(k => capitalize(k)).join(" ")
+			}
+		})
 	} catch (err) {
 		error.value = err
 	} finally {
-        if (!authwits.value.length) {
-            authwits.value = mockAuthwitsContent.map((awc, i) => {
-				return {
-					id: i,
-					address: appStore.account.address,
-					hash: "asd123qweijwefnm29D()AJDk90jrimkdmsklm",
-					kindName: awc.kind.split("_").map(w => capitalize(w)).join(" "),
-					content: awc,
-				}
-			})
-        } else {
-			authwits.value = authwits.value.map(aw => {
-				return {
-					...aw,
-					kindName: aw.content.kind.split("_").map(k => capitalize(k)).join(" ")
-				}
-			})
-		}
-
 		isFetchingAuthwits.value = false
 	}
 }
@@ -262,7 +201,7 @@ onBeforeUnmount(() => {
 								{{ `${isRegistryEnabled ? 'Disable' : 'Enable'} authwits registry` }}
 							</Flex>
 						</DropdownItem>
-						<DropdownItem @click="revokeAuthwits()">
+						<DropdownItem @click="revokeAuthwits()" :disabled="!authwits.length">
 							<Flex align="center" gap="8">
 								<Icon name="close-circle" size="14" color="secondary" />
 								Revoke all authwits
@@ -281,6 +220,7 @@ onBeforeUnmount(() => {
 				</Text>
 			</Flex>
 			<Input
+				v-if="authwits.length"
 				v-model="searchTerm"
 				icon="search"
 				placeholder="Search by kind, address or function"

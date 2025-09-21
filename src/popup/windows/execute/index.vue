@@ -273,12 +273,12 @@ const showJson = () => {
 
 			<Flex align="center" justify="center" gap="20">
 				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<Icon v-if="dapp.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
+					<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
 					<img v-else-if="dapp?.logoBlobUrl" width="48" height="48" :src="dapp?.logoBlobUrl" />
 					<Icon v-else name="dapp" size="48" color="blue" />
 
 					<Text size="13" weight="600" color="primary">
-						{{ dapp.name ?? "Unknown dapp" }}
+						{{ dapp?.name ?? "Unknown dapp" }}
 					</Text>
 				</Flex>
 
