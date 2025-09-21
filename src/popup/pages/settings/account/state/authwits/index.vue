@@ -245,7 +245,13 @@ onBeforeUnmount(() => {
 					<Flex align="center" justify="between" gap="12" wide>
 						<Text size="14" weight="600" color="primary" :class="$style.row"> {{ aw.kindName ?? 'Custom Authwit' }} </Text>
 
-                        <Icon @click.stop="revokeAuthwits(aw)" name="close-circle" color="secondary" size="16" :class="$style.icon" />
+						<Tooltip position="end">
+							<Icon @click.stop="revokeAuthwits(aw)" name="close-circle" color="secondary" size="16" :class="$style.icon" />
+
+							<template #content>
+								Revoke authwit
+							</template>
+						</Tooltip>
 					</Flex>
 
 					<div :class="$style.divider" />
