@@ -181,7 +181,7 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
     }
 
     private async syncAuthwit(pxe: PXE, authwit: Authwit, parentTask: WrappedTask) {
-        const task = parentTask.createSubtask(new StepContent(`Sync authwit #${authwit.id}`));
+        const task = parentTask.startSubtask(new StepContent(`Sync authwit #${authwit.id}`));
         try {
             const isConsumable = await isAuthwitConsumable(pxe, authwit.account, authwit.hash);
             if (isConsumable) return;
