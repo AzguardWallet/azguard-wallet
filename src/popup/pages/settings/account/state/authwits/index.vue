@@ -99,13 +99,7 @@ function onAuthwitAdded(authwit) {
 	authwits.value[idx] = authwit
 }
 function onAuthwitDeleted(authwit) {
-	const idx = authwits.value.findIndex(aw => aw.id === authwit.id)
-	if (idx === -1) {
-		authwits.value.push(authwit)
-		return
-	}
-
-	authwits.value[idx] = authwit
+	authwits.value = authwits.value.filter(aw => aw.id !== authwit.id)
 }
 function onRegistryEnabled(account) {
 	if (appStore.account?.address === account) {
