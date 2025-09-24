@@ -1180,11 +1180,7 @@
   dependencies:
     "@noble/hashes" "1.8.0"
 
-<<<<<<< HEAD
-"@noble/curves@1.9.7", "@noble/curves@^1.2.0", "@noble/curves@^1.6.0", "@noble/curves@^1.9.1", "@noble/curves@~1.9.0":
-=======
 "@noble/curves@1.9.7", "@noble/curves@^1.6.0", "@noble/curves@^1.9.1", "@noble/curves@~1.9.0":
->>>>>>> master
   version "1.9.7"
   resolved "https://registry.yarnpkg.com/@noble/curves/-/curves-1.9.7.tgz#79d04b4758a43e4bca2cbdc62e7771352fa6b951"
   integrity sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==
@@ -3301,11 +3297,7 @@ de-indent@^1.0.2:
   resolved "https://registry.yarnpkg.com/de-indent/-/de-indent-1.0.2.tgz#b2038e846dc33baa5796128d0804b455b8c1e21d"
   integrity sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==
 
-<<<<<<< HEAD
-debug@4, debug@^4.1.0, debug@^4.3.1, debug@^4.3.2, debug@^4.3.3, debug@^4.3.4, debug@^4.4.1, debug@^4.4.3:
-=======
 debug@4, debug@^4.1.0, debug@^4.3.1, debug@^4.3.2, debug@^4.3.3, debug@^4.3.4, debug@^4.4.1:
->>>>>>> master
   version "4.4.3"
   resolved "https://registry.yarnpkg.com/debug/-/debug-4.4.3.tgz#c6ae432d9bd9662582fce08709b038c58e9e3d6a"
   integrity sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==
@@ -5522,15 +5514,9 @@ pino@7.11.0:
     thread-stream "^0.15.1"
 
 pino@^9.5.0:
-<<<<<<< HEAD
-  version "9.11.0"
-  resolved "https://registry.yarnpkg.com/pino/-/pino-9.11.0.tgz#7fc383f815cf6bf5979b4d791eafd2f2496c42a6"
-  integrity sha512-+YIodBB9sxcWeR8PrXC2K3gEDyfkUuVEITOcbqrfcj+z5QW4ioIcqZfYFbrLTYLsmAwunbS7nfU/dpBB6PZc1g==
-=======
   version "9.10.0"
   resolved "https://registry.yarnpkg.com/pino/-/pino-9.10.0.tgz#b78555637605ef6f4287e51a89b2087d66da4859"
   integrity sha512-VOFxoNnxICtxaN8S3E73pR66c5MTFC+rwRcNRyHV/bV/c90dXvJqMfjkeRFsGBDXmlUN3LccJQPqGIufnaJePA==
->>>>>>> master
   dependencies:
     atomic-sleep "^1.0.0"
     fast-redact "^3.1.1"
