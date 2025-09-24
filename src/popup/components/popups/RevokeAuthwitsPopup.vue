@@ -178,7 +178,7 @@ const onKeydown = e => {
 				<Banner v-else-if="chunkesCount === 1" direction="vertical">
 					<template #title>Revoke authwits</template>
 					<template #description>
-						This transaction will revoke the selected authwits. Once revoked, they cannot be executed anymore.
+						This transaction will revoke the selected authwit(s). Once revoked, authwit(s) cannot be executed anymore.
 					</template>
 				</Banner>
 
