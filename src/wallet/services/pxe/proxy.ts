@@ -45,6 +45,10 @@ export class PXEProxy implements PXE {
     isL1ToL2MessageSynced(l1ToL2Message: Fr): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
+
+    getL1ToL2MessageBlock(l1ToL2Message: Fr): Promise<number | undefined> {
+        throw new Error("Method not implemented.");
+    }
     registerAccount(secretKey: Fr, partialAddress: PartialAddress): Promise<CompleteAddress> {
         return this.pxeService.registerAccount(this.network, secretKey, partialAddress);
     }

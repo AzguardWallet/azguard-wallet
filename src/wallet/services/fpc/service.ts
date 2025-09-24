@@ -59,10 +59,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 const pxe = this.pxeService.getPXE(network);
 
                 for (const contract of [
-                    AztecAddress.fromString("0x0c2246629438e708f452e924d05bb1521047eaf21fa9c98978cc0bf459a7c081"),
-                    AztecAddress.fromString("0x1260a43ecf03e985727affbbe3e483e60b836ea821b6305bea1c53398b986047"),
-                    AztecAddress.fromString("0x19b5539ca1b104d4c3705de94e4555c9630def411f025e023a13189d0c56f8f2"),
-                    AztecAddress.fromString("0x1107c84edae4dfc000b3af5b4bf3bb1e13ee917baa2e7ad4d3f13221c865b936"),
+                    AztecAddress.fromString("0x299f255076aa461e4e94a843f0275303470a6b8ebe7cb44a471c66711151e529"),
                 ]) {
                     const contractMeta = await pxe.getContractMetadata(contract);
                     if (contractMeta.contractInstance) {

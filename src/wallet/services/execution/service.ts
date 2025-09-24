@@ -10,6 +10,7 @@ import {
     FunctionSelector,
     FunctionType,
     FunctionCall,
+    decodeFromAbi,
 } from "@aztec/stdlib/abi";
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -52,7 +53,6 @@ import {
 import { FpcService } from "@/wallet/services/fpc/service";
 import { TransactionService, OriginType, TransferType, TxCall, TxOrigin } from "@/wallet/services/transaction/service";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
-import { decodeFromAbiPatched } from "@/wallet/utils/abi-decoder";
 import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import {
@@ -240,7 +240,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 simulatedTx.privateExecutionResult,
                 transferTask,
             );
-            const txHash = await this.sendProvedTx(pxe, provedTx.toTx(), transferTask);
+            const txHash = await this.sendProvedTx(pxe, await provedTx.toTx(), transferTask);
 
             const tx = await this.transactionService.addTransaction(
                 origin,
@@ -440,12 +440,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         feeSetupTask,
                     );
-                    const baseFees = await pxe.getCurrentBaseFees();
                     const gasSettings = new GasSettings(
                         simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                         simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                        baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
-                        new GasFees(0, 0),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
                     );
                     feeSetupTask.complete();
                     return [op, gasSettings, true];
@@ -472,12 +471,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         feeSetupTask,
                     );
-                    const baseFees = await pxe.getCurrentBaseFees();
                     const gasSettings = new GasSettings(
                         simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                         simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                        baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
-                        new GasFees(0, 0),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
                     );
                     feeSetupTask.complete();
                     return [op, gasSettings, true];
@@ -500,7 +498,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         feeSetupTask,
                     );
-                    const baseFees = await pxe.getCurrentBaseFees();
+                    const baseFees = txRequest.txContext.gasSettings.maxFeesPerGas;
                     let maxFee = simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)).computeFee(baseFees);
                     op.setup = fpc.getFeePayload(op.accountAddress, maxFee, inPublic);
                     // precise estimation
@@ -508,8 +506,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     txRequest.txContext.gasSettings = new GasSettings(
                         simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)),
                         simulatedTx.gasUsed.teardownGas.add(fpc.getTeardownGas(inPublic)),
-                        baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
-                        new GasFees(0, 0),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
                     );
                     simulatedTx = await this.simulateTxRequest(
                         pxe,
@@ -526,8 +524,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const gasSettings = new GasSettings(
                         simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                         simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                        baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
-                        new GasFees(0, 0),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
                     );
                     feeSetupTask.complete();
                     return [op, gasSettings, false];
@@ -538,12 +536,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     }
                     const { teardownDaGas, teardownL2Gas } = op.feeSettings.paymentMethod as CustomPaymentMethod;
                     let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
-                    const baseFees = await pxe.getCurrentBaseFees();
                     txRequest.txContext.gasSettings = new GasSettings(
                         txRequest.txContext.gasSettings.gasLimits,
                         new Gas(teardownDaGas, teardownL2Gas),
-                        baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
-                        new GasFees(0, 0),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
                     );
                     const simulatedTx = await this.simulateTxRequest(
                         pxe,
@@ -558,8 +555,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const gasSettings = new GasSettings(
                         simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
                         simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                        baseFees.mul(3), // TODO: remove multiplier when base fees are fixed
-                        new GasFees(0, 0),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
                     );
                     const isFeePayer =
                         simulatedTx.publicInputs.feePayer.isZero() ||
@@ -609,7 +606,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             parentTask,
         );
         const provedTx = await this.proveTxRequest(pxe, txRequest, simulatedTx.privateExecutionResult, parentTask);
-        const txHash = await this.sendProvedTx(pxe, provedTx.toTx(), parentTask);
+        const txHash = await this.sendProvedTx(pxe, await provedTx.toTx(), parentTask);
 
         const tx = await this.transactionService.addTransaction(
             origin,
@@ -805,11 +802,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     if (fn.functionType === FunctionType.UTILITY) {
                         let decodedArgs;
                         try {
-                            decodedArgs = ensureArray(
-                                decodeFromAbiPatched(
-                                    fn.parameters.map(x => x.type),
-                                    _call.args.map(x => Fr.fromString(x)),
-                                ),
+                            decodedArgs = decodeFromAbi(
+                                fn.parameters.map(x => x.type),
+                                _call.args.map(x => Fr.fromString(x)),
                             );
                         } catch (error) {
                             const errorMessage = getErrorMessage(error);
@@ -826,7 +821,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         utility.push([
                             pxe.simulateUtility(
                                 fn.name,
-                                decodedArgs,
+                                fn.parameters.length === 1
+                                    ? [decodedArgs] // CHECK: remove wrapping into array if aztec fix decoder
+                                    : (decodedArgs as AbiDecoded[]),
                                 AztecAddress.fromString(_call.to),
                                 undefined, // authwits
                                 account.address,
@@ -891,7 +888,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? [];
                 result.encoded[i] = values;
                 try {
-                    result.decoded[i] = decodeFromAbiPatched(types, values);
+                    result.decoded[i] = decodeFromAbi(types, values);
                 } catch (error) {
                     this.logError("Failed to decode simulation results", types, values, getErrorMessage(error));
                 }
@@ -909,7 +906,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                             visibility: "public",
                         })),
                     } as any,
-                    [values], // TODO: change to "ensureArray(values)" when aztec supports multi-type decoding
+                    types.length === 1
+                        ? [values] // CHECK: remove wrapping into array if aztec fix decoder
+                        : (values as AbiDecoded[]),
                 );
             } catch (error) {
                 this.logError("Failed to encode utility simulation results", types, values, getErrorMessage(error));

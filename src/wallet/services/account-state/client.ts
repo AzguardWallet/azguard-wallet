@@ -1,7 +1,7 @@
 import { ServiceSpec } from "@/wallet/base";
 import { ServiceClient } from "@/wallet/base/background";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import { ACCOUNT_STATE_SERVICE_NAME, Events, Methods, Note, NoteStatus } from "./spec";
+import { ACCOUNT_STATE_SERVICE_NAME, Events, Methods } from "./spec";
 import { LoggerServiceClient } from "../logger/client";
 
 export * from "./spec";
@@ -32,16 +32,6 @@ export class AccountStateServiceClient extends ServiceClient<Methods, Events> im
 
     public getContracts(networkId: string): Promise<string[]> {
         return this.request("getContracts", networkId);
-    }
-
-    public getNotes(
-        networkId: string,
-        owner: string,
-        status?: NoteStatus,
-        contract?: string,
-        tx?: string,
-    ): Promise<Note[]> {
-        return this.request("getNotes", networkId, owner, status, contract, tx);
     }
 
     public getVersion(networkId: string): Promise<string> {

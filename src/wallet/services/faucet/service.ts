@@ -3,13 +3,13 @@ import { TokenContract } from "@aztec/noir-contracts.js/Token";
 import { bufferAsFields } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
-    DEPLOYER_CONTRACT_ADDRESS,
+    CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS,
+    CONTRACT_CLASS_REGISTRY_BYTECODE_CAPSULE_SLOT,
+    CONTRACT_INSTANCE_REGISTRY_CONTRACT_ADDRESS,
     MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS,
-    REGISTERER_CONTRACT_ADDRESS,
-    REGISTERER_CONTRACT_BYTECODE_CAPSULE_SLOT,
 } from "@aztec/constants";
 import {
-    getContractInstanceFromDeployParams,
+    getContractInstanceFromInstantiationParams,
     getContractClassFromArtifact,
     type ContractInstanceWithAddress,
 } from "@aztec/stdlib/contract";
@@ -58,7 +58,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
     public constructor(logger: ILogger) {
         super(FAUCET_SERVICE_NAME, logger);
     }
-    
+
     protected async init(services: ServiceCollection) {
         this.pxeService = new PxeServiceClient(this.logger);
         this.profileService = services.get(ProfileService.name);
@@ -109,7 +109,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
 
             const artifact = TokenContract.artifact;
             const contractClass = await getContractClassFromArtifact(artifact);
-            instance = await getContractInstanceFromDeployParams(artifact, {
+            instance = await getContractInstanceFromInstantiationParams(artifact, {
                 constructorArgs: [accountAddress, name, symbol, decimals],
                 publicKeys: PublicKeys.default(),
                 salt: Fr.zero(),
@@ -122,27 +122,26 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
                 deployActions.push(
                     new AddCapsuleAction(
-                        AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(),
-                        new Fr(REGISTERER_CONTRACT_BYTECODE_CAPSULE_SLOT).toString(),
+                        AztecAddress.fromNumber(CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS).toString(),
+                        new Fr(CONTRACT_CLASS_REGISTRY_BYTECODE_CAPSULE_SLOT).toString(),
                         encodedBytecode.map(x => x.toString()),
                     ),
-                    new CallAction(AztecAddress.fromNumber(REGISTERER_CONTRACT_ADDRESS).toString(), "register", [
-                        artifactHash,
-                        privateFunctionsRoot,
-                        publicBytecodeCommitment,
-                        true,
-                    ]),
+                    new CallAction(
+                        AztecAddress.fromNumber(CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS).toString(),
+                        "publish",
+                        [artifactHash, privateFunctionsRoot, publicBytecodeCommitment],
+                    ),
                 );
             }
 
             const contractMetadata = await pxe.getContractMetadata(instance.address);
-            if (!contractMetadata.isContractPubliclyDeployed) {
+            if (!contractMetadata.isContractPublished) {
                 this.logDebug("deploy faucet token");
                 const { salt, currentContractClassId, initializationHash, publicKeys } = instance;
                 deployActions.push(
                     new CallAction(
-                        AztecAddress.fromNumber(DEPLOYER_CONTRACT_ADDRESS).toString(), // ContractInstanceDeployer
-                        "deploy",
+                        AztecAddress.fromNumber(CONTRACT_INSTANCE_REGISTRY_CONTRACT_ADDRESS).toString(),
+                        "publish_for_public_execution",
                         [salt, currentContractClassId, initializationHash, publicKeys, true],
                     ),
                 );
@@ -210,11 +209,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
             const [mintResult, registerResult] = await this.executionService.executeOperations(
                 [
                     new SendTransactionOperation(networkId, accountAddress, feeSettings, [
-                        new CallAction(instance.address.toString(), "mint_to_private", [
-                            accountAddress,
-                            accountAddress,
-                            amount,
-                        ]),
+                        new CallAction(instance.address.toString(), "mint_to_private", [accountAddress, amount]),
                         new CallAction(instance.address.toString(), "mint_to_public", [accountAddress, amount]),
                     ]),
                     new RegisterTokenOperation(networkId, accountAddress, instance.address.toString()),

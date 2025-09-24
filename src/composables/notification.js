@@ -21,7 +21,7 @@ export const getTemplate = (name, params) => {
                 autoDestroy: false,
                 payload: {
                     title: "Profile Reset Needed",
-                    description: "Due to breaking changes in the new version, please, delete your profile and create a new one to ensure compatibility with the new version.",
+                    description: "Due to Aztec testnet was reset, please, delete your profile and create a new one to ensure compatibility with the new version.",
                     onConfirm: async () => {
                         await managers.profile.deleteProfile(appStore.profile.id)
                         popupStore.closeAll()

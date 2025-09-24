@@ -19,7 +19,7 @@ import {
     CompleteAddress,
     computePartialAddress,
     ContractInstanceWithAddress,
-    getContractInstanceFromDeployParams,
+    getContractInstanceFromInstantiationParams,
 } from '@aztec/stdlib/contract';
 import { Gas, GasFees, GasSettings } from '@aztec/stdlib/gas';
 import { PXE } from '@aztec/stdlib/interfaces/client';
@@ -65,7 +65,7 @@ export class AzguardV0 implements IAccountContract {
         const keys = await deriveKeys(secret);
         const signingKey = sha512ToGrumpkinScalar([secret, 257]);
         const signingPubKey = await new Schnorr().computePublicKey(signingKey);
-        const instance = await getContractInstanceFromDeployParams(
+        const instance = await getContractInstanceFromInstantiationParams(
             azguardV0Artifact,
             {
                 constructorArgs: [signingPubKey.x, signingPubKey.y],
@@ -177,10 +177,11 @@ export class AzguardV0 implements IAccountContract {
         batchAuthwits.push(authwit);
 
         const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
+        const baseFees = await pxe.getCurrentBaseFees();
         const gasSettings = new GasSettings(
             new Gas(4_294_967_295, 4_294_967_295),
             new Gas(294_967_295, 294_967_295),
-            new GasFees(0, 0),
+            baseFees,
             new GasFees(0, 0),
         )
         const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
@@ -291,10 +292,11 @@ export class AzguardV0 implements IAccountContract {
         batchAuthwits.push(authwit);
 
         const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
+        const baseFees = await pxe.getCurrentBaseFees();
         const gasSettings = new GasSettings(
             new Gas(4_294_967_295, 4_294_967_295),
             new Gas(294_967_295, 294_967_295),
-            new GasFees(0, 0),
+            baseFees,
             new GasFees(0, 0),
         )
         const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);

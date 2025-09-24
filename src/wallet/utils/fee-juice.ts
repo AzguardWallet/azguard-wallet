@@ -13,9 +13,9 @@ export const feeJuiceSymbol = "FJC";
 
 export const getFeeJuiceClaimPayload = (
     to: string,
-    claimAmount: string,
-    claimSecret: string,
+    amount: string,
+    secret: string,
     messageLeafIndex: string,
 ): IAction[] => {
-    return [new CallAction(feeJuiceAddress, "claim", [to, claimAmount, claimSecret, messageLeafIndex])];
+    return [new CallAction(feeJuiceAddress, "claim", [to, amount, secret, messageLeafIndex])];
 };

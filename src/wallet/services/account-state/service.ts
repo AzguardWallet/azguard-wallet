@@ -8,7 +8,7 @@ import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { NetworkService } from "@/wallet/services/network/service";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
-import { ACCOUNT_STATE_SERVICE_NAME, Events, Methods, Note, NoteStatus } from "./spec";
+import { ACCOUNT_STATE_SERVICE_NAME, Events, Methods } from "./spec";
 
 export * from "./spec";
 
@@ -24,7 +24,7 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
     public constructor(logger: ILogger) {
         super(ACCOUNT_STATE_SERVICE_NAME, logger);
     }
-    
+
     protected async init(services: ServiceCollection) {
         this.pxeService = new PxeServiceClient(this.logger);
         this.networkService = services.get(NetworkService.name);
@@ -88,36 +88,6 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
             return contracts.map(x => x.toString());
         } catch (error) {
             this.logError("Failed to fetch registered contracts", getErrorMessage(error));
-            throw new Error("PXE request failed");
-        }
-    }
-
-    public async getNotes(
-        networkId: string,
-        owner: string,
-        status?: NoteStatus,
-        contract?: string,
-        tx?: string,
-    ): Promise<Note[]> {
-        await this.ensureInitialized();
-        const network = await this.networkService.getNetwork(networkId);
-        try {
-            const notes = await this.pxeService.getNotes(network, {
-                recipient: owner ? AztecAddress.fromString(owner) : undefined,
-                status: status === NoteStatus.All ? _NoteStatus.ACTIVE_OR_NULLIFIED : undefined,
-                contractAddress: contract ? AztecAddress.fromString(contract) : undefined,
-                txHash: tx ? TxHash.fromString(tx) : undefined,
-            });
-            return notes.map(x => ({
-                note: x.note.items.map(x => x.toString()),
-                owner: x.recipient.toString(),
-                contractAddress: x.contractAddress.toString(),
-                storageSlot: x.storageSlot.toString(),
-                txHash: x.txHash.toString(),
-                nonce: x.noteNonce.toString(),
-            }));
-        } catch (error) {
-            this.logError("Failed to fetch incoming notes", getErrorMessage(error));
             throw new Error("PXE request failed");
         }
     }

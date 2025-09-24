@@ -19,10 +19,11 @@ export class DefaultFpcHandler implements IFpcHandler {
         const fnSelector = await FunctionSelector.fromSignature("get_accepted_asset()");
         const packedArgs = await HashedValues.fromArgs([]);
         const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
+        const baseFees = await pxe.getCurrentBaseFees();
         const gasSettings = new GasSettings(
             new Gas(4_294_967_295, 4_294_967_295),
             new Gas(0, 0),
-            new GasFees(0, 0),
+            baseFees,
             new GasFees(0, 0),
         );
         const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
