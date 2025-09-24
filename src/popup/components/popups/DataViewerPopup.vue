@@ -4,10 +4,6 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue"
 
-/** Composables */
-import { useToast } from "@/composables/toast.js"
-const { openToast } = useToast()
-
 /** Store */
 import { usePopupStore } from "@/stores/popup.store.ts"
 import { useCacheStore } from "@/stores/cache.store.ts"
@@ -20,17 +16,26 @@ const props = defineProps({
 })
 
 const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.note?.order
+	return popupStore.len - popupStore.popups.data_viewer?.order
 })
 
-const note = computed(() => cacheStore.activeNote)
+const data = computed(() => cacheStore.viewerData)
+
+watch(
+	() => props.show,
+	async () => {
+		if (!props.show) {
+			cacheStore.viewerData = null
+		}
+	},
+)
 </script>
 
 <template>
-	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.note?.order">
+	<Popup :show="show" @onClose="emit('onClose')" :displaceIdx="popupStore.popups.data_viewer?.order">
 		<PopupCard :displaceIdx>
 			<Flex wide align="center" direction="column" gap="24" :class="$style.wrapper">
-				<JsonViewer :data="note" />
+				<JsonViewer :data="data" />
 
 				<Button @click="emit('onClose')" type="secondary" size="medium" wide>Close</Button>
 			</Flex>

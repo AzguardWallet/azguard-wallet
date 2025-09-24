@@ -14,7 +14,7 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 
 /** Utils */
 import { NoteServiceClient } from "@/wallet/services/note/client"
-import { trimAddress } from "@/utils/string"
+import { stringCompare, trimAddress } from "@/utils/string"
 import { getColorFromAddress } from "@/components/ui/utils.js"
 
 /** Composables */
@@ -56,10 +56,9 @@ const fetchNotes = async isRefetching => {
 		notes.value = await noteService.getNotes(appStore.network.id, appStore.account.address)
 		notes.value.forEach(n => n.showingContent = parseNoteContent(n))
 		notes.value.sort((a, b) => {
-			const contractCompare = a.contract.localeCompare(b.contract)
-			if (contractCompare !== 0 || !(a.location && b.location)) return contractCompare
+			const contractCompare = stringCompare(a.contract, b.contract)
 
-			return a.location.localeCompare(b.location)
+			return contractCompare ? contractCompare : stringCompare(a.location, b.location)
 		})		
 	} catch (err) {
 		error.value = err
@@ -80,9 +79,9 @@ function parseNoteContent(note) {
 	return Object.keys(filtered).length > 0 ? filtered : note.content
 }
 
-const handleOpenNotePopup = note => {
-	cacheStore.activeNote = note
-	popupStore.open("note")
+const handleOpenNote = note => {
+	cacheStore.viewerData = note
+	popupStore.open("data_viewer")
 }
 
 watch(
@@ -107,6 +106,7 @@ onBeforeUnmount(() => {
 
 		<Flex direction="column" gap="16">
 			<Input
+				v-if="filteredNotes.length"
 				v-model="searchTerm"
 				icon="search"
 				placeholder="Search by type, contract or location"
@@ -127,7 +127,7 @@ onBeforeUnmount(() => {
 			</Tooltip>
 			
 			<Flex v-else-if="filteredNotes.length" direction="column" gap="8">
-				<Flex v-for="note in filteredNotes" @click="handleOpenNotePopup(note)" direction="column" gap="6" :class="$style.card">
+				<Flex v-for="note in filteredNotes" @click="handleOpenNote(note)" direction="column" gap="6" :class="$style.card">
 					<Flex align="center" justify="between" gap="12" wide>
 						<Text size="14" weight="600" color="primary" :class="$style.row"> {{ note.type ?? 'Custom Note' }} </Text>
 
@@ -137,7 +137,8 @@ onBeforeUnmount(() => {
 							:class="$style.badge"
 							:style="{ background: `var(--${getColorFromAddress(note.contract)})` }"
 						>
-							<Text size="11" weight="600"> {{ trimAddress(note.contract, 4, 4) }} </Text>
+							<AddressDisplay size="11" weight="600" :address="note.contract" :formatter="(addr) => trimAddress(addr, 4, 4)" />
+							<!-- <Text size="11" weight="600"> {{ trimAddress(note.contract, 4, 4) }} </Text> -->
 						</Flex>
 					</Flex>
 

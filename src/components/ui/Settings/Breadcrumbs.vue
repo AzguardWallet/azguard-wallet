@@ -26,6 +26,8 @@ const props = defineProps({
 		<Text v-if="!hideTitle" size="13" weight="600" color="secondary" :class="$style.title">
 			{{ route.meta.title }}
 		</Text>
+
+		<slot name="right" />
 	</Flex>
 </template>
 

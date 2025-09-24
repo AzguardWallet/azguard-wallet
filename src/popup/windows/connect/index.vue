@@ -12,18 +12,19 @@ import { AccessLevel, confirmationPolicies } from "@/utils/confirmation-policies
 
 /** Services */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { NetworkServiceClient } from "@/wallet/services/network/client"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-
 const appStore = useAppStore()
-const profile = computed(() => appStore.profile)
-const networks = computed(() => appStore.networks)
 
 const router = useRouter()
+
+const profile = ref(null)
+const networks = ref(null)
 
 const requestId = ref()
 const payload = ref()
@@ -45,6 +46,8 @@ const processingError = ref({
 
 const initRequest = async () => {
 	try {
+		profile.value = await profileService.getActiveProfile()
+		networks.value = await networkService.getNetworks()
 		requestId.value = router.currentRoute.value.query.requestId
 		payload.value = await interactionService.getInteractionPayload(requestId.value)
 		dapp.value = payload.value.params.dappMetadata
@@ -139,9 +142,14 @@ const selectAccount = account => {
 }
 
 const onActiveProfileChanged = profile => {
-	if (!profile) {
+	if (!profile || profile.id !== profile.value?.id) {
 		reject()
 	}
+}
+
+const onNetworkListChnaged = async (network) => {
+	networks.value = await networkService.getNetworks()
+	await initAccounts()
 }
 
 const onInteractionCancelled = _requestId => {
@@ -207,17 +215,14 @@ const closeWindow = interactionCompleted => {
 const profileService = new ProfileServiceClient()
 profileService.onActiveProfileChanged.add(onActiveProfileChanged)
 
+const networkService = new NetworkServiceClient()
+networkService.onNetworkAdded.add(onNetworkListChnaged)
+networkService.onNetworkDeleted.add(onNetworkListChnaged)
+
 const sessionService = new DappSessionServiceClient()
 
 const interactionService = new DappInteractionServiceClient()
 interactionService.onInteractionCancelled.add(onInteractionCancelled)
-
-watch(
-	() => [appStore.profile, appStore.networks],
-	async () => {
-		await initAccounts()
-	},
-)
 
 onBeforeMount(async () => {
 	if (!appStore.isLogined) {
@@ -232,6 +237,7 @@ onBeforeMount(async () => {
 
 onMounted(async () => {
 	profileService.connect()
+	networkService.connect()
 	sessionService.connect()
 	interactionService.connect()
 	await initRequest()
@@ -241,6 +247,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
 	profileService.disconnect()
+	networkService.disconnect()
 	sessionService.disconnect()
 	interactionService.disconnect()
 	window.removeEventListener("beforeunload", reject)
@@ -376,10 +383,8 @@ const packPermissions = permissions => {
 			</Flex>
 			<Flex align="center" justify="center" gap="20">
 				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<Icon v-if="dapp.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
-
+					<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
 					<img v-else-if="dapp?.logoBlobUrl" width="48" height="48" :src="dapp?.logoBlobUrl" />
-
 					<Icon v-else name="dapp" size="48" color="blue" />
 
 					<Text size="13" weight="600" color="primary"> {{ dapp?.name ?? "Unknown DApp" }} </Text>

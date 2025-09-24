@@ -23,3 +23,7 @@ export function sanitizeString(s: string, length = 0): string {
 
     return cleaned;
 }
+
+export function stringCompare(a: string, b: string): number {
+    return (a || "").localeCompare((b || ""), undefined, {sensitivity: "base", numeric: true});
+}

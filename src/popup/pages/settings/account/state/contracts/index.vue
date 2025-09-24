@@ -14,6 +14,7 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 
 /** Utils */
 import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
+import { trimAddress } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -95,11 +96,12 @@ onBeforeUnmount(() => {
 
 						<Flex direction="column" gap="8">
 							<Text size="14" weight="600" color="primary"> Contract </Text>
-							<Text size="13" weight="600" color="tertiary">
+							<AddressDisplay size="13" weight="600" color="tertiary" :address="contract" :formatter="(addr) => trimAddress(addr, 6, 4)" />
+							<!-- <Text size="13" weight="600" color="tertiary">
 								{{ contract.slice(0, 6) }}
 								<Text color="dark">•••</Text>
 								{{ contract.slice(-4) }}
-							</Text>
+							</Text> -->
 						</Flex>
 					</Flex>
 				</Flex>

@@ -17,6 +17,8 @@ import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
 import { managers } from "@/utils/core"
+import { getChainPosition } from "@/components/ui/utils"
+import { stringCompare} from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -29,6 +31,11 @@ import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
+
+const networks = computed(() => [...appStore.networks].sort((a, b) => {
+	const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
+	return chainPos ? chainPos : stringCompare(a.name, b.name)
+}))
 
 const handleSelectNetwork = target => {
 	if (appStore.network.id === target.id) return
@@ -70,12 +77,12 @@ const handleDelete = target => {
 
 		<Flex direction="column" gap="16">
 			<Text size="13" weight="600" color="primary">
-				Nodes &nbsp;<Text color="tertiary">{{ appStore.networks.length }} </Text>
+				Nodes &nbsp;<Text color="tertiary">{{ networks.length }} </Text>
 			</Text>
 
 			<ItemsContainer>
 				<SettingItem
-					v-for="network in appStore.networks"
+					v-for="network in networks"
 					@click="handleSelectNetwork(network)"
 					:title="network.name"
 					:icon="appStore.network?.id === network.id ? 'check-circle' : 'circle'"

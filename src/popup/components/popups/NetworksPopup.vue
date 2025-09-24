@@ -9,6 +9,8 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Services */
 import { managers } from "@/utils/core.js"
+import { getChainPosition } from "@/components/ui/utils"
+import { stringCompare } from "@/utils/string"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -26,7 +28,11 @@ const displaceIdx = computed(() => {
 })
 
 const router = useRouter()
+const networks = computed(() => [...appStore.networks].sort((a, b) => {
+	const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
 
+	return chainPos ? chainPos : stringCompare(a.name, b.name)
+}))
 const handleSelectNetwork = target => {
 	if (appStore.network.id !== target.id) {
 		managers.network.setDefault(target.id)
@@ -55,7 +61,7 @@ const handleManageNetworks = () => {
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<ItemsContainer>
 					<SettingItem
-						v-for="network in appStore.networks"
+						v-for="network in networks"
 						@click="handleSelectNetwork(network)"
 						:title="network.name"
 						:icon="appStore.network.id === network.id ? 'check-circle' : 'circle'"

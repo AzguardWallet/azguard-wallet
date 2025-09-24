@@ -86,6 +86,7 @@
     "shallowReactive": true,
     "shallowReadonly": true,
     "shallowRef": true,
+    "stringCompare": true,
     "toRaw": true,
     "toRef": true,
     "toRefs": true,

@@ -10,6 +10,7 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 
 /** Utils */
 import { getChainColor } from "@/components/ui/utils.js"
+import { stringCompare } from "@/utils/string"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -34,9 +35,17 @@ let tokenBalanceService = null
 const selectedFpc = ref()
 const allFpcs = ref([])
 const fpcs = computed(() => {
+	const getOrder = (type) => (type === "sponsored" ? 0 : 1)
+
 	return allFpcs.value
 		?.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
 		.map(f => prepareFpc(f))
+		.sort((a, b) => {
+			const typeOrder = getOrder(a.type) - getOrder(b.type)
+			return typeOrder
+				? typeOrder
+				: stringCompare(a.name, b.name)
+		})
 })
 const balances = ref([])
 const tokenContracts = computed(() => new Set(balances.value?.map(b => b.token?.contract)))
@@ -111,16 +120,16 @@ const prepareFpc = (fpc) => {
 		}
 }
 const onFpcAdded = (fpc) => {
-	fpcs.value.push(prepareFpc(fpc))
+	allFpcs.value.push(prepareFpc(fpc))
 }
 const onFpcUpdated = (fpc) => {
-	const idx = fpcs.value?.findIndex(f => f.id === fpc.id)
+	const idx = allFpcs.value?.findIndex(f => f.id === fpc.id)
 
 	if (idx === -1) return
-	fpcs.value[idx] = prepareFpc(fpc)
+	allFpcs.value[idx] = prepareFpc(fpc)
 }
 const onFpcDeleted = (fpc) => {
-	fpcs.value = fpcs.value?.filter(f => f.id !== fpc.id)
+	allFpcs.value = allFpcs.value?.filter(f => f.id !== fpc.id)
 }
 const onBalanceAdded = (balance) => {
 	balances.value?.push(balance)

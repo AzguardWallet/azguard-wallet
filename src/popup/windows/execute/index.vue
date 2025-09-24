@@ -27,7 +27,7 @@ import { OriginType } from "@/wallet/services/transaction/client"
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
-const profile = computed(() => appStore.profile)
+const profile = ref(null)
 
 const router = useRouter()
 
@@ -35,6 +35,7 @@ const requestId = ref()
 const payload = ref()
 
 const session = ref()
+const dapp = ref({})
 const operations = ref([])
 const accounts = ref([])
 
@@ -65,10 +66,35 @@ function fillError(title, tooltip) {
 	}
 }
 
+async function loadImageBlob(url) {
+	try {
+		const res = await fetch(url, { mode: 'cors' })
+		if (!res.ok) return null
+
+		const blob = await res.blob()
+
+		return URL.createObjectURL(blob)
+	} catch {
+		return null
+	}
+}
+
 const init = async () => {
 	try {
+		profile.value = await profileService.getActiveProfile()
 		requestId.value = router.currentRoute.value.query.requestId
 		payload.value = await interactionService.getInteractionPayload(requestId.value)
+		dapp.value = payload.value.session.dappMetadata
+
+		if (dapp.value?.logo) {
+			dapp.value.loadingLogo = true
+			try {
+				dapp.value.logoBlobUrl = await loadImageBlob(dapp.value.logo)
+			} finally {
+				dapp.value.loadingLogo = false
+			}
+		}
+
 		if (profile.value.id !== payload.value.session.profileId) {
 			// TODO: redirect to sign in page with preconfigured profile id
 			isWrongProfile.value = true
@@ -143,7 +169,7 @@ const init = async () => {
 }
 
 const onActiveProfileChanged = profile => {
-	if (!profile) {
+	if (!profile || profile.id !== profile.value?.id) {
 		reject()
 	}
 }
@@ -168,7 +194,7 @@ const approve = async () => {
 		await profileService.refreshSession()
 		const results = await executionService.executeOperations(operations.value, {
 			type: OriginType.DAPP,
-			name: session.value.dappMetadata.name ?? "Unknown dapp",
+			name: dapp.value?.name ?? "Unknown dapp",
 		})
 		interactionService.resolveInteraction(requestId.value, results)
 		closeWindow(true)
@@ -247,12 +273,12 @@ const showJson = () => {
 
 			<Flex align="center" justify="center" gap="20">
 				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<img v-if="session?.dappMetadata.logo" width="48" height="48" :src="session?.dappMetadata.logo" />
-
+					<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
+					<img v-else-if="dapp?.logoBlobUrl" width="48" height="48" :src="dapp?.logoBlobUrl" />
 					<Icon v-else name="dapp" size="48" color="blue" />
 
 					<Text size="13" weight="600" color="primary">
-						{{ session?.dappMetadata.name ?? "Unknown dapp" }}
+						{{ dapp?.name ?? "Unknown dapp" }}
 					</Text>
 				</Flex>
 
@@ -275,7 +301,7 @@ const showJson = () => {
 
 			<Flex direction="column" align="center" justify="center" gap="8" :style="{ marginTop: '-4px' }">
 				<Flex direction="column" align="center" justify="center" gap="4">
-					<Text size="13" weight="600" color="primary"> {{ session?.dappMetadata.url }} </Text>
+					<Text size="13" weight="600" color="primary"> {{ dapp?.url }} </Text>
 					<Text size="13" color="primary">The dapp wants you to execute operation(s)</Text>
 				</Flex>
 				<Flex direction="column" align="center" justify="center" gap="4">
@@ -333,7 +359,8 @@ const showJson = () => {
 											<Text color="secondary"> call </Text>
 											{{ action.method || action.selector }}
 											<Text color="secondary"> in </Text>
-											{{ trimAddress(action.contract || action.to) }}
+											<AddressDisplay :address="action.contract || action.to" />
+											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -359,7 +386,8 @@ const showJson = () => {
 											<Text color="secondary"> call </Text>
 											{{ action.method || action.selector }}
 											<Text color="secondary"> in </Text>
-											{{ trimAddress(action.contract || action.to) }}
+											<AddressDisplay :address="action.contract || action.to" />
+											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -399,19 +427,22 @@ const showJson = () => {
 						<template v-else-if="op.kind === OperationKind.RegisterContract">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+								<AddressDisplay :address="op.address" />
+								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === OperationKind.RegisterSender">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Sender address:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+								<AddressDisplay :address="op.address" />
+								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === OperationKind.RegisterToken">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Token address:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.address) }}</Text>
+								<AddressDisplay :address="op.address" />
+								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === OperationKind.SimulateTransaction">
@@ -435,7 +466,8 @@ const showJson = () => {
 											<Text color="secondary"> call </Text>
 											{{ action.method || action.selector }}
 											<Text color="secondary"> in </Text>
-											{{ trimAddress(action.contract || action.to) }}
+											<AddressDisplay :address="action.contract || action.to" />
+											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -461,7 +493,8 @@ const showJson = () => {
 											<Text color="secondary"> call </Text>
 											{{ action.method || action.selector }}
 											<Text color="secondary"> in </Text>
-											{{ trimAddress(action.contract || action.to) }}
+											<AddressDisplay :address="action.contract || action.to" />
+											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -480,7 +513,8 @@ const showJson = () => {
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.contract) }}</Text>
+								<AddressDisplay :address="op.contract" />
+								<!-- <Text size="12" color="primary">{{ trimAddress(op.contract) }}</Text> -->
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Function:</Text>
@@ -501,7 +535,8 @@ const showJson = () => {
 									<Text v-for="(call, j) in op.calls" :key="`${i}:${j}`" size="12" color="primary">
 										{{ call.method || call.selector }}
 										<Text color="secondary"> in </Text>
-										{{ trimAddress(call.contract || call.to) }}
+										<AddressDisplay :address="call.contract || call.to" />
+										<!-- {{ trimAddress(call.contract || call.to) }} -->
 									</Text>
 								</Flex>
 							</Flex>

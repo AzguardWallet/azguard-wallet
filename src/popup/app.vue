@@ -6,7 +6,6 @@ import PopupManager from "./components/popups/PopupManager.vue"
 import GlobalLoader from "@/components/ui/GlobalLoader.vue"
 
 /** Utils */
-import { getChainPosition } from "@/components/ui/utils"
 import { managers, initTokenService, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"
 import { Config } from "@/wallet/config"
@@ -68,11 +67,7 @@ const initNetworks = async () => {
 	appStore.network = null
 	
 	managers.network = new NetworkServiceClient()
-	appStore.networks = (await managers.network.getOrInitNetworks()).sort((a, b) => {
-		const aPos = getChainPosition(a.chainId)
-		const bPos = getChainPosition(b.chainId)
-		return aPos === bPos ? a.name.localeCompare(b.name) : aPos - bPos
-	})
+	appStore.networks = await managers.network.getOrInitNetworks()
 
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
 	if ("azguard:ui:activeNetwork" in activeNetworkResult) {

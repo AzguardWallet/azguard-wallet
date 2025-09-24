@@ -345,7 +345,10 @@ function scrollToTargetLog(targetLogId) {
 
 function exportLogsToCSV() {
 	try {
-		const rows = logs.value.map(log => {
+		const MAX_CELL_LENGTH = 32_760
+		const rows = []
+
+		logs.value.forEach(log => {
 			const time = new Date(log.timestamp).toISOString()
 			const source = log.source
 			const level = getLogLevelName(log.level)
@@ -359,7 +362,29 @@ function exportLogsToCSV() {
 				data = formatArg(log.data)
 			}
 
-			return [time, source, level, data]
+			if (data.length <= MAX_CELL_LENGTH) {
+				rows.push([time, source, level, data])
+			} else {
+				let i = 0
+				while (i < data.length) {
+					const chunk = data.slice(i, i + MAX_CELL_LENGTH)
+					const isFirst = i === 0
+					const isLast = i + MAX_CELL_LENGTH >= data.length
+
+					let chunkWithDots = chunk
+					if (isFirst && !isLast) {
+						chunkWithDots = `${chunk}...`
+					} else if (!isFirst && !isLast) {
+						chunkWithDots = `...${chunk}...`
+					} else if (!isFirst && isLast) {
+						chunkWithDots = `...${chunk}`
+					}
+
+					rows.push([time, source, level, chunkWithDots])
+
+					i += MAX_CELL_LENGTH
+				}
+			}
 		})
 
 		const csvContent = [["time", "source", "level", "data"], ...rows]
@@ -378,7 +403,7 @@ function exportLogsToCSV() {
 				console.error("Download failed:", chrome.runtime.lastError.message);
 				openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
 			} else {
-				openToast({ label: "Logs are downloaded", icon: "download" }, 2_000)
+				openToast({ label: "Logs are ready for download", icon: "download" }, 2_000)
 			}
 			URL.revokeObjectURL(url)
 		})
