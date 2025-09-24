@@ -153,7 +153,7 @@ const onKeydown = e => {
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
-					<Text size="14" weight="600" color="primary">Change account authwits registry</Text>
+					<Text size="14" weight="600" color="primary">Revoke authwits</Text>
 				</template>
 			</PopupHeader>
 
