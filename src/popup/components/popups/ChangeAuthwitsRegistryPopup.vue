@@ -125,14 +125,14 @@ const onKeydown = e => {
 				<Banner v-if="isRegistryEnabled" direction="vertical">
 					<template #title>Disable Authwits Registry</template>
 					<template #description>
-						Disabling prevents dApps and contracts from consuming authwits for current account. 
+						Disabling prevents contracts from consuming authwits for current account. 
 						All previously issued authwits will be suspended and cannot be executed until you re-enable the registry.
 					</template>
 				</Banner>
 				<Banner v-else-if="!isRegistryEnabled && isRegistryEnabled !== undefined" direction="vertical">
 					<template #title>Enable Authwits Registry</template>
 					<template #description>
-						Enabling allows dApps and contracts to consume authwits for current account. 
+						Enabling allows contracts to consume authwits for current account. 
 						Any previously issued authwits will become executable again.
 					</template>
 				</Banner>

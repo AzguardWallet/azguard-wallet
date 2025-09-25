@@ -153,7 +153,7 @@ const onKeydown = e => {
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
-					<Text size="14" weight="600" color="primary">Change account authwits registry</Text>
+					<Text size="14" weight="600" color="primary">Revoke authwits</Text>
 				</template>
 			</PopupHeader>
 
@@ -178,7 +178,7 @@ const onKeydown = e => {
 				<Banner v-else-if="chunkesCount === 1" direction="vertical">
 					<template #title>Revoke authwits</template>
 					<template #description>
-						This transaction will revoke the selected authwits. Once revoked, they cannot be executed anymore.
+						This transaction will revoke the selected authwit(s). Once revoked, authwit(s) cannot be executed anymore.
 					</template>
 				</Banner>
 
