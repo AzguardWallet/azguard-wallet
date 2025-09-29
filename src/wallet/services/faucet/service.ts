@@ -25,19 +25,10 @@ import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { TaskService, StepContent, TokenMintContent } from "@/wallet/services/task/service";
 import {
     ExecutionService,
-    type IOperation,
-    RegisterContractOperation,
-    SendTransactionOperation,
-    type IAction,
-    AddCapsuleAction,
-    CallAction,
-    OperationStatus,
+    type Operation,
+    type Action,
     type OkOperationResult,
-    type FailedOperationResult,
     type FeeSettings,
-    FeePaymentMethodType,
-    FeeJuicePaymentMethod,
-    RegisterTokenOperation,
 } from "@/wallet/services/execution/service";
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import { FAUCET_SERVICE_NAME, Methods } from "./spec";
@@ -92,8 +83,8 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
             throw new Error("unknown account");
         }
         const pxe = this.pxeService.getPXE(network);
-        let deployActions: IAction[];
-        let deployOps: IOperation[];
+        let deployActions: Action[];
+        let deployOps: Operation[];
         let instance: ContractInstanceWithAddress;
         const origin: TxOrigin = { type: OriginType.UI, name: "Faucet" };
 
@@ -105,7 +96,15 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
         const checkTask = rootTask.startSubtask(new StepContent("Check if need to deploy token"));
         try {
             deployActions = [];
-            deployOps = [new SendTransactionOperation(networkId, accountAddress, feeSettings, deployActions)];
+            deployOps = [
+                {
+                    kind: "send_transaction",
+                    networkId,
+                    accountAddress,
+                    feeSettings,
+                    actions: deployActions,
+                },
+            ];
 
             const artifact = TokenContract.artifact;
             const contractClass = await getContractClassFromArtifact(artifact);
@@ -121,16 +120,18 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
                 const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
                 deployActions.push(
-                    new AddCapsuleAction(
-                        AztecAddress.fromNumber(CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS).toString(),
-                        new Fr(CONTRACT_CLASS_REGISTRY_BYTECODE_CAPSULE_SLOT).toString(),
-                        encodedBytecode.map(x => x.toString()),
-                    ),
-                    new CallAction(
-                        AztecAddress.fromNumber(CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS).toString(),
-                        "publish",
-                        [artifactHash, privateFunctionsRoot, publicBytecodeCommitment],
-                    ),
+                    {
+                        kind: "add_capsule",
+                        contract: AztecAddress.fromNumber(CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS).toString(),
+                        storageSlot: new Fr(CONTRACT_CLASS_REGISTRY_BYTECODE_CAPSULE_SLOT).toString(),
+                        capsule: encodedBytecode.map(x => x.toString()),
+                    },
+                    {
+                        kind: "call",
+                        contract: AztecAddress.fromNumber(CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS).toString(),
+                        method: "publish",
+                        args: [artifactHash, privateFunctionsRoot, publicBytecodeCommitment],
+                    },
                 );
             }
 
@@ -138,33 +139,29 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
             if (!contractMetadata.isContractPublished) {
                 this.logDebug("deploy faucet token");
                 const { salt, currentContractClassId, initializationHash, publicKeys } = instance;
-                deployActions.push(
-                    new CallAction(
-                        AztecAddress.fromNumber(CONTRACT_INSTANCE_REGISTRY_CONTRACT_ADDRESS).toString(),
-                        "publish_for_public_execution",
-                        [salt, currentContractClassId, initializationHash, publicKeys, true],
-                    ),
-                );
+                deployActions.push({
+                    kind: "call",
+                    contract: AztecAddress.fromNumber(CONTRACT_INSTANCE_REGISTRY_CONTRACT_ADDRESS).toString(),
+                    method: "publish_for_public_execution",
+                    args: [salt, currentContractClassId, initializationHash, publicKeys, true],
+                });
             }
 
             if (!contractMetadata.isContractInitialized) {
                 this.logDebug("initialize faucet token");
-                deployOps.unshift(
-                    new RegisterContractOperation(
-                        networkId,
-                        instance.address.toString(),
-                        jsonSanitize(instance),
-                        jsonSanitize(artifact),
-                    ),
-                );
-                deployActions.push(
-                    new CallAction(instance.address.toString(), "constructor", [
-                        accountAddress,
-                        name,
-                        symbol,
-                        decimals,
-                    ]),
-                );
+                deployOps.unshift({
+                    kind: "register_contract",
+                    networkId,
+                    address: instance.address.toString(),
+                    instance: jsonSanitize(instance),
+                    artifact: jsonSanitize(artifact),
+                });
+                deployActions.push({
+                    kind: "call",
+                    contract: instance.address.toString(),
+                    method: "constructor",
+                    args: [accountAddress, name, symbol, decimals],
+                });
             }
             checkTask.complete();
         } catch (error) {
@@ -178,22 +175,17 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
 
             try {
                 const deployResults = await this.executionService.executeOperations(deployOps, origin, deployTask);
-                if (!deployResults.every(x => x.status === OperationStatus.Ok)) {
-                    throw new Error(
-                        `Token deployment failed: ${
-                            (deployResults.find(x => x.status === OperationStatus.Failed) as FailedOperationResult)
-                                ?.error
-                        }`,
-                    );
+                if (!deployResults.every(x => x.kind === "ok")) {
+                    throw new Error(`Token deployment failed: ${deployResults.find(x => x.kind === "failed")?.error}`);
                 }
                 const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
                 this.logDebug("faucet deploy tx", deployTx);
                 await this.transactionService.waitForTx(deployTx, deployTask);
                 this.logDebug("faucet deploy tx mined");
-                if (feeSettings.paymentMethod.type === FeePaymentMethodType.FeeJuiceWithClaim) {
+                if (feeSettings.paymentMethod.kind === "fjwc") {
                     feeSettings = {
                         ...feeSettings,
-                        paymentMethod: new FeeJuicePaymentMethod(),
+                        paymentMethod: { kind: "fj" },
                     };
                 }
                 deployTask.complete();
@@ -208,20 +200,41 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
         try {
             const [mintResult, registerResult] = await this.executionService.executeOperations(
                 [
-                    new SendTransactionOperation(networkId, accountAddress, feeSettings, [
-                        new CallAction(instance.address.toString(), "mint_to_private", [accountAddress, amount]),
-                        new CallAction(instance.address.toString(), "mint_to_public", [accountAddress, amount]),
-                    ]),
-                    new RegisterTokenOperation(networkId, accountAddress, instance.address.toString()),
+                    {
+                        kind: "send_transaction",
+                        networkId,
+                        accountAddress,
+                        feeSettings,
+                        actions: [
+                            {
+                                kind: "call",
+                                contract: instance.address.toString(),
+                                method: "mint_to_private",
+                                args: [accountAddress, amount],
+                            },
+                            {
+                                kind: "call",
+                                contract: instance.address.toString(),
+                                method: "mint_to_public",
+                                args: [accountAddress, amount],
+                            },
+                        ],
+                    },
+                    {
+                        kind: "register_token",
+                        networkId,
+                        accountAddress,
+                        address: instance.address.toString(),
+                    },
                 ],
                 origin,
                 mintTask,
             );
-            if (mintResult.status !== OperationStatus.Ok) {
-                throw new Error(`Token mint failed: ${(mintResult as FailedOperationResult)?.error}`);
+            if (mintResult.kind === "failed") {
+                throw new Error(`Token mint failed: ${mintResult.error}`);
             }
-            if (registerResult.status !== OperationStatus.Ok) {
-                throw new Error(`Token register failed: ${(registerResult as FailedOperationResult)?.error}`);
+            if (registerResult.kind === "failed") {
+                throw new Error(`Token register failed: ${registerResult.error}`);
             }
             const mintTx = (mintResult as OkOperationResult<string>).result;
             this.logDebug("faucet mint tx:", mintTx);

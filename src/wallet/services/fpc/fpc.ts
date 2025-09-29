@@ -1,6 +1,6 @@
 import type { Fr } from "@aztec/foundation/fields";
 import type { Gas } from "@aztec/stdlib/gas";
-import type { IAction } from "@/wallet/services/execution/spec";
+import type { Action } from "@/wallet/services/execution/spec";
 import type { FpcInfo } from "./spec";
 import type { IFpcHandler } from "./handlers";
 
@@ -14,7 +14,7 @@ export class Fpc {
         return this.info;
     }
 
-    public getFeePayload(account: string, maxFee: Fr, inPublic?: boolean): IAction[] {
+    public getFeePayload(account: string, maxFee: Fr, inPublic?: boolean): Action[] {
         return this.handler.getFeePayload(this.info, account, maxFee, inPublic);
     }
 

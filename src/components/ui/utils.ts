@@ -1,6 +1,6 @@
 export const colors = ["blue", "green", "mint", "neutral-mint", "orange", "yellow", "red", "purple", "gray", "sand"]
 
-export function getColorFromAddress(address) {
+export function getColorFromAddress(address: string): string {
 	if (!address) return colors[0]
 
 	const clean = address.startsWith("0x") ? address.slice(2) : address
@@ -14,7 +14,7 @@ export function getColorFromAddress(address) {
 	return colors[index]
 }
 
-export function getChainPosition(chainId) {
+export function getChainPosition(chainId: number): number {
 	switch (chainId) {
 		case 11155111:
 			return 1
@@ -27,7 +27,7 @@ export function getChainPosition(chainId) {
 	}
 }
 
-export function getChainColor(chainId) {
+export function getChainColor(chainId: number): string {
 	switch (chainId) {
 		case 11155111:
 			return "neutral-mint"
@@ -40,7 +40,7 @@ export function getChainColor(chainId) {
 	}
 }
 
-export function getChainName(chainId) {
+export function getChainName(chainId: number): string {
 	switch (chainId) {
 		case 11155111:
 			return "Testnet"

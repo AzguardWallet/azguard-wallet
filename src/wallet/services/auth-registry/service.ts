@@ -3,13 +3,7 @@ import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
 import { ILogger } from "@/wallet/logger";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
-import {
-    ExecutionService,
-    CallAction,
-    FeeSettings,
-    IAuthwitContent,
-    SendTransactionOperation,
-} from "@/wallet/services/execution/service";
+import { ExecutionService, FeeSettings, AuthwitContent } from "@/wallet/services/execution/service";
 import { NetworkService } from "@/wallet/services/network/service";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { WrappedTask } from "@/wallet/services/task/wrapped-task";
@@ -53,7 +47,7 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         this.taskService = services.get(TaskService.name);
     }
 
-    public async trackAuthwit(account: string, hash: string, content: IAuthwitContent) {
+    public async trackAuthwit(account: string, hash: string, content: AuthwitContent) {
         try {
             await this.lock.enter();
             const authwits = await this.authwits.getValues();
@@ -97,12 +91,18 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         try {
             const registryAddress = getAuthRegistryAddress().toString();
             const txHash = await this.executionService.executeSendTransaction(
-                new SendTransactionOperation(
+                {
+                    kind: "send_transaction",
                     networkId,
-                    account,
+                    accountAddress: account,
                     feeSettings,
-                    authwits.map(x => new CallAction(registryAddress, "set_authorized", [x.hash, false])),
-                ),
+                    actions: authwits.map(x => ({
+                        kind: "call",
+                        contract: registryAddress,
+                        method: "set_authorized",
+                        args: [x.hash, false],
+                    })),
+                },
                 { type: OriginType.UI },
                 task,
             );
@@ -134,9 +134,20 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         const task = this.taskService.startNewTask(new StepContent(`${enabled ? "Enable" : "Disable"} auth registry`));
         try {
             const txHash = await this.executionService.executeSendTransaction(
-                new SendTransactionOperation(networkId, account, feeSettings, [
-                    new CallAction(getAuthRegistryAddress().toString(), "set_reject_all", [!enabled]),
-                ]),
+                {
+                    kind: "send_transaction",
+                    networkId,
+                    accountAddress: account,
+                    feeSettings,
+                    actions: [
+                        {
+                            kind: "call",
+                            contract: getAuthRegistryAddress().toString(),
+                            method: "set_reject_all",
+                            args: [!enabled],
+                        },
+                    ],
+                },
                 { type: OriginType.UI },
                 task,
             );
