@@ -2,7 +2,7 @@ import { PXE } from "@aztec/aztec.js";
 import { Fr } from "@aztec/foundation/fields";
 import { ContractArtifact } from "@aztec/stdlib/abi";
 import { Gas } from "@aztec/stdlib/gas";
-import { IAction } from "@/wallet/services/execution/spec";
+import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo, FpcType } from "../spec";
 import { DefaultFpcHandler } from "./default-fpc-handler";
 import { DefaultSponsoredFpcHandler } from "./default-sponsored-fpc-handler";
@@ -12,7 +12,7 @@ export interface IFpcHandler {
     acceptsPublic(): boolean | undefined;
     acceptsPrivate(): boolean | undefined;
     validateArtifact(artifact: ContractArtifact): void;
-    getFeePayload(fpc: FpcInfo, account: string, maxFee: Fr, inPublic?: boolean): IAction[];
+    getFeePayload(fpc: FpcInfo, account: string, maxFee: Fr, inPublic?: boolean): Action[];
     getTeardownGas(inPublic?: boolean): Gas;
     getTotalGas(inPublic?: boolean): Gas;
 }

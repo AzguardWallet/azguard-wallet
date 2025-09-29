@@ -4,13 +4,7 @@ import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import { PXE } from "@aztec/stdlib/interfaces/client";
 import { HashedValues, TxContext, TxExecutionRequest } from "@aztec/stdlib/tx";
-import {
-    AddPrivateAuthwitAction,
-    AddPublicAuthwitAction,
-    CallAction,
-    CallAuthwitContent,
-    IAction,
-} from "@/wallet/services/execution/spec";
+import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo, FpcType } from "../spec";
 import { IFpcHandler } from ".";
 
@@ -67,8 +61,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         if (
             fn.parameters.length !== 0 ||
             fn.returnTypes.length !== 1 ||
-            (fn.returnTypes[0] as StructType)?.path !==
-                "aztec::protocol_types::address::aztec_address::AztecAddress"
+            (fn.returnTypes[0] as StructType)?.path !== "aztec::protocol_types::address::aztec_address::AztecAddress"
         ) {
             throw new Error("Function `get_accepted_asset` has unsupported signature");
         }
@@ -100,7 +93,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         }
     }
 
-    public getFeePayload(fpc: FpcInfo, account: string, maxFee: Fr, inPublic?: boolean): IAction[] {
+    public getFeePayload(fpc: FpcInfo, account: string, maxFee: Fr, inPublic?: boolean): Action[] {
         if (fpc.type !== FpcType.DefaultFpc) {
             throw new Error("Invalid FPC type");
         }
@@ -110,27 +103,41 @@ export class DefaultFpcHandler implements IFpcHandler {
         const nonce = Fr.random();
         return inPublic
             ? [
-                new AddPublicAuthwitAction(
-                    new CallAuthwitContent(fpc.address, fpc.asset, "transfer_in_public", [
-                        account,
-                        fpc.address,
-                        maxFee.toString(),
-                        nonce.toString(),
-                    ]),
-                ),
-                new CallAction(fpc.address, "fee_entrypoint_public", [maxFee.toString(), nonce.toString()]),
-            ]
+                  {
+                      kind: "add_public_authwit",
+                      content: {
+                          kind: "call",
+                          caller: fpc.address,
+                          contract: fpc.asset,
+                          method: "transfer_in_public",
+                          args: [account, fpc.address, maxFee.toString(), nonce.toString()],
+                      },
+                  },
+                  {
+                      kind: "call",
+                      contract: fpc.address,
+                      method: "fee_entrypoint_public",
+                      args: [maxFee.toString(), nonce.toString()],
+                  },
+              ]
             : [
-                new AddPrivateAuthwitAction(
-                    new CallAuthwitContent(fpc.address, fpc.asset, "transfer_to_public", [
-                        account,
-                        fpc.address,
-                        maxFee.toString(),
-                        nonce.toString(),
-                    ]),
-                ),
-                new CallAction(fpc.address, "fee_entrypoint_private", [maxFee.toString(), nonce.toString()]),
-            ];
+                  {
+                      kind: "add_private_authwit",
+                      content: {
+                          kind: "call",
+                          caller: fpc.address,
+                          contract: fpc.asset,
+                          method: "transfer_to_public",
+                          args: [account, fpc.address, maxFee.toString(), nonce.toString()],
+                      },
+                  },
+                  {
+                      kind: "call",
+                      contract: fpc.address,
+                      method: "fee_entrypoint_private",
+                      args: [maxFee.toString(), nonce.toString()],
+                  },
+              ];
     }
 
     public getTeardownGas(inPublic?: boolean): Gas {

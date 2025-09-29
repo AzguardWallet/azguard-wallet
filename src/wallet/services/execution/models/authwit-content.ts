@@ -1,49 +1,36 @@
-export enum AuthwitContentKind {
-    Call = "call",
-    EncodedCall = "encoded_call",
-    Intent = "intent",
-    MessageHash = "message_hash",
-}
+export type AuthwitContent =
+    | CallAuthwitContent
+    | EncodedCallAuthwitContent
+    | IntentAuthwitContent
+    | MessageHashAuthwitContent;
 
-export interface IAuthwitContent {
-    readonly kind: AuthwitContentKind,
-}
+export type CallAuthwitContent = {
+    readonly kind: "call";
+    readonly caller: string;
+    readonly contract: string;
+    readonly method: string;
+    readonly args: any[];
+};
 
-export class CallAuthwitContent implements IAuthwitContent {
-    public readonly kind = AuthwitContentKind.Call;
-    public constructor(
-        public readonly caller: string,
-        public readonly contract: string,
-        public readonly method: string,
-        public readonly args: any[],
-    ) {}
-}
+export type EncodedCallAuthwitContent = {
+    readonly kind: "encoded_call";
+    readonly caller: string;
+    readonly to: string;
+    readonly selector: string;
+    readonly args: string[];
+    name?: string;
+    type?: string;
+    isStatic?: boolean;
+    returnTypes?: unknown[];
+};
 
-export class EncodedCallAuthwitContent implements IAuthwitContent {
-    public readonly kind = AuthwitContentKind.EncodedCall;
-    public constructor(
-        public readonly caller: string,
-        public readonly to: string,
-        public readonly selector: string,
-        public readonly args: string[],
-        public name?: string,
-        public type?: string,
-        public isStatic?: boolean,
-        public returnTypes?: unknown[],
-    ) {}
-}
+export type IntentAuthwitContent = {
+    readonly kind: "intent";
+    readonly consumer: string;
+    readonly intent: string[];
+};
 
-export class IntentAuthwitContent implements IAuthwitContent {
-    public readonly kind = AuthwitContentKind.Intent;
-    public constructor(
-        public readonly consumer: string,
-        public readonly intent: string[],
-    ) {}
-}
-
-export class MessageHashAuthwitContent implements IAuthwitContent {
-    public readonly kind = AuthwitContentKind.MessageHash;
-    public constructor(
-        public readonly messageHash: string,
-    ) {}
-}
+export type MessageHashAuthwitContent = {
+    readonly kind: "message_hash";
+    readonly messageHash: string;
+};

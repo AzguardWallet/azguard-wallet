@@ -2,7 +2,13 @@ import { AccessLevel } from "@/wallet/services/dapp-session/client"
 
 export { AccessLevel } from "@/wallet/services/dapp-session/client"
 
-export const confirmationPolicies = [
+export type ConfirmationPolicy = {
+	title: string
+	description: string
+	confirmationLevel: AccessLevel
+}
+
+export const confirmationPolicies: ConfirmationPolicy[] = [
 	{
 		title: "Confirm everything",
 		description: "Show confirmation popup on every request from this dapp",

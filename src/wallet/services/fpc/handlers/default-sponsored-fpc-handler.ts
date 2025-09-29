@@ -1,6 +1,6 @@
 import { ContractArtifact } from "@aztec/stdlib/abi";
 import { Gas } from "@aztec/stdlib/gas";
-import { CallAction, IAction } from "@/wallet/services/execution/spec";
+import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo } from "../spec";
 import { IFpcHandler } from ".";
 
@@ -27,8 +27,15 @@ export class DefaultSponsoredFpcHandler implements IFpcHandler {
         }
     }
 
-    public getFeePayload(fpc: FpcInfo): IAction[] {
-        return [new CallAction(fpc.address, "sponsor_unconditionally", [])];
+    public getFeePayload(fpc: FpcInfo): Action[] {
+        return [
+            {
+                kind: "call",
+                contract: fpc.address,
+                method: "sponsor_unconditionally",
+                args: [],
+            },
+        ];
     }
 
     public getTeardownGas(): Gas {

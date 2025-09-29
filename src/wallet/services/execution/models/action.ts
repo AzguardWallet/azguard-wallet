@@ -1,60 +1,46 @@
-import { IAuthwitContent } from ".";
+import { AuthwitContent } from ".";
 
-export enum ActionKind {
-    AddCapsule = "add_capsule",
-    AddPrivateAuthwit = "add_private_authwit",
-    AddPublicAuthwit = "add_public_authwit",
-    Call = "call",
-    EncodedCall = "encoded_call",
-}
+export type Action =
+    | AddCapsuleAction
+    | AddPrivateAuthwitAction
+    | AddPublicAuthwitAction
+    | CallAction
+    | EncodedCallAction;
 
-export interface IAction {
-    readonly kind: ActionKind;
-}
+export type ActionKind = Action["kind"];
 
-export class AddCapsuleAction implements IAction {
-    public readonly kind = ActionKind.AddCapsule;
-    public constructor(
-        public readonly contract: string,
-        public readonly storageSlot: string,
-        public readonly capsule: string[],
-    ) {}
-}
+export type AddCapsuleAction = {
+    readonly kind: "add_capsule";
+    readonly contract: string;
+    readonly storageSlot: string;
+    readonly capsule: string[];
+};
 
-export class AddPrivateAuthwitAction implements IAction {
-    public readonly kind = ActionKind.AddPrivateAuthwit;
-    public constructor(
-        public readonly content: IAuthwitContent,
-        public readonly authwit?: string[],
-    ) {}
-}
+export type AddPrivateAuthwitAction = {
+    readonly kind: "add_private_authwit";
+    readonly content: AuthwitContent;
+    readonly authwit?: string[];
+};
 
-export class AddPublicAuthwitAction implements IAction {
-    public readonly kind = ActionKind.AddPublicAuthwit;
-    public constructor(
-        public readonly content: IAuthwitContent,
-    ) {}
-}
+export type AddPublicAuthwitAction = {
+    readonly kind: "add_public_authwit";
+    readonly content: AuthwitContent;
+};
 
-export class CallAction implements IAction {
-    public readonly kind = ActionKind.Call;
-    public constructor(
-        public readonly contract: string,
-        public readonly method: string,
-        public readonly args: any[],
-    ) {}
-}
+export type CallAction = {
+    readonly kind: "call";
+    readonly contract: string;
+    readonly method: string;
+    readonly args: any[];
+};
 
-export class EncodedCallAction implements IAction {
-    public readonly kind = ActionKind.EncodedCall;
-    public constructor(
-        public readonly to: string,
-        public readonly selector: string,
-        public readonly args: string[],
-        public name?: string,
-        public type?: string,
-        public isStatic?: boolean,
-        public returnTypes?: unknown[],
-    ) {}
-}
-
+export type EncodedCallAction = {
+    readonly kind: "encoded_call";
+    readonly to: string;
+    readonly selector: string;
+    readonly args: string[];
+    name?: string;
+    type?: string;
+    isStatic?: boolean;
+    returnTypes?: unknown[];
+};

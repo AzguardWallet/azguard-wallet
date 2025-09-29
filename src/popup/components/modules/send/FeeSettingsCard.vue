@@ -8,15 +8,9 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 /** Utils */
 import { trimAddress } from "@/utils/string"
 import { getRandomHex } from "@/wallet/utils"
+import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 
 /** Services */
-import {
-	FeeJuicePaymentMethod,
-	FeeJuiceWithClaimPaymentMethod,
-	FeePaymentMethodType,
-	FeeSettings,
-	FpcPaymentMethod,
-} from "@/wallet/services/execution/client"
 import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
@@ -63,7 +57,7 @@ const methods = ref([
 		title: "FPC",
 	},
 ])
-const isCustomMethod = computed(() => settings.value?.paymentMethod.type === FeePaymentMethodType.Custom)
+const isCustomMethod = computed(() => settings.value?.paymentMethod.kind === "custom")
 const selectedMethod = ref()
 const isMethodsDropdownOpen = ref(false)
 
@@ -195,8 +189,8 @@ const init = async () => {
 			}
 		}
 	} catch (e) {
-		console.error("Failed to init", e)
-		error.value = (e)?.message || e
+		console.error("Failed to init", getErrorData(e))
+		error.value = getErrorMessage(e)
 	} finally {
 		isLoading.value = false
 	}
@@ -211,8 +205,12 @@ watch(
 					settings.value = undefined
 					break;
 				}
-				settings.value = new FeeSettings(new FeeJuicePaymentMethod())
-				saveSelectedMethod(selectedMethod.value);
+				settings.value = {
+					paymentMethod: {
+						kind: "fj",
+					},
+				}
+				saveSelectedMethod(selectedMethod.value)
 				break;
 			case "fjwc":
 				if (!selectedMethod.value.claimAmount && claimParameters.value) {
@@ -228,13 +226,14 @@ watch(
 					settings.value = undefined
 					break;
 				}
-				settings.value = new FeeSettings(
-					new FeeJuiceWithClaimPaymentMethod(
-						selectedMethod.value.claimAmount,
-						selectedMethod.value.claimSecret,
-						selectedMethod.value.messageLeafIndex,
-					),
-				)
+				settings.value = {
+					paymentMethod: {
+						kind: "fjwc",
+						claimAmount: selectedMethod.value.claimAmount,
+						claimSecret: selectedMethod.value.claimSecret,
+						messageLeafIndex: selectedMethod.value.messageLeafIndex,
+					},
+				}
 				saveSelectedMethod(methods.value[0]);
 				break;
 			case "fpc":
@@ -253,7 +252,12 @@ watch(
 				}
 				switch (selectedMethod.value.fpc.type) {
 					case FpcType.DefaultSponsoredFpc:
-						settings.value = new FeeSettings(new FpcPaymentMethod(selectedMethod.value.fpc.id))
+						settings.value = {
+							paymentMethod: {
+								kind: "fpc",
+								fpcId: selectedMethod.value.fpc.id,
+							},
+						}
 						saveSelectedMethod(selectedMethod.value);
 						break;
 					case FpcType.DefaultFpc:
@@ -262,7 +266,13 @@ watch(
 							break;
 						}
 
-						settings.value = new FeeSettings(new FpcPaymentMethod(selectedMethod.value.fpc.id, selectedMethod.value.inPublic))
+						settings.value = {
+							paymentMethod: {
+								kind: "fpc",
+								fpcId: selectedMethod.value.fpc.id,
+								inPublic: selectedMethod.value.inPublic,
+							},
+						}
 						saveSelectedMethod(selectedMethod.value);
 						break;
 					default:

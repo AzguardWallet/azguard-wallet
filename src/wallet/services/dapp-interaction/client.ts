@@ -4,8 +4,8 @@ import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import {
     ConnectionPayload,
+    ConnectionResult,
     DAPP_INTERACTION_SERVICE_NAME,
-    DappSessionInfo,
     Events,
     ExecutionPayload,
     ExecutionResult,
@@ -25,7 +25,7 @@ export class DappInteractionServiceClient extends ServiceClient<Methods, Events>
         return this.request("getInteractionPayload", id);
     }
 
-    public resolveInteraction(id: string, result: DappSessionInfo | ExecutionResult): Promise<void> {
+    public resolveInteraction(id: string, result: ConnectionResult | ExecutionResult): Promise<void> {
         return this.request("resolveInteraction", id, result);
     }
 

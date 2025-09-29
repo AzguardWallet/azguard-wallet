@@ -7,8 +7,8 @@ import {
     ConnectionParams,
     ExecutionParams,
     DappSessionInfo,
-    OperationResult,
 } from "@/wallet/services/dapp-interaction/service";
+import type { OperationResult } from "@/wallet/services/execution/service";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { Events, Methods, GenericRpcEvent, RPC_SERVICE_NAME } from "./spec";
 import { type WalletInfo, AzguardWalletInfo, RpcEvent, RpcMethod } from "./types";

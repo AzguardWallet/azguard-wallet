@@ -15,13 +15,6 @@ import Navigation from "../../../../../components/Navigation.vue"
 
 /** Utils */
 import { AuthRegistryServiceClient } from "@/wallet/services/auth-registry/client"
-import {
-    AuthwitContentKind,
-    CallAuthwitContent,
-    EncodedCallAuthwitContent,
-    IntentAuthwitContent,
-    MessageHashAuthwitContent,
-} from "@/wallet/services/execution/models/authwit-content"
 import { capitalize, stringCompare } from "@/utils/string"
 
 /** Composables */
@@ -47,13 +40,13 @@ const filteredAuthwits = computed(() => {
 		if (kindPos) return kindPos
 
 		switch (contentA.kind) {
-			case AuthwitContentKind.Call:
+			case "call":
 				return stringCompare(contentA.caller, contentB.caller)
-			case AuthwitContentKind.EncodedCall:
+			case "encoded_call":
 				return stringCompare(contentA.caller, contentB.caller)
-			case AuthwitContentKind.Intent:
+			case "intent":
 				return stringCompare(contentA.consumer, contentB.consumer)
-			case AuthwitContentKind.MessageHash:
+			case "message_hash":
 				return 1
 			
 			default:
@@ -250,7 +243,7 @@ onBeforeUnmount(() => {
 
 					<div :class="$style.divider" />
 
-					<Flex v-if="aw.content.kind === AuthwitContentKind.Call" direction="column" gap="8">
+					<Flex v-if="aw.content.kind === 'call'" direction="column" gap="8">
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Caller: </Text>
 							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.caller" full />
@@ -266,7 +259,7 @@ onBeforeUnmount(() => {
 							<Text size="13" color="tertiary" weight="600"> {{ aw.content.method }} </Text>
 						</Flex>
 					</Flex>
-					<Flex v-else-if="aw.content.kind === AuthwitContentKind.EncodedCall" direction="column" gap="8">
+					<Flex v-else-if="aw.content.kind === 'encoded_call'" direction="column" gap="8">
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Caller: </Text>
 							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.caller" full />
@@ -282,7 +275,7 @@ onBeforeUnmount(() => {
 							<Text size="13" color="tertiary" weight="600"> {{ aw.content.selector }} </Text>
 						</Flex>
 					</Flex>
-					<Flex v-else-if="aw.content.kind === AuthwitContentKind.Intent" direction="column" gap="8">
+					<Flex v-else-if="aw.content.kind === 'intent'" direction="column" gap="8">
 						<Flex align="center" gap="4" wide :class="$style.content">
 							<Text size="13" color="tertiary"> Consumer: </Text>
 							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.consumer" full />
@@ -293,7 +286,7 @@ onBeforeUnmount(() => {
 							<Text size="13" color="tertiary" weight="600"> {{ aw.content.intent.join(',\u00A0') }} </Text>
 						</Flex>
 					</Flex>
-					<Flex v-else-if="aw.content.kind === AuthwitContentKind.MessageHash" direction="column" gap="8">
+					<Flex v-else-if="aw.content.kind === 'message_hash'" direction="column" gap="8">
 						<Flex align="start" gap="4" wide :class="[$style.content_fix_lines, $style.content_3_lines]">
 							<Text size="13" color="tertiary"> Hash: </Text>
 							<Text size="13" color="tertiary" weight="600"> {{ aw.content.messageHash }} </Text>

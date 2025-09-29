@@ -1,27 +1,15 @@
-export enum OperationStatus {
-    Ok = "ok",
-    Failed = "failed",
-    Skipped = "skipped",
-}
+export type OperationResult<T = unknown> = OkOperationResult<T> | FailedOperationResult | SkippedOperationResult;
 
-export interface IOperationResult {
-    status: OperationStatus,
-}
+export type OkOperationResult<T> = {
+    kind: "ok";
+    result: T;
+};
 
-export class OkOperationResult<T> implements IOperationResult {
-    public readonly status = OperationStatus.Ok;
-    public constructor(
-        public readonly result: T,
-    ) {}
-}
+export type FailedOperationResult = {
+    kind: "failed";
+    error: string;
+};
 
-export class FailedOperationResult implements IOperationResult {
-    public readonly status = OperationStatus.Failed;
-    public constructor(
-        public readonly error: string,
-    ) {}
-}
-
-export class SkippedOperationResult implements IOperationResult {
-    public readonly status = OperationStatus.Skipped;
-}
+export type SkippedOperationResult = {
+    kind: "skipped";
+};

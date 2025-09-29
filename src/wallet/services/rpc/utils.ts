@@ -1,22 +1,8 @@
 import { DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/spec";
 import {
-    OperationKind,
-    ActionKind,
-    AuthwitContentKind,
-    CaipChain,
-    CaipAccount,
-    ConnectionParams,
-    ExecutionParams,
-    Operation,
-    GetCompleteAddressOperation,
-    RegisterContractOperation,
-    RegisterSenderOperation,
-    RegisterTokenOperation,
-    SendTransactionOperation,
-    SimulateTransactionOperation,
-    SimulateUtilityOperation,
-    SimulateViewsOperation,
     Action,
+    ActionKind,
+    OperationKind,
     AddCapsuleAction,
     AddPrivateAuthwitAction,
     AddPublicAuthwitAction,
@@ -27,6 +13,21 @@ import {
     EncodedCallAuthwitContent,
     IntentAuthwitContent,
     MessageHashAuthwitContent,
+} from "@/wallet/services/execution/models";
+import {
+    ConnectionParams,
+    ExecutionParams,
+    CaipChain,
+    CaipAccount,
+    OperationRequest,
+    GetCompleteAddressRequest,
+    RegisterContractRequest,
+    RegisterSenderRequest,
+    RegisterTokenRequest,
+    SendTransactionRequest,
+    SimulateTransactionRequest,
+    SimulateUtilityRequest,
+    SimulateViewsRequest,
 } from "@/wallet/services/dapp-interaction/spec";
 import { RpcEvent /*, RpcMethod*/ } from "./types";
 
@@ -73,26 +74,29 @@ export function parseDappPermissions(data: any): DappPermissions {
     };
 }
 
-export function parseMethod(data: any): string {
+export function parseMethod(data: OperationKind | ActionKind): string {
     switch (data) {
+        // rpc methods
         // case RpcMethod.get_wallet_info:
         // case RpcMethod.get_session:
         // case RpcMethod.close_session:
         // case RpcMethod.connect:
         // case RpcMethod.execute:
-        case OperationKind.GetCompleteAddress:
-        case OperationKind.RegisterSender:
-        case OperationKind.RegisterToken:
-        case OperationKind.RegisterContract:
-        case OperationKind.SendTransaction:
-        case OperationKind.SimulateTransaction:
-        case OperationKind.SimulateUtility:
-        case OperationKind.SimulateViews:
-        case ActionKind.AddCapsule:
-        case ActionKind.AddPrivateAuthwit:
-        case ActionKind.AddPublicAuthwit:
-        case ActionKind.Call:
-        case ActionKind.EncodedCall:
+        // operations
+        case "get_complete_address":
+        case "register_sender":
+        case "register_token":
+        case "register_contract":
+        case "send_transaction":
+        case "simulate_transaction":
+        case "simulate_utility":
+        case "simulate_views":
+        // actions
+        case "add_capsule":
+        case "add_private_authwit":
+        case "add_public_authwit":
+        case "call":
+        case "encoded_call":
             return data;
         default:
             throw new Error("Invalid method");
@@ -119,31 +123,31 @@ export function parseExecutionParams(data: any): ExecutionParams {
     };
 }
 
-function parseOperation(data: any): Operation {
-    switch (data?.kind) {
-        case OperationKind.GetCompleteAddress: {
-            return parseGetCompleteAddressOperation(data);
+function parseOperation(op: OperationRequest): OperationRequest {
+    switch (op?.kind) {
+        case "get_complete_address": {
+            return parseGetCompleteAddressRequest(op);
         }
-        case OperationKind.RegisterContract: {
-            return parseRegisterContractOperation(data);
+        case "register_contract": {
+            return parseRegisterContractRequest(op);
         }
-        case OperationKind.RegisterSender: {
-            return parseRegisterSenderOperation(data);
+        case "register_sender": {
+            return parseRegisterSenderRequest(op);
         }
-        case OperationKind.RegisterToken: {
-            return parseRegisterTokenOperation(data);
+        case "register_token": {
+            return parseRegisterTokenRequest(op);
         }
-        case OperationKind.SendTransaction: {
-            return parseSendTransactionOperation(data);
+        case "send_transaction": {
+            return parseSendTransactionRequest(op);
         }
-        case OperationKind.SimulateTransaction: {
-            return parseSimulateTransactionOperation(data);
+        case "simulate_transaction": {
+            return parseSimulateTransactionRequest(op);
         }
-        case OperationKind.SimulateUtility: {
-            return parseSimulateUtilityOperation(data);
+        case "simulate_utility": {
+            return parseSimulateUtilityRequest(op);
         }
-        case OperationKind.SimulateViews: {
-            return parseSimulateViewsOperation(data);
+        case "simulate_views": {
+            return parseSimulateViewsRequest(op);
         }
         default: {
             throw new Error("Invalid operation");
@@ -151,16 +155,16 @@ function parseOperation(data: any): Operation {
     }
 }
 
-function parseGetCompleteAddressOperation(data: any): GetCompleteAddressOperation {
+function parseGetCompleteAddressRequest(data: any): GetCompleteAddressRequest {
     return {
-        kind: OperationKind.GetCompleteAddress,
+        kind: "get_complete_address",
         account: parseAccountProp(data, "account"),
     };
 }
 
-function parseRegisterContractOperation(data: any): RegisterContractOperation {
+function parseRegisterContractRequest(data: any): RegisterContractRequest {
     return {
-        kind: OperationKind.RegisterContract,
+        kind: "register_contract",
         chain: parseChainProp(data, "chain"),
         address: parseStringProp(data, "address"),
         instance: data.instance, // TODO: implement validation
@@ -168,34 +172,34 @@ function parseRegisterContractOperation(data: any): RegisterContractOperation {
     };
 }
 
-function parseRegisterSenderOperation(data: any): RegisterSenderOperation {
+function parseRegisterSenderRequest(data: any): RegisterSenderRequest {
     return {
-        kind: OperationKind.RegisterSender,
+        kind: "register_sender",
         chain: parseChainProp(data, "chain"),
         address: parseStringProp(data, "address"),
     };
 }
 
-function parseRegisterTokenOperation(data: any): RegisterTokenOperation {
+function parseRegisterTokenRequest(data: any): RegisterTokenRequest {
     return {
-        kind: OperationKind.RegisterToken,
+        kind: "register_token",
         account: parseAccountProp(data, "account"),
         address: parseStringProp(data, "address"),
     };
 }
 
-function parseSendTransactionOperation(data: any): SendTransactionOperation {
+function parseSendTransactionRequest(data: any): SendTransactionRequest {
     return {
-        kind: OperationKind.SendTransaction,
+        kind: "send_transaction",
         account: parseAccountProp(data, "account"),
         actions: parseArrayProp(data, "actions", parseAction),
         setup: parseOptionalArrayProp(data, "setup", parseAction),
     };
 }
 
-function parseSimulateTransactionOperation(data: any): SimulateTransactionOperation {
+function parseSimulateTransactionRequest(data: any): SimulateTransactionRequest {
     return {
-        kind: OperationKind.SimulateTransaction,
+        kind: "simulate_transaction",
         account: parseAccountProp(data, "account"),
         actions: parseArrayProp(data, "actions", parseAction),
         setup: parseOptionalArrayProp(data, "setup", parseAction),
@@ -203,9 +207,9 @@ function parseSimulateTransactionOperation(data: any): SimulateTransactionOperat
     };
 }
 
-function parseSimulateUtilityOperation(data: any): SimulateUtilityOperation {
+function parseSimulateUtilityRequest(data: any): SimulateUtilityRequest {
     return {
-        kind: OperationKind.SimulateUtility,
+        kind: "simulate_utility",
         account: parseAccountProp(data, "account"),
         contract: parseStringProp(data, "contract"),
         method: parseStringProp(data, "method"),
@@ -213,29 +217,29 @@ function parseSimulateUtilityOperation(data: any): SimulateUtilityOperation {
     };
 }
 
-function parseSimulateViewsOperation(data: any): SimulateViewsOperation {
+function parseSimulateViewsRequest(data: any): SimulateViewsRequest {
     return {
-        kind: OperationKind.SimulateViews,
+        kind: "simulate_views",
         account: parseAccountProp(data, "account"),
         calls: parseArrayProp(data, "calls", parseAction).filter(x => x.kind === "call" || x.kind === "encoded_call"),
     };
 }
 
-function parseAction(data: any): Action {
+function parseAction(data: Action): Action {
     switch (data?.kind) {
-        case ActionKind.AddCapsule: {
+        case "add_capsule": {
             return parseAddCapsuleAction(data);
         }
-        case ActionKind.AddPrivateAuthwit: {
+        case "add_private_authwit": {
             return parseAddPrivateAuthwitAction(data);
         }
-        case ActionKind.AddPublicAuthwit: {
+        case "add_public_authwit": {
             return parseAddPublicAuthwitAction(data);
         }
-        case ActionKind.Call: {
+        case "call": {
             return parseCallAction(data);
         }
-        case ActionKind.EncodedCall: {
+        case "encoded_call": {
             return parseEncodedCallAction(data);
         }
         default: {
@@ -246,7 +250,7 @@ function parseAction(data: any): Action {
 
 function parseAddCapsuleAction(data: any): AddCapsuleAction {
     return {
-        kind: ActionKind.AddCapsule,
+        kind: "add_capsule",
         contract: parseStringProp(data, "contract"),
         storageSlot: parseStringProp(data, "storageSlot"),
         capsule: parseArrayProp(data, "capsule", parseString),
@@ -255,7 +259,7 @@ function parseAddCapsuleAction(data: any): AddCapsuleAction {
 
 function parseAddPrivateAuthwitAction(data: any): AddPrivateAuthwitAction {
     return {
-        kind: ActionKind.AddPrivateAuthwit,
+        kind: "add_private_authwit",
         content: parseAuthwitContent(data.content),
         authwit: parseOptionalArrayProp(data, "authwit", parseString),
     };
@@ -263,14 +267,14 @@ function parseAddPrivateAuthwitAction(data: any): AddPrivateAuthwitAction {
 
 function parseAddPublicAuthwitAction(data: any): AddPublicAuthwitAction {
     return {
-        kind: ActionKind.AddPublicAuthwit,
+        kind: "add_public_authwit",
         content: parseAuthwitContent(data.content),
     };
 }
 
 function parseCallAction(data: any): CallAction {
     return {
-        kind: ActionKind.Call,
+        kind: "call",
         contract: parseStringProp(data, "contract"),
         method: parseStringProp(data, "method"),
         args: parseArrayProp(data, "args"),
@@ -279,7 +283,7 @@ function parseCallAction(data: any): CallAction {
 
 function parseEncodedCallAction(data: any): EncodedCallAction {
     return {
-        kind: ActionKind.EncodedCall,
+        kind: "encoded_call",
         to: parseStringProp(data, "to"),
         name: parseOptionalStringProp(data, "name"),
         selector: parseStringProp(data, "selector"),
@@ -290,18 +294,18 @@ function parseEncodedCallAction(data: any): EncodedCallAction {
     };
 }
 
-function parseAuthwitContent(data: any): AuthwitContent {
+function parseAuthwitContent(data: AuthwitContent): AuthwitContent {
     switch (data?.kind) {
-        case AuthwitContentKind.Call: {
+        case "call": {
             return parseCallAuthwitContent(data);
         }
-        case AuthwitContentKind.EncodedCall: {
+        case "encoded_call": {
             return parseEncodedCallAuthwitContent(data);
         }
-        case AuthwitContentKind.Intent: {
+        case "intent": {
             return parseIntentAuthwitContent(data);
         }
-        case AuthwitContentKind.MessageHash: {
+        case "message_hash": {
             return parseMessageHashAuthwitContent(data);
         }
         default: {
@@ -312,7 +316,7 @@ function parseAuthwitContent(data: any): AuthwitContent {
 
 function parseCallAuthwitContent(data: any): CallAuthwitContent {
     return {
-        kind: AuthwitContentKind.Call,
+        kind: "call",
         caller: parseStringProp(data, "caller"),
         contract: parseStringProp(data, "contract"),
         method: parseStringProp(data, "method"),
@@ -322,7 +326,7 @@ function parseCallAuthwitContent(data: any): CallAuthwitContent {
 
 function parseEncodedCallAuthwitContent(data: any): EncodedCallAuthwitContent {
     return {
-        kind: AuthwitContentKind.EncodedCall,
+        kind: "encoded_call",
         caller: parseStringProp(data, "caller"),
         to: parseStringProp(data, "to"),
         name: parseOptionalStringProp(data, "name"),
@@ -336,7 +340,7 @@ function parseEncodedCallAuthwitContent(data: any): EncodedCallAuthwitContent {
 
 function parseIntentAuthwitContent(data: any): IntentAuthwitContent {
     return {
-        kind: AuthwitContentKind.Intent,
+        kind: "intent",
         consumer: parseStringProp(data, "consumer"),
         intent: parseArrayProp(data, "intent", parseString),
     };
@@ -344,7 +348,7 @@ function parseIntentAuthwitContent(data: any): IntentAuthwitContent {
 
 function parseMessageHashAuthwitContent(data: any): MessageHashAuthwitContent {
     return {
-        kind: AuthwitContentKind.MessageHash,
+        kind: "message_hash",
         messageHash: parseStringProp(data, "messageHash"),
     };
 }

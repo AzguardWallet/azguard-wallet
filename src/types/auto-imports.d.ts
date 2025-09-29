@@ -354,4 +354,7 @@ declare global {
   // @ts-ignore
   export type { NotificationType, NotificationPayload, NotificationItem } from '../stores/notification.store'
   import('../stores/notification.store')
+  // @ts-ignore
+  export type { ConfirmationPolicy } from '../utils/confirmation-policies'
+  import('../utils/confirmation-policies')
 }
