@@ -32,7 +32,7 @@ const cacheStore = useCacheStore()
 
 const senders = ref([])
 const isLoading = ref(false)
-const isCopied = ref(false)
+const copiedAddress = ref("")
 const error = ref()
 const fetchSenders = async () => {
 	isLoading.value = true
@@ -46,13 +46,13 @@ const fetchSenders = async () => {
 }
 
 const handleCopyAddress = (address) => {
-	isCopied.value = true
+	copiedAddress.value = address
 
 	window.navigator.clipboard.writeText(address)
 	openToast({ label: "Sender's address is copied", icon: "copy" })
 
 	setTimeout(() => {
-		isCopied.value = false
+		copiedAddress.value = ""
 	}, 2_000)
 }
 
@@ -115,17 +115,17 @@ onBeforeUnmount(() => {
 
 			<Flex v-else-if="senders.length" direction="column" gap="8">
 				<Flex v-for="sender in senders" justify="between" :class="$style.card">
-					<Flex gap="10">
+					<Flex align="center" gap="10">
 						<Icon name="user" size="16" color="tertiary" />
 
-						<AddressDisplay @onAddressClick="handleCopyAddress(sender)" size="14" weight="600" color="secondary" :address="transfer.from" :formatter="(addr) => trimAddress(addr, 8, 8)" />
+						<AddressDisplay @onAddressClick="handleCopyAddress(sender)" size="14" weight="600" color="secondary" :address="sender" :formatter="(addr) => trimAddress(addr, 8, 8)" />
 						<!-- <Text @click="handleCopyAddress(sender)" size="14" weight="600" color="secondary"> {{ trimAddress(sender, 8, 8) }} </Text> -->
 					</Flex>
 
 					<Flex align="center" gap="8">
 						<Tooltip position="end" delay="350">
 							<Icon
-								v-if="!isCopied"
+								v-if="copiedAddress !== sender"
 								@click.stop="handleCopyAddress(sender)"
 								name="copy"
 								size="14"
@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 								:class="$style.icon_btn"
 							/>
 							<Icon
-								v-else
+								v-else-if="copiedAddress === sender"
 								name="check-circle"
 								size="14"
 								color="green"
