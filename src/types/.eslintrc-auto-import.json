@@ -111,6 +111,7 @@
     "useSlots": true,
     "useSyncedRef": true,
     "useTemplateRef": true,
+    "useTicker": true,
     "useToast": true,
     "watch": true,
     "watchEffect": true,

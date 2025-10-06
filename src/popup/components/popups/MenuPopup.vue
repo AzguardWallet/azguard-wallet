@@ -38,8 +38,8 @@ function onSettingUpdate(setting) {
 	}
 }
 
-const handleNavigation = () => {
-	router.push("/popup/settings")
+const handleNavigation = (path) => {
+	router.push(path)
 	emit("onClose")
 }
 
@@ -92,8 +92,7 @@ onBeforeUnmount(() => {
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<ItemsContainer title="Profile">
 					<SettingItem
-						@click="emit('onClose')"
-						to="/popup/settings/profile"
+						@click="handleNavigation('/popup/settings/profile')"
 						:title="appStore.profile.name"
 						icon="user"
 						iconBgColor="blue"
@@ -108,8 +107,7 @@ onBeforeUnmount(() => {
 						:disabled="appStore.profiles.length === 1"
 					/> -->
 					<SettingItem
-						@click="emit('onClose')"
-						to="/popup/settings/general/contacts"
+						@click="handleNavigation('/popup/settings/general/contacts')"
 						title="Contacts"
 						icon="contacts"
 						iconBgColor="blue"
@@ -118,7 +116,12 @@ onBeforeUnmount(() => {
 				</ItemsContainer>
 
 				<ItemsContainer title="Other">
-					<SettingItem title="Task tracker" icon="task-tracker" iconBgColor="var(--green)" chevron disabled />
+					<SettingItem
+						@click="handleNavigation('/popup/settings/general/tasks')"
+						title="Task tracker"
+						icon="task-tracker"
+						iconBgColor="gray"
+					/>
 					<SettingItem
 						v-if="isDeveloperModeEnabled"
 						@click="handleOpenLogs"
