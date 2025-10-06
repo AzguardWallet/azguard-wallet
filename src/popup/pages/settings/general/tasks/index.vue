@@ -124,7 +124,7 @@ onBeforeUnmount(() => {
 					gap="4"
 					style="padding: 8px 0px 0px 12px;"
 				>
-					<Flex v-for="(st, i) in t.subtasks" align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.icon">
+					<Flex v-for="(st, i) in t.subtasks" align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
 						<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
 						<TaskCard
 							@click=handleShowSubtasks(st)
@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
 					gap="4"
 					style="padding: 8px 0px 0px 12px;"
 				>
-					<Flex v-for="(st, i) in t.subtasks" align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.icon">
+					<Flex v-for="(st, i) in t.subtasks" align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
 						<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
 						<TaskCard
 							:task="st"
@@ -193,11 +193,11 @@ onBeforeUnmount(() => {
 	padding: 20px 24px 80px 24px;
 }
 
-.icon {
+.subtask_icon {
 	position: relative;
 }
 
-.icon::after {
+.subtask_icon::after {
 	content: "";
 	position: absolute;
 	left: 2px;
@@ -209,19 +209,4 @@ onBeforeUnmount(() => {
 	transform: scaleX(0.5);
 	transform-origin: center;
 }
-/* .wrapper {
-	flex: 1;
-
-	height: 100%;
-
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-8);
-	box-shadow: inset 0 10px 8px -2px var(--gray-3);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 20px 24px 24px 24px;
-} */
-
 </style>

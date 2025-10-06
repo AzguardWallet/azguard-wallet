@@ -102,21 +102,8 @@ const iconSize = computed(() => props.isSubtask ? '12' : '16')
 		</Flex>
 
 		<Text size="12" weight="500" color="tertiary">
-			<!-- {{ DateTime.fromSeconds((task.finishedAt ?? task.createdAt) / 1_000).toRelative({style: "short", locale: "en"}) }} -->
 			{{ relativeTime }}
 		</Text>
-
-		<!-- <Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
-			<Text size="12" weight="600" color="primary">
-				{{ transferAmount }}
-				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
-			</Text>
-		</Flex>
-		<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
-			<Text size="12" weight="600" color="primary">
-				{{ mintAmount }}
-			</Text>
-		</Flex> -->
 	</Flex>
 </template>
 
@@ -178,22 +165,5 @@ const iconSize = computed(() => props.isSubtask ? '12' : '16')
 }
 .failed {
 	background: var(--red);
-}
-
-.check_icon {
-	position: absolute;
-	top: -8px;
-	right: -8px;
-
-	box-sizing: content-box;
-	border: 3px solid var(--card-bg);
-	border-radius: 50%;
-}
-
-.amount_badge {
-	background: var(--gray-5);
-	border-radius: 6px;
-
-	padding: 4px 6px;
 }
 </style>
