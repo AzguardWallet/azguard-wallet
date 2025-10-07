@@ -59,7 +59,7 @@ const initRuntime = () => {
     // });
     chrome.runtime.setUninstallURL("https://azguardwallet.io/forms/uninstall");
     logger.log("wallet", LogLevel.Info, "Runtime configured");
-}
+};
 
 const initConfig = async () => {
     await config.load();

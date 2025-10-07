@@ -175,8 +175,8 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
 
             try {
                 const deployResults = await this.executionService.executeOperations(deployOps, origin, deployTask);
-                if (!deployResults.every(x => x.kind === "ok")) {
-                    throw new Error(`Token deployment failed: ${deployResults.find(x => x.kind === "failed")?.error}`);
+                if (!deployResults.every(x => x.status === "ok")) {
+                    throw new Error(`Token deployment failed: ${deployResults.find(x => x.status === "failed")?.error}`);
                 }
                 const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
                 this.logDebug("faucet deploy tx", deployTx);
@@ -230,10 +230,10 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 origin,
                 mintTask,
             );
-            if (mintResult.kind === "failed") {
+            if (mintResult.status === "failed") {
                 throw new Error(`Token mint failed: ${mintResult.error}`);
             }
-            if (registerResult.kind === "failed") {
+            if (registerResult.status === "failed") {
                 throw new Error(`Token register failed: ${registerResult.error}`);
             }
             const mintTx = (mintResult as OkOperationResult<string>).result;

@@ -76,7 +76,7 @@ const initRequest = async () => {
 		if (!requestId.value) {
 			throw new Error("Invalid interaction request id")
 		}
-		payload.value = await interactionService.getInteractionPayload(requestId.value) as ConnectionPayload
+		payload.value = (await interactionService.getInteractionPayload(requestId.value)) as ConnectionPayload
 		dapp.value = payload.value.params.dappMetadata
 
 		if (dapp.value.logo) {
@@ -391,7 +391,7 @@ const unpackPermissions = (required: DappPermissions[], optional: DappPermission
 			if (a.type !== b.type) {
 				return a.type - b.type
 			}
-			return (a.type == 0 ? a.method : a.event).localeCompare(b.type == 0 ? b.method : b.event)
+			return (a.type === 0 ? a.method : a.event).localeCompare(b.type === 0 ? b.method : b.event)
 		})
 }
 
@@ -546,7 +546,7 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 			</Flex>
 		</Flex>
 
-		<Flex direction="column" gap="10">
+		<Flex direction="column" gap="10" style="margin-top: 16px">
 			<Tooltip v-if="processingError" side="top" position="start" wide :disabled="!processingError.tooltip">
 				<Flex align="center" wide>
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
@@ -594,6 +594,7 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 
 <style module>
 .wrapper {
+	overflow: auto;
 	flex: 1;
 
 	background: var(--card-bg);

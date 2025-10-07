@@ -1,13 +1,13 @@
 import { AuthwitContent } from ".";
 
+export type ActionKind = Action["kind"];
+
 export type Action =
     | AddCapsuleAction
     | AddPrivateAuthwitAction
     | AddPublicAuthwitAction
     | CallAction
     | EncodedCallAction;
-
-export type ActionKind = Action["kind"];
 
 export type AddCapsuleAction = {
     readonly kind: "add_capsule";
