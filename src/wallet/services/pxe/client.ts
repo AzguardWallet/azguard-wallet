@@ -115,7 +115,7 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
     public async proveTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        privateExecutionResult: PrivateExecutionResult,
+        privateExecutionResult?: PrivateExecutionResult,
     ): Promise<TxProvingResult> {
         await ensureOffscreenRunning();
         const result = await this.request("proveTx", network, txRequest, privateExecutionResult);

@@ -1,15 +1,15 @@
 export type OperationResult<T = unknown> = OkOperationResult<T> | FailedOperationResult | SkippedOperationResult;
 
 export type OkOperationResult<T> = {
-    kind: "ok";
+    status: "ok";
     result: T;
 };
 
 export type FailedOperationResult = {
-    kind: "failed";
+    status: "failed";
     error: string;
 };
 
 export type SkippedOperationResult = {
-    kind: "skipped";
+    status: "skipped";
 };

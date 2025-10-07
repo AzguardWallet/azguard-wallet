@@ -201,12 +201,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public async proveTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        privateExecutionResult: PrivateExecutionResult,
+        privateExecutionResult?: PrivateExecutionResult,
     ): Promise<TxProvingResult> {
         const pxe = await this.getPxeClient(network);
         return await pxe.proveTx(
             await TxExecutionRequest.schema.parseAsync(txRequest),
-            await PrivateExecutionResult.schema.parseAsync(privateExecutionResult),
+            await PrivateExecutionResult.schema.optional().parseAsync(privateExecutionResult),
         );
     }
 

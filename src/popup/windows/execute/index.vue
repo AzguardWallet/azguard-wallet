@@ -16,7 +16,7 @@ import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
 import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
 import { Account, AccountServiceClient } from "@/wallet/services/account/client"
-import { ExecutionServiceClient, FeeSettings, Operation, OperationResult } from "@/wallet/services/execution/client"
+import { ExecutionServiceClient, FeeSettings, Operation } from "@/wallet/services/execution/client"
 import {
 	CaipAccount,
 	CaipChain,
@@ -143,7 +143,28 @@ const init = async () => {
 		for (const op of payload.value.params.operations) {
 			switch (op.kind) {
 				case "register_contract":
-				case "register_sender": {
+				case "register_sender":
+				case "aztec_simulateTx":
+				case "aztec_simulateUtility":
+				case "aztec_profileTx":
+				case "aztec_sendTx":
+				case "aztec_getContractClassMetadata":
+				case "aztec_getContractMetadata":
+				case "aztec_registerContract":
+				case "aztec_registerContractClass":
+				case "aztec_proveTx":
+				case "aztec_getNodeInfo":
+				case "aztec_getPXEInfo":
+				case "aztec_getCurrentBaseFees":
+				case "aztec_updateContract":
+				case "aztec_registerSender":
+				case "aztec_getSenders":
+				case "aztec_removeSender":
+				case "aztec_getTxReceipt":
+				case "aztec_getPrivateEvents":
+				case "aztec_getPublicEvents":
+				case "aztec_getChainId":
+				case "aztec_getVersion": {
 					const network = await getNetwork(op.chain)
 					_operations.push({
 						...op,
@@ -156,7 +177,11 @@ const init = async () => {
 				case "register_token":
 				case "simulate_transaction":
 				case "simulate_utility":
-				case "simulate_views": {
+				case "simulate_views":
+				case "aztec_getCompleteAddress":
+				case "aztec_getAddress":
+				case "aztec_createTxExecutionRequest":
+				case "aztec_createAuthWit": {
 					const [network, account] = await getNetworkAndAccount(op.account)
 					_operations.push({
 						...op,
@@ -225,6 +250,7 @@ const approve = async () => {
 	try {
 		isLoading.value = true
 		await profileService.refreshSession()
+		/** @ts-ignore */
 		const result = await executionService.executeOperations(operations.value, {
 			type: OriginType.DAPP,
 			name: dapp.value?.name ?? "Unknown dapp",
@@ -288,8 +314,20 @@ onUnmounted(() => {
 	window.removeEventListener("beforeunload", reject)
 })
 
-const humanize = (str: string) => {
-	return `${str[0].toUpperCase()}${str.substring(1)}`.replace("_", " ")
+const humanizeOperationKind = (str: string) => {
+	if (str.startsWith("aztec_")) {
+		// split camelCase
+		str = str
+			.substring(6)
+			.replace("PXE", "Pxe")
+			.replace("AuthWit", "Authwit")
+			.replace(/([A-Z])/g, " $1")
+			.toLowerCase()
+	} else {
+		// split snake_case
+		str = str.replace("_", " ")
+	}
+	return `${str[0].toUpperCase()}${str.substring(1)}`
 }
 
 const showJson = () => {
@@ -372,7 +410,7 @@ const showJson = () => {
 							"
 						>
 							<Flex wide justify="between">
-								<Text size="14" color="primary">{{ humanize(op.kind) }}</Text>
+								<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
 								<NetworkBadge :chainId="op.network.chainId" />
 							</Flex>
 							<Flex :class="$style.prop">
@@ -388,10 +426,10 @@ const showJson = () => {
 									<Text v-for="(action, j) in op.setup" :key="`${i}:${j}`" size="12" color="primary">
 										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
 											<Text color="secondary"> call </Text>
-											{{ action.kind == "call" ? action.method : action.selector }}
+											{{ action.kind === "call" ? action.method : action.selector }}
 											<Text color="secondary"> in </Text>
 											<AddressDisplay
-												:address="action.kind == 'call' ? action.contract : action.to"
+												:address="action.kind === 'call' ? action.contract : action.to"
 											/>
 											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
@@ -412,10 +450,10 @@ const showJson = () => {
 									>
 										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
 											<Text color="secondary"> call </Text>
-											{{ action.kind == "call" ? action.method : action.selector }}
+											{{ action.kind === "call" ? action.method : action.selector }}
 											<Text color="secondary"> in </Text>
 											<AddressDisplay
-												:address="action.kind == 'call' ? action.contract : action.to"
+												:address="action.kind === 'call' ? action.contract : action.to"
 											/>
 											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
@@ -442,19 +480,17 @@ const showJson = () => {
 					</Flex>
 					<Flex v-else :class="$style.operation" direction="column" wide>
 						<Flex wide justify="between">
-							<Text size="14" color="primary">{{ humanize(op.kind) }}</Text>
+							<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
 							<NetworkBadge :chainId="op.network.chainId" />
 						</Flex>
-						<template v-if="op.kind === 'get_complete_address'">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">Requested account:</Text>
-								<Text size="12" color="primary">
-									{{ op.account!.name }}
-									<Text color="secondary">({{ trimAddress(op.account!.address) }})</Text>
-								</Text>
-							</Flex>
-						</template>
-						<template v-else-if="op.kind === 'register_contract'">
+						<Flex v-if="op.account" :class="$style.prop">
+							<Text size="12" color="secondary">From account:</Text>
+							<Text size="12" color="primary">
+								{{ op.account!.name }}
+								<Text color="secondary">({{ trimAddress(op.account!.address) }})</Text>
+							</Text>
+						</Flex>
+						<template v-if="op.kind === 'register_contract'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
 								<AddressDisplay :address="op.address" />
@@ -476,23 +512,16 @@ const showJson = () => {
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'simulate_transaction'">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">From account:</Text>
-								<Text size="12" color="primary">
-									{{ op.account!.name }}
-									<Text color="secondary">({{ trimAddress(op.account!.address) }})</Text>
-								</Text>
-							</Flex>
 							<Flex v-if="op.setup?.length" :class="$style.prop">
 								<Text size="12" color="secondary">Fee payload:</Text>
 								<Flex direction="column" gap="4">
 									<Text v-for="(action, j) in op.setup" :key="`${i}:${j}`" size="12" color="primary">
 										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
 											<Text color="secondary"> call </Text>
-											{{ action.kind == "call" ? action.method : action.selector }}
+											{{ action.kind === "call" ? action.method : action.selector }}
 											<Text color="secondary"> in </Text>
 											<AddressDisplay
-												:address="action.kind == 'call' ? action.contract : action.to"
+												:address="action.kind === 'call' ? action.contract : action.to"
 											/>
 											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
@@ -513,10 +542,10 @@ const showJson = () => {
 									>
 										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
 											<Text color="secondary"> call </Text>
-											{{ action.kind == "call" ? action.method : action.selector }}
+											{{ action.kind === "call" ? action.method : action.selector }}
 											<Text color="secondary"> in </Text>
 											<AddressDisplay
-												:address="action.kind == 'call' ? action.contract : action.to"
+												:address="action.kind === 'call' ? action.contract : action.to"
 											/>
 											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
@@ -529,13 +558,6 @@ const showJson = () => {
 						</template>
 						<template v-else-if="op.kind === 'simulate_utility'">
 							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">From account:</Text>
-								<Text size="12" color="primary">
-									{{ op.account!.name }}
-									<Text color="secondary">({{ trimAddress(op.account!.address) }})</Text>
-								</Text>
-							</Flex>
-							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
 								<AddressDisplay :address="op.contract" />
 								<!-- <Text size="12" color="primary">{{ trimAddress(op.contract) }}</Text> -->
@@ -547,22 +569,79 @@ const showJson = () => {
 						</template>
 						<template v-else-if="op.kind === 'simulate_views'">
 							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">From account:</Text>
-								<Text size="12" color="primary">
-									{{ op.account!.name }}
-									<Text color="secondary">({{ trimAddress(op.account!.address) }})</Text>
-								</Text>
-							</Flex>
-							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">View calls:</Text>
 								<Flex direction="column" gap="4">
 									<Text v-for="(call, j) in op.calls" :key="`${i}:${j}`" size="12" color="primary">
-										{{ call.kind == "call" ? call.method : call.selector }}
+										{{ call.kind === "call" ? call.method : call.selector }}
 										<Text color="secondary"> in </Text>
-										<AddressDisplay :address="call.kind == 'call' ? call.contract : call.to" />
+										<AddressDisplay :address="call.kind === 'call' ? call.contract : call.to" />
 										<!-- {{ trimAddress(call.contract || call.to) }} -->
 									</Text>
 								</Flex>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_simulateTx' || op.kind === 'aztec_profileTx' || op.kind === 'aztec_proveTx'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Origin address:</Text>
+								<AddressDisplay :address="op.txRequest.origin.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_simulateUtility'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.to.toString()" />
+							</Flex>
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Function:</Text>
+								<Text size="12" color="primary">{{ op.functionName }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_sendTx'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Tx hash:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.tx.txHash.toString()) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getContractClassMetadata'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Class id:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.id.toString()) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getContractMetadata'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.address.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_registerContract'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.contract.instance.address.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_updateContract'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.contractAddress.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_registerSender' || op.kind === 'aztec_removeSender'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.address.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getTxReceipt'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Tx hash:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.txHash.toString()) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getPrivateEvents'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.contractAddress.toString()" />
 							</Flex>
 						</template>
 					</Flex>

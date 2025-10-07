@@ -41,7 +41,7 @@ export type Methods = {
     proveTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        privateExecutionResult: PrivateExecutionResult,
+        privateExecutionResult?: PrivateExecutionResult,
     ): TxProvingResult;
     registerAccount(network: Network, secretKey: Fr, partialAddress: PartialAddress): CompleteAddress;
     registerContract(network: Network, instance: ContractInstanceWithAddress, artifact?: ContractArtifact): void;

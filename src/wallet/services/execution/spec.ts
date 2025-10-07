@@ -1,5 +1,5 @@
-import { TransferType, TxOrigin } from "@/wallet/services/transaction/spec";
-import { FeeSettings, Operation, OperationResult } from "./models";
+import type { TransferType, TxOrigin } from "@/wallet/services/transaction/spec";
+import type { FeeSettings, Operation, OperationResult } from "./models";
 
 export const EXECUTION_SERVICE_NAME = "execution";
 

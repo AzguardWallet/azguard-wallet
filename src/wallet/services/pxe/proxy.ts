@@ -76,7 +76,7 @@ export class PXEProxy implements PXE {
     getContracts(): Promise<AztecAddress[]> {
         return this.pxeService.getContracts(this.network);
     }
-    proveTx(txRequest: TxExecutionRequest, privateExecutionResult: PrivateExecutionResult): Promise<TxProvingResult> {
+    proveTx(txRequest: TxExecutionRequest, privateExecutionResult?: PrivateExecutionResult): Promise<TxProvingResult> {
         return this.pxeService.proveTx(this.network, txRequest, privateExecutionResult);
     }
     simulateTx(

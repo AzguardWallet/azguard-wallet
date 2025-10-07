@@ -3,9 +3,9 @@ import { inject } from "./utils";
 
 const azguardProp = "azguard";
 const azguardObject = {
-    version: "0.4.1",
+    version: "0.5.0",
     createClient: () => new ProxyClient(),
-}
+};
 
 inject(azguardProp, azguardObject);
 window.addEventListener("load", () => inject(azguardProp, azguardObject));
