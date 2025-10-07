@@ -15,8 +15,51 @@ import TaskCard from "./TaskCard.vue"
 
 /** Utils */
 import { TaskServiceClient } from "@/wallet/services/task/client"
+import { ContentKind } from "@/wallet/services/task/spec"
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+import { symbol } from "zod"
 
 const tasks = ref([])
+const activeTasks = computed(() => {
+	return tasks.value
+		.filter(t => !t.finishedAt)
+		.sort((a, b) => b.createdAt - a.createdAt)
+})
+const completedTasks = computed(() => {
+	return tasks.value
+		.filter(t => t.finishedAt)
+		.sort((a, b) => b.finishedAt - a.finishedAt)
+})
+
+async function processTask(task) {
+	console.log('task', task);
+	
+	let humanizedContent = {}
+	
+	switch (task.content?.kind) {
+		case ContentKind.BalanceUpdate:
+			const balance = await tokenBalanceService.getTokenBalance(task.content.tbId)
+			humanizedContent.token = {
+				name: balance.token.name,
+				symbol: balance.token.symbol,
+			}
+			
+			break;
+		case ContentKind.TokenMint:
+			humanizedContent.token = {
+				name: task.content.name,
+				symbol: task.content.symbol,
+			}
+
+		default:
+			break;
+	}
+
+	task.humanizedContent = humanizedContent
+	
+	return task
+}
+
 const taskService = new TaskServiceClient()
 taskService.onTaskCreated.add(onTaskCreated)
 taskService.onTaskUpdated.add(onTaskUpdated)
@@ -78,16 +121,7 @@ function findParentRecursive(tasks, childId) {
 	return null
 }
 
-const activeTasks = computed(() => {
-	return tasks.value
-		.filter(t => !t.finishedAt)
-		.sort((a, b) => b.createdAt - a.createdAt)
-})
-const completedTasks = computed(() => {
-	return tasks.value
-		.filter(t => t.finishedAt)
-		.sort((a, b) => b.finishedAt - a.finishedAt)
-})
+const tokenBalanceService = new TokenBalanceServiceClient()
 
 function handleShowSubtasks(task) {
 	if (!task.subtasks.length) return
@@ -95,10 +129,18 @@ function handleShowSubtasks(task) {
 }
 
 onMounted(async () => {
-	tasks.value = await taskService.getTasks()
+	const _tasks = await taskService.getTasks()	
+	const _tasks1 = await Promise.all(
+		_tasks.map(task => processTask(task))
+	)
+	console.log('_tasks1', _tasks1);
+	
+	// tasks.value = (await taskService.getTasks())
+	// 	.map(async (task) => await processTask(task))
 })
 onBeforeUnmount(() => {
 	taskService.disconnect()
+	tokenBalanceService.disconnect()
 })
 </script>
 
@@ -162,13 +204,50 @@ onBeforeUnmount(() => {
 					gap="4"
 					style="padding: 8px 0px 0px 12px;"
 				>
-					<Flex v-for="(st, i) in t.subtasks" align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
+					<div v-for="(st, i) in t.subtasks">
+						<!-- <Flex align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
+							<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
+							<TaskCard
+								@click="handleShowSubtasks(st)"
+								:task="st"
+								isSubtask
+							/>
+						</Flex> -->
+						<TaskCard
+							@click="handleShowSubtasks(st)"
+							:task="st"
+							isSubtask
+						/>
+
+
+						<Flex
+							v-if="st.showSubtasks"
+							direction="column"
+							gap="4"
+							style="padding: 2px 0px 0px 12px;"
+						>
+							<div v-for="(sst, ii) in st.subtasks">
+								<!-- <Flex align="center" gap="8" :class="(ii !== st.subtasks.length - 1) && $style.subtask_icon">
+									<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
+									<TaskCard
+										:task="sst"
+										isSubtask
+									/>
+								</Flex> -->
+								<TaskCard
+									:task="sst"
+									isSubtask
+								/>
+							</div>
+						</Flex>
+					</div>
+					<!-- <Flex v-for="(st, i) in t.subtasks" align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
 						<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
 						<TaskCard
 							:task="st"
 							isSubtask
 						/>
-					</Flex>
+					</Flex> -->
 				</Flex>
 			</div>
 		</Flex>

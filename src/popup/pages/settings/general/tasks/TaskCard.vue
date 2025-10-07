@@ -101,9 +101,11 @@ const iconSize = computed(() => props.isSubtask ? '12' : '16')
 			</Flex>
 		</Flex>
 
-		<Text size="12" weight="500" color="tertiary">
-			{{ relativeTime }}
-		</Text>
+		<Flex align="center" justify="end" style="min-width: 70px;">
+			<Text size="12" weight="500" color="tertiary">
+				{{ relativeTime }}
+			</Text>
+		</Flex>
 	</Flex>
 </template>
 

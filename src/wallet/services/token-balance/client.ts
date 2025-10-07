@@ -15,6 +15,10 @@ export class TokenBalanceServiceClient extends ServiceClient<Methods, Events> im
         super(TOKEN_BALANCE_SERVICE_NAME, new LoggerServiceClient(), name);
     }
 
+    public getTokenBalance(id: number): Promise<TokenBalanceInfo> {
+        return this.request("getTokenBalance", id);
+    }
+
     public getTokenBalances(tokenId?: number, accountAddress?: string): Promise<TokenBalanceInfo[]> {
         return this.request("getTokenBalances", tokenId, accountAddress);
     }

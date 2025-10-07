@@ -79,6 +79,16 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
         this.worker = this.startWorker();
     }
 
+    public async getTokenBalance(id: number): Promise<TokenBalanceInfo> {
+        await this.ensureInitialized();
+        const balance = await this.balances.get(`${id}`);
+        if (!balance) {
+            throw new Error("unknown token balance id");
+        }
+        
+        return this.getTokenBalanceInfo(balance);
+    }
+
     public async getTokenBalances(tokenId?: number, accountAddress?: string): Promise<TokenBalanceInfo[]> {
         await this.ensureInitialized();
         return (await this.balances.getValues())
