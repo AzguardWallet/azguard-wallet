@@ -133,7 +133,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
             this.emit("onProfileAdded", this.getProfileInfo(profile));
 
-            await this._openPasswordSession(id, profile, passhash);
+            await this._openSession(id, profile, secret, passhash);
 
             return profile;
         } finally {
@@ -160,8 +160,12 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
                 throw new Error("Invalid profile password");
             }
+            const secret = await this.tryDecrypt(Buffer.from(profile.secret, "base64"), key);
+            if (!secret) {
+                throw new Error("Profile storage corrupted");
+            }
 
-            await this._openPasswordSession(id, profile, passhash);
+            await this._openSession(id, profile, secret, passhash);
 
             return this.getProfileInfo(profile);
         } finally {
@@ -191,7 +195,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
             this.emit("onProfileAdded", this.getProfileInfo(profile));
 
-            await this._openPasskeySession(id, profile, master);
+            await this._openSession(id, profile, master);
 
             return profile;
         } finally {
@@ -218,7 +222,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             const credential = await this.passkeys.getKey(profile.credentialId);
             const master = await credential.deriveMasterSecret();
 
-            await this._openPasskeySession(id, profile, master);
+            await this._openSession(id, profile, master);
 
             return this.getProfileInfo(profile);
         } finally {
@@ -317,7 +321,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
             const session = await this._getSession();
             if (session?.session.profile === id) {
-                await this._openPasswordSession(id, profile, newPasshash);
+                await this._openSession(id, profile, newSecret, newPasshash);
             }
 
             return profile;
@@ -520,37 +524,16 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         this.activeSession = { profile, session, secret: Fr.fromBuffer(Buffer.from(secretBytes)) };
     }
 
-    private async _openPasswordSession(profileId: string, profile: Profile, passhash: ArrayBuffer) {
+    private async _openSession(profileId: string, profile: Profile, secretBuffer: Uint8Array<ArrayBuffer>, passhash?: ArrayBuffer) {
         try {
             const session: Session = {
                 profile: profileId,
-                passhash: Buffer.from(passhash).toString("base64"),
+                passhash: passhash ? Buffer.from(passhash).toString("base64") : undefined,
                 since: Date.now(),
             };
             await this.session.set(session);
-            if (profile.type !== "password") {
-                throw new Error("Expected password profile");
-            }
-            const key = await EncryptionKey.fromPasshash(passhash);
-            const secretBytes = await this.tryDecrypt(Buffer.from(profile.secret, "base64"), key);
-            if (!secretBytes) {
-                throw new Error("Profile storage corrupted");
-            }
-            this.activeSession = { profile, session, secret: Fr.fromBuffer(Buffer.from(secretBytes)) };
-            this.emit("onActiveProfileChanged", this.getProfileInfo(profile));
-        } catch (error) {
-            this.logError("Failed to open profile session", getErrorMessage(error));
-        }
-    }
-
-    private async _openPasskeySession(profileId: string, profile: Profile, master: Uint8Array<ArrayBuffer>) {
-        try {
-            const session: Session = {
-                profile: profileId,
-                since: Date.now(),
-            };
-            await this.session.set(session);
-            this.activeSession = { profile, session, secret: Fr.fromBuffer(Buffer.from(master)) };
+            const secret = Fr.fromBufferReduce(Buffer.from(secretBuffer));
+            this.activeSession = { profile, session, secret };
             this.emit("onActiveProfileChanged", this.getProfileInfo(profile));
         } catch (error) {
             this.logError("Failed to open profile session", getErrorMessage(error));
@@ -576,7 +559,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             };
             await this.profiles.set(id, profile);
             this.emit("onProfileAdded", this.getProfileInfo(profile));
-            await this._openPasswordSession(id, profile, passhash);
+            await this._openSession(id, profile, secretPlain, passhash);
             return profile;
         } finally {
             this.lock.leave();
@@ -598,7 +581,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             };
             await this.profiles.set(id, profile);
             this.emit("onProfileAdded", this.getProfileInfo(profile));
-            await this._openPasskeySession(id, profile, master);
+            await this._openSession(id, profile, master);
             return profile;
         } finally {
             this.lock.leave();
