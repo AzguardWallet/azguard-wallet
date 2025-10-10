@@ -501,8 +501,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             await this._closeSession();
             return;
         }
-        if (profile.type !== "password") {
-            this.logDebug("Restore password session called with non-password profile");
+        if (profile.type === "passkey") {
+            this.logDebug("Restore password session called with passkey profile");
             await this._closeSession();
             return;
         }
@@ -520,7 +520,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             await this._closeSession();
             return;
         }
-        this.logDebug("Session restored (password)");
+        this.logDebug("Session restored");
         this.activeSession = { profile, session, secret: Fr.fromBuffer(Buffer.from(secretBytes)) };
     }
 
@@ -532,7 +532,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 since: Date.now(),
             };
             await this.session.set(session);
-            const secret = Fr.fromBufferReduce(Buffer.from(secretBuffer));
+            const secret = Fr.fromBuffer(Buffer.from(secretBuffer));
             this.activeSession = { profile, session, secret };
             this.emit("onActiveProfileChanged", this.getProfileInfo(profile));
         } catch (error) {
@@ -549,13 +549,13 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             } while (await this.profiles.contains(id));
             const key = await EncryptionKey.fromPasshash(passhash);
             const guard = await key.encrypt(ENCRYPTION_GUARD);
-            const secretEnc = await key.encrypt(secretPlain);
+            const secret = await key.encrypt(secretPlain);
             const profile: Profile = {
                 id,
                 name,
                 type: "password",
                 guard: Buffer.from(guard.buffer).toString("base64"),
-                secret: Buffer.from(secretEnc.buffer).toString("base64"),
+                secret: Buffer.from(secret.buffer).toString("base64"),
             };
             await this.profiles.set(id, profile);
             this.emit("onProfileAdded", this.getProfileInfo(profile));
@@ -601,7 +601,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     private getProfileInfo(profile: Profile): ProfileInfo {
-        return { id: profile.id, name: profile.name, type: profile.type } as ProfileInfo;
+        return { id: profile.id, name: profile.name, type: profile.type };
     }
 
     private readonly onConfigUpdated = (prop: ConfigProp) => {
