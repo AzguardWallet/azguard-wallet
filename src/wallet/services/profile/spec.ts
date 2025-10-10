@@ -1,34 +1,37 @@
-import type { EncryptionKey } from "./encryption/encryption-key";
+import type { Fr } from "@aztec/foundation/fields";
 
 export const PROFILE_SERVICE_NAME = "profile";
 
 export const ENCRYPTION_GUARD = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
 
-export type AuthType = "password" | "passkey";
+export type ProfileType = "password" | "passkey";
 
 export type ProfileInfo = {
     /** Randomly generated id. */
     id: string;
     /** Display name. */
     name: string;
-    /** Authentication type. */
-    authType: AuthType;
+    /** Profile type. */
+    type: ProfileType;
 };
 
-export type Profile = ProfileInfo & {
-    /** Encrypted guard. */
-    guard: string;
-    /** Encrypted master secret. */
-    secret: string;
-    /** WebAuthn credential identifier (for passkey profiles). */
-    credentialId?: string;
-};
+export type Profile = ProfileInfo & (
+    | {
+            type: "password";
+            guard: string;
+            secret: string;
+        }
+    | {
+            type: "passkey";
+            credentialId: string;
+        }
+);
 
 export type Session = {
     /** Profile id. */
     profile: string;
     /** Profile passhash. */
-    passhash: string;
+    passhash?: string;
     /** Creation time */
     since: number;
 };
@@ -38,8 +41,8 @@ export type ActiveSession = {
     profile: Profile;
     /** Session object */
     session: Session;
-    /** Encryption key */
-    key: EncryptionKey;
+    /** Master secret */
+    secret: Fr;
 };
 
 export type Methods = {

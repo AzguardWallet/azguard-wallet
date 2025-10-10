@@ -43,7 +43,7 @@ const password = ref("")
 const isWrongPassword = ref(false)
 const isPasswordType = ref(true)
 
-const isPasskeyProfile = computed(() => appStore.profile?.authType === "passkey")
+const isPasskeyProfile = computed(() => appStore.profile?.type === "passkey")
 
 const handlePasswordInput = () => {
 	if (isWrongPassword.value) isWrongPassword.value = false
