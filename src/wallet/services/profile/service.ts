@@ -88,10 +88,6 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
         if (profile.type === "password") {
             await this.restorePasswordSession(session, profile);
-        } else {
-            // TODO: should we restore passkey session here or we should show auth modal instead?
-            this.logInfo("Going to restore passkey session");
-            await this.restorePasskeySession(session, profile);
         }
     }
 
@@ -522,24 +518,6 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
         this.logDebug("Session restored (password)");
         this.activeSession = { profile, session, secret: Fr.fromBuffer(Buffer.from(secretBytes)) };
-    }
-
-    private async restorePasskeySession(session: Session, profile: Profile) {
-        if (profile.type !== "passkey") {
-            this.logDebug("Restore passkey session called with non-passkey profile");
-            await this._closeSession();
-            return;
-        }
-        if (!profile.credentialId) {
-            this.logDebug("Passkey session missing credentialId");
-            await this._closeSession();
-            return;
-        }
-        const credential = await this.passkeys.getKey(profile.credentialId);
-        const master = await credential.deriveMasterSecret();
-        this.logDebug("Session restored (passkey)");
-        // TODO: should `deriveMasterSecret` return Fr instead of Buffer?
-        this.activeSession = { profile, session, secret: Fr.fromBuffer(Buffer.from(master)) };
     }
 
     private async _openPasswordSession(profileId: string, profile: Profile, passhash: ArrayBuffer) {

@@ -4,7 +4,6 @@ import { PasskeyCredentialData } from "./spec";
 const te = new TextEncoder();
 
 const PASSKEY_KDF_LABEL = te.encode("azguard:kdf:v1");
-const PASSKEY_PASSHASH_LABEL = te.encode("azguard:passhash:v1");
 const PASSKEY_MASTER_LABEL = te.encode("azguard:master:v1");
 
 export class PasskeyCredential {
@@ -25,14 +24,6 @@ export class PasskeyCredential {
         const baseKey = await self.crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
         const salt = await self.crypto.subtle.digest("SHA-256", saltInput);
         return new PasskeyCredential(params.id, baseKey, salt);
-    }
-
-    public async derivePasshash(): Promise<ArrayBuffer> {
-        return await self.crypto.subtle.deriveBits(
-            { name: "HKDF", hash: "SHA-256", salt: this.salt, info: PASSKEY_PASSHASH_LABEL },
-            this.baseKey,
-            256,
-        );
     }
 
     public async deriveMasterSecret(): Promise<Buffer<ArrayBuffer>> {
