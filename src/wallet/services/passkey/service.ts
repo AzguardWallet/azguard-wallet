@@ -5,7 +5,7 @@ import {
     PASSKEY_SERVICE_NAME,
     Methods,
     PasskeyCredentialData,
-    PendingPasskeyRequest,
+    PasskeyRequest,
     PasskeyRequestPromise
 } from "./spec";
 import { PasskeyCredential } from "./credential";
@@ -25,15 +25,15 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
 
     protected async init(): Promise<void> {}
 
-    public async createKey(): Promise<PasskeyCredential> {
-        return await this.openWindowAndWait({ mode: "create" });
+    public async createKey(userHandle: string): Promise<PasskeyCredential> {
+        return await this.openWindowAndWait({ mode: "create", userHandle });
     }
 
     public async getKey(credentialId?: string): Promise<PasskeyCredential> {
         return await this.openWindowAndWait({ mode: "get", credentialId });
     }
 
-    public async getPendingRequest(requestId: string): Promise<PendingPasskeyRequest> {
+    public async getPendingRequest(requestId: string): Promise<PasskeyRequest> {
         const entry = this.pending.get(requestId);
         if (!entry) throw new Error("Invalid request id");
         return entry.request;
@@ -56,7 +56,7 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
         entry.reject(reason);
     }
 
-    private async openWindowAndWait(request: PendingPasskeyRequest): Promise<PasskeyCredential> {
+    private async openWindowAndWait(request: PasskeyRequest): Promise<PasskeyCredential> {
         let id: string;
         do { id = getRandomHex(8); } while (this.pending.has(id));
         const promise = new Promise<PasskeyCredential>((resolve, reject) => {

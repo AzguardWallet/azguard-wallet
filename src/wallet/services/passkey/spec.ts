@@ -1,16 +1,28 @@
 export const PASSKEY_SERVICE_NAME = "passkey";
 export const PASSKEY_PRF_LABEL = "azguard:profile:v1";
 
-export type PasskeyCredentialData = { id: string; prf: string }; // base64 fields
+export type PasskeyCredentialData = {
+    id: string;  // base64
+    prf: string;  // base64
+    userHandle?: string;  // hex
+};
 
-export type PendingPasskeyRequest = { mode: "create" | "get"; credentialId?: string };
+export type PasskeyRequest =
+    | {
+        mode: "create";
+        userHandle: string;
+    }
+    | {
+        mode: "get";
+        credentialId?: string;
+    }
 
 import type { PasskeyCredential } from "./credential";
 
 export type PasskeyRequestPromise = {
     resolve: (r: PasskeyCredential) => void;
     reject: (reason: string) => void;
-    request: PendingPasskeyRequest;
+    request: PasskeyRequest;
 };
 
 export type Methods = {
@@ -18,7 +30,7 @@ export type Methods = {
      * Returns details for the pending request so the window can proceed.
      * @param requestId Pending request identifier.
      */
-    getPendingRequest(requestId: string): PendingPasskeyRequest;
+    getPendingRequest(requestId: string): PasskeyRequest;
 
     /**
      * Resolves a pending request, completing the promise.

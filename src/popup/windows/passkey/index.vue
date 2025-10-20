@@ -13,10 +13,9 @@ import { PasskeyServiceClient } from "@/wallet/services/passkey/client"
 import {
 	PASSKEY_PRF_LABEL,
 	PasskeyCredentialData,
-	PendingPasskeyRequest,
+	PasskeyRequest,
 } from "@/wallet/services/passkey/spec"
 import { getErrorMessage } from "@/wallet/utils/errors"
-import { getRandomHex } from "@/wallet/utils"
 
 const route = useRoute()
 
@@ -32,10 +31,12 @@ function encodeBase64(buf: BufferSource): string {
 
 const decodeBase64 = (b64: string) => Uint8Array.from(Buffer.from(b64, "base64"))
 
-const handlePasskeyCreate = async (requestId: string) => {
+const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) => {
+	if (request.mode !== "create") throw new Error("Invalid request mode")
 	const challenge = crypto.getRandomValues(new Uint8Array(32))
 	const te = new TextEncoder()
 	const prfInput = await crypto.subtle.digest("SHA-256", te.encode(PASSKEY_PRF_LABEL))
+	const userHandle = Uint8Array.from(Buffer.from(request.userHandle, "hex"))
 	const publicKey: PublicKeyCredentialCreationOptions = {
 		challenge,
 		rp: {
@@ -43,8 +44,8 @@ const handlePasskeyCreate = async (requestId: string) => {
 			id: "azguardwallet.io"
 		},
 		user: {
-			id: crypto.getRandomValues(new Uint8Array(16)),
-			name: `profile-${getRandomHex(6)}`,
+			id: userHandle,
+			name: `profile-${request.userHandle}`,
 			displayName: "Azguard Profile",
 		},
 		pubKeyCredParams: [{ type: "public-key", alg: -7 }],
@@ -53,6 +54,7 @@ const handlePasskeyCreate = async (requestId: string) => {
 			userVerification: "required",
 			requireResidentKey: true,
 		},
+		// attestation: "direct",
 		timeout: 60_000,
 		extensions: { prf: { eval: { first: new Uint8Array(prfInput) } } },
 	}
@@ -68,11 +70,13 @@ const handlePasskeyCreate = async (requestId: string) => {
 	const passkeyCredentialData: PasskeyCredentialData = {
 		id: encodeBase64(rawId),
 		prf: encodeBase64(prfResult),
+		userHandle: request.userHandle,
 	}
 	await passkey.resolvePasskeyRequest(requestId, passkeyCredentialData)
 }
 
-const handlePasskeyGet = async (requestId: string, pending: PendingPasskeyRequest) => {
+const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
+	if (request.mode !== "get") throw new Error("Invalid request mode")
 	const challenge = crypto.getRandomValues(new Uint8Array(32))
 	const te = new TextEncoder()
 	const prfInput = await crypto.subtle.digest("SHA-256", te.encode(PASSKEY_PRF_LABEL))
@@ -83,8 +87,8 @@ const handlePasskeyGet = async (requestId: string, pending: PendingPasskeyReques
 		timeout: 60_000,
 		extensions: { prf: { eval: { first: new Uint8Array(prfInput) } } },
 	}
-	if (pending.credentialId) {
-		const id = decodeBase64(pending.credentialId)
+	if (request.credentialId) {
+		const id = decodeBase64(request.credentialId)
 		publicKey.allowCredentials = [{ id, type: "public-key" }]
 	}
 	const assertion = await navigator.credentials.get({ publicKey })
@@ -96,7 +100,15 @@ const handlePasskeyGet = async (requestId: string, pending: PendingPasskeyReques
 	const prfResult = ext.prf.results.first
 	const rawId = (assertion)?.rawId
 	if (!rawId || !prfResult) throw new Error("Passkey PRF not available")
-	await passkey.resolvePasskeyRequest(requestId, { id: encodeBase64(rawId), prf: encodeBase64(prfResult) })
+	if (!(assertion.response instanceof AuthenticatorAssertionResponse))
+		throw new Error("Unexpected assertion response type")
+	const userHandleOption = assertion.response.userHandle
+	let passkeyCredentialData: PasskeyCredentialData = {
+		id: encodeBase64(rawId),
+		prf: encodeBase64(prfResult),
+		userHandle: userHandleOption ? Buffer.from(userHandleOption).toString('hex') : undefined,
+	}
+	await passkey.resolvePasskeyRequest(requestId, passkeyCredentialData)
 }
 
 const run = async () => {
@@ -107,12 +119,12 @@ const run = async () => {
 	}
 	try {
 		passkey.connect()
-		const pending = await passkey.getPendingRequest(requestId)
+		const request = await passkey.getPendingRequest(requestId)
 
-		if (pending.mode === "create") {
-			await handlePasskeyCreate(requestId)
+		if (request.mode === "create") {
+			await handlePasskeyCreate(requestId, request)
 		} else {
-			await handlePasskeyGet(requestId, pending)
+			await handlePasskeyGet(requestId, request)
 		}
 	} catch (e) {
 		try { await passkey.rejectPasskeyRequest(route.query.requestId, getErrorMessage(e)) } catch {}

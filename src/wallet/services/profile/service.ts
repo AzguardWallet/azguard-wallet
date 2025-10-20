@@ -176,8 +176,6 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
     public async createPasskeyProfile(name: string): Promise<ProfileInfo> {
         await this.ensureInitialized();
-        const credential = await this.passkeys.createKey();
-        const secret = await credential.deriveMasterSecret();
         try {
             await this.lock.enter();
 
@@ -185,6 +183,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             do {
                 id = getRandomHex(8);
             } while (await this.profiles.contains(id));
+            const credential = await this.passkeys.createKey(id);
+            const secret = await credential.deriveMasterSecret();
 
             const profile: Profile = {
                 id,
@@ -235,7 +235,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         await this.ensureInitialized();
         const credential = await this.passkeys.getKey();
         const secret = await credential.deriveMasterSecret();
-        return await this.importPasskeyProfile(name, credential.id, secret);
+        return await this.importPasskeyProfile(name, credential.id, credential.userHandle, secret);
     }
 
     public async lockActiveProfile(): Promise<void> {
@@ -567,13 +567,13 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
-    private async importPasskeyProfile(name: string, credentialId: string, secret: Uint8Array<ArrayBuffer>): Promise<Profile> {
+    private async importPasskeyProfile(name: string, credentialId: string, userHandle: string, secret: Uint8Array<ArrayBuffer>): Promise<Profile> {
         try {
             await this.lock.enter();
-            let id: string;
-            do {
-                id = getRandomHex(8);
-            } while (await this.profiles.contains(id));
+            if (await this.profiles.contains(userHandle)) {
+                throw new Error("Passkey profile already exists");
+            }
+            let id = userHandle;
             const profile: Profile = {
                 id,
                 name,
