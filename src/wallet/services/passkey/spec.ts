@@ -14,15 +14,6 @@ export type PasskeyRequestPromise = {
 };
 
 export type Methods = {
-    /** Creates a new WebAuthn credential and returns a PasskeyCredential helper. */
-    createKey(): PasskeyCredential;
-
-    /**
-     * Retrieves a PasskeyCredential for a credential; if omitted, picks any existing.
-     * @param credentialId Optional WebAuthn credential id (base64url encoded).
-     */
-    getKey(credentialId?: string): PasskeyCredential;
-
     /**
      * Returns details for the pending request so the window can proceed.
      * @param requestId Pending request identifier.

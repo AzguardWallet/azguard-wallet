@@ -1,4 +1,4 @@
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
 import {
@@ -23,7 +23,7 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
         super(PASSKEY_SERVICE_NAME, logger);
     }
 
-    protected async init(_services: ServiceCollection): Promise<void> {}
+    protected async init(): Promise<void> {}
 
     public async createKey(): Promise<PasskeyCredential> {
         return await this.openWindowAndWait({ mode: "create" });
