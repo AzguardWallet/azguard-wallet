@@ -113,7 +113,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         const passhash = await EncryptionKey.getPasshash(password);
         const key = await EncryptionKey.fromPasshash(passhash);
         const guard = await key.encrypt(ENCRYPTION_GUARD);
-        const secret = await key.encrypt(Fr.random().toBuffer() as Buffer<ArrayBuffer>);
+        const secret = Fr.random().toBuffer() as Buffer<ArrayBuffer>;
+        const encryptedSecret = await key.encrypt(secret);
         try {
             await this.lock.enter();
 
@@ -127,7 +128,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 name,
                 type: "password",
                 guard: Buffer.from(guard.buffer).toString("base64"),
-                secret: Buffer.from(secret.buffer).toString("base64"),
+                secret: Buffer.from(encryptedSecret.buffer).toString("base64"),
             };
             await this.profiles.set(id, profile);
 
@@ -176,7 +177,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     public async createPasskeyProfile(name: string): Promise<ProfileInfo> {
         await this.ensureInitialized();
         const credential = await this.passkeys.createKey();
-        const master = await credential.deriveMasterSecret();
+        const secret = await credential.deriveMasterSecret();
         try {
             await this.lock.enter();
 
@@ -195,7 +196,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
             this.emit("onProfileAdded", this.getProfileInfo(profile));
 
-            await this._openSession(id, profile, master);
+            await this._openSession(id, profile, secret);
 
             return profile;
         } finally {
@@ -220,9 +221,9 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             }
 
             const credential = await this.passkeys.getKey(profile.credentialId);
-            const master = await credential.deriveMasterSecret();
+            const secret = await credential.deriveMasterSecret();
 
-            await this._openSession(id, profile, master);
+            await this._openSession(id, profile, secret);
 
             return this.getProfileInfo(profile);
         } finally {
@@ -233,8 +234,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     public async importPasskey(name: string): Promise<ProfileInfo> {
         await this.ensureInitialized();
         const credential = await this.passkeys.getKey();
-        const master = await credential.deriveMasterSecret();
-        return await this.importPasskeyProfile(name, credential.id, master);
+        const secret = await credential.deriveMasterSecret();
+        return await this.importPasskeyProfile(name, credential.id, secret);
     }
 
     public async lockActiveProfile(): Promise<void> {
@@ -321,7 +322,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
             const session = await this._getSession();
             if (session?.session.profile === id) {
-                await this._openSession(id, profile, newSecret, newPasshash);
+                await this._openSession(id, profile, secret, newPasshash);
             }
 
             return profile;
@@ -540,7 +541,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
-    private async importPasswordProfile(name: string, secretPlain: Uint8Array<ArrayBuffer>, passhash: ArrayBuffer): Promise<Profile> {
+    private async importPasswordProfile(name: string, secret: Uint8Array<ArrayBuffer>, passhash: ArrayBuffer): Promise<Profile> {
         try {
             await this.lock.enter();
             let id: string;
@@ -549,24 +550,24 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             } while (await this.profiles.contains(id));
             const key = await EncryptionKey.fromPasshash(passhash);
             const guard = await key.encrypt(ENCRYPTION_GUARD);
-            const secret = await key.encrypt(secretPlain);
+            const encodedSecret = await key.encrypt(secret);
             const profile: Profile = {
                 id,
                 name,
                 type: "password",
                 guard: Buffer.from(guard.buffer).toString("base64"),
-                secret: Buffer.from(secret.buffer).toString("base64"),
+                secret: Buffer.from(encodedSecret.buffer).toString("base64"),
             };
             await this.profiles.set(id, profile);
             this.emit("onProfileAdded", this.getProfileInfo(profile));
-            await this._openSession(id, profile, secretPlain, passhash);
+            await this._openSession(id, profile, secret, passhash);
             return profile;
         } finally {
             this.lock.leave();
         }
     }
 
-    private async importPasskeyProfile(name: string, credentialId: string, master: Uint8Array<ArrayBuffer>): Promise<Profile> {
+    private async importPasskeyProfile(name: string, credentialId: string, secret: Uint8Array<ArrayBuffer>): Promise<Profile> {
         try {
             await this.lock.enter();
             let id: string;
@@ -581,7 +582,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             };
             await this.profiles.set(id, profile);
             this.emit("onProfileAdded", this.getProfileInfo(profile));
-            await this._openSession(id, profile, master);
+            await this._openSession(id, profile, secret);
             return profile;
         } finally {
             this.lock.leave();
