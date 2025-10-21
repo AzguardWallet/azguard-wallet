@@ -63,16 +63,22 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 	if (!(credential instanceof PublicKeyCredential)) throw new Error("Unexpected credential type")
 	const ext = credential.getClientExtensionResults()
 	if (!ext.prf) throw new Error("Passkey PRF not available")
-	if (!ext.prf.enabled) throw new Error("Passkey PRF is not enabled on credential creation")
-	if (!ext.prf.results) throw new Error("Passkey PRF has no results")
-	const prfResult = ext.prf.results.first
-	const rawId = credential.rawId
-	const passkeyCredentialData: PasskeyCredentialData = {
-		id: encodeBase64(rawId),
-		prf: encodeBase64(prfResult),
-		userHandle: request.userHandle,
+
+	const isPrfEnabledOnCreation = ext.prf.enabled
+	if (isPrfEnabledOnCreation) {
+		if (!ext.prf.results) throw new Error("Passkey PRF has no results")
+		const prfResult = ext.prf.results.first
+		const rawId = credential.rawId
+		const passkeyCredentialData: PasskeyCredentialData = {
+			id: encodeBase64(rawId),
+			prf: encodeBase64(prfResult),
+			userHandle: request.userHandle,
+		}
+		await passkey.resolvePasskeyRequest(requestId, passkeyCredentialData)
+	} else {
+		const rawIdB64 = encodeBase64(credential.rawId)
+		await handlePasskeyGet(requestId, { mode: "get", credentialId: rawIdB64 } as PasskeyRequest)
 	}
-	await passkey.resolvePasskeyRequest(requestId, passkeyCredentialData)
 }
 
 const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
