@@ -176,15 +176,20 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
     public async createPasskeyProfile(name: string): Promise<ProfileInfo> {
         await this.ensureInitialized();
+        // First we make unique id without a lock to avoid deadlocks during UI query:
+        let id: string;
+        do {
+            id = getRandomHex(8);
+        } while (await this.profiles.contains(id));
+        const credential = await this.passkeys.createKey(id);
+        const secret = await credential.deriveMasterSecret();
+
         try {
             await this.lock.enter();
-
-            let id: string;
-            do {
+            // Then we also protect against collision, which should be very unlikely:
+            while (await this.profiles.contains(id)) {
                 id = getRandomHex(8);
-            } while (await this.profiles.contains(id));
-            const credential = await this.passkeys.createKey(id);
-            const secret = await credential.deriveMasterSecret();
+            }
 
             const profile: Profile = {
                 id,
