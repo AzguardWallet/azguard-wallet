@@ -8,11 +8,11 @@ const PASSKEY_MASTER_LABEL = te.encode("azguard:master:v1");
 
 export class PasskeyCredential {
     public readonly id: string;
-    public readonly userHandle: string;
+    public readonly userHandle?: string;
     private baseKey: CryptoKey;
     private salt: ArrayBuffer;
 
-    private constructor(id: string, userHandle: string, baseKey: CryptoKey, salt: ArrayBuffer) {
+    private constructor(id: string, baseKey: CryptoKey, salt: ArrayBuffer, userHandle?: string) {
         this.id = id;
         this.userHandle = userHandle;
         this.baseKey = baseKey;
@@ -25,7 +25,7 @@ export class PasskeyCredential {
         const saltInput = Buffer.concat([PASSKEY_KDF_LABEL, credential]);
         const baseKey = await self.crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
         const salt = await self.crypto.subtle.digest("SHA-256", saltInput);
-        return new PasskeyCredential(params.id, params.userHandle, baseKey, salt);
+        return new PasskeyCredential(params.id, baseKey, salt, params.userHandle);
     }
 
     public async deriveMasterSecret(): Promise<Buffer<ArrayBuffer>> {

@@ -235,7 +235,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         await this.ensureInitialized();
         const credential = await this.passkeys.getKey();
         const secret = await credential.deriveMasterSecret();
-        return await this.importPasskeyProfile(name, credential.id, credential.userHandle, secret);
+        return await this.importPasskeyProfile(name, credential.id, secret, credential.userHandle);
     }
 
     public async lockActiveProfile(): Promise<void> {
@@ -567,12 +567,20 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
-    private async importPasskeyProfile(name: string, credentialId: string, userHandle: string, secret: Uint8Array<ArrayBuffer>): Promise<Profile> {
+    private async importPasskeyProfile(name: string, credentialId: string, secret: Uint8Array<ArrayBuffer>, userHandle?: string): Promise<Profile> {
         try {
             await this.lock.enter();
-            if (await this.profiles.contains(userHandle)) {
+            if (userHandle && await this.profiles.contains(userHandle)) {
                 throw new Error("Passkey profile already exists");
             }
+
+            // It is unclear if this case is possible, this is a fallback:
+            if (!userHandle) {
+                do {
+                    userHandle = getRandomHex(8);
+                } while (await this.profiles.contains(userHandle));
+            }
+
             let id = userHandle;
             const profile: Profile = {
                 id,
