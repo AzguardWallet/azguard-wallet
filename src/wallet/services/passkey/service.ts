@@ -23,8 +23,6 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
         super(PASSKEY_SERVICE_NAME, logger);
     }
 
-    protected async init(): Promise<void> {}
-
     public async createKey(userHandle: string): Promise<PasskeyCredential> {
         return await this.openWindowAndWait({ mode: "create", userHandle });
     }
