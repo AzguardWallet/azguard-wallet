@@ -133,7 +133,7 @@ const run = async () => {
 			await handlePasskeyGet(requestId, request)
 		}
 	} catch (e) {
-		try { await passkey.rejectPasskeyRequest(route.query.requestId, getErrorMessage(e)) } catch {}
+		passkey.rejectPasskeyRequest(requestId, getErrorMessage(e))
 	} finally {
 		passkey.disconnect()
 		window.close()

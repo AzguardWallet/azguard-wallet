@@ -36,9 +36,16 @@ const handleCreateProfile = async (mode: "password" | "passkey" = "password") =>
 
 	const profiles = await managers.profile.getProfiles()
 	const name = `My Profile${profiles.length ? ` ${profiles.length}` : ''}`
-	const profile = mode === "passkey"
-		? await managers.profile.createPasskeyProfile(name)
-		: await managers.profile.createProfile(name, walletPassword.value)
+	let profile
+	try {
+		profile = mode === "passkey"
+			? await managers.profile.createPasskeyProfile(name)
+			: await managers.profile.createProfile(name, walletPassword.value)
+	} catch (e) {
+		console.error("Failed to create profile:", e)
+	} finally {
+		isCreatingProfile.value = false
+	}
 
 	while (!appStore.isLogined) {
 		await sleep(100) // wait for services initialization
