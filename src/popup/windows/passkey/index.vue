@@ -14,6 +14,7 @@ import {
 	PASSKEY_PRF_LABEL,
 	PasskeyCredentialData,
 	PasskeyRequest,
+	PASSKEY_TIMEOUT,
 } from "@/wallet/services/passkey/spec"
 import { getErrorMessage } from "@/wallet/utils/errors"
 
@@ -55,7 +56,7 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 			requireResidentKey: true,
 		},
 		// attestation: "direct",
-		timeout: 60_000,
+		timeout: PASSKEY_TIMEOUT,
 		extensions: { prf: { eval: { first: new Uint8Array(prfInput) } } },
 	}
 	const credential = await navigator.credentials.create({ publicKey })
@@ -90,7 +91,7 @@ const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
 		challenge,
 		rpId: "azguardwallet.io",
 		userVerification: "required",
-		timeout: 60_000,
+		timeout: PASSKEY_TIMEOUT,
 		extensions: { prf: { eval: { first: new Uint8Array(prfInput) } } },
 	}
 	if (request.credentialId) {
