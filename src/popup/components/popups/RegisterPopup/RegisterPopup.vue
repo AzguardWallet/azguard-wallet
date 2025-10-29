@@ -9,7 +9,9 @@ import { sleep } from "@/wallet/utils"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useNotificationStore } from "@/stores/notification.store"
 const appStore = useAppStore()
+const notificationStore = useNotificationStore()
 
 const emit = defineEmits(["onProfileCreated"])
 
@@ -18,7 +20,10 @@ const router = useRouter()
 const walletPassword = ref<string>("")
 const repeatedPassword = ref<string>("")
 
-const isCreatingProfile = ref(false)
+const isCreatingProfile = ref({
+	password: false,
+	passkey: false,
+})
 const isAllowedToContinue = computed(() => {
 	if (!walletPassword.value.length || walletPassword.value.length < 8) {
 		return false
@@ -32,7 +37,7 @@ const isAllowedToContinue = computed(() => {
 })
 const handleCreateProfile = async (mode: "password" | "passkey" = "password") => {
 
-	isCreatingProfile.value = true
+	isCreatingProfile.value[mode] = true
 
 	const profiles = await managers.profile.getProfiles()
 	const name = `My Profile${profiles.length ? ` ${profiles.length}` : ''}`
@@ -42,9 +47,31 @@ const handleCreateProfile = async (mode: "password" | "passkey" = "password") =>
 			? await managers.profile.createPasskeyProfile(name)
 			: await managers.profile.createProfile(name, walletPassword.value)
 	} catch (e) {
-		console.error("Failed to create profile:", e)
+		if (typeof e === "string" && !e?.toLowerCase().includes("user closed") && !e?.toLowerCase().includes("operation either timed out or was not allowed")) {
+			let description
+			let note
+			if (mode === "passkey") {
+				description = "An error occurred while creating the profile. This authenticator may not be supported or encountered an issue. Try again or use another one."
+				note = "Windows Hello may not work correctly with some versions of Windows."
+			} else {
+				description = "An error occurred while creating the profile. Please try again."
+			}
+
+			notificationStore.create({
+				type: "warning",
+				payload: {
+					title: "Profile Creation Failed",
+					description,
+					note,
+					confirmText: "OK",
+					onConfirm: () => {},
+				},
+			})
+
+			console.error("Failed to create profile:", e);
+		}
 	} finally {
-		isCreatingProfile.value = false
+		isCreatingProfile.value[mode] = false
 	}
 
 	while (!appStore.isLogined) {
@@ -76,7 +103,6 @@ const handleCreateProfile = async (mode: "password" | "passkey" = "password") =>
 
 	router.push("/popup/general")
 
-	isCreatingProfile.value = false
 	appStore.showRegisterPopup = false
 }
 
@@ -85,7 +111,11 @@ const handleCancel = () => {
 }
 
 const onKeydown = (e: KeyboardEvent) => {
-	if (e.key === "Enter") handleCreateProfile()
+	if (e.key === "Enter") {
+		if (isAllowedToContinue.value && !isCreatingProfile.value.password && !isCreatingProfile.value.passkey) {
+			handleCreateProfile()
+		}
+	}
 }
 
 onMounted(() => {
@@ -137,22 +167,22 @@ onUnmounted(() => {
 						type="primary"
 						size="medium"
 						wide
-						:disabled="!isAllowedToContinue"
-						:loading="isCreatingProfile"
+						:disabled="!isAllowedToContinue || isCreatingProfile.passkey"
+						:loading="isCreatingProfile.password"
 					>
-						Create
+						Create with Password
 					</Button>
 					<Button
 						@click="handleCreateProfile('passkey')"
-						type="secondary"
+						type="primary"
 						size="medium"
 						wide
-						:disabled="isCreatingProfile"
-						:loading="isCreatingProfile"
+						:disabled="isCreatingProfile.passkey"
+						:loading="isCreatingProfile.passkey"
 					>
 						Create with Passkey
 					</Button>
-					<Button @click="handleCancel" type="secondary" size="medium" wide :disabled="isCreatingProfile">
+					<Button @click="handleCancel" type="secondary" size="medium" wide :disabled="isCreatingProfile.passkey || isCreatingProfile.password">
 						Cancel
 					</Button>
 				</Flex>

@@ -2,7 +2,7 @@
 {
 	"meta": {
 		"isAuthRequired": false,
-		"requiresProfile": false
+		"isPasskeyInteraction": true
 	}
 }
 </route>
@@ -145,7 +145,13 @@ onMounted(() => { run() })
 </script>
 
 <template>
-	<Flex align="center" justify="center" style="height: 100vh">
+	<Flex align="center" justify="center" :class="$style.wrapper">
 		<Text size="14" weight="600" color="primary"> Waiting for passkey... </Text>
 	</Flex>
 </template>
+
+<style module>
+.wrapper {
+	height: 100%;
+}
+</style>

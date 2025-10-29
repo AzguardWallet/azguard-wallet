@@ -15,9 +15,7 @@ import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Store */
-import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
-const appStore = useAppStore()
 const popupStore = usePopupStore()
 </script>
 

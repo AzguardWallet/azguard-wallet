@@ -60,12 +60,36 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
         const promise = new Promise<PasskeyCredential>((resolve, reject) => {
             this.pending.set(id, { resolve, reject, request });
         });
-        chrome.windows.create({
-            type: "popup",
-            url: chrome.runtime.getURL(`src/popup/index.html#/windows/passkey?requestId=${id}`),
-            height: 600,
-            width: 360,
-        });
+
+        chrome.windows.create(
+            {
+                type: "popup",
+                url: chrome.runtime.getURL(`src/popup/index.html#/windows/passkey?requestId=${id}`),
+                height: 800,
+                width: 500,
+            },
+            (createdWindow) => {
+                if (!createdWindow || createdWindow.id == null) return;
+
+                const windowId = createdWindow.id;
+                const pendingMap = this.pending;
+
+                function onRemoved(closedWindowId: number) {
+                    if (closedWindowId === windowId) {
+                        (chrome.windows.onRemoved.removeListener as any)(onRemoved);
+
+                        const entry = pendingMap.get(id);
+                        if (entry) {
+                            entry.reject("User closed the passkey window");
+                            pendingMap.delete(id);
+                        }
+                    }
+                }
+
+                (chrome.windows.onRemoved.addListener as any)(onRemoved);
+            }
+        );
+
         return promise;
     }
 }

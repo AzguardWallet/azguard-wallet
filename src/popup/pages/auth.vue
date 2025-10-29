@@ -110,6 +110,8 @@ const handleUnlockWallet = async () => {
 }
 
 const onKeydown = e => {
+	if (popupStore.len) return
+
 	if (e.key === "Enter") handleUnlockWallet()
 }
 
@@ -184,7 +186,7 @@ const handleSelectProfile = () => {
 </script>
 
 <template>
-	<Flex direction="column" jusitfy="between" :class="$style.wrapper">
+	<Flex direction="column" justify="between" :class="$style.wrapper">
 		<Flex align="center" justify="end" gap="4" wide :class="$style.settings">
 			<Icon
 				@click="handleSwitchTheme"

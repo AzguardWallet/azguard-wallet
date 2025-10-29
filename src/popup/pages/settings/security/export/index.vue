@@ -23,28 +23,61 @@ const appStore = useAppStore()
 	<Flex direction="column" gap="24" :class="$style.wrapper">
 		<Breadcrumbs hide-title />
 
-		<Flex direction="column" align="center" gap="16" :class="$style.page_header">
-			<Flex :class="$style.page_icon">
-				<Icon name="download" size="24" color="primary" />
-				<div />
+		<Flex v-if="appStore.profile.type === 'passkey'" direction="column" gap="24">
+			<Flex direction="column" align="center" gap="16" :class="$style.page_header">
+				<Flex :class="$style.page_icon">
+					<Icon name="download" size="24" color="primary" />
+					<div />
+				</Flex>
+
+				<Flex align="center" direction="column" gap="8">
+					<Text size="14" weight="600" color="primary">Backup </Text>
+					<Text size="13" weight="500" height="150" color="tertiary" align="center" style="padding: 0 24px">
+						Your profile is protected with a <Text weight="600" color="secondary">Passkey</Text>.
+					</Text>
+				</Flex>
 			</Flex>
 
-			<Flex align="center" direction="column" gap="8">
-				<Text size="14" weight="600" color="primary">Backup </Text>
-				<Text size="13" weight="500" height="150" color="tertiary" align="center" style="padding: 0 24px">
-					Get your profile credentials so your profile can be restored in the future
+			<ItemsContainer title="Profile">
+				<SettingItem :title="appStore.profile.name" icon="user" raw />
+			</ItemsContainer>
+
+			<Flex direction="column" gap="12" style="padding: 0 8px;">
+				<Text size="13" weight="500" height="150" color="tertiary">
+					The backup is stored <Text weight="600" color="secondary">on the device where the Passkey was created</Text>.
+				</Text>
+
+				<Text size="13" weight="500" height="150" color="tertiary">
+					To access your profile on a new device, the Passkey must be <Text weight="600" color="secondary">synced</Text> with
+					it or <Text weight="600" color="secondary">available on another device</Text> you own.
 				</Text>
 			</Flex>
 		</Flex>
+		<Flex v-else direction="column" gap="24">
+			<Flex direction="column" align="center" gap="16" :class="$style.page_header">
+				<Flex :class="$style.page_icon">
+					<Icon name="download" size="24" color="primary" />
+					<div />
+				</Flex>
 
-		<ItemsContainer title="Profile to backup">
-			<SettingItem :title="appStore.profile.name" icon="user" raw />
-		</ItemsContainer>
+				<Flex align="center" direction="column" gap="8">
+					<Text size="14" weight="600" color="primary">Backup </Text>
+					<Text size="13" weight="500" height="150" color="tertiary" align="center" style="padding: 0 24px">
+						Get your profile credentials so your profile can be restored in the future
+					</Text>
+				</Flex>
+			</Flex>
 
-		<ItemsContainer title="Choose backup format">
-			<SettingItem title="Seed Phrase" icon="text" iconBgColor="blue" to="/popup/settings/security/export/seed" />
-			<SettingItem title="Secret Key" icon="key" iconBgColor="blue" to="/popup/settings/security/export/key" />
-		</ItemsContainer>
+			<ItemsContainer title="Profile to backup">
+				<SettingItem :title="appStore.profile.name" icon="user" raw />
+			</ItemsContainer>
+
+			<ItemsContainer title="Choose backup format">
+				<SettingItem title="Seed Phrase" icon="text" iconBgColor="blue" to="/popup/settings/security/export/seed" />
+				<SettingItem title="Secret Key" icon="key" iconBgColor="blue" to="/popup/settings/security/export/key" />
+			</ItemsContainer>
+		</Flex>
+		
 
 		<ItemsContainer
 			description="Explore credentials management capabilities and options for resolving potential issues"
