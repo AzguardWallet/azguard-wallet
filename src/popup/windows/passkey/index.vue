@@ -32,6 +32,11 @@ function encodeBase64(buf: BufferSource): string {
 
 const decodeBase64 = (b64: string) => Uint8Array.from(Buffer.from(b64, "base64"))
 
+function toBase64Url(bytes: Uint8Array): string {
+	let s = Buffer.from(bytes).toString("base64")
+	return s.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+}
+
 const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) => {
 	if (request.mode !== "create") throw new Error("Invalid request mode")
 	const challenge = crypto.getRandomValues(new Uint8Array(32))
@@ -66,8 +71,7 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 	if (!ext.prf) throw new Error("Passkey PRF not available")
 
 	const isPrfEnabledOnCreation = ext.prf.enabled
-	if (isPrfEnabledOnCreation) {
-		if (!ext.prf.results) throw new Error("Passkey PRF has no results")
+	if (isPrfEnabledOnCreation && ext.prf.results && ext.prf.results.first) {
 		const prfResult = ext.prf.results.first
 		const rawId = credential.rawId
 		const passkeyCredentialData: PasskeyCredentialData = {
@@ -87,23 +91,28 @@ const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
 	const challenge = crypto.getRandomValues(new Uint8Array(32))
 	const te = new TextEncoder()
 	const prfInput = await crypto.subtle.digest("SHA-256", te.encode(PASSKEY_PRF_LABEL))
+	const idBytes = decodeBase64(request.credentialId)
+	const idB64Url = toBase64Url(idBytes)
 	const publicKey: PublicKeyCredentialRequestOptions = {
 		challenge,
 		rpId: "azguardwallet.io",
 		userVerification: "required",
 		timeout: PASSKEY_TIMEOUT,
-		extensions: { prf: { eval: { first: new Uint8Array(prfInput) } } },
+		extensions: { prf: { evalByCredential: { [idB64Url]: { first: new Uint8Array(prfInput) } } } },
 	}
-	if (request.credentialId) {
-		const id = decodeBase64(request.credentialId)
-		publicKey.allowCredentials = [{ id, type: "public-key" }]
-	}
+	publicKey.allowCredentials = [{ id: idBytes, type: "public-key" }]
 	const assertion = await navigator.credentials.get({ publicKey })
 	if (!assertion) throw new Error("Failed to get passkey assertion")
 	if (!(assertion instanceof PublicKeyCredential)) throw new Error("Unexpected assertion type")
 	const ext = assertion.getClientExtensionResults()
-	if (!ext.prf) throw new Error("Passkey PRF not available")
-	if (!ext.prf.results) throw new Error("Passkey PRF has no results")
+	if (!ext.prf) {
+		console.log("[passkey] PRF not available on get", { ua: navigator.userAgent, ext })
+		throw new Error("Passkey PRF not available")
+	}
+	if (!ext.prf.results) {
+		console.log("[passkey] PRF has no results on get", { ua: navigator.userAgent, ext })
+		throw new Error("Passkey PRF has no results")
+	}
 	const prfResult = ext.prf.results.first
 	const rawId = (assertion)?.rawId
 	if (!rawId || !prfResult) throw new Error("Passkey PRF not available")
@@ -118,6 +127,24 @@ const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
 	await passkey.resolvePasskeyRequest(requestId, passkeyCredentialData)
 }
 
+const handlePasskeyImport = async (requestId: string, request: PasskeyRequest) => {
+	if (request.mode !== "import") throw new Error("Invalid request mode")
+	const challenge = crypto.getRandomValues(new Uint8Array(32))
+	const publicKeyFirst: PublicKeyCredentialRequestOptions = {
+		challenge,
+		rpId: "azguardwallet.io",
+		userVerification: "required",
+		timeout: PASSKEY_TIMEOUT,
+	}
+	const assertion = await navigator.credentials.get({ publicKey: publicKeyFirst })
+	if (!assertion) throw new Error("Failed to get passkey assertion (import select)")
+	if (!(assertion instanceof PublicKeyCredential)) throw new Error("Unexpected assertion type")
+	const rawId = assertion.rawId
+	if (!rawId) throw new Error("Missing credential id from selection")
+	const rawIdB64 = encodeBase64(rawId)
+	await handlePasskeyGet(requestId, { mode: "get", credentialId: rawIdB64 } as PasskeyRequest)
+}
+
 const run = async () => {
 	const requestId = route.query.requestId
 	if (!requestId) {
@@ -130,8 +157,10 @@ const run = async () => {
 
 		if (request.mode === "create") {
 			await handlePasskeyCreate(requestId, request)
-		} else {
+		} else if (request.mode === "get") {
 			await handlePasskeyGet(requestId, request)
+		} else if (request.mode === "import") {
+			await handlePasskeyImport(requestId, request)
 		}
 	} catch (e) {
 		passkey.rejectPasskeyRequest(requestId, getErrorMessage(e))
