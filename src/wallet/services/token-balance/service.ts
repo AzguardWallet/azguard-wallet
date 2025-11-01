@@ -12,12 +12,7 @@ import { NetworkService } from "@/wallet/services/network/service";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { TokenService, Token, TokenInfo } from "@/wallet/services/token/service";
 import { BalanceOfPrivateFn, BalanceOfPublicFn } from "@/wallet/services/token/functions";
-import {
-    ExecutionService,
-    CallAction,
-    EncodedCallAction,
-    SimulateViewsOperation,
-} from "@/wallet/services/execution/service";
+import { ExecutionService, CallAction, EncodedCallAction } from "@/wallet/services/execution/service";
 import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/service";
 import { TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
 import type { ViewFn } from "@/wallet/utils/fn";
@@ -268,11 +263,12 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                     );
                     if (balanceOfPrivateFn.type === FunctionType.UTILITY) {
                         calls.push([
-                            new CallAction(
-                                token.contract,
-                                balanceOfPrivateFn.name,
-                                balanceOfPrivateFn.buildArgs(account),
-                            ),
+                            {
+                                kind: "call",
+                                contract: token.contract,
+                                method: balanceOfPrivateFn.name,
+                                args: balanceOfPrivateFn.buildArgs(account),
+                            },
                             i,
                             true,
                             balanceOfPrivateFn,
@@ -281,15 +277,16 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                         const selector = await balanceOfPrivateFn.getSelector();
                         const encodedArgs = balanceOfPrivateFn.encodeArgs(balanceOfPrivateFn.buildArgs(account));
                         calls.push([
-                            new EncodedCallAction(
-                                token.contract,
-                                selector.toString(),
-                                encodedArgs.map(x => x.toString()),
-                                balanceOfPrivateFn.name,
-                                balanceOfPrivateFn.type,
-                                balanceOfPrivateFn.isStatic,
-                                balanceOfPrivateFn.getReturnTypes(),
-                            ),
+                            {
+                                kind: "encoded_call",
+                                to: token.contract,
+                                selector: selector.toString(),
+                                args: encodedArgs.map(x => x.toString()),
+                                name: balanceOfPrivateFn.name,
+                                type: balanceOfPrivateFn.type,
+                                isStatic: balanceOfPrivateFn.isStatic,
+                                returnTypes: balanceOfPrivateFn.getReturnTypes(),
+                            },
                             i,
                             true,
                             balanceOfPrivateFn,
@@ -306,11 +303,12 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                     );
                     if (balanceOfPublicFn.type === FunctionType.UTILITY) {
                         calls.push([
-                            new CallAction(
-                                token.contract,
-                                balanceOfPublicFn.name,
-                                balanceOfPublicFn.buildArgs(account),
-                            ),
+                            {
+                                kind: "call",
+                                contract: token.contract,
+                                method: balanceOfPublicFn.name,
+                                args: balanceOfPublicFn.buildArgs(account),
+                            },
                             i,
                             false,
                             balanceOfPublicFn,
@@ -319,15 +317,16 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                         const selector = await balanceOfPublicFn.getSelector();
                         const encodedArgs = balanceOfPublicFn.encodeArgs(balanceOfPublicFn.buildArgs(account));
                         calls.push([
-                            new EncodedCallAction(
-                                token.contract,
-                                selector.toString(),
-                                encodedArgs.map(x => x.toString()),
-                                balanceOfPublicFn.name,
-                                balanceOfPublicFn.type,
-                                balanceOfPublicFn.isStatic,
-                                balanceOfPublicFn.getReturnTypes(),
-                            ),
+                            {
+                                kind: "encoded_call",
+                                to: token.contract,
+                                selector: selector.toString(),
+                                args: encodedArgs.map(x => x.toString()),
+                                name: balanceOfPublicFn.name,
+                                type: balanceOfPublicFn.type,
+                                isStatic: balanceOfPublicFn.isStatic,
+                                returnTypes: balanceOfPublicFn.getReturnTypes(),
+                            },
                             i,
                             false,
                             balanceOfPublicFn,
@@ -342,13 +341,12 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                 if (!network) {
                     throw new Error(`Failed to find network #${chainId}`);
                 }
-                const results = await this.executionService.executeSimulateViews(
-                    new SimulateViewsOperation(
-                        network.id,
-                        account,
-                        calls.map(x => x[0]),
-                    ),
-                );
+                const results = await this.executionService.executeSimulateViews({
+                    kind: "simulate_views",
+                    networkId: network.id,
+                    accountAddress: account,
+                    calls: calls.map(x => x[0]),
+                });
                 for (let i = 0; i < calls.length; i++) {
                     const [_, tbIndex, isPrivate, viewFn] = calls[i];
                     const balance = (viewFn.unpackResult(results.encoded[i]) as bigint).toString();

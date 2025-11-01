@@ -32,7 +32,7 @@ const cacheStore = useCacheStore()
 
 const senders = ref([])
 const isLoading = ref(false)
-const isCopied = ref(false)
+const copiedAddress = ref("")
 const error = ref()
 const fetchSenders = async () => {
 	isLoading.value = true
@@ -46,13 +46,13 @@ const fetchSenders = async () => {
 }
 
 const handleCopyAddress = (address) => {
-	isCopied.value = true
+	copiedAddress.value = address
 
 	window.navigator.clipboard.writeText(address)
 	openToast({ label: "Sender's address is copied", icon: "copy" })
 
 	setTimeout(() => {
-		isCopied.value = false
+		copiedAddress.value = ""
 	}, 2_000)
 }
 
@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
 					<Flex align="center" gap="8">
 						<Tooltip position="end" delay="350">
 							<Icon
-								v-if="!isCopied"
+								v-if="copiedAddress !== sender"
 								@click.stop="handleCopyAddress(sender)"
 								name="copy"
 								size="14"
@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 								:class="$style.icon_btn"
 							/>
 							<Icon
-								v-else
+								v-else-if="copiedAddress === sender"
 								name="check-circle"
 								size="14"
 								color="green"

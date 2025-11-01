@@ -182,7 +182,7 @@ const loadProfile = async () => {
 			// TODO: initialize all services here
 			// TODO: redirect to /general
 		} else {
-			// TODO: deinitialize all services here
+			// TODO: uninitialize all services here
 			popupStore.closeAll()
 			appStore.isLogined = false
 			router.push("/popup/auth")
@@ -220,6 +220,10 @@ const loadProfile = async () => {
 	}
 
 	if (!appStore.profile) {
+		if (route.meta.isPasskeyInteraction) {
+			return
+		}
+
 		if (appStore.profiles.length) {
 			appStore.profile = appStore.profiles[0]
 

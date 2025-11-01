@@ -268,7 +268,7 @@ onBeforeUnmount(() => {
 						/>
 
 						<template #content>
-							<Text size="12" color="secondary"> Show only availiable </Text>
+							<Text size="12" color="secondary"> Show only available </Text>
 						</template>
 					</Tooltip>
 

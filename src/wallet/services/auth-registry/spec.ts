@@ -1,4 +1,4 @@
-import { FeeSettings, IAuthwitContent } from "@/wallet/services/execution/spec";
+import { FeeSettings, AuthwitContent } from "@/wallet/services/execution/spec";
 
 export const AUTH_REGISTRY_SERVICE_NAME = "auth-registry";
 
@@ -12,7 +12,7 @@ export type Authwit = {
     /** Message hash. */
     hash: string;
     /** Plain content. */
-    content: IAuthwitContent;
+    content: AuthwitContent;
 };
 
 export type Methods = {

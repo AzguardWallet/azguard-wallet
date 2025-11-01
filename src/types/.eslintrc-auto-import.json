@@ -4,6 +4,7 @@
     "Component": true,
     "ComponentPublicInstance": true,
     "ComputedRef": true,
+    "ConfirmationPolicy": true,
     "DirectiveBinding": true,
     "EffectScope": true,
     "ExtractDefaultPropTypes": true,

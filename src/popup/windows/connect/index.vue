@@ -1,21 +1,50 @@
-<script setup>
+<script setup lang="ts">
 /** Vendor */
 import { onBeforeMount, onMounted, onUnmounted } from "vue"
 
 /** Components */
+// @ts-ignore
 import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
+// @ts-ignore
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
-import { getChainName } from "@/components/ui/utils.js"
-import { AccessLevel, confirmationPolicies } from "@/utils/confirmation-policies"
+import { getChainName } from "@/components/ui/utils"
+import { AccessLevel, confirmationPolicies, ConfirmationPolicy } from "@/utils/confirmation-policies"
+import { getErrorData } from "@/wallet/utils/errors"
 
 /** Services */
-import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { NetworkServiceClient } from "@/wallet/services/network/client"
-import { AccountServiceClient } from "@/wallet/services/account/client"
-import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
-import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
+import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
+import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
+import { Account, AccountServiceClient } from "@/wallet/services/account/client"
+import { DappMetadata, DappPermissions, DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
+import { ConnectionPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
+
+type UIDappMetadata = DappMetadata & {
+	loadingLogo?: boolean
+	logoBlobUrl?: string
+}
+
+type UIDappPermission = {
+	chains: string[]
+	required: boolean
+	selected: boolean
+} & (
+	| {
+			method: string
+			type: 0
+	  }
+	| {
+			event: string
+			type: 1
+	  }
+)
+
+type UIError = {
+	title: string
+	tooltip: string
+	type: string
+}
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -23,33 +52,31 @@ const appStore = useAppStore()
 
 const router = useRouter()
 
-const profile = ref(null)
-const networks = ref(null)
+const profile = ref<ProfileInfo>()
+const networks = ref<Network[]>()
 
-const requestId = ref()
-const payload = ref()
-const dapp = ref({})
-const permissions = ref([])
+const requestId = ref<string>()
+const payload = ref<ConnectionPayload>()
+const dapp = ref<UIDappMetadata>()
+const permissions = ref<UIDappPermission[]>([])
 
-const accounts = ref([])
-const selectedAccounts = ref([])
-const selectedConfirmationPolicy = ref(confirmationPolicies.at(-1))
+const accounts = ref<Account[]>([])
+const selectedAccounts = ref<Account[]>([])
+const selectedConfirmationPolicy = ref(confirmationPolicies.at(-1)!)
 
 const isLoading = ref(false)
 const isInteractionCancelled = ref(false)
-const processingError = ref({
-	show: false,
-	title: "",
-	tooltip: "",
-	type: "",
-})
+const processingError = ref<UIError>()
 
 const initRequest = async () => {
 	try {
 		profile.value = await profileService.getActiveProfile()
 		networks.value = await networkService.getNetworks()
 		requestId.value = router.currentRoute.value.query.requestId
-		payload.value = await interactionService.getInteractionPayload(requestId.value)
+		if (!requestId.value) {
+			throw new Error("Invalid interaction request id")
+		}
+		payload.value = (await interactionService.getInteractionPayload(requestId.value)) as ConnectionPayload
 		dapp.value = payload.value.params.dappMetadata
 
 		if (dapp.value.logo) {
@@ -60,27 +87,27 @@ const initRequest = async () => {
 				dapp.value.loadingLogo = false
 			}
 		}
-		
+
 		permissions.value = unpackPermissions(
 			payload.value.params.requiredPermissions ?? [],
 			payload.value.params.optionalPermissions ?? [],
 		)
 	} catch (error) {
-		console.error(error.message ?? error.stact)
-		fillError("Something went wrong")
+		console.error(getErrorData(error))
+		setError("Something went wrong")
 	}
 }
 
-async function loadImageBlob(url) {
+async function loadImageBlob(url: string) {
 	try {
-		const res = await fetch(url, { mode: 'cors' })
-		if (!res.ok) return null
+		const res = await fetch(url, { mode: "cors" })
+		if (!res.ok) return undefined
 
 		const blob = await res.blob()
 
 		return URL.createObjectURL(blob)
 	} catch {
-		return null
+		return undefined
 	}
 }
 
@@ -107,31 +134,25 @@ const initAccounts = async () => {
 	accounts.value = res
 }
 
-function fillError(title, tooltip, type) {
-	if (!title) {
-		processingError.value = {
-			show: false,
-			title: "",
-			tooltip: "",
-			type: "",
-		}
-		return
-	}
+function setError(title: string, tooltip: string = title, type: string = "error") {
 	processingError.value = {
-		show: true,
 		title,
 		tooltip,
-		type: type ? type : "error",
+		type,
 	}
 }
 
-const selectConfirmationPolicy = policy => {
+function clearError() {
+	processingError.value = undefined
+}
+
+const selectConfirmationPolicy = (policy: ConfirmationPolicy) => {
 	selectedConfirmationPolicy.value = policy
 }
 
-const selectAccount = account => {
-	if (processingError.value.show && processingError.value.type === "warning") {
-		fillError()
+const selectAccount = (account: Account) => {
+	if (processingError.value?.type === "warning") {
+		clearError()
 	}
 	const index = selectedAccounts.value.findIndex(acc => acc.address === account.address)
 	if (index < 0) {
@@ -141,18 +162,18 @@ const selectAccount = account => {
 	}
 }
 
-const onActiveProfileChanged = profile => {
-	if (!profile || profile.id !== profile.value?.id) {
+const onActiveProfileChanged = (_profile?: ProfileInfo) => {
+	if (!_profile || _profile.id !== profile.value?.id) {
 		reject()
 	}
 }
 
-const onNetworkListChnaged = async (network) => {
+const onNetworkListChnaged = async () => {
 	networks.value = await networkService.getNetworks()
 	await initAccounts()
 }
 
-const onInteractionCancelled = _requestId => {
+const onInteractionCancelled = (_requestId: string) => {
 	if (requestId.value === _requestId) {
 		isInteractionCancelled.value = true
 	}
@@ -168,7 +189,7 @@ const checkSelectedAccounts = () => {
 
 const approve = async () => {
 	if (!checkSelectedAccounts()) {
-		fillError(
+		setError(
 			"Validation error",
 			"You must select at least one account for each network in the required permissions",
 			"warning",
@@ -178,7 +199,7 @@ const approve = async () => {
 	try {
 		isLoading.value = true
 		const session = await sessionService.addDappSession(
-			dapp.value,
+			dapp.value!,
 			packPermissions(permissions.value.filter(x => x.selected)),
 			selectedAccounts.value.map(acc => `aztec:${acc.chainId}:${acc.address}`),
 			selectedConfirmationPolicy.value?.confirmationLevel ?? AccessLevel.None,
@@ -188,27 +209,29 @@ const approve = async () => {
 			permissions: session.permissions,
 			accounts: session.accounts,
 		}
-		await interactionService.resolveInteraction(requestId.value, sessionInfo)
+		await interactionService.resolveInteraction(requestId.value!, sessionInfo)
 		closeWindow(true)
 	} catch (error) {
-		console.error(error)
-		fillError("Something went wrong")
+		console.error(getErrorData(error))
+		setError("Something went wrong")
 	} finally {
 		isLoading.value = false
 	}
 }
 
 const reject = async () => {
-	interactionService.rejectInteraction(requestId.value, "User rejected")
+	interactionService.rejectInteraction(requestId.value!, "User rejected")
 	closeWindow(true)
 }
 
-const closeWindow = interactionCompleted => {
+const closeWindow = (interactionCompleted: boolean) => {
 	if (interactionCompleted) {
 		window.removeEventListener("beforeunload", reject)
 	}
-	chrome.windows.getCurrent(window => {
-		chrome.windows.remove(window.id)
+	chrome.windows.getCurrent(undefined, window => {
+		if (window.id) {
+			chrome.windows.remove(window.id)
+		}
 	})
 }
 
@@ -253,8 +276,24 @@ onUnmounted(() => {
 	window.removeEventListener("beforeunload", reject)
 })
 
-const unpackPermissions = (required, optional) => {
-	const result = new Map()
+const unpackPermissions = (required: DappPermissions[], optional: DappPermissions[]): UIDappPermission[] => {
+	const result = new Map<
+		string,
+		{
+			chains: Set<string>
+			required: boolean
+			selected: boolean
+		} & (
+			| {
+					method: string
+					type: 0
+			  }
+			| {
+					event: string
+					type: 1
+			  }
+		)
+	>()
 	for (const p of required) {
 		if (!p.chains?.length) {
 			continue
@@ -272,7 +311,7 @@ const unpackPermissions = (required, optional) => {
 					})
 				} else {
 					for (const chain of p.chains) {
-						result.get(key).chains.add(chain)
+						result.get(key)!.chains.add(chain)
 					}
 				}
 			}
@@ -290,7 +329,7 @@ const unpackPermissions = (required, optional) => {
 					})
 				} else {
 					for (const chain of p.chains) {
-						result.get(key).chains.add(chain)
+						result.get(key)!.chains.add(chain)
 					}
 				}
 			}
@@ -316,7 +355,7 @@ const unpackPermissions = (required, optional) => {
 							type: 0,
 						})
 					} else {
-						result.get(key).chains.add(chain)
+						result.get(key)!.chains.add(chain)
 					}
 				}
 			}
@@ -337,7 +376,7 @@ const unpackPermissions = (required, optional) => {
 							type: 1,
 						})
 					} else {
-						result.get(key).chains.add(chain)
+						result.get(key)!.chains.add(chain)
 					}
 				}
 			}
@@ -352,12 +391,12 @@ const unpackPermissions = (required, optional) => {
 			if (a.type !== b.type) {
 				return a.type - b.type
 			}
-			return (a.method ?? a.event).localeCompare(b.method ?? b.event)
+			return (a.type === 0 ? a.method : a.event).localeCompare(b.type === 0 ? b.method : b.event)
 		})
 }
 
-const packPermissions = permissions => {
-	const groups = new Map()
+const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => {
+	const groups = new Map<string, UIDappPermission[]>()
 	permissions.forEach(x => {
 		const key = x.chains.toSorted((a, b) => a.localeCompare(b)).join(",")
 		let arr = groups.get(key)
@@ -369,8 +408,8 @@ const packPermissions = permissions => {
 	})
 	return [...groups.values()].map(g => ({
 		chains: g[0].chains,
-		methods: g.filter(p => !!p.method).map(p => p.method),
-		events: g.filter(p => !!p.event).map(p => p.event),
+		methods: g.filter(p => p.type === 0).map(p => p.method),
+		events: g.filter(p => p.type === 1).map(p => p.event),
 	}))
 }
 </script>
@@ -422,7 +461,7 @@ const packPermissions = permissions => {
 				<Flex v-for="p in permissions" align="center" gap="4">
 					<Icon name="check-circle" :color="p.required ? 'green' : 'sand'" size="11" />
 					<Text size="13" color="secondary">
-						{{ p.method ?? p.event }} on
+						{{ p.type === 0 ? p.method : p.event }} on
 						{{ p.chains.map(c => getChainName(+c.split(":")[1]).toLowerCase()).join(", ") }}
 					</Text>
 				</Flex>
@@ -443,7 +482,7 @@ const packPermissions = permissions => {
 					<template #popup>
 						<DropdownItem
 							v-for="policy in confirmationPolicies"
-							:key="policy.level"
+							:key="policy.confirmationLevel"
 							@click="selectConfirmationPolicy(policy)"
 						>
 							<Flex align="center" gap="8">
@@ -478,11 +517,7 @@ const packPermissions = permissions => {
 						v-for="acc in accounts"
 						@click="selectAccount(acc)"
 						gap="10"
-						:class="[
-							$style.account,
-							(isLoading || (processingError.show && processingError.type === 'error')) &&
-								$style.disabled,
-						]"
+						:class="[$style.account, (isLoading || processingError?.type === 'error') && $style.disabled]"
 					>
 						<Flex align="center">
 							<Icon
@@ -511,8 +546,8 @@ const packPermissions = permissions => {
 			</Flex>
 		</Flex>
 
-		<Flex direction="column" gap="10">
-			<Tooltip v-if="processingError.show" side="top" position="start" wide :disabled="!processingError.tooltip">
+		<Flex direction="column" gap="10" style="margin-top: 16px">
+			<Tooltip v-if="processingError" side="top" position="start" wide :disabled="!processingError.tooltip">
 				<Flex align="center" wide>
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
 					<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
@@ -538,7 +573,7 @@ const packPermissions = permissions => {
 					type="primary"
 					size="medium"
 					:loading="isLoading"
-					:disabled="!selectedAccounts.length || processingError.show"
+					:disabled="!selectedAccounts.length || processingError"
 				>
 					<Text size="13" color="inverse">Approve</Text>
 				</Button>
@@ -559,6 +594,7 @@ const packPermissions = permissions => {
 
 <style module>
 .wrapper {
+	overflow: auto;
 	flex: 1;
 
 	background: var(--card-bg);

@@ -1,4 +1,10 @@
-import { computeInnerAuthWitHash, computeAuthWitMessageHash } from "@aztec/aztec.js";
+import {
+    computeInnerAuthWitHash,
+    computeAuthWitMessageHash,
+    type IntentInnerHash,
+    type IntentAction,
+} from "@aztec/aztec.js";
+import type { ExecutionPayload } from "@aztec/entrypoints/payload";
 import { Fr } from "@aztec/foundation/fields";
 import {
     type AbiDecoded,
@@ -22,15 +28,17 @@ import {
     getContractClassFromArtifact,
     type NodeInfo,
 } from "@aztec/stdlib/contract";
-import type { PXE } from "@aztec/stdlib/interfaces/client";
-import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
+import type { PXE, PXEInfo, ContractClassMetadata, ContractMetadata } from "@aztec/stdlib/interfaces/client";
+import { Gas, GasSettings, GasFees } from "@aztec/stdlib/gas";
 import {
     Capsule,
     HashedValues,
     PrivateExecutionResult,
     TxExecutionRequest,
     TxHash,
+    TxProfileResult,
     TxProvingResult,
+    TxReceipt,
     TxSimulationResult,
     UtilitySimulationResult,
     Tx,
@@ -69,38 +77,48 @@ import { getErrorMessage } from "@/wallet/utils/errors";
 import {
     EXECUTION_SERVICE_NAME,
     Methods,
-    OperationKind,
-    type IOperation,
+    type Operation,
     type GetCompleteAddressOperation,
     type RegisterSenderOperation,
     type RegisterTokenOperation,
     type RegisterContractOperation,
-    SendTransactionOperation,
+    type SendTransactionOperation,
     type SimulateTransactionOperation,
     type SimulateUtilityOperation,
     type SimulateViewsOperation,
-    OperationStatus,
-    type IOperationResult,
-    SkippedOperationResult,
-    FailedOperationResult,
-    OkOperationResult,
-    AuthwitContentKind,
+    type OperationResult,
     type CallAuthwitContent,
     type EncodedCallAuthwitContent,
     type IntentAuthwitContent,
-    type MessageHashAuthwitContent,
-    ActionKind,
-    type IAction,
-    type AddCapsuleAction,
+    type Action,
     type AddPrivateAuthwitAction,
     type AddPublicAuthwitAction,
-    type CallAction,
-    EncodedCallAction,
-    FeePaymentMethodType,
-    type FpcPaymentMethod,
-    type FeeJuiceWithClaimPaymentMethod,
-    type CustomPaymentMethod,
     type FeeSettings,
+    type AztecSimulateTxOperation,
+    type AztecSimulateUtilityOperation,
+    type AztecProfileTxOperation,
+    type AztecSendTxOperation,
+    type AztecGetContractClassMetadataOperation,
+    type AztecGetContractMetadataOperation,
+    type AztecRegisterContractOperation,
+    type AztecRegisterContractClassOperation,
+    type AztecProveTxOperation,
+    type AztecGetNodeInfoOperation,
+    type AztecGetPXEInfoOperation,
+    type AztecGetCurrentBaseFeesOperation,
+    type AztecUpdateContractOperation,
+    type AztecRegisterSenderOperation,
+    type AztecGetSendersOperation,
+    type AztecRemoveSenderOperation,
+    type AztecGetTxReceiptOperation,
+    type AztecGetPrivateEventsOperation,
+    type AztecGetPublicEventsOperation,
+    type AztecGetCompleteAddressOperation,
+    type AztecGetAddressOperation,
+    type AztecGetChainIdOperation,
+    type AztecGetVersionOperation,
+    type AztecCreateTxExecutionRequestOperation,
+    type AztecCreateAuthWitOperation,
 } from "./spec";
 
 export * from "./spec";
@@ -203,17 +221,24 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const selector = await fn.getSelector();
             const encodedArgs = fn.encodeArgs(args);
 
-            const op = new SendTransactionOperation(networkId, accountAddress, feeSettings, [
-                new EncodedCallAction(
-                    token.contract,
-                    selector.toString(),
-                    encodedArgs.map(x => x.toString()),
-                    fn.name,
-                    fn.type,
-                    fn.isStatic,
-                    [],
-                ),
-            ]);
+            const op: Operation = {
+                kind: "send_transaction",
+                networkId,
+                accountAddress,
+                feeSettings,
+                actions: [
+                    {
+                        kind: "encoded_call",
+                        to: token.contract,
+                        selector: selector.toString(),
+                        args: encodedArgs.map(x => x.toString()),
+                        name: fn.name,
+                        type: fn.type,
+                        isStatic: fn.isStatic,
+                        returnTypes: [],
+                    },
+                ],
+            };
 
             const [_op, _gasSettings, _isFeePayer] = await this.withFeePayment(op, transferTask);
 
@@ -276,58 +301,159 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     public async executeOperations(
-        operations: IOperation[],
+        operations: Operation[],
         origin: TxOrigin,
         parentTask?: WrappedTask,
-    ): Promise<IOperationResult[]> {
+    ): Promise<OperationResult[]> {
         await this.ensureInitialized();
-        const results: IOperationResult[] = [];
+        const results: OperationResult[] = [];
         for (const operation of operations) {
-            if (results.length && results.at(-1)!.status !== OperationStatus.Ok) {
-                results.push(new SkippedOperationResult());
+            if (results.length && results.at(-1)!.status !== "ok") {
+                results.push({ status: "skipped" });
                 continue;
             }
 
             const operationTask = parentTask
                 ? parentTask.startSubtask(new ExecuteOperationContent(operation.kind))
                 : this.taskService.startNewTask(new ExecuteOperationContent(operation.kind), undefined, origin);
+
             try {
                 let result;
                 switch (operation.kind) {
-                    case OperationKind.GetCompleteAddress: {
-                        result = await this.executeGetCompleteAddress(operation as GetCompleteAddressOperation);
+                    case "get_complete_address": {
+                        result = await this.executeGetCompleteAddress(operation);
                         break;
                     }
-                    case OperationKind.RegisterContract: {
-                        result = await this.executeRegisterContract(operation as RegisterContractOperation);
+                    case "register_contract": {
+                        result = await this.executeRegisterContract(operation);
                         break;
                     }
-                    case OperationKind.RegisterSender: {
-                        result = await this.executeRegisterSender(operation as RegisterSenderOperation);
+                    case "register_sender": {
+                        result = await this.executeRegisterSender(operation);
                         break;
                     }
-                    case OperationKind.RegisterToken: {
-                        result = await this.executeRegisterToken(operation as RegisterTokenOperation, operationTask);
+                    case "register_token": {
+                        result = await this.executeRegisterToken(operation, operationTask);
                         break;
                     }
-                    case OperationKind.SendTransaction: {
-                        result = await this.executeSendTransaction(
-                            operation as SendTransactionOperation,
-                            origin,
-                            operationTask,
-                        );
+                    case "send_transaction": {
+                        result = await this.executeSendTransaction(operation, origin, operationTask);
                         break;
                     }
-                    case OperationKind.SimulateTransaction: {
-                        result = await this.executeSimulateTransaction(operation as SimulateTransactionOperation);
+                    case "simulate_transaction": {
+                        result = await this.executeSimulateTransaction(operation);
                         break;
                     }
-                    case OperationKind.SimulateUtility: {
-                        result = await this.executeSimulateUtility(operation as SimulateUtilityOperation);
+                    case "simulate_utility": {
+                        result = await this.executeSimulateUtility(operation);
                         break;
                     }
-                    case OperationKind.SimulateViews: {
-                        result = await this.executeSimulateViews(operation as SimulateViewsOperation);
+                    case "simulate_views": {
+                        result = await this.executeSimulateViews(operation);
+                        break;
+                    }
+                    // Aztec.js PXE:
+                    case "aztec_simulateTx": {
+                        result = await this.executeAztecSimulateTx(operation);
+                        break;
+                    }
+                    case "aztec_simulateUtility": {
+                        result = await this.executeAztecSimulateUtility(operation);
+                        break;
+                    }
+                    case "aztec_profileTx": {
+                        result = await this.executeAztecProfileTx(operation);
+                        break;
+                    }
+                    case "aztec_sendTx": {
+                        result = await this.executeAztecSendTx(operation);
+                        break;
+                    }
+                    case "aztec_getContractClassMetadata": {
+                        result = await this.executeAztecGetContractClassMetadata(operation);
+                        break;
+                    }
+                    case "aztec_getContractMetadata": {
+                        result = await this.executeAztecGetContractMetadata(operation);
+                        break;
+                    }
+                    case "aztec_registerContract": {
+                        result = await this.executeAztecRegisterContract(operation);
+                        break;
+                    }
+                    case "aztec_registerContractClass": {
+                        result = await this.executeAztecRegisterContractClass(operation);
+                        break;
+                    }
+                    case "aztec_proveTx": {
+                        result = await this.executeAztecProveTx(operation);
+                        break;
+                    }
+                    case "aztec_getNodeInfo": {
+                        result = await this.executeAztecGetNodeInfo(operation);
+                        break;
+                    }
+                    case "aztec_getPXEInfo": {
+                        result = await this.executeAztecGetPXEInfo(operation);
+                        break;
+                    }
+                    case "aztec_getCurrentBaseFees": {
+                        result = await this.executeAztecGetCurrentBaseFees(operation);
+                        break;
+                    }
+                    case "aztec_updateContract": {
+                        result = await this.executeAztecUpdateContract(operation);
+                        break;
+                    }
+                    case "aztec_registerSender": {
+                        result = await this.executeAztecRegisterSender(operation);
+                        break;
+                    }
+                    case "aztec_getSenders": {
+                        result = await this.executeAztecGetSenders(operation);
+                        break;
+                    }
+                    case "aztec_removeSender": {
+                        result = await this.executeAztecRemoveSender(operation);
+                        break;
+                    }
+                    case "aztec_getTxReceipt": {
+                        result = await this.executeAztecGetTxReceipt(operation);
+                        break;
+                    }
+                    case "aztec_getPrivateEvents": {
+                        result = await this.executeAztecGetPrivateEvents(operation);
+                        break;
+                    }
+                    case "aztec_getPublicEvents": {
+                        result = await this.executeAztecGetPublicEvents(operation);
+                        break;
+                    }
+                    // Aztec.js AccountInterface:
+                    case "aztec_getCompleteAddress": {
+                        result = await this.executeAztecGetCompleteAddress(operation);
+                        break;
+                    }
+                    case "aztec_getAddress": {
+                        result = await this.executeAztecGetAddress(operation);
+                        break;
+                    }
+                    case "aztec_getChainId": {
+                        result = await this.executeAztecGetChainId(operation);
+                        break;
+                    }
+                    case "aztec_getVersion": {
+                        result = await this.executeAztecGetVersion(operation);
+                        break;
+                    }
+                    // Aztec.js EntrypointInterface:
+                    case "aztec_createTxExecutionRequest": {
+                        result = await this.executeAztecCreateTxExecutionRequest(operation);
+                        break;
+                    }
+                    // Aztec.js AuthWitnessProvider:
+                    case "aztec_createAuthWit": {
+                        result = await this.executeAztecCreateAuthWit(operation);
                         break;
                     }
                     default: {
@@ -335,14 +461,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     }
                 }
                 operationTask.complete();
-                results.push(new OkOperationResult(result));
+                results.push({ status: "ok", result });
             } catch (error) {
                 operationTask.fail(error);
-                results.push(new FailedOperationResult(getErrorMessage(error)));
+                results.push({ status: "failed", error: getErrorMessage(error) });
             }
         }
         return results;
     }
+
+    // Azguard base:
 
     private async executeGetCompleteAddress(op: GetCompleteAddressOperation): Promise<CompleteAddress> {
         const profile = await this.profileService.getActiveProfile();
@@ -413,171 +541,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Couldn't find necessary methods in the contract interface. Try to add token manually.");
         }
         await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti, parentTask);
-    }
-
-    private async withFeePayment(
-        op: SendTransactionOperation,
-        parentTask?: WrappedTask,
-    ): Promise<[SendTransactionOperation, GasSettings, boolean]> {
-        const feeSetupStep = new StepContent("Estimating fee");
-        const feeSetupTask = parentTask
-            ? parentTask.startSubtask(feeSetupStep)
-            : this.taskService.startNewTask(feeSetupStep);
-        try {
-            switch (op.feeSettings.paymentMethod.type) {
-                case FeePaymentMethodType.FeeJuice: {
-                    if (op.setup?.length) {
-                        throw new Error("Custom setup payload is not allowed with this fee payment method");
-                    }
-                    let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
-                    const simulatedTx = await this.simulateTxRequest(
-                        pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
-                        feeSetupTask,
-                    );
-                    const gasSettings = new GasSettings(
-                        simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
-                        simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
-                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
-                    );
-                    feeSetupTask.complete();
-                    return [op, gasSettings, true];
-                }
-                case FeePaymentMethodType.FeeJuiceWithClaim: {
-                    if (op.setup?.length) {
-                        throw new Error("Custom setup payload is not allowed with this fee payment method");
-                    }
-                    const method = op.feeSettings.paymentMethod as FeeJuiceWithClaimPaymentMethod;
-                    op.setup = getFeeJuiceClaimPayload(
-                        op.accountAddress,
-                        method.claimAmount,
-                        method.claimSecret,
-                        method.messageLeafIndex,
-                    );
-                    let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
-                    const simulatedTx = await this.simulateTxRequest(
-                        pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
-                        feeSetupTask,
-                    );
-                    const gasSettings = new GasSettings(
-                        simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
-                        simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
-                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
-                    );
-                    feeSetupTask.complete();
-                    return [op, gasSettings, true];
-                }
-                case FeePaymentMethodType.Fpc: {
-                    if (op.setup?.length) {
-                        throw new Error("Custom setup payload is not allowed with this fee payment method");
-                    }
-                    const { fpcId, inPublic } = op.feeSettings.paymentMethod as FpcPaymentMethod;
-                    const fpc = await this.fpcService.getFpcImpl(fpcId);
-                    // first approach
-                    let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
-                    let simulatedTx = await this.simulateTxRequest(
-                        pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
-                        feeSetupTask,
-                    );
-                    const baseFees = txRequest.txContext.gasSettings.maxFeesPerGas;
-                    let maxFee = simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)).computeFee(baseFees);
-                    op.setup = fpc.getFeePayload(op.accountAddress, maxFee, inPublic);
-                    // precise estimation
-                    [txRequest] = await this.processTx(op, false, feeSetupTask);
-                    txRequest.txContext.gasSettings = new GasSettings(
-                        simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)),
-                        simulatedTx.gasUsed.teardownGas.add(fpc.getTeardownGas(inPublic)),
-                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
-                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
-                    );
-                    simulatedTx = await this.simulateTxRequest(
-                        pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
-                        feeSetupTask,
-                    );
-                    maxFee = simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding).computeFee(baseFees);
-                    op.setup = fpc.getFeePayload(op.accountAddress, maxFee, inPublic);
-                    const gasSettings = new GasSettings(
-                        simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
-                        simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
-                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
-                    );
-                    feeSetupTask.complete();
-                    return [op, gasSettings, false];
-                }
-                case FeePaymentMethodType.Custom: {
-                    if (!op.setup?.length) {
-                        throw new Error("Setup payload is missed");
-                    }
-                    const { teardownDaGas, teardownL2Gas } = op.feeSettings.paymentMethod as CustomPaymentMethod;
-                    let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
-                    txRequest.txContext.gasSettings = new GasSettings(
-                        txRequest.txContext.gasSettings.gasLimits,
-                        new Gas(teardownDaGas, teardownL2Gas),
-                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
-                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
-                    );
-                    const simulatedTx = await this.simulateTxRequest(
-                        pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
-                        feeSetupTask,
-                    );
-                    const gasSettings = new GasSettings(
-                        simulatedTx.gasUsed.totalGas.mul(op.feeSettings.gasPadding),
-                        simulatedTx.gasUsed.teardownGas.mul(op.feeSettings.gasPadding),
-                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
-                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
-                    );
-                    const isFeePayer =
-                        simulatedTx.publicInputs.feePayer.isZero() ||
-                        simulatedTx.publicInputs.feePayer.equals(account.address) ||
-                        // see [previous_kernel_public_inputs.fee_payer] at Prover.toml
-                        simulatedTx.publicInputs.feePayer.equals(
-                            AztecAddress.fromString(
-                                "0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",
-                            ),
-                        );
-                    feeSetupTask.complete();
-                    return [op, gasSettings, isFeePayer];
-                }
-                default: {
-                    throw new Error("Invalid fee payment method");
-                }
-            }
-        } catch (error) {
-            feeSetupTask.fail(error);
-            throw error;
-        }
     }
 
     public async executeSendTransaction(
@@ -706,17 +669,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const args: HashedValues[] = [];
         const calls: [AzguardFunctionCall, number, number, AbiType[]][] = [];
         const utility: [Promise<UtilitySimulationResult>, number, AbiType[]][] = [];
-        const ensureArray = (value: any): any[] => (Array.isArray(value) ? value : [value]);
         let privateCalls = 0;
         let publicCalls = 0;
 
         await account.ensureRegistered(pxe);
 
         for (let i = 0; i < op.calls.length; i++) {
-            switch (op.calls[i].kind) {
-                case ActionKind.Call: {
-                    const _call = op.calls[i] as CallAction;
-                    const instance = instances.get(_call.contract);
+            const call = op.calls[i];
+            switch (call.kind) {
+                case "call": {
+                    const instance = instances.get(call.contract);
                     if (!instance) {
                         throw new Error("Contract not found");
                     }
@@ -725,17 +687,17 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         throw new Error("Contract artifact not found");
                     }
                     const fn =
-                        artifact.functions.find(x => x.name === _call.method) ??
-                        artifact.nonDispatchPublicFunctions.find(x => x.name === _call.method);
+                        artifact.functions.find(x => x.name === call.method) ??
+                        artifact.nonDispatchPublicFunctions.find(x => x.name === call.method);
                     if (!fn) {
                         throw new Error("Method not found");
                     }
                     if (fn.functionType === FunctionType.UTILITY) {
                         utility.push([
                             pxe.simulateUtility(
-                                _call.method,
-                                _call.args,
-                                AztecAddress.fromString(_call.contract),
+                                call.method,
+                                call.args,
+                                AztecAddress.fromString(call.contract),
                                 undefined, // authwits
                                 account.address,
                                 [account.address],
@@ -749,13 +711,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                             fn.functionType === FunctionType.PUBLIC
                                 ? await HashedValues.fromCalldata([
                                       fnSelector.toField(),
-                                      ...encodeArguments(fn, _call.args),
+                                      ...encodeArguments(fn, call.args),
                                   ])
-                                : await HashedValues.fromArgs(encodeArguments(fn, _call.args));
+                                : await HashedValues.fromArgs(encodeArguments(fn, call.args));
                         args.push(packedArgs);
                         calls.push([
                             new AzguardFunctionCall(
-                                AztecAddress.fromString(_call.contract),
+                                AztecAddress.fromString(call.contract),
                                 fnSelector,
                                 packedArgs.hash,
                                 fn.functionType === FunctionType.PUBLIC,
@@ -769,9 +731,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.logDebug("Call enqueued.");
                     break;
                 }
-                case ActionKind.EncodedCall: {
-                    const _call = op.calls[i] as EncodedCallAction;
-                    const instance = instances.get(_call.to);
+                case "encoded_call": {
+                    const instance = instances.get(call.to);
                     if (!instance) {
                         throw new Error("Contract not found");
                     }
@@ -782,7 +743,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     let fn;
                     for (const _fn of artifact.functions) {
                         const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
-                        if (selector.toString() === _call.selector) {
+                        if (selector.toString() === call.selector) {
                             fn = _fn;
                             break;
                         }
@@ -790,7 +751,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     if (!fn) {
                         for (const _fn of artifact.nonDispatchPublicFunctions) {
                             const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
-                            if (selector.toString() === _call.selector) {
+                            if (selector.toString() === call.selector) {
                                 fn = _fn;
                                 break;
                             }
@@ -804,16 +765,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         try {
                             decodedArgs = decodeFromAbi(
                                 fn.parameters.map(x => x.type),
-                                _call.args.map(x => Fr.fromString(x)),
+                                call.args.map(x => Fr.fromString(x)),
                             );
                         } catch (error) {
                             const errorMessage = getErrorMessage(error);
-                            this.logError(
-                                "Failed to decode utility call args",
-                                fn.parameters,
-                                _call.args,
-                                errorMessage,
-                            );
+                            this.logError("Failed to decode utility call args", fn.parameters, call.args, errorMessage);
                             throw new Error(
                                 `Failed to decode utility "encoded_call" args: ${errorMessage}. Try to use "call" instead.`,
                             );
@@ -824,7 +780,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 fn.parameters.length === 1
                                     ? [decodedArgs] // CHECK: remove wrapping into array if aztec fix decoder
                                     : (decodedArgs as AbiDecoded[]),
-                                AztecAddress.fromString(_call.to),
+                                AztecAddress.fromString(call.to),
                                 undefined, // authwits
                                 account.address,
                                 [account.address],
@@ -836,15 +792,15 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         const packedArgs =
                             fn.functionType === FunctionType.PUBLIC
                                 ? await HashedValues.fromCalldata([
-                                      FunctionSelector.fromString(_call.selector).toField(),
-                                      ..._call.args.map(x => Fr.fromString(x)),
+                                      FunctionSelector.fromString(call.selector).toField(),
+                                      ...call.args.map(x => Fr.fromString(x)),
                                   ])
-                                : await HashedValues.fromArgs(_call.args.map(x => Fr.fromString(x)));
+                                : await HashedValues.fromArgs(call.args.map(x => Fr.fromString(x)));
                         args.push(packedArgs);
                         calls.push([
                             new AzguardFunctionCall(
-                                AztecAddress.fromString(_call.to),
-                                FunctionSelector.fromString(_call.selector),
+                                AztecAddress.fromString(call.to),
+                                FunctionSelector.fromString(call.selector),
                                 packedArgs.hash,
                                 fn.functionType === FunctionType.PUBLIC,
                                 fn.isStatic,
@@ -919,12 +875,452 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return result;
     }
 
+    // Aztec.js PXE:
+
+    private async executeAztecSimulateTx(op: AztecSimulateTxOperation): Promise<TxSimulationResult> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.simulateTx(
+            network,
+            op.txRequest,
+            op.simulatePublic,
+            op.skipTxValidation,
+            op.skipFeeEnforcement,
+            op.overrides,
+            op.scopes,
+        );
+    }
+
+    private async executeAztecSimulateUtility(op: AztecSimulateUtilityOperation): Promise<UtilitySimulationResult> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.simulateUtility(
+            network,
+            op.functionName,
+            op.args,
+            op.to,
+            op.authwits,
+            op.from,
+            op.scopes,
+        );
+    }
+
+    private async executeAztecProfileTx(op: AztecProfileTxOperation): Promise<TxProfileResult> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.profileTx(network, op.txRequest, op.profileMode, op.skipProofGeneration, op.msgSender);
+    }
+
+    private async executeAztecSendTx(op: AztecSendTxOperation): Promise<TxHash> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.sendTx(network, op.tx);
+    }
+
+    private async executeAztecGetContractClassMetadata(
+        op: AztecGetContractClassMetadataOperation,
+    ): Promise<ContractClassMetadata> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        const metadata = await this.pxeService.getContractClassMetadata(network, op.id);
+        if (op.includeArtifact !== true) {
+            delete metadata.artifact;
+        }
+        return metadata;
+    }
+
+    private async executeAztecGetContractMetadata(op: AztecGetContractMetadataOperation): Promise<ContractMetadata> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.getContractMetadata(network, op.address);
+    }
+
+    private async executeAztecRegisterContract(op: AztecRegisterContractOperation): Promise<void> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.registerContract(network, op.contract.instance, op.contract.artifact);
+    }
+
+    private async executeAztecRegisterContractClass(op: AztecRegisterContractClassOperation): Promise<void> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.registerContractClass(network, op.artifact);
+    }
+
+    private async executeAztecProveTx(op: AztecProveTxOperation): Promise<TxProvingResult> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.proveTx(network, op.txRequest, op.privateExecutionResult);
+    }
+
+    private async executeAztecGetNodeInfo(op: AztecGetNodeInfoOperation): Promise<NodeInfo> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.getNodeInfo(network);
+    }
+
+    private async executeAztecGetPXEInfo(op: AztecGetPXEInfoOperation): Promise<PXEInfo> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.getPXEInfo(network);
+    }
+
+    private async executeAztecGetCurrentBaseFees(op: AztecGetCurrentBaseFeesOperation): Promise<GasFees> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.getCurrentBaseFees(network);
+    }
+
+    private async executeAztecUpdateContract(op: AztecUpdateContractOperation): Promise<void> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.updateContract(network, op.contractAddress, op.artifact);
+    }
+
+    private async executeAztecRegisterSender(op: AztecRegisterSenderOperation): Promise<AztecAddress> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.registerSender(network, op.address);
+    }
+
+    private async executeAztecGetSenders(op: AztecGetSendersOperation): Promise<AztecAddress[]> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.getSenders(network);
+    }
+
+    private async executeAztecRemoveSender(op: AztecRemoveSenderOperation): Promise<void> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.removeSender(network, op.address);
+    }
+
+    private async executeAztecGetTxReceipt(op: AztecGetTxReceiptOperation): Promise<TxReceipt> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.getTxReceipt(network, op.txHash);
+    }
+
+    private async executeAztecGetPrivateEvents(op: AztecGetPrivateEventsOperation): Promise<unknown[]> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.getPrivateEvents(
+            network,
+            op.contractAddress,
+            op.eventMetadata,
+            op.from,
+            op.numBlocks,
+            op.recipients,
+        );
+    }
+
+    private async executeAztecGetPublicEvents(op: AztecGetPublicEventsOperation): Promise<unknown[]> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        return this.pxeService.getPublicEvents(network, op.eventMetadata, op.from, op.limit);
+    }
+
+    // Aztec.js AccountInterface:
+
+    public async executeAztecGetCompleteAddress(op: AztecGetCompleteAddressOperation): Promise<CompleteAddress> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(op.networkId);
+        const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
+        return await account.getCompleteAddress();
+    }
+
+    public async executeAztecGetAddress(op: AztecGetAddressOperation): Promise<AztecAddress> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(op.networkId);
+        const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
+        return account.address;
+    }
+
+    public async executeAztecGetChainId(op: AztecGetChainIdOperation): Promise<Fr> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        const nodeInfo = await this.pxeService.getNodeInfo(network);
+        return new Fr(nodeInfo.l1ChainId);
+    }
+
+    public async executeAztecGetVersion(op: AztecGetVersionOperation): Promise<Fr> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        const nodeInfo = await this.pxeService.getNodeInfo(network);
+        return new Fr(nodeInfo.rollupVersion);
+    }
+
+    // Aztec.js EntrypointInterface:
+
+    public async executeAztecCreateTxExecutionRequest(
+        op: AztecCreateTxExecutionRequestOperation,
+    ): Promise<TxExecutionRequest> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(op.networkId);
+        const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
+        const pxe = this.pxeService.getPXE(network);
+
+        const processExecutionPayload = async (
+            payload: ExecutionPayload,
+            authwits: AuthWitness[],
+            capsules: Capsule[],
+            args: HashedValues[],
+            calls: AzguardFunctionCall[],
+        ) => {
+            authwits.push(...(await z.array(AuthWitness.schema).parseAsync(payload.authWitnesses)));
+            capsules.push(...(await z.array(Capsule.schema).parseAsync(payload.capsules)));
+            args.push(...(await z.array(HashedValues.schema).parseAsync(payload.extraHashedArgs)));
+            for (const call of payload.calls) {
+                const _selector = await FunctionSelector.schema.parseAsync(call.selector);
+                const _args = await z.array(Fr.schema).parseAsync(call.args);
+                const _packedArgs =
+                    call.type === FunctionType.PUBLIC
+                        ? await HashedValues.fromCalldata([_selector.toField(), ..._args])
+                        : await HashedValues.fromArgs(_args);
+                args.push(_packedArgs);
+                calls.push(
+                    new AzguardFunctionCall(
+                        await AztecAddress.schema.parseAsync(call.to),
+                        _selector,
+                        _packedArgs.hash,
+                        call.type === FunctionType.PUBLIC,
+                        call.isStatic,
+                    ),
+                );
+            }
+        };
+
+        const authwits: AuthWitness[] = [];
+        const capsules: Capsule[] = [];
+        const args: HashedValues[] = [];
+        const setupCalls: AzguardFunctionCall[] = [];
+        const appCalls: AzguardFunctionCall[] = [];
+        const feePayer = await AztecAddress.schema.parseAsync(op.fee.paymentMethod.feePayer);
+        const isFeePayer = feePayer.equals(account.address);
+        const gasSettings = await GasSettings.schema.parseAsync(op.fee.gasSettings);
+        const nonce = (await Fr.schema.optional().parseAsync(op.options.txNonce)) ?? Fr.random();
+
+        await processExecutionPayload(op.fee.paymentMethod.executionPayload, authwits, capsules, args, setupCalls);
+        await processExecutionPayload(op.exec, authwits, capsules, args, appCalls);
+
+        const res = await account.buildTxExecutionRequest(
+            pxe,
+            setupCalls,
+            isFeePayer,
+            appCalls,
+            args,
+            nonce,
+            authwits,
+            capsules,
+        );
+        res.txContext.gasSettings = gasSettings;
+
+        return res;
+    }
+
+    // Aztec.js AuthWitnessProvider:
+
+    public async executeAztecCreateAuthWit(op: AztecCreateAuthWitOperation): Promise<AuthWitness> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(op.networkId);
+        const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
+
+        const nodeInfo = await this.pxeService.getNodeInfo(network);
+        const metadata = {
+            chainId: new Fr(nodeInfo.l1ChainId),
+            version: new Fr(nodeInfo.rollupVersion),
+        };
+
+        let messageHash: Fr;
+        if (typeof op.messageHashOrIntent === "object" && "caller" in op.messageHashOrIntent) {
+            const { caller, action } = op.messageHashOrIntent;
+            const intentAction: IntentAction = {
+                caller: await AztecAddress.schema.parseAsync(caller),
+                action: {
+                    name: action.name,
+                    to: await AztecAddress.schema.parseAsync(action.to),
+                    selector: await FunctionSelector.schema.parseAsync(action.selector),
+                    type: action.type,
+                    isStatic: action.isStatic,
+                    args: await z.array(Fr.schema).parseAsync(action.args),
+                    returnTypes: await z.array(AbiTypeSchema).parseAsync(action.returnTypes),
+                } satisfies FunctionCall,
+            };
+            messageHash = await computeAuthWitMessageHash(intentAction, metadata);
+        } else if (typeof op.messageHashOrIntent === "object" && "consumer" in op.messageHashOrIntent) {
+            const { consumer, innerHash } = op.messageHashOrIntent;
+            const intentHash: IntentInnerHash = {
+                consumer: await AztecAddress.schema.parseAsync(consumer),
+                innerHash: await Fr.schema.parseAsync(innerHash),
+            };
+            messageHash = await computeAuthWitMessageHash(intentHash, metadata);
+        } else {
+            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
+        }
+
+        return await account.buildAuthWitness(messageHash);
+    }
+
+    // internals
+
+    private async withFeePayment(
+        op: SendTransactionOperation,
+        parentTask?: WrappedTask,
+    ): Promise<[SendTransactionOperation, GasSettings, boolean]> {
+        const feeSetupStep = new StepContent("Estimating fee");
+        const feeSetupTask = parentTask
+            ? parentTask.startSubtask(feeSetupStep)
+            : this.taskService.startNewTask(feeSetupStep);
+        try {
+            const gasPadding = op.feeSettings.gasPadding ?? 1.05;
+            switch (op.feeSettings.paymentMethod.kind) {
+                case "fj": {
+                    if (op.setup?.length) {
+                        throw new Error("Custom setup payload is not allowed with this fee payment method");
+                    }
+                    let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
+                    const simulatedTx = await this.simulateTxRequest(
+                        pxe,
+                        txRequest, // txRequest
+                        true, // simulatePublic
+                        undefined, // skipTxValidation
+                        true, // skipFeeEnforcement
+                        undefined, // overrides
+                        [account.address], // scopes
+                        feeSetupTask,
+                    );
+                    const gasSettings = new GasSettings(
+                        simulatedTx.gasUsed.totalGas.mul(gasPadding),
+                        simulatedTx.gasUsed.teardownGas.mul(gasPadding),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                    );
+                    feeSetupTask.complete();
+                    return [op, gasSettings, true];
+                }
+                case "fjwc": {
+                    if (op.setup?.length) {
+                        throw new Error("Custom setup payload is not allowed with this fee payment method");
+                    }
+                    const { claimAmount, claimSecret, messageLeafIndex } = op.feeSettings.paymentMethod;
+                    op.setup = getFeeJuiceClaimPayload(op.accountAddress, claimAmount, claimSecret, messageLeafIndex);
+                    let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
+                    const simulatedTx = await this.simulateTxRequest(
+                        pxe,
+                        txRequest, // txRequest
+                        true, // simulatePublic
+                        undefined, // skipTxValidation
+                        true, // skipFeeEnforcement
+                        undefined, // overrides
+                        [account.address], // scopes
+                        feeSetupTask,
+                    );
+                    const gasSettings = new GasSettings(
+                        simulatedTx.gasUsed.totalGas.mul(gasPadding),
+                        simulatedTx.gasUsed.teardownGas.mul(gasPadding),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                    );
+                    feeSetupTask.complete();
+                    return [op, gasSettings, true];
+                }
+                case "fpc": {
+                    if (op.setup?.length) {
+                        throw new Error("Custom setup payload is not allowed with this fee payment method");
+                    }
+                    const { fpcId, inPublic } = op.feeSettings.paymentMethod;
+                    const fpc = await this.fpcService.getFpcImpl(fpcId);
+                    // first approach
+                    let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
+                    let simulatedTx = await this.simulateTxRequest(
+                        pxe,
+                        txRequest, // txRequest
+                        true, // simulatePublic
+                        undefined, // skipTxValidation
+                        true, // skipFeeEnforcement
+                        undefined, // overrides
+                        [account.address], // scopes
+                        feeSetupTask,
+                    );
+                    const baseFees = txRequest.txContext.gasSettings.maxFeesPerGas;
+                    let maxFee = simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)).computeFee(baseFees);
+                    op.setup = fpc.getFeePayload(op.accountAddress, maxFee, inPublic);
+                    // precise estimation
+                    [txRequest] = await this.processTx(op, false, feeSetupTask);
+                    txRequest.txContext.gasSettings = new GasSettings(
+                        simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)),
+                        simulatedTx.gasUsed.teardownGas.add(fpc.getTeardownGas(inPublic)),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                    );
+                    simulatedTx = await this.simulateTxRequest(
+                        pxe,
+                        txRequest, // txRequest
+                        true, // simulatePublic
+                        undefined, // skipTxValidation
+                        true, // skipFeeEnforcement
+                        undefined, // overrides
+                        [account.address], // scopes
+                        feeSetupTask,
+                    );
+                    maxFee = simulatedTx.gasUsed.totalGas.mul(gasPadding).computeFee(baseFees);
+                    op.setup = fpc.getFeePayload(op.accountAddress, maxFee, inPublic);
+                    const gasSettings = new GasSettings(
+                        simulatedTx.gasUsed.totalGas.mul(gasPadding),
+                        simulatedTx.gasUsed.teardownGas.mul(gasPadding),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                    );
+                    feeSetupTask.complete();
+                    return [op, gasSettings, false];
+                }
+                case "custom": {
+                    if (!op.setup?.length) {
+                        throw new Error("Setup payload is missed");
+                    }
+                    const { teardownDaGas, teardownL2Gas } = op.feeSettings.paymentMethod;
+                    let [txRequest, pxe, account] = await this.processTx(op, false, feeSetupTask);
+                    txRequest.txContext.gasSettings = new GasSettings(
+                        txRequest.txContext.gasSettings.gasLimits,
+                        new Gas(teardownDaGas ?? 30_000, teardownL2Gas ?? 150_000),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                    );
+                    const simulatedTx = await this.simulateTxRequest(
+                        pxe,
+                        txRequest, // txRequest
+                        true, // simulatePublic
+                        undefined, // skipTxValidation
+                        true, // skipFeeEnforcement
+                        undefined, // overrides
+                        [account.address], // scopes
+                        feeSetupTask,
+                    );
+                    const gasSettings = new GasSettings(
+                        simulatedTx.gasUsed.totalGas.mul(gasPadding),
+                        simulatedTx.gasUsed.teardownGas.mul(gasPadding),
+                        txRequest.txContext.gasSettings.maxFeesPerGas.mul(3), // TODO: remove multiplier when base fees are fixed
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                    );
+                    const isFeePayer =
+                        simulatedTx.publicInputs.feePayer.isZero() ||
+                        simulatedTx.publicInputs.feePayer.equals(account.address) ||
+                        // see [previous_kernel_public_inputs.fee_payer] at Prover.toml
+                        simulatedTx.publicInputs.feePayer.equals(
+                            AztecAddress.fromString(
+                                "0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000",
+                            ),
+                        );
+                    feeSetupTask.complete();
+                    return [op, gasSettings, isFeePayer];
+                }
+                default: {
+                    throw new Error("Invalid fee payment method");
+                }
+            }
+        } catch (error) {
+            feeSetupTask.fail(error);
+            throw error;
+        }
+    }
+
     private async processTx(
         op: {
             networkId: string;
             accountAddress: string;
-            actions: IAction[];
-            setup?: IAction[];
+            actions: Action[];
+            setup?: Action[];
         },
         isFeePayer = false,
         parentTask?: WrappedTask,
@@ -1026,7 +1422,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     private async processTxActions(
-        actions: IAction[],
+        actions: Action[],
         capsules: Capsule[],
         authwits: AuthWitness[],
         account: IAccountContract,
@@ -1039,48 +1435,42 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     ) {
         for (const action of actions) {
             switch (action.kind) {
-                case ActionKind.AddCapsule: {
-                    const _action = action as AddCapsuleAction;
+                case "add_capsule": {
                     this.logDebug("Adding capsule...");
                     capsules.push(
                         new Capsule(
-                            AztecAddress.fromString(_action.contract),
-                            Fr.fromString(_action.storageSlot),
-                            _action.capsule.map(Fr.fromString),
+                            AztecAddress.fromString(action.contract),
+                            Fr.fromString(action.storageSlot),
+                            action.capsule.map(Fr.fromString),
                         ),
                     );
                     this.logDebug("Capsule added.");
                     break;
                 }
-                case ActionKind.AddPrivateAuthwit: {
-                    const _action = action as AddPrivateAuthwitAction;
+                case "add_private_authwit": {
                     this.logDebug("Adding private authwit...");
 
                     let messageHash: Fr;
-                    switch (_action.content.kind) {
-                        case AuthwitContentKind.Call: {
-                            const _content = _action.content as CallAuthwitContent;
-                            messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
+                    switch (action.content.kind) {
+                        case "call": {
+                            messageHash = await this.getCallMessageHash(action.content, nodeInfo, instances, artifacts);
                             break;
                         }
-                        case AuthwitContentKind.EncodedCall: {
-                            const _content = _action.content as EncodedCallAuthwitContent;
+                        case "encoded_call": {
                             messageHash = await this.getEncodedCallMessageHash(
-                                _content,
+                                action.content,
                                 nodeInfo,
                                 instances,
                                 artifacts,
                             );
                             break;
                         }
-                        case AuthwitContentKind.Intent: {
-                            const _content = _action.content as IntentAuthwitContent;
-                            messageHash = await this.getIntentMessageHash(_content, nodeInfo);
+                        case "intent": {
+                            messageHash = await this.getIntentMessageHash(action.content, nodeInfo);
                             break;
                         }
-                        case AuthwitContentKind.MessageHash: {
-                            const _content = _action.content as MessageHashAuthwitContent;
-                            messageHash = Fr.fromString(_content.messageHash);
+                        case "message_hash": {
+                            messageHash = Fr.fromString(action.content.messageHash);
                             break;
                         }
                         default: {
@@ -1088,10 +1478,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         }
                     }
 
-                    const authwit = _action.authwit
+                    const authwit = action.authwit
                         ? new AuthWitness(
                               messageHash,
-                              _action.authwit.map(x => Fr.fromString(x)),
+                              action.authwit.map(x => Fr.fromString(x)),
                           )
                         : await account.buildAuthWitness(messageHash);
 
@@ -1100,26 +1490,23 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.logDebug("Private authwit added.");
                     break;
                 }
-                case ActionKind.AddPublicAuthwit: {
-                    const _action = action as AddPublicAuthwitAction;
+                case "add_public_authwit": {
                     this.logDebug("Adding public authwit...");
 
                     let messageHash: Fr;
-                    switch (_action.content.kind) {
-                        case AuthwitContentKind.Call: {
-                            const _content = _action.content as CallAuthwitContent;
-                            messageHash = await this.getCallMessageHash(_content, nodeInfo, instances, artifacts);
+                    switch (action.content.kind) {
+                        case "call": {
+                            messageHash = await this.getCallMessageHash(action.content, nodeInfo, instances, artifacts);
                             await this.authRegistryService.trackAuthwit(
                                 account.address.toString(),
                                 messageHash.toString(),
-                                _content,
+                                action.content,
                             );
                             break;
                         }
-                        case AuthwitContentKind.EncodedCall: {
-                            const _content = _action.content as EncodedCallAuthwitContent;
+                        case "encoded_call": {
                             messageHash = await this.getEncodedCallMessageHash(
-                                _content,
+                                action.content,
                                 nodeInfo,
                                 instances,
                                 artifacts,
@@ -1127,27 +1514,25 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                             await this.authRegistryService.trackAuthwit(
                                 account.address.toString(),
                                 messageHash.toString(),
-                                _content,
+                                action.content,
                             );
                             break;
                         }
-                        case AuthwitContentKind.Intent: {
-                            const _content = _action.content as IntentAuthwitContent;
-                            messageHash = await this.getIntentMessageHash(_content, nodeInfo);
+                        case "intent": {
+                            messageHash = await this.getIntentMessageHash(action.content, nodeInfo);
                             await this.authRegistryService.trackAuthwit(
                                 account.address.toString(),
                                 messageHash.toString(),
-                                _content,
+                                action.content,
                             );
                             break;
                         }
-                        case AuthwitContentKind.MessageHash: {
-                            const _content = _action.content as MessageHashAuthwitContent;
-                            messageHash = Fr.fromString(_content.messageHash);
+                        case "message_hash": {
+                            messageHash = Fr.fromString(action.content.messageHash);
                             await this.authRegistryService.trackAuthwit(
                                 account.address.toString(),
                                 messageHash.toString(),
-                                _content,
+                                action.content,
                             );
                             break;
                         }
@@ -1183,9 +1568,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.logDebug("Public authwit added.");
                     break;
                 }
-                case ActionKind.Call: {
-                    const _action = action as CallAction;
-                    const instance = instances.get(_action.contract);
+                case "call": {
+                    const instance = instances.get(action.contract);
                     if (!instance) {
                         throw new Error("Contract not found");
                     }
@@ -1194,8 +1578,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         throw new Error("Contract artifact not found");
                     }
                     const fn =
-                        artifact.functions.find(x => x.name === _action.method) ??
-                        artifact.nonDispatchPublicFunctions.find(x => x.name === _action.method);
+                        artifact.functions.find(x => x.name === action.method) ??
+                        artifact.nonDispatchPublicFunctions.find(x => x.name === action.method);
                     if (!fn) {
                         throw new Error("Method not found");
                     }
@@ -1204,27 +1588,26 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         fn.functionType === FunctionType.PUBLIC
                             ? await HashedValues.fromCalldata([
                                   fnSelector.toField(),
-                                  ...encodeArguments(fn, _action.args),
+                                  ...encodeArguments(fn, action.args),
                               ])
-                            : await HashedValues.fromArgs(encodeArguments(fn, _action.args));
+                            : await HashedValues.fromArgs(encodeArguments(fn, action.args));
                     args.push(packedArgs);
                     calls.push(
                         new AzguardFunctionCall(
-                            AztecAddress.fromString(_action.contract),
+                            AztecAddress.fromString(action.contract),
                             fnSelector,
                             packedArgs.hash,
                             fn.functionType === FunctionType.PUBLIC,
                             fn.isStatic,
                         ),
                     );
-                    txCalls.push({ contract: _action.contract, method: _action.method, args: _action.args });
+                    txCalls.push({ contract: action.contract, method: action.method, args: action.args });
                     this.logDebug("Call enqueued.");
                     break;
                 }
-                case ActionKind.EncodedCall: {
-                    const _action = (action as EncodedCallAction)!;
-                    if (_action.type === undefined || _action.isStatic === undefined) {
-                        const instance = instances.get(_action.to);
+                case "encoded_call": {
+                    if (action.type === undefined || action.isStatic === undefined) {
+                        const instance = instances.get(action.to);
                         if (!instance) {
                             throw new Error("Contract not found");
                         }
@@ -1235,7 +1618,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         let fn;
                         for (const _fn of artifact.functions) {
                             const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
-                            if (selector.toString() === _action.selector) {
+                            if (selector.toString() === action.selector) {
                                 fn = _fn;
                                 break;
                             }
@@ -1243,7 +1626,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         if (!fn) {
                             for (const _fn of artifact.nonDispatchPublicFunctions) {
                                 const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
-                                if (selector.toString() === _action.selector) {
+                                if (selector.toString() === action.selector) {
                                     fn = _fn;
                                     break;
                                 }
@@ -1252,27 +1635,27 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         if (!fn) {
                             throw new Error("Method not found");
                         }
-                        _action.type = fn.functionType;
-                        _action.isStatic = fn.isStatic;
+                        action.type = fn.functionType;
+                        action.isStatic = fn.isStatic;
                     }
                     const packedArgs =
-                        _action.type === FunctionType.PUBLIC
+                        action.type === FunctionType.PUBLIC
                             ? await HashedValues.fromCalldata([
-                                  FunctionSelector.fromString(_action.selector).toField(),
-                                  ..._action.args.map(x => Fr.fromString(x)),
+                                  FunctionSelector.fromString(action.selector).toField(),
+                                  ...action.args.map(x => Fr.fromString(x)),
                               ])
-                            : await HashedValues.fromArgs(_action.args.map(x => Fr.fromString(x)));
+                            : await HashedValues.fromArgs(action.args.map(x => Fr.fromString(x)));
                     args.push(packedArgs);
                     calls.push(
                         new AzguardFunctionCall(
-                            AztecAddress.fromString(_action.to),
-                            FunctionSelector.fromString(_action.selector),
+                            AztecAddress.fromString(action.to),
+                            FunctionSelector.fromString(action.selector),
                             packedArgs.hash,
-                            _action.type === FunctionType.PUBLIC,
-                            _action.isStatic,
+                            action.type === FunctionType.PUBLIC,
+                            action.isStatic,
                         ),
                     );
-                    txCalls.push({ contract: _action.to, method: _action.selector, args: _action.args });
+                    txCalls.push({ contract: action.to, method: action.selector, args: action.args });
                     this.logDebug("EncodedCall enqueued.");
                     break;
                 }
@@ -1280,9 +1663,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
     }
 
-    /**
-     * Wrapper around pxe.simulateTx with task tracking.
-     */
     private async simulateTxRequest(
         pxe: PXE,
         txRequest: TxExecutionRequest,
@@ -1315,9 +1695,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return simulatedTx;
     }
 
-    /**
-     * Wrapper around pxe.proveTx with task tracking.
-     */
     private async proveTxRequest(
         pxe: PXE,
         txRequest: TxExecutionRequest,
@@ -1339,9 +1716,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return provedTx;
     }
 
-    /**
-     * Wrapper around pxe.sendTx with task tracking.
-     */
     private async sendProvedTx(pxe: PXE, tx: Tx, parentTask?: WrappedTask): Promise<TxHash> {
         let txHash: TxHash;
         const sendingStep = new StepContent("Sending transaction");
@@ -1476,47 +1850,29 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         );
     }
 
-    private getContracts(actions: IAction[]) {
+    private getContracts(actions: Action[]) {
         return [
             ...new Set(
                 actions
-                    .filter(
-                        x =>
-                            x.kind === ActionKind.AddPrivateAuthwit &&
-                            (x as AddPrivateAuthwitAction).content.kind === AuthwitContentKind.Call,
-                    )
+                    .filter(x => x.kind === "add_private_authwit" && x.content.kind === "call")
                     .map(x => ((x as AddPrivateAuthwitAction).content as CallAuthwitContent).contract)
                     .concat(
                         actions
-                            .filter(
-                                x =>
-                                    x.kind === ActionKind.AddPrivateAuthwit &&
-                                    (x as AddPrivateAuthwitAction).content.kind === AuthwitContentKind.EncodedCall,
-                            )
+                            .filter(x => x.kind === "add_private_authwit" && x.content.kind === "encoded_call")
                             .map(x => ((x as AddPrivateAuthwitAction).content as EncodedCallAuthwitContent).to),
                     )
                     .concat(
                         actions
-                            .filter(
-                                x =>
-                                    x.kind === ActionKind.AddPublicAuthwit &&
-                                    (x as AddPublicAuthwitAction).content.kind === AuthwitContentKind.Call,
-                            )
+                            .filter(x => x.kind === "add_public_authwit" && x.content.kind === "call")
                             .map(x => ((x as AddPublicAuthwitAction).content as CallAuthwitContent).contract),
                     )
                     .concat(
                         actions
-                            .filter(
-                                x =>
-                                    x.kind === ActionKind.AddPublicAuthwit &&
-                                    (x as AddPublicAuthwitAction).content.kind === AuthwitContentKind.EncodedCall,
-                            )
+                            .filter(x => x.kind === "add_public_authwit" && x.content.kind === "encoded_call")
                             .map(x => ((x as AddPublicAuthwitAction).content as EncodedCallAuthwitContent).to),
                     )
-                    .concat(actions.filter(x => x.kind === ActionKind.Call).map(x => (x as CallAction).contract))
-                    .concat(
-                        actions.filter(x => x.kind === ActionKind.EncodedCall).map(x => (x as EncodedCallAction).to),
-                    ),
+                    .concat(actions.filter(x => x.kind === "call").map(x => x.contract))
+                    .concat(actions.filter(x => x.kind === "encoded_call").map(x => x.to)),
             ),
         ];
     }

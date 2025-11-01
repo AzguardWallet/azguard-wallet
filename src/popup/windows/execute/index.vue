@@ -1,81 +1,90 @@
-<script setup>
+<script setup lang="ts">
 /** Vendor */
-import { computed, onMounted, onUnmounted } from "vue"
+import { onMounted, onUnmounted } from "vue"
 
 /** Components */
+// @ts-ignore
 import FeeSettingsCard from "../../components/modules/send/FeeSettingsCard.vue"
+// @ts-ignore
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
 import { trimAddress } from "@/utils/string"
+import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 
 /** Services */
-import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { NetworkServiceClient } from "@/wallet/services/network/client"
-import { AccountServiceClient } from "@/wallet/services/account/client"
+import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
+import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
+import { Account, AccountServiceClient } from "@/wallet/services/account/client"
+import { ExecutionServiceClient, FeeSettings, Operation } from "@/wallet/services/execution/client"
 import {
-	ActionKind,
-	CustomPaymentMethod,
-	ExecutionServiceClient,
-	FeeSettings,
-	OperationKind,
-} from "@/wallet/services/execution/client"
-import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
+	CaipAccount,
+	CaipChain,
+	DappInteractionServiceClient,
+	ExecutionPayload,
+} from "@/wallet/services/dapp-interaction/client"
+import { DappMetadata } from "@/wallet/services/dapp-session/client"
 import { OriginType } from "@/wallet/services/transaction/client"
+
+type UIOperation = Operation & {
+	network: Network
+	account?: Account
+}
+
+type UIDappMetadata = DappMetadata & {
+	loadingLogo?: boolean
+	logoBlobUrl?: string
+}
+
+type UIError = {
+	title: string
+	tooltip: string
+	type: string
+}
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
-const profile = ref(null)
+const profile = ref<ProfileInfo>()
 
 const router = useRouter()
 
-const requestId = ref()
-const payload = ref()
+const requestId = ref<string>()
+const payload = ref<ExecutionPayload>()
 
 const session = ref()
-const dapp = ref({})
-const operations = ref([])
-const accounts = ref([])
+const dapp = ref<UIDappMetadata>()
+const operations = ref<UIOperation[]>([])
+const accounts = ref<Account[]>([])
 
 const isLoading = ref(false)
 const isInteractionCancelled = ref(false)
 const isWrongProfile = ref(false)
-const processingError = ref({
-	show: false,
-	title: "",
-	tooltip: "",
-})
+const processingError = ref<UIError>()
 
-function fillError(title, tooltip) {
-	if (!title) {
-		processingError.value = {
-			show: false,
-			title: "",
-			tooltip: "",
-		}
-
-		return
-	}
-
+function setError(title: string, tooltip: string = title, type: string = "error") {
 	processingError.value = {
-		show: true,
 		title,
 		tooltip,
+		type,
 	}
 }
 
-async function loadImageBlob(url) {
+function clearError() {
+	processingError.value = undefined
+}
+
+async function loadImageBlob(url: string) {
 	try {
-		const res = await fetch(url, { mode: 'cors' })
-		if (!res.ok) return null
+		const res = await fetch(url, { mode: "cors" })
+		if (!res.ok) return undefined
 
 		const blob = await res.blob()
 
 		return URL.createObjectURL(blob)
 	} catch {
-		return null
+		return undefined
 	}
 }
 
@@ -83,10 +92,13 @@ const init = async () => {
 	try {
 		profile.value = await profileService.getActiveProfile()
 		requestId.value = router.currentRoute.value.query.requestId
-		payload.value = await interactionService.getInteractionPayload(requestId.value)
+		if (!requestId.value) {
+			throw new Error("Invalid interaction request id")
+		}
+		payload.value = (await interactionService.getInteractionPayload(requestId.value)) as ExecutionPayload
 		dapp.value = payload.value.session.dappMetadata
 
-		if (dapp.value?.logo) {
+		if (dapp.value.logo) {
 			dapp.value.loadingLogo = true
 			try {
 				dapp.value.logoBlobUrl = await loadImageBlob(dapp.value.logo)
@@ -95,25 +107,65 @@ const init = async () => {
 			}
 		}
 
-		if (profile.value.id !== payload.value.session.profileId) {
+		if (profile.value?.id !== payload.value.session.profileId) {
 			// TODO: redirect to sign in page with preconfigured profile id
 			isWrongProfile.value = true
 			throw new Error("Sign in with another profile")
 		}
 		const accountService = new AccountServiceClient()
 		const networkService = new NetworkServiceClient()
-		const _accounts = []
-		const _operations = []
+
+		const getNetwork = async (caipChain: CaipChain): Promise<Network> => {
+			const [_, chainId] = caipChain.split(":")
+			const networks = await networkService.getNetworks(+chainId)
+			if (networks.length === 0) {
+				throw new Error("Network no longer exists")
+			}
+			return networks.find(x => x.isDefault) ?? networks[0]
+		}
+
+		const getNetworkAndAccount = async (caipAccount: CaipAccount): Promise<[Network, Account]> => {
+			const [_, chainId, address] = caipAccount.split(":")
+			const networks = await networkService.getNetworks(+chainId)
+			if (networks.length === 0) {
+				throw new Error("Network no longer exists")
+			}
+			const network = networks.find(x => x.isDefault) ?? networks[0]
+			const account = await accountService.getAccount(profile.value!.id, network.chainId, address)
+			if (!account) {
+				throw new Error("Account no longer exists")
+			}
+			return [network, account]
+		}
+
+		const _accounts: Account[] = []
+		const _operations: UIOperation[] = []
 		for (const op of payload.value.params.operations) {
 			switch (op.kind) {
-				case OperationKind.RegisterContract:
-				case OperationKind.RegisterSender: {
-					const [_, chainId] = op.chain.split(":")
-					const networks = await networkService.getNetworks(+chainId)
-					if (networks.length === 0) {
-						throw new Error("Network no longer exist")
-					}
-					const network = networks.find(x => x.isDefault) || networks[0]
+				case "register_contract":
+				case "register_sender":
+				case "aztec_simulateTx":
+				case "aztec_simulateUtility":
+				case "aztec_profileTx":
+				case "aztec_sendTx":
+				case "aztec_getContractClassMetadata":
+				case "aztec_getContractMetadata":
+				case "aztec_registerContract":
+				case "aztec_registerContractClass":
+				case "aztec_proveTx":
+				case "aztec_getNodeInfo":
+				case "aztec_getPXEInfo":
+				case "aztec_getCurrentBaseFees":
+				case "aztec_updateContract":
+				case "aztec_registerSender":
+				case "aztec_getSenders":
+				case "aztec_removeSender":
+				case "aztec_getTxReceipt":
+				case "aztec_getPrivateEvents":
+				case "aztec_getPublicEvents":
+				case "aztec_getChainId":
+				case "aztec_getVersion": {
+					const network = await getNetwork(op.chain)
 					_operations.push({
 						...op,
 						network,
@@ -121,22 +173,16 @@ const init = async () => {
 					})
 					break
 				}
-				case OperationKind.RegisterToken:
-				case OperationKind.GetCompleteAddress:
-				case OperationKind.SendTransaction:
-				case OperationKind.SimulateTransaction:
-				case OperationKind.SimulateUtility:
-				case OperationKind.SimulateViews: {
-					const [_, chainId, address] = op.account.split(":")
-					const networks = await networkService.getNetworks(+chainId)
-					if (networks.length === 0) {
-						throw new Error("Network no longer exist")
-					}
-					const network = networks.find(x => x.isDefault) || networks[0]
-					const account = await accountService.getAccount(profile.value.id, network.chainId, address)
-					if (!account) {
-						throw new Error("Account no longer exist")
-					}
+				case "get_complete_address":
+				case "register_token":
+				case "simulate_transaction":
+				case "simulate_utility":
+				case "simulate_views":
+				case "aztec_getCompleteAddress":
+				case "aztec_getAddress":
+				case "aztec_createTxExecutionRequest":
+				case "aztec_createAuthWit": {
+					const [network, account] = await getNetworkAndAccount(op.account)
 					_operations.push({
 						...op,
 						network,
@@ -149,13 +195,25 @@ const init = async () => {
 					}
 					break
 				}
+				case "send_transaction": {
+					const [network, account] = await getNetworkAndAccount(op.account)
+					_operations.push({
+						...op,
+						network,
+						networkId: network.id,
+						account,
+						accountAddress: account.address,
+						feeSettings: op.setup ? { paymentMethod: { kind: "custom" } } : undefined!,
+					})
+					if (!_accounts.find(x => x.address === account.address)) {
+						_accounts.push(account)
+					}
+					break
+				}
 				default: {
 					throw new Error("Invalid operation kind")
 				}
 			}
-		}
-		for (const op of _operations.filter(x => x.kind === OperationKind.SendTransaction)) {
-			op.feeSettings = op.setup ? new FeeSettings(new CustomPaymentMethod()) : undefined
 		}
 		session.value = payload.value.session
 		operations.value = _operations
@@ -163,26 +221,26 @@ const init = async () => {
 		accountService.disconnect()
 		networkService.disconnect()
 	} catch (error) {
-		console.error(error)
-		fillError("Something went wrong")
+		console.error(getErrorData(error))
+		setError("Something went wrong")
 	}
 }
 
-const onActiveProfileChanged = profile => {
-	if (!profile || profile.id !== profile.value?.id) {
+const onActiveProfileChanged = (_profile?: ProfileInfo) => {
+	if (!_profile || _profile.id !== profile.value?.id) {
 		reject()
 	}
 }
 
-const onInteractionCancelled = _requestId => {
+const onInteractionCancelled = (_requestId: string) => {
 	if (requestId.value === _requestId) {
 		isInteractionCancelled.value = true
 	}
 }
 
 const approve = async () => {
-	if (operations.value.find(x => x.kind === OperationKind.SendTransaction && !x.feeSettings)) {
-		fillError(
+	if (operations.value.find(x => x.kind === "send_transaction" && !x.feeSettings)) {
+		setError(
 			"Validation error",
 			"You must specify fee payment method for each 'Send transaction' operations",
 			"warning",
@@ -192,30 +250,33 @@ const approve = async () => {
 	try {
 		isLoading.value = true
 		await profileService.refreshSession()
-		const results = await executionService.executeOperations(operations.value, {
+		/** @ts-ignore */
+		const result = await executionService.executeOperations(operations.value, {
 			type: OriginType.DAPP,
 			name: dapp.value?.name ?? "Unknown dapp",
 		})
-		interactionService.resolveInteraction(requestId.value, results)
+		interactionService.resolveInteraction(requestId.value!, result)
 		closeWindow(true)
 	} catch (error) {
-		fillError("Processing error.", error)
+		setError("Processing error.", getErrorMessage(error))
 	} finally {
 		isLoading.value = false
 	}
 }
 
 const reject = async () => {
-	interactionService.rejectInteraction(requestId.value, "User rejected")
+	interactionService.rejectInteraction(requestId.value!, "User rejected")
 	closeWindow(true)
 }
 
-const closeWindow = interactionCompleted => {
+const closeWindow = (interactionCompleted: boolean) => {
 	if (interactionCompleted) {
 		window.removeEventListener("beforeunload", reject)
 	}
-	chrome.windows.getCurrent(window => {
-		chrome.windows.remove(window.id)
+	chrome.windows.getCurrent(undefined, window => {
+		if (window.id) {
+			chrome.windows.remove(window.id)
+		}
 	})
 }
 
@@ -253,11 +314,24 @@ onUnmounted(() => {
 	window.removeEventListener("beforeunload", reject)
 })
 
-const humanize = str => {
-	return `${str[0].toUpperCase()}${str.substring(1)}`.replace("_", " ")
+const humanizeOperationKind = (str: string) => {
+	if (str.startsWith("aztec_")) {
+		// split camelCase
+		str = str
+			.substring(6)
+			.replace("PXE", "Pxe")
+			.replace("AuthWit", "Authwit")
+			.replace(/([A-Z])/g, " $1")
+			.toLowerCase()
+	} else {
+		// split snake_case
+		str = str.replace("_", " ")
+	}
+	return `${str[0].toUpperCase()}${str.substring(1)}`
 }
 
 const showJson = () => {
+	if (!requestId.value) return
 	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/json"))
 	url.searchParams.set("requestId", requestId.value)
 	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 900 })
@@ -310,7 +384,7 @@ const showJson = () => {
 			</Flex>
 
 			<Flex
-				v-if="operations?.length"
+				v-if="operations.length"
 				direction="column"
 				align="start"
 				justify="start"
@@ -323,7 +397,7 @@ const showJson = () => {
 				</Flex>
 
 				<template v-for="(op, i) in operations" :key="i">
-					<Flex v-if="op.kind === OperationKind.SendTransaction" direction="column" wide>
+					<Flex v-if="op.kind === 'send_transaction'" direction="column" wide>
 						<Flex
 							:class="$style.operation"
 							direction="column"
@@ -336,30 +410,27 @@ const showJson = () => {
 							"
 						>
 							<Flex wide justify="between">
-								<Text size="14" color="primary">{{ humanize(op.kind) }}</Text>
+								<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
 								<NetworkBadge :chainId="op.network.chainId" />
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">From account:</Text>
 								<Text size="12" color="primary">
-									{{ op.account.name }}
-									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
+									{{ op.account!.name }}
+									<Text color="secondary">({{ trimAddress(op.account!.address) }})</Text>
 								</Text>
 							</Flex>
 							<Flex v-if="op.setup?.length" :class="$style.prop">
 								<Text size="12" color="secondary">Fee payload:</Text>
 								<Flex direction="column" gap="4">
 									<Text v-for="(action, j) in op.setup" :key="`${i}:${j}`" size="12" color="primary">
-										<template
-											v-if="
-												action.kind === ActionKind.Call ||
-												action.kind === ActionKind.EncodedCall
-											"
-										>
+										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
 											<Text color="secondary"> call </Text>
-											{{ action.method || action.selector }}
+											{{ action.kind === "call" ? action.method : action.selector }}
 											<Text color="secondary"> in </Text>
-											<AddressDisplay :address="action.contract || action.to" />
+											<AddressDisplay
+												:address="action.kind === 'call' ? action.contract : action.to"
+											/>
 											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
@@ -377,16 +448,13 @@ const showJson = () => {
 										size="12"
 										color="primary"
 									>
-										<template
-											v-if="
-												action.kind === ActionKind.Call ||
-												action.kind === ActionKind.EncodedCall
-											"
-										>
+										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
 											<Text color="secondary"> call </Text>
-											{{ action.method || action.selector }}
+											{{ action.kind === "call" ? action.method : action.selector }}
 											<Text color="secondary"> in </Text>
-											<AddressDisplay :address="action.contract || action.to" />
+											<AddressDisplay
+												:address="action.kind === 'call' ? action.contract : action.to"
+											/>
 											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
@@ -402,9 +470,9 @@ const showJson = () => {
 							:account="op.account"
 							:modelValue="op.feeSettings"
 							@update:modelValue="
-								$event => {
-									op.feeSettings = $event
-									fillError()
+								($event?: FeeSettings) => {
+									op.feeSettings = $event!
+									clearError()
 								}
 							"
 							style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"
@@ -412,61 +480,49 @@ const showJson = () => {
 					</Flex>
 					<Flex v-else :class="$style.operation" direction="column" wide>
 						<Flex wide justify="between">
-							<Text size="14" color="primary">{{ humanize(op.kind) }}</Text>
+							<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
 							<NetworkBadge :chainId="op.network.chainId" />
 						</Flex>
-						<template v-if="op.kind === OperationKind.GetCompleteAddress">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">Requested account:</Text>
-								<Text size="12" color="primary">
-									{{ op.account.name }}
-									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
-								</Text>
-							</Flex>
-						</template>
-						<template v-else-if="op.kind === OperationKind.RegisterContract">
+						<Flex v-if="op.account" :class="$style.prop">
+							<Text size="12" color="secondary">From account:</Text>
+							<Text size="12" color="primary">
+								{{ op.account!.name }}
+								<Text color="secondary">({{ trimAddress(op.account!.address) }})</Text>
+							</Text>
+						</Flex>
+						<template v-if="op.kind === 'register_contract'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
 								<AddressDisplay :address="op.address" />
 								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
-						<template v-else-if="op.kind === OperationKind.RegisterSender">
+						<template v-else-if="op.kind === 'register_sender'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Sender address:</Text>
 								<AddressDisplay :address="op.address" />
 								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
-						<template v-else-if="op.kind === OperationKind.RegisterToken">
+						<template v-else-if="op.kind === 'register_token'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Token address:</Text>
 								<AddressDisplay :address="op.address" />
 								<!-- <Text size="12" color="primary">{{ trimAddress(op.address) }}</Text> -->
 							</Flex>
 						</template>
-						<template v-else-if="op.kind === OperationKind.SimulateTransaction">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">From account:</Text>
-								<Text size="12" color="primary">
-									{{ op.account.name }}
-									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
-								</Text>
-							</Flex>
+						<template v-else-if="op.kind === 'simulate_transaction'">
 							<Flex v-if="op.setup?.length" :class="$style.prop">
 								<Text size="12" color="secondary">Fee payload:</Text>
 								<Flex direction="column" gap="4">
 									<Text v-for="(action, j) in op.setup" :key="`${i}:${j}`" size="12" color="primary">
-										<template
-											v-if="
-												action.kind === ActionKind.Call ||
-												action.kind === ActionKind.EncodedCall
-											"
-										>
+										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
 											<Text color="secondary"> call </Text>
-											{{ action.method || action.selector }}
+											{{ action.kind === "call" ? action.method : action.selector }}
 											<Text color="secondary"> in </Text>
-											<AddressDisplay :address="action.contract || action.to" />
+											<AddressDisplay
+												:address="action.kind === 'call' ? action.contract : action.to"
+											/>
 											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
@@ -484,16 +540,13 @@ const showJson = () => {
 										size="12"
 										color="primary"
 									>
-										<template
-											v-if="
-												action.kind === ActionKind.Call ||
-												action.kind === ActionKind.EncodedCall
-											"
-										>
+										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
 											<Text color="secondary"> call </Text>
-											{{ action.method || action.selector }}
+											{{ action.kind === "call" ? action.method : action.selector }}
 											<Text color="secondary"> in </Text>
-											<AddressDisplay :address="action.contract || action.to" />
+											<AddressDisplay
+												:address="action.kind === 'call' ? action.contract : action.to"
+											/>
 											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
@@ -503,14 +556,7 @@ const showJson = () => {
 								</Flex>
 							</Flex>
 						</template>
-						<template v-else-if="op.kind === OperationKind.SimulateUtility">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">From account:</Text>
-								<Text size="12" color="primary">
-									{{ op.account.name }}
-									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
-								</Text>
-							</Flex>
+						<template v-else-if="op.kind === 'simulate_utility'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
 								<AddressDisplay :address="op.contract" />
@@ -521,24 +567,81 @@ const showJson = () => {
 								<Text size="12" color="primary">{{ op.method }}</Text>
 							</Flex>
 						</template>
-						<template v-else-if="op.kind === OperationKind.SimulateViews">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">From account:</Text>
-								<Text size="12" color="primary">
-									{{ op.account.name }}
-									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
-								</Text>
-							</Flex>
+						<template v-else-if="op.kind === 'simulate_views'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">View calls:</Text>
 								<Flex direction="column" gap="4">
 									<Text v-for="(call, j) in op.calls" :key="`${i}:${j}`" size="12" color="primary">
-										{{ call.method || call.selector }}
+										{{ call.kind === "call" ? call.method : call.selector }}
 										<Text color="secondary"> in </Text>
-										<AddressDisplay :address="call.contract || call.to" />
+										<AddressDisplay :address="call.kind === 'call' ? call.contract : call.to" />
 										<!-- {{ trimAddress(call.contract || call.to) }} -->
 									</Text>
 								</Flex>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_simulateTx' || op.kind === 'aztec_profileTx' || op.kind === 'aztec_proveTx'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Origin address:</Text>
+								<AddressDisplay :address="op.txRequest.origin.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_simulateUtility'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.to.toString()" />
+							</Flex>
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Function:</Text>
+								<Text size="12" color="primary">{{ op.functionName }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_sendTx'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Tx hash:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.tx.txHash.toString()) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getContractClassMetadata'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Class id:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.id.toString()) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getContractMetadata'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.address.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_registerContract'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.contract.instance.address.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_updateContract'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.contractAddress.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_registerSender' || op.kind === 'aztec_removeSender'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.address.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getTxReceipt'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Tx hash:</Text>
+								<Text size="12" color="primary">{{ trimAddress(op.txHash.toString()) }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getPrivateEvents'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.contractAddress.toString()" />
 							</Flex>
 						</template>
 					</Flex>
@@ -547,7 +650,7 @@ const showJson = () => {
 		</Flex>
 
 		<Flex direction="column" gap="10">
-			<Tooltip v-if="processingError.show" side="top" position="start" :disabled="!processingError.tooltip">
+			<Tooltip v-if="processingError" side="top" position="start" :disabled="!processingError.tooltip">
 				<Flex align="center" wide>
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
 					<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
@@ -573,7 +676,7 @@ const showJson = () => {
 					type="primary"
 					size="medium"
 					:loading="isLoading"
-					:disabled="processingError.show"
+					:disabled="processingError"
 				>
 					<Text size="13" color="inverse"> {{ `${isLoading ? "Executing" : "Confirm"}` }} </Text>
 				</Button>
@@ -582,7 +685,9 @@ const showJson = () => {
 
 		<Flex v-if="isWrongProfile" align="center" justify="center" :class="$style.notification_overlay">
 			<Flex direction="column" align="center" gap="16" :class="$style.notification_content">
-				<Text size="13" weight="600" color="primary">You are signed in to a different profile. Please switch profiles and resend your request.</Text>
+				<Text size="13" weight="600" color="primary"
+					>You are signed in to a different profile. Please switch profiles and resend your request.</Text
+				>
 
 				<Button @click="closeWindow" type="primary" size="small" :style="{ width: '50%' }">
 					<Text size="13" color="inverse">OK</Text>

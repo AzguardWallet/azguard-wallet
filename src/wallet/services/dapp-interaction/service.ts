@@ -1,3 +1,4 @@
+import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -7,17 +8,8 @@ import { AccountService, Account } from "@/wallet/services/account/service";
 import { DappSessionService, AccessLevel, DappSession } from "@/wallet/services/dapp-session/service";
 import {
     ExecutionService,
-    type IOperation,
-    FeeSettings,
-    CustomPaymentMethod,
-    GetCompleteAddressOperation as ExecGetCompleteAddressOperation,
-    RegisterContractOperation as ExecRegisterContractOperation,
-    RegisterSenderOperation as ExecRegisterSenderOperation,
-    RegisterTokenOperation as ExecRegisterTokenOperation,
-    SimulateTransactionOperation as ExecSimulateTransactionOperation,
-    SimulateUtilityOperation as ExecSimulateUtilityOperation,
-    SimulateViewsOperation as ExecSimulateViewsOperation,
-    SendTransactionOperation as ExecSendTransactionOperation,
+    type Operation,
+    type OperationKind,
 } from "@/wallet/services/execution/service";
 import { OriginType } from "@/wallet/services/transaction/service";
 import { getRandomHex, Lock } from "@/wallet/utils";
@@ -30,22 +22,11 @@ import {
     type ExecutionResult,
     type ConnectionParams,
     type ExecutionParams,
-    OperationKind,
-    type GetCompleteAddressOperation,
-    type RegisterContractOperation,
-    type RegisterSenderOperation,
-    type RegisterTokenOperation,
-    type SendTransactionOperation,
-    type SimulateTransactionOperation,
-    type SimulateUtilityOperation,
-    type SimulateViewsOperation,
     type CaipChain,
     type CaipAccount,
-    type OperationResult,
-    type Operation,
+    type OperationRequest,
     Methods,
     Events,
-    DappSessionInfo,
     DappInteraction,
 } from "./spec";
 
@@ -85,7 +66,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         return interactionRequest.payload;
     }
 
-    public async resolveInteraction(id: string, result: DappSessionInfo | ExecutionResult): Promise<void> {
+    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult): Promise<void> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -193,67 +174,57 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             }
             return [network, account];
         };
-        const operations: IOperation[] = [];
+        const operations: Operation[] = [];
         for (const op of payload.params.operations) {
             switch (op.kind) {
-                case OperationKind.RegisterContract: {
+                case "register_contract":
+                case "register_sender":
+                case "aztec_simulateTx":
+                case "aztec_simulateUtility":
+                case "aztec_profileTx":
+                case "aztec_sendTx":
+                case "aztec_getContractClassMetadata":
+                case "aztec_getContractMetadata":
+                case "aztec_registerContract":
+                case "aztec_registerContractClass":
+                case "aztec_proveTx":
+                case "aztec_getNodeInfo":
+                case "aztec_getPXEInfo":
+                case "aztec_getCurrentBaseFees":
+                case "aztec_updateContract":
+                case "aztec_registerSender":
+                case "aztec_getSenders":
+                case "aztec_removeSender":
+                case "aztec_getTxReceipt":
+                case "aztec_getPrivateEvents":
+                case "aztec_getPublicEvents":
+                case "aztec_getChainId":
+                case "aztec_getVersion": {
                     const network = await getNetwork(op.chain);
-                    operations.push(
-                        new ExecRegisterContractOperation(network.id, op.address, op.instance, op.artifact),
-                    );
+                    operations.push({ ...op, networkId: network.id });
                     break;
                 }
-                case OperationKind.RegisterSender: {
-                    const network = await getNetwork(op.chain);
-                    operations.push(new ExecRegisterSenderOperation(network.id, op.address));
-                    break;
-                }
-                case OperationKind.RegisterToken: {
+                case "get_complete_address":
+                case "register_token":
+                case "simulate_transaction":
+                case "simulate_utility":
+                case "simulate_views":
+                case "aztec_getCompleteAddress":
+                case "aztec_getAddress":
+                case "aztec_createTxExecutionRequest":
+                case "aztec_createAuthWit": {
                     const [network, account] = await getNetworkAndAccount(op.account);
-                    operations.push(new ExecRegisterTokenOperation(network.id, account.address, op.address));
+                    operations.push({ ...op, networkId: network.id, accountAddress: account.address });
                     break;
                 }
-                case OperationKind.GetCompleteAddress: {
+                case "send_transaction": {
                     const [network, account] = await getNetworkAndAccount(op.account);
-                    operations.push(new ExecGetCompleteAddressOperation(network.id, account.address));
-                    break;
-                }
-                case OperationKind.SendTransaction: {
-                    const [network, account] = await getNetworkAndAccount(op.account);
-                    operations.push(
-                        new ExecSendTransactionOperation(
-                            network.id,
-                            account.address,
-                            new FeeSettings(new CustomPaymentMethod()),
-                            op.actions,
-                            op.setup,
-                        ),
-                    );
-                    break;
-                }
-                case OperationKind.SimulateTransaction: {
-                    const [network, account] = await getNetworkAndAccount(op.account);
-                    operations.push(
-                        new ExecSimulateTransactionOperation(
-                            network.id,
-                            account.address,
-                            op.actions,
-                            op.setup,
-                            op.simulatePublic,
-                        ),
-                    );
-                    break;
-                }
-                case OperationKind.SimulateUtility: {
-                    const [network, account] = await getNetworkAndAccount(op.account);
-                    operations.push(
-                        new ExecSimulateUtilityOperation(network.id, account.address, op.contract, op.method, op.args),
-                    );
-                    break;
-                }
-                case OperationKind.SimulateViews: {
-                    const [network, account] = await getNetworkAndAccount(op.account);
-                    operations.push(new ExecSimulateViewsOperation(network.id, account.address, op.calls));
+                    operations.push({
+                        ...op,
+                        networkId: network.id,
+                        accountAddress: account.address,
+                        feeSettings: { paymentMethod: { kind: "custom" } },
+                    });
                     break;
                 }
                 default: {
@@ -262,12 +233,10 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             }
         }
         await this.profileService.refreshSession();
-        const results = await this.executionService.executeOperations(operations, {
+        return await this.executionService.executeOperations(operations, {
             type: OriginType.DAPP,
             name: payload.session.dappMetadata.name ?? "Unknown dapp",
         });
-        // TODO: refactor types
-        return results.map(x => x as unknown as OperationResult);
     }
 
     private async validateSession({ sessionId, operations }: ExecutionParams): Promise<DappSession> {
@@ -275,63 +244,77 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         if (!session) {
             throw new Error("Invalid session");
         }
+        // set scopes if omitted
+        for (const operation of operations) {
+            if (operation.kind === "aztec_simulateTx" || operation.kind === "aztec_simulateUtility") {
+                if (!operation.scopes?.length) {
+                    operation.scopes = session.accounts.map(x => AztecAddress.fromString(x.split(":")[2]));
+                }
+            }
+        }
+        // validate permissions
         for (const operation of operations) {
             switch (operation.kind) {
-                case OperationKind.GetCompleteAddress: {
-                    const _operation = operation as GetCompleteAddressOperation;
-                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
-                    this.checkAccountPermission(session, _operation.account);
-                    this.checkMethodPermission(session, _operation.kind, chain);
+                case "register_contract":
+                case "register_sender":
+                case "aztec_profileTx":
+                case "aztec_sendTx":
+                case "aztec_getContractClassMetadata":
+                case "aztec_getContractMetadata":
+                case "aztec_registerContract":
+                case "aztec_registerContractClass":
+                case "aztec_proveTx":
+                case "aztec_getNodeInfo":
+                case "aztec_getPXEInfo":
+                case "aztec_getCurrentBaseFees":
+                case "aztec_updateContract":
+                case "aztec_registerSender":
+                case "aztec_getSenders":
+                case "aztec_removeSender":
+                case "aztec_getTxReceipt":
+                case "aztec_getPublicEvents":
+                case "aztec_getChainId":
+                case "aztec_getVersion": {
+                    this.checkMethodPermission(session, operation.kind, operation.chain);
                     break;
                 }
-                case OperationKind.RegisterContract: {
-                    const _operation = operation as RegisterContractOperation;
-                    this.checkMethodPermission(session, _operation.kind, _operation.chain);
+                case "aztec_simulateTx":
+                case "aztec_simulateUtility": {
+                    this.checkMethodPermission(session, operation.kind, operation.chain);
+                    this.checkScopesPermissions(session, operation.scopes!); // scopes are ensured above
                     break;
                 }
-                case OperationKind.RegisterSender: {
-                    const _operation = operation as RegisterSenderOperation;
-                    this.checkMethodPermission(session, _operation.kind, _operation.chain);
+                case "aztec_getPrivateEvents": {
+                    this.checkMethodPermission(session, operation.kind, operation.chain);
+                    this.checkScopesPermissions(session, operation.recipients);
                     break;
                 }
-                case OperationKind.RegisterToken: {
-                    const _operation = operation as RegisterTokenOperation;
-                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
-                    this.checkAccountPermission(session, _operation.account);
-                    this.checkMethodPermission(session, _operation.kind, chain);
+                case "get_complete_address":
+                case "register_token":
+                case "simulate_utility":
+                case "aztec_getCompleteAddress":
+                case "aztec_getAddress":
+                case "aztec_createTxExecutionRequest":
+                case "aztec_createAuthWit": {
+                    const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
+                    this.checkAccountPermission(session, operation.account);
+                    this.checkMethodPermission(session, operation.kind, chain);
                     break;
                 }
-                case OperationKind.SendTransaction: {
-                    const _operation = operation as SendTransactionOperation;
-                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
-                    this.checkAccountPermission(session, _operation.account);
-                    this.checkMethodPermission(session, _operation.kind, chain);
-                    _operation.actions.forEach(x => this.checkMethodPermission(session, x.kind, chain));
-                    _operation.setup?.forEach(x => this.checkMethodPermission(session, x.kind, chain));
+                case "send_transaction":
+                case "simulate_transaction": {
+                    const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
+                    this.checkAccountPermission(session, operation.account);
+                    this.checkMethodPermission(session, operation.kind, chain);
+                    operation.actions.forEach(x => this.checkMethodPermission(session, x.kind, chain));
+                    operation.setup?.forEach(x => this.checkMethodPermission(session, x.kind, chain));
                     break;
                 }
-                case OperationKind.SimulateTransaction: {
-                    const _operation = operation as SimulateTransactionOperation;
-                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
-                    this.checkAccountPermission(session, _operation.account);
-                    this.checkMethodPermission(session, _operation.kind, chain);
-                    _operation.actions.forEach(x => this.checkMethodPermission(session, x.kind, chain));
-                    _operation.setup?.forEach(x => this.checkMethodPermission(session, x.kind, chain));
-                    break;
-                }
-                case OperationKind.SimulateUtility: {
-                    const _operation = operation as SimulateUtilityOperation;
-                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
-                    this.checkAccountPermission(session, _operation.account);
-                    this.checkMethodPermission(session, _operation.kind, chain);
-                    break;
-                }
-                case OperationKind.SimulateViews: {
-                    const _operation = operation as SimulateViewsOperation;
-                    const chain = _operation.account.substring(0, _operation.account.lastIndexOf(":"));
-                    this.checkAccountPermission(session, _operation.account);
-                    this.checkMethodPermission(session, _operation.kind, chain);
-                    _operation.calls.forEach(x => this.checkMethodPermission(session, x.kind, chain));
+                case "simulate_views": {
+                    const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
+                    this.checkAccountPermission(session, operation.account);
+                    this.checkMethodPermission(session, operation.kind, chain);
+                    operation.calls.forEach(x => this.checkMethodPermission(session, x.kind, chain));
                     break;
                 }
             }
@@ -351,6 +334,14 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         }
     }
 
+    private checkScopesPermissions(session: DappSession, scopes: AztecAddress[]) {
+        for (const address of scopes.map(x => x.toString())) {
+            if (!session.accounts.some(x => x.endsWith(address))) {
+                throw new Error("Unauthorized scopes");
+            }
+        }
+    }
+
     private async isConfirmationNeeded(payload: ExecutionPayload): Promise<boolean> {
         const profile = await this.profileService.getActiveProfile();
         if (profile?.id !== payload.session.profileId) {
@@ -360,13 +351,13 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         if (accessLevel >= payload.session.confirmationLevel) {
             return true;
         }
-        if (payload.params.operations.find(x => x.kind === OperationKind.SendTransaction && !x.setup?.length)) {
+        if (payload.params.operations.find(x => x.kind === "send_transaction" && !x.setup?.length)) {
             return true;
         }
         return false;
     }
 
-    private getAccessLevel(ops: Operation[]): AccessLevel {
+    private getAccessLevel(ops: OperationRequest[]): AccessLevel {
         let level = AccessLevel.None;
         for (const op of ops) {
             level = Math.max(level, this.getOperationAccessLevel(op.kind));
@@ -376,22 +367,72 @@ export class DappInteractionService extends Service<Methods, Events> implements 
 
     private getOperationAccessLevel(kind: OperationKind): AccessLevel {
         switch (kind) {
-            case OperationKind.RegisterToken:
+            case "register_token":
                 return AccessLevel.AppState;
-            case OperationKind.GetCompleteAddress:
+            case "get_complete_address":
                 return AccessLevel.PublicData;
-            case OperationKind.RegisterContract:
+            case "register_contract":
                 return AccessLevel.PxeState;
-            case OperationKind.RegisterSender:
+            case "register_sender":
                 return AccessLevel.PxeState;
-            case OperationKind.SimulateTransaction:
+            case "simulate_transaction":
                 return AccessLevel.PrivateData;
-            case OperationKind.SimulateUtility:
+            case "simulate_utility":
                 return AccessLevel.PrivateData;
-            case OperationKind.SimulateViews:
+            case "simulate_views":
                 return AccessLevel.PrivateData;
-            case OperationKind.SendTransaction:
+            case "send_transaction":
                 return AccessLevel.Transactions;
+            case "aztec_simulateTx":
+                return AccessLevel.PrivateData;
+            case "aztec_simulateUtility":
+                return AccessLevel.PrivateData;
+            case "aztec_profileTx":
+                return AccessLevel.PrivateData;
+            case "aztec_sendTx":
+                return AccessLevel.PublicData;
+            case "aztec_getContractClassMetadata":
+                return AccessLevel.PxeState;
+            case "aztec_getContractMetadata":
+                return AccessLevel.PxeState;
+            case "aztec_registerContract":
+                return AccessLevel.PxeState;
+            case "aztec_registerContractClass":
+                return AccessLevel.PxeState;
+            case "aztec_proveTx":
+                return AccessLevel.Transactions;
+            case "aztec_getNodeInfo":
+                return AccessLevel.PublicData;
+            case "aztec_getPXEInfo":
+                return AccessLevel.PublicData;
+            case "aztec_getCurrentBaseFees":
+                return AccessLevel.PublicData;
+            case "aztec_updateContract":
+                return AccessLevel.PxeState;
+            case "aztec_registerSender":
+                return AccessLevel.PxeState;
+            case "aztec_getSenders":
+                return AccessLevel.PxeState;
+            case "aztec_removeSender":
+                return AccessLevel.PxeState;
+            case "aztec_getTxReceipt":
+                return AccessLevel.PublicData;
+            case "aztec_getPrivateEvents":
+                return AccessLevel.PrivateData;
+            case "aztec_getPublicEvents":
+                return AccessLevel.PublicData;
+            case "aztec_getCompleteAddress":
+                return AccessLevel.PublicData;
+            case "aztec_getAddress":
+                return AccessLevel.PublicData;
+            case "aztec_getChainId":
+                return AccessLevel.PublicData;
+            case "aztec_getVersion":
+                return AccessLevel.PublicData;
+            case "aztec_createTxExecutionRequest":
+                return AccessLevel.PrivateData;
+            case "aztec_createAuthWit":
+                return AccessLevel.PrivateData;
             default:
                 return AccessLevel.None;
         }
