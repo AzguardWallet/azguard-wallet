@@ -1,17 +1,15 @@
 <script setup>
 /** Vendor */
-import BN from "bignumber.js"
 import { DateTime } from "luxon"
 
 /** Services */
-import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 import { TaskStatus } from "@/wallet/services/task/spec"
+import { ContentKind } from "@/wallet/services/task/spec"
 
 /** Composables */
 import { useTicker } from "@/composables/ticker"
-
-/** Utils */
-import { balanceFormatted } from "@/utils/amount.js"
+import { useToast } from "@/composables/toast"
+const { openToast } = useToast()
 
 const props = defineProps({
 	task: {
@@ -21,13 +19,16 @@ const props = defineProps({
 	isSubtask: {
 		type: Boolean,
 		default: false,
-	}
+	},
+	showContent: {
+		type: Boolean,
+		default: false,
+	},
 })
-
-console.log('props.task', props.task);
 
 const subtasks = computed(() => props.task.subtasks.length ? props.task.subtasks : [props.task] )
 const completedSubtasks = computed(() => subtasks.value.filter(st => st.finishedAt))
+
 const now = useTicker(1_000)
 const relativeTime = computed(() => {
 	return DateTime
@@ -40,32 +41,38 @@ const relativeTime = computed(() => {
 })
 const iconSize = computed(() => props.isSubtask ? '12' : '16')
 
-// export enum TaskStatus {
-// 	Pending,
-// 	Processing,
-// 	Completed,
-// 	Cancelled,
-// 	Failed,
-// }
+const content = computed(() => props.task.humanizedContent)
+const error = computed(() => {
+	const err = { description: props.task.error }
 
-// export type Task = {
-// 	id: string;
-// 	content: ITaskContent;
-// 	status: TaskStatus;
-// 	createdAt: number;
-// 	startedAt?: number;
-// 	subtasks: Task[];
-// 	origin?: TxOrigin;
-// 	parentId?: string;
-// 	finishedAt?: number;
-// 	result?: ITaskResult;
-// 	error?: string;
-// };
+	function findSource(t) {
+		const errTask = t.subtasks?.find(x => x.error)
+		return errTask ? [errTask.content.label, ...findSource(errTask)] : []
+	}
+
+	const path = findSource(props.task)
+	err.title = path.length ? path.join(" -> ") + ":" : ""
+
+	return err
+})
+
+const isCopied = ref(false)
+function handleCopyError(task) {
+	isCopied.value = true
+
+	window.navigator.clipboard.writeText(`${error.value.title || `${props.task.content.label}:`}\n${error.value.description}`)
+
+	openToast({ label: "Error is copied", icon: "copy" }, 2_000)
+
+	setTimeout(() => {
+		isCopied.value = false
+	}, 1_500)
+}
 </script>
 
 <template>
-	<Flex align="center" justify="between" :class="$style.wrapper" wide>
-		<Flex align="center" gap="12" :class="isSubtask && $style.subtask">
+	<Flex direction="column" gap="6" wide :class="$style.wrapper">
+		<Flex align="start" gap="12" wide :class="[$style.task_wrapper, isSubtask && $style.subtask]">
 			<Flex v-if="task.status === TaskStatus.Pending" align="center" justify="center" :class="$style.status_icon">
 				<span :class="[$style.bg, $style.pending]" />
 				<Icon name="clock-circle" :size="iconSize" color="gray" />
@@ -87,24 +94,88 @@ const iconSize = computed(() => props.isSubtask ? '12' : '16')
 				<Icon name="close" :size="iconSize" color="red" />
 			</Flex>
 
-			<Flex direction="column" gap="6">
-				<Text size="13" weight="600" color="primary">
-					{{ task.content.label }}
-				</Text>
+			<Flex direction="column" gap="4" wide>
+				<Flex align="center" justify="between" wide>
+					<Flex direction="column" align="start" justify="center" gap="6" wide style="min-height: 24px;">
+						<Text size="13" weight="600" color="primary">
+							{{ task.content.label }}
+						</Text>
 
-				<Flex v-if="!isSubtask" align="center" gap="4">
-					<Icon name="double-check" size="12" color="secondary" />
-					<Text size="12" color="secondary">
-						{{ `Done ${completedSubtasks.length} of ${subtasks.length} ${subtasks.length > 1 ? 'tasks' : 'task'}` }}
-					</Text>
+						<Flex v-if="!isSubtask" align="center" gap="4">
+							<Icon name="double-check" size="12" color="secondary" />
+							<Text size="12" color="secondary">
+								{{ `Done ${completedSubtasks.length} of ${subtasks.length} ${subtasks.length > 1 ? 'tasks' : 'task'}` }}
+							</Text>
+						</Flex>
+					</Flex>
+
+					<Flex v-if="!isSubtask" align="center" justify="end" style="min-width: 70px;">
+						<Text size="12" weight="500" color="tertiary">
+							{{ relativeTime }}
+						</Text>
+					</Flex>
+				</Flex>
+
+				<div v-if="showContent && content && !isSubtask" :class="$style.divider" />
+
+				<Flex v-if="showContent && content && !isSubtask" direction="column" gap="6">
+					<Flex v-if="task.content.kind === ContentKind.BalanceUpdate" align="center" wide>
+						<Text size="12" color="secondary">Token:
+							<Text color="primary">
+								{{ content.token.symbol }}
+							</Text>
+							{{ content.token.name }}
+						</Text>
+					</Flex>
+					<Flex v-if="task.content.kind === ContentKind.TokenMint" align="center" gap="6" wide>
+						<Text size="12" color="secondary"> Mint
+							<Text color="primary">
+								{{ `${content.amount} ${content.token.symbol}` }}
+							</Text>
+							{{ content.amount == 1 ? 'token' : 'tokens' }}
+						</Text>
+					</Flex>
+					<Flex v-if="task.content.kind === ContentKind.Transfer" align="center" gap="6">
+						<Text size="12" height="140" color="secondary">Transfer
+							<Text color="primary">
+								{{ `${content.amount} ${content.token.symbol}` }}
+							</Text>
+							{{ content.amount == 1 ? 'token' : 'tokens' }}
+							from
+							<AddressDisplay :address="content.sender" />
+							to
+							<AddressDisplay :address="content.recipient" />
+						</Text>
+					</Flex>
+					<Flex v-if="task.content.kind === ContentKind.RevokeAuthwits" align="center" wide>
+						<Text size="12" color="secondary">Revoke
+							<Text color="primary">
+								{{ content.authwitCount }}
+							</Text>
+							{{ content.authwitCount == 1 ? 'authwit' : 'authwits' }}
+						</Text>
+					</Flex>
 				</Flex>
 			</Flex>
 		</Flex>
 
-		<Flex align="center" justify="end" style="min-width: 70px;">
-			<Text size="12" weight="500" color="tertiary">
-				{{ relativeTime }}
-			</Text>
+		<Flex
+			v-if="task.error && showContent && !isSubtask"
+			@click.stop="handleCopyError(t)"
+			direction="column"
+			gap="4"
+			wide
+			:class="$style.error_wrapper"
+		>
+			<Text size="12" weight="600" color="red" height="130"> {{ error?.title }} </Text>
+
+			<Flex align="start" wide :class="$style.error_description_wrapper">
+				<Text size="12" color="red" height="130" :class="$style.error_description">
+					{{ error?.description }}
+				</Text>
+
+				<Icon :name="isCopied ? 'check' : 'copy'" size="14" color="red" style="opacity: 0.7;" />
+			</Flex>
 		</Flex>
 	</Flex>
 </template>
@@ -112,9 +183,12 @@ const iconSize = computed(() => props.isSubtask ? '12' : '16')
 <style module>
 .wrapper {
 	cursor: pointer;
+}
+
+.task_wrapper {
 	border-radius: 12px;
 
-	padding: 8px;
+	padding: 10px 8px;
 
 	transition: all 0.2s var(--bezier);
 	background: var(--gray-3);
@@ -128,19 +202,11 @@ const iconSize = computed(() => props.isSubtask ? '12' : '16')
 	}
 }
 
-.subtask {
-	.status_icon {
-		width: 24px;
-		height: 24px;
-
-		border-radius: 8px;
-	}
-}
 .status_icon {
 	position: relative;
 
-	width: 32px;
-	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
 
 	border-radius: 12px;
 
@@ -167,5 +233,56 @@ const iconSize = computed(() => props.isSubtask ? '12' : '16')
 }
 .failed {
 	background: var(--red);
+}
+
+.subtask {
+	.status_icon {
+		min-width: 24px;
+		min-height: 24px;
+
+		border-radius: 8px;
+	}
+}
+
+.divider {
+	width: 100%;
+	height: 1px;
+
+	margin: 6px 0;
+	
+	background: linear-gradient(
+		to right,
+		transparent 0%,
+		var(--gray-10) 20%,
+		var(--gray-10) 80%,
+		transparent 100%
+	);
+}
+
+.error_wrapper {
+	padding: 0px 8px 8px 8px;
+}
+
+.error_description_wrapper {
+	position: relative;
+
+	.error_description {
+		padding-right: 16px;
+
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+
+		overflow: hidden;
+		text-overflow: ellipsis;
+		word-break: break-word;
+
+		-webkit-line-clamp: 2;
+	}
+
+	& svg {
+		position: absolute;
+		top: 0;
+		right: 0;
+	}
 }
 </style>

@@ -129,7 +129,7 @@ const handleMint = async () => {
 			name,
 			symbol,
 			8,
-			new BN(amountTerm.value).times(10 ** 8).dividedBy(2),
+			new BN(amountTerm.value).times(10 ** 8),
 			feeSettings.value,
 		)
 		

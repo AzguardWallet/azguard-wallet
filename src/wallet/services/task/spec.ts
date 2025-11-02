@@ -85,6 +85,7 @@ export class TransferContent implements ITaskContent {
     constructor(
         public readonly tokenId: number,
         public readonly transferType: TransferType,
+        public readonly senderAddress: string,
         public readonly recipientAddress: string,
         public readonly amount: bigint,
     ) {}

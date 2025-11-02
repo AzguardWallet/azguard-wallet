@@ -8,16 +8,22 @@
 </route>
 
 <script setup>
+/** Vendor */
+import BN from "bignumber.js"
+
 /** Components */
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import Navigation from "../../../../components/Navigation.vue"
 import TaskCard from "./TaskCard.vue"
 
-/** Utils */
+/** Services */
 import { TaskServiceClient } from "@/wallet/services/task/client"
 import { ContentKind } from "@/wallet/services/task/spec"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
-import { symbol } from "zod"
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
+/** Utils */
+import { balanceFormatted } from "@/utils/amount.js"
 
 const tasks = ref([])
 const activeTasks = computed(() => {
@@ -32,25 +38,49 @@ const completedTasks = computed(() => {
 })
 
 async function processTask(task) {
-	console.log('task', task);
-	
 	let humanizedContent = {}
-	
+
 	switch (task.content?.kind) {
 		case ContentKind.BalanceUpdate:
-			const balance = await tokenBalanceService.getTokenBalance(task.content.tbId)
-			humanizedContent.token = {
-				name: balance.token.name,
-				symbol: balance.token.symbol,
+			let balance
+			try {
+				balance = await tokenBalanceService.getTokenBalance(task.content.tbId)
+			} catch (e) {
+				
+			} finally {
+				humanizedContent.token = {
+					name: balance?.token.name ?? "Unknown",
+					symbol: balance?.token.symbol ?? "",
+				}
 			}
-			
 			break;
 		case ContentKind.TokenMint:
 			humanizedContent.token = {
 				name: task.content.name,
 				symbol: task.content.symbol,
 			}
-
+			humanizedContent.amount = balanceFormatted(new BN(task.content.amount || 0).dividedBy(new BN(10).pow(task.content.decimals || 0))).value
+			break;
+		case ContentKind.Transfer:
+			let token
+			try {
+				token = await tokenService.getToken(task.content.tokenId)
+			} catch (e) {
+				
+			} finally {
+				humanizedContent.token = {
+					name: token?.name ?? "Unknown",
+					symbol: token?.symbol ?? "",
+				}
+			}
+			humanizedContent.sender = task.content.senderAddress
+			humanizedContent.recipient = task.content.recipientAddress
+			humanizedContent.amount = balanceFormatted(new BN(task.content.amount || 0).dividedBy(new BN(10).pow(token?.decimals || 0))).value
+			break;
+		case ContentKind.RevokeAuthwits:
+			humanizedContent.authwitCount = task.content.authwitIds.length
+			break;
+		
 		default:
 			break;
 	}
@@ -64,7 +94,9 @@ const taskService = new TaskServiceClient()
 taskService.onTaskCreated.add(onTaskCreated)
 taskService.onTaskUpdated.add(onTaskUpdated)
 taskService.onTaskDeleted.add(onTaskDeleted)
-function onTaskCreated(task) {
+async function onTaskCreated(task) {
+	task = await processTask(task)
+
 	if (!task.parentId) {
 		tasks.value.push(task)
 	} else {
@@ -91,14 +123,14 @@ function onTaskUpdated(task) {
 	}
 }
 function onTaskDeleted(task) {
-  if (!task.parentId) {
-    tasks.value = tasks.value.filter(t => t.id !== task.id)
-  } else {
-    const parent = findParentRecursive(tasks.value, task.id)
-    if (parent) {
-      parent.subtasks = parent.subtasks.filter(st => st.id !== task.id)
-    }
-  }
+	if (!task.parentId) {
+		tasks.value = tasks.value.filter(t => t.id !== task.id)
+	} else {
+		const parent = findParentRecursive(tasks.value, task.id)
+		if (parent) {
+			parent.subtasks = parent.subtasks.filter(st => st.id !== task.id)
+		}
+	}
 }
 function findTaskRecursive(tasks, id) {
 	for (const t of tasks) {
@@ -122,25 +154,24 @@ function findParentRecursive(tasks, childId) {
 }
 
 const tokenBalanceService = new TokenBalanceServiceClient()
+const tokenService = new TokenServiceClient()
 
-function handleShowSubtasks(task) {
-	if (!task.subtasks.length) return
+function handleClickTask(task) {
+	task.showContent = !task.showContent
+
+	if (!(task.subtasks.length || task.error)) return
 	task.showSubtasks = !task.showSubtasks
 }
 
 onMounted(async () => {
-	const _tasks = await taskService.getTasks()	
-	const _tasks1 = await Promise.all(
-		_tasks.map(task => processTask(task))
+	tasks.value = await Promise.all(
+		(await taskService.getTasks()).map(task => processTask(task))
 	)
-	console.log('_tasks1', _tasks1);
-	
-	// tasks.value = (await taskService.getTasks())
-	// 	.map(async (task) => await processTask(task))
 })
 onBeforeUnmount(() => {
 	taskService.disconnect()
 	tokenBalanceService.disconnect()
+	tokenService.disconnect()
 })
 </script>
 
@@ -156,24 +187,44 @@ onBeforeUnmount(() => {
 
 			<div v-for="t in activeTasks">
 				<TaskCard
-					@click="handleShowSubtasks(t)"
+					@click="handleClickTask(t)"
 					:task="t"
+					:showContent="t.showContent"
 				/>
 
 				<Flex
 					v-if="t.showSubtasks"
 					direction="column"
 					gap="4"
-					style="padding: 8px 0px 0px 12px;"
+					style="padding: 4px 0px 0px 8px;"
 				>
-					<Flex v-for="(st, i) in t.subtasks" align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
-						<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
-						<TaskCard
-							@click=handleShowSubtasks(st)
-							:task="st"
-							isSubtask
-						/>
-					</Flex>
+					<div v-for="(st, i) in t.subtasks">
+						<Flex align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
+							<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
+							<TaskCard
+								@click="handleClickTask(st)"
+								:task="st"
+								isSubtask
+							/>
+						</Flex>
+
+						<Flex
+							v-if="st.showSubtasks"
+							direction="column"
+							gap="4"
+							style="padding: 4px 0px 0px 8px;"
+						>
+							<div v-for="(sst, ii) in st.subtasks">
+								<Flex align="center" gap="8" :class="(ii !== st.subtasks.length - 1) && $style.subtask_icon">
+									<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
+									<TaskCard
+										:task="sst"
+										isSubtask
+									/>
+								</Flex>
+							</div>
+						</Flex>
+					</div>
 				</Flex>
 			</div>
 		</Flex>
@@ -194,60 +245,44 @@ onBeforeUnmount(() => {
 
 			<div v-for="t in completedTasks">
 				<TaskCard
-					@click="handleShowSubtasks(t)"
+					@click="handleClickTask(t)"
 					:task="t"
+					:showContent="t.showContent"
 				/>
 
 				<Flex
 					v-if="t.showSubtasks"
 					direction="column"
 					gap="4"
-					style="padding: 8px 0px 0px 12px;"
+					style="padding: 4px 0px 0px 8px;"
 				>
 					<div v-for="(st, i) in t.subtasks">
-						<!-- <Flex align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
+						<Flex align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
 							<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
 							<TaskCard
-								@click="handleShowSubtasks(st)"
+								@click="handleClickTask(st)"
 								:task="st"
 								isSubtask
 							/>
-						</Flex> -->
-						<TaskCard
-							@click="handleShowSubtasks(st)"
-							:task="st"
-							isSubtask
-						/>
-
+						</Flex>
 
 						<Flex
 							v-if="st.showSubtasks"
 							direction="column"
 							gap="4"
-							style="padding: 2px 0px 0px 12px;"
+							style="padding: 4px 0px 0px 8px;"
 						>
 							<div v-for="(sst, ii) in st.subtasks">
-								<!-- <Flex align="center" gap="8" :class="(ii !== st.subtasks.length - 1) && $style.subtask_icon">
+								<Flex align="center" gap="8" :class="(ii !== st.subtasks.length - 1) && $style.subtask_icon">
 									<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
 									<TaskCard
 										:task="sst"
 										isSubtask
 									/>
-								</Flex> -->
-								<TaskCard
-									:task="sst"
-									isSubtask
-								/>
+								</Flex>
 							</div>
 						</Flex>
 					</div>
-					<!-- <Flex v-for="(st, i) in t.subtasks" align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
-						<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
-						<TaskCard
-							:task="st"
-							isSubtask
-						/>
-					</Flex> -->
 				</Flex>
 			</div>
 		</Flex>
@@ -270,6 +305,24 @@ onBeforeUnmount(() => {
 	border-top-right-radius: 24px;
 
 	padding: 20px 24px 80px 24px;
+}
+
+.subtask {
+	position: relative;
+
+	&::before {
+		content: "";
+		position: absolute;
+		left: -8px;
+		width: 2px;
+		height: 110%;
+		background: var(--txt-tertiary);
+		transform-origin: center;
+    }
+
+	&:last-child:after {
+      display:none;
+    }	
 }
 
 .subtask_icon {
