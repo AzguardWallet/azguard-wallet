@@ -25,6 +25,10 @@ import { TokenServiceClient } from "@/wallet/services/token/client"
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+const appStore = useAppStore()
+
 const tasks = ref([])
 const activeTasks = computed(() => {
 	return tasks.value
@@ -52,6 +56,9 @@ async function processTask(task) {
 					name: balance?.token.name ?? "Unknown",
 					symbol: balance?.token.symbol ?? "",
 				}
+			}
+			if (appStore.account?.address !== task.content.account) {
+				humanizedContent.account = task.content.account
 			}
 			break;
 		case ContentKind.TokenMint:

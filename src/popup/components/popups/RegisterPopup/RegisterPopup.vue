@@ -83,15 +83,7 @@ const handleCreateProfile = async (mode: "password" | "passkey" = "password") =>
 	appStore.profile = profile
 	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
-	initTokenService({
-		profile: appStore.profile,
-		network: appStore.network,
-		account: appStore.account,
-		onTokenAdded: appStore.onTokenAdded,
-	})
 	initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
-
-	appStore.initBalanceListeners()
 
 	await chrome.storage.local.set({
 		"azguard:ui:activeAccount": appStore.account?.address,

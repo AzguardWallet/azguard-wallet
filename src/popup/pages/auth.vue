@@ -14,7 +14,7 @@ import { checkNotificationsForShow } from "@/composables/notification"
 import { Config } from "@/wallet/config"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
-import { initTokenService, initTransactionService, managers } from "@/utils/core"
+import { initTransactionService, managers, refreshBalances } from "@/utils/core"
 import { sleep } from "@/wallet/utils"
 
 /** Store */
@@ -87,19 +87,10 @@ const handleUnlockWallet = async () => {
 		chrome.storage.local.set({ [LAST_ACTIVE_PROFILE_KEY]: activeProfile?.id })
 		managers.account = new AccountServiceClient()
 
-		initTokenService({
-			profile: appStore.profile,
-			network: appStore.network,
-			account: appStore.account,
-			onTokenAdded: appStore.onTokenAdded,
-		})
 		initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
 
-		await appStore.syncLocalTokens()
-		appStore.syncBalances()
 		await appStore.syncTransactions()
-		appStore.initBalanceListeners()
-		appStore.refreshBalances(10)
+		refreshBalances(10)
 
 		router.push(appStore.pageAwaitingAuth || "/popup/general")
 

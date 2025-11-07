@@ -55,6 +55,7 @@ export class BalanceUpdateContent implements ITaskContent {
     public readonly label = "Refresh token balance";
     constructor(
         public readonly tbId: number,
+        public readonly account: string,
         public readonly estimatedTime?: number,
     ) {}
 }
@@ -67,6 +68,7 @@ export class TokenMintContent implements ITaskContent {
         public readonly symbol: string,
         public readonly decimals: number,
         public readonly amount: string,
+        public readonly account: string,
         public readonly estimatedTime?: number,
     ) {}
 }

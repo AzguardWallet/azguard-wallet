@@ -1,4 +1,7 @@
 <script setup>
+/** Services */
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -45,6 +48,29 @@ const defaultDisplayOptions = [
 const displayOptions = ref([...defaultDisplayOptions])
 const selectedOptionRef = computed(() => appStore.displayOption)
 
+const tokenBalances = ref([])
+const tokenBalanceService = new TokenBalanceServiceClient()
+tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
+tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
+tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
+function onBalanceAdded(tb) {
+	if (tb.account !== appStore.account.address) return
+	
+	tokenBalances.value.push(tb)
+}
+function onBalanceUpdated(tb) {
+	const idx = tokenBalances.value.findIndex(_tb => _tb.id === tb.id)
+	if (idx !== -1) {
+		tokenBalances.value[idx] = tb
+	}
+}
+function onBalanceDeleted(tb) {
+	const idx = tokenBalances.value.findIndex(_tb => _tb.id === tb.id)
+	if (idx !== -1) {
+		tokenBalances.value.splice(idx, 1)
+	}
+}
+
 const handleSelectOption = async option => {
 	appStore.displayOption = option.ref
 
@@ -60,27 +86,28 @@ const onHover = str => {
 
 watch(
 	() => props.show,
-	() => {
+	async () => {
 		if (props.show) {
-			for (const token of appStore.tokens) {
-				const tokenBalance = appStore.balances.filter(Boolean).find(b => b.token?.id === token.id)
+			tokenBalances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account?.address)
 
+			for (const tb of tokenBalances.value) {
 				displayOptions.value.push({
-					ref: token.id,
-					title: token.name,
+					ref: tb.token.id,
+					title: tb.token.name,
 					description: "Use token balance",
 					icon: "banknote",
 					token: {
-						...token,
+						...tb.token,
 						balance:
-							(Number.parseFloat(tokenBalance.privateBalance) +
-								Number.parseFloat(tokenBalance.publicBalance)) /
-							10 ** tokenBalance.token.decimals,
+							(Number.parseFloat(tb.privateBalance) +
+								Number.parseFloat(tb.publicBalance)) /
+							10 ** tb.token.decimals,
 					},
 				})
 			}
 		} else {
 			displayOptions.value = [...defaultDisplayOptions]
+			tokenBalanceService.disconnect()
 		}
 	},
 )

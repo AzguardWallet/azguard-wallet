@@ -90,7 +90,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
         const origin: TxOrigin = { type: OriginType.UI, name: "Faucet" };
 
         const rootTask = this.taskService.startNewTask(
-            new TokenMintContent(name, symbol, decimals, amount),
+            new TokenMintContent(name, symbol, decimals, amount, accountAddress),
             undefined,
             origin,
         );

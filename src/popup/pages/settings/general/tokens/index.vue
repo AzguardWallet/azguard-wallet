@@ -8,6 +8,9 @@
 </route>
 
 <script setup>
+/** Services */
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
@@ -15,7 +18,6 @@ import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
 import { stringCompare} from "@/utils/string"
 
 /** Composables */
@@ -30,7 +32,21 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const tokens = computed(() => [...appStore.tokens].sort((a, b) => stringCompare(a.name, b.name)))
+const tokens = ref([])
+// const tokens = computed(() => [...tokens.value].sort((a, b) => stringCompare(a.name, b.name)))
+
+const tokenService = new TokenServiceClient()
+tokenService.onTokenAdded.add(onTokenAdded)
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenAdded(token) {
+	tokens.value.push(token)
+}
+function onTokenDeleted(token) {
+	const idx = tokens.value.findIndex(t => t.id === token.id)
+	if (idx === -1) return
+
+	tokens.value.splice(idx, 1)
+}
 
 const handleEdit = target => {
 	cacheStore.tokenToEditIdx = target.id
@@ -44,14 +60,19 @@ const handleDelete = target => {
 	cacheStore.confirm.description =
 		"Removing a token only affects the display in the interface and it does not affect the token balance"
 	cacheStore.confirm.callback = async () => {
-		await managers.token.deleteToken(target.id)
-		appStore.tokens = appStore.tokens.filter(t => t.id !== target.id)
-		appStore.balances = appStore.balances.filter(b => b.token.id !== target.id)
+		await tokenService.deleteToken(target.id)
 		openToast({ label: "Token successfully deleted" })
 	}
 
 	popupStore.open("confirm")
 }
+
+watch(
+	() => tokens.value,
+	() => {
+		tokens.value = tokens.value.sort((a, b) => stringCompare(a.name, b.name))
+	}
+)
 </script>
 
 <template>

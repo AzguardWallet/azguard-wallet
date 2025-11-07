@@ -59,9 +59,6 @@ const handleReset = () => {
 		appStore.network = null
 		appStore.accounts = []
 		appStore.account = null
-		appStore.balances = []
-		appStore.tokensAwaitingBalanceRefresh.clear()
-		appStore.tokens = []
 		appStore.transactions = []
 		appStore.awaitingTransactions = []
 		chrome.storage.local.remove("azguard:ui:feePaymentMethods")

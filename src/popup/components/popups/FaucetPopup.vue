@@ -1,4 +1,9 @@
 <script setup>
+/** Services */
+import { FaucetServiceClient } from "@/wallet/services/faucet/client"
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
 /** Vendor */
 import BN from "bignumber.js"
 
@@ -10,7 +15,6 @@ import FeeSettingsCard from "@/popup/components/modules/send/FeeSettingsCard.vue
 
 /** Utils */
 import { purgeNumber, normalizeAmount } from "@/utils/amount.js"
-import { managers } from "@/utils/core"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -33,13 +37,29 @@ const props = defineProps({
 	show: Boolean,
 })
 
+const faucetService = new FaucetServiceClient()
+
 const feeSettings = ref()
 
-const tokens = computed(() => appStore.tokens)
+const tokenService = new TokenServiceClient()
+tokenService.onTokenAdded.add(onTokenAdded)
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenAdded(token) {
+	tokens.value.push(token)
+}
+function onTokenDeleted(token) {
+	const idx = tokens.value.findIndex(t => t.id === token.id)
+	if (idx === -1) return
+
+	tokens.value.splice(idx, 1)
+}
+
+const tokens = ref([])
 const token = computed(() =>
 	tokens.value.find(t => t.id == route.params.id || (t.symbol === tokenSymbolTerm.value && t.name === tokenNameTerm.value)),
 )
-const mintingTokenId = ref()
+
+const tokenBalanceService = new TokenBalanceServiceClient()
 
 const isPreselected = ref(false)
 const tokenNameTerm = ref("")
@@ -108,22 +128,10 @@ const handleMint = async () => {
 	try {
 		const name = tokenNameTerm.value.trim()
 		const symbol = tokenSymbolTerm.value.trim()
-		
-		if (!token.value) {
-			appStore.dummyTokens.push({
-				id: -1,
-				account: mintingAddress,
-				symbol,
-				name: "Minting in progress...",
-			})
-		} else {
-			mintingTokenId.value = token.value.id
-			appStore.mintingTokens.add(mintingAddress, mintingTokenId.value)
-		}
 
 		emit("onClose")
 
-		await managers.faucet.mint(
+		await faucetService.mint(
 			appStore.network.id,
 			mintingAddress,
 			name,
@@ -132,47 +140,48 @@ const handleMint = async () => {
 			new BN(amountTerm.value).times(10 ** 8),
 			feeSettings.value,
 		)
-		
-		if (mintingTokenId.value) {
-			appStore.mintingTokens.remove(mintingAddress, mintingTokenId.value)
-			appStore.tokensAwaitingBalanceRefresh.add(mintingAddress, mintingTokenId.value)
-		} else {
-			const allTokens = await managers.token?.getTokens(appStore.profile.id, appStore.network.chainId)
-			const newToken = allTokens.find(t => t.symbol === symbol && t.name === name)
-			
-			if (newToken) {
-				appStore.tokensAwaitingBalanceRefresh.add(mintingAddress, newToken.id)
-			}
-		}
+
+		tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+		const _token = tokens.value.find(t => t.symbol === tokenSymbolTerm.value && t.name === tokenNameTerm.value)
+		// if (_token) {
+		// 	const tokenBalances = await tokenBalanceService.getTokenBalances(_token?.id)
+		// 	tokenBalances.forEach(tb => {
+				// tokenBalanceService.refreshTokenBalance(tb.id)
+		// 	})
+		// }
 	} catch (err) {
 		error.value = err
 
 		openToast({ label: "Failed to mint", icon: "warning" })
-
-		if (!mintingTokenId.value) {
-			appStore.dummyTokens = appStore.dummyTokens.filter(dt => dt.account !== mintingAddress && dt.symbol !== tokenSymbolTerm.value && dt.name !== tokenNameTerm.value)
-		} else {
-			appStore.mintingTokens.remove(mintingAddress, mintingTokenId.value)
-		}
 	} finally {
 		isLoading.value = false
+		tokenNameTerm.value = ""
+		tokenSymbolTerm.value = ""
+		tokens.value = []
+		tokenService.disconnect()
+		tokenBalanceService.disconnect()
 	}
 }
 
 watch(
 	() => props.show,
-	() => {
+	async () => {
 		if (!props.show) {
 			document.removeEventListener("keydown", onKeydown)
 
-			tokenNameTerm.value = ""
-			tokenSymbolTerm.value = ""
+			if (!isLoading.value) {
+				tokenNameTerm.value = ""
+				tokenSymbolTerm.value = ""
+				tokens.value = []
+				tokenService.disconnect()
+			}
 			amountTerm.value = ""
 			isPreselected.value = false
 		} else {
 			document.addEventListener("keydown", onKeydown)
 
-			mintingTokenId.value = null
+			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+
 			if (token.value) {
 				isPreselected.value = true
 				tokenNameTerm.value = token.value.name

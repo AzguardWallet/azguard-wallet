@@ -31,7 +31,6 @@ const hiddenAccounts = computed(() => appStore.accounts.filter(a => !a.visible))
 
 const handleSelectAccount = acc => {
 	appStore.selectAccount(acc)
-	appStore.syncBalances()
 }
 
 const handleEditAccount = target => {

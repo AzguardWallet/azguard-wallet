@@ -13,7 +13,6 @@ import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
-import SettingField from "@/components/ui/Settings/SettingField.vue"
 </script>
 
 <template>
@@ -35,10 +34,6 @@ import SettingField from "@/components/ui/Settings/SettingField.vue"
 				icon="wallet"
 				disabled
 			/>
-		</ItemsContainer>
-
-		<ItemsContainer>
-			<SettingField label="Session Time" value="30 min" icon="edit" disabled />
 		</ItemsContainer>
 
 		<Navigation />

@@ -96,7 +96,7 @@ function handleCopyError(task) {
 
 			<Flex direction="column" gap="4" wide>
 				<Flex align="center" justify="between" wide>
-					<Flex direction="column" align="start" justify="center" gap="6" wide style="min-height: 24px;">
+					<Flex direction="column" align="start" justify="center" gap="8" wide style="min-height: 24px;">
 						<Text size="13" weight="600" color="primary">
 							{{ task.content.label }}
 						</Text>
@@ -118,13 +118,16 @@ function handleCopyError(task) {
 
 				<div v-if="showContent && content && !isSubtask" :class="$style.divider" />
 
-				<Flex v-if="showContent && content && !isSubtask" direction="column" gap="6">
-					<Flex v-if="task.content.kind === ContentKind.BalanceUpdate" align="center" wide>
+				<Flex v-if="showContent && content && !isSubtask" wide>
+					<Flex v-if="task.content.kind === ContentKind.BalanceUpdate" direction="column" gap="8" wide>
 						<Text size="12" color="secondary">Token:
 							<Text color="primary">
 								{{ content.token.symbol }}
 							</Text>
 							{{ content.token.name }}
+						</Text>
+						<Text v-if="content.account" size="12" color="secondary">Account:
+							<AddressDisplay :address="content.account" />
 						</Text>
 					</Flex>
 					<Flex v-if="task.content.kind === ContentKind.TokenMint" align="center" gap="6" wide>

@@ -11,22 +11,16 @@ import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()
 
 /** Store */
-import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
-const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const props = defineProps({
-	token: {
+	tokenBalance: {
 		type: Object,
 		required: false,
-	},
-})
-
-const tokenBalance = computed(() => {
-	return appStore.balances.find(b => b.token.id == props.token?.id)
+	}
 })
 
 const showFullBalance = ref({
@@ -34,18 +28,18 @@ const showFullBalance = ref({
 	public: false,
 })
 const privateBalance = computed(() => {
-	if (!tokenBalance.value) return 0
+	if (!props.tokenBalance) return 0
 
-	const decimals = new BN(10).pow(tokenBalance.value?.token?.decimals || 0)
-	const balance = new BN(tokenBalance.value.privateBalance || 0).dividedBy(decimals)
+	const decimals = new BN(10).pow(props.tokenBalance?.token?.decimals || 0)
+	const balance = new BN(props.tokenBalance.privateBalance || 0).dividedBy(decimals)
 	
 	return balanceFormatted(balance, showFullBalance.value.private ? undefined : 30)
 })
 const publicBalance = computed(() => {
-	if (!tokenBalance.value) return 0
+	if (!props.tokenBalance) return 0
 
-	const decimals = new BN(10).pow(tokenBalance.value?.token?.decimals || 0)
-	const balance = new BN(tokenBalance.value.publicBalance || 0).dividedBy(decimals)
+	const decimals = new BN(10).pow(props.tokenBalance?.token?.decimals || 0)
+	const balance = new BN(props.tokenBalance.publicBalance || 0).dividedBy(decimals)
 
 	return balanceFormatted(balance, showFullBalance.value.public ? undefined : 30)
 })
@@ -96,7 +90,7 @@ const handleOpenSendPopup = target => {
 				wide
 				align="center"
 				gap="12"
-				:class="[$style.item, $style.left, !token?.hasPrivateTransfers && $style.disabled]"
+				:class="[$style.item, $style.left, !tokenBalance?.token?.hasPrivateTransfers && $style.disabled]"
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary" :class="$style.balance_text">
@@ -119,7 +113,7 @@ const handleOpenSendPopup = target => {
 				wide
 				align="center"
 				gap="12"
-				:class="[$style.item, $style.right, !token?.hasPublicTransfers && $style.disabled]"
+				:class="[$style.item, $style.right, !tokenBalance?.token?.hasPublicTransfers && $style.disabled]"
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary" :class="$style.balance_text">
