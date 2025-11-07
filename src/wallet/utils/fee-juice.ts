@@ -21,8 +21,9 @@ export const getFeeJuiceClaimPayload = (
         {
             kind: "call",
             contract: feeJuiceAddress,
-            method: "claim",
+            method: "claim_and_end_setup",
             args: [to, amount, secret, messageLeafIndex],
+            hideSender: false,
         },
     ];
 };

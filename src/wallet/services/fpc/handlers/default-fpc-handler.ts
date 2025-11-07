@@ -2,18 +2,19 @@ import { Fr } from "@aztec/foundation/fields";
 import { ContractArtifact, FunctionSelector, StructType } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
-import { PXE } from "@aztec/stdlib/interfaces/client";
 import { HashedValues, TxContext, TxExecutionRequest } from "@aztec/stdlib/tx";
 import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo, FpcType } from "../spec";
 import { IFpcHandler } from ".";
+import { IPXE } from "../../pxe/proxy";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
 
 export class DefaultFpcHandler implements IFpcHandler {
-    public async getAsset(fpcAddress: string, pxe: PXE): Promise<string | undefined> {
+    public async getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined> {
         const fnSelector = await FunctionSelector.fromSignature("get_accepted_asset()");
         const packedArgs = await HashedValues.fromArgs([]);
-        const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
-        const baseFees = await pxe.getCurrentBaseFees();
+        const { l1ChainId, rollupVersion } = await node.getNodeInfo();
+        const baseFees = await node.getCurrentBaseFees();
         const gasSettings = new GasSettings(
             new Gas(4_294_967_295, 4_294_967_295),
             new Gas(0, 0),
@@ -111,6 +112,7 @@ export class DefaultFpcHandler implements IFpcHandler {
                           contract: fpc.asset,
                           method: "transfer_in_public",
                           args: [account, fpc.address, maxFee.toString(), nonce.toString()],
+                          hideSender: false,
                       },
                   },
                   {
@@ -118,6 +120,7 @@ export class DefaultFpcHandler implements IFpcHandler {
                       contract: fpc.address,
                       method: "fee_entrypoint_public",
                       args: [maxFee.toString(), nonce.toString()],
+                      hideSender: false,
                   },
               ]
             : [
@@ -129,6 +132,7 @@ export class DefaultFpcHandler implements IFpcHandler {
                           contract: fpc.asset,
                           method: "transfer_to_public",
                           args: [account, fpc.address, maxFee.toString(), nonce.toString()],
+                          hideSender: false,
                       },
                   },
                   {
@@ -136,6 +140,7 @@ export class DefaultFpcHandler implements IFpcHandler {
                       contract: fpc.address,
                       method: "fee_entrypoint_private",
                       args: [maxFee.toString(), nonce.toString()],
+                      hideSender: false,
                   },
               ];
     }

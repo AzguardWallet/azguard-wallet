@@ -241,7 +241,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         }
         const instance = contractMetadata.contractInstance;
 
-        const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId);
+        const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId, true);
         if (!classMetadata.artifact) {
             throw new Error("contract artifact not found");
         }
@@ -336,7 +336,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             }
             const instance = contractMetadata.contractInstance;
 
-            const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId);
+            const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId, true);
             if (!classMetadata.artifact) {
                 throw new Error("contract artifact not found");
             }
@@ -422,6 +422,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
         const account = await this.accounts.getAccountContract(profileId, network.chainId, address);
 
+        const node = await this.networks.getNode(network.chainId);
         const pxe = this.pxeService.getPXE(network);
 
         const getNameFn = ti.getNameFn ? GetNameFn.new(ti.getNameFn.name, ti.getNameFn.impl) : undefined;
@@ -432,16 +433,16 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
         return [
             getNameFn
-                ? await simulate(pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
+                ? await simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
                 : ti.contract === feeJuiceAddress
                 ? feeJuiceName
                 : "<name>",
             getSymbolFn
-                ? await simulate(pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
+                ? await simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
                 : ti.contract === feeJuiceAddress
                 ? feeJuiceSymbol
                 : "<symbol>",
-            getDecimalsFn ? await simulate(pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs()) : 0,
+            getDecimalsFn ? await simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs()) : 0,
         ];
     }
 

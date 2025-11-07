@@ -114,7 +114,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 salt: Fr.zero(),
             });
 
-            const classMetadata = await pxe.getContractClassMetadata(contractClass.id);
+            const classMetadata = await pxe.getContractClassMetadata(contractClass.id, true);
             if (!classMetadata.isContractClassPubliclyRegistered) {
                 this.logDebug("register faucet token class id");
                 const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
@@ -131,6 +131,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                         contract: AztecAddress.fromNumber(CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS).toString(),
                         method: "publish",
                         args: [artifactHash, privateFunctionsRoot, publicBytecodeCommitment],
+                        hideSender: false,
                     },
                 );
             }
@@ -144,6 +145,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                     contract: AztecAddress.fromNumber(CONTRACT_INSTANCE_REGISTRY_CONTRACT_ADDRESS).toString(),
                     method: "publish_for_public_execution",
                     args: [salt, currentContractClassId, initializationHash, publicKeys, true],
+                    hideSender: false,
                 });
             }
 
@@ -161,6 +163,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                     contract: instance.address.toString(),
                     method: "constructor",
                     args: [accountAddress, name, symbol, decimals],
+                    hideSender: false,
                 });
             }
             checkTask.complete();
@@ -211,12 +214,14 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                                 contract: instance.address.toString(),
                                 method: "mint_to_private",
                                 args: [accountAddress, amount],
+                                hideSender: false,
                             },
                             {
                                 kind: "call",
                                 contract: instance.address.toString(),
                                 method: "mint_to_public",
                                 args: [accountAddress, amount],
+                                hideSender: false,
                             },
                         ],
                     },

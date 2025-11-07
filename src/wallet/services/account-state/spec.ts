@@ -34,12 +34,6 @@ export type Methods = {
      * @param networkId Network id.
      */
     getContracts(networkId: string): string[];
-
-    /**
-     * Returns PXE version.
-     * @param networkId Network id.
-     */
-    getVersion(networkId: string): string;
 };
 
 export type Events = {

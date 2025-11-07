@@ -67,7 +67,7 @@ const initConfig = async () => {
 };
 
 const initBarretenberg = async () => {
-    await BarretenbergSync.initSingleton(process.env.BB_WASM_PATH);
+    await BarretenbergSync.initSingleton({ wasmPath: process.env.BB_WASM_PATH });
     logger.log("wallet", LogLevel.Info, "Barretenberg initialized");
 };
 

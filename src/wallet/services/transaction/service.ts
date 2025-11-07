@@ -11,6 +11,7 @@ import { sleep } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { Tx, TRANSACTION_SERVICE_NAME, TxOrigin, TxCall, TxStatus, Methods, Events } from "./spec";
+import { AzguardFeePaymentMethod } from "../account/contracts";
 
 export * from "./spec";
 
@@ -63,10 +64,9 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         origin: TxOrigin,
         chainId: number,
         account: string,
-        setup: TxCall[],
-        isFeePayer: boolean,
         calls: TxCall[],
         nonce: string,
+        feePaymentMethod: AzguardFeePaymentMethod,
         hash: string,
     ): Promise<Tx> {
         if (await this.txs.get(hash)) {
@@ -77,10 +77,9 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             origin,
             chainId,
             account,
-            setup,
-            isFeePayer,
             calls,
             nonce,
+            feePaymentMethod,
             hash,
             createdAt: now,
             updatedAt: now,

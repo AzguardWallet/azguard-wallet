@@ -1,27 +1,19 @@
+import { CallAction, EncodedCallAction } from "./action";
+
 export type AuthwitContent =
     | CallAuthwitContent
     | EncodedCallAuthwitContent
     | IntentAuthwitContent
     | MessageHashAuthwitContent;
 
-export type CallAuthwitContent = {
+export type CallAuthwitContent = Omit<CallAction, "kind"> & {
     readonly kind: "call";
     readonly caller: string;
-    readonly contract: string;
-    readonly method: string;
-    readonly args: any[];
 };
 
-export type EncodedCallAuthwitContent = {
+export type EncodedCallAuthwitContent = Omit<EncodedCallAction, "kind"> & {
     readonly kind: "encoded_call";
     readonly caller: string;
-    readonly to: string;
-    readonly selector: string;
-    readonly args: string[];
-    name?: string;
-    type?: string;
-    isStatic?: boolean;
-    returnTypes?: unknown[];
 };
 
 export type IntentAuthwitContent = {

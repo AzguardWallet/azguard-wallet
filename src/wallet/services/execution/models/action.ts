@@ -32,6 +32,7 @@ export type CallAction = {
     readonly contract: string;
     readonly method: string;
     readonly args: any[];
+    readonly hideSender: boolean;
 };
 
 export type EncodedCallAction = {
@@ -39,6 +40,7 @@ export type EncodedCallAction = {
     readonly to: string;
     readonly selector: string;
     readonly args: string[];
+    readonly hideSender: boolean;
     name?: string;
     type?: string;
     isStatic?: boolean;

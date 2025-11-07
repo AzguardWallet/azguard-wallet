@@ -1,6 +1,5 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
-import { TxHash } from "@aztec/stdlib/tx";
 import { ILogger } from "@/wallet/logger";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -88,18 +87,6 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
             return contracts.map(x => x.toString());
         } catch (error) {
             this.logError("Failed to fetch registered contracts", getErrorMessage(error));
-            throw new Error("PXE request failed");
-        }
-    }
-
-    public async getVersion(networkId: string): Promise<string> {
-        await this.ensureInitialized();
-        const network = await this.networkService.getNetwork(networkId);
-        try {
-            const pxeInfo = await this.pxeService.getPXEInfo(network);
-            return pxeInfo.pxeVersion;
-        } catch (error) {
-            this.logError("Failed to fetch PXE info", getErrorMessage(error));
             throw new Error("PXE request failed");
         }
     }
