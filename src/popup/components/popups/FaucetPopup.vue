@@ -1,7 +1,6 @@
 <script setup>
 /** Services */
 import { FaucetServiceClient } from "@/wallet/services/faucet/client"
-import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
 /** Vendor */
@@ -58,8 +57,6 @@ const tokens = ref([])
 const token = computed(() =>
 	tokens.value.find(t => t.id == route.params.id || (t.symbol === tokenSymbolTerm.value && t.name === tokenNameTerm.value)),
 )
-
-const tokenBalanceService = new TokenBalanceServiceClient()
 
 const isPreselected = ref(false)
 const tokenNameTerm = ref("")
@@ -140,15 +137,6 @@ const handleMint = async () => {
 			new BN(amountTerm.value).times(10 ** 8),
 			feeSettings.value,
 		)
-
-		tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
-		const _token = tokens.value.find(t => t.symbol === tokenSymbolTerm.value && t.name === tokenNameTerm.value)
-		// if (_token) {
-		// 	const tokenBalances = await tokenBalanceService.getTokenBalances(_token?.id)
-		// 	tokenBalances.forEach(tb => {
-				// tokenBalanceService.refreshTokenBalance(tb.id)
-		// 	})
-		// }
 	} catch (err) {
 		error.value = err
 
@@ -157,9 +145,9 @@ const handleMint = async () => {
 		isLoading.value = false
 		tokenNameTerm.value = ""
 		tokenSymbolTerm.value = ""
+		amountTerm.value = ""
 		tokens.value = []
 		tokenService.disconnect()
-		tokenBalanceService.disconnect()
 	}
 }
 
@@ -172,10 +160,11 @@ watch(
 			if (!isLoading.value) {
 				tokenNameTerm.value = ""
 				tokenSymbolTerm.value = ""
+				amountTerm.value = ""
 				tokens.value = []
 				tokenService.disconnect()
 			}
-			amountTerm.value = ""
+
 			isPreselected.value = false
 		} else {
 			document.addEventListener("keydown", onKeydown)
@@ -217,7 +206,7 @@ const onKeydown = e => {
 					v-model="tokenNameTerm"
 					sanitize
 					:maxLength="32"
-					:disabled="isPreselected"
+					:disabled="isPreselected || isLoading"
 					@focus="error = null"
 					@input="handleNameInput"
 					:autofocus="!token"
@@ -228,7 +217,7 @@ const onKeydown = e => {
 					v-model="tokenSymbolTerm"
 					sanitize
 					:maxLength="32"
-					:disabled="isPreselected"
+					:disabled="isPreselected || isLoading"
 					@focus="error = null"
 					@input="handleSymbolInput"
 				/>
@@ -236,6 +225,7 @@ const onKeydown = e => {
 					label="Total Amount"
 					placeholder="0.00"
 					v-model="amountTerm"
+					:disabled="isLoading"
 					@focus="error = null"
 					@input="handleAmountInput"
 					:autofocus="!!token"
@@ -303,7 +293,7 @@ const onKeydown = e => {
 						:loading="isLoading"
 						:disabled="!isAllowedToMint"
 					>
-						Mint
+						{{ isLoading ? 'Minting' : 'Mint' }}
 					</Button>
 
 					<Tooltip v-if="isErrorOccurred" side="top">

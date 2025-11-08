@@ -45,7 +45,7 @@ const defaultDisplayOptions = [
 	},
 ]
 
-const displayOptions = ref([...defaultDisplayOptions])
+const displayOptions = ref()
 const selectedOptionRef = computed(() => appStore.displayOption)
 
 const tokenBalances = ref([])
@@ -88,8 +88,8 @@ watch(
 	() => props.show,
 	async () => {
 		if (props.show) {
+			displayOptions.value = [...defaultDisplayOptions]
 			tokenBalances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account?.address)
-
 			for (const tb of tokenBalances.value) {
 				displayOptions.value.push({
 					ref: tb.token.id,
@@ -105,8 +105,12 @@ watch(
 					},
 				})
 			}
+
+			if (!displayOptions.value.map(opt => opt.ref).includes(appStore.displayOption?.ref)) {
+				appStore.displayOption = displayOptions.value[0].ref
+				amountToPreview.value = "$0.00"
+			}
 		} else {
-			displayOptions.value = [...defaultDisplayOptions]
 			tokenBalanceService.disconnect()
 		}
 	},

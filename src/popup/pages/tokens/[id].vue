@@ -59,6 +59,10 @@ watch(
 	() => appStore.account,
 	async () => {
 		tokenBalance.value = (await tokenBalanceService.getTokenBalances(token.value.id, appStore.account.address))?.at(0)
+		if (!tokenBalance.value) {
+			cacheStore.activeTokenIdx = null
+			router.push("/popup/general")
+		}
 	}
 )
 

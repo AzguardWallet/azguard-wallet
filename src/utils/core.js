@@ -26,9 +26,14 @@ export const managers = {
 	contact: contactService,
 }
 
-export async function refreshBalances(minutes) {
+export async function refreshBalances(minutes, accounts) {
+	if (!accounts?.length) return
+
 	const tokenBalanceService = new TokenBalanceServiceClient()
-	const tokenBalances = await tokenBalanceService.getTokenBalances()
+	const tokenBalances = []
+	for (const acc of accounts) {
+		tokenBalances.push(...(await tokenBalanceService.getTokenBalances(undefined, acc.address)));
+	}
 
 	function checkAge(updatedAt, minutes) {
 		if (!minutes) return true
@@ -38,11 +43,9 @@ export async function refreshBalances(minutes) {
 		return diff >= minutes * 60 * 1_000
 	}
 
-	tokenBalances.forEach(tb => {
-		if (checkAge(tb.updatedAt, minutes)) {
-			tokenBalanceService.getTokenBalance(tb.id)
-		}
-	})
+	for (const tb of tokenBalances) {
+		if (checkAge(tb.updatedAt, minutes)) tokenBalanceService.refreshTokenBalance(tb.id)
+	}
 
 	tokenBalanceService.disconnect()
 }
