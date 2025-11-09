@@ -24,6 +24,7 @@ const { openToast } = useToast()
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
+import { number } from "zod"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
@@ -197,6 +198,83 @@ async function fetchTokenBalances() {
 	)
 }
 
+async function loadBalanceDisplayOptionMigration(profileId, networkId) {
+	const oldKey = "azguard:ui:balanceDisplayOption"
+	const newKey = `azguard:ui:balanceDisplayOption@${profileId}`
+	let option
+	let optionsMap
+
+	const oldResult = await chrome.storage.local.get(oldKey)
+	if (oldKey in oldResult) {
+		option = oldResult[oldKey]
+		await chrome.storage.local.remove(oldKey)
+		if (option) {
+			await saveBalanceDisplayOption(profileId, networkId, option)
+		}		
+	} else {
+		const result = await chrome.storage.local.get(newKey)
+		optionsMap = result[newKey] || {}
+
+		option = optionsMap[networkId]
+	}
+
+	if (!option) {
+		option = "total_account_value"
+		optionsMap[networkId] = option
+		await chrome.storage.local.set({ [newKey]: optionsMap })
+	}
+
+	appStore.displayOption = option
+}
+async function loadBalanceDisplayOption(profileId, networkId) {
+	const key = `azguard:ui:balanceDisplayOption@${profileId}`
+
+	const result = await chrome.storage.local.get(key)
+	const optionsMap = result[key] || {}
+
+	let option = optionsMap[networkId]
+
+	if (!option) {
+		option = "total_account_value"
+		optionsMap[networkId] = option
+		await chrome.storage.local.set({ [key]: optionsMap })
+	}
+
+	appStore.displayOption = option
+}
+async function saveBalanceDisplayOption(profileId, networkId, option) {
+	const key = `azguard:ui:balanceDisplayOption@${profileId}`
+
+	const result = await chrome.storage.local.get(key)
+	const optionsMap = result[key] || {}
+	
+	if (optionsMap[networkId] !== option) {
+		optionsMap[networkId] = option
+		await chrome.storage.local.set({ [key]: optionsMap })
+	}
+}
+
+watch(
+	() => appStore.network,
+	async () => {
+		await loadBalanceDisplayOption(appStore.profile.id, appStore.network.id)
+	}
+)
+watch(
+	() => appStore.account,
+	async () => {
+		await fetchTokenBalances()
+		if (!tokenToDisplay.value) {
+			appStore.displayOption = "total_account_value"
+		}
+	}
+)
+watch(
+	() => appStore.displayOption,
+	async () => {
+		await saveBalanceDisplayOption(appStore.profile.id, appStore.network.id, appStore.displayOption)
+	}
+)
 watch(
 	() => totalTokenBalance.value.value,
 	async () => {
@@ -207,37 +285,11 @@ watch(
 		calcDynamicFontSize()
 	},
 )
-watch(
-	() => tokenToDisplay.value,
-	() => {
-		if (!tokenToDisplay.value) {
-			appStore.displayOption = "total_account_value"
-		}
-	},
-)
-
-watch(
-	() => appStore.account,
-	async () => {
-		await fetchTokenBalances()
-	}
-)
 
 onMounted(async () => {
 	await fetchTokenBalances()
 
-	/** Setup balance display */
-	const balanceDisplayOptionResult = await chrome.storage.local.get("azguard:ui:balanceDisplayOption")
-	if ("azguard:ui:balanceDisplayOption" in balanceDisplayOptionResult) {
-		const balanceDisplayOption = balanceDisplayOptionResult["azguard:ui:balanceDisplayOption"]
-		appStore.displayOption = balanceDisplayOption
-
-		if (!tokenBalances.value?.some(tb => tb.token.id === appStore.displayOption)) {
-			appStore.displayOption = "total_account_value"
-		}
-	} else {
-		chrome.storage.local.set({ "azguard:ui:balanceDisplayOption": "total_account_value" })
-	}
+	await loadBalanceDisplayOptionMigration(appStore.profile.id, appStore.network.id) // Replace me with "loadBalanceDisplayOption" at some point
 
 	if (!totalTokenBalance.value) return
 

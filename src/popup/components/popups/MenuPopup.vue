@@ -121,7 +121,11 @@ onBeforeUnmount(() => {
 						title="Task tracker"
 						icon="task-tracker"
 						iconBgColor="gray"
-					/>
+					>
+						<template v-if="cacheStore.activeTasksCount" #dot>
+							<div :class="$style.dot_indicator" :style="{ background: 'var(--green)' }" />
+						</template>
+					</SettingItem>
 					<SettingItem
 						v-if="isDeveloperModeEnabled"
 						@click="handleOpenLogs"

@@ -71,12 +71,10 @@ function onBalanceDeleted(tb) {
 	}
 }
 
-const handleSelectOption = async option => {
+const handleSelectOption = (option) => {
 	appStore.displayOption = option.ref
 
 	emit("onClose")
-
-	chrome.storage.local.set({ "azguard:ui:balanceDisplayOption": option.ref })
 }
 
 const amountToPreview = ref("$0.00")
@@ -107,7 +105,6 @@ watch(
 			}
 
 			if (!displayOptions.value.map(opt => opt.ref).includes(appStore.displayOption?.ref)) {
-				appStore.displayOption = displayOptions.value[0].ref
 				amountToPreview.value = "$0.00"
 			}
 		} else {
