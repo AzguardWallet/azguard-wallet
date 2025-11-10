@@ -28,17 +28,6 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
     }
 
     protected async init(services: ServiceCollection): Promise<void> {
-        // TODO: remove this at some point
-        // migration
-        const entries = await this.storage.getAll();
-        if (entries.some(x => x[0] !== x[1].address)) {
-            this.logInfo("Migrate accounts");
-            for (const [address, account] of entries) {
-                account.address = address;
-                await this.storage.set(address, account);
-            }
-        }
-
         this.profileService = services.get(ProfileService.name);
         this.profileService.onProfileDeleted.add(this.onProfileDeleted);
     }

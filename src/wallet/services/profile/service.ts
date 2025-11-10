@@ -50,27 +50,6 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     protected async init(services: ServiceCollection) {
         this.passkeys = services.get(PasskeyService.name);
 
-        // TODO: remove this at some point
-        // migration
-        const entries = await this.profiles.getAll();
-        if (entries.some(x => x[0] !== x[1].id)) {
-            this.logInfo("Migrate profiles");
-            for (const [id, profile] of entries) {
-                profile.id = id;
-                await this.profiles.set(id, profile);
-            }
-        }
-
-        if (entries.some(x => x[1].type === undefined)) {
-            this.logInfo("Migrate profiles: adding type for password profiles");
-            for (const [id, profile] of entries) {
-                if ((profile as { type?: unknown }).type === undefined) {
-                    profile.type = "password";
-                    await this.profiles.set(id, profile);
-                }
-            }
-        }
-
         const session = await this.session.get();
         if (!session) {
             return;
