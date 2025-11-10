@@ -7,7 +7,7 @@ import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Services */
-import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
+import { FpcServiceClient } from "@/wallet/services/fpc/client"
 
 /** Composables */
 import { useToast } from "@/composables/toast"

@@ -354,26 +354,26 @@ describe("Task Tree Implementation", () => {
         test("clears tasks when switching to a different profile", async () => {
             const { service, switchToProfile } = await createTestSetup();
 
-            switchToProfile({ id: "A", name: "A" });
+            switchToProfile({ id: "A", name: "A", type: "password" });
             service.createNewTask(new StepContent("T1"));
             service.createNewTask(new StepContent("T2"));
             expect((await service.getTasks()).length).toBe(2);
 
             // Switch to a different profile - should clear
-            switchToProfile({ id: "B", name: "B" });
+            switchToProfile({ id: "B", name: "B", type: "password" });
             expect((await service.getTasks()).length).toBe(0);
         });
 
         test("keeps tasks when switching to the same profile", async () => {
             const { service, switchToProfile } = await createTestSetup();
 
-            switchToProfile({ id: "A", name: "A" });
+            switchToProfile({ id: "A", name: "A", type: "password" });
             service.createNewTask(new StepContent("T1"));
             service.createNewTask(new StepContent("T2"));
             expect((await service.getTasks()).length).toBe(2);
 
             // Set to the same profile - no clearing
-            switchToProfile({ id: "A", name: "A" });
+            switchToProfile({ id: "A", name: "A", type: "password" });
             expect((await service.getTasks()).length).toBe(2);
         });
     });

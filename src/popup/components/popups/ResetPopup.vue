@@ -32,12 +32,12 @@ const props = defineProps({
 })
 
 const checks = reactive({
-	permament: false,
+	permanent: false,
 	undone: false,
 	sure: false,
 })
 
-const isReadyToReset = computed(() => checks.permament && checks.undone && checks.sure)
+const isReadyToReset = computed(() => checks.permanent && checks.undone && checks.sure)
 const handleReset = () => {
 	if (!isReadyToReset.value) return
 
@@ -117,7 +117,7 @@ watch(
 					<Text size="13" weight="600" color="body"> Before you continue </Text>
 
 					<Flex direction="column" gap="12">
-						<Checkbox v-model="checks.permament">
+						<Checkbox v-model="checks.permanent">
 							<Text size="14" weight="600" color="secondary" height="140">
 								I understand this action is permanent
 							</Text>
