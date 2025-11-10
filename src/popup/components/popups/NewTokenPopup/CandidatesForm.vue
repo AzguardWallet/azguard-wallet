@@ -117,11 +117,11 @@ const handleClearCandidate = target => {
 			</Flex>
 		</Flex>
 
-		<!-- TRANFSERS: Private / Public -->
+		<!-- TRANSFERS: Private / Public -->
 		<Flex align="center" justify="between" gap="16">
 			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Tranfser private</Text>
+					<Text size="13" weight="600" color="secondary">Transfer private</Text>
 					<Icon
 						:name="token.transferPrivateFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -167,7 +167,7 @@ const handleClearCandidate = target => {
 
 			<Flex wide direction="column" gap="8" :class="$style.field">
 				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Tranfser public</Text>
+					<Text size="13" weight="600" color="secondary">Transfer public</Text>
 					<Icon
 						:name="token.transferPublicFn ? 'check-circle' : 'close-circle'"
 						size="12"

@@ -11,10 +11,12 @@ import { managers, setSentinel } from "@/utils/core"
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
 import { useCacheStore } from "@/stores/cache.store"
+import { useNotificationStore } from "@/stores/notification.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
+const notificationStore = useNotificationStore()
 
 const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.import?.order
@@ -159,6 +161,29 @@ const handleImportPublicKey = async () => {
 	}
 }
 
+const handleImportPasskey = async () => {
+	try {
+		const profile = await managers.profile.importPasskey(profileName.value.trim())
+		
+		await completeImport(profile)
+	} catch (error) {
+		if (!error?.toLowerCase().includes("user closed") && !error?.toLowerCase().includes("operation either timed out or was not allowed")) {
+			notificationStore.create({
+				type: "warning",
+				payload: {
+					title: "Profile Import Failed",
+					description: "An error occurred while importing the profile. This authenticator may not be supported or encountered an issue. Try again or use another one.",
+					note: "Windows Hello may not work correctly with some versions of Windows.",
+					confirmText: "OK",
+					onConfirm: () => {},
+				},
+			})
+		}
+
+		console.error("Failed to import profile:", error);
+	}
+}
+
 const handleBack = () => {
 	selectedImportOption.value = null
 
@@ -238,6 +263,13 @@ watch(
 					<SettingItem
 						@click="selectedImportOption = 'public_key'"
 						title="Encrypted Key"
+						icon="key"
+						iconBgColor="blue"
+						chevron
+					/>
+					<SettingItem
+						@click="handleImportPasskey"
+						title="Passkey (WebAuthn)"
 						icon="key"
 						iconBgColor="blue"
 						chevron

@@ -8,7 +8,7 @@ import ActionButtonsView from "./ActionButtonsView.vue"
 import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
 
 /** Utils */
-import { balanceFormatted, comma } from "@/utils/amount.js"
+import { balanceFormatted } from "@/utils/amount.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"

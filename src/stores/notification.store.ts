@@ -5,6 +5,7 @@ export type NotificationType = "info" | "adv" | "warning" | "error"
 export type NotificationPayload = {
 	title: string
 	description: string
+	note?: string
 	onConfirm?: () => void
 	onCancel?: () => void
 	confirmText?: string

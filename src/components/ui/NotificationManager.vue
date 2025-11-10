@@ -61,6 +61,11 @@ const cancel = async () => {
                     {{ notification.payload.description }}
                 </Text>
 
+                <Text v-if="notification.payload.note" size="13" weight="500" color="secondary" height="140" align="center" style="font-style: italic;">
+                    <Text weight="600">Note: </Text>
+                    {{ notification.payload.note }}
+                </Text>
+
                 <Flex gap="12" wide>
                     <Button
                         v-if="notification.payload.onCancel"

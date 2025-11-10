@@ -46,7 +46,7 @@ function onRegistryDisabled(account) {
 
 const authwits = ref([])
 const chunkedAuthwits = ref([])
-const chunkesCount = computed(() => chunkedAuthwits.value.length)
+const chunksCount = computed(() => chunkedAuthwits.value.length)
 const isRegistryEnabled = ref(undefined)
 const isLoading = ref(false)
 const error = ref()
@@ -106,7 +106,7 @@ async function handleRevokeAuthwits() {
 	isLoading.value = false
 	const errors = chunkedAuthwits.value.filter(ch => !!ch.error).map(ch => ch.error)
 	if (errors.length) {
-		openToast({ label: `Failed to revoke ${errors.length === chunkesCount.value ? '' : 'some '}authwit(s)`, icon: "warning" })
+		openToast({ label: `Failed to revoke ${errors.length === chunksCount.value ? '' : 'some '}authwit(s)`, icon: "warning" })
 		error.value = errors.join(", ")
 	} else {
 		openToast({ label: "Authwit(s) successfully revoked" })
@@ -165,7 +165,7 @@ const onKeydown = e => {
 						You don’t need to spend gas or send a transaction to revoke them — but you can still do it if you want.
 					</template>
 				</Banner>
-				<Banner v-else-if="chunkesCount > 1" direction="vertical">
+				<Banner v-else-if="chunksCount > 1" direction="vertical">
 					<template #title>Multiple transactions required</template>
 					<template #description>
 						{{ `Due to Aztec protocol limits, only ${MAX_REVOKES_PER_TX} authwits can be revoked in a single transaction. 
@@ -175,7 +175,7 @@ const onKeydown = e => {
 						You can still proceed with revocation if you prefer.` }}
 					</template>
 				</Banner>
-				<Banner v-else-if="chunkesCount === 1" direction="vertical">
+				<Banner v-else-if="chunksCount === 1" direction="vertical">
 					<template #title>Revoke authwits</template>
 					<template #description>
 						This transaction will revoke the selected authwit(s). Once revoked, authwit(s) cannot be executed anymore.
@@ -183,7 +183,7 @@ const onKeydown = e => {
 				</Banner>
 
 				<template
-					v-if="chunkesCount"
+					v-if="chunksCount"
 					v-for="(ch, i) in chunkedAuthwits"
 				>
 					<Flex
@@ -193,7 +193,7 @@ const onKeydown = e => {
 					>
 						<Flex align="center" justify="between" wide :class="$style.header">
 							<Flex align="end" gap="4">
-								<Text v-if="chunkesCount > 1" size="13" color="primary"> {{ `#${i + 1}` }} </Text>
+								<Text v-if="chunksCount > 1" size="13" color="primary"> {{ `#${i + 1}` }} </Text>
 								<Text size="13" color="primary">Revoke authwits</Text>
 								<Text v-if="ch.count > 1" size="12" color="tertiary"> {{ `(${ch.count})` }} </Text>
 							</Flex>
@@ -231,7 +231,7 @@ const onKeydown = e => {
 						/>
 					</Flex>
 
-					<Tooltip v-if="ch.error && chunkesCount > 1" side="top">
+					<Tooltip v-if="ch.error && chunksCount > 1" side="top">
 						<Flex align="center" gap="6" style="margin-top: -8px;">
 							<Icon name="info" size="12" color="red" />
 							<Text size="12" weight="500" color="secondary">

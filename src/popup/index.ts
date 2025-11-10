@@ -54,6 +54,11 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
 	const appStore = useAppStore()
 
+	if (to.meta.isPasskeyInteraction) {
+		next()
+		return
+	}
+
 	if (to.name === "popup-register" && appStore.isRegistered) {
 		next({ name: from.name || "popup-general" })
 		return

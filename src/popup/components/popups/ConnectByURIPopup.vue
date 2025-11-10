@@ -29,8 +29,8 @@ const handleConnectByURI = async () => {
 	try {
 		isLoading.value = true
 
-		const wallectConnectClient = new WalletConnectServiceClient()
-		await wallectConnectClient.connectByURI(uri.value)
+		const walletConnectClient = new WalletConnectServiceClient()
+		await walletConnectClient.connectByURI(uri.value)
 		
 		closePopup()
 	} catch (error) {
