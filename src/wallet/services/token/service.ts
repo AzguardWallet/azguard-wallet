@@ -38,7 +38,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
     private readonly tokens = new EntityStorage<Token>("azguard:core:tokens", StorageType.Local);
     private readonly lock = new Lock();
-    
+
     private pxeService: PxeServiceClient = null!;
     private profiles: ProfileService = null!;
     private networks: NetworkService = null!;
@@ -48,7 +48,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     public constructor(logger: ILogger) {
         super(TOKEN_SERVICE_NAME, logger);
     }
-    
+
     protected async init(services: ServiceCollection) {
         this.pxeService = new PxeServiceClient(this.logger);
         this.profiles = services.get(ProfileService.name);
@@ -442,7 +442,9 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
                 : ti.contract === feeJuiceAddress
                 ? feeJuiceSymbol
                 : "<symbol>",
-            getDecimalsFn ? await simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs()) : 0,
+            getDecimalsFn
+                ? await simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())
+                : 0,
         ];
     }
 

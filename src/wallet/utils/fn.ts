@@ -76,7 +76,14 @@ export async function simulate(
         false,
     );
 
-    const txRequest = await account.buildTxExecutionRequest(node, pxe, [call], Fr.random(), AzguardFeePaymentMethod.FeeJuice, [packedArgs]);
+    const txRequest = await account.buildTxExecutionRequest(
+        node,
+        pxe,
+        [call],
+        Fr.random(),
+        AzguardFeePaymentMethod.FeeJuice,
+        [packedArgs],
+    );
 
     const tx = await pxe.simulateTx(
         txRequest, // txRequest

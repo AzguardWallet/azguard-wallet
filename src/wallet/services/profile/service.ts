@@ -509,7 +509,12 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         this.activeSession = { profile, session, secret: Fr.fromBuffer(Buffer.from(secretBytes)) };
     }
 
-    private async _openSession(profileId: string, profile: Profile, secretBuffer: Uint8Array<ArrayBuffer>, passhash?: ArrayBuffer) {
+    private async _openSession(
+        profileId: string,
+        profile: Profile,
+        secretBuffer: Uint8Array<ArrayBuffer>,
+        passhash?: ArrayBuffer,
+    ) {
         try {
             const session: Session = {
                 profile: profileId,
@@ -525,7 +530,11 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
-    private async importPasswordProfile(name: string, secret: Uint8Array<ArrayBuffer>, passhash: ArrayBuffer): Promise<Profile> {
+    private async importPasswordProfile(
+        name: string,
+        secret: Uint8Array<ArrayBuffer>,
+        passhash: ArrayBuffer,
+    ): Promise<Profile> {
         try {
             await this.lock.enter();
             let id: string;
@@ -551,10 +560,15 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
-    private async importPasskeyProfile(name: string, credentialId: string, secret: Uint8Array<ArrayBuffer>, userHandle?: string): Promise<Profile> {
+    private async importPasskeyProfile(
+        name: string,
+        credentialId: string,
+        secret: Uint8Array<ArrayBuffer>,
+        userHandle?: string,
+    ): Promise<Profile> {
         try {
             await this.lock.enter();
-            if (userHandle && await this.profiles.contains(userHandle)) {
+            if (userHandle && (await this.profiles.contains(userHandle))) {
                 throw new Error("Passkey profile already exists");
             }
 

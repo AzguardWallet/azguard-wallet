@@ -10,7 +10,7 @@ export class LogViewerService extends Service<Methods, Events> implements Servic
     public static name = LOG_VIEWER_SERVICE_NAME;
 
     public readonly onLog = new EventHandler<Log>();
-    
+
     private readonly loggerStore: ILoggerStore;
 
     public constructor(logger: ILoggerStore) {

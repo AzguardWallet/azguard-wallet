@@ -20,7 +20,7 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
     public readonly onAccountDeleted = new EventHandler<Account>();
 
     private readonly storage = new EntityStorage<Account>("azguard:core:accounts", StorageType.Local);
-    
+
     private profileService: ProfileService = null!;
 
     public constructor(logger: ILogger) {
