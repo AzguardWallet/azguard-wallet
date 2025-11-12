@@ -30,19 +30,6 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
     }
 
     protected async init(services: ServiceCollection) {
-        // TODO: remove this at some point
-        // migration
-        const entries = await this.storage.getAll();
-        if (entries.some(x => x[0] !== x[1].id)) {
-            this.logInfo("Migrate networks");
-            for (const [id, network] of entries) {
-                network.id = id;
-                await this.storage.set(id, network);
-            }
-            await (new ValueStorage("azguard:core:networks", StorageType.Local)).delete();
-            await (new ValueStorage("azguard:core:dappSessions", StorageType.Local)).delete();
-        }
-
         this.profileService = services.get(ProfileService.name);
         this.profileService.onActiveProfileChanged.add(this.onActiveProfileChanged);
         this.profileService.onProfileDeleted.add(this.onProfileDeleted);
@@ -62,26 +49,42 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             }
 
             const defaultNetworks = [];
-            try {
-                const name = "Azguard Node";
-                const rpcUrl = "https://node.testnet.azguardwallet.io";
-                const chainId = 11155111;
-                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
-            } catch (error) {
-                this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
-            }
+            // try {
+            //     const name = "Azguard Node";
+            //     const rpcUrl = "https://node.testnet.azguardwallet.io";
+            //     const chainId = 1721521349; // 11155111 ^ 1714840162
+            //     defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
+            // } catch (error) {
+            //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
+            // }
+            // try {
+            //     const name = "Aztec Node";
+            //     const rpcUrl = "https://aztec-alpha-testnet-fullnode.zkv.xyz";
+            //     const chainId = 1721521349; // 11155111 ^ 1714840162
+            //     defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
+            // } catch (error) {
+            //     this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));
+            // }
+            // try {
+            //     const name = "Azguard Node";
+            //     const rpcUrl = "https://node.devnet.azguardwallet.io";
+            //     const chainId = 1674512022; // 11155111 ^ 1667575857
+            //     defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
+            // } catch (error) {
+            //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
+            // }
             try {
                 const name = "Aztec Node";
-                const rpcUrl = "https://aztec-alpha-testnet-fullnode.zkv.xyz";
-                const chainId = 11155111;
-                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
+                const rpcUrl = "https://devnet.aztec-labs.com";
+                const chainId = 1674512022; // 11155111 ^ 1667575857
+                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));
             }
             try {
                 const name = "Sandbox";
                 const rpcUrl = "http://localhost:8080";
-                const chainId = 31337;
+                const chainId = 0;
                 defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Sandbox'", getErrorMessage(error));
@@ -284,7 +287,11 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
     private async getChainId(rpcUrl: string): Promise<number> {
         try {
             const rpc = createAztecNodeClient(rpcUrl);
-            return (await rpc.getNodeInfo()).l1ChainId;
+            const info = await rpc.getNodeInfo();
+            if (rpcUrl === "http://localhost:8080") {
+                return 0;
+            }
+            return info.l1ChainId ^ info.rollupVersion;
         } catch (error) {
             this.logError("Failed to fetch node info", getErrorMessage(error));
             throw new Error("Failed to fetch node info");

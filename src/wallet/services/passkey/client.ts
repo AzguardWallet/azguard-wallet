@@ -22,5 +22,3 @@ export class PasskeyServiceClient extends ServiceClient<Methods> implements Serv
         return this.request("rejectPasskeyRequest", requestId, reason);
     }
 }
-
-

@@ -50,27 +50,6 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     protected async init(services: ServiceCollection) {
         this.passkeys = services.get(PasskeyService.name);
 
-        // TODO: remove this at some point
-        // migration
-        const entries = await this.profiles.getAll();
-        if (entries.some(x => x[0] !== x[1].id)) {
-            this.logInfo("Migrate profiles");
-            for (const [id, profile] of entries) {
-                profile.id = id;
-                await this.profiles.set(id, profile);
-            }
-        }
-
-        if (entries.some(x => x[1].type === undefined)) {
-            this.logInfo("Migrate profiles: adding type for password profiles");
-            for (const [id, profile] of entries) {
-                if ((profile as { type?: unknown }).type === undefined) {
-                    profile.type = "password";
-                    await this.profiles.set(id, profile);
-                }
-            }
-        }
-
         const session = await this.session.get();
         if (!session) {
             return;
@@ -530,7 +509,12 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         this.activeSession = { profile, session, secret: Fr.fromBuffer(Buffer.from(secretBytes)) };
     }
 
-    private async _openSession(profileId: string, profile: Profile, secretBuffer: Uint8Array<ArrayBuffer>, passhash?: ArrayBuffer) {
+    private async _openSession(
+        profileId: string,
+        profile: Profile,
+        secretBuffer: Uint8Array<ArrayBuffer>,
+        passhash?: ArrayBuffer,
+    ) {
         try {
             const session: Session = {
                 profile: profileId,
@@ -546,7 +530,11 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
-    private async importPasswordProfile(name: string, secret: Uint8Array<ArrayBuffer>, passhash: ArrayBuffer): Promise<Profile> {
+    private async importPasswordProfile(
+        name: string,
+        secret: Uint8Array<ArrayBuffer>,
+        passhash: ArrayBuffer,
+    ): Promise<Profile> {
         try {
             await this.lock.enter();
             let id: string;
@@ -572,10 +560,15 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
-    private async importPasskeyProfile(name: string, credentialId: string, secret: Uint8Array<ArrayBuffer>, userHandle?: string): Promise<Profile> {
+    private async importPasskeyProfile(
+        name: string,
+        credentialId: string,
+        secret: Uint8Array<ArrayBuffer>,
+        userHandle?: string,
+    ): Promise<Profile> {
         try {
             await this.lock.enter();
-            if (userHandle && await this.profiles.contains(userHandle)) {
+            if (userHandle && (await this.profiles.contains(userHandle))) {
                 throw new Error("Passkey profile already exists");
             }
 

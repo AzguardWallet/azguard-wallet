@@ -1,53 +1,51 @@
 import type { Fr } from "@aztec/foundation/fields";
-import type { ContractArtifact } from "@aztec/stdlib/abi";
+import type { ContractArtifact, EventMetadataDefinition } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { CompleteAddress, ContractInstanceWithAddress, NodeInfo, PartialAddress } from "@aztec/stdlib/contract";
+import type {
+    CompleteAddress,
+    ContractClassMetadata,
+    ContractInstanceWithAddress,
+    ContractMetadata,
+    PartialAddress,
+} from "@aztec/stdlib/contract";
 import type { NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import type {
-    PrivateExecutionResult,
     SimulationOverrides,
-    Tx,
     TxExecutionRequest,
-    TxHash,
     TxProfileResult,
     TxProvingResult,
-    TxReceipt,
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
 import type { Network } from "@/wallet/services/network/spec";
-import type { GasFees } from "@aztec/stdlib/gas";
-import type {
-    ContractClassMetadata,
-    ContractMetadata,
-    EventMetadataDefinition,
-    PXEInfo,
-} from "@aztec/stdlib/interfaces/client";
 
 export const PXE_SERVICE_NAME = "pxe";
 
 export type Methods = {
-    getContractClassMetadata(network: Network, id: Fr): ContractClassMetadata;
+    getContractInstance(network: Network, address: AztecAddress): ContractInstanceWithAddress | undefined;
+    getContractClassMetadata(network: Network, id: Fr, includeArtifact?: boolean): ContractClassMetadata;
     getContractMetadata(network: Network, address: AztecAddress): ContractMetadata;
-    getContracts(network: Network): AztecAddress[];
-    getCurrentBaseFees(network: Network): GasFees;
-    getNodeInfo(network: Network): NodeInfo;
-    getNotes(network: Network, filter: NotesFilter): UniqueNote[];
-    getPXEInfo(network: Network): PXEInfo;
-    getPublicStorageAt(network: Network, contract: AztecAddress, slot: Fr): Fr;
+    registerAccount(network: Network, secretKey: Fr, partialAddress: PartialAddress): CompleteAddress;
+    registerSender(network: Network, address: AztecAddress): AztecAddress;
     getSenders(network: Network): AztecAddress[];
+    removeSender(network: Network, address: AztecAddress): void;
     getRegisteredAccounts(network: Network): CompleteAddress[];
-    proveTx(
+    registerContractClass(network: Network, artifact: ContractArtifact): void;
+    registerContract(
+        network: Network,
+        contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
+    ): void;
+    updateContract(network: Network, contractAddress: AztecAddress, artifact: ContractArtifact): void;
+    getContracts(network: Network): AztecAddress[];
+    getNotes(network: Network, filter: NotesFilter): UniqueNote[];
+    proveTx(network: Network, txRequest: TxExecutionRequest): TxProvingResult;
+    profileTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        privateExecutionResult?: PrivateExecutionResult,
-    ): TxProvingResult;
-    registerAccount(network: Network, secretKey: Fr, partialAddress: PartialAddress): CompleteAddress;
-    registerContract(network: Network, instance: ContractInstanceWithAddress, artifact?: ContractArtifact): void;
-    registerSender(network: Network, address: AztecAddress): AztecAddress;
-    removeSender(network: Network, address: AztecAddress): void;
-    sendTx(network: Network, tx: Tx): TxHash;
+        profileMode: "full" | "execution-steps" | "gates",
+        skipProofGeneration?: boolean,
+    ): TxProfileResult;
     simulateTx(
         network: Network,
         txRequest: TxExecutionRequest,
@@ -66,23 +64,12 @@ export type Methods = {
         from?: AztecAddress,
         scopes?: AztecAddress[],
     ): UtilitySimulationResult;
-    updateContract(network: Network, contractAddress: AztecAddress, artifact: ContractArtifact): void;
-    registerContractClass(network: Network, artifact: ContractArtifact): void;
-    getTxReceipt(network: Network, txHash: TxHash): TxReceipt;
-    getPrivateEvents(
+    getPrivateEvents<T>(
         network: Network,
         contractAddress: AztecAddress,
-        eventMetadata: EventMetadataDefinition,
+        eventMetadataDef: EventMetadataDefinition,
         from: number,
         numBlocks: number,
         recipients: AztecAddress[],
-    ): unknown[];
-    getPublicEvents(network: Network, eventMetadata: EventMetadataDefinition, from: number, limit: number): unknown[];
-    profileTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        profileMode: "gates" | "execution-steps" | "full",
-        skipProofGeneration?: boolean,
-        msgSender?: AztecAddress,
-    ): TxProfileResult;
+    ): T[];
 };

@@ -1,14 +1,15 @@
-import { PXE } from "@aztec/aztec.js";
 import { Fr } from "@aztec/foundation/fields";
 import { ContractArtifact } from "@aztec/stdlib/abi";
 import { Gas } from "@aztec/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
+import { IPXE } from "@/wallet/services/pxe/proxy";
 import { FpcInfo, FpcType } from "../spec";
 import { DefaultFpcHandler } from "./default-fpc-handler";
 import { DefaultSponsoredFpcHandler } from "./default-sponsored-fpc-handler";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
 
 export interface IFpcHandler {
-    getAsset(fpcAddress: string, pxe: PXE): Promise<string | undefined>;
+    getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined>;
     acceptsPublic(): boolean | undefined;
     acceptsPrivate(): boolean | undefined;
     validateArtifact(artifact: ContractArtifact): void;

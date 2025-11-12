@@ -60,8 +60,8 @@ export class NoteService extends Service<Methods> implements ServiceSpec<Methods
     private async fetchContractNotes(network: Network, account: string, contract: AztecAddress): Promise<UniqueNote[]> {
         return await this.pxeService.getNotes(network, {
             contractAddress: contract,
-            recipient: AztecAddress.fromString(account),
             status: NoteStatus.ACTIVE,
+            scopes: [AztecAddress.fromString(account)],
         });
     }
 

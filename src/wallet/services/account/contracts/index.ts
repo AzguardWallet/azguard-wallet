@@ -3,27 +3,28 @@ import { FunctionSelector } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { CompleteAddress } from "@aztec/stdlib/contract";
-import type { PXE } from "@aztec/stdlib/interfaces/client";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import type { Capsule, HashedValues, TxExecutionRequest } from "@aztec/stdlib/tx";
+import type { IPXE } from "@/wallet/services/pxe/client";
 
 export * from "./azguard-v0";
 
 export interface IAccountContract {
     readonly address: AztecAddress;
 
-    ensureRegistered(pxe: PXE): Promise<void>;
+    ensureRegistered(pxe: IPXE): Promise<void>;
 
     getCompleteAddress(): Promise<CompleteAddress>;
 
     buildAuthWitness(messageHash: Fr): Promise<AuthWitness>;
 
     buildTxExecutionRequest(
-        pxe: PXE,
-        setup: AzguardFunctionCall[],
-        isFeePayer: boolean,
+        node: AztecNode,
+        pxe: IPXE,
         calls: AzguardFunctionCall[],
-        args: HashedValues[],
         nonce: Fr,
+        feePaymentMethod: AzguardFeePaymentMethod,
+        args: HashedValues[],
         authwits?: AuthWitness[],
         capsules?: Capsule[],
     ): Promise<TxExecutionRequest>;
@@ -36,6 +37,7 @@ export class AzguardFunctionCall {
         public readonly args_hash: Fr,
         public readonly is_public: boolean,
         public readonly is_static: boolean,
+        public readonly hide_sender: boolean,
     ) {}
 
     public toFields(): Fr[] {
@@ -45,10 +47,17 @@ export class AzguardFunctionCall {
             this.args_hash,
             new Fr(this.is_public),
             new Fr(this.is_static),
+            new Fr(this.hide_sender),
         ];
     }
 
     public static empty(): AzguardFunctionCall {
-        return new AzguardFunctionCall(AztecAddress.zero(), FunctionSelector.empty(), Fr.zero(), false, false);
+        return new AzguardFunctionCall(AztecAddress.zero(), FunctionSelector.empty(), Fr.zero(), false, false, false);
     }
+}
+
+export enum AzguardFeePaymentMethod {
+    External = 0,
+    FeeJuice = 1,
+    FeeJuiceWithClaim = 2,
 }

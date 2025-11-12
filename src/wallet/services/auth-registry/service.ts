@@ -1,11 +1,9 @@
-import type { PXE } from "@aztec/stdlib/interfaces/client";
 import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
 import { ILogger } from "@/wallet/logger";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ExecutionService, FeeSettings, AuthwitContent } from "@/wallet/services/execution/service";
 import { NetworkService } from "@/wallet/services/network/service";
-import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { WrappedTask } from "@/wallet/services/task/wrapped-task";
 import { TaskService, RevokeAuthwitsContent, StepContent } from "@/wallet/services/task/service";
 import { TransactionService, OriginType } from "@/wallet/services/transaction/service";
@@ -14,6 +12,7 @@ import { array_max, Lock } from "@/wallet/utils";
 import { getAuthRegistryAddress, isAuthRegistryEnabled, isAuthwitConsumable } from "@/wallet/utils/auth-registry";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { AUTH_REGISTRY_SERVICE_NAME, Authwit, Events, MAX_REVOKES_PER_TX, Methods } from "./spec";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
 
 export * from "./spec";
 
@@ -29,7 +28,6 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
     private readonly statuses = new EntityStorage<boolean>("azguard:core:auth-registry-enabled", StorageType.Local);
     private readonly lock = new Lock();
 
-    private pxeService: PxeServiceClient = null!;
     private networkService: NetworkService = null!;
     private executionService: ExecutionService = null!;
     private transactionService: TransactionService = null!;
@@ -40,7 +38,6 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
     }
 
     protected async init(services: ServiceCollection) {
-        this.pxeService = new PxeServiceClient(this.logger);
         this.networkService = services.get(NetworkService.name);
         this.executionService = services.get(ExecutionService.name);
         this.transactionService = services.get(TransactionService.name);
@@ -110,8 +107,8 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
             await this.transactionService.waitForTx(txHash, task);
 
             const network = await this.networkService.getNetwork(networkId);
-            const pxe = this.pxeService.getPXE(network);
-            await this.syncAuthwits(pxe, account, task, authwits);
+            const node = await this.networkService.getNode(network.chainId);
+            await this.syncAuthwits(node, account, task, authwits);
 
             task.complete();
         } catch (error) {
@@ -155,8 +152,8 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
             await this.transactionService.waitForTx(txHash, task);
 
             const network = await this.networkService.getNetwork(networkId);
-            const pxe = this.pxeService.getPXE(network);
-            await this.syncStatus(pxe, account, task);
+            const node = await this.networkService.getNode(network.chainId);
+            await this.syncStatus(node, account, task);
 
             task.complete();
         } catch (error) {
@@ -170,8 +167,8 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         const task = this.taskService.startNewTask(new StepContent("Sync auth registry"));
         try {
             const network = await this.networkService.getNetwork(networkId);
-            const pxe = this.pxeService.getPXE(network);
-            await Promise.all([this.syncAuthwits(pxe, account, task), this.syncStatus(pxe, account, task)]);
+            const node = await this.networkService.getNode(network.chainId);
+            await Promise.all([this.syncAuthwits(node, account, task), this.syncStatus(node, account, task)]);
             task.complete();
         } catch (error) {
             task.fail(error);
@@ -179,11 +176,11 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         }
     }
 
-    private async syncAuthwits(pxe: PXE, account: string, parentTask: WrappedTask, authwits?: Authwit[]) {
+    private async syncAuthwits(node: AztecNode, account: string, parentTask: WrappedTask, authwits?: Authwit[]) {
         const task = parentTask.startSubtask(new StepContent("Sync authwits"));
         try {
             const _authwits = authwits ?? (await this.getAuthwits(account));
-            await Promise.all(_authwits.map(authwit => this.syncAuthwit(pxe, authwit, task)));
+            await Promise.all(_authwits.map(authwit => this.syncAuthwit(node, authwit, task)));
             task.complete();
         } catch (error) {
             task.fail(error);
@@ -191,10 +188,10 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         }
     }
 
-    private async syncAuthwit(pxe: PXE, authwit: Authwit, parentTask: WrappedTask) {
+    private async syncAuthwit(node: AztecNode, authwit: Authwit, parentTask: WrappedTask) {
         const task = parentTask.startSubtask(new StepContent(`Sync authwit #${authwit.id}`));
         try {
-            const isConsumable = await isAuthwitConsumable(pxe, authwit.account, authwit.hash);
+            const isConsumable = await isAuthwitConsumable(node, authwit.account, authwit.hash);
             if (isConsumable) return;
             try {
                 await this.lock.enter();
@@ -212,10 +209,10 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         }
     }
 
-    private async syncStatus(pxe: PXE, account: string, parentTask: WrappedTask): Promise<void> {
+    private async syncStatus(node: AztecNode, account: string, parentTask: WrappedTask): Promise<void> {
         const task = parentTask.startSubtask(new StepContent("Sync status"));
         try {
-            const isEnabled = await isAuthRegistryEnabled(pxe, account);
+            const isEnabled = await isAuthRegistryEnabled(node, account);
             try {
                 await this.lock.enter();
                 const enabled = await this.statuses.get(account);

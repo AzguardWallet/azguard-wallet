@@ -2,20 +2,22 @@ import { Fr } from "@aztec/foundation/fields";
 import { ContractArtifact, FunctionSelector, StructType } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
-import { PXE } from "@aztec/stdlib/interfaces/client";
 import { HashedValues, TxContext, TxExecutionRequest } from "@aztec/stdlib/tx";
 import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo, FpcType } from "../spec";
 import { IFpcHandler } from ".";
+import { IPXE } from "../../pxe/proxy";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec/constants";
 
 export class DefaultFpcHandler implements IFpcHandler {
-    public async getAsset(fpcAddress: string, pxe: PXE): Promise<string | undefined> {
+    public async getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined> {
         const fnSelector = await FunctionSelector.fromSignature("get_accepted_asset()");
         const packedArgs = await HashedValues.fromArgs([]);
-        const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
-        const baseFees = await pxe.getCurrentBaseFees();
+        const { l1ChainId, rollupVersion } = await node.getNodeInfo();
+        const baseFees = await node.getCurrentBaseFees();
         const gasSettings = new GasSettings(
-            new Gas(4_294_967_295, 4_294_967_295),
+            new Gas(GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT),
             new Gas(0, 0),
             baseFees,
             new GasFees(0, 0),

@@ -1,18 +1,11 @@
 import { ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
-import {
-    PASSKEY_SERVICE_NAME,
-    Methods,
-    PasskeyCredentialData,
-    PasskeyRequest,
-    PasskeyRequestPromise
-} from "./spec";
+import { PASSKEY_SERVICE_NAME, Methods, PasskeyCredentialData, PasskeyRequest, PasskeyRequestPromise } from "./spec";
 import { PasskeyCredential } from "./credential";
 import { getRandomHex } from "@/wallet/utils";
 
 export * from "./spec";
-
 
 export class PasskeyService extends Service<Methods> implements ServiceSpec<Methods> {
     public static name = PASSKEY_SERVICE_NAME;
@@ -56,7 +49,9 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
 
     private async openWindowAndWait(request: PasskeyRequest): Promise<PasskeyCredential> {
         let id: string;
-        do { id = getRandomHex(8); } while (this.pending.has(id));
+        do {
+            id = getRandomHex(8);
+        } while (this.pending.has(id));
         const promise = new Promise<PasskeyCredential>((resolve, reject) => {
             this.pending.set(id, { resolve, reject, request });
         });
@@ -68,7 +63,7 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
                 height: 800,
                 width: 500,
             },
-            (createdWindow) => {
+            createdWindow => {
                 if (!createdWindow || createdWindow.id == null) return;
 
                 const windowId = createdWindow.id;
@@ -87,7 +82,7 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
                 }
 
                 (chrome.windows.onRemoved.addListener as any)(onRemoved);
-            }
+            },
         );
 
         return promise;

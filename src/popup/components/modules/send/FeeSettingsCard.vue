@@ -57,7 +57,7 @@ const methods = ref([
 		title: "FPC",
 	},
 ])
-const isCustomMethod = computed(() => settings.value?.paymentMethod.kind === "custom")
+const isCustomMethod = computed(() => settings.value?.paymentMethod.kind === "embedded")
 const selectedMethod = ref()
 const isMethodsDropdownOpen = ref(false)
 

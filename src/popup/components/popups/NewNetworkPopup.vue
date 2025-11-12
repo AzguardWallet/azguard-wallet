@@ -125,7 +125,7 @@ const onKeydown = e => {
 
 				<Input
 					label="RPC Link"
-					placeholder="http://localhost:1337"
+					placeholder="http://localhost:8080"
 					v-model="urlTerm"
 					@click="isUrlHasError = false"
 				>

@@ -16,23 +16,23 @@ export const getMulticallEntrypointFn = () =>
                 name: "app_payload",
                 type: {
                     kind: "struct",
-                    path: "aztec::authwit::entrypoint::app::AppPayload",
+                    path: "authwit::entrypoint::app::AppPayload",
                     fields: [
                         {
                             name: "function_calls",
                             type: {
                                 kind: "array",
-                                length: 4,
+                                length: 5,
                                 type: {
                                     kind: "struct",
-                                    path: "aztec::authwit::entrypoint::function_call::FunctionCall",
+                                    path: "authwit::entrypoint::function_call::FunctionCall",
                                     fields: [
                                         { name: "args_hash", type: { kind: "field" } },
                                         {
                                             name: "function_selector",
                                             type: {
                                                 kind: "struct",
-                                                path: "aztec::protocol_types::abis::function_selector::FunctionSelector",
+                                                path: "authwit::aztec::protocol_types::abis::function_selector::FunctionSelector",
                                                 fields: [
                                                     {
                                                         name: "inner",
@@ -45,11 +45,12 @@ export const getMulticallEntrypointFn = () =>
                                             name: "target_address",
                                             type: {
                                                 kind: "struct",
-                                                path: "aztec::protocol_types::address::aztec_address::AztecAddress",
+                                                path: "authwit::aztec::protocol_types::address::AztecAddress",
                                                 fields: [{ name: "inner", type: { kind: "field" } }],
                                             },
                                         },
                                         { name: "is_public", type: { kind: "boolean" } },
+                                        { name: "hide_msg_sender", type: { kind: "boolean" } },
                                         { name: "is_static", type: { kind: "boolean" } },
                                     ],
                                 },
