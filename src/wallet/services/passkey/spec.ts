@@ -15,10 +15,7 @@ export type PasskeyRequest =
     }
     | {
         mode: "get";
-        credentialId: string;
-    }
-    | {
-        mode: "import";
+        credentialId?: string;
     }
 
 import type { PasskeyCredential } from "./credential";

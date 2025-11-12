@@ -27,12 +27,8 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
         return await this.openWindowAndWait({ mode: "create", userHandle });
     }
 
-    public async getKey(credentialId: string): Promise<PasskeyCredential> {
+    public async getKey(credentialId?: string): Promise<PasskeyCredential> {
         return await this.openWindowAndWait({ mode: "get", credentialId });
-    }
-
-    public async importKey(): Promise<PasskeyCredential> {
-        return await this.openWindowAndWait({ mode: "import" });
     }
 
     public async getPendingRequest(requestId: string): Promise<PasskeyRequest> {

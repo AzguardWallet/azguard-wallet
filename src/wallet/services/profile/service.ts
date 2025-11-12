@@ -238,7 +238,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
     public async importPasskey(name: string): Promise<ProfileInfo> {
         await this.ensureInitialized();
-        const credential = await this.passkeys.importKey();
+        const credential = await this.passkeys.getKey();
         const secret = await credential.deriveMasterSecret();
         return await this.importPasskeyProfile(name, credential.id, secret, credential.userHandle);
     }
