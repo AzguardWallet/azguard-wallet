@@ -144,14 +144,14 @@ const init = async () => {
 			switch (op.kind) {
 				case "register_contract":
 				case "register_sender":
-                case "aztec_getContractClassMetadata":
-                case "aztec_getContractMetadata":
-                case "aztec_getChainInfo":
-                case "aztec_getTxReceipt":
-                case "aztec_registerSender":
-                case "aztec_getAddressBook":
-                case "aztec_registerContract":
-                case "aztec_getPrivateEvents": {
+				case "aztec_getContractClassMetadata":
+				case "aztec_getContractMetadata":
+				case "aztec_getChainInfo":
+				case "aztec_getTxReceipt":
+				case "aztec_registerSender":
+				case "aztec_getAddressBook":
+				case "aztec_registerContract":
+				case "aztec_getPrivateEvents": {
 					const network = await getNetwork(op.chain)
 					_operations.push({
 						...op,
@@ -165,11 +165,10 @@ const init = async () => {
 				case "simulate_transaction":
 				case "simulate_utility":
 				case "simulate_views":
-                case "aztec_simulateTx":
-                case "aztec_simulateUtility":
-                case "aztec_profileTx":
-                case "aztec_sendTx":
-                case "aztec_createAuthWit": {
+				case "aztec_simulateTx":
+				case "aztec_simulateUtility":
+				case "aztec_profileTx":
+				case "aztec_createAuthWit": {
 					const [network, account] = await getNetworkAndAccount(op.account)
 					_operations.push({
 						...op,
@@ -177,6 +176,24 @@ const init = async () => {
 						networkId: network.id,
 						account,
 						accountAddress: account.address,
+					})
+					if (!_accounts.find(x => x.address === account.address)) {
+						_accounts.push(account)
+					}
+					break
+				}
+				case "aztec_sendTx": {
+					const [network, account] = await getNetworkAndAccount(op.account)
+					_operations.push({
+						...op,
+						network,
+						networkId: network.id,
+						account,
+						accountAddress: account.address,
+						feeSettings:
+							op.opts.fee?.embeddedPaymentMethodFeePayer !== undefined
+								? { paymentMethod: { kind: "embedded" } }
+								: undefined!,
 					})
 					if (!_accounts.find(x => x.address === account.address)) {
 						_accounts.push(account)
@@ -191,7 +208,10 @@ const init = async () => {
 						networkId: network.id,
 						account,
 						accountAddress: account.address,
-						feeSettings: op.feePaymentMethod !== undefined ? { paymentMethod: { kind: "custom" } } : undefined!,
+						feeSettings:
+							op.fee?.embeddedFeePayment !== undefined
+								? { paymentMethod: { kind: "embedded" } }
+								: undefined!,
 					})
 					if (!_accounts.find(x => x.address === account.address)) {
 						_accounts.push(account)

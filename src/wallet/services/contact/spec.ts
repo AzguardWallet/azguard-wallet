@@ -15,6 +15,7 @@ export type Contact = {
     abbr: string,
     /** Contact abbr color. */
     color: string,
+    // TODO: add chainId
 };
 
 export type Methods = {

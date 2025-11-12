@@ -174,7 +174,7 @@ export type AztecProfileTxRequest = Omit<AztecProfileTxOperation, AccountParams>
     account: CaipAccount;
 };
 
-export type AztecSendTxRequest = Omit<AztecSendTxOperation, AccountParams> & {
+export type AztecSendTxRequest = Omit<AztecSendTxOperation, SendParams> & {
     account: CaipAccount;
 };
 

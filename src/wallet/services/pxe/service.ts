@@ -376,7 +376,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private async fetchArtifactFromRegistry(network: Network, classId: Fr): Promise<ContractArtifact | undefined> {
         try {
-            const artifact = await this.fetchFromRegistry(network, `/artifacts/${classId.toString()}`);
+            const artifact = await this.fetchFromRegistry(network, `/api/artifacts/${classId.toString()}`);
             if (!artifact) {
                 return undefined;
             }
@@ -391,16 +391,17 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         network: Network,
         address: AztecAddress,
     ): Promise<ContractInstanceWithAddress | undefined> {
-        try {
-            const instance = await this.fetchFromRegistry(network, `/instances/${address.toString()}`);
-            if (!instance) {
-                return undefined;
-            }
-            return await ContractInstanceWithAddressSchema.parseAsync(instance);
-        } catch (error: unknown) {
-            this.logError("Failed to parse instance from registry", getErrorMessage(error));
-            return undefined;
-        }
+        return undefined;
+        // try {
+        //     const instance = await this.fetchFromRegistry(network, `/api/contracts/${address.toString()}`);
+        //     if (!instance) {
+        //         return undefined;
+        //     }
+        //     return await ContractInstanceWithAddressSchema.parseAsync(instance);
+        // } catch (error: unknown) {
+        //     this.logError("Failed to parse instance from registry", getErrorMessage(error));
+        //     return undefined;
+        // }
     }
 
     private async fetchFromRegistry(network: Network, path: string): Promise<unknown | undefined> {
@@ -425,8 +426,10 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private getRegistryUrl(network: Network): string | undefined {
         switch (network.chainId) {
-            case 11155111:
-                return "https://registry.testnet.azguardwallet.io";
+            case 1721521349: // 11155111 ^ 1714840162
+                return "https://testnet.aztec-registry.xyz";
+            case 1674512022: // 11155111 ^ 1667575857
+                return "https://devnet.aztec-registry.xyz";
             default:
                 return undefined;
         }

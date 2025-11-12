@@ -8,6 +8,7 @@ import { FpcInfo, FpcType } from "../spec";
 import { IFpcHandler } from ".";
 import { IPXE } from "../../pxe/proxy";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec/constants";
 
 export class DefaultFpcHandler implements IFpcHandler {
     public async getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined> {
@@ -16,7 +17,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         const { l1ChainId, rollupVersion } = await node.getNodeInfo();
         const baseFees = await node.getCurrentBaseFees();
         const gasSettings = new GasSettings(
-            new Gas(4_294_967_295, 4_294_967_295),
+            new Gas(GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT),
             new Gas(0, 0),
             baseFees,
             new GasFees(0, 0),

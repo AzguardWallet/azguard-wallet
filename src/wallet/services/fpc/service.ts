@@ -74,13 +74,11 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
                 for (const contract of [sponsoredFpc.address]) {
                     const contractMeta = await pxe.getContractMetadata(contract);
-                    console._warn(contractMeta);
                     if (contractMeta.contractInstance) {
                         const classMeta = await pxe.getContractClassMetadata(
                             contractMeta.contractInstance.currentContractClassId,
                             true,
                         );
-                    console._warn(classMeta);
                         if (classMeta.artifact) {
                             this.logInfo(`Found FPC: ${contract.toString()}`);
 

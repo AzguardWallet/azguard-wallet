@@ -6,11 +6,7 @@ import { ProfileService } from "@/wallet/services/profile/service";
 import { NetworkService, Network } from "@/wallet/services/network/service";
 import { AccountService, Account } from "@/wallet/services/account/service";
 import { DappSessionService, AccessLevel, DappSession } from "@/wallet/services/dapp-session/service";
-import {
-    ExecutionService,
-    type Operation,
-    type OperationKind,
-} from "@/wallet/services/execution/service";
+import { ExecutionService, type Operation, type OperationKind } from "@/wallet/services/execution/service";
 import { OriginType } from "@/wallet/services/transaction/service";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
@@ -199,19 +195,19 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_simulateTx":
                 case "aztec_simulateUtility":
                 case "aztec_profileTx":
-                case "aztec_sendTx":
                 case "aztec_createAuthWit": {
                     const [network, account] = await getNetworkAndAccount(op.account);
                     operations.push({ ...op, networkId: network.id, accountAddress: account.address });
                     break;
                 }
+                case "aztec_sendTx":
                 case "send_transaction": {
                     const [network, account] = await getNetworkAndAccount(op.account);
                     operations.push({
                         ...op,
                         networkId: network.id,
                         accountAddress: account.address,
-                        feeSettings: { paymentMethod: { kind: "custom" } },
+                        feeSettings: { paymentMethod: { kind: "embedded" } },
                     });
                     break;
                 }
@@ -243,7 +239,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_getTxReceipt":
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
-                case "aztec_registerContract":  {
+                case "aztec_registerContract": {
                     this.checkMethodPermission(session, operation.kind, operation.chain);
                     break;
                 }
@@ -314,7 +310,13 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         if (accessLevel >= payload.session.confirmationLevel) {
             return true;
         }
-        if (payload.params.operations.find(x => x.kind === "send_transaction" && x.feePaymentMethod === undefined)) {
+        if (
+            payload.params.operations.find(
+                x =>
+                    (x.kind === "send_transaction" && x.fee?.embeddedFeePayment === undefined) ||
+                    (x.kind === "aztec_sendTx" && x.opts?.fee?.embeddedPaymentMethodFeePayer === undefined),
+            )
+        ) {
             return true;
         }
         return false;
@@ -369,7 +371,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             case "aztec_profileTx":
                 return AccessLevel.PrivateData;
             case "aztec_sendTx":
-                return AccessLevel.PublicData;
+                return AccessLevel.Transactions;
             case "aztec_createAuthWit":
                 return AccessLevel.PrivateData;
             default:

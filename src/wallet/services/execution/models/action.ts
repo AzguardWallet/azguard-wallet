@@ -4,6 +4,7 @@ export type ActionKind = Action["kind"];
 
 export type Action =
     | AddCapsuleAction
+    | AddExtraArgsAction
     | AddPrivateAuthwitAction
     | AddPublicAuthwitAction
     | CallAction
@@ -14,6 +15,11 @@ export type AddCapsuleAction = {
     readonly contract: string;
     readonly storageSlot: string;
     readonly capsule: string[];
+};
+
+export type AddExtraArgsAction = {
+    readonly kind: "add_extra_args";
+    readonly args: string[];
 };
 
 export type AddPrivateAuthwitAction = {

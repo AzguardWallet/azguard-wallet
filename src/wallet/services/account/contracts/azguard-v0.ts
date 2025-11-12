@@ -1,4 +1,4 @@
-import { GeneratorIndex } from '@aztec/constants';
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT, GeneratorIndex } from '@aztec/constants';
 import {
     Fr,
     GrumpkinScalar,
@@ -119,12 +119,12 @@ export class AzguardV0 implements IAccountContract {
             }
             while (batchCalls.length >= CHUNK_SIZE) {
                 const chunkCalls = batchCalls.splice(0, CHUNK_SIZE);
-                const chunkNonce = Fr.zero();
+                const chunkNonce = Fr.random();
                 const chunkFeePaymentMethod = AzguardFeePaymentMethod.External;
                 const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [chunkCalls, chunkNonce, chunkFeePaymentMethod]));
                 batchArgs.push(chunkArgs);
                 
-                const chunkPayload = chunkCalls.flatMap(x => x.toFields()).concat(chunkNonce).concat(new Fr(feePaymentMethod));
+                const chunkPayload = chunkCalls.flatMap(x => x.toFields()).concat(chunkNonce).concat(new Fr(chunkFeePaymentMethod));
                 const chunkPayloadHash = await poseidon2HashWithSeparator(chunkPayload, GeneratorIndex.SIGNATURE_PAYLOAD);
                 const chunkAuthwit = await this.buildAuthWitness(chunkPayloadHash);
                 batchAuthwits.push(chunkAuthwit);
@@ -148,14 +148,13 @@ export class AzguardV0 implements IAccountContract {
         const { l1ChainId, rollupVersion } = await node.getNodeInfo();
         const baseFees = await node.getCurrentBaseFees();
         const gasSettings = new GasSettings(
-            new Gas(4_294_967_295, 4_294_967_295),
-            new Gas(294_967_295, 294_967_295),
+            new Gas(GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT),
+            new Gas(GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT),
             baseFees,
             new GasFees(0, 0),
         )
         const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
 
-        console._warn(batchAuthwits);
         const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, batchCapsules);
         
         const accounts = await pxe.getRegisteredAccounts();

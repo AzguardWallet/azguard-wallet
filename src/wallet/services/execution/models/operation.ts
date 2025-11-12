@@ -1,12 +1,5 @@
 import type { CallIntent, IntentInnerHash } from "@aztec/aztec.js/authorization";
-import type {
-    BatchableMethods,
-    BatchedMethod,
-    ContractInstanceAndArtifact,
-    ProfileOptions,
-    SendOptions,
-    SimulateOptions,
-} from "@aztec/aztec.js/wallet";
+import type { ContractInstanceAndArtifact, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
 import type { ExecutionPayload } from "@aztec/entrypoints/payload";
 import type { Fr } from "@aztec/foundation/fields";
 import type { ContractArtifact, EventMetadataDefinition } from "@aztec/stdlib/abi";
@@ -73,13 +66,25 @@ export type RegisterTokenOperation = {
     readonly address: string;
 };
 
+export type FeeOptions = {
+    readonly embeddedFeePayment?: "fjwc" | "fpc";
+    readonly gasLimits?: GasLimits;
+    readonly teardownGasLimits?: GasLimits;
+    readonly gasPadding?: number;
+};
+
+export type GasLimits = {
+    readonly daGas: number;
+    readonly l2Gas: number;
+};
+
 export type SendTransactionOperation = {
     readonly kind: "send_transaction";
     readonly networkId: string;
     readonly accountAddress: string;
     feeSettings: FeeSettings;
     readonly actions: Action[];
-    readonly feePaymentMethod?: AzguardFeePaymentMethod;
+    readonly fee?: FeeOptions;
 };
 
 export type SimulateTransactionOperation = {
@@ -87,7 +92,7 @@ export type SimulateTransactionOperation = {
     readonly networkId: string;
     readonly accountAddress: string;
     readonly actions: Action[];
-    readonly feePaymentMethod?: AzguardFeePaymentMethod;
+    readonly fee?: FeeOptions;
     readonly simulatePublic?: boolean;
 };
 
@@ -197,6 +202,7 @@ export type AztecSendTxOperation = {
     readonly kind: "aztec_sendTx";
     readonly networkId: string;
     readonly accountAddress: string;
+    feeSettings: FeeSettings;
     readonly exec: ExecutionPayload;
     readonly opts: SendOptions;
 };

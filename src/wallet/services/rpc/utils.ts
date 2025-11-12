@@ -4,6 +4,7 @@ import {
     ActionKind,
     OperationKind,
     AddCapsuleAction,
+    AddExtraArgsAction,
     AddPrivateAuthwitAction,
     AddPublicAuthwitAction,
     CallAction,
@@ -119,6 +120,7 @@ export function parseMethod(data: OperationKind | ActionKind): string {
         case "aztec_createAuthWit":
         // actions
         case "add_capsule":
+        case "add_extra_args":
         case "add_private_authwit":
         case "add_public_authwit":
         case "call":
@@ -258,7 +260,7 @@ function parseSendTransactionRequest(data: any): SendTransactionRequest {
         kind: "send_transaction",
         account: parseAccountProp(data, "account"),
         actions: parseArrayProp(data, "actions", parseAction),
-        feePaymentMethod: parseOptionalProp(data, "feePaymentMethod"),
+        fee: parseOptionalProp(data, "fee"),
     };
 }
 
@@ -267,8 +269,8 @@ function parseSimulateTransactionRequest(data: any): SimulateTransactionRequest 
         kind: "simulate_transaction",
         account: parseAccountProp(data, "account"),
         actions: parseArrayProp(data, "actions", parseAction),
+        fee: parseOptionalProp(data, "fee"),
         simulatePublic: parseOptionalBooleanProp(data, "simulatePublic"),
-        feePaymentMethod: parseOptionalProp(data, "feePaymentMethod"),
     };
 }
 
@@ -410,6 +412,9 @@ function parseAction(data: Action): Action {
         case "add_capsule": {
             return parseAddCapsuleAction(data);
         }
+        case "add_extra_args": {
+            return parseAddExtraArgsAction(data);
+        }
         case "add_private_authwit": {
             return parseAddPrivateAuthwitAction(data);
         }
@@ -434,6 +439,13 @@ function parseAddCapsuleAction(data: any): AddCapsuleAction {
         contract: parseStringProp(data, "contract"),
         storageSlot: parseStringProp(data, "storageSlot"),
         capsule: parseArrayProp(data, "capsule", parseString),
+    };
+}
+
+function parseAddExtraArgsAction(data: any): AddExtraArgsAction {
+    return {
+        kind: "add_extra_args",
+        args: parseArrayProp(data, "args", parseString),
     };
 }
 
