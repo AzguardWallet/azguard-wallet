@@ -34,7 +34,6 @@ export class DefaultSponsoredFpcHandler implements IFpcHandler {
                 contract: fpc.address,
                 method: "sponsor_unconditionally",
                 args: [],
-                hideSender: false,
             },
         ];
     }

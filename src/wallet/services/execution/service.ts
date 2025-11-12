@@ -235,7 +235,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         to: token.contract,
                         selector: selector.toString(),
                         args: encodedArgs.map(x => x.toString()),
-                        hideSender: false,
                         name: fn.name,
                         type: fn.type,
                         isStatic: fn.isStatic,
@@ -644,7 +643,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 packedArgs.hash,
                                 fn.functionType === FunctionType.PUBLIC,
                                 fn.isStatic,
-                                call.hideSender,
+                                call.hideSender === true,
                             ),
                             i,
                             fn.functionType === FunctionType.PUBLIC ? publicCalls++ : privateCalls++,
@@ -727,7 +726,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 packedArgs.hash,
                                 fn.functionType === FunctionType.PUBLIC,
                                 fn.isStatic,
-                                call.hideSender,
+                                call.hideMsgSender === true,
                             ),
                             i,
                             fn.functionType === FunctionType.PUBLIC ? publicCalls++ : privateCalls++,
@@ -920,7 +919,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             txRequest, // txRequest
             true, // simulatePublic
             op.opts.skipTxValidation, // skipTxValidation
-            op.opts.skipFeeEnforcement, // skipFeeEnforcement
+            op.opts.skipFeeEnforcement ?? true, // skipFeeEnforcement
             undefined, // overrides
             [account.address], // scopes
         );
@@ -1080,7 +1079,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 to: call.to.toString(),
                 selector: call.selector.toString(),
                 args: call.args.map(x => x.toString()),
-                hideSender: call.hideMsgSender,
+                hideMsgSender: call.hideMsgSender,
                 name: call.name,
                 type: call.type,
                 isStatic: call.isStatic,
@@ -1545,7 +1544,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 packedArgs.hash,
                                 fn.functionType === FunctionType.PUBLIC,
                                 fn.isStatic,
-                                action.hideSender,
+                                action.hideSender === true,
                             ),
                         );
                         txCalls.push({ contract: action.contract, method: action.method, args: action.args });
@@ -1603,7 +1602,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 packedArgs.hash,
                                 action.type === FunctionType.PUBLIC,
                                 action.isStatic,
-                                action.hideSender,
+                                action.hideMsgSender === true,
                             ),
                         );
                         txCalls.push({ contract: action.to, method: action.selector, args: action.args });
@@ -1714,7 +1713,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     AztecAddress.fromString(content.contract),
                     await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters),
                     fn.functionType,
-                    content.hideSender,
+                    content.hideSender === true,
                     fn.isStatic,
                     encodeArguments(fn, content.args),
                     fn.returnTypes,
@@ -1780,7 +1779,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     AztecAddress.fromString(content.to),
                     FunctionSelector.fromString(content.selector),
                     content.type as FunctionType,
-                    content.hideSender,
+                    content.hideMsgSender === true,
                     content.isStatic,
                     content.args.map(x => Fr.fromString(x)),
                     await z.array(AbiTypeSchema).parseAsync(content.returnTypes),

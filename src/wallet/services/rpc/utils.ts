@@ -470,7 +470,7 @@ function parseCallAction(data: any): CallAction {
         contract: parseStringProp(data, "contract"),
         method: parseStringProp(data, "method"),
         args: parseArrayProp(data, "args"),
-        hideSender: parseBooleanProp(data, "hideSender"),
+        hideSender: parseOptionalBooleanProp(data, "hideSender"),
     };
 }
 
@@ -481,10 +481,10 @@ function parseEncodedCallAction(data: any): EncodedCallAction {
         name: parseOptionalStringProp(data, "name"),
         selector: parseStringProp(data, "selector"),
         type: parseOptionalStringProp(data, "type"),
+        hideMsgSender: parseOptionalBooleanProp(data, "hideMsgSender"),
         isStatic: parseOptionalBooleanProp(data, "isStatic"),
         args: parseArrayProp(data, "args", parseString),
         returnTypes: parseOptionalArrayProp(data, "returnTypes"),
-        hideSender: parseBooleanProp(data, "hideSender"),
     };
 }
 
@@ -515,7 +515,7 @@ function parseCallAuthwitContent(data: any): CallAuthwitContent {
         contract: parseStringProp(data, "contract"),
         method: parseStringProp(data, "method"),
         args: parseArrayProp(data, "args"),
-        hideSender: parseBooleanProp(data, "hideSender"),
+        hideSender: parseOptionalBooleanProp(data, "hideSender"),
     };
 }
 
@@ -527,10 +527,10 @@ function parseEncodedCallAuthwitContent(data: any): EncodedCallAuthwitContent {
         name: parseOptionalStringProp(data, "name"),
         selector: parseStringProp(data, "selector"),
         type: parseOptionalStringProp(data, "type"),
+        hideMsgSender: parseOptionalBooleanProp(data, "hideMsgSender"),
         isStatic: parseOptionalBooleanProp(data, "isStatic"),
         args: parseArrayProp(data, "args", parseString),
         returnTypes: parseOptionalArrayProp(data, "returnTypes"),
-        hideSender: parseBooleanProp(data, "hideSender"),
     };
 }
 

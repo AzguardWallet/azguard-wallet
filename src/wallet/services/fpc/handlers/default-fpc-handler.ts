@@ -113,7 +113,6 @@ export class DefaultFpcHandler implements IFpcHandler {
                           contract: fpc.asset,
                           method: "transfer_in_public",
                           args: [account, fpc.address, maxFee.toString(), nonce.toString()],
-                          hideSender: false,
                       },
                   },
                   {
@@ -121,7 +120,6 @@ export class DefaultFpcHandler implements IFpcHandler {
                       contract: fpc.address,
                       method: "fee_entrypoint_public",
                       args: [maxFee.toString(), nonce.toString()],
-                      hideSender: false,
                   },
               ]
             : [
@@ -133,7 +131,6 @@ export class DefaultFpcHandler implements IFpcHandler {
                           contract: fpc.asset,
                           method: "transfer_to_public",
                           args: [account, fpc.address, maxFee.toString(), nonce.toString()],
-                          hideSender: false,
                       },
                   },
                   {
@@ -141,7 +138,6 @@ export class DefaultFpcHandler implements IFpcHandler {
                       contract: fpc.address,
                       method: "fee_entrypoint_private",
                       args: [maxFee.toString(), nonce.toString()],
-                      hideSender: false,
                   },
               ];
     }

@@ -131,7 +131,6 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                         contract: AztecAddress.fromNumber(CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS).toString(),
                         method: "publish",
                         args: [artifactHash, privateFunctionsRoot, publicBytecodeCommitment],
-                        hideSender: false,
                     },
                 );
             }
@@ -145,7 +144,6 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                     contract: AztecAddress.fromNumber(CONTRACT_INSTANCE_REGISTRY_CONTRACT_ADDRESS).toString(),
                     method: "publish_for_public_execution",
                     args: [salt, currentContractClassId, initializationHash, publicKeys, true],
-                    hideSender: false,
                 });
             }
 
@@ -163,7 +161,6 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                     contract: instance.address.toString(),
                     method: "constructor",
                     args: [accountAddress, name, symbol, decimals],
-                    hideSender: false,
                 });
             }
             checkTask.complete();
@@ -179,7 +176,9 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
             try {
                 const deployResults = await this.executionService.executeOperations(deployOps, origin, deployTask);
                 if (!deployResults.every(x => x.status === "ok")) {
-                    throw new Error(`Token deployment failed: ${deployResults.find(x => x.status === "failed")?.error}`);
+                    throw new Error(
+                        `Token deployment failed: ${deployResults.find(x => x.status === "failed")?.error}`,
+                    );
                 }
                 const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
                 this.logDebug("faucet deploy tx", deployTx);
@@ -214,14 +213,12 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                                 contract: instance.address.toString(),
                                 method: "mint_to_private",
                                 args: [accountAddress, amount],
-                                hideSender: false,
                             },
                             {
                                 kind: "call",
                                 contract: instance.address.toString(),
                                 method: "mint_to_public",
                                 args: [accountAddress, amount],
-                                hideSender: false,
                             },
                         ],
                     },
