@@ -110,7 +110,7 @@ import {
     type FeeOptions,
     type FeePaymentMethod,
 } from "./spec";
-import { AztecNode } from "@aztec/stdlib/interfaces/server";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
 import {
     Aliased,

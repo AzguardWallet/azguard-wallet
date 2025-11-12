@@ -43,7 +43,7 @@ import {
 import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from '.';
 
 import compiled from './azguard-v0.json' with { type: "json" };
-import { AztecNode } from '@aztec/stdlib/interfaces/server';
+import { AztecNode } from '@aztec/stdlib/interfaces/client';
 const azguardV0Artifact = loadContractArtifact(compiled as NoirCompiledContract);
 const CHUNK_SIZE = 4;
 

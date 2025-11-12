@@ -3,7 +3,7 @@ import { FunctionSelector } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { CompleteAddress } from "@aztec/stdlib/contract";
-import { AztecNode } from "@aztec/stdlib/interfaces/server";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import type { Capsule, HashedValues, TxExecutionRequest } from "@aztec/stdlib/tx";
 import type { IPXE } from "@/wallet/services/pxe/client";
 
