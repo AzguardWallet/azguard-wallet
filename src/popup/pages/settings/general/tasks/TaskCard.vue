@@ -42,6 +42,8 @@ const relativeTime = computed(() => {
 const iconSize = computed(() => props.isSubtask ? '12' : '16')
 
 const content = computed(() => props.task.humanizedContent)
+const isContentAvailable = computed(() => content.value && Object.keys(content.value).length > 0)
+
 const error = computed(() => {
 	const err = { description: props.task.error }
 
@@ -116,9 +118,9 @@ function handleCopyError(task) {
 					</Flex>
 				</Flex>
 
-				<div v-if="showContent && content && !isSubtask" :class="$style.divider" />
+				<div v-if="showContent && isContentAvailable && !isSubtask" :class="$style.divider" />
 
-				<Flex v-if="showContent && content && !isSubtask" wide>
+				<Flex v-if="showContent && isContentAvailable && !isSubtask" wide>
 					<Flex v-if="task.content.kind === ContentKind.BalanceUpdate" direction="column" gap="8" wide>
 						<Text size="12" color="secondary">Token:
 							<Text color="primary">

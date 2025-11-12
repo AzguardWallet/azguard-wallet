@@ -26,7 +26,8 @@ const indicateFailures = ref(defaultConfig.indicateFailures)
 const showNode = ref(defaultConfig.showNode)
 
 const HEADER_INDICATION_DURATION = 5_000
-let headerIndicateTimer = null
+let headerIndicateFailureTimer = null
+let headerIndicateTaskTimer = null
 
 const MENU_INDICATION_DURATION = 60_000
 let menuIndicateFailureTimer = null
@@ -72,16 +73,16 @@ function handleWalletFailure(type, logId) {
 	currentFailureType.value = type
 
 	// Header
-	if (headerIndicateTimer) {
-		clearTimeout(headerIndicateTimer)
-		headerIndicateTimer = null
+	if (headerIndicateFailureTimer) {
+		clearTimeout(headerIndicateFailureTimer)
+		headerIndicateFailureTimer = null
 	}
 
-	headerIndicateTimer = setTimeout(() => {
+	headerIndicateFailureTimer = setTimeout(() => {
 		currentFailureType.value = ""
 		activeTasksCount.value = tasks.value?.length || 0
 		cacheStore.activeTasksCount = activeTasksCount.value
-		headerIndicateTimer = null
+		headerIndicateFailureTimer = null
 	}, HEADER_INDICATION_DURATION)
 
 	// Menu
@@ -147,12 +148,15 @@ watch(
 	() => tasks.value?.length,
 	(newValue) => {
 		if (!newValue) {
-			if (!headerIndicateTimer) {
-				headerIndicateTimer = setTimeout(() => {
-					activeTasksCount.value = 0
-					headerIndicateTimer = null
-				}, HEADER_INDICATION_DURATION)
+			if (headerIndicateTaskTimer) {
+				clearTimeout(headerIndicateTaskTimer)
+				headerIndicateTaskTimer = null
 			}
+
+			headerIndicateTaskTimer = setTimeout(() => {
+				activeTasksCount.value = 0
+				headerIndicateTaskTimer = null
+			}, HEADER_INDICATION_DURATION)
 
 			menuIndicateTaskTimer = setTimeout(() => {
 				cacheStore.activeTasksCount = null
