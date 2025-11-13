@@ -1,32 +1,21 @@
 import { Fr } from "@aztec/foundation/fields";
-import type { ContractArtifact } from "@aztec/stdlib/abi";
+import type { ContractArtifact, EventMetadataDefinition } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
-    CompleteAddress,
-    NodeInfoSchema,
-    type ContractInstanceWithAddress,
-    type NodeInfo,
-    type PartialAddress,
-} from "@aztec/stdlib/contract";
-import { GasFees } from "@aztec/stdlib/gas";
-import type {
     ContractClassMetadata,
     ContractMetadata,
-    EventMetadataDefinition,
-    PXE,
-    PXEInfo,
-} from "@aztec/stdlib/interfaces/client";
+    CompleteAddress,
+    type ContractInstanceWithAddress,
+    type PartialAddress,
+    ContractInstanceWithAddressSchema,
+} from "@aztec/stdlib/contract";
 import { type NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
-    type PrivateExecutionResult,
     SimulationOverrides,
-    type Tx,
     type TxExecutionRequest,
-    TxHash,
     TxProfileResult,
     TxProvingResult,
-    TxReceipt,
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
@@ -36,9 +25,9 @@ import { ServiceSpec } from "@/wallet/base";
 import { Network } from "@/wallet/services/network/service";
 import { ServiceClient } from "@/wallet/base/offscreen";
 import { ensureOffscreenRunning } from "@/wallet/utils/offscreen";
-import { ContractClassMetadataSchema, ContractMetadataSchema, PXEInfoSchema } from "@/wallet/utils/schemas";
+import { ContractClassMetadataSchema, ContractMetadataSchema } from "@/wallet/utils/schemas";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
-import { PXEProxy } from "./proxy";
+import { IPXE, PXEProxy } from "./proxy";
 
 export * from "./proxy";
 export * from "./spec";
@@ -48,13 +37,26 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         super(PXE_SERVICE_NAME, logger);
     }
 
-    public getPXE(network: Network): PXE {
+    public getPXE(network: Network): IPXE {
         return new PXEProxy(this, network);
     }
 
-    public async getContractClassMetadata(network: Network, id: Fr): Promise<ContractClassMetadata> {
+    public async getContractInstance(
+        network: Network,
+        address: AztecAddress,
+    ): Promise<ContractInstanceWithAddress | undefined> {
         await ensureOffscreenRunning();
-        const result = await this.request("getContractClassMetadata", network, id);
+        const result = await this.request("getContractInstance", network, address);
+        return await ContractInstanceWithAddressSchema.optional().parseAsync(result);
+    }
+
+    public async getContractClassMetadata(
+        network: Network,
+        id: Fr,
+        includeArtifact?: boolean,
+    ): Promise<ContractClassMetadata> {
+        await ensureOffscreenRunning();
+        const result = await this.request("getContractClassMetadata", network, id, includeArtifact);
         return await ContractClassMetadataSchema.parseAsync(result);
     }
 
@@ -62,64 +64,6 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         await ensureOffscreenRunning();
         const result = await this.request("getContractMetadata", network, address);
         return await ContractMetadataSchema.parseAsync(result);
-    }
-
-    public async getContracts(network: Network): Promise<AztecAddress[]> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getContracts", network);
-        return await z.array(AztecAddress.schema).parseAsync(result);
-    }
-
-    public async getCurrentBaseFees(network: Network): Promise<GasFees> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getCurrentBaseFees", network);
-        return await GasFees.schema.parseAsync(result);
-    }
-
-    public async getNodeInfo(network: Network): Promise<NodeInfo> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getNodeInfo", network);
-        return await NodeInfoSchema.parseAsync(result);
-    }
-
-    public async getNotes(network: Network, filter: NotesFilter): Promise<UniqueNote[]> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getNotes", network, filter);
-        return await z.array(UniqueNote.schema).parseAsync(result);
-    }
-
-    public async getPXEInfo(network: Network): Promise<PXEInfo> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getPXEInfo", network);
-        return await PXEInfoSchema.parseAsync(result);
-    }
-
-    public async getPublicStorageAt(network: Network, contract: AztecAddress, slot: Fr): Promise<Fr> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getPublicStorageAt", network, contract, slot);
-        return await Fr.schema.parseAsync(result);
-    }
-
-    public async getSenders(network: Network): Promise<AztecAddress[]> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getSenders", network);
-        return await z.array(AztecAddress.schema).parseAsync(result);
-    }
-
-    public async getRegisteredAccounts(network: Network): Promise<CompleteAddress[]> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getRegisteredAccounts", network);
-        return await z.array(CompleteAddress.schema).parseAsync(result);
-    }
-
-    public async proveTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        privateExecutionResult?: PrivateExecutionResult,
-    ): Promise<TxProvingResult> {
-        await ensureOffscreenRunning();
-        const result = await this.request("proveTx", network, txRequest, privateExecutionResult);
-        return await TxProvingResult.schema.parseAsync(result);
     }
 
     public async registerAccount(
@@ -132,19 +76,16 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         return await CompleteAddress.schema.parseAsync(result);
     }
 
-    public async registerContract(
-        network: Network,
-        instance: ContractInstanceWithAddress,
-        artifact?: ContractArtifact,
-    ): Promise<void> {
-        await ensureOffscreenRunning();
-        await this.request("registerContract", network, instance, artifact);
-    }
-
     public async registerSender(network: Network, address: AztecAddress): Promise<AztecAddress> {
         await ensureOffscreenRunning();
         const result = await this.request("registerSender", network, address);
         return await AztecAddress.schema.parseAsync(result);
+    }
+
+    public async getSenders(network: Network): Promise<AztecAddress[]> {
+        await ensureOffscreenRunning();
+        const result = await this.request("getSenders", network);
+        return await z.array(AztecAddress.schema).parseAsync(result);
     }
 
     public async removeSender(network: Network, address: AztecAddress): Promise<void> {
@@ -152,10 +93,61 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         await this.request("removeSender", network, address);
     }
 
-    public async sendTx(network: Network, tx: Tx): Promise<TxHash> {
+    public async getRegisteredAccounts(network: Network): Promise<CompleteAddress[]> {
         await ensureOffscreenRunning();
-        const result = await this.request("sendTx", network, tx);
-        return await TxHash.schema.parseAsync(result);
+        const result = await this.request("getRegisteredAccounts", network);
+        return await z.array(CompleteAddress.schema).parseAsync(result);
+    }
+
+    public async registerContractClass(network: Network, artifact: ContractArtifact): Promise<void> {
+        await ensureOffscreenRunning();
+        await this.request("registerContractClass", network, artifact);
+    }
+
+    public async registerContract(
+        network: Network,
+        contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
+    ): Promise<void> {
+        await ensureOffscreenRunning();
+        await this.request("registerContract", network, contract);
+    }
+
+    public async updateContract(
+        network: Network,
+        contractAddress: AztecAddress,
+        artifact: ContractArtifact,
+    ): Promise<void> {
+        await ensureOffscreenRunning();
+        await this.request("updateContract", network, contractAddress, artifact);
+    }
+
+    public async getContracts(network: Network): Promise<AztecAddress[]> {
+        await ensureOffscreenRunning();
+        const result = await this.request("getContracts", network);
+        return await z.array(AztecAddress.schema).parseAsync(result);
+    }
+
+    public async getNotes(network: Network, filter: NotesFilter): Promise<UniqueNote[]> {
+        await ensureOffscreenRunning();
+        const result = await this.request("getNotes", network, filter);
+        return await z.array(UniqueNote.schema).parseAsync(result);
+    }
+
+    public async proveTx(network: Network, txRequest: TxExecutionRequest): Promise<TxProvingResult> {
+        await ensureOffscreenRunning();
+        const result = await this.request("proveTx", network, txRequest);
+        return await TxProvingResult.schema.parseAsync(result);
+    }
+
+    public async profileTx(
+        network: Network,
+        txRequest: TxExecutionRequest,
+        profileMode: "full" | "execution-steps" | "gates",
+        skipProofGeneration?: boolean,
+    ): Promise<TxProfileResult> {
+        await ensureOffscreenRunning();
+        const result = await this.request("profileTx", network, txRequest, profileMode, skipProofGeneration);
+        return await TxProfileResult.schema.parseAsync(result);
     }
 
     public async simulateTx(
@@ -195,30 +187,10 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         return await UtilitySimulationResult.schema.parseAsync(result);
     }
 
-    public async updateContract(
-        network: Network,
-        contractAddress: AztecAddress,
-        artifact: ContractArtifact,
-    ): Promise<void> {
-        await ensureOffscreenRunning();
-        await this.request("updateContract", network, contractAddress, artifact);
-    }
-
-    public async registerContractClass(network: Network, artifact: ContractArtifact): Promise<void> {
-        await ensureOffscreenRunning();
-        await this.request("registerContractClass", network, artifact);
-    }
-
-    public async getTxReceipt(network: Network, txHash: TxHash): Promise<TxReceipt> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getTxReceipt", network, txHash);
-        return await TxReceipt.schema.parseAsync(result);
-    }
-
     public async getPrivateEvents(
         network: Network,
         contractAddress: AztecAddress,
-        eventMetadata: EventMetadataDefinition,
+        eventMetadataDef: EventMetadataDefinition,
         from: number,
         numBlocks: number,
         recipients: AztecAddress[],
@@ -228,34 +200,11 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
             "getPrivateEvents",
             network,
             contractAddress,
-            eventMetadata,
+            eventMetadataDef,
             from,
             numBlocks,
             recipients,
         );
         return result;
-    }
-
-    public async getPublicEvents(
-        network: Network,
-        eventMetadata: EventMetadataDefinition,
-        from: number,
-        limit: number,
-    ): Promise<unknown[]> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getPublicEvents", network, eventMetadata, from, limit);
-        return result;
-    }
-
-    public async profileTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        profileMode: "gates" | "execution-steps" | "full",
-        skipProofGeneration?: boolean,
-        msgSender?: AztecAddress,
-    ): Promise<TxProfileResult> {
-        await ensureOffscreenRunning();
-        const result = await this.request("profileTx", network, txRequest, profileMode, skipProofGeneration, msgSender);
-        return await TxProfileResult.schema.parseAsync(result);
     }
 }

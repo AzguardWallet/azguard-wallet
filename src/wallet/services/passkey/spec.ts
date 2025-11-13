@@ -1,22 +1,22 @@
 export const PASSKEY_SERVICE_NAME = "passkey";
 export const PASSKEY_PRF_LABEL = "azguard:profile:v1";
-export const PASSKEY_TIMEOUT = 60_000 * 3;  // 3 minutes
+export const PASSKEY_TIMEOUT = 60_000 * 3; // 3 minutes
 
 export type PasskeyCredentialData = {
-    id: string;  // base64
-    prf: string;  // base64
-    userHandle?: string;  // hex
+    id: string; // base64
+    prf: string; // base64
+    userHandle?: string; // hex
 };
 
 export type PasskeyRequest =
     | {
-        mode: "create";
-        userHandle: string;
-    }
+          mode: "create";
+          userHandle: string;
+      }
     | {
-        mode: "get";
-        credentialId?: string;
-    }
+          mode: "get";
+          credentialId?: string;
+      };
 
 import type { PasskeyCredential } from "./credential";
 

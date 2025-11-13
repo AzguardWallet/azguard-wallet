@@ -1,84 +1,138 @@
-import { L1_TO_L2_MSG_TREE_HEIGHT } from "@aztec/constants";
 import type { Fr } from "@aztec/foundation/fields";
-import { SiblingPath } from "@aztec/foundation/trees";
-import type { ContractArtifact } from "@aztec/stdlib/abi";
+import type { ContractArtifact, EventMetadataDefinition } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     CompleteAddress,
     type ContractInstanceWithAddress,
-    type NodeInfo,
     type PartialAddress,
-} from "@aztec/stdlib/contract";
-import { L2Block } from "@aztec/stdlib/block";
-import { GasFees } from "@aztec/stdlib/gas";
-import {
     ContractClassMetadata,
     ContractMetadata,
-    EventMetadataDefinition,
-    GetContractClassLogsResponse,
-    GetPublicLogsResponse,
-    PXE,
-    PXEInfo,
-} from "@aztec/stdlib/interfaces/client";
-import { LogFilter } from "@aztec/stdlib/logs";
+} from "@aztec/stdlib/contract";
 import { NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
-    IndexedTxEffect,
-    PrivateExecutionResult,
     SimulationOverrides,
-    Tx,
     TxExecutionRequest,
-    TxHash,
     TxProfileResult,
     TxProvingResult,
-    TxReceipt,
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
 import { Network } from "@/wallet/services/network/spec";
 import { PxeServiceClient } from "./client";
 
-export class PXEProxy implements PXE {
+export interface IPXE {
+    getContractInstance(address: AztecAddress): Promise<ContractInstanceWithAddress | undefined>;
+    getContractClassMetadata(id: Fr, includeArtifact?: boolean): Promise<ContractClassMetadata>;
+    getContractMetadata(address: AztecAddress): Promise<ContractMetadata>;
+    registerAccount(secretKey: Fr, partialAddress: PartialAddress): Promise<CompleteAddress>;
+    registerSender(address: AztecAddress): Promise<AztecAddress>;
+    getSenders(): Promise<AztecAddress[]>;
+    removeSender(address: AztecAddress): Promise<void>;
+    getRegisteredAccounts(): Promise<CompleteAddress[]>;
+    registerContractClass(artifact: ContractArtifact): Promise<void>;
+    registerContract(contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact }): Promise<void>;
+    updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void>;
+    getContracts(): Promise<AztecAddress[]>;
+    getNotes(filter: NotesFilter): Promise<UniqueNote[]>;
+    proveTx(txRequest: TxExecutionRequest): Promise<TxProvingResult>;
+    profileTx(
+        txRequest: TxExecutionRequest,
+        profileMode: "full" | "execution-steps" | "gates",
+        skipProofGeneration?: boolean,
+    ): Promise<TxProfileResult>;
+    simulateTx(
+        txRequest: TxExecutionRequest,
+        simulatePublic: boolean,
+        skipTxValidation?: boolean,
+        skipFeeEnforcement?: boolean,
+        overrides?: SimulationOverrides,
+        scopes?: AztecAddress[],
+    ): Promise<TxSimulationResult>;
+    simulateUtility(
+        functionName: string,
+        args: any[],
+        to: AztecAddress,
+        authwits?: AuthWitness[],
+        _from?: AztecAddress,
+        scopes?: AztecAddress[],
+    ): Promise<UtilitySimulationResult>;
+    getPrivateEvents<T>(
+        contractAddress: AztecAddress,
+        eventMetadataDef: EventMetadataDefinition,
+        from: number,
+        numBlocks: number,
+        recipients: AztecAddress[],
+    ): Promise<T[]>;
+}
+
+export class PXEProxy implements IPXE {
     public constructor(private readonly pxeService: PxeServiceClient, private readonly network: Network) {}
 
-    isL1ToL2MessageSynced(l1ToL2Message: Fr): Promise<boolean> {
-        throw new Error("Method not implemented.");
+    getContractInstance(address: AztecAddress): Promise<ContractInstanceWithAddress | undefined> {
+        return this.pxeService.getContractInstance(this.network, address);
     }
 
-    getL1ToL2MessageBlock(l1ToL2Message: Fr): Promise<number | undefined> {
-        throw new Error("Method not implemented.");
+    getContractClassMetadata(id: Fr, includeArtifact?: boolean): Promise<ContractClassMetadata> {
+        return this.pxeService.getContractClassMetadata(this.network, id, includeArtifact);
     }
+
+    getContractMetadata(address: AztecAddress): Promise<ContractMetadata> {
+        return this.pxeService.getContractMetadata(this.network, address);
+    }
+
     registerAccount(secretKey: Fr, partialAddress: PartialAddress): Promise<CompleteAddress> {
         return this.pxeService.registerAccount(this.network, secretKey, partialAddress);
     }
-    getRegisteredAccounts(): Promise<CompleteAddress[]> {
-        return this.pxeService.getRegisteredAccounts(this.network);
-    }
+
     registerSender(address: AztecAddress): Promise<AztecAddress> {
         return this.pxeService.registerSender(this.network, address);
     }
+
     getSenders(): Promise<AztecAddress[]> {
         return this.pxeService.getSenders(this.network);
     }
+
     removeSender(address: AztecAddress): Promise<void> {
         return this.pxeService.removeSender(this.network, address);
     }
+
+    getRegisteredAccounts(): Promise<CompleteAddress[]> {
+        return this.pxeService.getRegisteredAccounts(this.network);
+    }
+
     registerContractClass(artifact: ContractArtifact): Promise<void> {
         return this.pxeService.registerContractClass(this.network, artifact);
     }
+
     registerContract(contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact }): Promise<void> {
-        return this.pxeService.registerContract(this.network, contract.instance, contract.artifact);
+        return this.pxeService.registerContract(this.network, contract);
     }
+
     updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void> {
         return this.pxeService.updateContract(this.network, contractAddress, artifact);
     }
+
     getContracts(): Promise<AztecAddress[]> {
         return this.pxeService.getContracts(this.network);
     }
-    proveTx(txRequest: TxExecutionRequest, privateExecutionResult?: PrivateExecutionResult): Promise<TxProvingResult> {
-        return this.pxeService.proveTx(this.network, txRequest, privateExecutionResult);
+
+    getNotes(filter: NotesFilter): Promise<UniqueNote[]> {
+        return this.pxeService.getNotes(this.network, filter);
     }
+
+    proveTx(txRequest: TxExecutionRequest): Promise<TxProvingResult> {
+        return this.pxeService.proveTx(this.network, txRequest);
+    }
+
+    profileTx(
+        txRequest: TxExecutionRequest,
+        profileMode: "full" | "execution-steps" | "gates",
+        skipProofGeneration?: boolean,
+    ): Promise<TxProfileResult> {
+        return this.pxeService.profileTx(this.network, txRequest, profileMode, skipProofGeneration);
+    }
+
     simulateTx(
         txRequest: TxExecutionRequest,
         simulatePublic: boolean,
@@ -97,45 +151,7 @@ export class PXEProxy implements PXE {
             scopes,
         );
     }
-    profileTx(
-        txRequest: TxExecutionRequest,
-        profileMode: "gates" | "execution-steps" | "full",
-        skipProofGeneration?: boolean,
-        msgSender?: AztecAddress,
-    ): Promise<TxProfileResult> {
-        return this.pxeService.profileTx(this.network, txRequest, profileMode, skipProofGeneration, msgSender);
-    }
-    sendTx(tx: Tx): Promise<TxHash> {
-        return this.pxeService.sendTx(this.network, tx);
-    }
-    getTxReceipt(txHash: TxHash): Promise<TxReceipt> {
-        return this.pxeService.getTxReceipt(this.network, txHash);
-    }
-    getTxEffect(txHash: TxHash): Promise<IndexedTxEffect | undefined> {
-        throw new Error("Method not implemented.");
-    }
-    getPublicStorageAt(contract: AztecAddress, slot: Fr): Promise<Fr> {
-        return this.pxeService.getPublicStorageAt(this.network, contract, slot);
-    }
-    getNotes(filter: NotesFilter): Promise<UniqueNote[]> {
-        return this.pxeService.getNotes(this.network, filter);
-    }
-    getL1ToL2MembershipWitness(
-        contractAddress: AztecAddress,
-        messageHash: Fr,
-        secret: Fr,
-    ): Promise<[bigint, SiblingPath<typeof L1_TO_L2_MSG_TREE_HEIGHT>]> {
-        throw new Error("Method not implemented.");
-    }
-    getL2ToL1MembershipWitness(blockNumber: number, l2Tol1Message: Fr): Promise<[bigint, SiblingPath<number>]> {
-        throw new Error("Method not implemented.");
-    }
-    getBlock(number: number): Promise<L2Block | undefined> {
-        throw new Error("Method not implemented.");
-    }
-    getCurrentBaseFees(): Promise<GasFees> {
-        return this.pxeService.getCurrentBaseFees(this.network);
-    }
+
     simulateUtility(
         functionName: string,
         args: any[],
@@ -146,33 +162,10 @@ export class PXEProxy implements PXE {
     ): Promise<UtilitySimulationResult> {
         return this.pxeService.simulateUtility(this.network, functionName, args, to, authwits, from, scopes);
     }
-    getPublicLogs(filter: LogFilter): Promise<GetPublicLogsResponse> {
-        throw new Error("Method not implemented.");
-    }
-    getContractClassLogs(filter: LogFilter): Promise<GetContractClassLogsResponse> {
-        throw new Error("Method not implemented.");
-    }
-    getBlockNumber(): Promise<number> {
-        throw new Error("Method not implemented.");
-    }
-    getProvenBlockNumber(): Promise<number> {
-        throw new Error("Method not implemented.");
-    }
-    getNodeInfo(): Promise<NodeInfo> {
-        return this.pxeService.getNodeInfo(this.network);
-    }
-    getPXEInfo(): Promise<PXEInfo> {
-        return this.pxeService.getPXEInfo(this.network);
-    }
-    getContractMetadata(address: AztecAddress): Promise<ContractMetadata> {
-        return this.pxeService.getContractMetadata(this.network, address);
-    }
-    getContractClassMetadata(id: Fr, includeArtifact?: boolean): Promise<ContractClassMetadata> {
-        return this.pxeService.getContractClassMetadata(this.network, id);
-    }
+
     async getPrivateEvents<T>(
         contractAddress: AztecAddress,
-        eventMetadata: EventMetadataDefinition,
+        eventMetadataDef: EventMetadataDefinition,
         from: number,
         numBlocks: number,
         recipients: AztecAddress[],
@@ -180,13 +173,10 @@ export class PXEProxy implements PXE {
         return (await this.pxeService.getPrivateEvents(
             this.network,
             contractAddress,
-            eventMetadata,
+            eventMetadataDef,
             from,
             numBlocks,
             recipients,
         )) as T[];
-    }
-    async getPublicEvents<T>(eventMetadata: EventMetadataDefinition, from: number, limit: number): Promise<T[]> {
-        return (await this.pxeService.getPublicEvents(this.network, eventMetadata, from, limit)) as T[];
     }
 }

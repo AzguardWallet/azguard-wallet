@@ -1,24 +1,13 @@
 import { Fr } from "@aztec/foundation/fields";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { PXE } from "@aztec/stdlib/interfaces/client";
-import {
-    HashedValues,
-    NestedProcessReturnValues,
-} from "@aztec/stdlib/tx";
-import {
-    AbiType,
-    encodeArguments,
-    FunctionAbi,
-    FunctionSelector,
-    FunctionType,
-} from "@aztec/stdlib/abi";
-import { AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
+import { HashedValues, NestedProcessReturnValues } from "@aztec/stdlib/tx";
+import { AbiType, encodeArguments, FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
+import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
+import { IPXE } from "@/wallet/services/pxe/proxy";
 
 export class FnImpl {
-    constructor(
-        public readonly name: string,
-        public readonly impl: number,
-    ) {}
+    constructor(public readonly name: string, public readonly impl: number) {}
 }
 
 export abstract class Fn extends FnImpl {
@@ -34,7 +23,7 @@ export abstract class Fn extends FnImpl {
     }
 
     protected abstract abi(): FunctionAbi;
-    
+
     public abstract buildArgs(...args: any[]): any[];
 
     public async getSelector(): Promise<FunctionSelector> {
@@ -60,7 +49,8 @@ export abstract class ViewFn extends Fn {
 }
 
 export async function simulate(
-    pxe: PXE,
+    node: AztecNode,
+    pxe: IPXE,
     account: IAccountContract,
     contract: string,
     viewFn: ViewFn,
@@ -70,21 +60,30 @@ export async function simulate(
         const { result } = await pxe.simulateUtility(viewFn.name, args, AztecAddress.fromString(contract));
         return result;
     }
-    
+
     const encodedArgs = viewFn.encodeArgs(args);
-    const packedArgs = viewFn.type === FunctionType.PUBLIC
-        ? await HashedValues.fromCalldata([(await viewFn.getSelector()).toField(), ...encodedArgs])
-        : await HashedValues.fromArgs(encodedArgs);
+    const packedArgs =
+        viewFn.type === FunctionType.PUBLIC
+            ? await HashedValues.fromCalldata([(await viewFn.getSelector()).toField(), ...encodedArgs])
+            : await HashedValues.fromArgs(encodedArgs);
 
     const call = new AzguardFunctionCall(
         AztecAddress.fromString(contract),
         await viewFn.getSelector(),
         packedArgs.hash,
         viewFn.type === FunctionType.PUBLIC,
-        viewFn.isStatic
+        viewFn.isStatic,
+        false,
     );
 
-    const txRequest = await account.buildTxExecutionRequest(pxe, [], false, [call], [packedArgs], Fr.zero());
+    const txRequest = await account.buildTxExecutionRequest(
+        node,
+        pxe,
+        [call],
+        Fr.random(),
+        AzguardFeePaymentMethod.FeeJuice,
+        [packedArgs],
+    );
 
     const tx = await pxe.simulateTx(
         txRequest, // txRequest

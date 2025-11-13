@@ -4,7 +4,7 @@ import { AuthRegistryContract } from "@aztec/noir-contracts.js/AuthRegistry";
 import { FunctionAbi, FunctionSelector } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { deriveStorageSlotInMap } from "@aztec/stdlib/hash";
-import { PXE } from "@aztec/stdlib/interfaces/client";
+import { AztecNode } from "@aztec/stdlib/interfaces/client";
 
 export const getAuthRegistryAddress = () => AztecAddress.fromNumber(CANONICAL_AUTH_REGISTRY_ADDRESS);
 
@@ -36,7 +36,7 @@ export const getSetAuthorizedSelector = async () => {
     return await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
 };
 
-export const isAuthwitConsumable = async (pxe: PXE, account: string, message_hash: string) => {
+export const isAuthwitConsumable = async (node: AztecNode, account: string, message_hash: string) => {
     const slot = await deriveStorageSlotInMap(
         await deriveStorageSlotInMap(
             AuthRegistryContract.storage.approved_actions.slot,
@@ -44,15 +44,15 @@ export const isAuthwitConsumable = async (pxe: PXE, account: string, message_has
         ),
         Fr.fromString(message_hash),
     );
-    const approved = await pxe.getPublicStorageAt(getAuthRegistryAddress(), slot);
+    const approved = await node.getPublicStorageAt("latest", getAuthRegistryAddress(), slot);
     return !approved.isZero();
 };
 
-export const isAuthRegistryEnabled = async (pxe: PXE, account: string) => {
+export const isAuthRegistryEnabled = async (node: AztecNode, account: string) => {
     const slot = await deriveStorageSlotInMap(
         AuthRegistryContract.storage.reject_all.slot,
         AztecAddress.fromString(account),
     );
-    const rejectAll = await pxe.getPublicStorageAt(getAuthRegistryAddress(), slot);
+    const rejectAll = await node.getPublicStorageAt("latest", getAuthRegistryAddress(), slot);
     return rejectAll.isZero();
 };

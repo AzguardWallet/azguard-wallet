@@ -33,8 +33,4 @@ export class AccountStateServiceClient extends ServiceClient<Methods, Events> im
     public getContracts(networkId: string): Promise<string[]> {
         return this.request("getContracts", networkId);
     }
-
-    public getVersion(networkId: string): Promise<string> {
-        return this.request("getVersion", networkId);
-    }
 }

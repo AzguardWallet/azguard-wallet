@@ -132,7 +132,7 @@ const onKeydown = e => {
 
 				<Input
 					label="New RPC Link"
-					placeholder="http://localhost:1337"
+					placeholder="http://localhost:8080"
 					v-model="urlTerm"
 					@input="isStartedEditingUrl = true"
 				>

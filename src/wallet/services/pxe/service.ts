@@ -1,22 +1,23 @@
 import { SPONSORED_FPC_SALT } from "@aztec/constants";
-import { getPXEServiceConfig, type PXEServiceConfig } from "@aztec/pxe/config";
-import { createPXEService } from "@aztec/pxe/client/bundle";
+import { getPXEConfig, type PXEConfig } from "@aztec/pxe/config";
+import { createPXE, PXE } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/fields";
-import { AuthRegistryContractArtifact } from "@aztec/noir-contracts.js/AuthRegistry";
-// import { ContractInstanceDeployerContractArtifact } from "@aztec/noir-contracts.js/ContractRegistry";
-// import { ContractClassRegistererContractArtifact } from "@aztec/noir-contracts.js/ContractClassRegisterer";
-import { MultiCallEntrypointContractArtifact } from "@aztec/noir-contracts.js/MultiCallEntrypoint";
-import { FeeJuiceContractArtifact } from "@aztec/noir-contracts.js/FeeJuice";
+import { AuthRegistryArtifact } from "@aztec/protocol-contracts/auth-registry";
+import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-registry";
+import { FeeJuiceArtifact } from "@aztec/protocol-contracts/fee-juice";
+import { ContractInstanceRegistryArtifact } from "@aztec/protocol-contracts/instance-registry";
+import { MultiCallEntrypointArtifact } from "@aztec/protocol-contracts/multi-call-entrypoint";
+import { RouterArtifact } from "@aztec/protocol-contracts/router";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
-import { RouterContractArtifact } from "@aztec/noir-contracts.js/Router";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
-import { TokenBlacklistContractArtifact } from "@aztec/noir-contracts.js/TokenBlacklist";
-import { type ContractArtifact, ContractArtifactSchema } from "@aztec/stdlib/abi";
+import { type ContractArtifact, ContractArtifactSchema, EventMetadataDefinition } from "@aztec/stdlib/abi";
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
+    type ContractClassMetadata,
+    type ContractMetadata,
     type ContractClassWithId,
     type ContractInstanceWithAddress,
     ContractInstanceWithAddressSchema,
@@ -24,29 +25,15 @@ import {
     getContractInstanceFromInstantiationParams,
     CompleteAddress,
     PartialAddress,
-    NodeInfo,
 } from "@aztec/stdlib/contract";
-import { GasFees } from "@aztec/stdlib/gas";
-import {
-    type AztecNode,
-    type ContractClassMetadata,
-    type ContractMetadata,
-    createAztecNodeClient,
-    EventMetadataDefinition,
-    type PXE,
-    PXEInfo,
-} from "@aztec/stdlib/interfaces/client";
+import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
 import { NotesFilterSchema, NotesFilter, UniqueNote } from "@aztec/stdlib/note";
 import {
-    PrivateExecutionResult,
     SimulationOverrides,
-    Tx,
     TxExecutionRequest,
     TxProvingResult,
     TxSimulationResult,
     UtilitySimulationResult,
-    TxHash,
-    TxReceipt,
     TxProfileResult,
 } from "@aztec/stdlib/tx";
 import z from "zod";
@@ -104,11 +91,23 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         const _ = this.profiles.connect();
     }
 
-    public async getContractClassMetadata(network: Network, id: Fr): Promise<ContractClassMetadata> {
+    public async getContractInstance(
+        network: Network,
+        address: AztecAddress,
+    ): Promise<ContractInstanceWithAddress | undefined> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.getContractInstance(address);
+    }
+
+    public async getContractClassMetadata(
+        network: Network,
+        id: Fr,
+        includeArtifact?: boolean,
+    ): Promise<ContractClassMetadata> {
         id = await Fr.schema.parseAsync(id);
         const pxe = await this.getPxeClient(network);
-        const metadata = await pxe.getContractClassMetadata(id, true);
-        if (!metadata.artifact) {
+        const metadata = await pxe.getContractClassMetadata(id, includeArtifact);
+        if (!metadata.artifact && (includeArtifact || !metadata.contractClass)) {
             // check known
             if (!this.knownArtifacts.size) {
                 await this.initKnown();
@@ -128,6 +127,9 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             if (!metadata.contractClass && metadata.artifact) {
                 metadata.contractClass = await getContractClassFromArtifact(metadata.artifact);
             }
+        }
+        if (includeArtifact !== true) {
+            delete metadata.artifact;
         }
         return metadata;
     }
@@ -155,61 +157,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         return metadata;
     }
 
-    public async getContracts(network: Network): Promise<AztecAddress[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getContracts();
-    }
-
-    public async getCurrentBaseFees(network: Network): Promise<GasFees> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getCurrentBaseFees();
-    }
-
-    public async getNodeInfo(network: Network): Promise<NodeInfo> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getNodeInfo();
-    }
-
-    public async getNotes(network: Network, filter: NotesFilter): Promise<UniqueNote[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getNotes(await NotesFilterSchema.parseAsync(filter));
-    }
-
-    public async getPXEInfo(network: Network): Promise<PXEInfo> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getPXEInfo();
-    }
-
-    public async getPublicStorageAt(network: Network, contract: AztecAddress, slot: Fr): Promise<Fr> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getPublicStorageAt(
-            await AztecAddress.schema.parseAsync(contract),
-            await Fr.schema.parseAsync(slot),
-        );
-    }
-
-    public async getSenders(network: Network): Promise<AztecAddress[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getSenders();
-    }
-
-    public async getRegisteredAccounts(network: Network): Promise<CompleteAddress[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getRegisteredAccounts();
-    }
-
-    public async proveTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        privateExecutionResult?: PrivateExecutionResult,
-    ): Promise<TxProvingResult> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.proveTx(
-            await TxExecutionRequest.schema.parseAsync(txRequest),
-            await PrivateExecutionResult.schema.optional().parseAsync(privateExecutionResult),
-        );
-    }
-
     public async registerAccount(
         network: Network,
         secretKey: Fr,
@@ -222,21 +169,14 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         );
     }
 
-    public async registerContract(
-        network: Network,
-        instance: ContractInstanceWithAddress,
-        artifact?: ContractArtifact,
-    ): Promise<void> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.registerContract({
-            instance: await ContractInstanceWithAddressSchema.parseAsync(instance),
-            artifact: await ContractArtifactSchema.optional().parseAsync(artifact),
-        });
-    }
-
     public async registerSender(network: Network, address: AztecAddress): Promise<AztecAddress> {
         const pxe = await this.getPxeClient(network);
         return await pxe.registerSender(await AztecAddress.schema.parseAsync(address));
+    }
+
+    public async getSenders(network: Network): Promise<AztecAddress[]> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.getSenders();
     }
 
     public async removeSender(network: Network, address: AztecAddress): Promise<void> {
@@ -244,9 +184,66 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         return await pxe.removeSender(await AztecAddress.schema.parseAsync(address));
     }
 
-    public async sendTx(network: Network, tx: Tx): Promise<TxHash> {
+    public async getRegisteredAccounts(network: Network): Promise<CompleteAddress[]> {
         const pxe = await this.getPxeClient(network);
-        return await pxe.sendTx(await Tx.schema.parseAsync(tx));
+        return await pxe.getRegisteredAccounts();
+    }
+
+    public async registerContractClass(network: Network, artifact: ContractArtifact): Promise<void> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.registerContractClass(await ContractArtifactSchema.parseAsync(artifact));
+    }
+
+    public async registerContract(
+        network: Network,
+        contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
+    ): Promise<void> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.registerContract({
+            instance: await ContractInstanceWithAddressSchema.parseAsync(contract.instance),
+            artifact: await ContractArtifactSchema.optional().parseAsync(contract.artifact),
+        });
+    }
+
+    public async updateContract(
+        network: Network,
+        contractAddress: AztecAddress,
+        artifact: ContractArtifact,
+    ): Promise<void> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.updateContract(
+            await AztecAddress.schema.parseAsync(contractAddress),
+            await ContractArtifactSchema.parseAsync(artifact),
+        );
+    }
+
+    public async getContracts(network: Network): Promise<AztecAddress[]> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.getContracts();
+    }
+
+    public async getNotes(network: Network, filter: NotesFilter): Promise<UniqueNote[]> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.getNotes(await NotesFilterSchema.parseAsync(filter));
+    }
+
+    public async proveTx(network: Network, txRequest: TxExecutionRequest): Promise<TxProvingResult> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.proveTx(await TxExecutionRequest.schema.parseAsync(txRequest));
+    }
+
+    public async profileTx(
+        network: Network,
+        txRequest: TxExecutionRequest,
+        profileMode: "full" | "execution-steps" | "gates",
+        skipProofGeneration?: boolean,
+    ): Promise<TxProfileResult> {
+        const pxe = await this.getPxeClient(network);
+        return await pxe.profileTx(
+            await TxExecutionRequest.schema.parseAsync(txRequest),
+            profileMode,
+            skipProofGeneration,
+        );
     }
 
     public async simulateTx(
@@ -289,28 +286,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         );
     }
 
-    public async updateContract(
-        network: Network,
-        contractAddress: AztecAddress,
-        artifact: ContractArtifact,
-    ): Promise<void> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.updateContract(
-            await AztecAddress.schema.parseAsync(contractAddress),
-            await ContractArtifactSchema.parseAsync(artifact),
-        );
-    }
-
-    public async registerContractClass(network: Network, artifact: ContractArtifact): Promise<void> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.registerContractClass(await ContractArtifactSchema.parseAsync(artifact));
-    }
-
-    public async getTxReceipt(network: Network, txHash: TxHash): Promise<TxReceipt> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getTxReceipt(await TxHash.schema.parseAsync(txHash));
-    }
-
     public async getPrivateEvents(
         network: Network,
         contractAddress: AztecAddress,
@@ -329,47 +304,20 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         );
     }
 
-    public async getPublicEvents(
-        network: Network,
-        eventMetadata: EventMetadataDefinition,
-        from: number,
-        limit: number,
-    ): Promise<unknown[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getPublicEvents(await EventMetadataDefinitionSchema.parseAsync(eventMetadata), from, limit);
-    }
-
-    public async profileTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        profileMode: "gates" | "execution-steps" | "full",
-        skipProofGeneration?: boolean,
-        msgSender?: AztecAddress,
-    ): Promise<TxProfileResult> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.profileTx(
-            await TxExecutionRequest.schema.parseAsync(txRequest),
-            profileMode,
-            skipProofGeneration,
-            await AztecAddress.schema.optional().parseAsync(msgSender),
-        );
-    }
-
     private async initKnown() {
         for (const artifact of [
             // protocol
-            AuthRegistryContractArtifact,
-            // ContractInstanceDeployerContractArtifact,
-            // ContractClassRegistererContractArtifact,
-            MultiCallEntrypointContractArtifact,
-            FeeJuiceContractArtifact,
-            RouterContractArtifact,
+            AuthRegistryArtifact,
+            ContractClassRegistryArtifact,
+            FeeJuiceArtifact,
+            ContractInstanceRegistryArtifact,
+            MultiCallEntrypointArtifact,
+            RouterArtifact,
             // other
             FPCContractArtifact,
+            NFTContractArtifact,
             SponsoredFPCContractArtifact,
             TokenContractArtifact,
-            NFTContractArtifact,
-            TokenBlacklistContractArtifact,
         ]) {
             const contractClass = await getContractClassFromArtifact(artifact);
             this.knownArtifacts.set(contractClass.id.toString(), artifact);
@@ -414,12 +362,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         const node = createAztecNodeClient(network.rpcUrl);
         const l1Contracts = await node.getL1ContractAddresses();
         const config = {
-            ...getPXEServiceConfig(),
+            ...getPXEConfig(),
             l1Contracts,
             dataDirectory: `pxe/${network.profileId}/${network.chainId}`,
             proverEnabled: true,
-        } as PXEServiceConfig;
-        const pxe = await createPXEService(node, config);
+        } as PXEConfig;
+        const pxe = await createPXE(node, config);
 
         this.nodes.set(network.chainId, node);
         this.pxes.set(network.chainId, pxe);
@@ -428,7 +376,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private async fetchArtifactFromRegistry(network: Network, classId: Fr): Promise<ContractArtifact | undefined> {
         try {
-            const artifact = await this.fetchFromRegistry(network, `/artifacts/${classId.toString()}`);
+            const artifact = await this.fetchFromRegistry(network, `/api/artifacts/${classId.toString()}`);
             if (!artifact) {
                 return undefined;
             }
@@ -443,16 +391,17 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         network: Network,
         address: AztecAddress,
     ): Promise<ContractInstanceWithAddress | undefined> {
-        try {
-            const instance = await this.fetchFromRegistry(network, `/instances/${address.toString()}`);
-            if (!instance) {
-                return undefined;
-            }
-            return await ContractInstanceWithAddressSchema.parseAsync(instance);
-        } catch (error: unknown) {
-            this.logError("Failed to parse instance from registry", getErrorMessage(error));
-            return undefined;
-        }
+        return undefined;
+        // try {
+        //     const instance = await this.fetchFromRegistry(network, `/api/contracts/${address.toString()}`);
+        //     if (!instance) {
+        //         return undefined;
+        //     }
+        //     return await ContractInstanceWithAddressSchema.parseAsync(instance);
+        // } catch (error: unknown) {
+        //     this.logError("Failed to parse instance from registry", getErrorMessage(error));
+        //     return undefined;
+        // }
     }
 
     private async fetchFromRegistry(network: Network, path: string): Promise<unknown | undefined> {
@@ -477,8 +426,10 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private getRegistryUrl(network: Network): string | undefined {
         switch (network.chainId) {
-            case 11155111:
-                return "https://registry.testnet.azguardwallet.io";
+            case 1721521349: // 11155111 ^ 1714840162
+                return "https://testnet.aztec-registry.xyz";
+            case 1674512022: // 11155111 ^ 1667575857
+                return "https://devnet.aztec-registry.xyz";
             default:
                 return undefined;
         }

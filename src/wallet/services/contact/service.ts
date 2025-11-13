@@ -41,7 +41,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
 
         return (await this.storage.getValues()).filter(c => c.profileId === profile.id);
     }
-    
+
     public async getContact(contactId: string): Promise<Contact> {
         await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
@@ -64,9 +64,11 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
             throw new Error("Profile locked");
         }
 
-        const contact = (await this.storage.getValues()).filter(c => c.profileId === profile.id && c.address === contactAddress);
+        const contact = (await this.storage.getValues()).filter(
+            c => c.profileId === profile.id && c.address === contactAddress,
+        );
 
-        if (!contact.length) return undefined
+        if (!contact.length) return undefined;
 
         return contact[0];
     }
@@ -82,20 +84,21 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
             await this.lock.enter();
 
             let id: string;
-            do { id = getRandomHex(8); }
-            while (await this.storage.contains(id));
+            do {
+                id = getRandomHex(8);
+            } while (await this.storage.contains(id));
 
-            const _color = color && contactColors.includes(color) ? color : getRandomElement(contactColors)
+            const _color = color && contactColors.includes(color) ? color : getRandomElement(contactColors);
             const contact: Contact = {
                 id,
                 profileId: profile.id,
                 name,
                 address,
                 abbr: this._getAbbreviation(name),
-                color: _color
-            }
+                color: _color,
+            };
 
-            await this.storage.set(contact.id, contact)
+            await this.storage.set(contact.id, contact);
 
             this.emit("onContactAdded", contact);
 
@@ -114,7 +117,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
 
         try {
             await this.lock.enter();
-                
+
             const contact = await this.storage.get(contactId);
             if (contact?.profileId !== profile.id) {
                 throw new Error("invalid id");
@@ -132,12 +135,11 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
             this.emit("onContactUpdated", newContact);
 
             return newContact;
-        }
-        finally {
+        } finally {
             this.lock.leave();
         }
     }
-        
+
     public async deleteContact(contactId: string): Promise<Contact> {
         await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
@@ -147,7 +149,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
 
         try {
             await this.lock.enter();
-               
+
             const contact = await this.storage.get(contactId);
             if (contact?.profileId !== profile.id) {
                 throw new Error("invalid id");
@@ -155,12 +157,11 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
 
             this.logDebug(`Remove contact #${contact.id} - ${contact.name}`);
             await this.storage.delete(contactId);
-            
+
             this.emit("onContactDeleted", contact);
 
             return contact;
-        }
-        finally {
+        } finally {
             this.lock.leave();
         }
     }
@@ -170,7 +171,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
         const data = contacts.map(contact => ({
             name: contact.name,
             address: contact.address,
-            color: contact.color
+            color: contact.color,
         }));
 
         return JSON.stringify(data, null, 2);
@@ -185,20 +186,20 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
 
         const results: Contact[] = [];
 
-        type importedContact = { name: string; address: string; [key: string]: any; }
+        type importedContact = { name: string; address: string; [key: string]: any };
         const importedContacts = JSON.parse(data)
-        .map((c: importedContact) => ({
-            ...c,
-            name: sanitizeString(c.name, 20),
-            address: sanitizeString(c.address, 66),
-        }))
-        .filter((c: importedContact) => !!c.name && !!c.address);
+            .map((c: importedContact) => ({
+                ...c,
+                name: sanitizeString(c.name, 20),
+                address: sanitizeString(c.address, 66),
+            }))
+            .filter((c: importedContact) => !!c.name && !!c.address);
 
         if (importedContacts.length) {
-            const existingContacts  = (await this.storage.getValues()).filter(c => c.profileId === profile.id);
+            const existingContacts = (await this.storage.getValues()).filter(c => c.profileId === profile.id);
             const contactsByAddress = new Map<string, Contact>();
             const contactsByName = new Map<string, Contact>();
-            
+
             existingContacts.forEach(contact => {
                 contactsByAddress.set(contact.address, contact);
                 contactsByName.set(contact.name, contact);
@@ -212,29 +213,18 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
                     const existingByName = contactsByName.get(_c.name);
 
                     if (existingByAddress) {
-                        contact = await this.updateContact(
-                            existingByAddress.id,
-                            _c.name,
-                            _c.address
-                        );
-                        
+                        contact = await this.updateContact(existingByAddress.id, _c.name, _c.address);
+
                         this.logDebug(`Updated existing contact by address: ${_c.address}`);
                     } else if (existingByName) {
-                        contact = await this.updateContact(
-                            existingByName.id,
-                            _c.name,
-                            _c.address
-                        );
-                        
+                        contact = await this.updateContact(existingByName.id, _c.name, _c.address);
+
                         this.logDebug(`Updated existing contact by name: ${_c.name}`);
                     } else {
-                        const _color = _c.color && contactColors.includes(_c.color) ? _c.color : getRandomElement(contactColors)
-                        contact = await this.addContact(
-                            _c.name,
-                            _c.address,
-                            _color
-                        );
-                        
+                        const _color =
+                            _c.color && contactColors.includes(_c.color) ? _c.color : getRandomElement(contactColors);
+                        contact = await this.addContact(_c.name, _c.address, _color);
+
                         this.logDebug(`Added new contact: ${_c.name} - ${_c.address}`);
                     }
 
@@ -244,7 +234,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
                 }
             }
         }
-        
+
         return results;
     }
 
@@ -262,15 +252,15 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
         } finally {
             this.lock.leave();
         }
-    }
-    
+    };
+
     private _getAbbreviation(name: string): string {
         const words = name.trim().split(/\s+/);
 
         if (words.length > 1) {
             return (words[0][0] + words[1][0]).toUpperCase();
         }
-        
+
         if (words.length === 1) {
             return words[0].substring(0, Math.min(words[0].length, 2)).toUpperCase();
         }

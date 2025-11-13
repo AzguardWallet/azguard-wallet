@@ -11,6 +11,9 @@ import { EventHandler } from "@/wallet/utils/event-handler";
 import { Fpc } from "./fpc";
 import { getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
+import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
+import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
+import { Fr } from "@aztec/foundation/fields";
 
 export * from "./fpc";
 export * from "./spec";
@@ -24,7 +27,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
     private readonly storage = new EntityStorage<FpcInfo>("azguard:core:fpcs", StorageType.Local);
     private readonly lock = new Lock();
-    
+
     private pxeService: PxeServiceClient = null!;
     private profileService: ProfileService = null!;
     private networkService: NetworkService = null!;
@@ -32,7 +35,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
     public constructor(logger: ILogger) {
         super(FPC_SERVICE_NAME, logger);
     }
-    
+
     protected async init(services: ServiceCollection) {
         this.pxeService = new PxeServiceClient(this.logger);
         this.profileService = services.get(ProfileService.name);
@@ -56,15 +59,25 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 await this.lock.enter();
                 const networks = await this.networkService.getNetworks(chainId);
                 const network = networks.find(x => x.isDefault) ?? networks[0];
+                const node = await this.networkService.getNode(network.chainId);
                 const pxe = this.pxeService.getPXE(network);
 
-                for (const contract of [
-                    AztecAddress.fromString("0x299f255076aa461e4e94a843f0275303470a6b8ebe7cb44a471c66711151e529"),
-                ]) {
+                const sponsoredFpc = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
+                    constructorArgs: [],
+                    salt: Fr.zero(),
+                });
+
+                await pxe.registerContract({
+                    instance: sponsoredFpc,
+                    artifact: SponsoredFPCContractArtifact,
+                });
+
+                for (const contract of [sponsoredFpc.address]) {
                     const contractMeta = await pxe.getContractMetadata(contract);
                     if (contractMeta.contractInstance) {
                         const classMeta = await pxe.getContractClassMetadata(
                             contractMeta.contractInstance.currentContractClassId,
+                            true,
                         );
                         if (classMeta.artifact) {
                             this.logInfo(`Found FPC: ${contract.toString()}`);
@@ -82,7 +95,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                             const fpcHandler = getFpcHandler(type);
                             fpcHandler.validateArtifact(classMeta.artifact);
 
-                            const asset = await fpcHandler.getAsset(contract.toString(), pxe);
+                            const asset = await fpcHandler.getAsset(contract.toString(), pxe, node);
                             const acceptsPrivate = fpcHandler.acceptsPrivate();
                             const acceptsPublic = fpcHandler.acceptsPublic();
 
@@ -133,6 +146,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             throw new Error("Profile locked");
         }
         const network = await this.networkService.getNetwork(networkId);
+        const node = await this.networkService.getNode(network.chainId);
         const pxe = this.pxeService.getPXE(network);
 
         const fpcMetadata = await pxe.getContractMetadata(AztecAddress.fromString(address));
@@ -142,6 +156,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
         const fpcClassMetadata = await pxe.getContractClassMetadata(
             fpcMetadata.contractInstance.currentContractClassId,
+            true,
         );
         if (!fpcClassMetadata.artifact) {
             throw new Error("Contract artifact not found");
@@ -158,7 +173,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const fpcHandler = getFpcHandler(type);
         fpcHandler.validateArtifact(fpcClassMetadata.artifact);
 
-        const asset = await fpcHandler.getAsset(address, pxe);
+        const asset = await fpcHandler.getAsset(address, pxe, node);
         const acceptsPrivate = fpcHandler.acceptsPrivate();
         const acceptsPublic = fpcHandler.acceptsPublic();
 

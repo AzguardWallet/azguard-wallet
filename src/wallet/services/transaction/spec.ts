@@ -1,3 +1,5 @@
+import { AzguardFeePaymentMethod } from "../account/contracts";
+
 export const TRANSACTION_SERVICE_NAME = "transaction";
 
 export enum OriginType {
@@ -73,14 +75,12 @@ export type Tx = {
     chainId: number;
     /** Sender address. */
     account: string;
-    /** Setup calls. */
-    setup: TxCall[];
-    /** Whether or not the account will pay for fees. */
-    isFeePayer: boolean;
     /** App calls. */
     calls: TxCall[];
     /** Nonce. */
     nonce: string;
+    /** Fee payment method */
+    feePaymentMethod: AzguardFeePaymentMethod;
     /** Transaction hash. */
     hash: string;
     /** Creation time. */

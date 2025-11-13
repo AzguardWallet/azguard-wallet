@@ -22,13 +22,10 @@ export type FpcPaymentMethod = {
 };
 
 export type CustomPaymentMethod = {
-    readonly kind: "custom";
-    readonly teardownDaGas?: number;
-    readonly teardownL2Gas?: number;
+    readonly kind: "embedded";
 };
 
 export type FeeSettings = {
     readonly paymentMethod: FeePaymentMethod;
-    readonly gasPadding?: number;
     // TODO: add priority fee
 };

@@ -6,11 +6,7 @@ import { ProfileService } from "@/wallet/services/profile/service";
 import { NetworkService, Network } from "@/wallet/services/network/service";
 import { AccountService, Account } from "@/wallet/services/account/service";
 import { DappSessionService, AccessLevel, DappSession } from "@/wallet/services/dapp-session/service";
-import {
-    ExecutionService,
-    type Operation,
-    type OperationKind,
-} from "@/wallet/services/execution/service";
+import { ExecutionService, type Operation, type OperationKind } from "@/wallet/services/execution/service";
 import { OriginType } from "@/wallet/services/transaction/service";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
@@ -179,27 +175,14 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             switch (op.kind) {
                 case "register_contract":
                 case "register_sender":
-                case "aztec_simulateTx":
-                case "aztec_simulateUtility":
-                case "aztec_profileTx":
-                case "aztec_sendTx":
                 case "aztec_getContractClassMetadata":
                 case "aztec_getContractMetadata":
-                case "aztec_registerContract":
-                case "aztec_registerContractClass":
-                case "aztec_proveTx":
-                case "aztec_getNodeInfo":
-                case "aztec_getPXEInfo":
-                case "aztec_getCurrentBaseFees":
-                case "aztec_updateContract":
-                case "aztec_registerSender":
-                case "aztec_getSenders":
-                case "aztec_removeSender":
+                case "aztec_getChainInfo":
                 case "aztec_getTxReceipt":
-                case "aztec_getPrivateEvents":
-                case "aztec_getPublicEvents":
-                case "aztec_getChainId":
-                case "aztec_getVersion": {
+                case "aztec_registerSender":
+                case "aztec_getAddressBook":
+                case "aztec_registerContract":
+                case "aztec_getPrivateEvents": {
                     const network = await getNetwork(op.chain);
                     operations.push({ ...op, networkId: network.id });
                     break;
@@ -209,21 +192,22 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "simulate_transaction":
                 case "simulate_utility":
                 case "simulate_views":
-                case "aztec_getCompleteAddress":
-                case "aztec_getAddress":
-                case "aztec_createTxExecutionRequest":
+                case "aztec_simulateTx":
+                case "aztec_simulateUtility":
+                case "aztec_profileTx":
                 case "aztec_createAuthWit": {
                     const [network, account] = await getNetworkAndAccount(op.account);
                     operations.push({ ...op, networkId: network.id, accountAddress: account.address });
                     break;
                 }
+                case "aztec_sendTx":
                 case "send_transaction": {
                     const [network, account] = await getNetworkAndAccount(op.account);
                     operations.push({
                         ...op,
                         networkId: network.id,
                         accountAddress: account.address,
-                        feeSettings: { paymentMethod: { kind: "custom" } },
+                        feeSettings: { paymentMethod: { kind: "embedded" } },
                     });
                     break;
                 }
@@ -244,44 +228,19 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         if (!session) {
             throw new Error("Invalid session");
         }
-        // set scopes if omitted
-        for (const operation of operations) {
-            if (operation.kind === "aztec_simulateTx" || operation.kind === "aztec_simulateUtility") {
-                if (!operation.scopes?.length) {
-                    operation.scopes = session.accounts.map(x => AztecAddress.fromString(x.split(":")[2]));
-                }
-            }
-        }
         // validate permissions
         for (const operation of operations) {
             switch (operation.kind) {
                 case "register_contract":
                 case "register_sender":
-                case "aztec_profileTx":
-                case "aztec_sendTx":
                 case "aztec_getContractClassMetadata":
                 case "aztec_getContractMetadata":
-                case "aztec_registerContract":
-                case "aztec_registerContractClass":
-                case "aztec_proveTx":
-                case "aztec_getNodeInfo":
-                case "aztec_getPXEInfo":
-                case "aztec_getCurrentBaseFees":
-                case "aztec_updateContract":
-                case "aztec_registerSender":
-                case "aztec_getSenders":
-                case "aztec_removeSender":
+                case "aztec_getChainInfo":
                 case "aztec_getTxReceipt":
-                case "aztec_getPublicEvents":
-                case "aztec_getChainId":
-                case "aztec_getVersion": {
+                case "aztec_registerSender":
+                case "aztec_getAddressBook":
+                case "aztec_registerContract": {
                     this.checkMethodPermission(session, operation.kind, operation.chain);
-                    break;
-                }
-                case "aztec_simulateTx":
-                case "aztec_simulateUtility": {
-                    this.checkMethodPermission(session, operation.kind, operation.chain);
-                    this.checkScopesPermissions(session, operation.scopes!); // scopes are ensured above
                     break;
                 }
                 case "aztec_getPrivateEvents": {
@@ -292,9 +251,10 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "get_complete_address":
                 case "register_token":
                 case "simulate_utility":
-                case "aztec_getCompleteAddress":
-                case "aztec_getAddress":
-                case "aztec_createTxExecutionRequest":
+                case "aztec_simulateTx":
+                case "aztec_simulateUtility":
+                case "aztec_profileTx":
+                case "aztec_sendTx":
                 case "aztec_createAuthWit": {
                     const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
                     this.checkAccountPermission(session, operation.account);
@@ -307,7 +267,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     this.checkAccountPermission(session, operation.account);
                     this.checkMethodPermission(session, operation.kind, chain);
                     operation.actions.forEach(x => this.checkMethodPermission(session, x.kind, chain));
-                    operation.setup?.forEach(x => this.checkMethodPermission(session, x.kind, chain));
                     break;
                 }
                 case "simulate_views": {
@@ -351,7 +310,13 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         if (accessLevel >= payload.session.confirmationLevel) {
             return true;
         }
-        if (payload.params.operations.find(x => x.kind === "send_transaction" && !x.setup?.length)) {
+        if (
+            payload.params.operations.find(
+                x =>
+                    (x.kind === "send_transaction" && x.fee?.embeddedFeePayment === undefined) ||
+                    (x.kind === "aztec_sendTx" && x.opts?.fee?.embeddedPaymentMethodFeePayer === undefined),
+            )
+        ) {
             return true;
         }
         return false;
@@ -383,6 +348,22 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 return AccessLevel.PrivateData;
             case "send_transaction":
                 return AccessLevel.Transactions;
+            case "aztec_getContractClassMetadata":
+                return AccessLevel.PxeState;
+            case "aztec_getContractMetadata":
+                return AccessLevel.PxeState;
+            case "aztec_getPrivateEvents":
+                return AccessLevel.PrivateData;
+            case "aztec_getChainInfo":
+                return AccessLevel.PublicData;
+            case "aztec_getTxReceipt":
+                return AccessLevel.PublicData;
+            case "aztec_registerSender":
+                return AccessLevel.PxeState;
+            case "aztec_getAddressBook":
+                return AccessLevel.AppState;
+            case "aztec_registerContract":
+                return AccessLevel.PxeState;
             case "aztec_simulateTx":
                 return AccessLevel.PrivateData;
             case "aztec_simulateUtility":
@@ -390,47 +371,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             case "aztec_profileTx":
                 return AccessLevel.PrivateData;
             case "aztec_sendTx":
-                return AccessLevel.PublicData;
-            case "aztec_getContractClassMetadata":
-                return AccessLevel.PxeState;
-            case "aztec_getContractMetadata":
-                return AccessLevel.PxeState;
-            case "aztec_registerContract":
-                return AccessLevel.PxeState;
-            case "aztec_registerContractClass":
-                return AccessLevel.PxeState;
-            case "aztec_proveTx":
                 return AccessLevel.Transactions;
-            case "aztec_getNodeInfo":
-                return AccessLevel.PublicData;
-            case "aztec_getPXEInfo":
-                return AccessLevel.PublicData;
-            case "aztec_getCurrentBaseFees":
-                return AccessLevel.PublicData;
-            case "aztec_updateContract":
-                return AccessLevel.PxeState;
-            case "aztec_registerSender":
-                return AccessLevel.PxeState;
-            case "aztec_getSenders":
-                return AccessLevel.PxeState;
-            case "aztec_removeSender":
-                return AccessLevel.PxeState;
-            case "aztec_getTxReceipt":
-                return AccessLevel.PublicData;
-            case "aztec_getPrivateEvents":
-                return AccessLevel.PrivateData;
-            case "aztec_getPublicEvents":
-                return AccessLevel.PublicData;
-            case "aztec_getCompleteAddress":
-                return AccessLevel.PublicData;
-            case "aztec_getAddress":
-                return AccessLevel.PublicData;
-            case "aztec_getChainId":
-                return AccessLevel.PublicData;
-            case "aztec_getVersion":
-                return AccessLevel.PublicData;
-            case "aztec_createTxExecutionRequest":
-                return AccessLevel.PrivateData;
             case "aztec_createAuthWit":
                 return AccessLevel.PrivateData;
             default:

@@ -4,6 +4,7 @@ export type ActionKind = Action["kind"];
 
 export type Action =
     | AddCapsuleAction
+    | AddExtraArgsAction
     | AddPrivateAuthwitAction
     | AddPublicAuthwitAction
     | CallAction
@@ -14,6 +15,11 @@ export type AddCapsuleAction = {
     readonly contract: string;
     readonly storageSlot: string;
     readonly capsule: string[];
+};
+
+export type AddExtraArgsAction = {
+    readonly kind: "add_extra_args";
+    readonly args: string[];
 };
 
 export type AddPrivateAuthwitAction = {
@@ -32,6 +38,7 @@ export type CallAction = {
     readonly contract: string;
     readonly method: string;
     readonly args: any[];
+    readonly hideSender?: boolean;
 };
 
 export type EncodedCallAction = {
@@ -39,6 +46,7 @@ export type EncodedCallAction = {
     readonly to: string;
     readonly selector: string;
     readonly args: string[];
+    readonly hideMsgSender?: boolean;
     name?: string;
     type?: string;
     isStatic?: boolean;

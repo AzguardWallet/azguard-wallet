@@ -1,20 +1,32 @@
 export const CONTACT_SERVICE_NAME = "contact";
 
-export const contactColors = ["blue", "green", "mint", "neutral-mint", "orange", "yellow", "red", "purple", "gray", "sand"]
+export const contactColors = [
+    "blue",
+    "green",
+    "mint",
+    "neutral-mint",
+    "orange",
+    "yellow",
+    "red",
+    "purple",
+    "gray",
+    "sand",
+];
 
 export type Contact = {
     /** Randomly generated contact id. */
-    id: string,
+    id: string;
     /** Profile id. */
-    profileId: string,
+    profileId: string;
     /** Contact name. */
-    name: string,
+    name: string;
     /** Contact address. */
-    address: string,
+    address: string;
     /** Contact name abbreviation (1–2 letters). */
-    abbr: string,
+    abbr: string;
     /** Contact abbr color. */
-    color: string,
+    color: string;
+    // TODO: add chainId
 };
 
 export type Methods = {

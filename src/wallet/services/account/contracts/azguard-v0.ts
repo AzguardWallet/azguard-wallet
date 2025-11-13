@@ -1,4 +1,4 @@
-import { GeneratorIndex } from '@aztec/constants';
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT, GeneratorIndex } from '@aztec/constants';
 import {
     Fr,
     GrumpkinScalar,
@@ -22,7 +22,6 @@ import {
     getContractInstanceFromInstantiationParams,
 } from '@aztec/stdlib/contract';
 import { Gas, GasFees, GasSettings } from '@aztec/stdlib/gas';
-import { PXE } from '@aztec/stdlib/interfaces/client';
 import { 
     deriveKeys,
     PublicKey,
@@ -35,16 +34,17 @@ import {
     TxExecutionRequest,
 } from '@aztec/stdlib/tx';
 import { ILogger, LogLevel } from '@/wallet/logger';
+import type { IPXE } from "@/wallet/services/pxe/client";
 import {
     getMulticallEntrypointAddress,
     getMulticallEntrypointFn,
     getMulticallEntrypointSelector,
 } from '@/wallet/utils/multicall-entrypoint';
-import { AzguardFunctionCall, IAccountContract } from '.';
+import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from '.';
 
 import compiled from './azguard-v0.json' with { type: "json" };
+import { AztecNode } from '@aztec/stdlib/interfaces/client';
 const azguardV0Artifact = loadContractArtifact(compiled as NoirCompiledContract);
-const SETUP_CHUNK_SIZE = 2;
 const CHUNK_SIZE = 4;
 
 export class AzguardV0 implements IAccountContract {
@@ -76,7 +76,7 @@ export class AzguardV0 implements IAccountContract {
         return new AzguardV0(secret, signingKey, signingPubKey, instance, logger);
     }
 
-    public async ensureRegistered(pxe: PXE): Promise<void> {
+    public async ensureRegistered(pxe: IPXE): Promise<void> {
         const accounts = await pxe.getRegisteredAccounts();
         if (!accounts.find(x => x.address.toString() === this.address.toString())) {
             this.logger.log(this.name, LogLevel.Debug, 'register account...');
@@ -94,26 +94,13 @@ export class AzguardV0 implements IAccountContract {
         return new AuthWitness(messageHash, [...signature.toBuffer()]);
     }
 
-    public buildTxExecutionRequest(
-        pxe: PXE,
-        setup: AzguardFunctionCall[],
-        isFeePayer: boolean,
+    public async buildTxExecutionRequest(
+        node: AztecNode,
+        pxe: IPXE,
         calls: AzguardFunctionCall[],
-        args: HashedValues[],
         nonce: Fr,
-        authwits?: AuthWitness[],
-        capsules?: Capsule[],
-    ): Promise<TxExecutionRequest> {
-        return setup.length 
-            ? this._buildTxExecutionRequestWithSetup(pxe, setup, isFeePayer, calls, args, nonce, authwits, capsules)
-            : this._buildTxExecutionRequest(pxe, calls, args, nonce, authwits, capsules);
-    }
-
-    private async _buildTxExecutionRequest(
-        pxe: PXE,
-        calls: AzguardFunctionCall[],
+        feePaymentMethod: AzguardFeePaymentMethod,
         args: HashedValues[],
-        nonce: Fr,
         authwits?: AuthWitness[],
         capsules?: Capsule[],
     ): Promise<TxExecutionRequest> {
@@ -122,180 +109,47 @@ export class AzguardV0 implements IAccountContract {
         
         let batchCalls = calls.slice();
         const batchArgs = args.slice();
-        const batchAuthwits = authwits ?? [];
-        const batchCapsules = capsules ?? [];
+        const batchAuthwits = authwits?.slice() ?? [];
+        const batchCapsules = capsules?.slice() ?? [];
 
         while (batchCalls.length > CHUNK_SIZE) {
             let new_calls = [];
+            while (Math.floor(batchCalls.length / CHUNK_SIZE) % CHUNK_SIZE + batchCalls.length % CHUNK_SIZE > CHUNK_SIZE) {
+                batchCalls.push(AzguardFunctionCall.empty());
+            }
             while (batchCalls.length >= CHUNK_SIZE) {
                 const chunkCalls = batchCalls.splice(0, CHUNK_SIZE);
-                const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [chunkCalls, chunkNonce]));
+                const chunkNonce = Fr.random();
+                const chunkFeePaymentMethod = AzguardFeePaymentMethod.External;
+                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [chunkCalls, chunkNonce, chunkFeePaymentMethod]));
                 batchArgs.push(chunkArgs);
                 
-                const chunkPayload = chunkCalls.flatMap(x => x.toFields()).concat(chunkNonce);
+                const chunkPayload = chunkCalls.flatMap(x => x.toFields()).concat(chunkNonce).concat(new Fr(chunkFeePaymentMethod));
                 const chunkPayloadHash = await poseidon2HashWithSeparator(chunkPayload, GeneratorIndex.SIGNATURE_PAYLOAD);
-                const chunkSignature = (await new Schnorr().constructSignature(chunkPayloadHash.toBuffer(), this.signingKey)).toBuffer();
-                const chunkAuthwit = new AuthWitness(chunkPayloadHash, [...chunkSignature]);
+                const chunkAuthwit = await this.buildAuthWitness(chunkPayloadHash);
                 batchAuthwits.push(chunkAuthwit);
                 
-                new_calls.push(new AzguardFunctionCall(this.address, fnSelector, chunkArgs.hash, false, false));
+                new_calls.push(new AzguardFunctionCall(this.address, fnSelector, chunkArgs.hash, false, false, false));
             }
-            if (new_calls.length % CHUNK_SIZE + batchCalls.length > CHUNK_SIZE) {
-                while (batchCalls.length < CHUNK_SIZE) {
-                    batchCalls.push(AzguardFunctionCall.empty());
-                }
-                const chunkCalls = batchCalls;
-                const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [chunkCalls, chunkNonce]));
-                batchArgs.push(chunkArgs);
-
-                const chunkPayload = chunkCalls.flatMap(x => x.toFields()).concat(chunkNonce);
-                const chunkPayloadHash = await poseidon2HashWithSeparator(chunkPayload, GeneratorIndex.SIGNATURE_PAYLOAD);
-                const chunkSignature = (await new Schnorr().constructSignature(chunkPayloadHash.toBuffer(), this.signingKey)).toBuffer();
-                const chunkAuthwit = new AuthWitness(chunkPayloadHash, [...chunkSignature]);
-                batchAuthwits.push(chunkAuthwit);
-
-                new_calls.push(new AzguardFunctionCall(this.address, fnSelector, chunkArgs.hash, false, false));
-            }
-            else {
-                new_calls.push(...batchCalls);
-            }
-            batchCalls = new_calls;
+            batchCalls = [...new_calls, ...batchCalls];
         }
         while (batchCalls.length < CHUNK_SIZE) {
             batchCalls.push(AzguardFunctionCall.empty());
         }
 
-        const fnArgs = await HashedValues.fromArgs(encodeArguments(fn, [batchCalls, nonce]));
+        const fnArgs = await HashedValues.fromArgs(encodeArguments(fn, [batchCalls, nonce, feePaymentMethod]));
         batchArgs.push(fnArgs);
 
-        const payload = batchCalls.flatMap(x => x.toFields()).concat(nonce);
+        const payload = batchCalls.flatMap(x => x.toFields()).concat(nonce).concat(new Fr(feePaymentMethod));
         const payloadHash = await poseidon2HashWithSeparator(payload, GeneratorIndex.SIGNATURE_PAYLOAD);
-        const signature = (await new Schnorr().constructSignature(payloadHash.toBuffer(), this.signingKey)).toBuffer();
-        const authwit = new AuthWitness(payloadHash, [...signature]);
+        const authwit = await this.buildAuthWitness(payloadHash);
         batchAuthwits.push(authwit);
 
-        const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
-        const baseFees = await pxe.getCurrentBaseFees();
+        const { l1ChainId, rollupVersion } = await node.getNodeInfo();
+        const baseFees = await node.getCurrentBaseFees();
         const gasSettings = new GasSettings(
-            new Gas(4_294_967_295, 4_294_967_295),
-            new Gas(294_967_295, 294_967_295),
-            baseFees,
-            new GasFees(0, 0),
-        )
-        const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
-
-        const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, batchCapsules);
-        
-        const accounts = await pxe.getRegisteredAccounts();
-        if (!accounts.find(x => x.address.toString() === this.address.toString())) {
-            this.logger.log(this.name, LogLevel.Debug, 'register account...');
-            await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
-        }
-        const contractMetadata = await pxe.getContractMetadata(this.address);
-        if (!contractMetadata.contractInstance) {
-            this.logger.log(this.name, LogLevel.Debug, 'register contract...');
-            await pxe.registerContract({instance: this.instance, artifact: azguardV0Artifact});
-        }
-        if (!contractMetadata.isContractInitialized) {
-            this.logger.log(this.name, LogLevel.Debug, 'initialize account contract instance...');
-            return await this._withInitialization(request);
-        }
-
-        return request;
-    }
-
-    private async _buildTxExecutionRequestWithSetup(
-        pxe: PXE,
-        setup: AzguardFunctionCall[],
-        isFeePayer: boolean,
-        calls: AzguardFunctionCall[],
-        args: HashedValues[],
-        nonce: Fr,
-        authwits?: AuthWitness[],
-        capsules?: Capsule[],
-    ): Promise<TxExecutionRequest> {
-        const fn = azguardV0Artifact.functions.find(x => x.name === "execute_with_setup")!
-        const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
-        
-        let setupCalls = setup.slice();
-        let batchCalls = calls.slice();
-        const batchArgs = args.slice();
-        const batchAuthwits = authwits ?? [];
-        const batchCapsules = capsules ?? [];
-
-        if (setupCalls.length > SETUP_CHUNK_SIZE) {
-            throw new Error("Unsuported number of setup calls");
-        }
-        while (batchCalls.length > CHUNK_SIZE) {
-            let emptySetup = new Array(SETUP_CHUNK_SIZE).fill(AzguardFunctionCall.empty());
-            let newCalls = [];
-            while (batchCalls.length >= CHUNK_SIZE) {
-                const chunkCalls = batchCalls.splice(0, CHUNK_SIZE);
-                const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [emptySetup, false, chunkCalls, chunkNonce]));
-                batchArgs.push(chunkArgs);
-                
-                const chunkPayload = emptySetup.flatMap(x => x.toFields())
-                    .concat(chunkCalls.flatMap(x => x.toFields()))
-                    .concat(chunkNonce);
-                const chunkPayloadHash = await poseidon2HashWithSeparator(chunkPayload, GeneratorIndex.SIGNATURE_PAYLOAD);
-                const chunkSignature = (await new Schnorr().constructSignature(chunkPayloadHash.toBuffer(), this.signingKey)).toBuffer();
-                const chunkAuthwit = new AuthWitness(chunkPayloadHash, [...chunkSignature]);
-                batchAuthwits.push(chunkAuthwit);
-                
-                newCalls.push(new AzguardFunctionCall(this.address, fnSelector, chunkArgs.hash, false, false));
-            }
-            if (newCalls.length % CHUNK_SIZE + batchCalls.length > CHUNK_SIZE) {
-                while (batchCalls.length < CHUNK_SIZE) {
-                    batchCalls.push(AzguardFunctionCall.empty());
-                }
-                const chunkCalls = batchCalls;
-                const chunkNonce = nonce.isZero() ? Fr.zero() : Fr.random();
-                const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [emptySetup, false, chunkCalls, chunkNonce]));
-                batchArgs.push(chunkArgs);
-
-                const chunkPayload = emptySetup.flatMap(x => x.toFields())
-                    .concat(chunkCalls.flatMap(x => x.toFields()))
-                    .concat(chunkNonce);
-                const chunkPayloadHash = await poseidon2HashWithSeparator(chunkPayload, GeneratorIndex.SIGNATURE_PAYLOAD);
-                const chunkSignature = (await new Schnorr().constructSignature(chunkPayloadHash.toBuffer(), this.signingKey)).toBuffer();
-                const chunkAuthwit = new AuthWitness(chunkPayloadHash, [...chunkSignature]);
-                batchAuthwits.push(chunkAuthwit);
-
-                newCalls.push(new AzguardFunctionCall(this.address, fnSelector, chunkArgs.hash, false, false));
-            }
-            else {
-                newCalls.push(...batchCalls);
-            }
-            batchCalls = newCalls;
-        }
-
-        while (setupCalls.length < SETUP_CHUNK_SIZE) {
-            setupCalls.push(AzguardFunctionCall.empty());
-        }
-        while (batchCalls.length < CHUNK_SIZE) {
-            batchCalls.push(AzguardFunctionCall.empty());
-        }
-
-        const fnArgs = await HashedValues.fromArgs(encodeArguments(fn, [setupCalls, isFeePayer, batchCalls, nonce]));
-        batchArgs.push(fnArgs);
-
-        const payload = setupCalls.flatMap(x => x.toFields())
-            .concat(new Fr(isFeePayer))
-            .concat(batchCalls.flatMap(x => x.toFields()))
-            .concat(nonce);
-        const payloadHash = await poseidon2HashWithSeparator(payload, GeneratorIndex.SIGNATURE_PAYLOAD);
-        const signature = (await new Schnorr().constructSignature(payloadHash.toBuffer(), this.signingKey)).toBuffer();
-        const authwit = new AuthWitness(payloadHash, [...signature]);
-        batchAuthwits.push(authwit);
-
-        const { l1ChainId, rollupVersion } = await pxe.getNodeInfo();
-        const baseFees = await pxe.getCurrentBaseFees();
-        const gasSettings = new GasSettings(
-            new Gas(4_294_967_295, 4_294_967_295),
-            new Gas(294_967_295, 294_967_295),
+            new Gas(GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT),
+            new Gas(GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT),
             baseFees,
             new GasFees(0, 0),
         )
@@ -332,6 +186,7 @@ export class AzguardV0 implements IAccountContract {
                 function_selector: ctorSelector,
                 target_address: request.origin,
                 is_public: false,
+                hide_msg_sender: false,
                 is_static: false,
             },
             {
@@ -339,6 +194,7 @@ export class AzguardV0 implements IAccountContract {
                 function_selector: request.functionSelector,
                 target_address: request.origin,
                 is_public: false,
+                hide_msg_sender: false,
                 is_static: false,
             },
             {
@@ -346,6 +202,7 @@ export class AzguardV0 implements IAccountContract {
                 function_selector: FunctionSelector.empty(),
                 target_address: AztecAddress.zero(),
                 is_public: false,
+                hide_msg_sender: false,
                 is_static: false,
             },
             {
@@ -353,6 +210,15 @@ export class AzguardV0 implements IAccountContract {
                 function_selector: FunctionSelector.empty(),
                 target_address: AztecAddress.zero(),
                 is_public: false,
+                hide_msg_sender: false,
+                is_static: false,
+            },
+            {
+                args_hash: Fr.zero(),
+                function_selector: FunctionSelector.empty(),
+                target_address: AztecAddress.zero(),
+                is_public: false,
+                hide_msg_sender: false,
                 is_static: false,
             },
         ];

@@ -115,7 +115,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 salt: Fr.zero(),
             });
 
-            const classMetadata = await pxe.getContractClassMetadata(contractClass.id);
+            const classMetadata = await pxe.getContractClassMetadata(contractClass.id, true);
             if (!classMetadata.isContractClassPubliclyRegistered) {
                 this.logDebug("register faucet token class id");
                 const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
@@ -177,7 +177,9 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
             try {
                 const deployResults = await this.executionService.executeOperations(deployOps, origin, deployTask);
                 if (!deployResults.every(x => x.status === "ok")) {
-                    throw new Error(`Token deployment failed: ${deployResults.find(x => x.status === "failed")?.error}`);
+                    throw new Error(
+                        `Token deployment failed: ${deployResults.find(x => x.status === "failed")?.error}`,
+                    );
                 }
                 const deployTx = (deployResults.at(-1) as OkOperationResult<string>).result;
                 this.logDebug("faucet deploy tx", deployTx);
