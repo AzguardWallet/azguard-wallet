@@ -115,6 +115,7 @@ import { ChainInfo } from "@aztec/entrypoints/interfaces";
 import {
     Aliased,
     ContractInstanceAndArtifact,
+    FunctionCallSchema,
     ProfileOptions,
     SendOptions,
     SimulateOptions,
@@ -1046,7 +1047,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     ): Promise<[Action[], AzguardFeePaymentMethod, FeeOptions]> {
         const actions: Action[] = [];
 
-        for (const capsule of (exec.capsules ?? []).concat(opts.capsules ?? [])) {
+        for (const _capsule of (exec.capsules ?? []).concat(opts.capsules ?? [])) {
+            const capsule = await Capsule.schema.parseAsync(_capsule);
             actions.push({
                 kind: "add_capsule",
                 contract: capsule.contractAddress.toString(),
@@ -1055,7 +1057,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             } satisfies AddCapsuleAction);
         }
 
-        for (const authwit of (exec.authWitnesses ?? []).concat(opts.authWitnesses ?? [])) {
+        for (const _authwit of (exec.authWitnesses ?? []).concat(opts.authWitnesses ?? [])) {
+            const authwit = await AuthWitness.schema.parseAsync(_authwit);
             actions.push({
                 kind: "add_private_authwit",
                 content: {
@@ -1066,14 +1069,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             } satisfies AddPrivateAuthwitAction);
         }
 
-        for (const args of exec.extraHashedArgs ?? []) {
+        for (const _args of exec.extraHashedArgs ?? []) {
+            const args = await HashedValues.schema.parseAsync(_args);
             actions.push({
                 kind: "add_extra_args",
                 args: args.values.map(x => x.toString()),
-            } satisfies AddExtraArgsAction);
+            } satisfies AddExtraArgsAction); 
         }
 
-        for (const call of exec.calls ?? []) {
+        for (const _call of exec.calls ?? []) {
+            const call = await FunctionCallSchema.parseAsync(_call);
             actions.push({
                 kind: "encoded_call",
                 to: call.to.toString(),
