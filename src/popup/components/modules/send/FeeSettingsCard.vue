@@ -168,14 +168,14 @@ const init = async () => {
 	try {
 		isLoading.value = true
 		
-		if (props.network && props.account) {
+		if (props.network && props.account && !isCustomMethod.value) {
 			balances.value = await tokenBalanceService.getTokenBalances(undefined, props.account.address)
 			methods.value[0].balance = feeJuiceBalance.value
 			methods.value[1].balance = feeJuiceBalance.value
 
-			const fpms = (await chrome.storage.local.get(FEE_METHOD_LS_KEY))[FEE_METHOD_LS_KEY] || {}
-			if (fpms[props.account.address]) {
-				selectedMethod.value = fpms[props.account.address]
+			const fpcs = (await chrome.storage.local.get(FEE_METHOD_LS_KEY))[FEE_METHOD_LS_KEY] || {}
+			if (fpcs[props.account.address]) {
+				selectedMethod.value = fpcs[props.account.address]
 			} else {
 				const fpcs = (await fpcService.getFpcs(props.network.chainId))?.filter(f => f.type === FpcType.DefaultSponsoredFpc)
 				if (fpcs?.length) {
@@ -335,7 +335,7 @@ onBeforeUnmount(() => {
 		<Flex align="center" justify="between" :class="$style.card">
 			<Text size="13" weight="600" color="primary">Pay fee with</Text>
 
-			<Text v-if="isCustomMethod" size="13" weight="600" color="primary"> Custom method </Text>
+			<Text v-if="isCustomMethod" size="13" weight="600" color="primary"> Embedded payload </Text>
 			<Dropdown v-else @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false">
 				<template #trigger>
 					<Spinner v-if="isLoading" color="--txt-primary" />
