@@ -23,9 +23,14 @@ const router = useRouter()
 const tasks = ref([])
 const newTokens = computed(() => {
 	return tasks.value
-		.filter(t => t.content.kind === ContentKind.TokenMint &&
-			!t.finishedAt &&
-			t.content.account === appStore.account.address
+		.filter(t =>
+			t.content.kind === ContentKind.TokenMint &&
+			t.content.account === appStore.account.address &&
+			!tokenBalances.value?.some(tb => 
+				tb.token.name === t.content.name &&
+				tb.token.symbol === t.content.symbol
+			) &&
+			!t.finishedAt
 		)
 		.map(t => t.content)
 		.sort((a, b) => stringCompare(a.name, b.name))
@@ -172,31 +177,14 @@ watch(
 	}
 )
 onMounted(async () => {
-	await fetchTokenBalances()
-
-	const _tasks = (await taskService.getTasks())
+	tasks.value = (await taskService.getTasks())
 		.filter(t =>
 			(t.content.kind === ContentKind.BalanceUpdate ||
 			 t.content.kind === ContentKind.TokenMint) &&
-			t.content.account === appStore.account.address &&
-			!t.finishedAt
+			t.content.account === appStore.account.address
 		)
 
-	tasks.value = _tasks.filter(t => {
-		const idx = tokenBalances.value.findIndex(
-			tb =>
-				tb.token.name === t.content.name &&
-				tb.token.symbol === t.content.symbol &&
-				t.content.kind === ContentKind.TokenMint
-		)
-
-		if (idx !== -1) {
-			tokenBalances.value[idx].isMinting = true
-			return false
-		}
-
-		return true
-	})
+	await fetchTokenBalances()
 })
 onBeforeUnmount(() => {
 	taskService.disconnect()
