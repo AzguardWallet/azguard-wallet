@@ -31,6 +31,12 @@ export type Methods = {
      * Returns details for the pending request so the window can proceed.
      * @param requestId Pending request identifier.
      */
+    getKey(credentialId: string): PasskeyCredential;
+
+    /**
+     * Returns details for the pending request so the window can proceed.
+     * @param requestId Pending request identifier.
+     */
     getPendingRequest(requestId: string): PasskeyRequest;
 
     /**

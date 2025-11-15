@@ -1,13 +1,22 @@
 <script setup>
+/** Services */
+import { PasskeyServiceClient } from "@/wallet/services/passkey/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
+/** Composables */
+import { useToast } from "@/composables/toast"
+const { openToast } = useToast()
+
 /** Store */
-import { usePopupStore } from "@/stores/popup.store"
+import { useAppStore } from "@/stores/app.store"
 import { useCacheStore } from "@/stores/cache.store.ts"
-const popupStore = usePopupStore()
+import { usePopupStore } from "@/stores/popup.store"
+const appStore = useAppStore()
 const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
 
 const emit = defineEmits(["onClose"])
 const props = defineProps({
@@ -20,7 +29,41 @@ const displaceIdx = computed(() => {
 
 const confirmationInputEl = useTemplateRef("confirmationInputEl")
 const confirmationTerm = ref()
-const isConfirmationTextValid = computed(() => cacheStore.confirm.confirmation_text === confirmationTerm.value)
+const isPasskeyConfirmed = ref(false)
+const isConfirmed = computed(() => {
+	return (
+		cacheStore.confirm.confirmation_text &&
+		cacheStore.confirm.confirmation_text === confirmationTerm.value
+	) ||
+	(
+		cacheStore.confirm.passkeyConfirmation &&
+		isPasskeyConfirmed.value
+	) ||
+	(
+		!cacheStore.confirm.confirmation_text &&
+		!cacheStore.confirm.passkeyConfirmation
+	)
+})
+
+async function handlePasskeyConfirmation() {
+	if (isPasskeyConfirmed.value) {
+		openToast({ label: "The operation is already confirmed", icon: "info" }, 2_000)
+		return
+	}
+
+	const passkeyService = new PasskeyServiceClient()
+	try {
+		const credential = await passkeyService.getKey(appStore.profile.credentialId);
+		if (credential) {
+			isPasskeyConfirmed.value = true
+			confirmationTerm.value = cacheStore.confirm.confirmation_text || ""
+		}
+	} catch (error) {
+		
+	} finally {
+		passkeyService.disconnect()
+	}	
+}
 
 const handleConfirm = () => {
 	cacheStore.confirm.callback()
@@ -32,6 +75,7 @@ watch(
 	async () => {
 		if (!props.show) {
 			confirmationTerm.value = null
+			isPasskeyConfirmed.value = false
 
 			cacheStore.confirm = {}
 		} else {
@@ -61,12 +105,18 @@ watch(
 					</Text>
 				</Flex>
 
-				<Input
-					v-if="cacheStore.confirm.confirmation_text"
-					ref="confirmationInputEl"
-					v-model="confirmationTerm"
-					:placeholder="cacheStore.confirm.confirmation_text"
-				/>
+				<Flex v-if="cacheStore.confirm.confirmation_text || cacheStore.confirm.passkeyConfirmation" align="center" justify="between" gap="8" wide>
+					<Input
+						ref="confirmationInputEl"
+						v-model="confirmationTerm"
+						:placeholder="cacheStore.confirm.confirmation_text"
+						wide
+					/>
+
+					<Button v-if="cacheStore.confirm.passkeyConfirmation" @click="handlePasskeyConfirmation" type="tertiary" size="medium">
+						<Icon name="passkey" size="24" :color="isPasskeyConfirmed ? 'green' : 'tertiary'" />
+					</Button>
+				</Flex>
 
 				<Flex gap="12">
 					<Button @click="emit('onClose')" wide type="secondary" size="medium"> Cancel </Button>
@@ -75,7 +125,7 @@ watch(
 						@click="handleConfirm"
 						wide
 						:type="cacheStore.confirm.confirm_color"
-						:disabled="cacheStore.confirm.confirmation_text && !isConfirmationTextValid"
+						:disabled="!isConfirmed"
 						size="medium"
 					>
 						{{ cacheStore.confirm.confirm_text || "Confirm" }}

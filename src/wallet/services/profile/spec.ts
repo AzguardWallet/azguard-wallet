@@ -13,6 +13,8 @@ export type ProfileInfo = {
     name: string;
     /** Profile type. */
     type: ProfileType;
+    /** Passkey credential id. */
+    credentialId?: string;
 };
 
 export type Profile = ProfileInfo & (

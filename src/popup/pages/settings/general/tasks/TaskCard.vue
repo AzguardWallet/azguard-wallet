@@ -3,8 +3,7 @@
 import { DateTime } from "luxon"
 
 /** Services */
-import { TaskStatus } from "@/wallet/services/task/spec"
-import { ContentKind } from "@/wallet/services/task/spec"
+import { ContentKind, TaskStatus } from "@/wallet/services/task/spec"
 
 /** Composables */
 import { useTicker } from "@/composables/ticker"
@@ -26,7 +25,7 @@ const props = defineProps({
 	},
 })
 
-const subtasks = computed(() => props.task.subtasks.length ? props.task.subtasks : [props.task] )
+const subtasks = computed(() => props.task.subtasks.length ? props.task.subtasks : [props.task])
 const completedSubtasks = computed(() => subtasks.value.filter(st => st.finishedAt))
 
 const now = useTicker(1_000)
@@ -40,6 +39,14 @@ const relativeTime = computed(() => {
 		})
 })
 const iconSize = computed(() => props.isSubtask ? '12' : '16')
+
+const circumference = computed(() => 2 * Math.PI * 10)
+const arcLength = computed(() => circumference.value / subtasks.value?.length)
+const arcLengthWithGap = computed(() => arcLength.value - 4)
+
+function offsetFor(i) {
+	return - (i * arcLength.value)
+}
 
 const content = computed(() => props.task.humanizedContent)
 const isContentAvailable = computed(() => content.value && Object.keys(content.value).length > 0)
@@ -116,6 +123,24 @@ function handleCopyError(task) {
 							{{ relativeTime }}
 						</Text>
 					</Flex>
+					
+					<svg v-else-if="subtasks.length > 1" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="Circle split into four colored arcs">
+						<g transform="rotate(-80 12 12)">
+							<circle
+								v-for="(st, i) in subtasks"
+								:key="st.id"
+								cx="12"
+								cy="12"
+								r="10"
+								fill="none"
+								:stroke="st.statusColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								:stroke-dasharray="arcLengthWithGap + ' ' + circumference"
+								:stroke-dashoffset="offsetFor(i)"
+							/>
+						</g>
+					</svg>
 				</Flex>
 
 				<div v-if="showContent && isContentAvailable && !isSubtask" :class="$style.divider" />

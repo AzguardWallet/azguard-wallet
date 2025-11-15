@@ -172,15 +172,31 @@ watch(
 	}
 )
 onMounted(async () => {
-	tasks.value = (await taskService.getTasks())
-		.filter(t => (
-			t.content.kind === ContentKind.BalanceUpdate ||
-			t.content.kind === ContentKind.TokenMint
-		) &&
-			t.content.account === appStore.account.address
-		)
-	
 	await fetchTokenBalances()
+
+	const _tasks = (await taskService.getTasks())
+		.filter(t =>
+			(t.content.kind === ContentKind.BalanceUpdate ||
+			 t.content.kind === ContentKind.TokenMint) &&
+			t.content.account === appStore.account.address &&
+			!t.finishedAt
+		)
+
+	tasks.value = _tasks.filter(t => {
+		const idx = tokenBalances.value.findIndex(
+			tb =>
+				tb.token.name === t.content.name &&
+				tb.token.symbol === t.content.symbol &&
+				t.content.kind === ContentKind.TokenMint
+		)
+
+		if (idx !== -1) {
+			tokenBalances.value[idx].isMinting = true
+			return false
+		}
+
+		return true
+	})
 })
 onBeforeUnmount(() => {
 	taskService.disconnect()

@@ -18,7 +18,7 @@ import TaskCard from "./TaskCard.vue"
 
 /** Services */
 import { TaskServiceClient } from "@/wallet/services/task/client"
-import { ContentKind } from "@/wallet/services/task/spec"
+import { ContentKind, TaskStatus } from "@/wallet/services/task/spec"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
@@ -96,6 +96,41 @@ async function processTask(task) {
 	
 	return task
 }
+function processSubtask(subtask) {
+	if (!subtask.parentId) return subtask
+
+	switch (subtask.status) {
+		case TaskStatus.Pending:
+			subtask.statusColor = 'var(--gray)'
+			break;
+		case TaskStatus.Processing:
+			subtask.statusColor = 'var(--blue)'
+			break;
+		case TaskStatus.Completed:
+			subtask.statusColor = 'var(--green)'
+			break;
+		case TaskStatus.Cancelled:
+			subtask.statusColor = 'var(--gray)'
+			break;
+		case TaskStatus.Failed:
+			subtask.statusColor = 'var(--red)'
+			break;
+	
+		default:
+			break;
+	}
+
+	return subtask
+}
+function processSubtaskRecursively(subtask) {
+	processSubtask(subtask)
+
+	if (subtask.subtasks?.length) {
+		subtask.subtasks = subtask.subtasks.map(st => processSubtaskRecursively(st))
+	}
+
+	return subtask
+}
 
 const taskService = new TaskServiceClient()
 taskService.onTaskCreated.add(onTaskCreated)
@@ -105,11 +140,11 @@ async function onTaskCreated(task) {
 	task = await processTask(task)
 
 	if (!task.parentId) {
-		tasks.value.push(task)
+		tasks.value.push(reactive(task))
 	} else {
 		const parent = findTaskRecursive(tasks.value, task.parentId)
 		if (parent) {
-			parent.subtasks.push(task)
+			parent.subtasks.push(reactive(processSubtask(task)))
 		}
 	}
 }
@@ -117,14 +152,14 @@ function onTaskUpdated(task) {
 	const existing = findTaskRecursive(tasks.value, task.id)
 
 	if (existing) {
-		Object.assign(existing, task)
+		Object.assign(existing, processSubtask(task))
 	} else {
 		if (!task.parentId) {
-			tasks.value.push(task)
+			tasks.value.push(reactive(task))
 		} else {
 			const parent = findTaskRecursive(tasks.value, task.parentId)
 			if (parent) {
-				parent.subtasks.push(task)
+				parent.subtasks.push(reactive(processSubtask(task)))
 			}
 		}
 	}
@@ -171,9 +206,11 @@ function handleClickTask(task) {
 }
 
 onMounted(async () => {
-	tasks.value = await Promise.all(
+	const _tasks = await Promise.all(
 		(await taskService.getTasks()).map(task => processTask(task))
 	)
+
+	tasks.value = _tasks.map(t => processSubtaskRecursively(t)).map(t => reactive(t))
 })
 onBeforeUnmount(() => {
 	taskService.disconnect()

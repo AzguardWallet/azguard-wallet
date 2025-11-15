@@ -608,7 +608,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     private getProfileInfo(profile: Profile): ProfileInfo {
-        return { id: profile.id, name: profile.name, type: profile.type };
+        return { id: profile.id, name: profile.name, type: profile.type, credentialId: profile.credentialId };
     }
 
     private readonly onConfigUpdated = (prop: ConfigProp) => {

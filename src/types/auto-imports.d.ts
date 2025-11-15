@@ -124,6 +124,7 @@ declare global {
   const refDefault: typeof import("@vueuse/core")["refDefault"]
   const refThrottled: typeof import("@vueuse/core")["refThrottled"]
   const refWithControl: typeof import("@vueuse/core")["refWithControl"]
+  const refreshBalances: typeof import('../utils/core.js').refreshBalances
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveRef: typeof import("@vueuse/core")["resolveRef"]
   const resolveUnref: typeof import("@vueuse/core")["resolveUnref"]
@@ -304,6 +305,7 @@ declare global {
   const useThrottle: typeof import("@vueuse/core")["useThrottle"]
   const useThrottleFn: typeof import("@vueuse/core")["useThrottleFn"]
   const useThrottledRefHistory: typeof import("@vueuse/core")["useThrottledRefHistory"]
+  const useTicker: typeof import('../composables/ticker').useTicker
   const useTimeAgo: typeof import("@vueuse/core")["useTimeAgo"]
   const useTimeout: typeof import("@vueuse/core")["useTimeout"]
   const useTimeoutFn: typeof import("@vueuse/core")["useTimeoutFn"]

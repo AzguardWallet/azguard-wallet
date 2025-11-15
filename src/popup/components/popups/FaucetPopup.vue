@@ -2,6 +2,7 @@
 /** Services */
 import { FaucetServiceClient } from "@/wallet/services/faucet/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
 /** Vendor */
 import BN from "bignumber.js"
@@ -52,6 +53,8 @@ function onTokenDeleted(token) {
 
 	tokens.value.splice(idx, 1)
 }
+
+const tokenBalanceService = new TokenBalanceServiceClient()
 
 const tokens = ref([])
 const token = computed(() =>
@@ -126,6 +129,10 @@ const handleMint = async () => {
 		const name = tokenNameTerm.value.trim()
 		const symbol = tokenSymbolTerm.value.trim()
 
+		const balance = (
+			await tokenBalanceService.getTokenBalances(undefined, mintingAddress)
+		).find(tb => tb.token.name === name && tb.token.symbol === symbol)
+
 		emit("onClose")
 
 		await faucetService.mint(
@@ -137,6 +144,10 @@ const handleMint = async () => {
 			new BN(amountTerm.value).times(10 ** 8),
 			feeSettings.value,
 		)
+
+		if (balance) {
+			tokenBalanceService.refreshTokenBalance(balance.id)
+		}
 	} catch (err) {
 		error.value = err
 
@@ -148,6 +159,7 @@ const handleMint = async () => {
 		amountTerm.value = ""
 		tokens.value = []
 		tokenService.disconnect()
+		tokenBalanceService.disconnect()
 	}
 }
 
