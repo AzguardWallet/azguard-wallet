@@ -5,6 +5,10 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
+import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown"
+
+/** Utils */
+import { getAvailableExplorers, getEffectiveExplorerId } from "@/wallet/constants/explorers"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -27,33 +31,57 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const networkToEdit = computed(() => appStore.networks.find(n => n.id === cacheStore.networkToEditIdx))
+const networkToEdit = computed(() => appStore.networks.find((n) => n.id === cacheStore.networkToEditIdx))
 
-const notAllowedNetworkNames = computed(() => appStore.networks.filter(n => n.id !== networkToEdit.value.id).map(n => n.name))
-const notAllowedNetworkUrls = computed(() => appStore.networks.filter(n => n.id !== networkToEdit.value.id).map(n => n.rpcUrl))
+// Get available explorers for this network's chainId
+const availableExplorers = computed(() => {
+	if (!networkToEdit.value?.chainId) return []
+	return getAvailableExplorers(networkToEdit.value.chainId)
+})
+
+// Show explorer selector only if explorers are available
+const hasExplorers = computed(() => availableExplorers.value.length > 0)
+
+const existingNetworkNames = computed(() => appStore.networks.filter((n) => n.id !== networkToEdit.value.id).map((n) => n.name))
+const existingNetworkUrls = computed(() => appStore.networks.filter((n) => n.id !== networkToEdit.value.id).map((n) => n.rpcUrl))
 
 const isStartedEditingName = ref(false)
 const isStartedEditingUrl = ref(false)
+const isStartedEditingExplorer = ref(false)
 
 const nameTerm = ref("")
 const urlTerm = ref("")
+const selectedExplorer = ref(undefined)
 const handleFillFieldsWithDefaultValues = () => {
 	nameTerm.value = networkToEdit.value.name
 	urlTerm.value = networkToEdit.value.rpcUrl
+	// Use network's selected explorer or get default for chainId
+	selectedExplorer.value = networkToEdit.value.selectedExplorerId ||
+		getEffectiveExplorerId(networkToEdit.value.chainId)
 
 	isStartedEditingName.value = false
 	isStartedEditingUrl.value = false
+	isStartedEditingExplorer.value = false
 }
 
-const isNameAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value) && isStartedEditingName.value)
-const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value) && isStartedEditingUrl.value)
+const isNameAlreadyExist = computed(() => existingNetworkNames.value.includes(nameTerm.value) && isStartedEditingName.value)
+const isUrlAlreadyExist = computed(() => existingNetworkUrls.value.includes(urlTerm.value) && isStartedEditingUrl.value)
 
 const isAvailableToUpdateNetwork = computed(() => {
-	if (!nameTerm.value.length) return
-	if (!urlTerm.value.length) return
-	if (urlTerm.value.length < 5) return
-	if (nameTerm.value === networkToEdit.value.name && urlTerm.value === networkToEdit.value.rpcUrl) return
-	if (isNameAlreadyExist.value || isUrlAlreadyExist.value) return
+	// Basic validation
+	if (!nameTerm.value.length) return false
+	if (!urlTerm.value.length) return false
+	if (urlTerm.value.length < 5) return false
+
+	// Check if anything actually changed
+	const noChanges =
+		nameTerm.value === networkToEdit.value.name &&
+		urlTerm.value === networkToEdit.value.rpcUrl &&
+		selectedExplorer.value === networkToEdit.value.selectedExplorerId
+	if (noChanges) return false
+
+	// Check for conflicts with other networks
+	if (isNameAlreadyExist.value || isUrlAlreadyExist.value) return false
 
 	return true
 })
@@ -63,11 +91,17 @@ const handleUpdateNetwork = async () => {
 	if (!isAvailableToUpdateNetwork.value) return
 
 	isNetworkUpdateInProgress.value = true
-	await appStore.updateNetwork(cacheStore.networkToEditIdx, nameTerm.value, urlTerm.value)
+
+	// Update network with new values including selected explorer
+	await appStore.updateNetwork(
+		cacheStore.networkToEditIdx,
+		nameTerm.value,
+		urlTerm.value,
+		selectedExplorer.value
+	)
+
 	isNetworkUpdateInProgress.value = false
-
 	emit("onClose")
-
 	openToast({ label: "Node is updated" })
 }
 
@@ -86,7 +120,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleUpdateNetwork()
 }
 </script>
@@ -146,6 +180,46 @@ const onKeydown = e => {
 					</template>
 				</Input>
 
+				<!-- Block Explorer Selector (only show if explorers available) -->
+				<Flex v-if="hasExplorers" direction="column" gap="8">
+					<Text size="13" weight="600" color="secondary">Block Explorer</Text>
+					<Dropdown fullWidth>
+						<template #trigger>
+							<DropdownTrigger wide @click="isStartedEditingExplorer = true">
+								<Text size="13" weight="600" color="primary" style="text-transform: capitalize">
+									{{ availableExplorers.find(e => e.id === selectedExplorer)?.name }}
+								</Text>
+								<Icon name="chevron-down" size="12" color="tertiary" />
+							</DropdownTrigger>
+						</template>
+
+						<template #popup>
+							<DropdownItem
+								v-for="explorer in availableExplorers"
+								:key="explorer.id"
+								@click="selectedExplorer = explorer.id; isStartedEditingExplorer = true"
+							>
+								<Flex align="center" gap="8">
+									<Icon
+										:name="selectedExplorer === explorer.id ? 'check' : ''"
+										size="14"
+										color="primary"
+									/>
+									{{ explorer.name }}
+								</Flex>
+							</DropdownItem>
+						</template>
+					</Dropdown>
+				</Flex>
+
+				<!-- Placeholder when no explorers available -->
+				<Flex v-else direction="column" gap="8">
+					<Text size="13" weight="600" color="secondary">Block Explorer</Text>
+					<Flex align="center" :style="{ padding: '8px 12px', borderRadius: '8px', background: 'var(--card-bg)' }">
+						<Text size="13" weight="600" color="tertiary">None available</Text>
+					</Flex>
+				</Flex>
+
 				<Flex direction="column" gap="12">
 					<Flex direction="column" gap="12">
 						<Button
@@ -153,7 +227,7 @@ const onKeydown = e => {
 							wide
 							type="primary"
 							size="medium"
-							:disabled="!isAvailableToUpdateNetwork || (!isStartedEditingName && !isStartedEditingUrl)"
+							:disabled="!isAvailableToUpdateNetwork || (!isStartedEditingName && !isStartedEditingUrl && !isStartedEditingExplorer)"
 							:loading="isNetworkUpdateInProgress"
 						>
 							Update

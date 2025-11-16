@@ -65,8 +65,22 @@ function applySetting(setting) {
 const initNetworks = async () => {
 	appStore.networks = []
 	appStore.network = null
-	
+
 	managers.network = new NetworkServiceClient()
+
+	// Listen for network updates from background service
+	// Supporting explorer selection logic propagation
+	managers.network.onNetworkUpdated.add((updatedNetwork) => {
+		const idx = appStore.networks.findIndex(n => n.id === updatedNetwork.id)
+		if (idx > -1) {
+			appStore.networks[idx] = updatedNetwork
+		}
+		// Update current network if it's the one that was updated
+		if (appStore.network?.id === updatedNetwork.id) {
+			appStore.network = updatedNetwork
+		}
+	})
+
 	appStore.networks = await managers.network.getOrInitNetworks()
 
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
@@ -77,7 +91,7 @@ const initNetworks = async () => {
 
 	const key = `azguard:ui:lastActiveNetwork@${appStore.profile?.id}`
 	const lastActiveNetworkId = (await chrome.storage.local.get(key))[key]
-	
+
 	if (lastActiveNetworkId) {
 		appStore.network = appStore.networks.find(n => n.id === lastActiveNetworkId)
 	}

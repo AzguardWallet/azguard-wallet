@@ -9,6 +9,9 @@ export class Config {
     // Wallet
     sessionTtl: number = 1_800_000; // 30 minutes.
 
+    // Additional
+    blockExplorerEnabled: boolean = true;
+
     // Developer
     developerMode: boolean = false;
     debugMode: boolean = false;
