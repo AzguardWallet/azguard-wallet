@@ -149,4 +149,15 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
             this.emit("onAccountDeleted", account);
         }
     };
+
+    public async backup() {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
+        return (await this.storage.getValues()).filter(
+            x => x.profileId === profile.id
+        );
+    }
 }

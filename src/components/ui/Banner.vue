@@ -79,6 +79,16 @@ const props = defineProps({
 		background: var(--gray-5);
 	}
 
+	&.done {
+		background: var(--gray-5);
+
+		& .icon {
+			& svg {
+				fill: var(--green);
+			}
+		}
+	}
+
 	&.warning {
 		background: var(--gray-5);
 

@@ -5,6 +5,7 @@ import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { NetworkService } from "@/wallet/services/network/service";
+import { NodeStatus } from "@/wallet/services/network/spec"
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { ACCOUNT_STATE_SERVICE_NAME, Events, Methods } from "./spec";
@@ -89,5 +90,48 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
             this.logError("Failed to fetch registered contracts", getErrorMessage(error));
             throw new Error("PXE request failed");
         }
+    }
+
+    public async backup() {
+        const networks = (await this.networkService.getNetworks());
+        if (!networks.length) {
+            return undefined;
+        }
+
+        const res = []
+
+        for (const n of networks) {
+            if ((await this.networkService.getNodeStatus(n.id)) === NodeStatus.Active) {
+                const senders = await this.getSenders(n.id);
+                const contracts = await this.getContracts(n.id);
+                const contractsFull = []
+                for (const c of contracts) {
+                    const contractMetadata = await this.pxeService.getContractMetadata(n, AztecAddress.fromString(c));
+                    if (!contractMetadata.contractInstance) continue;
+
+                    const instance = contractMetadata.contractInstance;
+                    if (!instance.currentContractClassId) continue;
+
+                    const classMetadata = await this.pxeService.getContractClassMetadata(n, instance.currentContractClassId, true);
+                    if (!classMetadata.artifact) continue;
+
+                    const artifact = classMetadata.artifact;
+
+                    contractsFull.push({
+                        address: c,
+                        instance,
+                        artifact,
+                    })
+                }
+
+                res.push({
+                    networkId: n.id,
+                    senders,
+                    contracts: contractsFull,
+                });
+            }
+        }
+
+        return res;
     }
 }

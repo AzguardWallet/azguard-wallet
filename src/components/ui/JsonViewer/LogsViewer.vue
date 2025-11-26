@@ -408,8 +408,8 @@ function exportLogsToCSV() {
 			URL.revokeObjectURL(url)
 		})
 	} catch (err) {
-		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
 		console.error(err)
+		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
 	}
 }
 async function handleClearLogs() {

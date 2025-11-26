@@ -24,7 +24,6 @@ const { openToast } = useToast()
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
-import { number } from "zod"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
@@ -349,7 +348,7 @@ onBeforeUnmount(() => {
 									</Flex>
 								</DropdownItem>
 								<DropdownDivider />
-								<DropdownItem @click="handleCopy(token?.contract, 'Token address')">
+								<DropdownItem @click="handleCopy(tokenToDisplay?.contract, 'Token address')">
 									<Flex align="center" gap="8">
 										<Icon name="copy" size="14" color="primary" />
 										Copy address

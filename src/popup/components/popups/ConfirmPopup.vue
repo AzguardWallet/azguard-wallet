@@ -1,7 +1,4 @@
 <script setup>
-/** Services */
-import { PasskeyServiceClient } from "@/wallet/services/passkey/client"
-
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -51,17 +48,14 @@ async function handlePasskeyConfirmation() {
 		return
 	}
 
-	const passkeyService = new PasskeyServiceClient()
 	try {
-		const credential = await passkeyService.getKey(appStore.profile.credentialId);
-		if (credential) {
+		const confirmation = await managers.profile.confirmProfileOperation(appStore.profile.id);
+		if (confirmation) {
 			isPasskeyConfirmed.value = true
 			confirmationTerm.value = cacheStore.confirm.confirmation_text || ""
 		}
 	} catch (error) {
 		
-	} finally {
-		passkeyService.disconnect()
 	}	
 }
 

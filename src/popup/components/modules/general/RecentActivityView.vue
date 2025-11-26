@@ -21,7 +21,7 @@ const router = useRouter()
 
 const latestTransaction = computed(() => {
 	return props.token
-		? appStore.transactions.filter(t => t.calls[0]?.contract === props.token?.contract)[0]
+		? appStore.transactions.filter(t => t.calls[0]?.contract === props.token?.contract || t.calls.at(1)?.contract === props.token?.contract)[0]
 		: appStore.transactions[0]
 })
 const isTokenAwaitingTx = computed(() => {

@@ -38,7 +38,7 @@ const props = defineProps({
 const tokenService = new TokenServiceClient()
 
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
-const call = computed(() => tx.value.calls[0])
+const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
 const type = computed(() => {
 	if (call.value?.method.startsWith("transfer")) return "transfer"
 	if (call.value?.method.startsWith("mint_to_")) return "mint"
@@ -120,7 +120,7 @@ const handleCopy = target => {
 				<Flex v-else-if="mintAmount" align="center" direction="column" gap="8">
 					<Text size="24" weight="500" color="primary">
 						{{ mintAmount }}
-						<Text color="tertiary">{{ token.symbol }}</Text>
+						<Text v-if="token" color="tertiary">{{ token.symbol }}</Text>
 					</Text>
 					<Text size="12" weight="500" color="tertiary"> Mint Amount </Text>
 				</Flex>

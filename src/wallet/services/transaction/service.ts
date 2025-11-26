@@ -179,4 +179,27 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 throw new Error("unknown tx status");
         }
     }
+
+    public async backup() {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
+        const networks = (await this.networkService.getNetworks());
+        if (!networks.length) {
+            return undefined;
+        }
+
+        const txs: Tx[] = [];
+
+        for (const n of networks) {
+            const accounts = await this.accountService.getAccounts(profile.id, n.chainId);
+            for (const acc of accounts) {
+                txs.push(...(await this.getTransactions(acc.address)));
+            }
+        }
+
+        return txs;
+    }
 }

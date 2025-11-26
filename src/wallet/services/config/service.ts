@@ -36,6 +36,10 @@ export class ConfigService extends Service<Methods, Events> implements ServiceSp
         await this.config.reset();
     }
 
+    public async backup() {
+        return await this.getProps();
+    }
+
     private readonly onConfigUpdated = (prop: ConfigProp) => {
         this.emit("onUpdate", prop);
     };

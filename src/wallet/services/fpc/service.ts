@@ -271,4 +271,8 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             this.lock.leave();
         }
     };
+
+    public async backup() {
+        return (await this.getFpcs());
+    }
 }

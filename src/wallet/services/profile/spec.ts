@@ -13,8 +13,6 @@ export type ProfileInfo = {
     name: string;
     /** Profile type. */
     type: ProfileType;
-    /** Passkey credential id. */
-    credentialId?: string;
 };
 
 export type Profile = ProfileInfo & (
@@ -110,6 +108,13 @@ export type Methods = {
     changeProfilePassword(id: string, oldPassword: string, newPassword: string): ProfileInfo;
 
     /**
+     * Confirm profile operation.
+     * @param id Profile id.
+     * @param password Profile password.
+     */
+    confirmProfileOperation(id: string, password?: string): boolean;
+
+    /**
      * Deletes a profile and returns the deleted profile.
      * @param id Profile id.
      */
@@ -156,7 +161,7 @@ export type Methods = {
      * @param id Profile id.
      * @param password Password to decrypt the secret.
      */
-    exportPlain(id: string, password: string): string;
+    exportPlain(id: string, password?: string): string;
 
     /**
      * Returns 24-words mnemonic phrase, representing plain profile secret.

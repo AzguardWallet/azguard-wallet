@@ -150,4 +150,13 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
     protected logError(...data: any[]) {
         this.logger.log(this.name, LogLevel.Error, ...data);
     }
+
+    public async backup(): Promise<any> {
+        // can be overriden in derived classes if necessary
+        return null;
+    }
+
+    public async restore(_data: any): Promise<void> {
+        // can be overriden in derived classes if necessary
+    }
 }

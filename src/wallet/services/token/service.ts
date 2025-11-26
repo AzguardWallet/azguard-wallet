@@ -462,4 +462,13 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             await this.deleteToken(token.id);
         }
     };
+
+    public async backup() {
+        const profile = await this.profiles.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
+        return (await this.getTokensRaw(profile.id));
+    }
 }

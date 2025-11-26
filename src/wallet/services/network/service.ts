@@ -3,7 +3,7 @@ import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
-import { EntityStorage, StorageType, ValueStorage } from "@/wallet/storage";
+import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
@@ -322,4 +322,8 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             this.lock.leave();
         }
     };
+
+    public async backup() {
+        return (await this.getNetworks());
+    }
 }

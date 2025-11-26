@@ -3,7 +3,9 @@ import { ILogger } from "@/wallet/logger";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ExecutionService, FeeSettings, AuthwitContent } from "@/wallet/services/execution/service";
+import { ProfileService } from "@/wallet/services/profile/service";
 import { NetworkService } from "@/wallet/services/network/service";
+import { AccountService } from "@/wallet/services/account/service";
 import { WrappedTask } from "@/wallet/services/task/wrapped-task";
 import { TaskService, RevokeAuthwitsContent, StepContent } from "@/wallet/services/task/service";
 import { TransactionService, OriginType } from "@/wallet/services/transaction/service";
@@ -28,7 +30,9 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
     private readonly statuses = new EntityStorage<boolean>("azguard:core:auth-registry-enabled", StorageType.Local);
     private readonly lock = new Lock();
 
+    private profileService: ProfileService = null!;
     private networkService: NetworkService = null!;
+    private accountService: AccountService = null!;
     private executionService: ExecutionService = null!;
     private transactionService: TransactionService = null!;
     private taskService: TaskService = null!;
@@ -38,7 +42,9 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
     }
 
     protected async init(services: ServiceCollection) {
+        this.profileService = services.get(ProfileService.name);
         this.networkService = services.get(NetworkService.name);
+        this.accountService = services.get(AccountService.name);
         this.executionService = services.get(ExecutionService.name);
         this.transactionService = services.get(TransactionService.name);
         this.taskService = services.get(TaskService.name);
@@ -233,5 +239,28 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
             task.fail(error);
             throw error;
         }
+    }
+
+    public async backup() {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
+        const networks = (await this.networkService.getNetworks());
+        if (!networks.length) {
+            return undefined;
+        }
+
+        const authwits: Authwit[] = [];
+
+        for (const n of networks) {
+            const accounts = await this.accountService.getAccounts(profile.id, n.chainId);
+            for (const acc of accounts) {
+                authwits.push(...(await this.getAuthwits(acc.address)));
+            }
+        }
+
+        return authwits;
     }
 }

@@ -315,6 +315,53 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
+    public async confirmProfileOperation(id: string, password?: string): Promise<boolean> {
+        await this.ensureInitialized();
+        try {
+            await this.lock.enter();
+
+            const profile = await this.profiles.get(id);
+            if (!profile) {
+                throw new Error("Invalid profile id");
+            }
+
+            if (profile.type === "password") {
+                if (!password) {
+                    throw new Error("Password is required");
+                }
+
+                const passhash = await EncryptionKey.getPasshash(password);
+                const key = await EncryptionKey.fromPasshash(passhash);
+
+                const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), key);
+                if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
+                    throw new Error("Invalid profile password");
+                }
+                const secret = await this.tryDecrypt(Buffer.from(profile.secret, "base64"), key);
+                if (!secret) {
+                    throw new Error("Profile storage corrupted");
+                }
+            } else {
+                if (!profile.credentialId) {
+                    throw new Error("Missing credentialId");
+                }
+
+                const credential = await this.passkeys.getKey(profile.credentialId);
+
+                if (!credential) {
+                    throw new Error("Failed to get passkey credential");
+                }
+            }
+
+            return true;
+        } catch (error) {
+            this.logError("Failed to confirm operation", getErrorMessage(error));
+            throw new Error(getErrorMessage(error));
+        } finally {
+            this.lock.leave();
+        }
+    }
+    
     public async deleteProfile(id: string): Promise<ProfileInfo> {
         await this.ensureInitialized();
         try {
@@ -384,26 +431,27 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         return profile.secret;
     }
 
-    public async exportPlain(id: string, password: string): Promise<string> {
+    public async exportPlain(id: string, password?: string): Promise<string> {
         await this.ensureInitialized();
-        const passhash = await EncryptionKey.getPasshash(password);
-        const key = await EncryptionKey.fromPasshash(passhash);
         const profile = await this.profiles.get(id);
         if (!profile) {
             throw new Error("Invalid profile id");
         }
-        if (profile.type === "passkey") {
-            throw new Error("Operation not supported for passkey profile");
+
+        await this.confirmProfileOperation(id, password);
+
+        let plainSecret = "";
+        if (profile.type === "password" && password) {
+            const passhash = await EncryptionKey.getPasshash(password);
+            const key = await EncryptionKey.fromPasshash(passhash);
+            const secret = await this.tryDecrypt(Buffer.from(profile.secret, "base64"), key);
+
+            plainSecret = Buffer.from(secret!).toString("base64");
+        } else if (profile.type === "passkey") {
+            plainSecret = profile.credentialId;
         }
-        const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), key);
-        if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
-            throw new Error("Invalid profile password");
-        }
-        const secret = await this.tryDecrypt(Buffer.from(profile.secret, "base64"), key);
-        if (!secret) {
-            throw new Error("Profile storage corrupted");
-        }
-        return Buffer.from(secret).toString("base64");
+
+        return plainSecret;
     }
 
     public async exportMnemonic(id: string, password: string): Promise<string[]> {
@@ -608,7 +656,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     private getProfileInfo(profile: Profile): ProfileInfo {
-        return { id: profile.id, name: profile.name, type: profile.type, credentialId: profile.credentialId };
+        return { id: profile.id, name: profile.name, type: profile.type };
     }
 
     private readonly onConfigUpdated = (prop: ConfigProp) => {
@@ -616,4 +664,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             this.sessionTtl = prop.value;
         }
     };
+
+    public async backup() {
+        return (await this.getActiveProfile());
+    }
 }

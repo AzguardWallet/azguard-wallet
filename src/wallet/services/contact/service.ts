@@ -267,4 +267,8 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
 
         return "AZ";
     }
+
+    public async backup() {
+        return (await this.getContacts());
+    }
 }

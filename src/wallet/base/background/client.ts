@@ -148,6 +148,14 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
     protected logError(...data: any[]) {
         this.logger.log(this.name, LogLevel.Error, ...data);
     }
+
+    public async backup(): Promise<any> {
+        return this.request("backup" as keyof TRequests, ...([] as any));
+    }
+
+    public async restore(_data: any): Promise<any> {
+        return this.request("restore" as keyof TRequests, ...([] as any));
+    }
 }
 
 enum ClientState {

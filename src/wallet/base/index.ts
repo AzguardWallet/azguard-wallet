@@ -5,6 +5,7 @@ export type EventsMap = Record<string, unknown>;
 export type EventsSpec<T extends EventsMap> = {
     [P in keyof T]: EventHandler<T[P]>;
 };
+
 export type MethodsMap = Record<string, (...params: any) => unknown>;
 
 export type MethodsSpec<T extends MethodsMap> = {
