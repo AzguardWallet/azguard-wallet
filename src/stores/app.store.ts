@@ -201,8 +201,8 @@ export const useAppStore = defineStore("app", () => {
 		
 		networkStatus.value = NodeStatus[status]
 	}
-	const updateNetwork = async (id, name, url, selectedExplorerId) => {
-		const updatedNetwork = await managers.network.updateNetwork(id, name, url, selectedExplorerId)
+	const updateNetwork = async (id, name, url) => {
+		const updatedNetwork = await managers.network.updateNetwork(id, name, url)
 		networks.value = await managers.network.getNetworks()
 		return updatedNetwork
 	}

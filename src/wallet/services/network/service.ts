@@ -7,8 +7,7 @@ import { EntityStorage, StorageType, ValueStorage } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
-import { Events, Methods, Network, NETWORK_SERVICE_NAME, NodeStatus, BlockExplorerType } from "./spec";
-import { getEffectiveExplorerId } from "@/wallet/constants/explorers";
+import { Events, Methods, Network, NETWORK_SERVICE_NAME, NodeStatus } from "./spec";
 
 export * from "./spec";
 
@@ -78,8 +77,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
                 const name = "Aztec Node";
                 const rpcUrl = "https://devnet.aztec-labs.com";
                 const chainId = 1674512022; // 11155111 ^ 1667575857
-                const selectedExplorerId: BlockExplorerType = "aztecscan";
-                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true, selectedExplorerId));
+                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));
             }
@@ -87,8 +85,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
                 const name = "Sandbox";
                 const rpcUrl = "http://localhost:8080";
                 const chainId = 0;
-                const selectedExplorerId: BlockExplorerType = "none";
-                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true, selectedExplorerId));
+                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Sandbox'", getErrorMessage(error));
             }
@@ -126,7 +123,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
         return network;
     }
 
-    public async addNetwork(name: string, rpcUrl: string, selectedExplorerId?: BlockExplorerType): Promise<Network> {
+    public async addNetwork(name: string, rpcUrl: string): Promise<Network> {
         await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
@@ -135,9 +132,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
         const chainId = await this.getChainId(rpcUrl);
         try {
             await this.lock.enter();
-            // Use provided explorer or default based on chainId
-            const effectiveExplorerId = selectedExplorerId || getEffectiveExplorerId(chainId);
-            const network = await this._addNetwork(profile.id, name, rpcUrl, chainId, false, effectiveExplorerId);
+            const network = await this._addNetwork(profile.id, name, rpcUrl, chainId, false);
             this.emit("onNetworkAdded", network);
             return network;
         } finally {
@@ -145,7 +140,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
         }
     }
 
-    public async updateNetwork(id: string, name: string, rpcUrl: string, selectedExplorerId?: BlockExplorerType): Promise<Network> {
+    public async updateNetwork(id: string, name: string, rpcUrl: string): Promise<Network> {
         await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
@@ -162,10 +157,6 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             network.name = name;
             network.rpcUrl = rpcUrl;
             network.chainId = chainId;
-            // Update explorer selection if provided, otherwise keep existing or use default
-            network.selectedExplorerId = selectedExplorerId !== undefined
-                ? selectedExplorerId
-                : getEffectiveExplorerId(chainId, network.selectedExplorerId);
             await this.storage.set(id, network);
             this.emit("onNetworkUpdated", network);
             return network;
@@ -276,7 +267,6 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
         rpcUrl: string,
         chainId: number,
         isDefault: boolean,
-        selectedExplorerId?: BlockExplorerType,
     ): Promise<Network> {
         let id: string;
         do {
@@ -289,7 +279,6 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             rpcUrl,
             chainId,
             isDefault,
-            selectedExplorerId,
         };
         await this.storage.set(network.id, network);
         return network;

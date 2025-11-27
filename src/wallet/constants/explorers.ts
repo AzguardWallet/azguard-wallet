@@ -57,79 +57,20 @@ export function generateExplorerUrls(chainId: number, explorerType: BlockExplore
 }
 
 /**
- * Get available block explorers for a specific network chainId.
- * Filters explorers based on whether they actually generate URLs for this network.
- * Does not include "none" - use getSelectableExplorers for dropdown options.
- *
- * @param chainId - The network's chain ID
- * @returns Array of available explorers (empty array if no explorers support this chain)
- */
-export function getAvailableExplorers(chainId: number): BlockExplorer[] {
-	return BLOCK_EXPLORERS.filter(explorer => {
-		if (explorer.id === "none") return false
-		const urls = generateExplorerUrls(chainId, explorer.id)
-		return urls.length > 0
-	})
-}
-
-/**
- * Get selectable explorers for dropdown UI.
- * Returns real explorers + "None" option when at least one real explorer is available.
- * Returns empty array if no explorers support this network (selector should be hidden).
- *
- * @param chainId - The network's chain ID
- * @returns Array of selectable explorers including "None" option
- */
-export function getSelectableExplorers(chainId: number): BlockExplorer[] {
-	const available = getAvailableExplorers(chainId)
-	if (available.length === 0) return []
-
-	const noneOption = BLOCK_EXPLORERS.find(e => e.id === "none")
-	return noneOption ? [...available, noneOption] : available
-}
-
-/**
- * Get the user's selected explorer ID or default to first available explorer for the chainId.
- * Returns "none" if no explorers are available.
- *
- * @param chainId - The network's chain ID
- * @param selectedExplorerId - User's selected explorer (optional)
- * @returns The explorer ID to use
- */
-export function getEffectiveExplorerId(chainId: number, selectedExplorerId?: BlockExplorerType): BlockExplorerType {
-	// If user explicitly selected "none", respect that choice
-	if (selectedExplorerId === "none") {
-		return "none"
-	}
-
-	const available = getAvailableExplorers(chainId)
-
-	// If user has a selection and it's available, use it
-	if (selectedExplorerId && available.some(e => e.id === selectedExplorerId)) {
-		return selectedExplorerId
-	}
-
-	// Otherwise use first available, or "none" if no explorers
-	return available[0]?.id || "none"
-}
-
-/**
  * Construct a transaction explorer URL for a given transaction hash.
- * Returns null if no explorer is available for this network.
+ * Returns null if explorer is "none" or doesn't support the network.
  *
  * @param chainId - The network's chain ID
- * @param selectedExplorerId - User's selected explorer ID (optional)
+ * @param selectedExplorerId - User's selected explorer ID
  * @param txHash - Transaction hash
- * @returns Full URL to view the transaction, or null if no explorer available
+ * @returns Full URL to view the transaction, or null if unavailable
  */
 export function getTransactionExplorerUrl(chainId: number, selectedExplorerId: BlockExplorerType | undefined, txHash: string): string | null {
-	const effectiveId = getEffectiveExplorerId(chainId, selectedExplorerId)
-
-	if (effectiveId === "none") {
+	if (!selectedExplorerId || selectedExplorerId === "none") {
 		return null
 	}
 
-	const urls = generateExplorerUrls(chainId, effectiveId)
+	const urls = generateExplorerUrls(chainId, selectedExplorerId)
 	if (urls.length === 0) {
 		return null
 	}

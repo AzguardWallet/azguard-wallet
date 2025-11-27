@@ -19,7 +19,7 @@ import { Config } from "@/wallet/config"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { debounce } from "@/utils/general"
-import { getSelectableExplorers } from "@/wallet/constants/explorers"
+import { BLOCK_EXPLORERS } from "@/wallet/constants/explorers"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -48,19 +48,9 @@ const isIndicationFailuresEnabled = ref(defaultConfig.indicateFailures)
 const isDebugModeEnabled = ref(defaultConfig.debugMode)
 const defaultExplorer = ref(defaultConfig.defaultExplorer)
 
-// Get selectable explorers based on active network's chainId
-const selectableExplorers = computed(() => {
-	const network = appStore.network
-	if (!network?.chainId) return []
-	return getSelectableExplorers(network.chainId)
-})
-
-// Only show explorer selector if explorers are available for current network
-const hasExplorers = computed(() => selectableExplorers.value.length > 0)
-
 // Get display name for selected explorer
 const selectedExplorerName = computed(() => {
-	const explorer = selectableExplorers.value.find(e => e.id === defaultExplorer.value)
+	const explorer = BLOCK_EXPLORERS.find(e => e.id === defaultExplorer.value)
 	return explorer?.name || "None"
 })
 
@@ -274,8 +264,8 @@ onBeforeUnmount(() => {
 				</Flex>
 			</template>
 
-			<!-- Default Block Explorer (only show if explorers available for current network) -->
-			<Flex v-if="hasExplorers" justify="between" align="center">
+			<!-- Default Block Explorer -->
+			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
 					<Text size="13" weight="600" color="primary">Default Explorer</Text>
 					<Text size="12" weight="500" color="tertiary">Block explorer for transaction links</Text>
@@ -293,7 +283,7 @@ onBeforeUnmount(() => {
 
 					<template #popup>
 						<DropdownItem
-							v-for="explorer in selectableExplorers"
+							v-for="explorer in BLOCK_EXPLORERS"
 							:key="explorer.id"
 							@click="handleExplorerChange(explorer.id)"
 						>

@@ -3,7 +3,6 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
-import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown"
 
 /** Utils */
 import { managers } from "@/utils/core"
@@ -32,7 +31,6 @@ const existingNetworkUrls = computed(() => appStore.networks.map((n) => n.rpcUrl
 
 const nameTerm = ref("")
 const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
-const selectedExplorer = ref(undefined)
 
 const isUrlHasError = ref(false)
 
@@ -60,8 +58,7 @@ const handleCreateNetwork = async () => {
 	try {
 		isCreating.value = true
 
-		// Add network with selected explorer (service auto-selects default if undefined)
-		const network = await managers.network.addNetwork(nameTerm.value, urlTerm.value, selectedExplorer.value)
+		const network = await managers.network.addNetwork(nameTerm.value, urlTerm.value)
 
 		// Set as active network and default for this chain
 		appStore.network = network
@@ -92,7 +89,6 @@ watch(
 
 			nameTerm.value = ""
 			urlTerm.value = "https://rpc.sandbox.azguardwallet.io/"
-			selectedExplorer.value = undefined
 		} else {
 			document.addEventListener("keydown", onKeydown)
 		}
@@ -151,8 +147,6 @@ const onKeydown = (e) => {
 						</Transition>
 					</template>
 				</Input>
-
-				<!-- Explorer is auto-selected based on chainId - user can change it later in edit -->
 
 				<Flex direction="column" gap="12">
 					<Button

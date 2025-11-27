@@ -6,8 +6,6 @@ export enum NodeStatus {
     InvalidChain,
 }
 
-export type BlockExplorerType = "aztecscan" | "none";
-
 export type Network = {
     /** Randomly generated id. */
     id: string;
@@ -21,8 +19,6 @@ export type Network = {
     chainId: number;
     /** Whether or not this node is default for the given chain */
     isDefault: boolean;
-    /** User's selected block explorer for this network */
-    selectedExplorerId?: BlockExplorerType;
 };
 
 export type Methods = {
@@ -47,18 +43,16 @@ export type Methods = {
      * Creates and returns a new node.
      * @param name Display name.
      * @param rpcUrl RPC URL the wallet will connect to.
-     * @param selectedExplorerId User's selected block explorer ID (optional).
      */
-    addNetwork(name: string, rpcUrl: string, selectedExplorerId?: BlockExplorerType): Network;
+    addNetwork(name: string, rpcUrl: string): Network;
 
     /**
      * Changes node display name and RPC URL and returns the updated node.
      * @param id Node id.
      * @param name New display name.
      * @param rpcUrl New RPC URL.
-     * @param selectedExplorerId User's selected block explorer ID (optional).
      */
-    updateNetwork(id: string, name: string, rpcUrl: string, selectedExplorerId?: BlockExplorerType): Network;
+    updateNetwork(id: string, name: string, rpcUrl: string): Network;
 
     /**
      * Deletes node with the specified id.
