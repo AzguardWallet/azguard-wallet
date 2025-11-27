@@ -71,19 +71,6 @@ const initNetworks = async () => {
 
 	managers.network = new NetworkServiceClient()
 
-	// Listen for network updates from background service
-	// Supporting explorer selection logic propagation
-	managers.network.onNetworkUpdated.add((updatedNetwork) => {
-		const idx = appStore.networks.findIndex(n => n.id === updatedNetwork.id)
-		if (idx > -1) {
-			appStore.networks[idx] = updatedNetwork
-		}
-		// Update current network if it's the one that was updated
-		if (appStore.network?.id === updatedNetwork.id) {
-			appStore.network = updatedNetwork
-		}
-	})
-
 	appStore.networks = await managers.network.getOrInitNetworks()
 
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
