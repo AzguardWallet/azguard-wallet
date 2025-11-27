@@ -7,7 +7,6 @@ import Icon from "@/components/core/Icon.vue"
 
 /** Services */
 import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
-import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
@@ -22,26 +21,10 @@ const props = defineProps({
 	tx: {
 		type: Object,
 	},
-})
-
-/** Config: get default explorer setting */
-const configService = new ConfigServiceClient()
-const defaultExplorer = ref()
-
-// Listen for config updates (when user changes setting)
-configService.onUpdate.add((setting) => {
-	if (setting.key === "defaultExplorer") {
-		defaultExplorer.value = setting.value
-	}
-})
-
-onMounted(async () => {
-	const configProps = await configService.getProps()
-	defaultExplorer.value = configProps.find(p => p.key === 'defaultExplorer')?.value
-})
-
-onBeforeUnmount(() => {
-	configService.disconnect()
+	defaultExplorer: {
+		type: String,
+		default: undefined,
+	},
 })
 
 const call = computed(() => props.tx.calls[0])
@@ -104,7 +87,7 @@ const explorerUrl = computed(() => {
 
 	return getTransactionExplorerUrl(
 		appStore.network.chainId,
-		defaultExplorer.value,
+		props.defaultExplorer,
 		props.tx.hash
 	)
 })

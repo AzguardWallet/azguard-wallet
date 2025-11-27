@@ -5,6 +5,10 @@ import { DateTime } from "luxon"
 /** Components */
 import TransactionCard from "./TransactionCard.vue"
 
+/** Composables */
+import { useDefaultExplorer } from "@/composables/useDefaultExplorer"
+const { defaultExplorer } = useDefaultExplorer()
+
 /** Store */
 import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
@@ -57,6 +61,7 @@ const handleSelectTx = (target) => {
 				v-for="tx in group.transactions"
 				:key="tx.hash"
 				:tx="tx"
+				:defaultExplorer="defaultExplorer"
 				@click="handleSelectTx(tx)"
 			/>
 		</Flex>

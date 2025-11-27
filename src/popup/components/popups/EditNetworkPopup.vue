@@ -6,7 +6,6 @@ import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
-
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
@@ -28,10 +27,10 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const networkToEdit = computed(() => appStore.networks.find((n) => n.id === cacheStore.networkToEditIdx))
+const networkToEdit = computed(() => appStore.networks.find(n => n.id === cacheStore.networkToEditIdx))
 
-const existingNetworkNames = computed(() => appStore.networks.filter((n) => n.id !== networkToEdit.value.id).map((n) => n.name))
-const existingNetworkUrls = computed(() => appStore.networks.filter((n) => n.id !== networkToEdit.value.id).map((n) => n.rpcUrl))
+const notAllowedNetworkNames = computed(() => appStore.networks.filter(n => n.id !== networkToEdit.value.id).map(n => n.name))
+const notAllowedNetworkUrls = computed(() => appStore.networks.filter(n => n.id !== networkToEdit.value.id).map(n => n.rpcUrl))
 
 const isStartedEditingName = ref(false)
 const isStartedEditingUrl = ref(false)
@@ -46,23 +45,15 @@ const handleFillFieldsWithDefaultValues = () => {
 	isStartedEditingUrl.value = false
 }
 
-const isNameAlreadyExist = computed(() => existingNetworkNames.value.includes(nameTerm.value) && isStartedEditingName.value)
-const isUrlAlreadyExist = computed(() => existingNetworkUrls.value.includes(urlTerm.value) && isStartedEditingUrl.value)
+const isNameAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value) && isStartedEditingName.value)
+const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value) && isStartedEditingUrl.value)
 
 const isAvailableToUpdateNetwork = computed(() => {
-	// Basic validation
-	if (!nameTerm.value.length) return false
-	if (!urlTerm.value.length) return false
-	if (urlTerm.value.length < 5) return false
-
-	// Check if anything actually changed
-	const noChanges =
-		nameTerm.value === networkToEdit.value.name &&
-		urlTerm.value === networkToEdit.value.rpcUrl
-	if (noChanges) return false
-
-	// Check for conflicts with other networks
-	if (isNameAlreadyExist.value || isUrlAlreadyExist.value) return false
+	if (!nameTerm.value.length) return
+	if (!urlTerm.value.length) return
+	if (urlTerm.value.length < 5) return
+	if (nameTerm.value === networkToEdit.value.name && urlTerm.value === networkToEdit.value.rpcUrl) return
+	if (isNameAlreadyExist.value || isUrlAlreadyExist.value) return
 
 	return true
 })
@@ -72,15 +63,11 @@ const handleUpdateNetwork = async () => {
 	if (!isAvailableToUpdateNetwork.value) return
 
 	isNetworkUpdateInProgress.value = true
-
-	await appStore.updateNetwork(
-		cacheStore.networkToEditIdx,
-		nameTerm.value,
-		urlTerm.value
-	)
-
+	await appStore.updateNetwork(cacheStore.networkToEditIdx, nameTerm.value, urlTerm.value)
 	isNetworkUpdateInProgress.value = false
+
 	emit("onClose")
+
 	openToast({ label: "Node is updated" })
 }
 
@@ -99,7 +86,7 @@ watch(
 	},
 )
 
-const onKeydown = (e) => {
+const onKeydown = e => {
 	if (e.key === "Enter") handleUpdateNetwork()
 }
 </script>

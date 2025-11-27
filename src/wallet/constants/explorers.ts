@@ -32,28 +32,16 @@ export const BLOCK_EXPLORERS: BlockExplorer[] = [
 ]
 
 /**
- * Generate explorer URLs based on chain ID and explorer type.
- * Returns array of explorer URLs to be stored in Network.explorerUrls
+ * Base URLs for each explorer by chain ID.
+ * To add a new explorer: add its ID to BlockExplorerType,
+ * add to BLOCK_EXPLORERS array, and add URLs here.
  */
-export function generateExplorerUrls(chainId: number, explorerType: BlockExplorerType): string[] {
-	if (explorerType === "none") {
-		return []
-	}
-
-	if (explorerType === "aztecscan") {
-		switch (chainId) {
-			case CHAIN_IDS.SEPOLIA_TESTNET:
-				return ["https://testnet.aztecscan.xyz"]
-			case CHAIN_IDS.DEVNET:
-				return ["https://devnet.aztecscan.xyz"]
-			case CHAIN_IDS.SANDBOX:
-				return []
-			default:
-				return []
-		}
-	}
-
-	return []
+const EXPLORER_BASE_URLS: Record<BlockExplorerType, Record<number, string>> = {
+	aztecscan: {
+		[CHAIN_IDS.SEPOLIA_TESTNET]: "https://testnet.aztecscan.xyz",
+		[CHAIN_IDS.DEVNET]: "https://devnet.aztecscan.xyz",
+	},
+	none: {},
 }
 
 /**
@@ -61,19 +49,17 @@ export function generateExplorerUrls(chainId: number, explorerType: BlockExplore
  * Returns null if explorer is "none" or doesn't support the network.
  *
  * @param chainId - The network's chain ID
- * @param selectedExplorerId - User's selected explorer ID
+ * @param explorerId - User's selected explorer ID
  * @param txHash - Transaction hash
  * @returns Full URL to view the transaction, or null if unavailable
  */
-export function getTransactionExplorerUrl(chainId: number, selectedExplorerId: BlockExplorerType | undefined, txHash: string): string | null {
-	if (!selectedExplorerId || selectedExplorerId === "none") {
-		return null
-	}
+export function getTransactionExplorerUrl(
+	chainId: number,
+	explorerId: BlockExplorerType | undefined,
+	txHash: string
+): string | null {
+	if (!explorerId || explorerId === "none") return null
 
-	const urls = generateExplorerUrls(chainId, selectedExplorerId)
-	if (urls.length === 0) {
-		return null
-	}
-
-	return `${urls[0]}/tx-effects/${txHash}`
+	const baseUrl = EXPLORER_BASE_URLS[explorerId]?.[chainId]
+	return baseUrl ? `${baseUrl}/tx-effects/${txHash}` : null
 }

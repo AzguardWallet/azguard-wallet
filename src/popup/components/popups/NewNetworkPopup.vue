@@ -26,27 +26,22 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const existingNetworkNames = computed(() => appStore.networks.map((n) => n.name))
-const existingNetworkUrls = computed(() => appStore.networks.map((n) => n.rpcUrl))
+const notAllowedNetworkNames = computed(() => appStore.networks.map(n => n.name))
+const notAllowedNetworkUrls = computed(() => appStore.networks.map(n => n.rpcUrl))
 
 const nameTerm = ref("")
 const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
 
 const isUrlHasError = ref(false)
 
-const isNameAlreadyExist = computed(() => existingNetworkNames.value.includes(nameTerm.value))
-const isUrlAlreadyExist = computed(() =>
-	existingNetworkUrls.value.includes(urlTerm.value.endsWith("/") ? urlTerm.value.slice(0, -1) : urlTerm.value),
-)
+const isNameAlreadyExist = computed(() => notAllowedNetworkNames.value.includes(nameTerm.value))
+const isUrlAlreadyExist = computed(() => notAllowedNetworkUrls.value.includes(urlTerm.value.endsWith("/") ? urlTerm.value.slice(0, -1) : urlTerm.value))
 
 const isAvailableToCreateNetwork = computed(() => {
-	// Basic validation
-	if (!nameTerm.value.length) return false
-	if (!urlTerm.value.length) return false
-	if (urlTerm.value.length < 5) return false
-
-	// Check for conflicts with existing networks
-	if (isNameAlreadyExist.value || isUrlAlreadyExist.value) return false
+	if (!nameTerm.value.length) return
+	if (!urlTerm.value.length) return
+	if (urlTerm.value.length < 5) return
+	if (isNameAlreadyExist.value || isUrlAlreadyExist.value) return
 
 	return true
 })
@@ -57,18 +52,18 @@ const handleCreateNetwork = async () => {
 
 	try {
 		isCreating.value = true
-
 		const network = await managers.network.addNetwork(nameTerm.value, urlTerm.value)
+		isCreating.value = false
 
-		// Set as active network and default for this chain
+		/** todo: ref */
 		appStore.network = network
 		managers.network.setDefault(network.id)
 		chrome.storage.local.set({ [`azguard:ui:lastActiveNetwork@${appStore.profile.id}`]: network.id })
 
 		appStore.networks = await managers.network.getNetworks()
 
-		isCreating.value = false
 		emit("onClose")
+
 		openToast({ label: "Node is created" })
 	} catch (error) {
 		isCreating.value = false
@@ -95,7 +90,7 @@ watch(
 	},
 )
 
-const onKeydown = (e) => {
+const onKeydown = e => {
 	if (e.key === "Enter") handleCreateNetwork()
 }
 </script>
