@@ -21,10 +21,6 @@ const props = defineProps({
 	tx: {
 		type: Object,
 	},
-	defaultExplorer: {
-		type: String,
-		default: undefined,
-	},
 })
 
 const call = computed(() => props.tx.calls[0])
@@ -87,7 +83,7 @@ const explorerUrl = computed(() => {
 
 	return getTransactionExplorerUrl(
 		appStore.network.chainId,
-		props.defaultExplorer,
+		appStore.defaultExplorer,
 		props.tx.hash
 	)
 })

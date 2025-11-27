@@ -53,6 +53,9 @@ const settingHandlers = {
 		chrome.sidePanel.setPanelBehavior({
 			openPanelOnActionClick: Boolean(value)
 		})
+	},
+	defaultExplorer(value) {
+		appStore.defaultExplorer = value
 	}
 }
 function applySetting(setting) {

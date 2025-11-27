@@ -3,10 +3,6 @@
 import TransactionCard from "../activity/TransactionCard.vue"
 import TransactionAwaitingCard from "../activity/TransactionAwaitingCard.vue"
 
-/** Composables */
-import { useDefaultExplorer } from "@/composables/useDefaultExplorer"
-const { defaultExplorer } = useDefaultExplorer()
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { useCacheStore } from "@/stores/cache.store"
@@ -60,7 +56,7 @@ const handleSelectTx = () => {
 
 		<div :class="$style.list">
 			<TransactionAwaitingCard v-if="isTokenAwaitingTx" />
-			<TransactionCard v-else :tx="latestTransaction" :defaultExplorer="defaultExplorer" @click="handleSelectTx" />
+			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
 		</div>
 	</Flex>
 	<Flex v-else-if="!token && (latestTransaction || awaitingAccountTxs.length)" direction="column" gap="16">
@@ -79,7 +75,7 @@ const handleSelectTx = () => {
 
 		<div :class="$style.list">
 			<TransactionAwaitingCard v-if="awaitingAccountTxs.length" />
-			<TransactionCard v-else :tx="latestTransaction" :defaultExplorer="defaultExplorer" @click="handleSelectTx" />
+			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
 		</div>
 	</Flex>
 </template>
