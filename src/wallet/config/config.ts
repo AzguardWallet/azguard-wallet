@@ -1,3 +1,5 @@
+import type { BlockExplorerType } from "@/wallet/constants/explorers"
+
 export class Config {
     // Appearance
     theme: "dark" | "light" | "system" = "dark";
@@ -10,7 +12,7 @@ export class Config {
     sessionTtl: number = 1_800_000; // 30 minutes.
 
     // Additional
-    blockExplorerEnabled: boolean = true;
+    defaultExplorer: BlockExplorerType = "aztecscan";
 
     // Developer
     developerMode: boolean = false;

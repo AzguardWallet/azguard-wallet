@@ -5,8 +5,6 @@ export type BlockExplorer = {
 	id: BlockExplorerType
 	/** Display name */
 	name: string
-	/** Whether this explorer is available */
-	enabled: boolean
 }
 
 /**
@@ -19,14 +17,17 @@ export const CHAIN_IDS = {
 } as const
 
 /**
- * Available block explorers for selection in network settings
- * Note: "none" is not included here - it's only used internally when no explorer is available
+ * Available block explorers for selection in settings.
+ * "none" provides explicit option to disable explorer links.
  */
 export const BLOCK_EXPLORERS: BlockExplorer[] = [
 	{
 		id: "aztecscan",
 		name: "Aztecscan",
-		enabled: true,
+	},
+	{
+		id: "none",
+		name: "None",
 	},
 ]
 
@@ -58,15 +59,33 @@ export function generateExplorerUrls(chainId: number, explorerType: BlockExplore
 /**
  * Get available block explorers for a specific network chainId.
  * Filters explorers based on whether they actually generate URLs for this network.
+ * Does not include "none" - use getSelectableExplorers for dropdown options.
  *
  * @param chainId - The network's chain ID
  * @returns Array of available explorers (empty array if no explorers support this chain)
  */
 export function getAvailableExplorers(chainId: number): BlockExplorer[] {
 	return BLOCK_EXPLORERS.filter(explorer => {
+		if (explorer.id === "none") return false
 		const urls = generateExplorerUrls(chainId, explorer.id)
 		return urls.length > 0
 	})
+}
+
+/**
+ * Get selectable explorers for dropdown UI.
+ * Returns real explorers + "None" option when at least one real explorer is available.
+ * Returns empty array if no explorers support this network (selector should be hidden).
+ *
+ * @param chainId - The network's chain ID
+ * @returns Array of selectable explorers including "None" option
+ */
+export function getSelectableExplorers(chainId: number): BlockExplorer[] {
+	const available = getAvailableExplorers(chainId)
+	if (available.length === 0) return []
+
+	const noneOption = BLOCK_EXPLORERS.find(e => e.id === "none")
+	return noneOption ? [...available, noneOption] : available
 }
 
 /**
@@ -78,6 +97,11 @@ export function getAvailableExplorers(chainId: number): BlockExplorer[] {
  * @returns The explorer ID to use
  */
 export function getEffectiveExplorerId(chainId: number, selectedExplorerId?: BlockExplorerType): BlockExplorerType {
+	// If user explicitly selected "none", respect that choice
+	if (selectedExplorerId === "none") {
+		return "none"
+	}
+
 	const available = getAvailableExplorers(chainId)
 
 	// If user has a selection and it's available, use it

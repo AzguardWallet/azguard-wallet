@@ -1,6 +1,7 @@
 <script setup>
 /** Vendor */
 import BN from "bignumber.js"
+import { DateTime } from "luxon"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
@@ -73,7 +74,12 @@ watch(
 	},
 )
 
-const handleCopy = target => {
+const txTime = computed(() => {
+	if (!tx.value?.updatedAt) return null
+	return DateTime.fromMillis(tx.value.updatedAt).toFormat("MMM dd, yyyy 'at' HH:mm")
+})
+
+const handleCopy = (target) => {
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Successfully copied", icon: "copy" })
 }
@@ -91,13 +97,18 @@ const handleCopy = target => {
 						</Text>
 					</Flex>
 
-					<Flex @click="handleCopy(tx.hash)" align="center" gap="6" class="copyable">
-						<Text size="12" weight="600" color="tertiary">
-							{{ tx.hash.slice(0, 4) }}
-							<Text color="dark">•••</Text>
-							{{ tx.hash.slice(-4) }}
+					<Flex align="center" gap="8">
+						<Flex @click="handleCopy(tx.hash)" align="center" gap="6" class="copyable">
+							<Text size="12" weight="600" color="tertiary">
+								{{ tx.hash.slice(0, 4) }}
+								<Text color="dark">•••</Text>
+								{{ tx.hash.slice(-4) }}
+							</Text>
+							<Icon name="copy" size="12" color="tertiary" />
+						</Flex>
+						<Text v-if="txTime" size="12" weight="500" color="tertiary">
+							{{ txTime }}
 						</Text>
-						<Icon name="copy" size="12" color="tertiary" />
 					</Flex>
 				</Flex>
 

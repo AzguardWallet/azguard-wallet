@@ -31,7 +31,6 @@ const isSidePanelEnabled = ref(defaultConfig.sidePanel)
 const isShowNodeNameEnabled = ref(defaultConfig.showNode)
 const isShowPopupFullscreen = ref(defaultConfig.showPopupFullscreen)
 const isAnimationsDisabled = ref(defaultConfig.disableAnimations)
-const isBlockExplorerEnabled = ref(defaultConfig.blockExplorerEnabled)
 const settings = {
 	theme: {
 		title: "",
@@ -57,11 +56,6 @@ const settings = {
 		title: "Disable animations",
 		description: "Minimize the use of animations",
 		model: isAnimationsDisabled,
-	},
-	blockExplorerEnabled: {
-		title: "Block Explorer",
-		description: "Show block explorer links for transactions",
-		model: isBlockExplorerEnabled,
 	},
 }
 

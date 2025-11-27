@@ -1,7 +1,9 @@
 <script setup>
 /** Vendor */
 import BN from "bignumber.js"
-import { DateTime } from "luxon"
+
+/** Components */
+import Icon from "@/components/core/Icon.vue"
 
 /** Services */
 import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
@@ -9,6 +11,7 @@ import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
+import { trimAddress } from "@/utils/string"
 import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
 
 /** Store */
@@ -21,12 +24,20 @@ const props = defineProps({
 	},
 })
 
+/** Config: get default explorer setting */
 const configService = new ConfigServiceClient()
-const config = ref({ blockExplorerEnabled: true })
+const defaultExplorer = ref()
+
+// Listen for config updates (when user changes setting)
+configService.onUpdate.add((setting) => {
+	if (setting.key === "defaultExplorer") {
+		defaultExplorer.value = setting.value
+	}
+})
 
 onMounted(async () => {
 	const configProps = await configService.getProps()
-	config.value = Object.fromEntries(configProps.map((p) => [p.key, p.value]))
+	defaultExplorer.value = configProps.find(p => p.key === 'defaultExplorer')?.value
 })
 
 onBeforeUnmount(() => {
@@ -86,13 +97,14 @@ const title = computed(() => {
 	return "Transaction"
 })
 
+const shortHash = computed(() => trimAddress(props.tx.hash, 4, 4))
+
 const explorerUrl = computed(() => {
-	if (!config.value.blockExplorerEnabled) return null
 	if (!appStore.network?.chainId) return null
 
 	return getTransactionExplorerUrl(
 		appStore.network.chainId,
-		appStore.network.selectedExplorerId,
+		defaultExplorer.value,
 		props.tx.hash
 	)
 })
@@ -111,9 +123,19 @@ const explorerUrl = computed(() => {
 				<Text size="13" weight="600" color="primary">
 					{{ title }}
 				</Text>
-				<Text size="12" weight="500" color="tertiary">
-					{{ DateTime.fromSeconds(tx.updatedAt / 1_000).toFormat("LLL dd, HH:mm") }}
-				</Text>
+				<!-- Short hash with optional explorer link -->
+				<a
+					v-if="explorerUrl"
+					:href="explorerUrl"
+					target="_blank"
+					rel="noopener noreferrer"
+					@click.stop
+					:class="$style.hash_link"
+				>
+					<Text size="12" weight="500" color="blue">{{ shortHash }}</Text>
+					<Icon name="external-link" size="12" color="blue" />
+				</a>
+				<Text v-else size="12" weight="500" color="tertiary">{{ shortHash }}</Text>
 			</Flex>
 		</Flex>
 
@@ -130,23 +152,11 @@ const explorerUrl = computed(() => {
 				</Text>
 			</Flex>
 		</Flex>
-
-		<a
-			v-if="explorerUrl"
-			:href="explorerUrl"
-			target="_blank"
-			rel="noopener noreferrer"
-			@click.stop
-			:class="$style.explorer_link"
-		>
-			Explorer
-		</a>
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
-	position: relative;
 	cursor: pointer;
 	border-radius: 8px;
 
@@ -190,21 +200,17 @@ const explorerUrl = computed(() => {
 	padding: 4px 6px;
 }
 
-.explorer_link {
-	position: absolute;
-	bottom: 8px;
-	right: 8px;
-	z-index: 10;
+.hash_link {
+	display: flex;
+	align-items: center;
+	gap: 4px;
 
-	font-size: 11px;
-	font-weight: 500;
-	color: var(--blue);
 	text-decoration: none;
 
-	transition: all 0.2s var(--bezier);
+	transition: opacity 0.2s var(--bezier);
 
 	&:hover {
-		text-decoration: underline;
+		opacity: 0.8;
 	}
 }
 </style>

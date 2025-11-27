@@ -11,6 +11,7 @@
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown"
 
 /** Utils */
 import { managers } from "@/utils/core"
@@ -18,6 +19,7 @@ import { Config } from "@/wallet/config"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { debounce } from "@/utils/general"
+import { getSelectableExplorers } from "@/wallet/constants/explorers"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -44,6 +46,23 @@ const sessionTtlMinutes = ref(0)
 const isDeveloperModeEnabled = ref(defaultConfig.developerMode)
 const isIndicationFailuresEnabled = ref(defaultConfig.indicateFailures)
 const isDebugModeEnabled = ref(defaultConfig.debugMode)
+const defaultExplorer = ref(defaultConfig.defaultExplorer)
+
+// Get selectable explorers based on active network's chainId
+const selectableExplorers = computed(() => {
+	const network = appStore.network
+	if (!network?.chainId) return []
+	return getSelectableExplorers(network.chainId)
+})
+
+// Only show explorer selector if explorers are available for current network
+const hasExplorers = computed(() => selectableExplorers.value.length > 0)
+
+// Get display name for selected explorer
+const selectedExplorerName = computed(() => {
+	const explorer = selectableExplorers.value.find(e => e.id === defaultExplorer.value)
+	return explorer?.name || "None"
+})
 
 const settings = {
 	sessionTtl: {
@@ -127,6 +146,21 @@ function onSettingUpdate(setting) {
 			applySetting(setting.key, setting.value)
 		}
 	}
+	// Handle defaultExplorer separately (not in settings object)
+	if (setting.key === "defaultExplorer" && defaultExplorer.value !== setting.value) {
+		defaultExplorer.value = setting.value
+	}
+}
+
+async function handleExplorerChange(explorerId) {
+	if (defaultExplorer.value === explorerId) return
+	try {
+		await configService.setValue("defaultExplorer", explorerId)
+		defaultExplorer.value = explorerId
+		openToast({ label: "Default explorer updated", icon: "info" }, 1_500)
+	} catch (err) {
+		openToast({ label: "Failed to update explorer", icon: "warning" })
+	}
 }
 
 const handleFullReset = () => {
@@ -169,6 +203,10 @@ onBeforeMount(async () => {
 	_settings.forEach(s => {
 		if (settings[s.key]) {
 			settings[s.key].model.value = s.value
+		}
+		// Load defaultExplorer separately
+		if (s.key === "defaultExplorer") {
+			defaultExplorer.value = s.value
 		}
 	})
 
@@ -218,12 +256,12 @@ onBeforeUnmount(() => {
 					:class="$style.input"
 				/>
 			</Flex>
-			<Flex
-				v-for="sk in Object.keys(settings).filter(sk => sk !== 'sessionTtl')"
-				align="center"
-				justify="between"
-			>
-				<template v-if="settings[sk].visible.value">
+			<template v-for="sk in Object.keys(settings).filter(sk => sk !== 'sessionTtl')" :key="sk">
+				<Flex
+					v-if="settings[sk].visible.value"
+					align="center"
+					justify="between"
+				>
 					<Flex direction="column" justify="center" gap="6">
 						<Text size="13" weight="600" color="primary"> {{ settings[sk].title }} </Text>
 						<Text size="12" weight="500" color="tertiary"> {{ settings[sk].description }} </Text>
@@ -233,7 +271,43 @@ onBeforeUnmount(() => {
 						@update:modelValue="updateSetting(sk, $event)"
 						:modelValue="settings[sk].model.value"
 					/>
-				</template>
+				</Flex>
+			</template>
+
+			<!-- Default Block Explorer (only show if explorers available for current network) -->
+			<Flex v-if="hasExplorers" justify="between" align="center">
+				<Flex direction="column" gap="6">
+					<Text size="13" weight="600" color="primary">Default Explorer</Text>
+					<Text size="12" weight="500" color="tertiary">Block explorer for transaction links</Text>
+				</Flex>
+
+				<Dropdown>
+					<template #trigger>
+						<DropdownTrigger :class="$style.explorerTrigger">
+							<Text size="13" weight="600" color="primary">
+								{{ selectedExplorerName }}
+							</Text>
+							<Icon name="chevron-down" size="12" color="tertiary" />
+						</DropdownTrigger>
+					</template>
+
+					<template #popup>
+						<DropdownItem
+							v-for="explorer in selectableExplorers"
+							:key="explorer.id"
+							@click="handleExplorerChange(explorer.id)"
+						>
+							<Flex align="center" gap="8">
+								<Icon
+									:name="defaultExplorer === explorer.id ? 'check' : ''"
+									size="14"
+									color="primary"
+								/>
+								{{ explorer.name }}
+							</Flex>
+						</DropdownItem>
+					</template>
+				</Dropdown>
 			</Flex>
 		</template>
 
@@ -269,5 +343,9 @@ onBeforeUnmount(() => {
 	* {
 		text-align: center;
 	}
+}
+
+.explorerTrigger {
+	min-width: 100px;
 }
 </style>
