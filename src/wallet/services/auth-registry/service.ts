@@ -1,6 +1,6 @@
 import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
 import { ILogger } from "@/wallet/logger";
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ExecutionService, FeeSettings, AuthwitContent } from "@/wallet/services/execution/service";
 import { ProfileService } from "@/wallet/services/profile/service";
@@ -241,7 +241,7 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         }
     }
 
-    public async backup() {
+    public async backup(): Promise<Authwit[] | undefined> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Profile locked");
@@ -262,5 +262,33 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         }
 
         return authwits;
+    }
+
+    public async restore(authwits: Authwit[]): Promise<Restored<Authwit>[]> {
+        await this.ensureInitialized();
+
+        const result: Restored<Authwit>[] = [];
+
+        try {
+            await this.lock.enter();
+
+            let id = array_max((await this.authwits.getValues()).map(x => x.id)) + 1;
+            for (const authwit of authwits) {
+                try {
+                    await this.authwits.set(`${id}`, {...authwit, id});
+                    result.push({ ...authwit, id });
+                    id++;
+                } catch (err) {
+                    result.push({
+                        ...authwit,
+                        restoreError: err instanceof Error ? err.message : err,
+                    });
+                }
+            }
+
+            return result;
+        } finally {
+            this.lock.leave();
+        }
     }
 }

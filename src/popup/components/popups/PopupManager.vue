@@ -13,6 +13,7 @@ import DataViewerPopup from "./DataViewerPopup.vue"
 import EditClaimParametersPopup from "./EditClaimParametersPopup.vue"
 
 /** Profiles */
+import ChangeProfilePasswordPopup from "./ChangeProfilePasswordPopup.vue"
 import EditProfilePopup from "./EditProfilePopup.vue"
 import SelectProfilePopup from "./SelectProfilePopup.vue"
 
@@ -77,6 +78,7 @@ const popupStore = usePopupStore()
 	<ConfirmPopup :show="popupStore.isOpened('confirm')" @onClose="popupStore.close('confirm')" />
 	<DataViewerPopup :show="popupStore.isOpened('data_viewer')" @onClose="popupStore.close('data_viewer')" />
 
+	<ChangeProfilePasswordPopup :show="popupStore.isOpened('change_profile_password')" @onClose="popupStore.close('change_profile_password')" />
 	<EditProfilePopup :show="popupStore.isOpened('edit_profile')" @onClose="popupStore.close('edit_profile')" />
 	<SelectProfilePopup :show="popupStore.isOpened('select_profile')" @onClose="popupStore.close('select_profile')" />
 

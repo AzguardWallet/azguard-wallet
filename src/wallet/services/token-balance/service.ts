@@ -1,6 +1,6 @@
 import { FunctionType } from "@aztec/stdlib/abi";
 import { ILogger } from "@/wallet/logger";
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { getTokenInfo } from "@/wallet/services/token/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
@@ -431,5 +431,34 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
         } finally {
             tbs.forEach(tb => this.pendingTasks.delete(tb.id));
         }
+    }
+
+    public async backup(): Promise<TokenBalanceRaw[]> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
+        return (await this.balances.getValues());
+    }
+
+    public async restore(tokenBalances: TokenBalanceRaw[]): Promise<Restored<TokenBalanceRaw>[]> {
+        await this.ensureInitialized();
+
+        const result: Restored<TokenBalanceRaw>[] = [];
+        for (const tb of tokenBalances) {
+            try {
+                const id = array_max((await this.balances.getKeys()).map(x => +x)) + 1;
+                await this.balances.set(`${id}`, { ...tb, id });
+                result.push({ ...tb, id });
+            } catch (err) {
+                result.push({
+                    ...tb,
+                    restoreError: err instanceof Error ? err.message : err,
+                });
+            }
+        }
+
+        return result;
     }
 }

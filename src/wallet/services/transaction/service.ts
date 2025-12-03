@@ -1,5 +1,5 @@
 import { TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
 import { AccountService, Account } from "@/wallet/services/account/service";
@@ -180,7 +180,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         }
     }
 
-    public async backup() {
+    public async backup(): Promise<Tx[] | undefined> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Profile locked");
@@ -201,5 +201,29 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         }
 
         return txs;
+    }
+
+    public async restore(txs: Tx[]): Promise<Restored<Tx>[]> {
+        await this.ensureInitialized();
+
+        const result: Restored<Tx>[] = [];
+
+        for (const tx of txs) {
+            try {
+                await this.txs.set(tx.hash, tx);
+                
+                result.push(tx);
+                if (tx.status !== TxStatus.Pending) continue;
+
+                this.pending.set(tx.hash, tx);
+            } catch (err) {
+                result.push({
+                    ...tx,
+                    restoreError: err instanceof Error ? err.message : err,
+                });
+            }
+        }
+
+        return result;
     }
 }

@@ -1,4 +1,4 @@
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
@@ -252,7 +252,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
         } finally {
             this.lock.leave();
         }
-    };
+    }
 
     private _getAbbreviation(name: string): string {
         const words = name.trim().split(/\s+/);
@@ -268,7 +268,38 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
         return "AZ";
     }
 
-    public async backup() {
+    public async backup(): Promise<Contact[]> {
         return (await this.getContacts());
+    }
+
+    public async restore(contacts: Contact[]): Promise<Restored<Contact>[]> {
+        await this.ensureInitialized();
+
+        const result: Restored<Contact>[] = [];
+        try {
+            await this.lock.enter();
+
+            for (const contact of contacts) {
+                try {
+                    let id = contact.id;
+                    while ((await this.storage.contains(id))) {
+                        id = getRandomHex(8);
+                    }
+
+                    await this.storage.set(id, { ...contact, id });
+                    
+                    result.push({ ...contact, id });
+                } catch (err) {
+                    result.push({
+                        ...contact,
+                        restoreError: err
+                    });
+                }
+            }
+
+            return result;
+        } finally {
+            this.lock.leave();
+        }
     }
 }

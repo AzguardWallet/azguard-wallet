@@ -20,10 +20,15 @@ import { managers } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
 import { AuthRegistryServiceClient } from "@/wallet/services/auth-registry/client"
-import { FpcServiceClient } from "@/wallet/services/fpc/client"
-import { TokenServiceClient } from "@/wallet/services/token/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
-import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key";
+import { ContactServiceClient } from "@/wallet/services/contact/client"
+import { FpcServiceClient } from "@/wallet/services/fpc/client"
+import { NetworkServiceClient } from "@/wallet/services/network/client"
+import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { TokenServiceClient } from "@/wallet/services/token/client"
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+import { TransactionServiceClient } from "@/wallet/services/transaction/client"
+import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -37,15 +42,16 @@ const router = useRouter()
 
 let backup = {}
 const backupServices = [
-	managers.profile,
-	managers.network,
+	new ProfileServiceClient(),
+	new NetworkServiceClient(),
 	new AccountServiceClient(),
-	managers.transaction,
+	new TransactionServiceClient(),
 	new TokenServiceClient(),
+	new TokenBalanceServiceClient(),
 	new AccountStateServiceClient(),
 	new AuthRegistryServiceClient(),
 	new FpcServiceClient(),
-	managers.contact,
+	new ContactServiceClient(),
 	new ConfigServiceClient(),
 ]
 const version = __VERSION__
@@ -97,10 +103,11 @@ async function handleBackup() {
 
 	for (const s of backupServices) {
 		const data = await s.backup()
+		s.disconnect();
 
-		if (data === null || data === undefined) continue
+		if (data === null || data === undefined) continue;
 
-		backup.data[s.name?.replace("-client", "")] = await s.backup()
+		backup.data[s.name?.replace("-client", "")] = data
 	}
 
 	const checksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
@@ -127,12 +134,6 @@ async function handleEncrypt() {
 		const passhash = await EncryptionKey.getPasshash(password.value)
 		const key = await EncryptionKey.fromPasshash(passhash)
 		backup = Buffer(await key.encrypt(new TextEncoder().encode(JSON.stringify(backup)))).toString("base64")
-
-		// Restore example
-		// const encryptedBytes = new Uint8Array(Buffer.from(backup, "base64"));
-		// const decryptedBytes = await key.decrypt(encryptedBytes);
-		// const decodedJson = new TextDecoder().decode(decryptedBytes);
-		// const backupObject = JSON.parse(decodedJson);
 		
 		backupStatus.value = "encrypted"
 	} catch (error) {

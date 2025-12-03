@@ -33,7 +33,6 @@ const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const tokens = ref([])
-// const tokens = computed(() => [...tokens.value].sort((a, b) => stringCompare(a.name, b.name)))
 
 const tokenService = new TokenServiceClient()
 tokenService.onTokenAdded.add(onTokenAdded)
@@ -68,11 +67,18 @@ const handleDelete = target => {
 }
 
 watch(
-	() => tokens.value,
+	() => tokens.value.length,
 	() => {
-		tokens.value = tokens.value.sort((a, b) => stringCompare(a.name, b.name))
+		tokens.value = [...tokens.value].sort((a, b) => stringCompare(a.name, b.name))
 	}
 )
+
+onMounted(async () => {
+	tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+})
+onBeforeUnmount(() => {
+	tokenService.disconnect()
+})
 </script>
 
 <template>

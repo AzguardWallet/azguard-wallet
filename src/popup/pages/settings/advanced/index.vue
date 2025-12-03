@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
 		<template v-if="!isLoading">
 			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
-					<Flex align="center" gap="6">
+					<Flex align="end" gap="6">
 						<Text size="13" weight="600" color="primary"> {{ settings.sessionTtl.title }} </Text>
 						<Tooltip
 							v-if="notification.show"

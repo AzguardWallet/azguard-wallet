@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
 					color="tertiary"
 					:class="$style.network_type"
 				>
-					• &nbsp;{{ getChainName(appStore.network.chainId) }}
+					• &nbsp;{{ getChainName(appStore.network?.chainId) }}
 				</Text>
 
 				<Icon name="chevron" size="12" color="secondary" />

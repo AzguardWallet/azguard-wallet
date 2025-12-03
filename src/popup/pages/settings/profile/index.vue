@@ -58,7 +58,7 @@ const handleOpen = target => {
 
 			<ItemsContainer wide>
 				<SettingItem to="/popup/settings/security/export" title="Backup profile" icon="key-square" chevron />
-				<SettingItem title="Change password" icon="profile-password" disabled />
+				<SettingItem @click="popupStore.open('change_profile_password')" title="Change password" icon="profile-password" :disabled="appStore.profile.type === 'passkey'" />
 			</ItemsContainer>
 
 			<ItemsContainer wide>

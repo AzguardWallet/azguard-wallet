@@ -153,8 +153,8 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
         return this.request("backup" as keyof TRequests, ...([] as any));
     }
 
-    public async restore(_data: any): Promise<any> {
-        return this.request("restore" as keyof TRequests, ...([] as any));
+    public async restore(..._args: any[]): Promise<any> {
+        return this.request("restore" as keyof TRequests, ...(_args as any));
     }
 }
 
