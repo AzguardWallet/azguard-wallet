@@ -20,6 +20,9 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key"
 
+/** Utils */
+import { pickFile } from "@/utils"
+
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
@@ -229,41 +232,33 @@ const isAllowedToImportBackup = computed(() => {
 async function handlePickBackupFile() {
 	if (restoreStatus.value === 'progress') return
 
-	decryptionPassword.value = ""
-    const input = document.createElement("input")
-    input.type = "file"
-    input.accept = ".json,.txt"
-    input.style.display = "none"
+	try {
+		const file = await pickFile()
+		if (!file) return
 
-    document.body.appendChild(input)
+		selectedBackup.value = await processBackupFile(file)
+		if (selectedBackup.value?.type === "unknown" || (selectedBackup.value?.type === "plain" && !selectedBackup.value?.profileType)) {
+			fillError(
+				"full_backup",
+				"Unrecognized Backup File",
+				"The selected file is not a valid backup. Please select a correct backup file.",
+			)
+			return
+		}
 
-    input.onchange = async () => {
-        try {
-            const file = input.files && input.files[0]
-            if (!file) {
-                return
-            }
+		restoreStatus.value = null
+		password.value = null
+		repeatedPassword.value = null
+		decryptionPassword.value = null
 
-			selectedBackup.value = await processBackupFile(file)
-
-			if (selectedBackup.value?.type === "unknown") {
-				fillError(
-					"full_backup",
-					"Unrecognized Backup File",
-					"The selected file is not a valid backup. Please select a correct backup file.",
-				)
-				return
-			}
-
-            fillError()
-        } catch (err) {
-            console.error("Failed to read backup file:", err)
-        } finally {
-            document.body.removeChild(input)
-        }
-    }
-
-    input.click()
+		fillError()
+	} catch (err) {
+		fillError(
+			"full_backup",
+			"Failed to read the backup file",
+		)
+		console.error("Failed to read backup file:", err.message || err)
+	}
 }
 async function processBackupFile(file) {
 	let backup = null
@@ -482,8 +477,30 @@ async function handleRestoreBackup() {
 				}
 			}
 		}
-		processRestoredData(getServiceName(managers.network.name), newNetworks)
+		processRestoredData(getServiceName(networkService.name), newNetworks)
 		
+		const accountService = new AccountServiceClient()
+		try {
+			const newAccounts = await accountService.restore(backup.data.account)
+			accountService.disconnect()
+			processRestoredData(getServiceName(accountService.name), newAccounts)
+		} catch (err) {
+			if (err === "Duplicate address") {
+				try {
+					await profileService.deleteProfile(newProfile.id);
+				} catch (err) {
+					console.error(err);
+				} finally {
+					fillError("full_backup", "Import failed", "Profile already exists, import aborted")
+					profileService.disconnect()
+				}
+
+				restoreStatus.value = "failed"
+				return
+			}
+		}
+		
+
 		const tokenService = new TokenServiceClient()
 		const newTokens = await tokenService.restore(backup.data.token)
 		tokenService.disconnect()
@@ -500,7 +517,6 @@ async function handleRestoreBackup() {
 		processRestoredData(getServiceName(tokenService.name), newTokens)
 
 		const backupServices = [
-			new AccountServiceClient(),
 			new TransactionServiceClient(),
 			new TokenBalanceServiceClient(),
 			new AccountStateServiceClient(),
@@ -532,7 +548,7 @@ async function handleRestoreBackup() {
 		restoreStatus.value = ""
 
 		fillError("full_backup", "Import failed", err)
-		console.error(err);
+		console.error(err.message || err);
 		
 		return
 	}
@@ -562,14 +578,30 @@ const handleBack = () => {
 	clearPopup()
 }
 
+const onKeydown = e => {
+	if (e.key === "Enter") {
+		if (selectedBackup.value?.type === "encrypted" && !selectedBackup.value?.profileType) {
+			handleDecryptBackup()
+		} else if (selectedBackup.value?.profileType && restoreStatus.value !== "finished") {
+			handleRestoreBackup()
+		} else if (restoreStatus.value === "finished" && isRestoreHasErrors.value) {
+			completeImport(importedProfile.value)
+		}
+	}
+}
+
 watch(
 	() => props.show,
 	async () => {
 		if (!props.show) {
+			document.removeEventListener("keydown", onKeydown)
+
 			clearPopup()
 		} else {
 			const profiles = await managers.profile.getProfiles()
 			profileName.value = `My Profile${profiles?.length ? ` ${profiles?.length}` : ''}`
+
+			document.addEventListener("keydown", onKeydown)
 		}
 	},
 )
@@ -699,6 +731,7 @@ watch(
 								type="password"
 								label="Decryption password"
 								placeholder="Enter decryption password"
+								autofocus
 							>
 								<template #suffix>
 									<Icon
@@ -712,7 +745,7 @@ watch(
 							</Input>
 						</Flex>
 
-						<Flex v-if="selectedBackup?.profileType === 'password'" direction="column" gap="8">
+						<Flex v-if="selectedBackup?.profileType === 'password' && !restoreStatus" direction="column" gap="8">
 							<Input
 								v-model="password"
 								:type="isPasswordType ? 'password' : 'text'"
@@ -720,6 +753,7 @@ watch(
 								:maxLength="maxPasswordLength"
 								label="New password"
 								placeholder="Enter new password"
+								autofocus
 							>
 								<template #suffix>
 									<Icon
@@ -985,7 +1019,7 @@ watch(
 							v-if="selectedBackup?.profileType && restoreStatus !== 'finished'"
 							@click="handleRestoreBackup"
 							:loading="restoreStatus === 'progress'"
-							:disabled="!isAllowedToImportBackup"
+							:disabled="!isAllowedToImportBackup || restoreStatus === 'failed'"
 							type="primary"
 							size="medium"
 							rightIcon="arrow-right-circle"

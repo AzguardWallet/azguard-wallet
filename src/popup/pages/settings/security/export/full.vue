@@ -12,8 +12,6 @@
 import Navigation from "../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import PageHeader from "@/components/ui/Settings/PageHeader.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Services */
 import { managers } from "@/utils/core"
@@ -29,6 +27,9 @@ import { TokenServiceClient } from "@/wallet/services/token/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key"
+
+/** Utils */
+import { downloadFile } from "@/utils"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -144,45 +145,31 @@ async function handleEncrypt() {
 	}
 }
 async function handleDownloadBackup() {
-    try {
-		const isEncrypted = backupStatus.value === "encrypted"
-		let filename = `_${appStore.profile.name.replace(" ", "_")}_${Math.floor(Date.now() / 1000)}`
-        filename = isEncrypted
-			? `AzguardWalletEncryptedBackup${filename}.txt`
-			: `AzguardWalletBackup${filename}.json`
+	const isEncrypted = backupStatus.value === "encrypted"
+	let filename = `_${appStore.profile.name.replace(" ", "_")}_${Math.floor(Date.now() / 1000)}`
+	filename = isEncrypted
+		? `AzguardWalletEncryptedBackup${filename}.txt`
+		: `AzguardWalletBackup${filename}.json`
 
-        let fileContent = ""
-        let mimeType = ""
+	let fileContent = ""
+	if (isEncrypted) {
+		fileContent = backup
+	} else {
+		fileContent = JSON.stringify(backup, null, 2)
+	}
 
-        if (isEncrypted) {
-            fileContent = backup
-            mimeType = "text/plain;charset=utf-8"
-        } else {
-            fileContent = JSON.stringify(backup, null, 2)
-            mimeType = "application/json;charset=utf-8"
-        }
+	try {
+		await downloadFile({
+			data: fileContent,
+			filename,
+			compressionFormat: "gzip",
+		})
 
-        const blob = new Blob([fileContent], { type: mimeType })
-        const url = URL.createObjectURL(blob)
-
-        chrome.downloads.download({
-            url,
-            filename,
-        }, () => {
-            URL.revokeObjectURL(url);
-
-            if (chrome.runtime.lastError) {
-                console.error("Download failed:", chrome.runtime.lastError.message);
-                openToast({ label: "Failed to download backup", icon: "warning" }, 2000)
-            } else {
-                openToast({ label: "Backup downloaded successfully", icon: "download" }, 2000)
-            }
-        })
-
-    } catch (err) {
-        console.error("Backup export error:", err);
-        openToast({ label: "Failed to export backup", icon: "warning" }, 2000)
-    }
+		openToast({ label: "Backup downloaded successfully", icon: "download" }, 2000)
+	} catch (err) {
+		console.error("Download failed:", err.message || err);
+		openToast({ label: "Failed to download backup", icon: "warning" }, 2000)
+	}
 }
 
 const onKeydown = e => {

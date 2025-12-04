@@ -48,10 +48,11 @@ const handleOpen = target => {
 		<Flex direction="column" gap="24" align="center">
 			<Breadcrumbs />
 
-			<PageHeader :title="appStore.profile?.name" :description="appStore.profile?.id" icon="user" />
+			<PageHeader v-if="appStore.profile" :title="appStore.profile?.name" :description="appStore.profile?.id" icon="user" />
 
 			<ItemsContainer wide>
 				<SettingField
+					v-if="appStore.profile"
 					@click="popupStore.open('edit_profile')"
 					label="Name" :value="appStore.profile?.name" icon="edit" />
 			</ItemsContainer>

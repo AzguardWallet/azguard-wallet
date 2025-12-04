@@ -21,6 +21,7 @@ declare global {
   const asyncComputed: typeof import("@vueuse/core")["asyncComputed"]
   const autoResetRef: typeof import("@vueuse/core")["autoResetRef"]
   const balanceFormatted: typeof import('../utils/amount.js').balanceFormatted
+  const blobToUint8Array: typeof import('../utils/files').blobToUint8Array
   const bn: typeof import('../utils/bn.js')['default']
   const browser: typeof import('webextension-polyfill')
   const capitalize: typeof import('../utils/string').capitalize
@@ -28,6 +29,7 @@ declare global {
   const checkNotificationsForShow: typeof import('../composables/notification.js').checkNotificationsForShow
   const checkSentinel: typeof import('../utils/core.js').checkSentinel
   const comma: typeof import('../utils/amount.js').comma
+  const compressData: typeof import('../utils/files').compressData
   const computed: typeof import('vue').computed
   const computedAsync: typeof import("@vueuse/core")["computedAsync"]
   const computedEager: typeof import("@vueuse/core")["computedEager"]
@@ -50,10 +52,12 @@ declare global {
   const debounce: typeof import('../utils/general.js').debounce
   const debouncedRef: typeof import("@vueuse/core")["debouncedRef"]
   const debouncedWatch: typeof import("@vueuse/core")["debouncedWatch"]
+  const decompressData: typeof import('../utils/files').decompressData
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
   const defineLoader: typeof import("vue-router/auto")["defineLoader"]
   const definePage: typeof import("unplugin-vue-router/runtime")["_definePage"]
+  const downloadFile: typeof import('../utils/files').downloadFile
   const eagerComputed: typeof import("@vueuse/core")["eagerComputed"]
   const effectScope: typeof import('vue').effectScope
   const extendRef: typeof import("@vueuse/core")["extendRef"]
@@ -108,6 +112,7 @@ declare global {
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
   const pausableWatch: typeof import("@vueuse/core")["pausableWatch"]
+  const pickFile: typeof import('../utils/files').pickFile
   const provide: typeof import('vue').provide
   const provideLocal: typeof import("@vueuse/core")["provideLocal"]
   const purgeNumber: typeof import('../utils/amount.js').purgeNumber

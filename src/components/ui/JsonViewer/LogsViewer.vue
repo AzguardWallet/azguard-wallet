@@ -16,7 +16,7 @@ import { Config } from "@/wallet/config"
 import { LogLevel } from "@/wallet/logger"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { LogViewerServiceClient } from "@/wallet/services/log-viewer/client"
-import { capitalize } from "@/utils/string"
+import { capitalize, downloadFile } from "@/utils"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -343,7 +343,7 @@ function scrollToTargetLog(targetLogId) {
 	})
 }
 
-function exportLogsToCSV() {
+async function exportLogsToCSV() {
 	try {
 		const MAX_CELL_LENGTH = 32_760
 		const rows = []
@@ -390,23 +390,18 @@ function exportLogsToCSV() {
 		const csvContent = [["time", "source", "level", "data"], ...rows]
 			.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(","))
 			.join("\n")
+		
+		try {
+			await downloadFile({
+				data: csvContent,
+				filename: `AzguardWalletLogs_${Math.floor(Date.now() / 1000)}.csv`,
+			})
 
-		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-		const url = URL.createObjectURL(blob)
-
-		chrome.downloads.download({
-			url,
-			filename: `AzguardWalletLogs_${Math.floor(Date.now() / 1000)}.csv`,
-			saveAs: true,
-		}, () => {
-			if (chrome.runtime.lastError) {
-				console.error("Download failed:", chrome.runtime.lastError.message);
-				openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
-			} else {
-				openToast({ label: "Logs are ready for download", icon: "download" }, 2_000)
-			}
-			URL.revokeObjectURL(url)
-		})
+			openToast({ label: "Logs downloaded successfully", icon: "download" }, 2000)
+		} catch (err) {
+			console.error("Download failed:", err);
+			openToast({ label: "Failed to download logs", icon: "warning" }, 2000)
+		}
 	} catch (err) {
 		console.error(err)
 		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)

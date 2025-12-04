@@ -483,7 +483,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             let id = array_max((await this.tokens.getKeys()).map(x => +x)) + 1;
             for (const token of tokens) {
                 try {
-                    await this.tokens.set(`${id}`, {...token, id});
+                    await this.tokens.set(`${id}`, { ...token, id });
                     result.push({ ...token, id });
                     id++;
                 } catch (err) {

@@ -5,7 +5,7 @@ import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
-import { array_max } from "@/wallet/utils";
+import { array_max, hasIntersectionByKeys } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { AzguardV0, IAccountContract } from "./contracts";
 import { ACCOUNT_SERVICE_NAME, AccountType, Account, Events, Methods } from "./spec";
@@ -166,6 +166,13 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
 
         const result: Restored<Account>[] = [];
 
+        const hasIntersectionByAddress = hasIntersectionByKeys(
+            await this.storage.getValues(),
+            accounts,
+            ["address"],
+        );
+        if (hasIntersectionByAddress) throw new Error("Duplicate address");
+        
         for (const account of accounts) {
             try {
                 await this.storage.set(account.address, account);
