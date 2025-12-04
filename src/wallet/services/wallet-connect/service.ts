@@ -4,6 +4,7 @@ import type { ProposalTypes, SessionTypes } from "@walletconnect/types";
 import { getSdkError } from "@walletconnect/utils";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
+import { IConfigStore, ConfigProp } from "@/wallet/config";
 import { ILogger } from "@/wallet/logger";
 import { DappSessionService, DappMetadata, DappPermissions, DappSession } from "@/wallet/services/dapp-session/service";
 import {
@@ -20,41 +21,79 @@ import { Methods, WALLET_CONNECT_SERVICE_NAME } from "./spec";
 
 export * from "./spec";
 
+const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783";
+const WALLET_CONNECT_METADATA = {
+    name: AzguardWalletInfo.name,
+    description: AzguardWalletInfo.description,
+    url: AzguardWalletInfo.url,
+    icons: [AzguardWalletInfo.logo],
+};
+const WALLET_CONNECT_LOG_LEVEL = "silent"; // silent | error | warn | info | debug | trace
+
 export class WalletConnectService extends Service<Methods> implements ServiceSpec<Methods> {
     public static name = WALLET_CONNECT_SERVICE_NAME;
 
+    private readonly configStore: IConfigStore;
     private walletKit?: InstanceType<typeof WalletKit>;
+    private core?: InstanceType<typeof Core>;
+    private isEnabled: boolean = false;
 
     private dappSessions: DappSessionService = null!;
     private dappInteractions: DappInteractionService = null!;
 
-    public constructor(logger: ILogger) {
+    public constructor(configStore: IConfigStore, logger: ILogger) {
         super(WALLET_CONNECT_SERVICE_NAME, logger);
+        this.configStore = configStore;
     }
 
     protected async init(services: ServiceCollection) {
         this.dappSessions = services.get(DappSessionService.name);
         this.dappInteractions = services.get(DappInteractionService.name);
 
+        // Subscribe to config changes for runtime toggle
+        this.configStore.onUpdate.add(this.onConfigUpdate);
+
+        // Only initialize if enabled
+        this.isEnabled = this.configStore.get("walletConnectEnabled");
+        if (this.isEnabled) {
+            await this.initializeWalletKit();
+        } else {
+            this.logDebug("WalletConnect is disabled, skipping initialization");
+        }
+    }
+
+    /**
+     * Handle config changes at runtime
+     */
+    private readonly onConfigUpdate = async (prop: ConfigProp) => {
+        if (prop.key !== "walletConnectEnabled") return;
+
+        const newValue = prop.value as boolean;
+        if (newValue && !this.walletKit) {
+            this.isEnabled = true;
+            await this.initializeWalletKit();
+            this.logInfo("WalletConnect enabled");
+        } else if (!newValue && this.walletKit) {
+            this.isEnabled = false;
+            await this.cleanup();
+            this.logInfo("WalletConnect disabled");
+        }
+    };
+
+    /**
+     * Initialize WalletKit and register event listeners
+     */
+    private async initializeWalletKit() {
         while (true) {
             try {
-                const WALLET_CONNECT_PROJECT_ID = "d809b7373c4209e576c9033266578783";
-                const WALLET_CONNECT_METADATA = {
-                    name: AzguardWalletInfo.name,
-                    description: AzguardWalletInfo.description,
-                    url: AzguardWalletInfo.url,
-                    icons: [AzguardWalletInfo.logo],
-                };
-                const WALLET_CONNECT_LOG_LEVEL = "silent"; // silent | error | warn | info | debug | trace
-
-                const core = new Core({
+                this.core = new Core({
                     projectId: WALLET_CONNECT_PROJECT_ID,
                     logger: WALLET_CONNECT_LOG_LEVEL,
                 });
-                this.configureLoggers(core, WALLET_CONNECT_LOG_LEVEL);
+                this.configureLoggers(this.core, WALLET_CONNECT_LOG_LEVEL);
 
                 this.walletKit = await WalletKit.init({
-                    core,
+                    core: this.core,
                     metadata: WALLET_CONNECT_METADATA,
                 });
                 this.walletKit.on("session_proposal", this.onSessionProposal);
@@ -67,18 +106,54 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
                 this.dappSessions.onDappSessionUpdated.add(this.onDappSessionUpdated);
                 this.dappSessions.onDappSessionDeleted.add(this.onDappSessionDeleted);
 
+                // Cleanup orphaned WC sessions
                 for (const topic of Object.keys(this.walletKit.getActiveSessions())) {
                     if (!(await this.dappSessions.tryGetDappSession(topic))) {
                         this.disconnectSession(topic);
                     }
                 }
 
-                this.logDebug("Wallet connect service initialized");
+                this.logDebug("WalletConnect service initialized");
                 break;
             } catch (error) {
-                this.logError("Failed to initialize wallet connect service. Retry...", getErrorMessage(error));
+                this.logError("Failed to initialize WalletConnect service. Retry...", getErrorMessage(error));
                 await sleep(1000);
             }
+        }
+    }
+
+    /**
+     * Cleanup when disabled at runtime (preserves storage for reconnection)
+     */
+    private async cleanup() {
+        if (!this.walletKit || !this.core) return;
+
+        try {
+            // Close WebSocket relay connection
+            if (this.core.relayer.connected) {
+                await this.core.relayer.transportClose();
+                this.logDebug("Relay connection closed");
+            }
+
+            // Remove WalletKit event listeners
+            this.walletKit.off("session_proposal", this.onSessionProposal);
+            this.walletKit.off("proposal_expire", this.onProposalExpire);
+            this.walletKit.off("session_request", this.onSessionRequest);
+            this.walletKit.off("session_request_expire", this.onSessionRequestExpire);
+            this.walletKit.off("session_delete", this.onSessionDelete);
+            this.walletKit.off("session_authenticate", this.onSessionAuthenticate);
+
+            // Remove app session event listeners
+            this.dappSessions.onDappSessionUpdated.remove(this.onDappSessionUpdated);
+            this.dappSessions.onDappSessionDeleted.remove(this.onDappSessionDeleted);
+
+            // Clear instances (storage preserved for reconnection on re-enable)
+            this.walletKit = undefined;
+            this.core = undefined;
+
+            this.logDebug("WalletConnect cleanup completed");
+        } catch (error) {
+            this.logError("WalletConnect cleanup failed", getErrorMessage(error));
         }
     }
 
@@ -111,6 +186,9 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
     };
 
     public async connectByURI(uri: string) {
+        if (!this.isEnabled) {
+            throw new Error("WalletConnect is disabled. Enable it in Settings > External Services.");
+        }
         if (!this.walletKit) {
             throw new Error("WalletKit is not initialized.");
         }

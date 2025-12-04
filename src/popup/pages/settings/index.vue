@@ -64,6 +64,13 @@ const handleCopyAddress = () => {
 					chevron
 				/>
 				<SettingItem
+					to="/popup/settings/external-services"
+					title="External Services"
+					icon="globe"
+					iconBgColor="purple"
+					chevron
+				/>
+				<SettingItem
 					to="/popup/settings/advanced"
 					title="Advanced"
 					icon="zap"
