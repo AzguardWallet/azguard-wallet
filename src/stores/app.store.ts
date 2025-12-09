@@ -203,9 +203,8 @@ export const useAppStore = defineStore("app", () => {
 		networkStatus.value = NodeStatus[status]
 	}
 	const updateNetwork = async (id, name, url) => {
-		const updatedNetwork = await managers.network.updateNetwork(id, name, url)
+		await managers.network.updateNetwork(id, name, url)
 		networks.value = await managers.network.getNetworks()
-		return updatedNetwork
 	}
 	const removeNetwork = async target => {
 		await managers.network.deleteNetwork(target.id)
@@ -257,7 +256,7 @@ export const useAppStore = defineStore("app", () => {
 
 	const isPrivacyModeEnabled = ref(false)
 
-	const defaultExplorer = ref<BlockExplorerType>("aztecscan")
+	const defaultExplorer = ref<BlockExplorerType | null>("aztecscan")
 
 	const loggerWindowId = useSyncedRef("loggerWindowId", null)
 

@@ -3,7 +3,7 @@ import type { BlockExplorerType } from "@/wallet/constants/explorers"
 export type StealthModeSnapshot = {
     contractRegistry: boolean;
     walletConnectEnabled: boolean;
-    defaultExplorer: BlockExplorerType;
+    defaultExplorer: BlockExplorerType | null;
 } | null;
 
 export class Config {
@@ -18,7 +18,7 @@ export class Config {
     sessionTtl: number = 1_800_000; // 30 minutes.
 
     // Additional
-    defaultExplorer: BlockExplorerType = "aztecscan";
+    defaultExplorer: BlockExplorerType | null = "aztecscan";
 
     // External Services (Stealth Mode)
     stealthMode: boolean = true; // When ON, all external services are disabled

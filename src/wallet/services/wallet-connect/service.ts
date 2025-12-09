@@ -86,11 +86,14 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
     private async initializeWalletKit() {
         while (true) {
             try {
-                this.core = new Core({
-                    projectId: WALLET_CONNECT_PROJECT_ID,
-                    logger: WALLET_CONNECT_LOG_LEVEL,
-                });
-                this.configureLoggers(this.core, WALLET_CONNECT_LOG_LEVEL);
+                // Reuse existing Core instance to avoid "already initialized" warning
+                if (!this.core) {
+                    this.core = new Core({
+                        projectId: WALLET_CONNECT_PROJECT_ID,
+                        logger: WALLET_CONNECT_LOG_LEVEL,
+                    });
+                    this.configureLoggers(this.core, WALLET_CONNECT_LOG_LEVEL);
+                }
 
                 this.walletKit = await WalletKit.init({
                     core: this.core,
@@ -147,9 +150,8 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
             this.dappSessions.onDappSessionUpdated.remove(this.onDappSessionUpdated);
             this.dappSessions.onDappSessionDeleted.remove(this.onDappSessionDeleted);
 
-            // Clear instances (storage preserved for reconnection on re-enable)
+            // Clear walletKit but preserve core for reconnection on re-enable
             this.walletKit = undefined;
-            this.core = undefined;
 
             this.logDebug("WalletConnect cleanup completed");
         } catch (error) {

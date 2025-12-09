@@ -2,9 +2,6 @@
 /** Vendor */
 import BN from "bignumber.js"
 
-/** Components */
-import Icon from "@/components/core/Icon.vue"
-
 /** Services */
 import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 

@@ -36,119 +36,122 @@ const defaultExplorer = ref(defaultConfig.defaultExplorer)
 // When stealth mode is ON, all external services are locked/disabled
 const isServicesLocked = computed(() => stealthMode.value)
 
+const settings = {
+	stealthMode: {
+		title: "Stealth Mode",
+		description: "Disable all external service connections",
+		model: stealthMode,
+		visible: ref(true),
+	},
+	contractRegistry: {
+		title: "Contract Registry",
+		description: "Lookup contract metadata from external registry",
+		model: contractRegistry,
+		visible: ref(true),
+		locked: isServicesLocked,
+	},
+	walletConnectEnabled: {
+		title: "WalletConnect",
+		description: "Connect to dApps via WalletConnect",
+		model: walletConnectEnabled,
+		visible: ref(true),
+		locked: isServicesLocked,
+	},
+	defaultExplorer: {
+		title: "Block Explorer",
+		description: "Transaction links",
+		model: defaultExplorer,
+		visible: ref(true),
+		locked: isServicesLocked,
+	},
+}
+
 // Get display name for selected explorer
 const selectedExplorerName = computed(() => {
-	if (isServicesLocked.value) return "Disabled"
+	if (!defaultExplorer.value) return "None"
 	const explorer = BLOCK_EXPLORERS.find(e => e.id === defaultExplorer.value)
 	return explorer?.name || "None"
 })
 
+async function updateSetting(key, value) {
+	if (!settings[key]) return
+	if (settings[key].model.value === value) return
+	if (settings[key].locked?.value) return
+
+	try {
+		await configService.setValue(key, value)
+		applySetting(key, value)
+	} catch (err) {
+		openToast({ label: "Failed to update setting", icon: "warning" })
+	}
+}
+
+async function applySetting(key, value) {
+	settings[key].model.value = value
+
+	switch (key) {
+		case "stealthMode":
+			if (value) {
+				// Enabling stealth mode: save snapshot, then disable all
+				const snapshot = {
+					contractRegistry: contractRegistry.value,
+					walletConnectEnabled: walletConnectEnabled.value,
+					defaultExplorer: defaultExplorer.value,
+				}
+				await configService.setValue("stealthModeSnapshot", snapshot)
+
+				await configService.setValue("contractRegistry", false)
+				settings.contractRegistry.model.value = false
+				await configService.setValue("walletConnectEnabled", false)
+				settings.walletConnectEnabled.model.value = false
+				await configService.setValue("defaultExplorer", null)
+				settings.defaultExplorer.model.value = null
+			} else {
+				// Disabling stealth mode: restore from snapshot
+				const snapshot = await configService.getValue("stealthModeSnapshot")
+				if (snapshot) {
+					await configService.setValue("contractRegistry", snapshot.contractRegistry)
+					settings.contractRegistry.model.value = snapshot.contractRegistry
+					await configService.setValue("walletConnectEnabled", snapshot.walletConnectEnabled)
+					settings.walletConnectEnabled.model.value = snapshot.walletConnectEnabled
+					await configService.setValue("defaultExplorer", snapshot.defaultExplorer)
+					settings.defaultExplorer.model.value = snapshot.defaultExplorer
+					await configService.setValue("stealthModeSnapshot", null)
+				}
+			}
+			openToast({
+				label: value ? "Stealth mode enabled" : "Stealth mode disabled",
+				icon: "info"
+			}, 1_500)
+			break
+
+		case "contractRegistry":
+			openToast({ label: "Contract registry updated", icon: "info" }, 1_500)
+			break
+
+		case "walletConnectEnabled":
+			openToast({ label: "WalletConnect updated", icon: "info" }, 1_500)
+			break
+
+		case "defaultExplorer":
+			openToast({ label: "Default explorer updated", icon: "info" }, 1_500)
+			break
+	}
+}
+
 function onSettingUpdate(setting) {
-	if (setting.key === "stealthMode" && stealthMode.value !== setting.value) {
-		stealthMode.value = setting.value
-	}
-	if (setting.key === "contractRegistry" && contractRegistry.value !== setting.value) {
-		contractRegistry.value = setting.value
-	}
-	if (setting.key === "walletConnectEnabled" && walletConnectEnabled.value !== setting.value) {
-		walletConnectEnabled.value = setting.value
-	}
-	if (setting.key === "defaultExplorer" && defaultExplorer.value !== setting.value) {
-		defaultExplorer.value = setting.value
-	}
-}
-
-async function handleStealthModeChange(value) {
-	if (stealthMode.value === value) return
-	try {
-		if (value) {
-			// Enabling stealth mode: save snapshot, then disable all
-			const snapshot = {
-				contractRegistry: contractRegistry.value,
-				walletConnectEnabled: walletConnectEnabled.value,
-				defaultExplorer: defaultExplorer.value,
-			}
-			await configService.setValue("stealthModeSnapshot", snapshot)
-
-			await configService.setValue("contractRegistry", false)
-			contractRegistry.value = false
-			await configService.setValue("walletConnectEnabled", false)
-			walletConnectEnabled.value = false
-			await configService.setValue("defaultExplorer", "none")
-			defaultExplorer.value = "none"
-		} else {
-			// Disabling stealth mode: restore from snapshot
-			const snapshot = await configService.getValue("stealthModeSnapshot")
-			if (snapshot) {
-				await configService.setValue("contractRegistry", snapshot.contractRegistry)
-				contractRegistry.value = snapshot.contractRegistry
-				await configService.setValue("walletConnectEnabled", snapshot.walletConnectEnabled)
-				walletConnectEnabled.value = snapshot.walletConnectEnabled
-				await configService.setValue("defaultExplorer", snapshot.defaultExplorer)
-				defaultExplorer.value = snapshot.defaultExplorer
-				await configService.setValue("stealthModeSnapshot", null)
-			}
+	if (settings[setting.key]) {
+		if (settings[setting.key].model.value !== setting.value) {
+			settings[setting.key].model.value = setting.value
 		}
-
-		await configService.setValue("stealthMode", value)
-		stealthMode.value = value
-
-		openToast({
-			label: value ? "Stealth mode enabled" : "Stealth mode disabled",
-			icon: "info"
-		}, 1_500)
-	} catch (err) {
-		openToast({ label: "Failed to update setting", icon: "warning" })
-	}
-}
-
-async function handleContractRegistryChange(value) {
-	if (isServicesLocked.value || contractRegistry.value === value) return
-	try {
-		await configService.setValue("contractRegistry", value)
-		contractRegistry.value = value
-		openToast({ label: "Contract registry updated", icon: "info" }, 1_500)
-	} catch (err) {
-		openToast({ label: "Failed to update setting", icon: "warning" })
-	}
-}
-
-async function handleWalletConnectChange(value) {
-	if (isServicesLocked.value || walletConnectEnabled.value === value) return
-	try {
-		await configService.setValue("walletConnectEnabled", value)
-		walletConnectEnabled.value = value
-		openToast({ label: "WalletConnect updated", icon: "info" }, 1_500)
-	} catch (err) {
-		openToast({ label: "Failed to update setting", icon: "warning" })
-	}
-}
-
-async function handleExplorerChange(explorerId) {
-	if (isServicesLocked.value || defaultExplorer.value === explorerId) return
-	try {
-		await configService.setValue("defaultExplorer", explorerId)
-		defaultExplorer.value = explorerId
-		openToast({ label: "Default explorer updated", icon: "info" }, 1_500)
-	} catch (err) {
-		openToast({ label: "Failed to update explorer", icon: "warning" })
 	}
 }
 
 onBeforeMount(async () => {
 	const _settings = await configService.getProps()
 	_settings.forEach(s => {
-		if (s.key === "stealthMode") {
-			stealthMode.value = s.value
-		}
-		if (s.key === "contractRegistry") {
-			contractRegistry.value = s.value
-		}
-		if (s.key === "walletConnectEnabled") {
-			walletConnectEnabled.value = s.value
-		}
-		if (s.key === "defaultExplorer") {
-			defaultExplorer.value = s.value
+		if (settings[s.key]) {
+			settings[s.key].model.value = s.value
 		}
 	})
 
@@ -170,64 +173,46 @@ onBeforeUnmount(() => {
 			<!-- Stealth Mode Master Toggle -->
 			<Flex align="center" justify="between">
 				<Flex direction="column" justify="center" gap="6">
-					<Text size="13" weight="600" color="primary">Stealth Mode</Text>
-					<Text size="12" weight="500" color="tertiary">Disable all external service connections</Text>
+					<Text size="13" weight="600" color="primary">{{ settings.stealthMode.title }}</Text>
+					<Text size="12" weight="500" color="tertiary">{{ settings.stealthMode.description }}</Text>
 				</Flex>
 
 				<Toggle
-					@update:modelValue="handleStealthModeChange"
-					:modelValue="stealthMode"
+					@update:modelValue="updateSetting('stealthMode', $event)"
+					:modelValue="settings.stealthMode.model.value"
 				/>
 			</Flex>
 
 			<Flex :class="$style.divider" />
 
-			<!-- Contract Registry -->
-			<Flex align="center" justify="between">
-				<Flex direction="column" justify="center" gap="6">
-					<Text size="13" weight="600" color="primary">Contract Registry</Text>
-					<Text size="12" weight="500" color="tertiary">Lookup contract metadata from external registry</Text>
+			<!-- Toggle Settings (contractRegistry, walletConnectEnabled) -->
+			<template v-for="sk in ['contractRegistry', 'walletConnectEnabled']" :key="sk">
+				<Flex
+					v-if="settings[sk].visible.value"
+					align="center"
+					justify="between"
+				>
+					<Flex direction="column" justify="center" gap="6">
+						<Text size="13" weight="600" color="primary">{{ settings[sk].title }}</Text>
+						<Text size="12" weight="500" color="tertiary">{{ settings[sk].description }}</Text>
+					</Flex>
+
+					<Toggle
+						@update:modelValue="updateSetting(sk, $event)"
+						:modelValue="settings[sk].model.value"
+						:disabled="settings[sk].locked?.value"
+					/>
 				</Flex>
+			</template>
 
-				<Toggle
-					@update:modelValue="handleContractRegistryChange"
-					:modelValue="contractRegistry"
-					:disabled="isServicesLocked"
-				/>
-			</Flex>
-
-			<!-- WalletConnect -->
-			<Flex align="center" justify="between">
-				<Flex direction="column" justify="center" gap="6">
-					<Text size="13" weight="600" color="primary">WalletConnect</Text>
-					<Text size="12" weight="500" color="tertiary">Connect to dApps via WalletConnect</Text>
-				</Flex>
-
-				<Toggle
-					@update:modelValue="handleWalletConnectChange"
-					:modelValue="walletConnectEnabled"
-					:disabled="isServicesLocked"
-				/>
-			</Flex>
-
-			<!-- Default Block Explorer -->
+			<!-- Default Block Explorer (dropdown) -->
 			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">Block Explorer</Text>
-					<Text size="12" weight="500" color="tertiary">Explorer for transaction links</Text>
+					<Text size="13" weight="600" color="primary">{{ settings.defaultExplorer.title }}</Text>
+					<Text size="12" weight="500" color="tertiary">{{ settings.defaultExplorer.description }}</Text>
 				</Flex>
 
-				<!-- Locked state: just show disabled trigger -->
-				<Flex
-					v-if="isServicesLocked"
-					:class="[$style.explorerTrigger, $style.disabled]"
-				>
-					<Text size="13" weight="600" color="tertiary">Disabled</Text>
-					<Icon name="lock" size="12" color="tertiary" />
-				</Flex>
-
-				<!-- Unlocked state: show dropdown -->
-				<Dropdown v-else>
+				<Dropdown :disabled="settings.defaultExplorer.locked?.value">
 					<template #trigger>
 						<DropdownTrigger :class="$style.explorerTrigger">
 							<Text size="13" weight="600" color="primary">
@@ -241,15 +226,25 @@ onBeforeUnmount(() => {
 						<DropdownItem
 							v-for="explorer in BLOCK_EXPLORERS"
 							:key="explorer.id"
-							@click="handleExplorerChange(explorer.id)"
+							@click="updateSetting('defaultExplorer', explorer.id)"
 						>
 							<Flex align="center" gap="8">
 								<Icon
-									:name="defaultExplorer === explorer.id ? 'check' : ''"
+									:name="settings.defaultExplorer.model.value === explorer.id ? 'check' : ''"
 									size="14"
 									color="primary"
 								/>
 								{{ explorer.name }}
+							</Flex>
+						</DropdownItem>
+						<DropdownItem @click="updateSetting('defaultExplorer', null)">
+							<Flex align="center" gap="8">
+								<Icon
+									:name="!settings.defaultExplorer.model.value ? 'check' : ''"
+									size="14"
+									color="primary"
+								/>
+								None
 							</Flex>
 						</DropdownItem>
 					</template>
@@ -289,10 +284,5 @@ onBeforeUnmount(() => {
 	display: flex;
 	align-items: center;
 	gap: 6px;
-}
-
-.disabled {
-	opacity: 0.6;
-	cursor: not-allowed;
 }
 </style>
