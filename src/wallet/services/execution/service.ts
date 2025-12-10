@@ -115,6 +115,7 @@ import { ChainInfo } from "@aztec/entrypoints/interfaces";
 import {
     Aliased,
     ContractInstanceAndArtifact,
+    ContractInstantiationDataSchema,
     FunctionCallSchema,
     ProfileOptions,
     SendOptions,
@@ -880,7 +881,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     "Contract artifact must be provided when registering a contract using instantiation data",
                 );
             }
-            instance = await getContractInstanceFromInstantiationParams(op.artifact, op.instanceData);
+            instance = await getContractInstanceFromInstantiationParams(
+                await ContractArtifactSchema.parseAsync(op.artifact),                
+                await ContractInstantiationDataSchema.parseAsync(op.instanceData),
+            );
             await this.pxeService.registerContract(network, { instance, artifact: op.artifact });
         } else {
             if (!op.artifact) {
@@ -896,12 +900,15 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 );
             }
             instance = maybeContractInstance;
-            const thisContractClass = await getContractClassFromArtifact(op.artifact);
+            const thisContractClass = await getContractClassFromArtifact(
+                await ContractArtifactSchema.parseAsync(op.artifact),
+            );
             if (!thisContractClass.id.equals(instance.currentContractClassId)) {
                 // wallet holds an outdated version of this contract
                 await this.pxeService.updateContract(network, instance.address, op.artifact);
                 instance.currentContractClassId = thisContractClass.id;
             }
+            await this.pxeService.registerContract(network, { instance, artifact: op.artifact });
         }
         if (op.secretKey) {
             await this.pxeService.registerAccount(network, op.secretKey, await computePartialAddress(instance));
@@ -934,6 +941,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         const pxe = this.pxeService.getPXE(network);
+        await account.ensureRegistered(pxe);
         return pxe.simulateUtility(
             op.functionName,
             op.args,
