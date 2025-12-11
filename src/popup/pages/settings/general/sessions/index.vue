@@ -27,9 +27,9 @@ const router = useRouter()
 const dappSessions = ref([])
 
 const dappSessionService = new DappSessionServiceClient()
-dappSessionService.onDappSessionAdded(onDappSessionAdded)
-dappSessionService.onDappSessionUpdated(onDappSessionUpdated)
-dappSessionService.onDappSessionDeleted(onDappSessionDeleted)
+dappSessionService.onDappSessionAdded.add(onDappSessionAdded)
+dappSessionService.onDappSessionUpdated.add(onDappSessionUpdated)
+dappSessionService.onDappSessionDeleted.add(onDappSessionDeleted)
 function onDappSessionAdded(session) {
 	dappSessions.value.push(session)
 }

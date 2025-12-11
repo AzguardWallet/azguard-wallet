@@ -44,7 +44,7 @@ export async function refreshBalances(minutes, accounts) {
 	}
 
 	for (const tb of tokenBalances) {
-		if (checkAge(tb.updatedAt)) tokenBalanceService.refreshTokenBalance(tb.id)
+		if (checkAge(tb.updatedAt, 30)) tokenBalanceService.refreshTokenBalance(tb.id)
 	}
 
 	tokenBalanceService.disconnect()
