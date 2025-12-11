@@ -99,37 +99,28 @@ async function processTask(task) {
 function processSubtask(subtask) {
 	if (!subtask.parentId) return subtask
 
-	switch (subtask.status) {
-		case TaskStatus.Pending:
-			subtask.statusColor = 'var(--gray)'
-			break;
-		case TaskStatus.Processing:
-			subtask.statusColor = 'var(--blue)'
-			break;
-		case TaskStatus.Completed:
-			subtask.statusColor = 'var(--green)'
-			break;
-		case TaskStatus.Cancelled:
-			subtask.statusColor = 'var(--gray)'
-			break;
-		case TaskStatus.Failed:
-			subtask.statusColor = 'var(--red)'
-			break;
-	
-		default:
-			break;
+	return {
+		...subtask,
+		statusColor: (() => {
+			switch (subtask.status) {
+				case TaskStatus.Pending: return 'var(--gray)'
+				case TaskStatus.Processing: return 'var(--blue)'
+				case TaskStatus.Completed: return 'var(--green)'
+				case TaskStatus.Cancelled: return 'var(--gray)'
+				case TaskStatus.Failed: return 'var(--red)'
+				default: return 'var(--gray)'
+			}
+		})()
 	}
-
-	return subtask
 }
 function processSubtaskRecursively(subtask) {
-	processSubtask(subtask)
+	const processed = processSubtask(subtask)
 
-	if (subtask.subtasks?.length) {
-		subtask.subtasks = subtask.subtasks.map(st => processSubtaskRecursively(st))
+	if (processed.subtasks?.length) {
+		processed.subtasks = processed.subtasks.map(st => processSubtaskRecursively(st))
 	}
 
-	return subtask
+	return processed
 }
 
 const taskService = new TaskServiceClient()
@@ -140,7 +131,7 @@ async function onTaskCreated(task) {
 	task = await processTask(task)
 
 	if (!task.parentId) {
-		tasks.value.push(reactive(task))
+		tasks.value.push(reactive(processSubtaskRecursively(task)))
 	} else {
 		const parent = findTaskRecursive(tasks.value, task.parentId)
 		if (parent) {
@@ -152,14 +143,23 @@ function onTaskUpdated(task) {
 	const existing = findTaskRecursive(tasks.value, task.id)
 
 	if (existing) {
-		Object.assign(existing, processSubtask(task))
+		// Object.assign(existing, processSubtask(task))
+		const processedTask = processSubtask(task)
+		
+		Object.keys(processedTask).forEach(key => {
+			if (key !== 'subtasks' && key !== 'id') {
+				existing[key] = processedTask[key]
+			}
+		})
 	} else {
+		const processedTask = processSubtask(task)
+
 		if (!task.parentId) {
-			tasks.value.push(reactive(task))
+			tasks.value.push(reactive(processedTask))
 		} else {
 			const parent = findTaskRecursive(tasks.value, task.parentId)
 			if (parent) {
-				parent.subtasks.push(reactive(processSubtask(task)))
+				parent.subtasks.push(reactive(processedTask))
 			}
 		}
 	}
@@ -240,7 +240,7 @@ onBeforeUnmount(() => {
 					v-if="t.showSubtasks"
 					direction="column"
 					gap="4"
-					style="padding: 4px 0px 0px 8px;"
+					style="padding: 4px 0px 0px 4px;"
 				>
 					<div v-for="(st, i) in t.subtasks">
 						<Flex align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
@@ -256,15 +256,34 @@ onBeforeUnmount(() => {
 							v-if="st.showSubtasks"
 							direction="column"
 							gap="4"
-							style="padding: 4px 0px 0px 8px;"
+							style="padding: 4px 0px 0px 20px;"
 						>
 							<div v-for="(sst, ii) in st.subtasks">
 								<Flex align="center" gap="8" :class="(ii !== st.subtasks.length - 1) && $style.subtask_icon">
 									<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
 									<TaskCard
+										@click="handleClickTask(sst)"
 										:task="sst"
 										isSubtask
 									/>
+								</Flex>
+
+								<Flex
+									v-if="sst.showSubtasks"
+									direction="column"
+									gap="4"
+									style="padding: 4px 0px 0px 20px;"
+								>
+									<div v-for="(ssst, iii) in sst.subtasks">
+										<Flex align="center" gap="8" :class="(iii !== sst.subtasks.length - 1) && $style.subtask_icon">
+											<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
+											<TaskCard
+												:task="ssst"
+												:expandable="false"
+												isSubtask
+											/>
+										</Flex>
+									</div>
 								</Flex>
 							</div>
 						</Flex>
@@ -298,7 +317,7 @@ onBeforeUnmount(() => {
 					v-if="t.showSubtasks"
 					direction="column"
 					gap="4"
-					style="padding: 4px 0px 0px 8px;"
+					style="padding: 4px 0px 0px 4px;"
 				>
 					<div v-for="(st, i) in t.subtasks">
 						<Flex align="center" gap="8" :class="(i !== t.subtasks.length - 1) && $style.subtask_icon">
@@ -314,15 +333,34 @@ onBeforeUnmount(() => {
 							v-if="st.showSubtasks"
 							direction="column"
 							gap="4"
-							style="padding: 4px 0px 0px 8px;"
+							style="padding: 4px 0px 0px 20px;"
 						>
 							<div v-for="(sst, ii) in st.subtasks">
 								<Flex align="center" gap="8" :class="(ii !== st.subtasks.length - 1) && $style.subtask_icon">
 									<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
 									<TaskCard
+										@click="handleClickTask(sst)"
 										:task="sst"
 										isSubtask
 									/>
+								</Flex>
+
+								<Flex
+									v-if="sst.showSubtasks"
+									direction="column"
+									gap="4"
+									style="padding: 4px 0px 0px 20px;"
+								>
+									<div v-for="(ssst, iii) in sst.subtasks">
+										<Flex align="center" gap="8" :class="(iii !== sst.subtasks.length - 1) && $style.subtask_icon">
+											<Icon name="arrow-corner-down-right" size="16" color="tertiary" />
+											<TaskCard
+												:task="ssst"
+												:expandable="false"
+												isSubtask
+											/>
+										</Flex>
+									</div>
 								</Flex>
 							</div>
 						</Flex>
@@ -331,6 +369,16 @@ onBeforeUnmount(() => {
 			</div>
 		</Flex>
 
+		<Flex v-if="!activeTasks.length && !completedTasks.length" align="center" :class="$style.empty_section">
+			<Flex direction="column" align="center" gap="6" :class="$style.empty_banner">
+				<Text size="13" weight="600" color="secondary" align="center">
+					There are no active or recently finished tasks
+				</Text>
+				<Text size="12" weight="500" height="140" color="tertiary" align="center">
+					Tasks show recent or current wallet activity
+				</Text>
+			</Flex>
+		</Flex>
 		<Navigation />
 	</Flex>
 </template>
@@ -384,5 +432,17 @@ onBeforeUnmount(() => {
 	background: var(--txt-tertiary);
 	transform: scaleX(0.5);
 	transform-origin: center;
+}
+
+.empty_section {
+    flex: 1;
+
+    margin-bottom: 50px;
+}
+
+.empty_banner {
+	max-width: 290px;
+
+	margin: 40px auto 0 auto;
 }
 </style>

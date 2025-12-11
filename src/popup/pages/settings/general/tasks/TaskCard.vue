@@ -23,6 +23,10 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	expandable: {
+		type: Boolean,
+		default: true,
+	},
 })
 
 const subtasks = computed(() => props.task.subtasks.length ? props.task.subtasks : [props.task])
@@ -66,7 +70,7 @@ const error = computed(() => {
 })
 
 const isCopied = ref(false)
-function handleCopyError(task) {
+function handleCopyError() {
 	isCopied.value = true
 
 	window.navigator.clipboard.writeText(`${error.value.title || `${props.task.content.label}:`}\n${error.value.description}`)
@@ -77,10 +81,12 @@ function handleCopyError(task) {
 		isCopied.value = false
 	}, 1_500)
 }
+console.log(props.task);
+
 </script>
 
 <template>
-	<Flex direction="column" gap="6" wide :class="$style.wrapper">
+	<Flex direction="column" gap="6" wide :class="(expandable && (task.subtasks.length || !task.parentId)) && $style.wrapper">
 		<Flex align="start" gap="12" wide :class="[$style.task_wrapper, isSubtask && $style.subtask]">
 			<Flex v-if="task.status === TaskStatus.Pending" align="center" justify="center" :class="$style.status_icon">
 				<span :class="[$style.bg, $style.pending]" />
@@ -138,6 +144,7 @@ function handleCopyError(task) {
 								stroke-linecap="round"
 								:stroke-dasharray="arcLengthWithGap + ' ' + circumference"
 								:stroke-dashoffset="offsetFor(i)"
+								:class="$style.circle"
 							/>
 						</g>
 					</svg>
@@ -191,7 +198,7 @@ function handleCopyError(task) {
 
 		<Flex
 			v-if="task.error && showContent && !isSubtask"
-			@click.stop="handleCopyError(t)"
+			@click.stop="handleCopyError"
 			direction="column"
 			gap="4"
 			wide
@@ -287,6 +294,13 @@ function handleCopyError(task) {
 		var(--gray-10) 80%,
 		transparent 100%
 	);
+}
+
+.circle {
+	transition:
+		stroke 1s ease,
+		stroke-dasharray 1s ease,
+		stroke-dashoffset 1s ease;
 }
 
 .error_wrapper {
