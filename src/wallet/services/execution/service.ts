@@ -168,7 +168,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         await this.ensureInitialized();
         amount = BigInt(amount);
         const origin: TxOrigin = { type: OriginType.UI };
-        const transferContent = new TransferContent(tokenId, transferType, recipientAddress, amount);
+        const transferContent = new TransferContent(tokenId, transferType, accountAddress, recipientAddress, amount);
         const transferTask = this.taskService.startNewTask(transferContent, undefined, origin);
 
         try {

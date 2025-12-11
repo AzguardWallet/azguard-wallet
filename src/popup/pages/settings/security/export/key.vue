@@ -180,8 +180,8 @@ onBeforeUnmount(() => {
 							</Text>
 							<Text height="140"> Ensure that plain key is securely stored. </Text>
 							<Text height="140"> By continuing you agree to all risks and responsibilities. </Text>
-							<a href="https://google.com">
-								<Text color="blue" height="140"> Read more about secret key </Text>
+							<a href="https://azguardwallet.io/help/wallet-setup/backup-methods">
+								<Text color="blue" height="140"> Read more about backups </Text>
 							</a>
 						</Flex>
 					</template>

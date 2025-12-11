@@ -20,7 +20,7 @@ const props = defineProps({
 	},
 })
 
-const call = computed(() => props.tx.calls[0])
+const call = computed(() => props.tx.calls.at(1)?.method?.startsWith("mint") ? props.tx.calls[1] : props.tx.calls[0])
 const type = computed(() => {
 	if (call.value.method.startsWith("transfer")) return "transfer"
 	if (call.value.method.startsWith("mint_to_")) return "mint"

@@ -1,5 +1,5 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
 import { NetworkService } from "@/wallet/services/network/service";
@@ -462,4 +462,41 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             await this.deleteToken(token.id);
         }
     };
+
+    public async backup(): Promise<Token[]> {
+        const profile = await this.profiles.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
+        return (await this.getTokensRaw(profile.id));
+    }
+
+    public async restore(tokens: Token[]): Promise<Restored<Token>[]> {
+        await this.ensureInitialized();
+
+        const result: Restored<Token>[] = [];
+
+        try {
+            await this.lock.enter();
+
+            let id = array_max((await this.tokens.getKeys()).map(x => +x)) + 1;
+            for (const token of tokens) {
+                try {
+                    await this.tokens.set(`${id}`, { ...token, id });
+                    result.push({ ...token, id });
+                    id++;
+                } catch (err) {
+                    result.push({
+                        ...token,
+                        restoreError: err instanceof Error ? err.message : err,
+                    });
+                }
+            }
+
+            return result;
+        } finally {
+            this.lock.leave()
+        }
+    }
 }

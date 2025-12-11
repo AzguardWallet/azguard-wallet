@@ -11,8 +11,6 @@
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Services */
 import { managers } from "@/utils/core"
@@ -132,8 +130,8 @@ onBeforeUnmount(() => {
 						</Text>
 						<Text height="140"> Ensure that seed phrase is securely stored. </Text>
 						<Text height="140"> By continuing you agree to all risks and responsibilities. </Text>
-						<a href="https://google.com">
-							<Text color="blue" height="140"> Read more about seed phrase </Text>
+						<a href="https://azguardwallet.io/help/wallet-setup/backup-methods">
+							<Text color="blue" height="140"> Read more about backups </Text>
 						</a>
 					</Flex>
 				</template>

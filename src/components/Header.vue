@@ -5,6 +5,7 @@ import { Config } from "@/wallet/config"
 import { LogLevel } from "@/wallet/logger"
 import { LogViewerServiceClient } from "@/wallet/services/log-viewer/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
+import { TaskServiceClient } from "@/wallet/services/task/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -25,52 +26,89 @@ const indicateFailures = ref(defaultConfig.indicateFailures)
 const showNode = ref(defaultConfig.showNode)
 const stealthMode = ref(defaultConfig.stealthMode)
 
-const highlightColor = ref("")
-const isLogsHighlighted = ref(false)
-
 const HEADER_INDICATION_DURATION = 5_000
-let headerIndicateTimer = null
+let headerIndicateFailureTimer = null
+let headerIndicateTaskTimer = null
 
 const MENU_INDICATION_DURATION = 60_000
-let menuIndicateTimer = null
+let menuIndicateFailureTimer = null
+let menuIndicateTaskTimer = null
 
-function handleWalletFailure(color, logId) {
-	// Header
-	if (headerIndicateTimer) {
-		clearTimeout(headerIndicateTimer)
-		headerIndicateTimer = null
+const tasks = ref([])
+const activeTasksCount = ref(0)
+const taskService = new TaskServiceClient()
+taskService.onTaskCreated.add(onTaskCreated)
+taskService.onTaskUpdated.add(onTaskUpdated)
+taskService.onTaskDeleted.add(processTask)
+async function onTaskCreated(task) {
+	if (task.parentId) return
+
+	tasks.value.push(task)
+}
+function processTask(task) {
+	const idx = tasks.value.findIndex(t => t.id === task.id)
+	if (idx !== -1) {
+		tasks.value.splice(idx, 1)
 	}
-	highlightColor.value = color
-	isLogsHighlighted.value = true
+}
+function onTaskUpdated(task) {
+	if (!task.finishedAt || task.parentId) return
 
-	headerIndicateTimer = setTimeout(() => {
-		isLogsHighlighted.value = false
-		headerIndicateTimer = null
+	processTask(task)
+}
+
+const currentFailureType = ref("")
+const highlightColor = computed(() => {
+	if (currentFailureType.value === "error") {
+		return "var(--red)"
+	} else if (currentFailureType.value === "warning") {
+		return "var(--yellow)"
+	} else if (activeTasksCount.value) {
+		return "var(--green)"
+	} else {
+		return ""
+	}
+})
+
+function handleWalletFailure(type, logId) {
+	currentFailureType.value = type
+
+	// Header
+	if (headerIndicateFailureTimer) {
+		clearTimeout(headerIndicateFailureTimer)
+		headerIndicateFailureTimer = null
+	}
+
+	headerIndicateFailureTimer = setTimeout(() => {
+		currentFailureType.value = ""
+		activeTasksCount.value = tasks.value?.length || 0
+		cacheStore.activeTasksCount = activeTasksCount.value
+		headerIndicateFailureTimer = null
 	}, HEADER_INDICATION_DURATION)
 
 	// Menu
-	if (menuIndicateTimer) {
-		clearTimeout(menuIndicateTimer)
-		menuIndicateTimer = null
+	if (menuIndicateFailureTimer) {
+		clearTimeout(menuIndicateFailureTimer)
+		menuIndicateFailureTimer = null
 	}
 	cacheStore.failureLog = {
 		id: logId,
-		color,
+		color: highlightColor.value,
 	}
 
-	menuIndicateTimer = setTimeout(() => {
+	menuIndicateFailureTimer = setTimeout(() => {
 		cacheStore.failureLog = null
-		menuIndicateTimer = null
+		menuIndicateFailureTimer = null
 	}, MENU_INDICATION_DURATION)
 }
 
 function onLogAdded(log) {
 	switch (log.level) {
 		case LogLevel.Warn:
-			handleWalletFailure("var(--yellow)", log.id)
+			handleWalletFailure("warning", log.id)
 			break;
 		case LogLevel.Error:
-			handleWalletFailure("var(--red)", log.id)
+			handleWalletFailure("error", log.id)
 			break;
 
 		default:
@@ -110,20 +148,55 @@ watch(
 		}
 	}
 )
+watch(
+	() => tasks.value?.length,
+	(newValue) => {
+		if (!newValue) {
+			if (headerIndicateTaskTimer) {
+				clearTimeout(headerIndicateTaskTimer)
+				headerIndicateTaskTimer = null
+			}
+
+			headerIndicateTaskTimer = setTimeout(() => {
+				activeTasksCount.value = 0
+				headerIndicateTaskTimer = null
+			}, HEADER_INDICATION_DURATION)
+
+			menuIndicateTaskTimer = setTimeout(() => {
+				cacheStore.activeTasksCount = null
+				menuIndicateTaskTimer = null
+			}, MENU_INDICATION_DURATION)
+
+			return
+		}
+
+		if (menuIndicateTaskTimer) {
+			clearTimeout(menuIndicateTaskTimer)
+			menuIndicateTaskTimer = null
+		}
+
+		activeTasksCount.value = newValue
+		cacheStore.activeTasksCount = newValue
+	}
+)
 
 onMounted(async () => {
 	indicateFailures.value = await configService.getValue("indicateFailures")
 	showNode.value = await configService.getValue("showNode")
 	stealthMode.value = await configService.getValue("stealthMode")
 
+	tasks.value = (await taskService.getTasks()).filter(t => !t.parentId && !t.finishedAt)
+	activeTasksCount.value = tasks.value?.length
+	
 	if (indicateFailures.value) {
 		logViewerService.connect()
 	}
 })
 
 onBeforeUnmount(() => {
-	logViewerService.disconnect()
 	configService.disconnect()
+	logViewerService.disconnect()
+	taskService.disconnect()
 })
 </script>
 
@@ -137,7 +210,7 @@ onBeforeUnmount(() => {
 			:class="[
 				$style.button,
 				$style.logs_indicator,
-				isLogsHighlighted && $style['logs_indicator--visible'],
+				highlightColor && $style['logs_indicator--visible'],
 				!appStore.isLogined && $style.disabled
 			]"
 			:style="highlightColor ? { '--highlight-color': highlightColor } : {}"
@@ -169,7 +242,7 @@ onBeforeUnmount(() => {
 					color="tertiary"
 					:class="$style.network_type"
 				>
-					• &nbsp;{{ getChainName(appStore.network.chainId) }}
+					• &nbsp;{{ getChainName(appStore.network?.chainId) }}
 				</Text>
 
 				<Icon name="chevron" size="12" color="secondary" />

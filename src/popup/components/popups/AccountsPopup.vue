@@ -33,7 +33,6 @@ const accounts = computed(() => {
 
 const handleSelectAccount = acc => {
 	appStore.selectAccount(acc)
-	appStore.syncBalances()
 
 	emit("onClose")
 }

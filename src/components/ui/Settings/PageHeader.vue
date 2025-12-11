@@ -21,10 +21,14 @@ const props = defineProps({
 
 <template>
 	<Flex direction="column" align="center" gap="12">
-		<Flex :class="[$style.icon, $style[iconColor]]">
-			<Icon :name="icon" size="24" color="white" />
-			<div />
-		</Flex>
+		<div style="position: relative;">
+			<Flex :class="[$style.icon, $style[iconColor]]">
+				<Icon :name="icon" size="24" color="white" />
+				<div />
+			</Flex>
+
+			<slot name="rightdownicon" />
+		</div>
 
 		<Flex align="center" direction="column" gap="8">
 			<Text size="14" weight="600" color="primary" align="center" :class="$style.title"> {{ title }} </Text>
@@ -78,6 +82,12 @@ const props = defineProps({
 
 		padding: 8px;
 	}
+}
+
+.right_down_icon {
+	position: absolute;
+	top: 0;
+	right: 0;
 }
 
 .title {

@@ -7,58 +7,66 @@ import { DateTime } from "luxon"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
-import { managers } from "@/utils/core.js"
 import { balanceFormatted } from "@/utils/amount.js"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+const emit = defineEmits(["onRefreshBalance"])
 const props = defineProps({
-	token: Object,
+	tokenBalance: {
+		type: Object,
+		required: false,
+	},
+	newToken: {
+		type: Object,
+		required: false,
+	},
 })
 
-const balance = computed(() => appStore.balances.filter(Boolean).find(b => b.token?.id === props.token?.id))
+const token = computed(() => props.tokenBalance.token)
 const totalBalance = computed(() => {
-	const decimals = new BN(10).pow(balance.value?.token?.decimals || 0)
-	const publicBalance = new BN(balance.value?.publicBalance || 0).dividedBy(decimals)
-	const privateBalance = new BN(balance.value?.privateBalance || 0).dividedBy(decimals)
+	const decimals = new BN(10).pow(token.value?.decimals || 0)
+	const publicBalance = new BN(props.tokenBalance?.publicBalance || 0).dividedBy(decimals)
+	const privateBalance = new BN(props.tokenBalance?.privateBalance || 0).dividedBy(decimals)
 
 	const total = privateBalance.plus(publicBalance)
 
 	return balanceFormatted(total, 10).value
 })
 const description = computed(() => {
-	if (appStore.mintingTokens.has(balance.value?.account, props.token?.id)) return "Minting more tokens..."
-	if (appStore.tokensAwaitingBalanceRefresh.has(balance.value?.account, props.token?.id)) return "Refreshing balance..."
+	if (props.tokenBalance?.isMinting) return "Minting more tokens..."
+	if (props.tokenBalance?.isUpdating) return "Refreshing balance..."
+	if (props.newToken) return "Minting in progress..."
 
-	return props.token?.name || 'unknown'
+	return token.value?.name || 'unknown'
 })
+
 const isHovered = ref(false)
 
 const handleRefreshBalance = async () => {
-	if (!balance.value) return
+	if (!props.tokenBalance) return
 
-	appStore.tokensAwaitingBalanceRefresh.add(balance.value?.account, props.token?.id)
-	managers.balance.refreshTokenBalance(balance.value?.id)
+	emit("onRefreshBalance")
 }
 </script>
 
 <template>
 	<SettingItem
-		:to="token?.id !== -1 ? `/popup/tokens/${token?.id}` : null"
+		v-if="tokenBalance"
+		:to="`/popup/tokens/${token?.id}`"
 		size="large"
 		:title="token.symbol"
 		:description="description"
-		:disabled="token?.id === -1"
 		icon="banknote"
 		@pointerenter="isHovered = true"
 		@pointerleave="isHovered = false"
 	>
 		<template #icon>
-			<Tooltip position="start" :disabled="!balance?.updatedAt">
+			<Tooltip position="start" :disabled="!tokenBalance?.updatedAt">
 				<Icon
-					v-if="token?.id !== -1 && !appStore.tokensAwaitingBalanceRefresh.has(balance?.account, token?.id) && !appStore.mintingTokens.has(balance?.account, token?.id)"
+					v-if="!(tokenBalance?.isUpdating || tokenBalance?.isMinting)"
 					@click.stop="handleRefreshBalance"
 					:name="!isHovered ? 'banknote' : 'refresh'"
 					size="16"
@@ -72,14 +80,14 @@ const handleRefreshBalance = async () => {
 				<template #content>
 					<Text color="secondary">Latest balance refresh - </Text>
 					<Text>
-						{{ DateTime.fromSeconds(balance?.updatedAt / 1_000).toRelative({ locale: "en" }) }}
+						{{ DateTime.fromSeconds(tokenBalance?.updatedAt / 1_000).toRelative({ locale: "en" }) }}
 					</Text>
 				</template>
 			</Tooltip>
 		</template>
 
 		<template #right>
-			<Flex v-if="token?.id !== -1" direction="column" align="end" gap="6">
+			<Flex direction="column" align="end" gap="6">
 				<Text size="13" weight="600" color="tertiary" noWrap :class="$style.balance_text">
 					<Text color="primary">{{ totalBalance || 0 }}</Text>
 					<Text :class="$style.symbol_wrapper">&nbsp;{{ token.symbol }}</Text>
@@ -94,6 +102,23 @@ const handleRefreshBalance = async () => {
 					<template #content> No quotes available at the moment </template>
 				</Tooltip>
 			</Flex>
+		</template>
+	</SettingItem>
+
+	<SettingItem
+		v-if="newToken"
+		size="large"
+		:title="newToken.symbol"
+		:description="description"
+		disabled
+		icon="banknote"
+		@pointerenter="isHovered = true"
+		@pointerleave="isHovered = false"
+	>
+		<template #icon>
+			<div :class="$style.icon">
+				<Spinner size="16" color="--txt-primary" />
+			</div>
 		</template>
 	</SettingItem>
 </template>

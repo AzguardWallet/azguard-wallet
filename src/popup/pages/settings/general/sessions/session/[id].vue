@@ -43,9 +43,7 @@ const methods = ref([])
 const events = ref([])
 
 const fetchSession = async () => {
-	const id = route.params.id
-
-	session.value = await dappSessionServiceClient.getDappSession(id)
+	session.value = await dappSessionService.getDappSession(route.params.id)
 
 	if (!session.value) {
 		router.push("/popup/settings/general/sessions")
@@ -116,7 +114,7 @@ async function fetchSessionParams() {
 }
 
 const handleDropSession = () => {
-	dappSessionServiceClient.deleteDappSession(session.value.id)
+	dappSessionService.deleteDappSession(session.value.id)
 	router.push("/popup/settings/general/sessions")
 }
 
@@ -125,7 +123,21 @@ const handleCopyAddress = target => {
 	openToast({ label: "Address is copied", icon: "copy" })
 }
 
-const dappSessionServiceClient = new DappSessionServiceClient()
+const dappSessionService = new DappSessionServiceClient()
+dappSessionService.onDappSessionUpdated(onDappSessionUpdated)
+dappSessionService.onDappSessionDeleted(onDappSessionDeleted)
+function onDappSessionUpdated(ds) {
+	if (ds.id !== session.value.id) return
+
+	session.value = ds
+}
+function onDappSessionDeleted(ds) {
+	if (ds.id !== session.value.id) return
+
+	openToast({ label: "The session was interrupted" })
+	router.push("/popup/settings/general/sessions")
+}
+
 
 onMounted(async () => {
 	await fetchSession()

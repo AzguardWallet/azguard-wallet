@@ -1,4 +1,7 @@
 <script setup>
+/** Services */
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -27,6 +30,16 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.tokens?.order
 })
 
+const tokens = ref()
+const tokenService = new TokenServiceClient()
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenDeleted(token) {
+	const idx = tokens.value.findIndex(t => t.id === token.id)
+	if (idx === -1) return
+
+	tokens.value.splice(idx, 1)
+}
+
 const handleEditToken = target => {
 	cacheStore.tokenToEditIdx = target.id
 
@@ -37,14 +50,27 @@ const handleDeleteToken = target => {
 	cacheStore.confirm.description =
 		"Removing a token only affects the display in the UI and it does not affect the token balance"
 	cacheStore.confirm.callback = async () => {
-		await managers.token.deleteToken(target.id)
-		appStore.tokens = appStore.tokens.filter(t => t.id !== target.id)
-		appStore.balances = appStore.balances.filter(b => b.token.id !== target.id)
+		await tokenService.deleteToken(target.id)
+
 		openToast({ label: "Token successfully deleted" })
 	}
 
 	popupStore.open("confirm")
 }
+
+watch(
+	() => props.show,
+	async () => {
+		if (props.show) {
+			if (route.params.id) {
+				tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+			}
+		} else {
+			tokens.value = []
+			tokenService.disconnect()
+		}
+	},
+)
 </script>
 
 <template>
@@ -54,9 +80,9 @@ const handleDeleteToken = target => {
 				<Flex direction="column" gap="16">
 					<Text size="14" weight="600" color="primary"> Manage tokens </Text>
 
-					<Flex v-if="appStore.tokens.length" direction="column" gap="6">
+					<Flex v-if="tokens.length" direction="column" gap="6">
 						<Flex
-							v-for="token in appStore.tokens"
+							v-for="token in tokens"
 							align="center"
 							justify="between"
 							gap="16"

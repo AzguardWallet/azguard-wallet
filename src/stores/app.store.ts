@@ -106,89 +106,6 @@ export const useAppStore = defineStore("app", () => {
 		}
 	}
 
-	const tokens = ref([])
-	const tokensAwaitingBalanceRefresh = ref(new AccountTokenMap())
-	const mintingTokens	= ref(new AccountTokenMap())
-	const dummyTokens = ref([])
-	const onTokenAdded = token => {
-		const dummyTokenIdx = dummyTokens.value.findLastIndex(t => t.id === -1)
-		if (dummyTokenIdx !== -1) dummyTokens.value.splice(dummyTokenIdx, 1)
-		
-		const tokenIdx = tokens.value.findIndex(t => t.id ===  token.id)
-		if (tokenIdx === -1) tokens.value.push(token)
-	}
-	const syncLocalTokens = async () => {
-		const rawTokens = await managers.token?.getTokens(profile.value.id, network.value.chainId)
-		tokens.value = rawTokens?.length ? rawTokens.filter(t => t.chainId == network.value.chainId) : []
-	}
-
-	const isBalancesSynced = ref(false)
-	const balances = ref([])
-
-	function checkAge(updatedAt: number, minutes?: number): boolean {
-		if (!minutes) return true;
-
-		const now = Date.now();
-		const diff = now - updatedAt;
-		return diff >= minutes * 60 * 1000;
-	}
-
-	const accountTotalBalance = computed(() => {
-		if (!balances.value.length) return 0
-
-		return balances.value
-			.filter(b => b.account === account.value?.address)
-			.reduce((acc, curr) => {
-				const tokenBalance = Number.parseFloat(curr.privateBalance) + Number.parseFloat(curr.publicBalance)
-				return acc + tokenBalance
-			}, 0)
-	})
-	const syncBalances = async () => {
-		if (!tokens.value.length) return
-		balances.value = []
-
-		for (const token of tokens.value) {
-			const tokenBalance = (await managers.balance.getTokenBalances(token.id, account.value?.address))[0]
-			if (tokenBalance) balances.value.push(tokenBalance)
-		}
-
-		isBalancesSynced.value = true
-	}
-	const refreshBalances = async (minutes) => {
-		let balances_ = []
-		for (const tkn of tokens.value) {
-			if (tokensAwaitingBalanceRefresh.value.has(account.value.address, tkn.id)) continue
-
-			const balance = await managers.balance.getTokenBalances(tkn.id, account.value.address)
-			if (balance.length && checkAge(balance[0]?.updatedAt, minutes)) {
-				balances_ = [...balances_, ...balance]
-				tokensAwaitingBalanceRefresh.value.add(account.value.address, tkn.id)
-			}
-		}
-
-		if (balances_.length) {
-			for (const balance of balances_) {
-				managers.balance.refreshTokenBalance(balance.id)
-			}
-		}
-	}
-	const initBalanceListeners = () => {
-		// TODO: make sure to not add duplicated listeners
-		managers.balance.onTokenBalanceUpdated.add(newBalance => {
-			const tokens_ = tokens.value.filter(t => t.name === newBalance.token.name && t.symbol === newBalance.token.symbol && t.chainId === newBalance.token.chainId)
-			tokens_.forEach(t => {
-				tokensAwaitingBalanceRefresh.value.remove(newBalance.account, t.id)
-			})
-
-			const oldBalanceIdx = balances.value.findIndex(b => b.id === newBalance.id)
-			if (oldBalanceIdx === -1) {
-				balances.value.push(newBalance)
-			} else {
-				balances.value[oldBalanceIdx] = newBalance
-			}
-		})
-	}
-
 	const network = ref()
 	const networkStatus = ref()
 	const networks = ref([])
@@ -220,20 +137,6 @@ export const useAppStore = defineStore("app", () => {
 		const awaitingTxIdx = awaitingTransactions.value.findIndex(t => t.account === tx.account && t.contract === call?.contract && t.destination === destination)
 		if (awaitingTxIdx > -1) {
 			awaitingTransactions.value.splice(awaitingTxIdx, 1)
-			const token = tokens.value.find(t => t.contract === call?.contract)
-			if (token?.id) {
-				const balanceFrom = await managers.balance.getTokenBalances(token.id, tx.account)
-				if (balanceFrom[0]?.id && !tokensAwaitingBalanceRefresh.value.has(balanceFrom[0]?.account, token.id)) {
-					tokensAwaitingBalanceRefresh.value.add(balanceFrom[0]?.account, token.id)
-					managers.balance.refreshTokenBalance(balanceFrom[0].id)
-				}
-				
-				const balanceTo = await managers.balance.getTokenBalances(token.id, destination)
-				if (balanceTo[0]?.id && !tokensAwaitingBalanceRefresh.value.has(balanceTo[0]?.account, token.id)) {
-					tokensAwaitingBalanceRefresh.value.add(balanceTo[0]?.account, token.id)
-					managers.balance.refreshTokenBalance(balanceTo[0].id)
-				}
-			}
 		}
 	}
 	const onTxUpdated = tx => {
@@ -277,18 +180,6 @@ export const useAppStore = defineStore("app", () => {
 		selectAccount,
 		changeAccountVisibility,
 		updateAccount,
-		tokens,
-		mintingTokens,
-		dummyTokens,
-		onTokenAdded,
-		syncLocalTokens,
-		tokensAwaitingBalanceRefresh,
-		isBalancesSynced,
-		balances,
-		accountTotalBalance,
-		syncBalances,
-		refreshBalances,
-		initBalanceListeners,
 		network,
 		networkStatus,
 		syncNetworkStatus,

@@ -26,7 +26,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
     }
 
     protected async init(services: ServiceCollection): Promise<void> {
-        // to be overriden in derived classes
+        // to be overridden in derived classes
     }
 
     public async start(services: ServiceCollection) {
