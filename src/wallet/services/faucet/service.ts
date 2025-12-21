@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { TokenContract } from "@aztec/noir-contracts.js/Token";
 import { bufferAsFields } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";

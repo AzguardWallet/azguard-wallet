@@ -1,7 +1,7 @@
 import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/constants";
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { AuthRegistryContract } from "@aztec/noir-contracts.js/AuthRegistry";
-import { FunctionAbi, FunctionSelector } from "@aztec/stdlib/abi";
+import { FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { deriveStorageSlotInMap } from "@aztec/stdlib/hash";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
@@ -11,8 +11,8 @@ export const getAuthRegistryAddress = () => AztecAddress.fromNumber(CANONICAL_AU
 export const getSetAuthorizedFn = () =>
     ({
         name: "set_authorized",
-        functionType: "public",
-        isInternal: false,
+        functionType: FunctionType.PUBLIC,
+        isOnlySelf: false,
         isStatic: false,
         isInitializer: false,
         parameters: [

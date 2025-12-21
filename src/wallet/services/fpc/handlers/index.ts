@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact } from "@aztec/stdlib/abi";
 import { Gas } from "@aztec/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
