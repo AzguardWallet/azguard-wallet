@@ -85,6 +85,7 @@ export type SendTransactionOperation = {
     feeSettings: FeeSettings;
     readonly actions: Action[];
     readonly fee?: FeeOptions;
+    readonly nonce?: Fr;
 };
 
 export type SimulateTransactionOperation = {

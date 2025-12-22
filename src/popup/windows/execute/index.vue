@@ -444,7 +444,6 @@ const showJson = () => {
 											<AddressDisplay
 												:address="action.kind === 'call' ? action.contract : action.to"
 											/>
-											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}

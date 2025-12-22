@@ -18,11 +18,16 @@ const handleSelectTx = target => {
 	cacheStore.activeTxHash = target.hash
 	popupStore.open("tx")
 }
+
+async function handleCancelTx(tx) {
+	cacheStore.activeTxHash = tx.hash
+	popupStore.open("cancel_tx")
+}
 </script>
 
 <template>
 	<Flex direction="column" gap="8">
-		<TransactionCard v-for="tx in transactions" :tx @click="handleSelectTx(tx)" />
+		<TransactionCard v-for="tx in transactions" :tx @click="handleSelectTx(tx)" @cancelTx="handleCancelTx" />
 	</Flex>
 </template>
 

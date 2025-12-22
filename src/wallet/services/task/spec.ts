@@ -1,5 +1,5 @@
 import type { OperationKind } from "@/wallet/services/execution/spec";
-import type { TxOrigin, TransferType } from "@/wallet/services/transaction/spec";
+import type { Tx, TxOrigin, TransferType } from "@/wallet/services/transaction/spec";
 
 export const TASK_SERVICE_NAME = "task";
 
@@ -34,6 +34,7 @@ export enum ContentKind {
     ExecuteOperation,
     Transfer,
     RevokeAuthwits,
+    CancelTx,
 }
 
 export interface ITaskContent {
@@ -99,6 +100,14 @@ export class RevokeAuthwitsContent implements ITaskContent {
     constructor(
         public readonly authwitIds: number[],
         public readonly estimatedTime?: number,
+    ) {}
+}
+
+export class CancelTxContent implements ITaskContent {
+    public readonly kind = ContentKind.CancelTx;
+    public readonly label = "Cancel transaction";
+    constructor(
+        public readonly cancellingTx: Tx,
     ) {}
 }
 

@@ -9,6 +9,7 @@ import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 
+const emits = defineEmits(["cancelTx"])
 const props = defineProps({
 	tx: {
 		type: Object,
@@ -67,6 +68,10 @@ const title = computed(() => {
 	if (type.value === "mint") return "Mint"
 	return "Transaction"
 })
+
+const handleCancelTx = () => {
+	emits("cancelTx", props.tx)
+}
 </script>
 
 <template>
@@ -88,13 +93,18 @@ const title = computed(() => {
 			</Flex>
 		</Flex>
 
-		<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
+		<Flex v-if="tx.status !== TxStatus.Pending" align="center">
+			<Text @click.stop="handleCancelTx" size="12" weight="500" color="tertiary">
+				Pending
+			</Text>
+		</Flex>
+		<Flex v-else-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
 				{{ transferAmount }}
 				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
 			</Text>
 		</Flex>
-		<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
+		<Flex v-else-if="type === 'mint'" align="center" :class="$style.amount_badge">
 			<Text size="12" weight="600" color="primary">
 				{{ mintAmount }}
 			</Text>

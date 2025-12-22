@@ -39,6 +39,7 @@ import SendPopup from "./SendPopup.vue"
 import ReceivePopup from "./ReceivePopup.vue"
 
 /** Transactions */
+import CancelTxPopup from "./CancelTxPopup.vue"
 import TransactionPopup from "./TransactionPopup.vue"
 
 /** FPCs */
@@ -98,6 +99,7 @@ const popupStore = usePopupStore()
 	<SelectTokenPopup :show="popupStore.isOpened('select_token')" @onClose="popupStore.close('select_token')" />
 	<SelectBalanceTypePopup :show="popupStore.isOpened('select_balance_type')" @onClose="popupStore.close('select_balance_type')" />
 
+	<CancelTxPopup :show="popupStore.isOpened('cancel_tx')" @onClose="popupStore.close('cancel_tx')" />
 	<TransactionPopup :show="popupStore.isOpened('tx')" @onClose="popupStore.close('tx')" />
 
 	<NewFpcPopup :show="popupStore.isOpened('new_fpc')" @onClose="popupStore.close('new_fpc')" />

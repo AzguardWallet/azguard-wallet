@@ -37,7 +37,7 @@ import {
     TxReceipt,
     TxSimulationResult,
     UtilitySimulationResult,
-    Tx,
+    type Tx as aztecTx,
     SimulationOverrides,
 } from "@aztec/stdlib/tx";
 import z from "zod";
@@ -56,7 +56,7 @@ import {
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
 import { FpcService } from "@/wallet/services/fpc/service";
-import { TransactionService, OriginType, TransferType, TxCall, TxOrigin } from "@/wallet/services/transaction/service";
+import { TransactionService, OriginType, TransferType, type Tx as azguardTx, TxCall, TxOrigin, TxStatus } from "@/wallet/services/transaction/service";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
@@ -65,6 +65,7 @@ import {
     WrappedTask,
     ExecuteOperationContent,
     StepContent,
+    CancelTxContent,
     TransferContent,
 } from "@/wallet/services/task/service";
 import { ILogger } from "@/wallet/logger";
@@ -402,6 +403,60 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             }
         }
         return results;
+    }
+
+    public async cancelTx(cancellingTx: azguardTx, networkId: string, feeSettings: FeeSettings): Promise<string> {
+        await this.ensureInitialized();
+
+        if (cancellingTx.status !== TxStatus.Pending) {
+            throw new Error("Only pending transactions can be cancelled");
+        }
+
+        const origin: TxOrigin = { type: OriginType.UI };
+        const cancelTxContent = new CancelTxContent(cancellingTx);
+        const cancelTxTask = this.taskService.startNewTask(cancelTxContent, undefined, origin);
+
+        try {
+            const profile = await this.profileService.getActiveProfile();
+            if (!profile) {
+                throw new Error("Unauthorized");
+            }
+
+            const accountAddress = cancellingTx.account;
+            const op: Operation = {
+                kind: "send_transaction",
+                networkId,
+                accountAddress,
+                feeSettings,
+                actions: [],
+                nonce: Fr.fromString(cancellingTx.nonce),
+            };
+
+            const [txRequest, node, pxe, _, network, nonce, __, feePaymentMethod] =
+                await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, cancelTxTask);
+
+            const provedTx = await this.proveTxTask(pxe, txRequest, cancelTxTask);
+
+            const tx = await provedTx.toTx();
+            await this.sendTxTask(node, tx, cancelTxTask);
+
+            const txHash = tx.getTxHash().toString();
+            await this.transactionService.addTransaction(
+                origin,
+                network.chainId,
+                accountAddress,
+                [],
+                nonce.toString(),
+                feePaymentMethod,
+                txHash,
+            );
+
+            cancelTxTask.complete();
+            return txHash;
+        } catch (error) {
+            cancelTxTask.fail(error);
+            throw error;
+        }
     }
 
     // Azguard base:
@@ -1153,6 +1208,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             accountAddress: string;
             actions: Action[];
             fee?: FeeOptions;
+            nonce?: Fr;
         },
         feePaymentMethod: FeePaymentMethod,
         parentTask?: WrappedTask,
@@ -1322,6 +1378,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             networkId: string;
             accountAddress: string;
             actions: Action[];
+            nonce?: Fr;
         },
         feePaymentMethod: AzguardFeePaymentMethod,
         parentTask?: WrappedTask,
@@ -1363,7 +1420,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const authwits: AuthWitness[] = [];
             const args: HashedValues[] = [];
             const calls: AzguardFunctionCall[] = [];
-            const nonce = Fr.random();
+            const nonce = op.nonce ?? Fr.random();
             const txCalls = [];
 
             for (const action of op.actions) {
@@ -1678,7 +1735,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
     }
 
-    private async sendTxTask(node: AztecNode, tx: Tx, parentTask?: WrappedTask): Promise<void> {
+    private async sendTxTask(node: AztecNode, tx: aztecTx, parentTask?: WrappedTask): Promise<void> {
         const step = new StepContent("Sending transaction");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
         try {
