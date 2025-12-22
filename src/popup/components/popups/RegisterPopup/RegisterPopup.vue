@@ -5,14 +5,19 @@ import WalletPasswordContent from "./WalletPasswordContent.vue"
 /** Utils */
 import { managers, setSentinel } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { sleep } from "@/wallet/utils"
 import { capitalize } from "@/utils/string"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
 import { useNotificationStore } from "@/stores/notification.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const notificationStore = useNotificationStore()
+
+const configService = new ConfigServiceClient()
 
 const emit = defineEmits(["onProfileCreated"])
 
@@ -39,6 +44,20 @@ const isAllowedToContinue = computed(() => {
 
 function handleProfileTypeChange(type: string) {
 	profilType.value = type
+}
+
+// Apply privacy settings after profile creation
+async function applyPrivacySettings() {
+	// Clear promo flow flag if set
+	if (cacheStore.privacySettings !== null) {
+		cacheStore.privacySettings = null
+	}
+	// Note: Config defaults are already "open" (stealth OFF, all ON, links enabled)
+	// If user came from promo, settings were saved there
+	// If user ignored promo, config defaults apply automatically
+
+	// Mark that user has seen the stealth promo (prevents showing again)
+	await configService.setValue("hasSeenStealthPromo", true)
 }
 
 const handleCreateProfile = async () => {
@@ -94,8 +113,11 @@ const handleCreateProfile = async () => {
 	await chrome.storage.local.set({
 		"azguard:ui:activeAccount": appStore.account?.address,
 	})
-	
+
 	await setSentinel()
+
+	// Apply privacy settings (from promo flow or defaults)
+	await applyPrivacySettings()
 
 	emit("onProfileCreated")
 
@@ -122,6 +144,7 @@ onMounted(() => {
 
 onUnmounted(() => {
 	document.removeEventListener("keydown", onKeydown)
+	configService.disconnect()
 })
 </script>
 

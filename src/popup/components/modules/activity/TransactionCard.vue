@@ -10,6 +10,9 @@ import { balanceFormatted } from "@/utils/amount.js"
 import { trimAddress } from "@/utils/string"
 import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
 
+/** Composables */
+const { handleExternalLink } = useExternalLink()
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
@@ -105,7 +108,7 @@ const explorerUrl = computed(() => {
 					:href="explorerUrl"
 					target="_blank"
 					rel="noopener noreferrer"
-					@click.stop
+					@click.stop="handleExternalLink($event, explorerUrl)"
 					:class="$style.hash_link"
 				>
 					<Text size="12" weight="500" color="blue">{{ shortHash }}</Text>

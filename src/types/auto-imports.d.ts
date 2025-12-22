@@ -219,6 +219,8 @@ declare global {
   const useEventBus: typeof import("@vueuse/core")["useEventBus"]
   const useEventListener: typeof import("@vueuse/core")["useEventListener"]
   const useEventSource: typeof import("@vueuse/core")["useEventSource"]
+  const useExternalImage: typeof import('../composables/externalImage.js').useExternalImage
+  const useExternalLink: typeof import('../composables/externalLinks.js').useExternalLink
   const useEyeDropper: typeof import("@vueuse/core")["useEyeDropper"]
   const useFavicon: typeof import("@vueuse/core")["useFavicon"]
   const useFetch: typeof import("@vueuse/core")["useFetch"]
@@ -358,6 +360,9 @@ declare global {
   // @ts-ignore
   export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
+  // @ts-ignore
+  export type { PrivacySettings } from '../stores/cache.store'
+  import('../stores/cache.store')
   // @ts-ignore
   export type { NotificationType, NotificationPayload, NotificationItem } from '../stores/notification.store'
   import('../stores/notification.store')

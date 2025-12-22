@@ -1,7 +1,7 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "External Services",
+		"title": "Privacy Settings",
 		"isAuthRequired": true
 	}
 }
@@ -16,11 +16,16 @@ import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdow
 /** Utils */
 import { Config } from "@/wallet/config"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
-import { BLOCK_EXPLORERS } from "@/wallet/constants/explorers"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
+
+/** Stores */
+import { useCacheStore } from "@/stores/cache.store"
+import { usePopupStore } from "@/stores/popup.store"
+const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
 
 const configService = new ConfigServiceClient()
 configService.onUpdate.add(onSettingUpdate)
@@ -31,10 +36,11 @@ const defaultConfig = new Config()
 const stealthMode = ref(defaultConfig.stealthMode)
 const contractRegistry = ref(defaultConfig.contractRegistry)
 const walletConnectEnabled = ref(defaultConfig.walletConnectEnabled)
-const defaultExplorer = ref(defaultConfig.defaultExplorer)
+const uploadExternalImages = ref(defaultConfig.uploadExternalImages)
+const externalLinks = ref(defaultConfig.externalLinks)
 
-// When stealth mode is ON, all external services are locked/disabled
-const isServicesLocked = computed(() => stealthMode.value)
+// Track if exit dialog has been shown (suppress subsequent dialogs)
+const dialogsSuppressed = ref(false)
 
 const settings = {
 	stealthMode: {
@@ -48,94 +54,141 @@ const settings = {
 		description: "Lookup contract metadata from external registry",
 		model: contractRegistry,
 		visible: ref(true),
-		locked: isServicesLocked,
 	},
 	walletConnectEnabled: {
 		title: "WalletConnect",
 		description: "Connect to dApps via WalletConnect",
 		model: walletConnectEnabled,
 		visible: ref(true),
-		locked: isServicesLocked,
 	},
-	defaultExplorer: {
-		title: "Block Explorer",
-		description: "Transaction links",
-		model: defaultExplorer,
+	uploadExternalImages: {
+		title: "Upload external images",
+		description: "Load images from external URLs",
+		model: uploadExternalImages,
 		visible: ref(true),
-		locked: isServicesLocked,
+	},
+	externalLinks: {
+		title: "External links",
+		description: "How to handle external link clicks",
+		model: externalLinks,
+		visible: ref(true),
 	},
 }
 
-// Get display name for selected explorer
-const selectedExplorerName = computed(() => {
-	if (!defaultExplorer.value) return "None"
-	const explorer = BLOCK_EXPLORERS.find(e => e.id === defaultExplorer.value)
-	return explorer?.name || "None"
+// Check if all privacy settings are disabled (for auto-enable stealth)
+const isAllDisabled = computed(() => {
+	return !contractRegistry.value &&
+		!walletConnectEnabled.value &&
+		!uploadExternalImages.value &&
+		externalLinks.value === "disabled"
 })
+
+// Show exit stealth mode dialog
+function showExitStealthDialog(onConfirm) {
+	cacheStore.confirm.title = "Exit Stealth Mode?"
+	cacheStore.confirm.description = "External service connections will be allowed"
+	cacheStore.confirm.confirm_text = "Yes, exit"
+	cacheStore.confirm.confirm_color = "primary"
+	cacheStore.confirm.callback = onConfirm
+	popupStore.open("confirm")
+}
+
+// Enable stealth mode: turn off all settings
+async function enableStealthMode() {
+	dialogsSuppressed.value = false // Reset dialog suppression
+
+	await configService.setValue("stealthMode", true)
+	stealthMode.value = true
+
+	await configService.setValue("contractRegistry", false)
+	contractRegistry.value = false
+	await configService.setValue("walletConnectEnabled", false)
+	walletConnectEnabled.value = false
+	await configService.setValue("uploadExternalImages", false)
+	uploadExternalImages.value = false
+	await configService.setValue("externalLinks", "disabled")
+	externalLinks.value = "disabled"
+
+	openToast({ label: "Stealth mode enabled", icon: "info" }, 1_500)
+}
+
+// Disable stealth mode: turn on all settings
+async function disableStealthMode() {
+	dialogsSuppressed.value = true // Suppress subsequent dialogs
+
+	await configService.setValue("stealthMode", false)
+	stealthMode.value = false
+
+	await configService.setValue("contractRegistry", true)
+	contractRegistry.value = true
+	await configService.setValue("walletConnectEnabled", true)
+	walletConnectEnabled.value = true
+	await configService.setValue("uploadExternalImages", true)
+	uploadExternalImages.value = true
+	await configService.setValue("externalLinks", "enabled")
+	externalLinks.value = "enabled"
+
+	openToast({ label: "Stealth mode disabled", icon: "info" }, 1_500)
+}
+
+// Exit stealth mode and apply a specific setting change
+async function exitStealthAndApply(key, value) {
+	await configService.setValue("stealthMode", false)
+	stealthMode.value = false
+
+	await configService.setValue(key, value)
+	settings[key].model.value = value
+
+	openToast({ label: "Stealth mode disabled", icon: "info" }, 1_500)
+}
 
 async function updateSetting(key, value) {
 	if (!settings[key]) return
 	if (settings[key].model.value === value) return
-	if (settings[key].locked?.value) return
 
 	try {
+		if (key === "stealthMode") {
+			if (value) {
+				// 3.1, 3.5: Enable stealth - no dialog
+				await enableStealthMode()
+			} else {
+				// 3.2: Disable stealth - show dialog
+				showExitStealthDialog(async () => {
+					await disableStealthMode()
+				})
+			}
+			return
+		}
+
+		// For non-stealth settings
+		if (stealthMode.value) {
+			// 3.3: Changing a setting while stealth is ON
+			if (dialogsSuppressed.value) {
+				// Dialog already shown, just exit stealth and apply
+				await exitStealthAndApply(key, value)
+			} else {
+				// Show exit dialog first
+				showExitStealthDialog(async () => {
+					dialogsSuppressed.value = true
+					await exitStealthAndApply(key, value)
+				})
+			}
+			return
+		}
+
+		// Normal update (stealth is OFF)
 		await configService.setValue(key, value)
-		applySetting(key, value)
+		settings[key].model.value = value
+
+		// 3.4: Auto-enable stealth when last element turned off
+		if (isAllDisabled.value && !stealthMode.value) {
+			await configService.setValue("stealthMode", true)
+			stealthMode.value = true
+			dialogsSuppressed.value = false
+			openToast({ label: "Stealth mode auto-enabled", icon: "info" }, 1_500)
+		}
 	} catch (err) {
 		openToast({ label: "Failed to update setting", icon: "warning" })
-	}
-}
-
-async function applySetting(key, value) {
-	settings[key].model.value = value
-
-	switch (key) {
-		case "stealthMode":
-			if (value) {
-				// Enabling stealth mode: save snapshot, then disable all
-				const snapshot = {
-					contractRegistry: contractRegistry.value,
-					walletConnectEnabled: walletConnectEnabled.value,
-					defaultExplorer: defaultExplorer.value,
-				}
-				await configService.setValue("stealthModeSnapshot", snapshot)
-
-				await configService.setValue("contractRegistry", false)
-				settings.contractRegistry.model.value = false
-				await configService.setValue("walletConnectEnabled", false)
-				settings.walletConnectEnabled.model.value = false
-				await configService.setValue("defaultExplorer", null)
-				settings.defaultExplorer.model.value = null
-			} else {
-				// Disabling stealth mode: restore from snapshot
-				const snapshot = await configService.getValue("stealthModeSnapshot")
-				if (snapshot) {
-					await configService.setValue("contractRegistry", snapshot.contractRegistry)
-					settings.contractRegistry.model.value = snapshot.contractRegistry
-					await configService.setValue("walletConnectEnabled", snapshot.walletConnectEnabled)
-					settings.walletConnectEnabled.model.value = snapshot.walletConnectEnabled
-					await configService.setValue("defaultExplorer", snapshot.defaultExplorer)
-					settings.defaultExplorer.model.value = snapshot.defaultExplorer
-					await configService.setValue("stealthModeSnapshot", null)
-				}
-			}
-			openToast({
-				label: value ? "Stealth mode enabled" : "Stealth mode disabled",
-				icon: "info"
-			}, 1_500)
-			break
-
-		case "contractRegistry":
-			openToast({ label: "Contract registry updated", icon: "info" }, 1_500)
-			break
-
-		case "walletConnectEnabled":
-			openToast({ label: "WalletConnect updated", icon: "info" }, 1_500)
-			break
-
-		case "defaultExplorer":
-			openToast({ label: "Default explorer updated", icon: "info" }, 1_500)
-			break
 	}
 }
 
@@ -185,8 +238,8 @@ onBeforeUnmount(() => {
 
 			<Flex :class="$style.divider" />
 
-			<!-- Toggle Settings (contractRegistry, walletConnectEnabled) -->
-			<template v-for="sk in ['contractRegistry', 'walletConnectEnabled']" :key="sk">
+			<!-- Toggle Settings (contractRegistry, walletConnectEnabled, uploadExternalImages) -->
+			<template v-for="sk in ['contractRegistry', 'walletConnectEnabled', 'uploadExternalImages']" :key="sk">
 				<Flex
 					v-if="settings[sk].visible.value"
 					align="center"
@@ -200,51 +253,44 @@ onBeforeUnmount(() => {
 					<Toggle
 						@update:modelValue="updateSetting(sk, $event)"
 						:modelValue="settings[sk].model.value"
-						:disabled="settings[sk].locked?.value"
 					/>
 				</Flex>
 			</template>
 
-			<!-- Default Block Explorer (dropdown) -->
+			<!-- External Links (dropdown) -->
 			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">{{ settings.defaultExplorer.title }}</Text>
-					<Text size="12" weight="500" color="tertiary">{{ settings.defaultExplorer.description }}</Text>
+					<Text size="13" weight="600" color="primary">{{ settings.externalLinks.title }}</Text>
+					<Text size="12" weight="500" color="tertiary">{{ settings.externalLinks.description }}</Text>
 				</Flex>
 
-				<Dropdown :disabled="settings.defaultExplorer.locked?.value">
+				<Dropdown>
 					<template #trigger>
-						<DropdownTrigger :class="$style.explorerTrigger">
-							<Text size="13" weight="600" color="primary">
-								{{ selectedExplorerName }}
+						<DropdownTrigger :class="$style.dropdownTrigger">
+							<Text size="13" weight="600" color="primary" style="text-transform: capitalize">
+								{{ externalLinks === 'confirm' ? 'Confirm' : externalLinks }}
 							</Text>
 							<Icon name="chevron-down" size="12" color="tertiary" />
 						</DropdownTrigger>
 					</template>
 
 					<template #popup>
-						<DropdownItem
-							v-for="explorer in BLOCK_EXPLORERS"
-							:key="explorer.id"
-							@click="updateSetting('defaultExplorer', explorer.id)"
-						>
+						<DropdownItem @click="updateSetting('externalLinks', 'disabled')">
 							<Flex align="center" gap="8">
-								<Icon
-									:name="settings.defaultExplorer.model.value === explorer.id ? 'check' : ''"
-									size="14"
-									color="primary"
-								/>
-								{{ explorer.name }}
+								<Icon :name="externalLinks === 'disabled' ? 'check' : ''" size="14" color="primary" />
+								Disabled
 							</Flex>
 						</DropdownItem>
-						<DropdownItem @click="updateSetting('defaultExplorer', null)">
+						<DropdownItem @click="updateSetting('externalLinks', 'confirm')">
 							<Flex align="center" gap="8">
-								<Icon
-									:name="!settings.defaultExplorer.model.value ? 'check' : ''"
-									size="14"
-									color="primary"
-								/>
-								None
+								<Icon :name="externalLinks === 'confirm' ? 'check' : ''" size="14" color="primary" />
+								Ask for confirmation
+							</Flex>
+						</DropdownItem>
+						<DropdownItem @click="updateSetting('externalLinks', 'enabled')">
+							<Flex align="center" gap="8">
+								<Icon :name="externalLinks === 'enabled' ? 'check' : ''" size="14" color="primary" />
+								Enabled
 							</Flex>
 						</DropdownItem>
 					</template>
@@ -279,7 +325,7 @@ onBeforeUnmount(() => {
 	padding: 0 24px;
 }
 
-.explorerTrigger {
+.dropdownTrigger {
 	min-width: 100px;
 	display: flex;
 	align-items: center;

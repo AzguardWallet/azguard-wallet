@@ -1,4 +1,13 @@
 import { defineStore } from "pinia"
+import type { ExternalLinksMode } from "@/wallet/config/config"
+
+export type PrivacySettings = {
+	stealthMode: boolean
+	contractRegistry: boolean
+	walletConnectEnabled: boolean
+	uploadExternalImages: boolean
+	externalLinks: ExternalLinksMode
+} | null
 
 export const useCacheStore = defineStore("cache", () => {
 	const confirm = reactive({})
@@ -32,6 +41,9 @@ export const useCacheStore = defineStore("cache", () => {
 
 	const viewerData = ref()
 
+	// Pre-configured privacy settings from stealth promo flow
+	const privacySettings = ref<PrivacySettings>(null)
+
 	return {
 		confirm,
 		networkToEditIdx,
@@ -55,5 +67,6 @@ export const useCacheStore = defineStore("cache", () => {
 		importPromise,
 		failureLog,
 		viewerData,
+		privacySettings,
 	}
 })

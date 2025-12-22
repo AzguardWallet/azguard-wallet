@@ -25,6 +25,9 @@ import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
+/** Composables */
+const { loadExternalImage } = useExternalImage()
+
 const router = useRouter()
 
 const dappSessions = ref([])
@@ -80,26 +83,13 @@ const handleDropAllSessions = () => {
 	}
 }
 
-async function loadImageBlob(url) {
-	try {
-		const res = await fetch(url, { mode: 'cors' })
-		if (!res.ok) return null
-
-		const blob = await res.blob()
-
-		return URL.createObjectURL(blob)
-	} catch {
-		return null
-	}
-}
-
 watchEffect(() => {
 	dappSessions.value.sort((a, b) => a.expiry - b.expiry)
 	dappSessions.value.forEach(async (s) => {
 		if (s.dappMetadata.logo) {
 			s.loadingLogo = true
 			try {
-				s.dappMetadata.logoBlobUrl = await loadImageBlob(s.dappMetadata.logo)
+				s.dappMetadata.logoBlobUrl = await loadExternalImage(s.dappMetadata.logo)
 			} finally {
 				s.loadingLogo = false
 			}

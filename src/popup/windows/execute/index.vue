@@ -46,6 +46,10 @@ type UIError = {
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+/** Composables */
+// @ts-ignore
+const { loadExternalImage } = useExternalImage()
+
 const profile = ref<ProfileInfo>()
 
 const router = useRouter()
@@ -75,18 +79,6 @@ function clearError() {
 	processingError.value = undefined
 }
 
-async function loadImageBlob(url: string) {
-	try {
-		const res = await fetch(url, { mode: "cors" })
-		if (!res.ok) return undefined
-
-		const blob = await res.blob()
-
-		return URL.createObjectURL(blob)
-	} catch {
-		return undefined
-	}
-}
 
 const init = async () => {
 	try {
@@ -101,7 +93,7 @@ const init = async () => {
 		if (dapp.value.logo) {
 			dapp.value.loadingLogo = true
 			try {
-				dapp.value.logoBlobUrl = await loadImageBlob(dapp.value.logo)
+				dapp.value.logoBlobUrl = await loadExternalImage(dapp.value.logo)
 			} finally {
 				dapp.value.loadingLogo = false
 			}

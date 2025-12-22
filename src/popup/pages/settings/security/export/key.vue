@@ -21,6 +21,9 @@ import { managers } from "@/utils/core"
 /** Composables */
 import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()
+const { handleExternalLink } = useExternalLink()
+
+const backupHelpUrl = "https://azguardwallet.io/help/wallet-setup/backup-methods"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -180,7 +183,12 @@ onBeforeUnmount(() => {
 							</Text>
 							<Text height="140"> Ensure that plain key is securely stored. </Text>
 							<Text height="140"> By continuing you agree to all risks and responsibilities. </Text>
-							<a href="https://azguardwallet.io/help/wallet-setup/backup-methods">
+							<a
+								:href="backupHelpUrl"
+								target="_blank"
+								rel="noopener noreferrer"
+								@click="handleExternalLink($event, backupHelpUrl)"
+							>
 								<Text color="blue" height="140"> Read more about backups </Text>
 							</a>
 						</Flex>
