@@ -36,12 +36,6 @@ const isLoading = ref(true)
 
 const configService = new ConfigServiceClient()
 
-onBeforeMount(async () => {
-	const wcSetting = await configService.getValue("walletConnectEnabled")
-	walletConnectEnabled.value = wcSetting
-	isLoading.value = false
-})
-
 // Listen for config changes
 configService.onUpdate.add((setting) => {
 	if (setting.key === "walletConnectEnabled") {
@@ -50,9 +44,9 @@ configService.onUpdate.add((setting) => {
 })
 
 const dappSessionService = new DappSessionServiceClient()
-dappSessionService.onDappSessionAdded(onDappSessionAdded)
-dappSessionService.onDappSessionUpdated(onDappSessionUpdated)
-dappSessionService.onDappSessionDeleted(onDappSessionDeleted)
+dappSessionService.onDappSessionAdded.add(onDappSessionAdded)
+dappSessionService.onDappSessionUpdated.add(onDappSessionUpdated)
+dappSessionService.onDappSessionDeleted.add(onDappSessionDeleted)
 function onDappSessionAdded(session) {
 	dappSessions.value.push(session)
 }
@@ -86,7 +80,7 @@ const handleDropAllSessions = () => {
 watchEffect(() => {
 	dappSessions.value.sort((a, b) => a.expiry - b.expiry)
 	dappSessions.value.forEach(async (s) => {
-		if (s.dappMetadata.logo) {
+		if (s.dappMetadata.logo && !s.dappMetadata.logoBlobUrl) {
 			s.loadingLogo = true
 			try {
 				s.dappMetadata.logoBlobUrl = await loadExternalImage(s.dappMetadata.logo)
@@ -96,6 +90,16 @@ watchEffect(() => {
 		}
 	})
 })
+
+onBeforeMount(async () => {
+	const wcSetting = await configService.getValue("walletConnectEnabled")
+	walletConnectEnabled.value = wcSetting
+
+	dappSessions.value = await dappSessionService.getDappSessions()
+
+	isLoading.value = false
+})
+
 </script>
 
 <template>

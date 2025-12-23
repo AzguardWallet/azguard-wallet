@@ -111,8 +111,8 @@ const handleCopyAddress = target => {
 }
 
 const dappSessionService = new DappSessionServiceClient()
-dappSessionService.onDappSessionUpdated(onDappSessionUpdated)
-dappSessionService.onDappSessionDeleted(onDappSessionDeleted)
+dappSessionService.onDappSessionUpdated.add(onDappSessionUpdated)
+dappSessionService.onDappSessionDeleted.add(onDappSessionDeleted)
 function onDappSessionUpdated(ds) {
 	if (ds.id !== session.value.id) return
 
