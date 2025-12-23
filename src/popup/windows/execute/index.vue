@@ -183,9 +183,7 @@ const init = async () => {
 						account,
 						accountAddress: account.address,
 						feeSettings:
-							op.opts.fee?.embeddedPaymentMethodFeePayer !== undefined
-								? { paymentMethod: { kind: "embedded" } }
-								: undefined!,
+							op.exec.feePayer !== undefined ? { paymentMethod: { kind: "embedded" } } : undefined!,
 					})
 					if (!_accounts.find(x => x.address === account.address)) {
 						_accounts.push(account)
@@ -611,7 +609,7 @@ const showJson = () => {
 						<template v-else-if="op.kind === 'aztec_getPrivateEvents'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
-								<AddressDisplay :address="op.contractAddress.toString()" />
+								<AddressDisplay :address="op.eventFilter.contractAddress.toString()" />
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'aztec_getTxReceipt'">
@@ -647,11 +645,11 @@ const showJson = () => {
 						<template v-else-if="op.kind === 'aztec_simulateUtility'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
-								<AddressDisplay :address="op.to.toString()" />
+								<AddressDisplay :address="op.call.to.toString()" />
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Function:</Text>
-								<Text size="12" color="primary">{{ op.functionName }}</Text>
+								<Text size="12" color="primary">{{ op.call.name ?? op.call.selector.toString() }}</Text>
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'aztec_profileTx'">

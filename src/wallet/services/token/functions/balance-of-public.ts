@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
@@ -55,7 +55,7 @@ export class DefaultBalanceOfPublicFn extends BalanceOfPublicFn {
             name: this.name,
             isInitializer: false,
             functionType: FunctionType.PUBLIC,
-            isInternal: false,
+            isOnlySelf: false,
             isStatic: true,
             parameters: [
                 {
@@ -88,7 +88,7 @@ export class DefaultBalanceOfPublicFn extends BalanceOfPublicFn {
         for (const fn of artifact.nonDispatchPublicFunctions) {
             if (
                 !fn.isInitializer &&
-                !fn.isInternal &&
+                !fn.isOnlySelf &&
                 fn.isStatic &&
                 fn.functionType === FunctionType.PUBLIC &&
                 fn.parameters.length === 1 &&

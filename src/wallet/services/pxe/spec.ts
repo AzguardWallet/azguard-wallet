@@ -1,5 +1,7 @@
-import type { Fr } from "@aztec/foundation/fields";
-import type { ContractArtifact, EventMetadataDefinition } from "@aztec/stdlib/abi";
+import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
+import type { Fr } from "@aztec/foundation/curves/bn254";
+import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
+import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type {
@@ -9,7 +11,7 @@ import type {
     ContractMetadata,
     PartialAddress,
 } from "@aztec/stdlib/contract";
-import type { NotesFilter, UniqueNote } from "@aztec/stdlib/note";
+import type { NotesFilter, NoteDao } from "@aztec/stdlib/note";
 import type {
     SimulationOverrides,
     TxExecutionRequest,
@@ -38,7 +40,7 @@ export type Methods = {
     ): void;
     updateContract(network: Network, contractAddress: AztecAddress, artifact: ContractArtifact): void;
     getContracts(network: Network): AztecAddress[];
-    getNotes(network: Network, filter: NotesFilter): UniqueNote[];
+    getNotes(network: Network, filter: NotesFilter): NoteDao[];
     proveTx(network: Network, txRequest: TxExecutionRequest): TxProvingResult;
     profileTx(
         network: Network,
@@ -57,19 +59,13 @@ export type Methods = {
     ): TxSimulationResult;
     simulateUtility(
         network: Network,
-        functionName: string,
-        args: any[],
-        to: AztecAddress,
+        call: FunctionCall,
         authwits?: AuthWitness[],
-        from?: AztecAddress,
         scopes?: AztecAddress[],
     ): UtilitySimulationResult;
     getPrivateEvents<T>(
         network: Network,
-        contractAddress: AztecAddress,
-        eventMetadataDef: EventMetadataDefinition,
-        from: number,
-        numBlocks: number,
-        recipients: AztecAddress[],
-    ): T[];
+        eventSelector: EventSelector,
+        filter: PrivateEventFilter,
+    ): PackedPrivateEvent[];
 };

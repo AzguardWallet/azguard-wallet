@@ -313,11 +313,8 @@ function parseAztecGetPrivateEventsRequest(data: any): AztecGetPrivateEventsRequ
     return {
         kind: "aztec_getPrivateEvents",
         chain: parseChainProp(data, "chain"),
-        contractAddress: parseRequiredProp(data, "contractAddress"),
         eventMetadata: parseRequiredProp(data, "eventMetadata"),
-        from: parseNumberProp(data, "from"),
-        numBlocks: parseNumberProp(data, "numBlocks"),
-        recipients: parseArrayProp(data, "recipients"),
+        eventFilter: parseRequiredProp(data, "eventFilter"),
     };
 }
 
@@ -355,7 +352,7 @@ function parseAztecRegisterContractRequest(data: any): AztecRegisterContractRequ
     return {
         kind: "aztec_registerContract",
         chain: parseChainProp(data, "chain"),
-        instanceData: parseRequiredProp(data, "instanceData"),
+        instance: parseRequiredProp(data, "instance"),
         artifact: parseOptionalProp(data, "artifact"),
         secretKey: parseOptionalProp(data, "secretKey"),
     };
@@ -374,9 +371,7 @@ function parseAztecSimulateUtilityRequest(data: any): AztecSimulateUtilityReques
     return {
         kind: "aztec_simulateUtility",
         account: parseAccountProp(data, "account"),
-        functionName: parseStringProp(data, "functionName"),
-        args: parseArrayProp(data, "args"),
-        to: parseRequiredProp(data, "to"),
+        call: parseRequiredProp(data, "call"),
         authwits: parseOptionalArrayProp(data, "authwits"),
     };
 }

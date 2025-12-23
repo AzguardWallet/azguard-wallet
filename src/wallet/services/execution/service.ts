@@ -1,5 +1,5 @@
 import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import {
     type AbiDecoded,
     type AbiType,
@@ -23,13 +23,12 @@ import {
     ContractInstanceWithAddressSchema,
     getContractClassFromArtifact,
     type NodeInfo,
-    ContractInstantiationData,
-    getContractInstanceFromInstantiationParams,
     computePartialAddress,
 } from "@aztec/stdlib/contract";
 import { Gas, GasSettings } from "@aztec/stdlib/gas";
 import {
     Capsule,
+    ExecutionPayload,
     HashedValues,
     TxExecutionRequest,
     TxHash,
@@ -112,16 +111,8 @@ import {
 } from "./spec";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
-import {
-    Aliased,
-    ContractInstanceAndArtifact,
-    FunctionCallSchema,
-    ProfileOptions,
-    SendOptions,
-    SimulateOptions,
-} from "@aztec/aztec.js/wallet";
-import { bufferSchema } from "@aztec/foundation/schemas";
-import { ExecutionPayload } from "@aztec/entrypoints/payload";
+import { Aliased, FunctionCallSchema, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
+import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export * from "./spec";
 
@@ -541,17 +532,41 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             await pxe.registerContract({ instance, artifact });
         }
 
+        const [_, instance] = await this.getInstance(pxe, op.contract);
+        const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
+
+        const fn =
+            artifact.functions.find(x => x.name === op.method) ??
+            artifact.nonDispatchPublicFunctions.find(x => x.name === op.method);
+        if (!fn) {
+            throw new Error("Method not found");
+        }
+        const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
+        const encodedArgs = encodeArguments(fn, op.args);
+        const call = new FunctionCall(
+            fn.name,
+            AztecAddress.fromString(op.contract),
+            fnSelector,
+            fn.functionType,
+            false,
+            fn.isStatic,
+            encodedArgs,
+            fn.returnTypes,
+        );
+
         await account.ensureRegistered(pxe);
         const { result } = await pxe.simulateUtility(
-            op.method, // functionName
-            op.args, // args
-            AztecAddress.fromString(op.contract), // to
+            call, // call
             undefined, // authwits
-            undefined, // from
             [account.address], // scopes
         );
 
-        return result;
+        try {
+            return decodeFromAbi(fn.returnTypes, result);
+        } catch (error) {
+            this.logError("Failed to decode simulation results", fn.returnTypes, result, getErrorMessage(error));
+            return result as any;
+        }
     }
 
     public async executeSimulateViews(op: SimulateViewsOperation): Promise<{ encoded: Fr[][]; decoded: AbiDecoded[] }> {
@@ -614,28 +629,32 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     if (!fn) {
                         throw new Error("Method not found");
                     }
+                    const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
+                    const encodedArgs = encodeArguments(fn, call.args);
                     if (fn.functionType === FunctionType.UTILITY) {
                         utility.push([
                             pxe.simulateUtility(
-                                call.method,
-                                call.args,
-                                AztecAddress.fromString(call.contract),
+                                new FunctionCall(
+                                    fn.name,
+                                    AztecAddress.fromString(call.contract),
+                                    fnSelector,
+                                    fn.functionType,
+                                    false,
+                                    fn.isStatic,
+                                    encodedArgs,
+                                    fn.returnTypes,
+                                ),
                                 undefined, // authwits
-                                account.address,
                                 [account.address],
                             ),
                             i,
                             fn.returnTypes,
                         ]);
                     } else {
-                        const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters);
                         const packedArgs =
                             fn.functionType === FunctionType.PUBLIC
-                                ? await HashedValues.fromCalldata([
-                                      fnSelector.toField(),
-                                      ...encodeArguments(fn, call.args),
-                                  ])
-                                : await HashedValues.fromArgs(encodeArguments(fn, call.args));
+                                ? await HashedValues.fromCalldata([fnSelector.toField(), ...encodedArgs])
+                                : await HashedValues.fromArgs(encodedArgs);
                         args.push(packedArgs);
                         calls.push([
                             new AzguardFunctionCall(
@@ -684,28 +703,19 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         throw new Error("Method not found");
                     }
                     if (fn.functionType === FunctionType.UTILITY) {
-                        let decodedArgs;
-                        try {
-                            decodedArgs = decodeFromAbi(
-                                fn.parameters.map(x => x.type),
-                                call.args.map(x => Fr.fromString(x)),
-                            );
-                        } catch (error) {
-                            const errorMessage = getErrorMessage(error);
-                            this.logError("Failed to decode utility call args", fn.parameters, call.args, errorMessage);
-                            throw new Error(
-                                `Failed to decode utility "encoded_call" args: ${errorMessage}. Try to use "call" instead.`,
-                            );
-                        }
                         utility.push([
                             pxe.simulateUtility(
-                                fn.name,
-                                fn.parameters.length === 1
-                                    ? [decodedArgs] // CHECK: remove wrapping into array if aztec fix decoder
-                                    : (decodedArgs as AbiDecoded[]),
-                                AztecAddress.fromString(call.to),
+                                new FunctionCall(
+                                    fn.name,
+                                    AztecAddress.fromString(call.to),
+                                    FunctionSelector.fromString(call.selector),
+                                    fn.functionType,
+                                    false,
+                                    fn.isStatic,
+                                    call.args.map(x => Fr.fromString(x)),
+                                    fn.returnTypes,
+                                ),
                                 undefined, // authwits
-                                account.address,
                                 [account.address],
                             ),
                             i,
@@ -778,22 +788,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         for (const [promise, i, types] of utility) {
             const { result: values } = await promise;
             try {
-                result.encoded[i] = encodeArguments(
-                    {
-                        parameters: types.map((x, ind) => ({
-                            type: x,
-                            name: `result${ind}`,
-                            visibility: "public",
-                        })),
-                    } as any,
-                    types.length === 1
-                        ? [values] // CHECK: remove wrapping into array if aztec fix decoder
-                        : (values as AbiDecoded[]),
-                );
+                result.decoded[i] = decodeFromAbi(types, values);
             } catch (error) {
                 this.logError("Failed to encode utility simulation results", types, values, getErrorMessage(error));
             }
-            result.decoded[i] = values;
+            result.encoded[i] = values;
         }
 
         return result;
@@ -813,16 +812,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return this.pxeService.getContractMetadata(network, op.address);
     }
 
-    private async executeAztecGetPrivateEvents(op: AztecGetPrivateEventsOperation): Promise<unknown[]> {
+    private async executeAztecGetPrivateEvents(op: AztecGetPrivateEventsOperation): Promise<PackedPrivateEvent[]> {
         const network = await this.networkService.getNetwork(op.networkId);
-        return this.pxeService.getPrivateEvents(
-            network,
-            op.contractAddress,
-            op.eventMetadata,
-            op.from,
-            op.numBlocks,
-            op.recipients,
-        );
+        return this.pxeService.getPrivateEvents(network, op.eventMetadata.eventSelector, op.eventFilter);
     }
 
     private async executeAztecGetChainInfo(op: AztecGetChainInfoOperation): Promise<ChainInfo> {
@@ -854,58 +846,35 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async executeAztecRegisterContract(
         op: AztecRegisterContractOperation,
     ): Promise<ContractInstanceWithAddress> {
+        const instance = await ContractInstanceWithAddressSchema.parseAsync(op.instance);
         const network = await this.networkService.getNetwork(op.networkId);
-        function isInstanceWithAddress(instanceData: any): instanceData is ContractInstanceWithAddress {
-            return (instanceData as ContractInstanceWithAddress).address !== undefined;
+
+        const addressNum = op.instance.address.toBigInt();
+        if (addressNum >= 0 && addressNum <= 6) {
+            // ignore protocol contracts registration,
+            // because we cannot validate it due to hardcoded addresses
+            return op.instance;
         }
-        function isContractInstantiationData(instanceData: any): instanceData is ContractInstantiationData {
-            return (instanceData as ContractInstantiationData).salt !== undefined;
+
+        const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
+        const artifact =
+            providedArtifact ??
+            (await this.pxeService.getContractClassMetadata(network, instance.currentContractClassId, true)).artifact;
+        if (!artifact) {
+            throw new Error("Contract artifact not found");
         }
-        function isContractInstanceAndArtifact(instanceData: any): instanceData is ContractInstanceAndArtifact {
-            return (
-                (instanceData as ContractInstanceAndArtifact).instance !== undefined &&
-                (instanceData as ContractInstanceAndArtifact).artifact !== undefined
-            );
+
+        const contractClass = await getContractClassFromArtifact(artifact);
+        if (contractClass.id.toString() !== instance.currentContractClassId.toString()) {
+            throw new Error("Contract artifact doesn't match instance's current class id");
         }
-        let instance: ContractInstanceWithAddress;
-        if (isContractInstanceAndArtifact(op.instanceData)) {
-            instance = op.instanceData.instance;
-            await this.pxeService.registerContract(network, op.instanceData);
-        } else if (isInstanceWithAddress(op.instanceData)) {
-            instance = op.instanceData;
-            await this.pxeService.registerContract(network, { instance, artifact: op.artifact });
-        } else if (isContractInstantiationData(op.instanceData)) {
-            if (!op.artifact) {
-                throw new Error(
-                    "Contract artifact must be provided when registering a contract using instantiation data",
-                );
-            }
-            instance = await getContractInstanceFromInstantiationParams(op.artifact, op.instanceData);
-            await this.pxeService.registerContract(network, { instance, artifact: op.artifact });
-        } else {
-            if (!op.artifact) {
-                throw new Error("Contract artifact must be provided when registering a contract using an address");
-            }
-            const { contractInstance: maybeContractInstance } = await this.pxeService.getContractMetadata(
-                network,
-                op.instanceData,
-            );
-            if (!maybeContractInstance) {
-                throw new Error(
-                    `Contract instance at ${op.instanceData.toString()} has not been registered in the wallet's PXE`,
-                );
-            }
-            instance = maybeContractInstance;
-            const thisContractClass = await getContractClassFromArtifact(op.artifact);
-            if (!thisContractClass.id.equals(instance.currentContractClassId)) {
-                // wallet holds an outdated version of this contract
-                await this.pxeService.updateContract(network, instance.address, op.artifact);
-                instance.currentContractClassId = thisContractClass.id;
-            }
-        }
+
+        await this.pxeService.registerContract(network, { instance, artifact });
+
         if (op.secretKey) {
             await this.pxeService.registerAccount(network, op.secretKey, await computePartialAddress(instance));
         }
+
         return instance;
     }
 
@@ -934,14 +903,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         const pxe = this.pxeService.getPXE(network);
-        return pxe.simulateUtility(
-            op.functionName,
-            op.args,
-            await AztecAddress.schema.parseAsync(op.to),
-            await z.array(AuthWitness.schema).optional().parseAsync(op.authwits),
+        await account.ensureRegistered(pxe);
+        return pxe.simulateUtility(op.call, await z.array(AuthWitness.schema).optional().parseAsync(op.authwits), [
             account.address,
-            [account.address],
-        );
+        ]);
     }
 
     private async executeAztecProfileTx(op: AztecProfileTxOperation): Promise<TxProfileResult> {
@@ -1029,11 +994,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
             messageHash = await computeAuthWitMessageHash(intentHash, metadata);
         } else {
-            try {
-                messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
-            } catch {
-                messageHash = new Fr(await bufferSchema.parseAsync(op.messageHashOrIntent));
-            }
+            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
         }
 
         return await account.buildAuthWitness(messageHash);
@@ -1074,7 +1035,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             actions.push({
                 kind: "add_extra_args",
                 args: args.values.map(x => x.toString()),
-            } satisfies AddExtraArgsAction); 
+            } satisfies AddExtraArgsAction);
         }
 
         for (const _call of exec.calls ?? []) {
@@ -1093,9 +1054,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         const feeOptions: FeeOptions = {
-            embeddedFeePayment: !opts.fee?.embeddedPaymentMethodFeePayer
+            embeddedFeePayment: !exec.feePayer
                 ? undefined
-                : opts.fee.embeddedPaymentMethodFeePayer.toString() === opts.from.toString()
+                : exec.feePayer.toString() === opts.from.toString()
                 ? "fjwc"
                 : "fpc",
             gasLimits: opts.fee?.gasSettings?.gasLimits,

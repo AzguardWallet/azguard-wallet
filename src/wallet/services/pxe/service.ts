@@ -1,7 +1,7 @@
 import { SPONSORED_FPC_SALT } from "@aztec/constants";
 import { getPXEConfig, type PXEConfig } from "@aztec/pxe/config";
-import { createPXE, PXE } from "@aztec/pxe/client/bundle";
-import { Fr } from "@aztec/foundation/fields";
+import { createPXE, PackedPrivateEvent, PXE } from "@aztec/pxe/client/bundle";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { AuthRegistryArtifact } from "@aztec/protocol-contracts/auth-registry";
 import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-registry";
 import { FeeJuiceArtifact } from "@aztec/protocol-contracts/fee-juice";
@@ -12,7 +12,7 @@ import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
-import { type ContractArtifact, ContractArtifactSchema, EventMetadataDefinition } from "@aztec/stdlib/abi";
+import { type ContractArtifact, ContractArtifactSchema, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
@@ -27,7 +27,7 @@ import {
     PartialAddress,
 } from "@aztec/stdlib/contract";
 import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
-import { NotesFilterSchema, NotesFilter, UniqueNote } from "@aztec/stdlib/note";
+import { NotesFilterSchema, NotesFilter, NoteDao } from "@aztec/stdlib/note";
 import {
     SimulationOverrides,
     TxExecutionRequest,
@@ -46,7 +46,7 @@ import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/cli
 import { Lock } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
-import { EventMetadataDefinitionSchema } from "@/wallet/utils/schemas";
+import { FunctionCallSchema, PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet";
 
 export * from "./spec";
 
@@ -224,7 +224,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         return await pxe.getContracts();
     }
 
-    public async getNotes(network: Network, filter: NotesFilter): Promise<UniqueNote[]> {
+    public async getNotes(network: Network, filter: NotesFilter): Promise<NoteDao[]> {
         const pxe = await this.getPxeClient(network);
         return await pxe.getNotes(await NotesFilterSchema.parseAsync(filter));
     }
@@ -270,39 +270,27 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     public async simulateUtility(
         network: Network,
-        functionName: string,
-        args: any[],
-        to: AztecAddress,
+        call: FunctionCall,
         authwits?: AuthWitness[],
-        from?: AztecAddress,
         scopes?: AztecAddress[],
     ): Promise<UtilitySimulationResult> {
         const pxe = await this.getPxeClient(network);
         return await pxe.simulateUtility(
-            functionName,
-            args,
-            await AztecAddress.schema.parseAsync(to),
+            await FunctionCallSchema.parseAsync(call),
             await z.array(AuthWitness.schema).optional().parseAsync(authwits),
-            await AztecAddress.schema.optional().parseAsync(from),
             await z.array(AztecAddress.schema).optional().parseAsync(scopes),
         );
     }
 
     public async getPrivateEvents(
         network: Network,
-        contractAddress: AztecAddress,
-        eventMetadata: EventMetadataDefinition,
-        from: number,
-        numBlocks: number,
-        recipients: AztecAddress[],
-    ): Promise<unknown[]> {
+        eventSelector: EventSelector,
+        filter: PrivateEventFilter,
+    ): Promise<PackedPrivateEvent[]> {
         const pxe = await this.getPxeClient(network);
         return await pxe.getPrivateEvents(
-            await AztecAddress.schema.parseAsync(contractAddress),
-            await EventMetadataDefinitionSchema.parseAsync(eventMetadata),
-            from,
-            numBlocks,
-            await z.array(AztecAddress.schema).parseAsync(recipients),
+            await EventSelector.schema.parseAsync(eventSelector),
+            await PrivateEventFilterSchema.parseAsync(filter),
         );
     }
 
@@ -436,7 +424,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         switch (network.chainId) {
             case 1721521349: // 11155111 ^ 1714840162
                 return "https://testnet.aztec-registry.xyz";
-            case 1674512022: // 11155111 ^ 1667575857
+            case 1654394782: // 11155111 ^ 1667575857
                 return "https://devnet.aztec-registry.xyz";
             default:
                 return undefined;

@@ -1,4 +1,4 @@
-import type { Fr } from "@aztec/foundation/fields";
+import type { Fr } from "@aztec/foundation/curves/bn254";
 import type { Gas } from "@aztec/stdlib/gas";
 import type { Action } from "@/wallet/services/execution/spec";
 import type { FpcInfo } from "./spec";

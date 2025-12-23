@@ -13,7 +13,7 @@ import { getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 
 export * from "./fpc";
 export * from "./spec";
