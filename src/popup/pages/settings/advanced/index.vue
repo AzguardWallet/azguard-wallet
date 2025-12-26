@@ -75,7 +75,7 @@ const settings = {
 	},
 	defaultExplorer: {
 		title: "Block Explorer",
-		description: "Default explorer for transaction links",
+		description: "Transaction link explorer",
 		model: defaultExplorer,
 		visible: ref(true),
 	},
@@ -237,7 +237,7 @@ onBeforeUnmount(() => {
 					:class="$style.input"
 				/>
 			</Flex>
-			<template v-for="sk in Object.keys(settings).filter(sk => sk !== 'sessionTtl')" :key="sk">
+			<template v-for="sk in Object.keys(settings).filter(sk => sk !== 'sessionTtl' && sk !== 'defaultExplorer')" :key="sk">
 				<Flex
 					v-if="settings[sk].visible.value"
 					align="center"
@@ -338,7 +338,6 @@ onBeforeUnmount(() => {
 }
 
 .explorerTrigger {
-	min-width: 100px;
 	display: flex;
 	align-items: center;
 	gap: 6px;

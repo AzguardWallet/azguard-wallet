@@ -80,7 +80,7 @@ const handleDropAllSessions = () => {
 watchEffect(() => {
 	dappSessions.value.sort((a, b) => a.expiry - b.expiry)
 	dappSessions.value.forEach(async (s) => {
-		if (s.dappMetadata.logo && !s.dappMetadata.logoBlobUrl) {
+		if (s.dappMetadata.logo) {
 			s.loadingLogo = true
 			try {
 				s.dappMetadata.logoBlobUrl = await loadExternalImage(s.dappMetadata.logo)

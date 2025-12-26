@@ -51,7 +51,7 @@ const settings = {
 	},
 	contractRegistry: {
 		title: "Contract Registry",
-		description: "Lookup contract metadata from external registry",
+		description: "Fetch contract info externally",
 		model: contractRegistry,
 		visible: ref(true),
 	},
@@ -69,7 +69,7 @@ const settings = {
 	},
 	externalLinks: {
 		title: "External links",
-		description: "How to handle external link clicks",
+		description: "Control external link behavior",
 		model: externalLinks,
 		visible: ref(true),
 	},
