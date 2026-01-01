@@ -18,7 +18,7 @@ export function getChainPosition(chainId: number): number {
 	switch (chainId) {
 		case 1721521349: // 11155111 ^ 1714840162
 			return 1
-		case 1674512022: // 11155111 ^ 1667575857
+		case 1654394782: // 11155111 ^ 1667575857
 			return 2
 		case 0: // localhost:8080
 			return 3
@@ -31,7 +31,7 @@ export function getChainColor(chainId: number): string {
 	switch (chainId) {
 		case 1721521349: // 11155111 ^ 1714840162
 			return "neutral-mint"
-		case 1674512022: // 11155111 ^ 1667575857
+		case 1654394782: // 11155111 ^ 1667575857
 			return "blue"
 		case 0: // localhost:8080
 			return "sand"
@@ -44,7 +44,7 @@ export function getChainName(chainId: number): string {
 	switch (chainId) {
 		case 1721521349: // 11155111 ^ 1714840162
 			return "Testnet"
-		case 1674512022: // 11155111 ^ 1667575857
+		case 1654394782: // 11155111 ^ 1667575857
 			return "Devnet"
 		case 0: // localhost:8080
 			return "Sandbox"

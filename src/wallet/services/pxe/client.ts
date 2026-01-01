@@ -1,5 +1,5 @@
-import { Fr } from "@aztec/foundation/fields";
-import type { ContractArtifact, EventMetadataDefinition } from "@aztec/stdlib/abi";
+import { Fr } from "@aztec/foundation/curves/bn254";
+import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
@@ -10,7 +10,7 @@ import {
     type PartialAddress,
     ContractInstanceWithAddressSchema,
 } from "@aztec/stdlib/contract";
-import { type NotesFilter, UniqueNote } from "@aztec/stdlib/note";
+import { type NotesFilter, NoteDao } from "@aztec/stdlib/note";
 import {
     SimulationOverrides,
     type TxExecutionRequest,
@@ -19,13 +19,20 @@ import {
     TxSimulationResult,
     UtilitySimulationResult,
 } from "@aztec/stdlib/tx";
+import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
+import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 import z from "zod";
 import { ILogger } from "@/wallet/logger";
 import { ServiceSpec } from "@/wallet/base";
 import { Network } from "@/wallet/services/network/service";
 import { ServiceClient } from "@/wallet/base/offscreen";
 import { ensureOffscreenRunning } from "@/wallet/utils/offscreen";
-import { ContractClassMetadataSchema, ContractMetadataSchema } from "@/wallet/utils/schemas";
+import {
+    ContractClassMetadataSchema,
+    ContractMetadataSchema,
+    NoteDaoSchema,
+    PackedPrivateEventSchema,
+} from "@/wallet/utils/schemas";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
 import { IPXE, PXEProxy } from "./proxy";
 
@@ -127,10 +134,18 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         return await z.array(AztecAddress.schema).parseAsync(result);
     }
 
-    public async getNotes(network: Network, filter: NotesFilter): Promise<UniqueNote[]> {
+    public async getNotes(network: Network, filter: NotesFilter): Promise<NoteDao[]> {
         await ensureOffscreenRunning();
         const result = await this.request("getNotes", network, filter);
-        return await z.array(UniqueNote.schema).parseAsync(result);
+        return await z.array(NoteDaoSchema).parseAsync(
+            result.map(x => ({
+                ...x,
+                // crutch for zod
+                toBuffer: () => {},
+                equals: () => {},
+                getSize: () => {},
+            })),
+        );
     }
 
     public async proveTx(network: Network, txRequest: TxExecutionRequest): Promise<TxProvingResult> {
@@ -175,36 +190,22 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
 
     public async simulateUtility(
         network: Network,
-        functionName: string,
-        args: any[],
-        to: AztecAddress,
+        call: FunctionCall,
         authwits?: AuthWitness[],
-        from?: AztecAddress,
         scopes?: AztecAddress[],
     ): Promise<UtilitySimulationResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("simulateUtility", network, functionName, args, to, authwits, from, scopes);
+        const result = await this.request("simulateUtility", network, call, authwits, scopes);
         return await UtilitySimulationResult.schema.parseAsync(result);
     }
 
     public async getPrivateEvents(
         network: Network,
-        contractAddress: AztecAddress,
-        eventMetadataDef: EventMetadataDefinition,
-        from: number,
-        numBlocks: number,
-        recipients: AztecAddress[],
-    ): Promise<unknown[]> {
+        eventSelector: EventSelector,
+        filter: PrivateEventFilter,
+    ): Promise<PackedPrivateEvent[]> {
         await ensureOffscreenRunning();
-        const result = await this.request(
-            "getPrivateEvents",
-            network,
-            contractAddress,
-            eventMetadataDef,
-            from,
-            numBlocks,
-            recipients,
-        );
-        return result;
+        const result = await this.request("getPrivateEvents", network, eventSelector, filter);
+        return await z.array(PackedPrivateEventSchema).parseAsync(result);
     }
 }

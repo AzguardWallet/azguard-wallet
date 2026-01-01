@@ -68,15 +68,15 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             // try {
             //     const name = "Azguard Node";
             //     const rpcUrl = "https://node.devnet.azguardwallet.io";
-            //     const chainId = 1674512022; // 11155111 ^ 1667575857
+            //     const chainId = 1654394782; // 11155111 ^ 1667575857
             //     defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             // } catch (error) {
             //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
             // }
             try {
                 const name = "Aztec Node";
-                const rpcUrl = "https://devnet.aztec-labs.com";
-                const chainId = 1674512022; // 11155111 ^ 1667575857
+                const rpcUrl = "https://next.devnet.aztec-labs.com";
+                const chainId = 1654394782; // 11155111 ^ 1667575857
                 defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));

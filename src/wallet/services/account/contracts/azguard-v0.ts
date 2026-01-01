@@ -1,13 +1,9 @@
 import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT, GeneratorIndex } from '@aztec/constants';
-import {
-    Fr,
-    GrumpkinScalar,
-} from '@aztec/foundation/fields';
-import {
-    poseidon2HashWithSeparator,
-    sha512ToGrumpkinScalar,
-    Schnorr,
-} from '@aztec/foundation/crypto';
+import { Fr } from '@aztec/foundation/curves/bn254';
+import { GrumpkinScalar } from '@aztec/foundation/curves/grumpkin';
+import { sha512ToGrumpkinScalar } from '@aztec/foundation/crypto/sha512';
+import { poseidon2HashWithSeparator } from '@aztec/foundation/crypto/poseidon';
+import { Schnorr } from '@aztec/foundation/crypto/schnorr';
 import {
     encodeArguments,
     FunctionSelector,

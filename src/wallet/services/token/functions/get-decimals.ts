@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact, FunctionAbi, FunctionType } from "@aztec/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
 
@@ -74,7 +74,7 @@ export class DefaultPublicGetDecimalsFn extends GetDecimalsFn {
             name: this.name,
             isInitializer: false,
             functionType: FunctionType.PUBLIC,
-            isInternal: false,
+            isOnlySelf: false,
             isStatic: true,
             parameters: [],
             returnTypes: [{ kind: "integer", sign: "unsigned", width: 8 }],
@@ -91,7 +91,7 @@ export class DefaultPublicGetDecimalsFn extends GetDecimalsFn {
         for (const fn of artifact.nonDispatchPublicFunctions) {
             if (
                 !fn.isInitializer &&
-                !fn.isInternal &&
+                !fn.isOnlySelf &&
                 fn.isStatic &&
                 fn.functionType === FunctionType.PUBLIC &&
                 fn.parameters.length === 0 &&
@@ -117,7 +117,7 @@ export class DefaultPrivateGetDecimalsFn extends GetDecimalsFn {
             name: this.name,
             isInitializer: false,
             functionType: FunctionType.PRIVATE,
-            isInternal: false,
+            isOnlySelf: false,
             isStatic: true,
             parameters: [],
             returnTypes: [{ kind: "integer", sign: "unsigned", width: 8 }],
@@ -134,7 +134,7 @@ export class DefaultPrivateGetDecimalsFn extends GetDecimalsFn {
         for (const fn of artifact.functions) {
             if (
                 !fn.isInitializer &&
-                !fn.isInternal &&
+                !fn.isOnlySelf &&
                 fn.isStatic &&
                 fn.functionType === FunctionType.PRIVATE &&
                 fn.parameters.length === 0 &&
