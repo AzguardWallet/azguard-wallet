@@ -8,13 +8,13 @@
 </route>
 
 <script setup>
+/** Services */
+import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
+
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import PageHeader from "@/components/ui/Settings/PageHeader.vue"
-
-/** Utils */
-import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -26,7 +26,24 @@ const router = useRouter()
 
 const dappSessions = ref([])
 
-const dappSessionServiceClient = new DappSessionServiceClient()
+const dappSessionService = new DappSessionServiceClient()
+dappSessionService.onDappSessionAdded.add(onDappSessionAdded)
+dappSessionService.onDappSessionUpdated.add(onDappSessionUpdated)
+dappSessionService.onDappSessionDeleted.add(onDappSessionDeleted)
+function onDappSessionAdded(session) {
+	dappSessions.value.push(session)
+}
+function onDappSessionUpdated(session) {
+	const idx = dappSessions.value.findIndex(ds => ds.id === session.id)
+	if (idx !== -1) {
+		dappSessions.value[idx] = session
+	} else {
+		dappSessions.value.push(session)
+	}
+}
+function onDappSessionDeleted(session) {
+	dappSessions.value = dappSessions.value.filter(ds => ds.id !== session.id)
+}
 
 const handleOpenConnectByURIPopup = () => {
 	if (!appStore.isLogined) return
@@ -34,7 +51,7 @@ const handleOpenConnectByURIPopup = () => {
 }
 
 const handleDropSession = session => {
-	dappSessionServiceClient.deleteDappSession(session.id)
+	dappSessionService.deleteDappSession(session.id)
 }
 
 const handleDropAllSessions = () => {
@@ -57,18 +74,7 @@ async function loadImageBlob(url) {
 }
 
 watchEffect(() => {
-	const storeIds = appStore.dappSessions.map(s => s.id)
-	dappSessions.value = dappSessions.value.filter(s => storeIds.includes(s.id))
-
-	appStore.dappSessions.forEach(s => {
-		const exists = dappSessions.value.some(item => item.id === s.id)
-		if (!exists) {
-			dappSessions.value.push({...s})
-		}
-	})
-
 	dappSessions.value.sort((a, b) => a.expiry - b.expiry)
-
 	dappSessions.value.forEach(async (s) => {
 		if (s.dappMetadata.logo) {
 			s.loadingLogo = true

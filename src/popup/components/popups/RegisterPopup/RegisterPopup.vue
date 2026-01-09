@@ -6,6 +6,7 @@ import WalletPasswordContent from "./WalletPasswordContent.vue"
 import { managers, setSentinel } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { sleep } from "@/wallet/utils"
+import { capitalize } from "@/utils/string"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -19,12 +20,12 @@ const router = useRouter()
 
 const walletPassword = ref<string>("")
 const repeatedPassword = ref<string>("")
+const profilType = ref<string>("password")
 
-const isCreatingProfile = ref({
-	password: false,
-	passkey: false,
-})
+const isCreatingProfile = ref<boolean>(false)
 const isAllowedToContinue = computed(() => {
+	if (profilType.value === "passkey") return true
+
 	if (!walletPassword.value.length || walletPassword.value.length < 8) {
 		return false
 	}
@@ -35,22 +36,27 @@ const isAllowedToContinue = computed(() => {
 
 	return true
 })
-const handleCreateProfile = async (mode: "password" | "passkey" = "password") => {
 
-	isCreatingProfile.value[mode] = true
+function handleProfileTypeChange(type: string) {
+	profilType.value = type
+}
+
+const handleCreateProfile = async () => {
+
+	isCreatingProfile.value = true
 
 	const profiles = await managers.profile.getProfiles()
 	const name = `My Profile${profiles.length ? ` ${profiles.length}` : ''}`
 	let profile
 	try {
-		profile = mode === "passkey"
+		profile = profilType.value === "passkey"
 			? await managers.profile.createPasskeyProfile(name)
 			: await managers.profile.createProfile(name, walletPassword.value)
 	} catch (e) {
 		if (typeof e === "string" && !e?.toLowerCase().includes("user closed") && !e?.toLowerCase().includes("operation either timed out or was not allowed")) {
 			let description
 			let note
-			if (mode === "passkey") {
+			if (profilType.value === "passkey") {
 				description = "An error occurred while creating the profile. This authenticator may not be supported or encountered an issue. Try again or use another one."
 				note = "Windows Hello may not work correctly with some versions of Windows."
 			} else {
@@ -71,7 +77,7 @@ const handleCreateProfile = async (mode: "password" | "passkey" = "password") =>
 			console.error("Failed to create profile:", e);
 		}
 	} finally {
-		isCreatingProfile.value[mode] = false
+		isCreatingProfile.value = false
 	}
 
 	while (!appStore.isLogined) {
@@ -83,15 +89,7 @@ const handleCreateProfile = async (mode: "password" | "passkey" = "password") =>
 	appStore.profile = profile
 	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
-	initTokenService({
-		profile: appStore.profile,
-		network: appStore.network,
-		account: appStore.account,
-		onTokenAdded: appStore.onTokenAdded,
-	})
 	initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
-
-	appStore.initBalanceListeners()
 
 	await chrome.storage.local.set({
 		"azguard:ui:activeAccount": appStore.account?.address,
@@ -112,7 +110,7 @@ const handleCancel = () => {
 
 const onKeydown = (e: KeyboardEvent) => {
 	if (e.key === "Enter") {
-		if (isAllowedToContinue.value && !isCreatingProfile.value.password && !isCreatingProfile.value.passkey) {
+		if (isAllowedToContinue.value && !isCreatingProfile.value) {
 			handleCreateProfile()
 		}
 	}
@@ -157,6 +155,7 @@ onUnmounted(() => {
 
 			<Flex direction="column" justify="between" :class="$style.content">
 				<WalletPasswordContent
+					@onProfileTypeChange="handleProfileTypeChange"
 					v-model:password="walletPassword"
 					v-model:repeatedPassword="repeatedPassword"
 				/>
@@ -167,22 +166,12 @@ onUnmounted(() => {
 						type="primary"
 						size="medium"
 						wide
-						:disabled="!isAllowedToContinue || isCreatingProfile.passkey"
-						:loading="isCreatingProfile.password"
+						:disabled="!isAllowedToContinue"
+						:loading="isCreatingProfile"
 					>
-						Create with Password
+						Create with {{ capitalize(profilType) }}
 					</Button>
-					<Button
-						@click="handleCreateProfile('passkey')"
-						type="primary"
-						size="medium"
-						wide
-						:disabled="isCreatingProfile.passkey"
-						:loading="isCreatingProfile.passkey"
-					>
-						Create with Passkey
-					</Button>
-					<Button @click="handleCancel" type="secondary" size="medium" wide :disabled="isCreatingProfile.passkey || isCreatingProfile.password">
+					<Button @click="handleCancel" type="secondary" size="medium" wide :disabled="isCreatingProfile">
 						Cancel
 					</Button>
 				</Flex>

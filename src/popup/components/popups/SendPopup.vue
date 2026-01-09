@@ -1,4 +1,11 @@
 <script setup>
+/** Services */
+import { ContactServiceClient } from "@/wallet/services/contact/client"
+import { ExecutionServiceClient } from "@/wallet/services/execution/client"
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+import { TokenServiceClient } from "@/wallet/services/token/client"
+import { TransferType } from "@/wallet/services/transaction/client"
+
 /** Vendor */
 import BN from "bignumber.js"
 
@@ -11,9 +18,6 @@ import FeeSettingsCard from "../modules/send/FeeSettingsCard.vue"
 import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 
 /** Utils */
-import { managers } from "@/utils/core.js"
-import { ContactServiceClient } from "@/wallet/services/contact/client"
-import { TransferType } from "@/wallet/services/transaction/client"
 import { capitalize, isValidHex, trimAddress } from "@/utils/string"
 import { getChainColor, getChainName } from "@/components/ui/utils.js"
 
@@ -45,14 +49,56 @@ const displaceIdx = computed(() => {
 
 const awaitingNewToken = ref(false)
 
+const tokenService = new TokenServiceClient()
+tokenService.onTokenAdded.add(onTokenAdded)
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenAdded(token) {
+	tokens.value.push(token)
+}
+function onTokenDeleted(token) {
+	const idx = tokens.value.findIndex(t => t.id === token.id)
+	if (idx === -1) return
+
+	tokens.value.splice(idx, 1)
+
+	if (activeToken.value?.id !== token.id) return
+	
+	if (tokens.value?.length) {
+		cacheStore.activeTokenIdx = tokens.value[0].id
+		return
+	}
+
+	openToast({ label: "The last token has just been deleted" })
+
+	emit("onClose")
+}
+
+const tokens = ref([])
 const activeToken = computed(() =>
-	appStore.tokens.find(t => t.id == cacheStore.activeTokenIdx),
+	tokens.value?.find(t => t.id == cacheStore.activeTokenIdx),
 )
 const isBlockedTransfer = computed(
 	() => !activeToken.value?.hasPrivateTransfers && !activeToken.value?.hasPublicTransfers,
 )
+
+const tokenBalanceService = new TokenBalanceServiceClient()
+tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
+tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
+function onBalanceAdded(balance) {
+	if (balance.account !== appStore.account.address) return
+
+	tokenBalance.push(balance)
+}
+function onBalanceUpdated(balance) {
+	const idx = tokenBalances.value.findIndex(tb => tb.id === balance.id)
+	if (idx === -1) return
+	
+	tokenBalances.value[idx] = balance
+}
+
+const tokenBalances = ref([])
 const tokenBalance = computed(() => {
-	return appStore.balances.find(
+	return tokenBalances.value?.find(
 		b => b?.token.id == cacheStore.activeTokenIdx,
 	)
 })
@@ -98,6 +144,20 @@ const contactService = new ContactServiceClient()
 contactService.onContactAdded.add(onContactAdded)
 contactService.onContactUpdated.add(onContactUpdated)
 contactService.onContactDeleted.add(onContactDeleted)
+function onContactAdded(contact) {
+	contacts.value.push(contact)
+}
+function onContactUpdated(contact) {
+	const idx = contacts.value.findIndex(c => c.id === contact.id)
+	if (idx !== -1) {
+		contacts.value[idx] = contact
+	} else {
+		contacts.value.push(contact)
+	}
+}
+function onContactDeleted(contact) {
+	contacts.value = contacts.value.filter(c => c.id !== contact.id)
+}
 
 const contacts = ref([])
 const selectedContact = ref()
@@ -169,6 +229,7 @@ const isAllowedToSend = computed(() => {
 	return true
 })
 
+const executionService = new ExecutionServiceClient()
 const handleSend = async () => {
 	if (!isAllowedToSend.value) return
 
@@ -196,7 +257,7 @@ const handleSend = async () => {
 	})
 
 	try {
-		managers.execution.executeTransfer(
+		executionService.executeTransfer(
 			appStore.network.id,
 			appStore.account.address,
 			activeToken.value.id,
@@ -208,25 +269,12 @@ const handleSend = async () => {
 	} catch (err) {
 		console.error('err', err);
 	} finally {
+		executionService.disconnect()
+
 		openToast({ label: "Transaction is sent" })
 
 		emit("onClose")
 	}
-}
-
-function onContactAdded(contact) {
-	contacts.value.push(contact)
-}
-function onContactUpdated(contact) {
-	const idx = contacts.value.findIndex(c => c.id === contact.id)
-	if (idx !== -1) {
-		contacts.value[idx] = contact
-	} else {
-		contacts.value.push(contact)
-	}
-}
-function onContactDeleted(contact) {
-	contacts.value = contacts.value.filter(c => c.id !== contact.id)
 }
 
 watch(
@@ -240,11 +288,11 @@ watch(
 )
 
 watch(
-	() => appStore.tokens,
+	() => tokens.value,
 	() => {
-		if (appStore.tokens.length && awaitingNewToken.value) {
+		if (tokens.value?.length && awaitingNewToken.value) {
 			awaitingNewToken.value = false
-			cacheStore.activeTokenIdx = appStore.tokens[0]?.id
+			cacheStore.activeTokenIdx = tokens.value[0].id
 		}
 	},
 	{ deep: true },
@@ -263,6 +311,9 @@ watch(
 	() => props.show,
 	async () => {
 		if (props.show) {
+			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+			tokenBalances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
+
 			initSendType()
 			initReceiverType()
 
@@ -272,21 +323,23 @@ watch(
 				cacheStore.activeTokenIdx = route.params.id
 			}
 
-			if (!cacheStore.activeTokenIdx && appStore.tokens.length) {
-				cacheStore.activeTokenIdx = appStore.tokens[0]?.id
+			if (!cacheStore.activeTokenIdx && tokens.value.length) {
+				cacheStore.activeTokenIdx = tokens.value[0].id
 			}
 
 			if (cacheStore.preselectedContactToSend) {
 				handleSelectContact(cacheStore.preselectedContactToSend)
 			}
 
-			if (!appStore.tokens.length) {
+			if (!tokens.value.length) {
 				awaitingNewToken.value = true
 			}
 
 			document.addEventListener("keydown", onKeydown)
 		} else {
 			contactService.disconnect()
+			tokenBalanceService.disconnect()
+			tokenService.disconnect()
 			
 			amountTerm.value = null
 

@@ -4,6 +4,10 @@ import { onMounted } from "vue"
 import { managers } from "@/utils/core.js"
 import { trimAddress } from "@/utils/string"
 
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+const appStore = useAppStore()
+
 const emit = defineEmits(["onAddressClick"])
 const props = defineProps({
 	address: {
@@ -57,6 +61,12 @@ onMounted(async () => {
 		if (contact?.name) {
 			contactName.value = `@${contact.name}`
 			showName.value = true
+		} else {
+			const _acc = appStore.accounts.find(acc => acc.address === props.address)
+			if (_acc?.name) {
+				contactName.value = _acc.name
+				showName.value = true
+			}
 		}
 
 		if (props.full) {

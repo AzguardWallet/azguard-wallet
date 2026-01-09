@@ -2,12 +2,13 @@
 /** Vendor */
 import BN from "bignumber.js"
 
+/** Services */
+import { TokenServiceClient } from "@/wallet/services/token/client"
+import { OriginType } from "@/wallet/services/transaction/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-
-/** Services */
-import { OriginType } from "@/wallet/services/transaction/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
@@ -34,6 +35,8 @@ const props = defineProps({
 	show: Boolean,
 })
 
+const tokenService = new TokenServiceClient()
+
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
 const call = computed(() => tx.value.calls[0])
 const type = computed(() => {
@@ -43,7 +46,8 @@ const type = computed(() => {
 })
 
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
-const token = computed(() => appStore.tokens.find(t => call.value?.contract === t.contract))
+const tokens = ref([])
+const token = computed(() => tokens.value.find(t => call.value?.contract === t.contract))
 
 const transferAmount = computed(() => {
 	if (transfer.value) {
@@ -68,8 +72,12 @@ const mintAmount = computed(() => {
 
 watch(
 	() => props.show,
-	() => {
-		// console.log('tx', tx.value);
+	async () => {
+		if (props.show) {
+			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+		} else {
+			tokenService.disconnect()
+		}
 	},
 )
 

@@ -75,7 +75,7 @@ const getStyles = () => {
 		:tabindex="disabled ? -1 : 0"
 		:class="[...getStyles(), loading && $style.loading]"
 	>
-		<Spinner v-if="loading" color="primary" />
+		<Spinner v-if="loading" color="--txt-primary" />
 		<Icon
 			v-if="leftIcon"
 			:name="leftIcon"
