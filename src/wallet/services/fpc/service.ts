@@ -53,7 +53,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
         );
         // TODO: remove it
-        if (!result.length && chainId) {
+        if (!result.length && chainId !== undefined) {
             this.logInfo("Discovering FPCs...");
             try {
                 await this.lock.enter();

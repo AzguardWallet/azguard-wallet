@@ -849,11 +849,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const instance = await ContractInstanceWithAddressSchema.parseAsync(op.instance);
         const network = await this.networkService.getNetwork(op.networkId);
 
-        const addressNum = op.instance.address.toBigInt();
+        const addressNum = instance.address.toBigInt();
         if (addressNum >= 0 && addressNum <= 6) {
             // ignore protocol contracts registration,
             // because we cannot validate it due to hardcoded addresses
-            return op.instance;
+            return instance;
         }
 
         const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
