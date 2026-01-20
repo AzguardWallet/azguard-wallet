@@ -1,13 +1,15 @@
 <script setup>
 /** Vendor */
 import BN from "bignumber.js"
+import { DateTime } from "luxon"
+
+/** Services */
+import { TokenServiceClient } from "@/wallet/services/token/client"
+import { OriginType } from "@/wallet/services/transaction/client"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-
-/** Services */
-import { OriginType } from "@/wallet/services/transaction/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
@@ -34,8 +36,10 @@ const props = defineProps({
 	show: Boolean,
 })
 
+const tokenService = new TokenServiceClient()
+
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
-const call = computed(() => tx.value.calls[0])
+const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
 const type = computed(() => {
 	if (call.value?.method.startsWith("transfer")) return "transfer"
 	if (call.value?.method.startsWith("mint_to_")) return "mint"
@@ -43,7 +47,8 @@ const type = computed(() => {
 })
 
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
-const token = computed(() => appStore.tokens.find(t => call.value?.contract === t.contract))
+const tokens = ref([])
+const token = computed(() => tokens.value.find(t => call.value?.contract === t.contract))
 
 const transferAmount = computed(() => {
 	if (transfer.value) {
@@ -68,12 +73,21 @@ const mintAmount = computed(() => {
 
 watch(
 	() => props.show,
-	() => {
-		// console.log('tx', tx.value);
+	async () => {
+		if (props.show) {
+			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+		} else {
+			tokenService.disconnect()
+		}
 	},
 )
 
-const handleCopy = target => {
+const txTime = computed(() => {
+	if (!tx.value?.updatedAt) return null
+	return DateTime.fromMillis(tx.value.updatedAt).toFormat("MMM dd, yyyy 'at' HH:mm")
+})
+
+const handleCopy = (target) => {
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Successfully copied", icon: "copy" })
 }
@@ -91,13 +105,18 @@ const handleCopy = target => {
 						</Text>
 					</Flex>
 
-					<Flex @click="handleCopy(tx.hash)" align="center" gap="6" class="copyable">
-						<Text size="12" weight="600" color="tertiary">
-							{{ tx.hash.slice(0, 4) }}
-							<Text color="dark">•••</Text>
-							{{ tx.hash.slice(-4) }}
+					<Flex align="center" gap="8">
+						<Flex @click="handleCopy(tx.hash)" align="center" gap="6" class="copyable">
+							<Text size="12" weight="600" color="tertiary">
+								{{ tx.hash.slice(0, 4) }}
+								<Text color="dark">•••</Text>
+								{{ tx.hash.slice(-4) }}
+							</Text>
+							<Icon name="copy" size="12" color="tertiary" />
+						</Flex>
+						<Text v-if="txTime" size="12" weight="500" color="tertiary">
+							{{ txTime }}
 						</Text>
-						<Icon name="copy" size="12" color="tertiary" />
 					</Flex>
 				</Flex>
 
@@ -112,7 +131,7 @@ const handleCopy = target => {
 				<Flex v-else-if="mintAmount" align="center" direction="column" gap="8">
 					<Text size="24" weight="500" color="primary">
 						{{ mintAmount }}
-						<Text color="tertiary">{{ token.symbol }}</Text>
+						<Text v-if="token" color="tertiary">{{ token.symbol }}</Text>
 					</Text>
 					<Text size="12" weight="500" color="tertiary"> Mint Amount </Text>
 				</Flex>

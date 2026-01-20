@@ -39,6 +39,7 @@ import {
 import z from "zod";
 import { ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/offscreen";
+import { ConfigServiceClient } from "@/wallet/services/config/client";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { Network } from "@/wallet/services/network/client";
 import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/client";
@@ -53,6 +54,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public static name = PXE_SERVICE_NAME;
 
     private readonly profiles = new ProfileServiceClient();
+    private readonly config = new ConfigServiceClient();
     private readonly nodes = new Map<number, AztecNode>();
     private readonly pxes = new Map<number, PXE>();
     private readonly rpcs = new Map<number, string>();
@@ -393,6 +395,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     private async fetchFromRegistry(network: Network, path: string): Promise<unknown | undefined> {
+        // Check if contract registry is enabled in settings
+        const contractRegistryEnabled = await this.config.getValue("contractRegistry");
+        if (!contractRegistryEnabled) {
+            return undefined;
+        }
+
         const registryUrl = this.getRegistryUrl(network);
         if (!registryUrl) {
             return undefined;

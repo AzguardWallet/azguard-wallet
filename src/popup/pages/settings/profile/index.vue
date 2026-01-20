@@ -48,17 +48,18 @@ const handleOpen = target => {
 		<Flex direction="column" gap="24" align="center">
 			<Breadcrumbs />
 
-			<PageHeader :title="appStore.profile?.name" :description="appStore.profile?.id" icon="user" />
+			<PageHeader v-if="appStore.profile" :title="appStore.profile?.name" :description="appStore.profile?.id" icon="user" />
 
 			<ItemsContainer wide>
 				<SettingField
+					v-if="appStore.profile"
 					@click="popupStore.open('edit_profile')"
 					label="Name" :value="appStore.profile?.name" icon="edit" />
 			</ItemsContainer>
 
 			<ItemsContainer wide>
 				<SettingItem to="/popup/settings/security/export" title="Backup profile" icon="key-square" chevron />
-				<SettingItem title="Change password" icon="profile-password" disabled />
+				<SettingItem @click="popupStore.open('change_profile_password')" title="Change password" icon="profile-password" :disabled="appStore.profile.type === 'passkey'" />
 			</ItemsContainer>
 
 			<ItemsContainer wide>

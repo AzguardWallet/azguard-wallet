@@ -1,4 +1,8 @@
 <script setup>
+/** Services */
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -6,9 +10,6 @@ import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 import CandidatesForm from "./NewTokenPopup/CandidatesForm.vue"
-
-/** Utils */
-import { managers } from "@/utils/core"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -38,6 +39,19 @@ const isAvailableToUpdateToken = computed(() => {
 
 const rawToken = ref()
 const rawTokenForReset = ref()
+
+const tokenService = new TokenServiceClient()
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenDeleted(token) {
+	if (token.id === cacheStore.tokenToEditIdx) {
+		openToast({ label: "Token has been deleted" })
+
+		emit("onClose")
+	}
+}
+
+const tokenBalanceService = new TokenBalanceServiceClient()
+
 const selectedFields = ref({
 	balanceOfPrivateFn: null,
 	balanceOfPublicFn: null,
@@ -77,12 +91,11 @@ const handleSaveToken = async () => {
 	isUpdatingTokenInterface.value = true
 
 	try {
-		const updatedToken = await managers.token.updateToken(appStore.profile.id, appStore.network.id, appStore.account.address, cacheStore.tokenToEditIdx, rawToken.value)
-
-		const updatedTokenIdx = appStore.tokens.findLastIndex(t => t.id == cacheStore.tokenToEditIdx)
-		appStore.tokens[updatedTokenIdx] = updatedToken
-
-		await appStore.syncBalances()
+		await tokenService.updateToken(appStore.profile.id, appStore.network.id, appStore.account.address, cacheStore.tokenToEditIdx, rawToken.value)
+		const tokenBalances = await tokenBalanceService.getTokenBalances(cacheStore.tokenToEditIdx)
+		tokenBalances.forEach(tb => {
+			tokenBalanceService.refreshTokenBalance(tb.id)
+		})
 
 		openToast({ label: "Token has been updated" })
 	} catch (error) {
@@ -97,6 +110,12 @@ const handleSaveToken = async () => {
 
 const isAwaitingTokenInterface = ref(true)
 const isErrorOccurred = computed(() => !!error.value)
+
+const handleCopyContractAddress = () => {
+	window.navigator.clipboard.writeText(rawToken.value.contract)
+	openToast({ label: "Contract address is copied", icon: "copy" })
+}
+
 watch(
 	() => props.show,
 	async () => {
@@ -105,10 +124,12 @@ watch(
 			selectedFields.value = {}
 			isAwaitingTokenInterface.value = false
 			error.value = null
+			tokenService.disconnect()
+			tokenBalanceService.disconnect()
 		} else {
 			try {
 				isAwaitingTokenInterface.value = true
-				const tokenInterface = await managers.token.getTokenInterface(appStore.network.id, cacheStore.tokenToEditIdx)
+				const tokenInterface = await tokenService.getTokenInterface(appStore.network.id, cacheStore.tokenToEditIdx)
 
 				rawToken.value = { ...tokenInterface }
 				rawTokenForReset.value = { ...tokenInterface }
@@ -129,11 +150,6 @@ watch(
 		}
 	},
 )
-
-const handleCopyContractAddress = () => {
-	window.navigator.clipboard.writeText(rawToken.value.contract)
-	openToast({ label: "Contract address is copied", icon: "copy" })
-}
 </script>
 
 <template>

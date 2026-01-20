@@ -22,6 +22,12 @@ export type TokenBalanceInfo = {
 
 export type Methods = {
     /**
+     * Returns a token balance with the specified id.
+     * @param id Token balance id.
+     */
+    getTokenBalance(id: number): TokenBalanceInfo;
+
+    /**
      * Returns a list of token balances.
      * @param tokenId Token id.
      * @param accountAddress Account address.

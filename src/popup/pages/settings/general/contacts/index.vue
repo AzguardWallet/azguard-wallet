@@ -17,7 +17,7 @@ import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 /** Utils */
 import { ContactServiceClient } from "@/wallet/services/contact/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { sanitizeString, stringCompare, trimAddress } from "@/utils/string"
+import { downloadFile, pickFile, sanitizeString, stringCompare, trimAddress } from "@/utils"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -96,125 +96,116 @@ async function handleExportContacts() {
 		if (profile.name) {
 			filename = `${profile.name}_${filename}`
 		}
-		const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-		const url = URL.createObjectURL(blob);
 
-		chrome.downloads.download({
-			url: url,
-			filename,
-			saveAs: true
-		}, () => {
-			URL.revokeObjectURL(url);
-		})
-	} catch (e) {
+		try {
+			await downloadFile({
+				data: JSON.stringify(data, null, 2),
+				filename,
+			})
 
+			openToast({ label: "Contacts exported successfully", icon: "download" }, 2000)
+		} catch (err) {
+			console.error("Export failed:", err.message || err);
+			openToast({ label: "Failed to export contacts", icon: "warning" }, 2000)
+		}
+	} catch (err) {
+		console.error(err);
 	} finally {
 		profileService.disconnect()
 	}
 }
 
 async function handleImportContacts() {
-	const input = document.createElement('input')
-	input.type = 'file'
-	input.accept = '.json'
-	input.style.display = 'none'
+	try {
+		const file = await pickFile(".json", true)
+		if (!file) return
 
-	input.onchange = async (e) => {
-		try {
-			const file = e.target.files[0]
-			if (file) {
-				const data = await file.text()
-				const importedContacts = JSON.parse(data)
-					.map(c => ({
-						...c,
-						name: sanitizeString(c.name, 20),
-						address: sanitizeString(c.address, 66),
-					}))
-					.filter(c => !!c.name && !!c.address)
+		const data = await file.text()
+		const importedContacts = JSON.parse(data)
+			.map(c => ({
+				...c,
+				name: sanitizeString(c.name, 20),
+				address: sanitizeString(c.address, 66),
+			}))
+			.filter(c => !!c.name && !!c.address)
 
-				if (importedContacts?.length) {
-					for (const _c of importedContacts) {
-						cacheStore.importContacts.push(_c)
+		if (importedContacts?.length) {
+			for (const _c of importedContacts) {
+				cacheStore.importContacts.push(_c)
+			}
+
+			const importPromise = new Promise((resolve, reject) => {
+				cacheStore.importPromise = { resolve, reject }
+			})
+
+			popupStore.open("import_contacts")
+
+			try {
+				const res = await importPromise;
+				if (res.length) {
+					const contactsByAddress = new Map()
+					const contactsByName = new Map()
+					contacts.value.forEach(c => {
+						contactsByAddress.set(c.address, c);
+						contactsByName.set(c.name, c);
+					});
+
+					const errors = []
+					for (const _c of res) {
+						const existingByAddress = contactsByAddress.get(_c.address);
+						const existingByName = contactsByName.get(_c.name);
+						try {
+							if (existingByAddress) {
+								await contactService.updateContact(
+									existingByAddress.id,
+									_c.name,
+									_c.address,
+								)
+							} else if (existingByName) {
+								await contactService.updateContact(
+									existingByName.id,
+									_c.name,
+									_c.address,
+								)
+							} else {
+								await contactService.addContact(_c.name, _c.address, _c.color)
+							}
+						} catch (err) {
+							errors.push({
+								name: _c.name,
+								address: _c.address,
+								operation: existingByAddress || existingByName ? "update" : "create",
+								error: err,
+							})
+						}
 					}
 
-					const importPromise = new Promise((resolve, reject) => {
-						cacheStore.importPromise = { resolve, reject }
-					})
-
-					popupStore.open("import_contacts")
-
-					try {
-						const res = await importPromise;
-						if (res.length) {
-							const contactsByAddress = new Map()
-							const contactsByName = new Map()
-							contacts.value.forEach(c => {
-								contactsByAddress.set(c.address, c);
-								contactsByName.set(c.name, c);
-							});
-
-							const errors = []
-							for (const _c of res) {
-								const existingByAddress = contactsByAddress.get(_c.address);
-								const existingByName = contactsByName.get(_c.name);
-								try {
-									if (existingByAddress) {
-										await contactService.updateContact(
-											existingByAddress.id,
-											_c.name,
-											_c.address,
-										)
-									} else if (existingByName) {
-										await contactService.updateContact(
-											existingByName.id,
-											_c.name,
-											_c.address,
-										)
-									} else {
-										await contactService.addContact(_c.name, _c.address, _c.color)
-									}
-								} catch (err) {
-									errors.push({
-										name: _c.name,
-										address: _c.address,
-										operation: existingByAddress || existingByName ? "update" : "create",
-										error: err,
-									})
-								}
-							}
-
-							if (errors.length) {
-								for (const e of errors) {
-									console.error(`Failed to ${e.operation} contact ${e.name} ${e.address}`, e.error);
-								}
-
-								openToast({ label: "Import ended with errors", icon: "warning" })
-							} else {
-								openToast({ label: "Import competed successfully", icon: "info" })
-							}
-						} else {
-							openToast({ label: "No contacts selected for import", icon: "info" })
+					if (errors.length) {
+						for (const e of errors) {
+							console.error(`Failed to ${e.operation} contact ${e.name} ${e.address}`, e.error);
 						}
-					} catch (err) {
-						openToast({ label: "Contact import canceled", icon: "info" })
+
+						openToast({ label: "Import ended with errors", icon: "warning" })
+					} else {
+						openToast({ label: "Import competed successfully", icon: "info" })
 					}
 				} else {
-					openToast({ label: "No contacts found in file", icon: "info" })
+					openToast({ label: "No contacts selected for import", icon: "info" })
 				}
+			} catch (err) {
+				openToast({ label: "Contact import canceled", icon: "info" })
 			}
-		} catch (err) {
-			console.error("Error occurred during import", err.message ?? err.stack);
-			
-			openToast({ label: "Error occurred during import", icon: "warning" })
-		} finally {
-			document.body.removeChild(input)
-			cacheStore.importContacts = []
-			cacheStore.importPromise = null
+		} else {
+			openToast({ label: "No contacts found in file", icon: "info" })
 		}
+	} catch (err) {
+		console.error("Error occurred during import", err.message || err.stack || err);
+			
+		openToast({ label: "Error occurred during import", icon: "warning" })
+	} finally {
+		cacheStore.importContacts = []
+		cacheStore.importPromise = null
 	}
-
-	document.body.appendChild(input)
-	setTimeout(() => input.click(), 50)
 }
 
 onMounted(async () => {

@@ -1,4 +1,7 @@
 <script setup>
+/** Services */
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -27,9 +30,16 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const token = computed(() => {
-	return appStore.tokens.findLast(t => t.id == cacheStore.activeTokenIdx)
-})
+const token = ref()
+const tokenService = new TokenServiceClient()
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenDeleted(token) {
+	if (token.id === cacheStore.activeTokenIdx) {
+		openToast({ label: "Token has been deleted" })
+
+		emit("onClose")
+	}
+}
 
 const handleCopyAddress = () => {
 	window.navigator.clipboard.writeText(token.value.contract)
@@ -38,11 +48,14 @@ const handleCopyAddress = () => {
 
 watch(
 	() => props.show,
-	() => {
+	async () => {
 		if (props.show) {
 			if (route.params.id) {
 				cacheStore.activeTokenIdx = route.params.id
+				token.value = await tokenService.getToken(cacheStore.activeTokenIdx)
 			}
+		} else {
+			tokenService.disconnect()
 		}
 	},
 )
@@ -59,7 +72,7 @@ watch(
 						<Text size="12" weight="600" color="tertiary"> Id </Text>
 
 						<Text size="12" weight="600" color="secondary">
-							{{ token.id }}
+							{{ token?.id }}
 						</Text>
 					</Flex>
 

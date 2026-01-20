@@ -1,4 +1,22 @@
+import { type ContractArtifact} from "@aztec/stdlib/abi";
+import { type ContractInstanceWithAddress } from "@aztec/stdlib/contract";
+import { Restored } from "@/wallet/base";
+
 export const ACCOUNT_STATE_SERVICE_NAME = "account-state";
+
+export type BackupSender = {
+    address: string;
+}
+export type BackupContract = {
+    address: string;
+    instance: ContractInstanceWithAddress;
+    artifact: ContractArtifact;
+};
+export type BackupAccountState = {
+    networkId: string;
+    senders: Restored<BackupSender>[];
+    contracts: Restored<BackupContract>[];
+};
 
 export type Methods = {
     /**

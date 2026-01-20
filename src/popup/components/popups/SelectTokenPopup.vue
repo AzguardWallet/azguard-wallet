@@ -1,4 +1,7 @@
 <script setup>
+/** Services */
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -26,6 +29,21 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.select_token?.order
 })
 
+const tokens = ref([])
+
+const tokenService = new TokenServiceClient()
+tokenService.onTokenAdded.add(onTokenAdded)
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenAdded(token) {
+	tokens.value.push(token)
+}
+function onTokenDeleted(token) {
+	const idx = tokens.value.findIndex(t => t.id === token.id)
+	if (idx === -1) return
+
+	tokens.value.splice(idx, 1)
+}
+
 const handleSelectToken = id => {
 	cacheStore.activeTokenIdx = id
 	emit("onClose")
@@ -35,6 +53,18 @@ const handleManageTokens = () => {
 	router.push("/popup/settings/general/tokens")
 	popupStore.closeAll()
 }
+
+watch(
+	() => props.show,
+	async () => {
+		if (props.show) {
+			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+		} else {
+			tokens.value = []
+			tokenService.disconnect()
+		}
+	},
+)
 </script>
 
 <template>
@@ -49,7 +79,7 @@ const handleManageTokens = () => {
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<ItemsContainer>
 					<SettingItem
-						v-for="token in appStore.tokens"
+						v-for="token in tokens"
 						@click="handleSelectToken(token.id)"
 						:title="token.symbol"
 						:icon="token.id === cacheStore.activeTokenIdx ? 'check-circle' : 'circle'"

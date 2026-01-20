@@ -95,7 +95,7 @@ const runServices = async () => {
     services.add(new TokenService(logger));
     services.add(new TokenBalanceService(logger));
     services.add(new TransactionService(logger));
-    services.add(new WalletConnectService(logger));
+    services.add(new WalletConnectService(config, logger));
     services.add(new PasskeyService(logger));
 
     await services.start();

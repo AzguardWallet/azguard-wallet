@@ -26,7 +26,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
     }
 
     protected async init(services: ServiceCollection): Promise<void> {
-        // to be overriden in derived classes
+        // to be overridden in derived classes
     }
 
     public async start(services: ServiceCollection) {
@@ -149,5 +149,15 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
 
     protected logError(...data: any[]) {
         this.logger.log(this.name, LogLevel.Error, ...data);
+    }
+
+    public async backup(): Promise<any> {
+        // can be overridden in derived classes if necessary
+        return null;
+    }
+
+    public async restore(..._args: any[]): Promise<any> {
+        // can be overridden in derived classes if necessary
+        return null;
     }
 }

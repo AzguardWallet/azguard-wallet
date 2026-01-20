@@ -10,6 +10,7 @@ const calcStyles = computed(() => {
 		minHeight: `${props.size || 16}px`,
 		width: `${props.size || 16}px`,
 		minWidth: `${props.size || 16}px`,
+		borderColor: `color-mix(in srgb, var(${props.color}) 10%, transparent)`,
 		borderTopColor: `var(${props.color})`,
 	}
 })
@@ -22,7 +23,8 @@ const calcStyles = computed(() => {
 <style module>
 .wrapper {
 	border-radius: 100px;
-	border: 2px var(--gray-10) solid;
+	/* border: 2px var(--gray-10) solid; */
+	border: 2px solid;
 	border-top: 2px solid;
 	animation: material-spinner 4s infinite;
 }
