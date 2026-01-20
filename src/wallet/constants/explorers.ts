@@ -1,4 +1,6 @@
-export type BlockExplorerType = "aztecscan" | "none"
+import { CHAIN_IDS } from "@/components/ui/utils"
+
+export type BlockExplorerType = "aztecscan"
 
 export type BlockExplorer = {
 	/** Unique identifier */
@@ -8,26 +10,13 @@ export type BlockExplorer = {
 }
 
 /**
- * Known Aztec network chain IDs
- */
-export const CHAIN_IDS = {
-	SEPOLIA_TESTNET: 11155111,
-	DEVNET: 1674512022,
-	SANDBOX: 31337,
-} as const
-
-/**
  * Available block explorers for selection in settings.
- * "none" provides explicit option to disable explorer links.
+ * Use `null` in config to disable explorer links.
  */
 export const BLOCK_EXPLORERS: BlockExplorer[] = [
 	{
 		id: "aztecscan",
 		name: "Aztecscan",
-	},
-	{
-		id: "none",
-		name: "None",
 	},
 ]
 
@@ -38,27 +27,26 @@ export const BLOCK_EXPLORERS: BlockExplorer[] = [
  */
 const EXPLORER_BASE_URLS: Record<BlockExplorerType, Record<number, string>> = {
 	aztecscan: {
-		[CHAIN_IDS.SEPOLIA_TESTNET]: "https://testnet.aztecscan.xyz",
+		[CHAIN_IDS.TESTNET]: "https://testnet.aztecscan.xyz",
 		[CHAIN_IDS.DEVNET]: "https://devnet.aztecscan.xyz",
 	},
-	none: {},
 }
 
 /**
  * Construct a transaction explorer URL for a given transaction hash.
- * Returns null if explorer is "none" or doesn't support the network.
+ * Returns null if explorer is disabled (null) or doesn't support the network.
  *
  * @param chainId - The network's chain ID
- * @param explorerId - User's selected explorer ID
+ * @param explorerId - User's selected explorer ID, or null if disabled
  * @param txHash - Transaction hash
  * @returns Full URL to view the transaction, or null if unavailable
  */
 export function getTransactionExplorerUrl(
 	chainId: number,
-	explorerId: BlockExplorerType | undefined,
+	explorerId: BlockExplorerType | null | undefined,
 	txHash: string
 ): string | null {
-	if (!explorerId || explorerId === "none") return null
+	if (!explorerId) return null
 
 	const baseUrl = EXPLORER_BASE_URLS[explorerId]?.[chainId]
 	return baseUrl ? `${baseUrl}/tx-effects/${txHash}` : null

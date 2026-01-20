@@ -13,6 +13,7 @@ import DataViewerPopup from "./DataViewerPopup.vue"
 import EditClaimParametersPopup from "./EditClaimParametersPopup.vue"
 
 /** Profiles */
+import ChangeProfilePasswordPopup from "./ChangeProfilePasswordPopup.vue"
 import EditProfilePopup from "./EditProfilePopup.vue"
 import SelectProfilePopup from "./SelectProfilePopup.vue"
 
@@ -62,6 +63,9 @@ import ConnectByURIPopup from "./ConnectByURIPopup.vue"
 import SelectDepositPopup from "./SelectDepositPopup.vue"
 import FaucetPopup from "./FaucetPopup.vue"
 
+/** Privacy */
+import StealthPromoPopup from "./StealthPromoPopup.vue"
+
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
 const popupStore = usePopupStore()
@@ -77,6 +81,7 @@ const popupStore = usePopupStore()
 	<ConfirmPopup :show="popupStore.isOpened('confirm')" @onClose="popupStore.close('confirm')" />
 	<DataViewerPopup :show="popupStore.isOpened('data_viewer')" @onClose="popupStore.close('data_viewer')" />
 
+	<ChangeProfilePasswordPopup :show="popupStore.isOpened('change_profile_password')" @onClose="popupStore.close('change_profile_password')" />
 	<EditProfilePopup :show="popupStore.isOpened('edit_profile')" @onClose="popupStore.close('edit_profile')" />
 	<SelectProfilePopup :show="popupStore.isOpened('select_profile')" @onClose="popupStore.close('select_profile')" />
 
@@ -118,4 +123,6 @@ const popupStore = usePopupStore()
 	<SendPopup :show="popupStore.isOpened('send')" @onClose="popupStore.close('send')" />
 	<ReceivePopup :show="popupStore.isOpened('receive')" @onClose="popupStore.close('receive')" />
 	<EditClaimParametersPopup :show="popupStore.isOpened('edit_claim_parameters')" :payload="popupStore.getPayload('edit_claim_parameters')" @onClose="popupStore.close('edit_claim_parameters')" />
+
+	<StealthPromoPopup :show="popupStore.isOpened('stealth_promo')" @onClose="popupStore.close('stealth_promo')" />
 </template>

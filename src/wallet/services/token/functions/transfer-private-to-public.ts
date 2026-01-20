@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi";
 import { Fn } from "@/wallet/utils/fn";
@@ -73,7 +73,7 @@ export class DefaultTransferPrivateToPublicFn extends TransferPrivateToPublicFn 
             name: this.name,
             isInitializer: false,
             functionType: FunctionType.PRIVATE,
-            isInternal: false,
+            isOnlySelf: false,
             isStatic: false,
             parameters: [
                 {
@@ -119,7 +119,7 @@ export class DefaultTransferPrivateToPublicFn extends TransferPrivateToPublicFn 
         for (const fn of artifact.functions) {
             if (
                 !fn.isInitializer &&
-                !fn.isInternal &&
+                !fn.isOnlySelf &&
                 !fn.isStatic &&
                 fn.functionType === FunctionType.PRIVATE &&
                 fn.parameters.length === 4 &&

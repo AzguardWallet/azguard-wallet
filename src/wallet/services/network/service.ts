@@ -1,9 +1,9 @@
 import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
-import { EntityStorage, StorageType, ValueStorage } from "@/wallet/storage";
+import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
@@ -68,15 +68,15 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             // try {
             //     const name = "Azguard Node";
             //     const rpcUrl = "https://node.devnet.azguardwallet.io";
-            //     const chainId = 1674512022; // 11155111 ^ 1667575857
+            //     const chainId = 1654394782; // 11155111 ^ 1667575857
             //     defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             // } catch (error) {
             //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
             // }
             try {
                 const name = "Aztec Node";
-                const rpcUrl = "https://devnet.aztec-labs.com";
-                const chainId = 1674512022; // 11155111 ^ 1667575857
+                const rpcUrl = "https://next.devnet.aztec-labs.com";
+                const chainId = 1654394782; // 11155111 ^ 1667575857
                 defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));
@@ -322,4 +322,38 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             this.lock.leave();
         }
     };
+
+    public async backup(): Promise<Network[]> {
+        return (await this.getNetworks());
+    }
+
+    public async restore(networks: Network[]): Promise<Restored<Network>[]> {
+        await this.ensureInitialized();
+
+        const result: Restored<Network>[] = [];
+        try {
+            await this.lock.enter();
+
+            for (const n of networks) {
+                try {
+                    let id = n.id;
+                    while ((await this.storage.contains(id))) {
+                        id = getRandomHex(8);
+                    }
+
+                    await this.storage.set(id, { ...n, id });
+                    result.push({ ...n, id });
+                } catch (err) {
+                    result.push({
+                        ...n,
+                        restoreError: err instanceof Error ? err.message : err,
+                    });
+                }
+            }
+
+            return result;
+        } finally {
+            this.lock.leave();
+        }
+    }
 }

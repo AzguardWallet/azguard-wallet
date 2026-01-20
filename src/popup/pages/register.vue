@@ -9,6 +9,7 @@
 <script setup>
 /** Components */
 import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
+import StealthPromoPopup from "../components/popups/StealthPromoPopup.vue"
 
 /** Utils */
 import { Config } from "@/wallet/config"
@@ -16,13 +17,19 @@ import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const defaultConfig = new Config()
 const theme = ref(defaultConfig.theme)
 const isSidePanelEnabled = ref(defaultConfig.sidePanel)
+
+// Stealth promo visibility
+const hasSeenStealthPromo = ref(true) // Default true to hide promo until we check
+const showStealthPromo = ref(false)
 
 const configService = new ConfigServiceClient()
 configService.onUpdate.add(onSettingUpdate)
@@ -70,9 +77,27 @@ async function handleSwitchAppView () {
 	}
 }
 
-onMounted(async () => {	
+function handleOpenStealthPromo() {
+	showStealthPromo.value = true
+}
+
+function handleCloseStealthPromo() {
+	showStealthPromo.value = false
+}
+
+function handleCreateProfileFromPromo(payload) {
+	// Mark that user came from promo flow (settings already saved to config)
+	cacheStore.privacySettings = payload
+	// Close the stealth promo popup
+	showStealthPromo.value = false
+	// Open the register popup
+	appStore.showRegisterPopup = true
+}
+
+onMounted(async () => {
 	theme.value = await configService.getValue("theme")
 	isSidePanelEnabled.value = await configService.getValue("sidePanel")
+	hasSeenStealthPromo.value = await configService.getValue("hasSeenStealthPromo") || false
 })
 
 onBeforeUnmount(() => {
@@ -109,6 +134,19 @@ onBeforeUnmount(() => {
 				<Icon name="warning" size="16" color="orange" />
 				Azguard Alpha Testing
 			</Button>
+
+			<!-- Stealth Mode Promo (only shown before first profile) -->
+			<Flex
+				v-if="!hasSeenStealthPromo"
+				@click="handleOpenStealthPromo"
+				align="center"
+				gap="8"
+				:class="$style.promo"
+			>
+				<Icon name="eye-off" size="16" color="green" />
+				<Text size="12" weight="600" color="secondary">Try Stealth Mode for your wallet</Text>
+				<Icon name="chevron-right" size="12" color="tertiary" />
+			</Flex>
 		</Flex>
 
 		<Flex direction="column" gap="12" align="center" :class="$style.bottom">
@@ -134,6 +172,13 @@ onBeforeUnmount(() => {
 		<Transition name="slide">
 			<RegisterPopup v-if="appStore.showRegisterPopup" />
 		</Transition>
+
+		<!-- Stealth Promo Popup -->
+		<StealthPromoPopup
+			:show="showStealthPromo"
+			@onClose="handleCloseStealthPromo"
+			@onCreateProfile="handleCreateProfileFromPromo"
+		/>
 	</Flex>
 </template>
 
@@ -195,6 +240,19 @@ onBeforeUnmount(() => {
 
 	&:hover {
 		color: var(--txt-primary);
+	}
+}
+
+.promo {
+	margin-top: 8px;
+	padding: 10px 16px;
+	background: var(--gray-5);
+	border-radius: 12px;
+	cursor: pointer;
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--gray-8);
 	}
 }
 </style>

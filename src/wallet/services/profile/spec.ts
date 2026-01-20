@@ -1,4 +1,4 @@
-import type { Fr } from "@aztec/foundation/fields";
+import type { Fr } from "@aztec/foundation/curves/bn254";
 
 export const PROFILE_SERVICE_NAME = "profile";
 
@@ -15,17 +15,18 @@ export type ProfileInfo = {
     type: ProfileType;
 };
 
-export type Profile = ProfileInfo & (
-    | {
-            type: "password";
-            guard: string;
-            secret: string;
-        }
-    | {
-            type: "passkey";
-            credentialId: string;
-        }
-);
+export type Profile = ProfileInfo &
+    (
+        | {
+              type: "password";
+              guard: string;
+              secret: string;
+          }
+        | {
+              type: "passkey";
+              credentialId: string;
+          }
+    );
 
 export type Session = {
     /** Profile id. */
@@ -108,6 +109,13 @@ export type Methods = {
     changeProfilePassword(id: string, oldPassword: string, newPassword: string): ProfileInfo;
 
     /**
+     * Confirm profile operation.
+     * @param id Profile id.
+     * @param password Profile password.
+     */
+    confirmProfileOperation(id: string, password?: string): boolean;
+
+    /**
      * Deletes a profile and returns the deleted profile.
      * @param id Profile id.
      */
@@ -154,7 +162,7 @@ export type Methods = {
      * @param id Profile id.
      * @param password Password to decrypt the secret.
      */
-    exportPlain(id: string, password: string): string;
+    exportPlain(id: string, password?: string): string;
 
     /**
      * Returns 24-words mnemonic phrase, representing plain profile secret.

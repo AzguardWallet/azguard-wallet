@@ -7,6 +7,10 @@
 </route>
 
 <script setup>
+/** Services */
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
 /** Components */
 import BalanceView from "../../components/modules/general/BalanceView.vue"
 import SplittedBalancesView from "../../components/modules/general/SplittedBalancesView.vue"
@@ -20,29 +24,65 @@ const appStore = useAppStore()
 const cacheStore = useCacheStore()
 
 const route = useRoute()
+const router = useRouter()
 
-const token = computed(() =>
-	appStore.tokens.find(t => t.id == route.params.id),
-)
+const token = ref()
+const tokenBalance = ref()
+
+const tokenService = new TokenServiceClient()
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenDeleted(token) {
+	if (token.id === token.value?.id) {
+		router.push("/popup/general")
+	}
+}
+
+const tokenBalanceService = new TokenBalanceServiceClient()
+tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
+function onBalanceUpdated(tb) {
+	if (tb.id !== tokenBalance.value?.id) return
+	
+	tokenBalance.value = tb
+}
+
 watch(
 	() => token.value,
-	() => {
-		cacheStore.activeTokenIdx = token.value?.id
+	async () => {
+		if (token.value) {
+			cacheStore.activeTokenIdx = token.value?.id
+			tokenBalance.value = (await tokenBalanceService.getTokenBalances(token.value.id, appStore.account.address))?.at(0)
+		}
 	},
 )
 
-onMounted(() => {
-	cacheStore.activeTokenIdx = token.value?.id
+watch(
+	() => appStore.account,
+	async () => {
+		tokenBalance.value = (await tokenBalanceService.getTokenBalances(token.value.id, appStore.account.address))?.at(0)
+		if (!tokenBalance.value) {
+			cacheStore.activeTokenIdx = null
+			router.push("/popup/general")
+		}
+	}
+)
+
+onMounted(async () => {
+	token.value = await tokenService.getToken(route.params.id)
+	if (!token.value) {
+		router.push("/popup/general")
+	}
 })
 
 onBeforeUnmount(() => {
+	tokenService.disconnect()
+	tokenBalanceService.disconnect()
 	cacheStore.activeTokenIdx = null
 })
 </script>
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
-		<BalanceView :token />
+		<BalanceView :tokenBalance />
 
 		<Flex direction="column" justify="between" :class="$style.content">
 			<Flex direction="column" gap="32">
@@ -50,7 +90,7 @@ onBeforeUnmount(() => {
 					Private and public transfers disabled
 				</Banner>
 
-				<SplittedBalancesView :token />
+				<SplittedBalancesView :tokenBalance />
 
 				<RecentActivityView :token />
 			</Flex>

@@ -1,5 +1,5 @@
-import type { Fr } from "@aztec/foundation/fields";
-import type { ContractArtifact, EventMetadataDefinition } from "@aztec/stdlib/abi";
+import type { Fr } from "@aztec/foundation/curves/bn254";
+import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
@@ -9,7 +9,7 @@ import {
     ContractClassMetadata,
     ContractMetadata,
 } from "@aztec/stdlib/contract";
-import { NotesFilter, UniqueNote } from "@aztec/stdlib/note";
+import { NotesFilter, NoteDao } from "@aztec/stdlib/note";
 import {
     SimulationOverrides,
     TxExecutionRequest,
@@ -20,6 +20,8 @@ import {
 } from "@aztec/stdlib/tx";
 import { Network } from "@/wallet/services/network/spec";
 import { PxeServiceClient } from "./client";
+import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
+import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export interface IPXE {
     getContractInstance(address: AztecAddress): Promise<ContractInstanceWithAddress | undefined>;
@@ -34,7 +36,7 @@ export interface IPXE {
     registerContract(contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact }): Promise<void>;
     updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void>;
     getContracts(): Promise<AztecAddress[]>;
-    getNotes(filter: NotesFilter): Promise<UniqueNote[]>;
+    getNotes(filter: NotesFilter): Promise<NoteDao[]>;
     proveTx(txRequest: TxExecutionRequest): Promise<TxProvingResult>;
     profileTx(
         txRequest: TxExecutionRequest,
@@ -50,20 +52,11 @@ export interface IPXE {
         scopes?: AztecAddress[],
     ): Promise<TxSimulationResult>;
     simulateUtility(
-        functionName: string,
-        args: any[],
-        to: AztecAddress,
+        call: FunctionCall,
         authwits?: AuthWitness[],
-        _from?: AztecAddress,
         scopes?: AztecAddress[],
     ): Promise<UtilitySimulationResult>;
-    getPrivateEvents<T>(
-        contractAddress: AztecAddress,
-        eventMetadataDef: EventMetadataDefinition,
-        from: number,
-        numBlocks: number,
-        recipients: AztecAddress[],
-    ): Promise<T[]>;
+    getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]>;
 }
 
 export class PXEProxy implements IPXE {
@@ -117,7 +110,7 @@ export class PXEProxy implements IPXE {
         return this.pxeService.getContracts(this.network);
     }
 
-    getNotes(filter: NotesFilter): Promise<UniqueNote[]> {
+    getNotes(filter: NotesFilter): Promise<NoteDao[]> {
         return this.pxeService.getNotes(this.network, filter);
     }
 
@@ -153,30 +146,14 @@ export class PXEProxy implements IPXE {
     }
 
     simulateUtility(
-        functionName: string,
-        args: any[],
-        to: AztecAddress,
+        call: FunctionCall,
         authwits?: AuthWitness[],
-        from?: AztecAddress,
         scopes?: AztecAddress[],
     ): Promise<UtilitySimulationResult> {
-        return this.pxeService.simulateUtility(this.network, functionName, args, to, authwits, from, scopes);
+        return this.pxeService.simulateUtility(this.network, call, authwits, scopes);
     }
 
-    async getPrivateEvents<T>(
-        contractAddress: AztecAddress,
-        eventMetadataDef: EventMetadataDefinition,
-        from: number,
-        numBlocks: number,
-        recipients: AztecAddress[],
-    ): Promise<T[]> {
-        return (await this.pxeService.getPrivateEvents(
-            this.network,
-            contractAddress,
-            eventMetadataDef,
-            from,
-            numBlocks,
-            recipients,
-        )) as T[];
+    async getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]> {
+        return this.pxeService.getPrivateEvents(this.network, eventSelector, filter);
     }
 }

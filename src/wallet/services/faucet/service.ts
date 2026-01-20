@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { TokenContract } from "@aztec/noir-contracts.js/Token";
 import { bufferAsFields } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -14,6 +14,7 @@ import {
     type ContractInstanceWithAddress,
 } from "@aztec/stdlib/contract";
 import { PublicKeys } from "@aztec/stdlib/keys";
+import BN from "bignumber.js";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -89,7 +90,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
         const origin: TxOrigin = { type: OriginType.UI, name: "Faucet" };
 
         const rootTask = this.taskService.startNewTask(
-            new TokenMintContent(name, symbol, decimals, amount),
+            new TokenMintContent(name, symbol, decimals, amount, accountAddress),
             undefined,
             origin,
         );
@@ -200,6 +201,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
 
         const mintTask = rootTask.startSubtask(new StepContent("Minting token"));
         try {
+            const _amount = new BN(amount).dividedBy(2).toString();
             const [mintResult, registerResult] = await this.executionService.executeOperations(
                 [
                     {
@@ -212,13 +214,13 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                                 kind: "call",
                                 contract: instance.address.toString(),
                                 method: "mint_to_private",
-                                args: [accountAddress, amount],
+                                args: [accountAddress, _amount],
                             },
                             {
                                 kind: "call",
                                 contract: instance.address.toString(),
                                 method: "mint_to_public",
-                                args: [accountAddress, amount],
+                                args: [accountAddress, _amount],
                             },
                         ],
                     },

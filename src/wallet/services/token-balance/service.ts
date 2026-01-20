@@ -1,6 +1,6 @@
 import { FunctionType } from "@aztec/stdlib/abi";
 import { ILogger } from "@/wallet/logger";
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { getTokenInfo } from "@/wallet/services/token/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
@@ -14,7 +14,7 @@ import { TokenService, Token, TokenInfo } from "@/wallet/services/token/service"
 import { BalanceOfPrivateFn, BalanceOfPublicFn } from "@/wallet/services/token/functions";
 import { ExecutionService, CallAction, EncodedCallAction } from "@/wallet/services/execution/service";
 import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/service";
-import { TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
+import { OriginType, TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
 import type { ViewFn } from "@/wallet/utils/fn";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { TOKEN_BALANCE_SERVICE_NAME, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec";
@@ -74,6 +74,16 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
         this.worker = this.startWorker();
     }
 
+    public async getTokenBalance(id: number): Promise<TokenBalanceInfo> {
+        await this.ensureInitialized();
+        const balance = await this.balances.get(`${id}`);
+        if (!balance) {
+            throw new Error("unknown token balance id");
+        }
+        
+        return this.getTokenBalanceInfo(balance);
+    }
+
     public async getTokenBalances(tokenId?: number, accountAddress?: string): Promise<TokenBalanceInfo[]> {
         await this.ensureInitialized();
         return (await this.balances.getValues())
@@ -98,7 +108,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
 
     private addBalanceToRefreshQueue(balance: TokenBalanceRaw): void {
         if (!this.pendingTasks.has(balance.id)) {
-            const task = this.taskService.createNewTask(new BalanceUpdateContent(balance.id));
+            const task = this.taskService.createNewTask(new BalanceUpdateContent(balance.id, balance.account));
             this.pendingTasks.set(balance.id, task.id);
         }
         this.queue.priorityPass(balance);
@@ -177,8 +187,41 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
 
     private readonly onTransactionUpdated = async (tx: Tx) => {
         if (tx.status !== TxStatus.Pending) {
+            if (tx.origin?.type === OriginType.UI) {
+                const addresses = new Set<string>()
+                const contracts = new Set<string>()
+                const tokenIds = new Set<number>()
+
+                for (const c of tx.calls) {
+                    if (c.contract && c.transfers) {
+                        contracts.add(c.contract);
+                    }
+                    if (c.transfers) {
+                        for (const t of c.transfers) {
+                            addresses.add(t.to);
+                            addresses.add(t.from);
+                        }
+                    }
+                }
+
+                for (const t of this.tokens.values()) {
+                    if (contracts.has(t.contract)) {
+                        tokenIds.add(t.id);
+                    }
+                }
+
+                const _balances = await this.balances.getValues();
+                for (const tb of _balances) {
+                    if (addresses.has(tb.account) && tokenIds.has(tb.token)) {
+                        this.addBalanceToRefreshQueue(tb);
+                    }
+                }
+                
+                return;
+            }
+
             await this.refreshAccountBalances(tx.account);
-        }
+        };
     };
 
     private async startWorker() {
@@ -222,7 +265,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
         for (const tb of tbs) {
             const taskId = this.pendingTasks.get(tb.id);
             if (!taskId) {
-                const task = this.taskService.startNewTask(new BalanceUpdateContent(tb.id));
+                const task = this.taskService.startNewTask(new BalanceUpdateContent(tb.id, account));
                 this.pendingTasks.set(tb.id, task.id);
             } else {
                 this.taskService.startTask(taskId);
@@ -388,5 +431,34 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
         } finally {
             tbs.forEach(tb => this.pendingTasks.delete(tb.id));
         }
+    }
+
+    public async backup(): Promise<TokenBalanceRaw[]> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Profile locked");
+        }
+
+        return (await this.balances.getValues());
+    }
+
+    public async restore(tokenBalances: TokenBalanceRaw[]): Promise<Restored<TokenBalanceRaw>[]> {
+        await this.ensureInitialized();
+
+        const result: Restored<TokenBalanceRaw>[] = [];
+        for (const tb of tokenBalances) {
+            try {
+                const id = array_max((await this.balances.getKeys()).map(x => +x)) + 1;
+                await this.balances.set(`${id}`, { ...tb, id });
+                result.push({ ...tb, id });
+            } catch (err) {
+                result.push({
+                    ...tb,
+                    restoreError: err instanceof Error ? err.message : err,
+                });
+            }
+        }
+
+        return result;
     }
 }

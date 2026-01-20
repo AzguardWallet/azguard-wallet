@@ -2,9 +2,6 @@
 /** Vendor */
 import BN from "bignumber.js"
 
-/** Components */
-import Icon from "@/components/core/Icon.vue"
-
 /** Services */
 import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 
@@ -12,6 +9,9 @@ import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 import { balanceFormatted } from "@/utils/amount.js"
 import { trimAddress } from "@/utils/string"
 import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
+
+/** Composables */
+const { handleExternalLink } = useExternalLink()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -23,7 +23,7 @@ const props = defineProps({
 	},
 })
 
-const call = computed(() => props.tx.calls[0])
+const call = computed(() => props.tx.calls.at(1)?.method?.startsWith("mint") ? props.tx.calls[1] : props.tx.calls[0])
 const type = computed(() => {
 	if (call.value.method.startsWith("transfer")) return "transfer"
 	if (call.value.method.startsWith("mint_to_")) return "mint"
@@ -108,7 +108,7 @@ const explorerUrl = computed(() => {
 					:href="explorerUrl"
 					target="_blank"
 					rel="noopener noreferrer"
-					@click.stop
+					@click.stop="handleExternalLink($event, explorerUrl)"
 					:class="$style.hash_link"
 				>
 					<Text size="12" weight="500" color="blue">{{ shortHash }}</Text>

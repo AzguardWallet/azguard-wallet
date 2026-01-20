@@ -48,12 +48,6 @@ const isIndicationFailuresEnabled = ref(defaultConfig.indicateFailures)
 const isDebugModeEnabled = ref(defaultConfig.debugMode)
 const defaultExplorer = ref(defaultConfig.defaultExplorer)
 
-// Get display name for selected explorer
-const selectedExplorerName = computed(() => {
-	const explorer = BLOCK_EXPLORERS.find(e => e.id === defaultExplorer.value)
-	return explorer?.name || "None"
-})
-
 const settings = {
 	sessionTtl: {
 		title: "Auto-lock Timeout",
@@ -79,7 +73,20 @@ const settings = {
 		model: isDebugModeEnabled,
 		visible: isDeveloperModeEnabled,
 	},
+	defaultExplorer: {
+		title: "Block Explorer",
+		description: "Transaction link explorer",
+		model: defaultExplorer,
+		visible: ref(true),
+	},
 }
+
+// Get display name for selected explorer
+const selectedExplorerName = computed(() => {
+	if (!defaultExplorer.value) return "None"
+	const explorer = BLOCK_EXPLORERS.find(e => e.id === defaultExplorer.value)
+	return explorer?.name || "None"
+})
 
 const notification = reactive({
 	show: false,
@@ -122,11 +129,14 @@ async function applySetting(key, value) {
 			if (!value) {
 				updateSetting("debugMode", value)
 			}
-			
-			break;
-	
+			break
+
+		case "defaultExplorer":
+			openToast({ label: "Default explorer updated", icon: "info" }, 1_500)
+			break
+
 		default:
-			break;
+			break
 	}
 }
 
@@ -135,21 +145,6 @@ function onSettingUpdate(setting) {
 		if (settings[setting.key].model.value !== setting.value) {
 			applySetting(setting.key, setting.value)
 		}
-	}
-	// Handle defaultExplorer separately (not in settings object)
-	if (setting.key === "defaultExplorer" && defaultExplorer.value !== setting.value) {
-		defaultExplorer.value = setting.value
-	}
-}
-
-async function handleExplorerChange(explorerId) {
-	if (defaultExplorer.value === explorerId) return
-	try {
-		await configService.setValue("defaultExplorer", explorerId)
-		defaultExplorer.value = explorerId
-		openToast({ label: "Default explorer updated", icon: "info" }, 1_500)
-	} catch (err) {
-		openToast({ label: "Failed to update explorer", icon: "warning" })
 	}
 }
 
@@ -194,10 +189,6 @@ onBeforeMount(async () => {
 		if (settings[s.key]) {
 			settings[s.key].model.value = s.value
 		}
-		// Load defaultExplorer separately
-		if (s.key === "defaultExplorer") {
-			defaultExplorer.value = s.value
-		}
 	})
 
 	sessionTtlMinutes.value = String(sessionTtl.value / 1_000 / 60)
@@ -220,7 +211,7 @@ onBeforeUnmount(() => {
 		<template v-if="!isLoading">
 			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
-					<Flex align="center" gap="6">
+					<Flex align="end" gap="6">
 						<Text size="13" weight="600" color="primary"> {{ settings.sessionTtl.title }} </Text>
 						<Tooltip
 							v-if="notification.show"
@@ -246,7 +237,7 @@ onBeforeUnmount(() => {
 					:class="$style.input"
 				/>
 			</Flex>
-			<template v-for="sk in Object.keys(settings).filter(sk => sk !== 'sessionTtl')" :key="sk">
+			<template v-for="sk in Object.keys(settings).filter(sk => sk !== 'sessionTtl' && sk !== 'defaultExplorer')" :key="sk">
 				<Flex
 					v-if="settings[sk].visible.value"
 					align="center"
@@ -267,8 +258,8 @@ onBeforeUnmount(() => {
 			<!-- Default Block Explorer -->
 			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">Default Explorer</Text>
-					<Text size="12" weight="500" color="tertiary">Block explorer for transaction links</Text>
+					<Text size="13" weight="600" color="primary">{{ settings.defaultExplorer.title }}</Text>
+					<Text size="12" weight="500" color="tertiary">{{ settings.defaultExplorer.description }}</Text>
 				</Flex>
 
 				<Dropdown>
@@ -285,20 +276,31 @@ onBeforeUnmount(() => {
 						<DropdownItem
 							v-for="explorer in BLOCK_EXPLORERS"
 							:key="explorer.id"
-							@click="handleExplorerChange(explorer.id)"
+							@click="updateSetting('defaultExplorer', explorer.id)"
 						>
 							<Flex align="center" gap="8">
 								<Icon
-									:name="defaultExplorer === explorer.id ? 'check' : ''"
+									:name="settings.defaultExplorer.model.value === explorer.id ? 'check' : ''"
 									size="14"
 									color="primary"
 								/>
 								{{ explorer.name }}
 							</Flex>
 						</DropdownItem>
+						<DropdownItem @click="updateSetting('defaultExplorer', null)">
+							<Flex align="center" gap="8">
+								<Icon
+									:name="!settings.defaultExplorer.model.value ? 'check' : ''"
+									size="14"
+									color="primary"
+								/>
+								None
+							</Flex>
+						</DropdownItem>
 					</template>
 				</Dropdown>
 			</Flex>
+
 		</template>
 
 		<Navigation />
@@ -336,6 +338,8 @@ onBeforeUnmount(() => {
 }
 
 .explorerTrigger {
-	min-width: 100px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 </style>

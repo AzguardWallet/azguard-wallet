@@ -57,12 +57,12 @@ const handleOpenLogs = async () => {
 		</ItemsContainer>
 
 		<ItemsContainer title="Activity">
-			<SettingItem title="Task tracker" icon="task-tracker" iconBgColor="var(--green)" chevron disabled />
+			<SettingItem to="/popup/settings/general/tasks" title="Task tracker" icon="task-tracker" iconBgColor="gray" />
 			<SettingItem
 				@click="handleOpenLogs"
 				title="Logs"
 				icon="logs"
-				iconBgColor="var(--gray)"
+				iconBgColor="gray"
 				chevron
 			>
 				<template v-if="cacheStore.failureLog?.color" #dot>

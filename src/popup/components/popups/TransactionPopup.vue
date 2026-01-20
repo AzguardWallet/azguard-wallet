@@ -3,12 +3,13 @@
 import BN from "bignumber.js"
 import { DateTime } from "luxon"
 
+/** Services */
+import { TokenServiceClient } from "@/wallet/services/token/client"
+import { OriginType } from "@/wallet/services/transaction/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-
-/** Services */
-import { OriginType } from "@/wallet/services/transaction/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
@@ -35,8 +36,10 @@ const props = defineProps({
 	show: Boolean,
 })
 
+const tokenService = new TokenServiceClient()
+
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
-const call = computed(() => tx.value.calls[0])
+const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
 const type = computed(() => {
 	if (call.value?.method.startsWith("transfer")) return "transfer"
 	if (call.value?.method.startsWith("mint_to_")) return "mint"
@@ -44,7 +47,8 @@ const type = computed(() => {
 })
 
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
-const token = computed(() => appStore.tokens.find(t => call.value?.contract === t.contract))
+const tokens = ref([])
+const token = computed(() => tokens.value.find(t => call.value?.contract === t.contract))
 
 const transferAmount = computed(() => {
 	if (transfer.value) {
@@ -69,8 +73,12 @@ const mintAmount = computed(() => {
 
 watch(
 	() => props.show,
-	() => {
-		// console.log('tx', tx.value);
+	async () => {
+		if (props.show) {
+			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+		} else {
+			tokenService.disconnect()
+		}
 	},
 )
 
@@ -123,7 +131,7 @@ const handleCopy = (target) => {
 				<Flex v-else-if="mintAmount" align="center" direction="column" gap="8">
 					<Text size="24" weight="500" color="primary">
 						{{ mintAmount }}
-						<Text color="tertiary">{{ token.symbol }}</Text>
+						<Text v-if="token" color="tertiary">{{ token.symbol }}</Text>
 					</Text>
 					<Text size="12" weight="500" color="tertiary"> Mint Amount </Text>
 				</Flex>

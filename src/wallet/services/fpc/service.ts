@@ -1,6 +1,6 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { ILogger } from "@/wallet/logger";
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { NetworkService } from "@/wallet/services/network/service";
@@ -13,7 +13,7 @@ import { getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 
 export * from "./fpc";
 export * from "./spec";
@@ -271,4 +271,38 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             this.lock.leave();
         }
     };
+
+    public async backup(): Promise<FpcInfo[]> {
+        return (await this.getFpcs());
+    }
+
+    public async restore(fpcs: FpcInfo[]): Promise<Restored<FpcInfo>[]> {
+        await this.ensureInitialized();
+
+        const result: Restored<FpcInfo>[] = [];
+        try {
+            await this.lock.enter();
+
+            for (const fpc of fpcs) {
+                try {
+                    let id = fpc.id;
+                    while ((await this.storage.contains(id))) {
+                        id = getRandomHex(8);
+                    }
+
+                    await this.storage.set(id, { ...fpc, id });
+                    result.push({ ...fpc, id });
+                } catch (err) {
+                    result.push({
+                        ...fpc,
+                        restoreError: err instanceof Error ? err.message : err,
+                    });
+                }
+            }
+
+            return result;
+        } finally {
+            this.lock.leave();
+        }
+    }
 }

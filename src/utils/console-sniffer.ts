@@ -4,15 +4,15 @@ for (const method of ["trace", "debug", "log", "info", "warn", "error"] as const
 	const original = console[method].bind(console)
 	console[`_${method}`] = original
 	console[method] = (...args: any[]) => {
-		const overriden = self[`on${method}`]
-		if (!overriden) {
+		const overridden = self[`on${method}`]
+		if (!overridden) {
 			pendingLogs.push(args)
 			return
 		}
 		if (pendingLogs.length) {
 			for (const data of pendingLogs) {
 				try {
-					overriden(...data)
+					overridden(...data)
 				} catch (error) {
 					original(`Error in self.on${method}`, error)
 					original(...data)
@@ -21,7 +21,7 @@ for (const method of ["trace", "debug", "log", "info", "warn", "error"] as const
 			pendingLogs.splice(0)
 		}
 		try {
-			overriden(...args)
+			overridden(...args)
 		} catch (error) {
 			original(`Error in self.on${method}`, error)
 			original(...args)

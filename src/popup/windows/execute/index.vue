@@ -46,6 +46,10 @@ type UIError = {
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+/** Composables */
+// @ts-ignore
+const { loadExternalImage } = useExternalImage()
+
 const profile = ref<ProfileInfo>()
 
 const router = useRouter()
@@ -75,18 +79,6 @@ function clearError() {
 	processingError.value = undefined
 }
 
-async function loadImageBlob(url: string) {
-	try {
-		const res = await fetch(url, { mode: "cors" })
-		if (!res.ok) return undefined
-
-		const blob = await res.blob()
-
-		return URL.createObjectURL(blob)
-	} catch {
-		return undefined
-	}
-}
 
 const init = async () => {
 	try {
@@ -101,7 +93,7 @@ const init = async () => {
 		if (dapp.value.logo) {
 			dapp.value.loadingLogo = true
 			try {
-				dapp.value.logoBlobUrl = await loadImageBlob(dapp.value.logo)
+				dapp.value.logoBlobUrl = await loadExternalImage(dapp.value.logo)
 			} finally {
 				dapp.value.loadingLogo = false
 			}
@@ -191,9 +183,7 @@ const init = async () => {
 						account,
 						accountAddress: account.address,
 						feeSettings:
-							op.opts.fee?.embeddedPaymentMethodFeePayer !== undefined
-								? { paymentMethod: { kind: "embedded" } }
-								: undefined!,
+							op.exec.feePayer !== undefined ? { paymentMethod: { kind: "embedded" } } : undefined!,
 					})
 					if (!_accounts.find(x => x.address === account.address)) {
 						_accounts.push(account)
@@ -619,7 +609,7 @@ const showJson = () => {
 						<template v-else-if="op.kind === 'aztec_getPrivateEvents'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
-								<AddressDisplay :address="op.contractAddress.toString()" />
+								<AddressDisplay :address="op.eventFilter.contractAddress.toString()" />
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'aztec_getTxReceipt'">
@@ -655,11 +645,11 @@ const showJson = () => {
 						<template v-else-if="op.kind === 'aztec_simulateUtility'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
-								<AddressDisplay :address="op.to.toString()" />
+								<AddressDisplay :address="op.call.to.toString()" />
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Function:</Text>
-								<Text size="12" color="primary">{{ op.functionName }}</Text>
+								<Text size="12" color="primary">{{ op.call.name ?? op.call.selector.toString() }}</Text>
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'aztec_profileTx'">
