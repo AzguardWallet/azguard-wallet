@@ -5,6 +5,7 @@ export type EventsMap = Record<string, unknown>;
 export type EventsSpec<T extends EventsMap> = {
     [P in keyof T]: EventHandler<T[P]>;
 };
+
 export type MethodsMap = Record<string, (...params: any) => unknown>;
 
 export type MethodsSpec<T extends MethodsMap> = {
@@ -12,6 +13,8 @@ export type MethodsSpec<T extends MethodsMap> = {
 };
 
 export type ServiceSpec<T1 extends MethodsMap, T2 extends EventsMap = {}> = MethodsSpec<T1> & EventsSpec<T2>;
+
+export type Restored<T> = T & { restoreError?: any };
 
 export interface IService {
     name: string;

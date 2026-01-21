@@ -6,12 +6,11 @@ import PopupManager from "./components/popups/PopupManager.vue"
 import GlobalLoader from "@/components/ui/GlobalLoader.vue"
 
 /** Utils */
-import { managers, initTokenService, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
+import { managers, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"
 import { Config } from "@/wallet/config"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
-import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
 
 /** Store */
@@ -53,6 +52,9 @@ const settingHandlers = {
 		chrome.sidePanel.setPanelBehavior({
 			openPanelOnActionClick: Boolean(value)
 		})
+	},
+	defaultExplorer(value) {
+		appStore.defaultExplorer = value
 	}
 }
 function applySetting(setting) {
@@ -65,8 +67,9 @@ function applySetting(setting) {
 const initNetworks = async () => {
 	appStore.networks = []
 	appStore.network = null
-	
+
 	managers.network = new NetworkServiceClient()
+
 	appStore.networks = await managers.network.getOrInitNetworks()
 
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
@@ -77,7 +80,7 @@ const initNetworks = async () => {
 
 	const key = `azguard:ui:lastActiveNetwork@${appStore.profile?.id}`
 	const lastActiveNetworkId = (await chrome.storage.local.get(key))[key]
-	
+
 	if (lastActiveNetworkId) {
 		appStore.network = appStore.networks.find(n => n.id === lastActiveNetworkId)
 	}
@@ -103,23 +106,12 @@ const initAccount = async () => {
 	await appStore.setupActiveAccount()
 }
 
-// Update appStore
-const uploadDappSessions = async () => {
-	appStore.dappSessions = await managers.dappSession.getDappSessions()
-}
-const dappSessionServiceClient = new DappSessionServiceClient()
-dappSessionServiceClient.onDappSessionAdded.add(uploadDappSessions)
-dappSessionServiceClient.onDappSessionDeleted.add(uploadDappSessions)
-dappSessionServiceClient.onDappSessionUpdated.add(uploadDappSessions)
-dappSessionServiceClient.connect()
-
 /** todo: ref */
 watch(
 	() => appStore.account,
 	() => {
 		if (!appStore.account || !appStore.isLogined) return
 
-		appStore.syncBalances()
 		if (managers.transaction) {
 			appStore.syncTransactions()
 		}
@@ -142,28 +134,11 @@ watch(
 			appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 			await appStore.setupActiveAccount()
 
-			initTokenService({
-				profile: appStore.profile,
-				network: appStore.network,
-				account: appStore.account,
-				onTokenAdded: appStore.onTokenAdded,
-			})
-			await appStore.syncLocalTokens()
 			await appStore.syncTransactions()
 		} else {
 			await appStore.setupActiveAccount()
 
-			initTokenService({
-				profile: appStore.profile,
-				network: appStore.network,
-				account: appStore.account,
-				onTokenAdded: appStore.onTokenAdded,
-			})
-
-			await appStore.syncLocalTokens()
-			await appStore.syncBalances()
 			await appStore.syncTransactions()
-			appStore.initBalanceListeners()
 		}
 	},
 )
@@ -176,7 +151,6 @@ const loadProfile = async () => {
 
 			await initNetworks()
 			await initAccount()
-			await uploadDappSessions()
 
 			appStore.isLogined = true
 			// TODO: initialize all services here
@@ -196,20 +170,10 @@ const loadProfile = async () => {
 
 		await initNetworks()
 		await initAccount()
-		await uploadDappSessions()
 
-		initTokenService({
-			profile: appStore.profile,
-			network: appStore.network,
-			account: appStore.account,
-			onTokenAdded: appStore.onTokenAdded,
-		})
 		initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
 
-		await appStore.syncLocalTokens()
-		appStore.syncBalances()
 		await appStore.syncTransactions()
-		appStore.initBalanceListeners()
 
 		appStore.isLogined = true
 		appStore.isSessionChecked = true

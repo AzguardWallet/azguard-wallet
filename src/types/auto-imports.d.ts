@@ -21,6 +21,7 @@ declare global {
   const asyncComputed: typeof import("@vueuse/core")["asyncComputed"]
   const autoResetRef: typeof import("@vueuse/core")["autoResetRef"]
   const balanceFormatted: typeof import('../utils/amount.js').balanceFormatted
+  const blobToUint8Array: typeof import('../utils/files').blobToUint8Array
   const bn: typeof import('../utils/bn.js')['default']
   const browser: typeof import('webextension-polyfill')
   const capitalize: typeof import('../utils/string').capitalize
@@ -28,6 +29,7 @@ declare global {
   const checkNotificationsForShow: typeof import('../composables/notification.js').checkNotificationsForShow
   const checkSentinel: typeof import('../utils/core.js').checkSentinel
   const comma: typeof import('../utils/amount.js').comma
+  const compressData: typeof import('../utils/files').compressData
   const computed: typeof import('vue').computed
   const computedAsync: typeof import("@vueuse/core")["computedAsync"]
   const computedEager: typeof import("@vueuse/core")["computedEager"]
@@ -50,13 +52,16 @@ declare global {
   const debounce: typeof import('../utils/general.js').debounce
   const debouncedRef: typeof import("@vueuse/core")["debouncedRef"]
   const debouncedWatch: typeof import("@vueuse/core")["debouncedWatch"]
+  const decompressData: typeof import('../utils/files').decompressData
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
   const defineLoader: typeof import("vue-router/auto")["defineLoader"]
   const definePage: typeof import("unplugin-vue-router/runtime")["_definePage"]
+  const downloadFile: typeof import('../utils/files').downloadFile
   const eagerComputed: typeof import("@vueuse/core")["eagerComputed"]
   const effectScope: typeof import('vue').effectScope
   const extendRef: typeof import("@vueuse/core")["extendRef"]
+  const externalLinks: typeof import('../composables/configClient').externalLinks
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
@@ -66,6 +71,7 @@ declare global {
   const getThousandSeparator: typeof import('../utils/amount.js').getThousandSeparator
   const h: typeof import('vue').h
   const ignorableWatch: typeof import("@vueuse/core")["ignorableWatch"]
+  const initConfigClient: typeof import('../composables/configClient').initConfigClient
   const initProfileService: typeof import('../utils/core.js')['initProfileService']
   const initTokenService: typeof import('../utils/core.js').initTokenService
   const initTransactionService: typeof import('../utils/core.js').initTransactionService
@@ -108,6 +114,7 @@ declare global {
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
   const pausableWatch: typeof import("@vueuse/core")["pausableWatch"]
+  const pickFile: typeof import('../utils/files').pickFile
   const provide: typeof import('vue').provide
   const provideLocal: typeof import("@vueuse/core")["provideLocal"]
   const purgeNumber: typeof import('../utils/amount.js').purgeNumber
@@ -124,6 +131,7 @@ declare global {
   const refDefault: typeof import("@vueuse/core")["refDefault"]
   const refThrottled: typeof import("@vueuse/core")["refThrottled"]
   const refWithControl: typeof import("@vueuse/core")["refWithControl"]
+  const refreshBalances: typeof import('../utils/core.js').refreshBalances
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveRef: typeof import("@vueuse/core")["resolveRef"]
   const resolveUnref: typeof import("@vueuse/core")["resolveUnref"]
@@ -154,6 +162,7 @@ declare global {
   const unref: typeof import('vue').unref
   const unrefElement: typeof import("@vueuse/core")["unrefElement"]
   const until: typeof import("@vueuse/core")["until"]
+  const uploadExternalImages: typeof import('../composables/configClient').uploadExternalImages
   const useActiveElement: typeof import("@vueuse/core")["useActiveElement"]
   const useAnimate: typeof import("@vueuse/core")["useAnimate"]
   const useAppStore: typeof import('../stores/app.store').useAppStore
@@ -184,6 +193,7 @@ declare global {
   const useClipboardItems: typeof import("@vueuse/core")["useClipboardItems"]
   const useCloned: typeof import("@vueuse/core")["useCloned"]
   const useColorMode: typeof import("@vueuse/core")["useColorMode"]
+  const useConfigStore: typeof import('../stores/config.store').useConfigStore
   const useConfirmDialog: typeof import("@vueuse/core")["useConfirmDialog"]
   const useCounter: typeof import("@vueuse/core")["useCounter"]
   const useCssModule: typeof import('vue').useCssModule
@@ -213,6 +223,8 @@ declare global {
   const useEventBus: typeof import("@vueuse/core")["useEventBus"]
   const useEventListener: typeof import("@vueuse/core")["useEventListener"]
   const useEventSource: typeof import("@vueuse/core")["useEventSource"]
+  const useExternalImage: typeof import('../composables/externalImage').useExternalImage
+  const useExternalLink: typeof import('../composables/externalLinks').useExternalLink
   const useEyeDropper: typeof import("@vueuse/core")["useEyeDropper"]
   const useFavicon: typeof import("@vueuse/core")["useFavicon"]
   const useFetch: typeof import("@vueuse/core")["useFetch"]
@@ -304,6 +316,7 @@ declare global {
   const useThrottle: typeof import("@vueuse/core")["useThrottle"]
   const useThrottleFn: typeof import("@vueuse/core")["useThrottleFn"]
   const useThrottledRefHistory: typeof import("@vueuse/core")["useThrottledRefHistory"]
+  const useTicker: typeof import('../composables/ticker').useTicker
   const useTimeAgo: typeof import("@vueuse/core")["useTimeAgo"]
   const useTimeout: typeof import("@vueuse/core")["useTimeout"]
   const useTimeoutFn: typeof import("@vueuse/core")["useTimeoutFn"]
@@ -351,6 +364,9 @@ declare global {
   // @ts-ignore
   export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
+  // @ts-ignore
+  export type { PrivacySettings } from '../stores/cache.store'
+  import('../stores/cache.store')
   // @ts-ignore
   export type { NotificationType, NotificationPayload, NotificationItem } from '../stores/notification.store'
   import('../stores/notification.store')

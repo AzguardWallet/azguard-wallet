@@ -1,3 +1,9 @@
+<script setup>
+const { handleExternalLink } = useExternalLink()
+
+const reportIssueUrl = "https://azguardwallet.io/forms/report-issue"
+</script>
+
 <template>
 	<Flex gap="8" :class="$style.wrapper">
 		<Icon name="warning" size="16" color="orange" />
@@ -5,7 +11,14 @@
 			<Text size="13" weight="600" color="primary"> Azguard Wallet is in alpha testing </Text>
 			<Text size="12" weight="600" color="tertiary">
 				If you're facing a bug -
-				<a href="https://azguardwallet.io/forms/report-issue" target="_blank"> report an issue </a>
+				<a
+					:href="reportIssueUrl"
+					target="_blank"
+					rel="noopener noreferrer"
+					@click="handleExternalLink($event, reportIssueUrl)"
+				>
+					report an issue
+				</a>
 			</Text>
 		</Flex>
 	</Flex>

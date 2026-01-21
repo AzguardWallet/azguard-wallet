@@ -1,7 +1,7 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { ConfigProp, IConfig } from "@/wallet/config";
 import { ILogger } from "@/wallet/logger";
-import { ServiceCollection, ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { EntityStorage, StorageType, ValueStorage } from "@/wallet/storage";
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils";
@@ -315,6 +315,53 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         }
     }
 
+    public async confirmProfileOperation(id: string, password?: string): Promise<boolean> {
+        await this.ensureInitialized();
+        try {
+            await this.lock.enter();
+
+            const profile = await this.profiles.get(id);
+            if (!profile) {
+                throw new Error("Invalid profile id");
+            }
+
+            if (profile.type === "password") {
+                if (!password) {
+                    throw new Error("Password is required");
+                }
+
+                const passhash = await EncryptionKey.getPasshash(password);
+                const key = await EncryptionKey.fromPasshash(passhash);
+
+                const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), key);
+                if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
+                    throw new Error("Invalid profile password");
+                }
+                const secret = await this.tryDecrypt(Buffer.from(profile.secret, "base64"), key);
+                if (!secret) {
+                    throw new Error("Profile storage corrupted");
+                }
+            } else {
+                if (!profile.credentialId) {
+                    throw new Error("Missing credentialId");
+                }
+
+                const credential = await this.passkeys.getKey(profile.credentialId);
+
+                if (!credential) {
+                    throw new Error("Failed to get passkey credential");
+                }
+            }
+
+            return true;
+        } catch (error) {
+            this.logError("Failed to confirm operation", getErrorMessage(error));
+            throw new Error(getErrorMessage(error));
+        } finally {
+            this.lock.leave();
+        }
+    }
+    
     public async deleteProfile(id: string): Promise<ProfileInfo> {
         await this.ensureInitialized();
         try {
@@ -384,26 +431,27 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         return profile.secret;
     }
 
-    public async exportPlain(id: string, password: string): Promise<string> {
+    public async exportPlain(id: string, password?: string): Promise<string> {
         await this.ensureInitialized();
-        const passhash = await EncryptionKey.getPasshash(password);
-        const key = await EncryptionKey.fromPasshash(passhash);
         const profile = await this.profiles.get(id);
         if (!profile) {
             throw new Error("Invalid profile id");
         }
-        if (profile.type === "passkey") {
-            throw new Error("Operation not supported for passkey profile");
+
+        await this.confirmProfileOperation(id, password);
+
+        let plainSecret = "";
+        if (profile.type === "password" && password) {
+            const passhash = await EncryptionKey.getPasshash(password);
+            const key = await EncryptionKey.fromPasshash(passhash);
+            const secret = await this.tryDecrypt(Buffer.from(profile.secret, "base64"), key);
+
+            plainSecret = Buffer.from(secret!).toString("base64");
+        } else if (profile.type === "passkey") {
+            plainSecret = profile.credentialId;
         }
-        const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), key);
-        if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
-            throw new Error("Invalid profile password");
-        }
-        const secret = await this.tryDecrypt(Buffer.from(profile.secret, "base64"), key);
-        if (!secret) {
-            throw new Error("Profile storage corrupted");
-        }
-        return Buffer.from(secret).toString("base64");
+
+        return plainSecret;
     }
 
     public async exportMnemonic(id: string, password: string): Promise<string[]> {
@@ -616,4 +664,112 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             this.sessionTtl = prop.value;
         }
     };
+
+    public async backup(): Promise<ProfileInfo | undefined> {
+        return (await this.getActiveProfile());
+    }
+
+    public async restore(profile: ProfileInfo, masterKey: string, password?: string): Promise<Restored<ProfileInfo>> {
+        await this.ensureInitialized();
+
+        if (!masterKey) {
+            throw new Error("Master key is required to restore profile");
+        }
+
+        const profileNames = (await this.profiles.getValues()).map(p => p.name);
+        let base = profile.name;
+        let name = base;
+        let counter = 1;
+        while (profileNames.includes(name)) {
+            name = `${base} ${counter}`;
+            counter++;
+        }
+
+        switch (profile.type) {
+            case "password": {
+                if (!password) {
+                    throw new Error("Password is required for password profile");
+                }
+
+                const plainSecret = Buffer.from(masterKey, "base64");
+                if (plainSecret.byteLength !== 32) {
+                    throw new Error("Invalid master key length");
+                }
+
+                const passhash = await EncryptionKey.getPasshash(password);
+                const key = await EncryptionKey.fromPasshash(passhash);
+                const guard = await key.encrypt(ENCRYPTION_GUARD);
+                const encodedSecret = await key.encrypt(plainSecret);
+                try {
+                    await this.lock.enter();
+
+                    let id = profile.id;
+                    while ((await this.profiles.contains(id))) {
+                        id = getRandomHex(8);
+                    }
+
+                    const newProfile: Profile = {
+                        id,
+                        name,
+                        type: "password",
+                        guard: Buffer.from(guard.buffer).toString("base64"),
+                        secret: Buffer.from(encodedSecret.buffer).toString("base64"),
+                    };
+
+                    await this.profiles.set(id, newProfile);
+
+                    this.emit("onProfileAdded", this.getProfileInfo(newProfile));
+
+                    return this.getProfileInfo(newProfile);
+                } catch (err) {
+                    return {
+                        ...profile,
+                        restoreError: err instanceof Error ? err.message : err,
+                    };
+                } finally {
+                    this.lock.leave();
+                }
+            }
+            case "passkey": {
+                try {
+                    const credential = await this.passkeys.getKey(masterKey);
+                    let id = credential.userHandle;
+
+                    await this.lock.enter();
+                    if (id && (await this.profiles.contains(id))) {
+                        throw new Error("Passkey profile already exists");
+                    }
+
+                    // It is unclear if this case is possible, this is a fallback:
+                    if (!id) {
+                        do {
+                            id = getRandomHex(8);
+                        } while (await this.profiles.contains(id));
+                    }
+
+                    const newProfile: Profile = {
+                        id,
+                        name,
+                        type: "passkey",
+                        credentialId: credential.id,
+                    };
+                    await this.profiles.set(id, newProfile);
+
+                    this.emit("onProfileAdded", this.getProfileInfo(newProfile));
+
+                    return this.getProfileInfo(newProfile);
+                } catch (err) {
+                    return {
+                        ...profile,
+                        restoreError: err instanceof Error ? err.message : err,
+                    }
+                } finally {
+                    this.lock.leave();
+                }
+            }
+
+            default:
+                throw new Error("Unknown profile type");
+        }
+    }
 }

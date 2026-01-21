@@ -1,13 +1,21 @@
 <script setup>
 /** Vendor */
 import BN from "bignumber.js"
-import { DateTime } from "luxon"
 
 /** Services */
 import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
+import { trimAddress } from "@/utils/string"
+import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
+
+/** Composables */
+const { handleExternalLink } = useExternalLink()
+
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+const appStore = useAppStore()
 
 const props = defineProps({
 	tx: {
@@ -15,7 +23,7 @@ const props = defineProps({
 	},
 })
 
-const call = computed(() => props.tx.calls[0])
+const call = computed(() => props.tx.calls.at(1)?.method?.startsWith("mint") ? props.tx.calls[1] : props.tx.calls[0])
 const type = computed(() => {
 	if (call.value.method.startsWith("transfer")) return "transfer"
 	if (call.value.method.startsWith("mint_to_")) return "mint"
@@ -28,7 +36,7 @@ const transferAmount = computed(() => {
 		const decimals = new BN(10).pow(token.value?.decimals || 0)
 		return balanceFormatted(new BN((transfer.value.amount || 0)).dividedBy(decimals), 8).value
 	}
-	
+
 	return 0
 })
 
@@ -67,6 +75,18 @@ const title = computed(() => {
 	if (type.value === "mint") return "Mint"
 	return "Transaction"
 })
+
+const shortHash = computed(() => trimAddress(props.tx.hash, 4, 4))
+
+const explorerUrl = computed(() => {
+	if (!appStore.network?.chainId) return null
+
+	return getTransactionExplorerUrl(
+		appStore.network.chainId,
+		appStore.defaultExplorer,
+		props.tx.hash
+	)
+})
 </script>
 
 <template>
@@ -82,22 +102,34 @@ const title = computed(() => {
 				<Text size="13" weight="600" color="primary">
 					{{ title }}
 				</Text>
-				<Text size="12" weight="500" color="tertiary">
-					{{ DateTime.fromSeconds(tx.updatedAt / 1_000).toFormat("LLL dd, HH:mm") }}
-				</Text>
+				<!-- Short hash with optional explorer link -->
+				<a
+					v-if="explorerUrl"
+					:href="explorerUrl"
+					target="_blank"
+					rel="noopener noreferrer"
+					@click.stop="handleExternalLink($event, explorerUrl)"
+					:class="$style.hash_link"
+				>
+					<Text size="12" weight="500" color="blue">{{ shortHash }}</Text>
+					<Icon name="external-link" size="12" color="blue" />
+				</a>
+				<Text v-else size="12" weight="500" color="tertiary">{{ shortHash }}</Text>
 			</Flex>
 		</Flex>
 
-		<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
-			<Text size="12" weight="600" color="primary">
-				{{ transferAmount }}
-				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
-			</Text>
-		</Flex>
-		<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
-			<Text size="12" weight="600" color="primary">
-				{{ mintAmount }}
-			</Text>
+		<Flex align="center" gap="8">
+			<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
+				<Text size="12" weight="600" color="primary">
+					{{ transferAmount }}
+					<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
+				</Text>
+			</Flex>
+			<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
+				<Text size="12" weight="600" color="primary">
+					{{ mintAmount }}
+				</Text>
+			</Flex>
 		</Flex>
 	</Flex>
 </template>
@@ -145,5 +177,19 @@ const title = computed(() => {
 	border-radius: 6px;
 
 	padding: 4px 6px;
+}
+
+.hash_link {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+
+	text-decoration: none;
+
+	transition: opacity 0.2s var(--bezier);
+
+	&:hover {
+		opacity: 0.8;
+	}
 }
 </style>

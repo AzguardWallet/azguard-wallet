@@ -45,8 +45,12 @@ const handleReset = () => {
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.title = "Delete your profile permanently?"
 	cacheStore.confirm.description =
-		"This action cannot be undone. This will permanently delete your profile. Type the name of the profile to confirm."
+		`This action cannot be undone. This will permanently delete your profile. 
+		Type the name of the profile 
+		${appStore.profile.type === "passkey" ? "or use your passkey " : ""}
+		to confirm.`
 	cacheStore.confirm.confirmation_text = appStore.profile.name
+	cacheStore.confirm.passkeyConfirmation = appStore.profile.type === "passkey"
 	cacheStore.confirm.callback = () => {
 		managers.profile.deleteProfile(appStore.profile.id)
 		popupStore.closeAll()
@@ -59,9 +63,6 @@ const handleReset = () => {
 		appStore.network = null
 		appStore.accounts = []
 		appStore.account = null
-		appStore.balances = []
-		appStore.tokensAwaitingBalanceRefresh.clear()
-		appStore.tokens = []
 		appStore.transactions = []
 		appStore.awaitingTransactions = []
 		chrome.storage.local.remove("azguard:ui:feePaymentMethods")

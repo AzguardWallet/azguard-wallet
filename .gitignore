@@ -25,3 +25,4 @@ src/external/*
 *.sln
 *.sw?
 *.tsbuildinfo
+CLAUDE.md

@@ -56,6 +56,10 @@ export class ProfileServiceClient extends ServiceClient<Methods, Events> impleme
         return this.request("changeProfilePassword", id, oldPassword, newPassword);
     }
 
+    public confirmProfileOperation(id: string, password?: string): Promise<boolean> {
+        return this.request("confirmProfileOperation", id, password);
+    }
+
     public deleteProfile(id: string): Promise<ProfileInfo> {
         return this.request("deleteProfile", id);
     }
@@ -80,7 +84,7 @@ export class ProfileServiceClient extends ServiceClient<Methods, Events> impleme
         return this.request("exportEncrypted", id);
     }
 
-    public exportPlain(id: string, password: string): Promise<string> {
+    public exportPlain(id: string, password?: string): Promise<string> {
         return this.request("exportPlain", id, password);
     }
 

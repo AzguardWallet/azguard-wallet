@@ -95,4 +95,21 @@ export class EncryptionKey {
         const utf8 = new TextEncoder();
         return await self.crypto.subtle.digest("SHA-256", utf8.encode(password));
     }
+
+    /**
+     * Calculates SHA-256 hash of a string and returns hex
+     * @param input Any UTF-8 string
+     * @returns hex representation of the SHA-256 hash
+     */
+    public static async getHashHex(input: string): Promise<string> {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(input);
+        const hashBuffer = await self.crypto.subtle.digest("SHA-256", data);
+        const hashArray = new Uint8Array(hashBuffer);
+
+        // Convert bytes to hex
+        return [...hashArray]
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("");
+    }
 }

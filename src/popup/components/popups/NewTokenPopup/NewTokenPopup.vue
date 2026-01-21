@@ -1,4 +1,8 @@
 <script setup>
+/** Services */
+import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+import { TokenServiceClient } from "@/wallet/services/token/client"
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -6,7 +10,6 @@ import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 import CandidatesForm from "./CandidatesForm.vue"
 
 /** Utils */
-import { managers } from "@/utils/core"
 import { isValidHex } from "@/utils/string"
 
 /** Composables */
@@ -30,6 +33,21 @@ const props = defineProps({
 })
 
 const emit = defineEmits(["onClose"])
+
+const tokenService = new TokenServiceClient()
+tokenService.onTokenAdded.add(onTokenAdded)
+tokenService.onTokenDeleted.add(onTokenDeleted)
+function onTokenAdded(token) {
+	tokens.value.push(token)
+}
+function onTokenDeleted(token) {
+	const idx = tokens.value.findIndex(t => t.id === token.id)
+	if (idx === -1) return
+
+	tokens.value.splice(idx, 1)
+}
+
+const tokenBalanceService = new TokenBalanceServiceClient()
 
 const contractAddressTerm = ref("")
 
@@ -82,7 +100,7 @@ const handleCreateToken = async () => {
 	isLoadingParseResult.value = true
 
 	try {
-		const parsingResult = await managers.token.parseTokenInterface(appStore.network.id, contractAddressTerm.value)
+		const parsingResult = await tokenService.parseTokenInterface(appStore.network.id, contractAddressTerm.value)
 
 		if (!parsingResult.isComplete) {
 			isLoadingParseResult.value = false
@@ -108,12 +126,13 @@ const handleCreateToken = async () => {
 			return
 		}
 
-		const newToken = await managers.token.addToken(appStore.profile.id, appStore.network.id, appStore.account.address, parsingResult)
-		appStore.tokensAwaitingBalanceRefresh.add(appStore.account.address, newToken?.id)
-
+		const newToken = await tokenService.addToken(appStore.profile.id, appStore.network.id, appStore.account.address, parsingResult)
 		isAddingNewToken.value = false
 
-		await appStore.syncBalances()
+		const tokenBalances = await tokenBalanceService.getTokenBalances(newToken?.id)
+		tokenBalances.forEach(tb => {
+			tokenBalanceService.refreshTokenBalance(tb.id)
+		})
 
 		openToast({ label: "New token has been added" })
 
@@ -131,10 +150,12 @@ const handleSaveToken = async () => {
 	isSavingToken.value = true
 
 	try {
-		const newToken = await managers.token.addToken(appStore.profile.id, appStore.network.id, appStore.account.address, rawToken.value)
+		const newToken = await tokenService.addToken(appStore.profile.id, appStore.network.id, appStore.account.address, rawToken.value)
 		
-		appStore.tokensAwaitingBalanceRefresh.add(appStore.account.address, newToken?.id)
-		await appStore.syncBalances()
+		const tokenBalances = await tokenBalanceService.getTokenBalances(newToken?.id)
+		tokenBalances.forEach(tb => {
+			tokenBalanceService.refreshTokenBalance(tb.id)
+		})
 
 		openToast({ label: "New token has been added" })
 	} catch (err) {
@@ -152,15 +173,13 @@ watch(
 	async () => {
 		if (!props.show) {
 			contractAddressTerm.value = ""
-
 			isCompleted.value = true
-
 			selectedFields.value = {}
-
 			error.value = null
+			tokenBalanceService.disconnect()
+			tokenService.disconnect()
 		} else {
-			const rawTokens = await managers.token?.getTokens(appStore.profile.id, appStore.network.chainId)
-			tokens.value = rawTokens?.length ? rawTokens.filter(t => t.chainId === appStore.network.chainId) : []
+			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
 
 			if (cacheStore.preselectedTokenAddressToAdd) {
 				contractAddressTerm.value = cacheStore.preselectedTokenAddressToAdd

@@ -22,11 +22,13 @@ const handleClearCandidate = target => {
 
 <template>
 	<Flex direction="column" gap="16">
-		<!-- BALANCES -> Private / Public -->
-		<Flex align="center" justify="between" gap="16">
-			<Flex wide direction="column" gap="8" :class="$style.field">
-				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Balance of private</Text>
+		<!-- BALANCES -->
+		<Flex direction="column" gap="16" :class="$style.section">
+			<Text size="12" weight="600" color="secondary" :class="$style.section_title">Fetch Balances</Text>
+
+			<Flex wide direction="column" gap="4" :class="$style.field">
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Private</Text>
 					<Icon
 						:name="token.balanceOfPrivateFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -70,9 +72,9 @@ const handleClearCandidate = target => {
 				</Dropdown>
 			</Flex>
 
-			<Flex wide direction="column" gap="8" :class="$style.field">
-				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Balance of public</Text>
+			<Flex wide direction="column" gap="4" :class="$style.field">
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Public</Text>
 					<Icon
 						:name="token.balanceOfPublicFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -117,11 +119,13 @@ const handleClearCandidate = target => {
 			</Flex>
 		</Flex>
 
-		<!-- TRANSFERS: Private / Public -->
-		<Flex align="center" justify="between" gap="16">
+		<!-- TRANSFERS -->
+		<Flex direction="column" gap="16" :class="$style.section">
+			<Text size="12" weight="600" color="secondary" :class="$style.section_title">Transfers</Text>
+
 			<Flex wide direction="column" gap="8" :class="$style.field">
-				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Transfer private</Text>
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Private</Text>
 					<Icon
 						:name="token.transferPrivateFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -166,8 +170,8 @@ const handleClearCandidate = target => {
 			</Flex>
 
 			<Flex wide direction="column" gap="8" :class="$style.field">
-				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Transfer public</Text>
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Public</Text>
 					<Icon
 						:name="token.transferPublicFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -210,13 +214,10 @@ const handleClearCandidate = target => {
 					</template>
 				</Dropdown>
 			</Flex>
-		</Flex>
 
-		<!-- TRANSFERS: Private to Public / Public to Private -->
-		<Flex align="center" justify="between" gap="16">
 			<Flex wide direction="column" gap="8" :class="$style.field">
-				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Private to public</Text>
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Private to Public</Text>
 					<Icon
 						:name="token.transferPrivateToPublicFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -261,8 +262,8 @@ const handleClearCandidate = target => {
 			</Flex>
 
 			<Flex wide direction="column" gap="8" :class="$style.field">
-				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Public to private</Text>
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Public to Private</Text>
 					<Icon
 						:name="token.transferPublicToPrivateFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -307,11 +308,13 @@ const handleClearCandidate = target => {
 			</Flex>
 		</Flex>
 
-		<!-- OTHER -> Name / Symbol -->
-		<Flex align="center" justify="between" gap="16">
+		<!-- OTHER -->
+		<Flex direction="column" gap="16" :class="$style.section">
+			<Text size="12" weight="600" color="secondary" :class="$style.section_title">Metadata</Text>
+
 			<Flex wide direction="column" gap="8" :class="$style.field">
-				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Get name</Text>
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Get name</Text>
 					<Icon
 						:name="token.getNameFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -356,8 +359,8 @@ const handleClearCandidate = target => {
 			</Flex>
 
 			<Flex wide direction="column" gap="8" :class="$style.field">
-				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="secondary">Get symbol</Text>
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Get symbol</Text>
 					<Icon
 						:name="token.getSymbolFn ? 'check-circle' : 'close-circle'"
 						size="12"
@@ -400,52 +403,52 @@ const handleClearCandidate = target => {
 					</template>
 				</Dropdown>
 			</Flex>
-		</Flex>
 
-		<Flex wide direction="column" gap="8">
-			<Flex align="center" gap="6">
-				<Text size="13" weight="600" color="secondary">Get decimals</Text>
-				<Icon
-					:name="token.getDecimalsFn ? 'check-circle' : 'close-circle'"
-					size="12"
-					:color="token.getDecimalsFn ? 'green' : 'red'"
-				/>
-			</Flex>
+			<Flex wide direction="column" gap="8">
+				<Flex align="center" gap="6" :class="$style.title">
+					<Text size="12" color="secondary">Get decimals</Text>
+					<Icon
+						:name="token.getDecimalsFn ? 'check-circle' : 'close-circle'"
+						size="12"
+						:color="token.getDecimalsFn ? 'green' : 'red'"
+					/>
+				</Flex>
 
-			<Dropdown wide :disabled="!token.getDecimalsFnCandidates.length">
-				<template #trigger>
-					<DropdownTrigger
-						wide
-						clearable
-						:value="selectedFields['getDecimalsFn']"
-						:disabled="!token.getDecimalsFnCandidates.length"
-						@onClear="handleClearCandidate('getDecimalsFn')"
-					>
-						<Text
-							v-if="token.getDecimalsFnCandidates.length"
-							size="13"
-							weight="600"
-							:color="'getDecimalsFn' in selectedFields ? 'primary' : 'secondary'"
+				<Dropdown wide :disabled="!token.getDecimalsFnCandidates.length">
+					<template #trigger>
+						<DropdownTrigger
+							wide
+							clearable
+							:value="selectedFields['getDecimalsFn']"
+							:disabled="!token.getDecimalsFnCandidates.length"
+							@onClear="handleClearCandidate('getDecimalsFn')"
 						>
-							{{
-								"getDecimalsFn" in selectedFields
-									? selectedFields["getDecimalsFn"]?.name
-									: "Select function"
-							}}
-						</Text>
-						<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
-					</DropdownTrigger>
-				</template>
+							<Text
+								v-if="token.getDecimalsFnCandidates.length"
+								size="13"
+								weight="600"
+								:color="'getDecimalsFn' in selectedFields ? 'primary' : 'secondary'"
+							>
+								{{
+									"getDecimalsFn" in selectedFields
+										? selectedFields["getDecimalsFn"]?.name
+										: "Select function"
+								}}
+							</Text>
+							<Text v-else size="13" weight="600" color="tertiary">No candidates</Text>
+						</DropdownTrigger>
+					</template>
 
-				<template #popup>
-					<DropdownItem
-						v-for="candidate in token.getDecimalsFnCandidates"
-						@click="handleSelectCandidate('getDecimalsFn', candidate)"
-					>
-						{{ candidate.name }}
-					</DropdownItem>
-				</template>
-			</Dropdown>
+					<template #popup>
+						<DropdownItem
+							v-for="candidate in token.getDecimalsFnCandidates"
+							@click="handleSelectCandidate('getDecimalsFn', candidate)"
+						>
+							{{ candidate.name }}
+						</DropdownItem>
+					</template>
+				</Dropdown>
+			</Flex>
 		</Flex>
 	</Flex>
 </template>
@@ -454,9 +457,58 @@ const handleClearCandidate = target => {
 .wrapper {
 }
 
-.field {
-	flex: 1;
+.section {
+	position: relative;
+	padding: 16px 12px 12px 12px;
+	/* border: 2px dashed var(--gray-10); */
+	border-radius: 8px;
+}
 
-	max-width: 152px;
+.section::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	border: 2px solid var(--gray-10);
+
+	--dash: 6px;
+	--gap: 6px;
+
+	mask:
+		repeating-linear-gradient(90deg, #000 0 var(--dash), transparent var(--dash) calc(var(--dash) + var(--gap))) top,
+		repeating-linear-gradient(180deg, #000 0 var(--dash), transparent var(--dash) calc(var(--dash) + var(--gap))) right,
+		repeating-linear-gradient(90deg, #000 0 var(--dash), transparent var(--dash) calc(var(--dash) + var(--gap))) bottom,
+		repeating-linear-gradient(180deg, #000 0 var(--dash), transparent var(--dash) calc(var(--dash) + var(--gap))) left;
+
+	mask-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%;
+	mask-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+
+	-webkit-mask:
+		repeating-linear-gradient(90deg, #000 0 var(--dash), transparent var(--dash) calc(var(--dash) + var(--gap))) top,
+		repeating-linear-gradient(180deg, #000 0 var(--dash), transparent var(--dash) calc(var(--dash) + var(--gap))) right,
+		repeating-linear-gradient(90deg, #000 0 var(--dash), transparent var(--dash) calc(var(--dash) + var(--gap))) bottom,
+		repeating-linear-gradient(180deg, #000 0 var(--dash), transparent var(--dash) calc(var(--dash) + var(--gap))) left;
+
+	-webkit-mask-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%;
+	-webkit-mask-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+}
+
+.section_title {
+	position: absolute;
+	top: -6px;
+	left: 12px;
+	background: var(--card-bg);
+	padding: 0 6px;
+	font-size: 14px;
+}
+
+.field {
+	/* flex: 1; */
+
+	/* max-width: 152px; */
+	.title {
+		padding-left: 4px;
+	}
 }
 </style>

@@ -1,4 +1,4 @@
-import { ServiceSpec } from "@/wallet/base";
+import { Restored, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { IConfigStore } from "@/wallet/config";
 import { ILogger } from "@/wallet/logger";
@@ -36,7 +36,29 @@ export class ConfigService extends Service<Methods, Events> implements ServiceSp
         await this.config.reset();
     }
 
+    public async backup(): Promise<ConfigProp[]> {
+        return await this.getProps();
+    }
+
+    public async restore(configProps: ConfigProp[]): Promise<Restored<ConfigProp>[]> {
+        const result: Restored<ConfigProp>[] = [];
+
+        for (const cp of configProps) {
+            try {
+                await this.setValue(cp.key, cp.value);
+                result.push(cp);
+            } catch (err) {
+                result.push({
+                    ...cp,
+                    restoreError: err instanceof Error ? err.message : err,
+                });
+            }
+        }
+
+        return result;
+    }
+
     private readonly onConfigUpdated = (prop: ConfigProp) => {
         this.emit("onUpdate", prop);
-    };
+    }
 }
