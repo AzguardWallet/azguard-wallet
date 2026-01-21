@@ -7,21 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 yarn dev              # Start dev server (Chrome, port 8088)
 yarn build            # Production build (Chrome)
-yarn build:firefox    # Production build (Firefox)
-yarn typecheck        # Run vue-tsc type checking
 yarn test             # Run vitest tests
 ```
 
 Load the extension in Chrome: `chrome://extensions` → Load unpacked → select `dist/chrome/`
-
-### Debugging with Chrome DevTools MCP
-
-To open the extension popup in a browser tab for debugging:
-```
-chrome-extension://<EXTENSION_ID>/src/popup/index.html
-```
-
-Find the extension ID on `chrome://extensions` page (e.g., `bbapbohcbjbooibhlidllgdjaedaagdb`).
 
 ## Architecture Overview
 
