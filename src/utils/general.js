@@ -12,3 +12,15 @@ export const debounce = (fn, delay) => {
 		}, delay)
 	}
 }
+
+export async function ensurePermissions(perms) {
+    return new Promise((resolve) => {
+        chrome.permissions.contains(perms, (has) => {
+            if (has) return resolve(true)
+
+            chrome.permissions.request(perms, (granted) => {
+                resolve(Boolean(granted))
+            })
+        })
+    })
+}

@@ -1,3 +1,5 @@
+import { ensurePermissions } from "./general";
+
 const mimeByExtension: Record<string, string> = {
     ".json": "application/json;charset=utf-8",
     ".txt":  "text/plain;charset=utf-8",
@@ -36,6 +38,11 @@ export async function downloadFile({
 	saveAs?: boolean;
 	compressionFormat?: CompressionFormat;
 }): Promise<void> {
+    const hasPermission = await ensurePermissions({ permissions: ["downloads"] });
+    if (!hasPermission) {
+        throw new Error("Permission for downloads not granted by user");
+    }
+
 	let blob;
 	let finalFilename = filename;
 	if (compressionFormat) {

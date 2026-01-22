@@ -60,6 +60,7 @@ declare global {
   const downloadFile: typeof import('../utils/files').downloadFile
   const eagerComputed: typeof import("@vueuse/core")["eagerComputed"]
   const effectScope: typeof import('vue').effectScope
+  const ensurePermissions: typeof import('../utils/general.js').ensurePermissions
   const extendRef: typeof import("@vueuse/core")["extendRef"]
   const externalLinks: typeof import('../composables/configClient').externalLinks
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']

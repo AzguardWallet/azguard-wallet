@@ -41,6 +41,7 @@
     "defineComponent": true,
     "downloadFile": true,
     "effectScope": true,
+    "ensurePermissions": true,
     "externalLinks": true,
     "getCurrentInstance": true,
     "getCurrentScope": true,
