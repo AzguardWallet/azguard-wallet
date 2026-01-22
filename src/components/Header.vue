@@ -64,7 +64,7 @@ const highlightColor = computed(() => {
 	} else if (currentFailureType.value === "warning") {
 		return "var(--yellow)"
 	} else if (activeTasksCount.value) {
-		return "var(--green)"
+		return "" // "var(--green)"
 	} else {
 		return ""
 	}

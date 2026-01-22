@@ -102,7 +102,6 @@ async function fetchSessionParams() {
 
 const handleDropSession = () => {
 	dappSessionService.deleteDappSession(session.value.id)
-	router.push("/popup/settings/general/sessions")
 }
 
 const handleCopyAddress = target => {
@@ -122,7 +121,7 @@ function onDappSessionDeleted(ds) {
 	if (ds.id !== session.value.id) return
 
 	openToast({ label: "The session was interrupted" })
-	router.push("/popup/settings/general/sessions")
+	router.go(-1)
 }
 
 
