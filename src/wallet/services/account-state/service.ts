@@ -154,8 +154,8 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
             for (const sender of item.senders) {
                 try {
                     if (!network) throw new Error("Network not found");
-                    
-                    await this.addSender(item.networkId, sender.address);
+
+                    await this.pxeService.registerSender(network, AztecAddress.fromString(sender.address));
                     senders.push(sender);
                 } catch (err) {
                     senders.push({
