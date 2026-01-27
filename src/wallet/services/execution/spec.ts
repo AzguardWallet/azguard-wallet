@@ -1,4 +1,4 @@
-import type { TransferType, TxOrigin } from "@/wallet/services/transaction/spec";
+import type { TransferType, LocalTxOrigin } from "@/wallet/services/transaction/spec";
 import type { FeeSettings, Operation, OperationResult } from "./models";
 
 export const EXECUTION_SERVICE_NAME = "execution";
@@ -29,5 +29,5 @@ export type Methods = {
      * @param operations Operations to execute.
      * @param origin Origin.
      */
-    executeOperations(operations: Operation[], origin: TxOrigin): OperationResult[];
+    executeOperations(operations: Operation[], origin: LocalTxOrigin): OperationResult[];
 };

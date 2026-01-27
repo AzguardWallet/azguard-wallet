@@ -5,7 +5,9 @@ import { DateTime } from "luxon"
 
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
+import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { OriginType } from "@/wallet/services/transaction/client"
+import { AzguardFeePaymentMethod } from "@/wallet/services/account/contracts"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
@@ -37,6 +39,8 @@ const props = defineProps({
 })
 
 const tokenService = new TokenServiceClient()
+const configService = new ConfigServiceClient()
+const isDebugMode = ref(false)
 
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
 const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
@@ -65,7 +69,7 @@ const mintAmount = computed(() => {
 	const decimals = new BN(10).pow(tx.value?.origin?.type === OriginType.UI ? 8 : 0)
 	let amount = new BN(0)
 	for (const c of tx.value.calls) {
-		amount = amount.plus(new BN(c.args.at(-1) || 0))
+		amount = amount.plus(new BN(c.args?.at(-1) || 0))
 	}
 
 	return balanceFormatted(amount.dividedBy(decimals), 8).value
@@ -76,8 +80,10 @@ watch(
 	async () => {
 		if (props.show) {
 			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+			isDebugMode.value = await configService.getValue("debugMode")
 		} else {
 			tokenService.disconnect()
+			configService.disconnect()
 		}
 	},
 )
@@ -90,6 +96,26 @@ const txTime = computed(() => {
 const handleCopy = (target) => {
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Successfully copied", icon: "copy" })
+}
+
+const formatTimestamp = (timestamp) => {
+	if (!timestamp) return "N/A"
+	return DateTime.fromMillis(timestamp).toFormat("yyyy-MM-dd HH:mm:ss")
+}
+
+const getFeePaymentMethodName = (method) => {
+	switch (method) {
+		case AzguardFeePaymentMethod.External: return "External (FPC)"
+		case AzguardFeePaymentMethod.FeeJuice: return "FeeJuice"
+		case AzguardFeePaymentMethod.FeeJuiceWithClaim: return "FeeJuice + Claim"
+		default: return `Unknown (${method})`
+	}
+}
+
+const formatFee = (fee) => {
+	if (!fee) return "N/A"
+	const feeBN = new BN(fee)
+	return feeBN.dividedBy(new BN(10).pow(9)).toFixed(2) + " Gwei"
 }
 </script>
 
@@ -175,6 +201,98 @@ const handleCopy = (target) => {
 					</Flex>
 				</Flex>
 
+				<Flex v-if="isDebugMode" wide direction="column" gap="8" :class="$style.debug_section">
+					<Text size="11" weight="600" color="secondary" style="text-transform: uppercase; letter-spacing: 0.5px;">
+						Tx Debug Details
+					</Text>
+
+					<!-- Origin -->
+					<Flex wide direction="column" gap="2">
+						<Text size="10" weight="600" color="tertiary">Origin</Text>
+						<Text size="10" weight="500" color="primary">
+							{{ tx.origin?.type === OriginType.UI ? 'UI' : tx.origin?.type === OriginType.DAPP ? 'DApp' : 'Indexer' }}
+							<Text color="tertiary" v-if="tx.origin?.name">({{ tx.origin?.name }})</Text>
+						</Text>
+					</Flex>
+
+					<!-- Fee Payment Method -->
+					<Flex wide direction="column" gap="2">
+						<Text size="10" weight="600" color="tertiary">Fee Payment</Text>
+						<Text size="10" weight="500" color="primary">{{ getFeePaymentMethodName(tx.feePaymentMethod) }}</Text>
+					</Flex>
+
+					<!-- Nonce -->
+					<Flex wide direction="column" gap="2">
+						<Text size="10" weight="600" color="tertiary">Nonce</Text>
+						<Text size="10" weight="500" color="primary" @click="handleCopy(tx.nonce)" class="copyable">
+							{{ trimAddress(tx.nonce, 6, 4) }}
+						</Text>
+					</Flex>
+
+					<!-- Calls -->
+					<Flex wide direction="column" gap="4">
+						<Text size="10" weight="600" color="tertiary">Calls ({{ tx.calls?.length || 0 }})</Text>
+						<Flex wide direction="column" gap="2" :class="$style.calls_list">
+							<Flex
+								v-for="(call, idx) in tx.calls"
+								:key="idx"
+								wide
+								direction="column"
+								gap="1"
+								:class="$style.call_item"
+							>
+								<Flex wide justify="between" align="center">
+									<Flex align="center" gap="4">
+										<Text v-if="call.isBatch" size="10" weight="500" color="tertiary" title="Re-entry call">↩</Text>
+										<Text size="10" weight="600" color="primary">{{ call.method }}</Text>
+									</Flex>
+									<Text v-if="'callIndex' in call" size="9" weight="500" color="tertiary">#{{ call.callIndex }}</Text>
+								</Flex>
+								<Text size="10" weight="500" color="tertiary" @click="handleCopy(call.contract)" class="copyable">
+									address: {{ trimAddress(call.contract, 6, 4) }}
+								</Text>
+								<Text v-if="call.chunkNonce" size="10" weight="500" color="tertiary" @click="handleCopy(call.chunkNonce)" class="copyable">
+									nonce: {{ trimAddress(call.chunkNonce, 6, 4) }}
+								</Text>
+							</Flex>
+						</Flex>
+					</Flex>
+
+					<!-- Timestamps -->
+					<Flex wide direction="column" gap="2">
+						<Text size="10" weight="600" color="tertiary">Created</Text>
+						<Text size="10" weight="500" color="primary">{{ formatTimestamp(tx.createdAt) }}</Text>
+					</Flex>
+
+					<Flex wide direction="column" gap="2">
+						<Text size="10" weight="600" color="tertiary">Updated</Text>
+						<Text size="10" weight="500" color="primary">{{ formatTimestamp(tx.updatedAt) }}</Text>
+					</Flex>
+
+					<!-- Block -->
+					<Flex v-if="tx.block" wide direction="column" gap="2">
+						<Text size="10" weight="600" color="tertiary">Block</Text>
+						<Text size="10" weight="500" color="primary">
+							#{{ tx.block.number }}
+							<Text color="tertiary" @click="handleCopy(tx.block.hash)" class="copyable">
+								({{ trimAddress(tx.block.hash, 6, 4) }})
+							</Text>
+						</Text>
+					</Flex>
+
+					<!-- Fee -->
+					<Flex v-if="tx.fee" wide direction="column" gap="2">
+						<Text size="10" weight="600" color="tertiary">Fee Paid</Text>
+						<Text size="10" weight="500" color="primary">{{ formatFee(tx.fee) }}</Text>
+					</Flex>
+
+					<!-- Error -->
+					<Flex v-if="tx.error" wide direction="column" gap="2">
+						<Text size="10" weight="600" color="red">Error</Text>
+						<Text size="10" weight="500" color="red" :class="$style.error_text">{{ tx.error }}</Text>
+					</Flex>
+				</Flex>
+
 				<Button @click="emit('onClose')" wide type="secondary" size="small"> Close </Button>
 			</Flex>
 		</PopupCard>
@@ -200,5 +318,32 @@ const handleCopy = (target) => {
 	&.right {
 		border-radius: 4px 8px 8px 4px;
 	}
+}
+
+.debug_section {
+	background: var(--gray-3);
+	border-radius: 8px;
+	padding: 12px;
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+.calls_list {
+	max-height: 150px;
+	overflow-y: auto;
+}
+
+.call_item {
+	padding: 4px 6px;
+	background: var(--gray-3);
+	border-radius: 4px;
+}
+
+.error_text {
+	word-break: break-word;
+	padding: 6px;
+	background: rgba(255, 0, 0, 0.05);
+	border-radius: 4px;
+	border: 1px solid rgba(255, 0, 0, 0.2);
 }
 </style>

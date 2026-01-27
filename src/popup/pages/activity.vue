@@ -10,15 +10,94 @@
 /** Components */
 import TransactionsList from "../components/modules/activity/TransactionsList.vue"
 import Navigation from "../components/Navigation.vue"
+import Spinner from "@/components/ui/Spinner.vue"
+
+/** Services */
+import { AccountType } from "@/wallet/services/account/client"
+import { ContentKind } from "@/wallet/services/task/spec"
+import { TaskServiceClient } from "@/wallet/services/task/client"
+
+/** Utils */
+import { managers } from "@/utils/core"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+
 const appStore = useAppStore()
+
+/** Reactive state */
+const isPersistentAccount = computed(() => appStore.account?.type === AccountType.Azguard_v0_persistent)
+const isSyncing = ref(false)
+
+/** Service clients + event subscriptions */
+const taskService = new TaskServiceClient()
+
+function onTaskCreated(task) {
+	if (task.content.kind !== ContentKind.TransactionSync) return
+	if (task.content.account !== appStore.account?.address) return
+	isSyncing.value = true
+}
+
+function onTaskUpdated(task) {
+	if (task.content.kind !== ContentKind.TransactionSync) return
+	if (task.content.account !== appStore.account?.address) return
+	if (task.finishedAt) {
+		isSyncing.value = false
+	}
+}
+
+function onTaskDeleted(task) {
+	if (task.content.kind !== ContentKind.TransactionSync) return
+	if (task.content.account !== appStore.account?.address) return
+	isSyncing.value = false
+}
+
+taskService.onTaskCreated.add(onTaskCreated)
+taskService.onTaskUpdated.add(onTaskUpdated)
+taskService.onTaskDeleted.add(onTaskDeleted)
+
+/** Functions/Handlers */
+const handleSync = () => {
+	if (!appStore.account || !appStore.network || isSyncing.value) return
+	isSyncing.value = true
+	managers.transaction.syncTransactionHistory(appStore.network.chainId, appStore.account.address)
+}
+
+async function checkExistingSyncTask() {
+	const tasks = await taskService.getTasks()
+	isSyncing.value = tasks.some(t =>
+		!t.finishedAt &&
+		t.content.kind === ContentKind.TransactionSync &&
+		t.content.account === appStore.account?.address
+	)
+}
+
+/** Lifecycle hooks */
+onMounted(() => {
+	checkExistingSyncTask()
+})
+
+onBeforeUnmount(() => {
+	taskService.disconnect()
+})
 </script>
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Text size="13" weight="600" color="primary"> Transactions </Text>
+		<Flex align="center" justify="between">
+			<Text size="13" weight="600" color="primary"> Transactions </Text>
+
+			<Button
+				v-if="isPersistentAccount"
+				type="tertiary"
+				size="mini"
+				:disabled="isSyncing"
+				@click="handleSync"
+			>
+				<Spinner v-if="isSyncing" size="12" color="--txt-secondary" />
+				<Icon v-else name="refresh" size="12" color="secondary" />
+			</Button>
+		</Flex>
 
 		<Flex direction="column" gap="8" :class="$style.list">
 			<template v-if="!appStore.transactions.length">

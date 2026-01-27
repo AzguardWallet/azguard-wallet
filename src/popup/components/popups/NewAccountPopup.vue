@@ -26,6 +26,7 @@ const displaceIdx = computed(() => {
 const inputEl = useTemplateRef("inputEl")
 
 const name = ref("")
+const enablePersistentHistory = ref(false)
 
 const isAlreadyExist = computed(() => !!appStore.accounts.find(a => a.name === name.value))
 
@@ -39,7 +40,8 @@ const isAvailableToCreateAccount = computed(() => {
 const handleCreateAccount = async () => {
 	if (!isAvailableToCreateAccount.value) return
 
-	const account = await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Azguard_v0, name.value.trim())
+	const accountType = enablePersistentHistory.value ? AccountType.Azguard_v0_persistent : AccountType.Azguard_v0
+	const account = await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, accountType, name.value.trim())
 
 	appStore.account = account
 	appStore.accounts.push(account)
@@ -58,10 +60,14 @@ watch(
 			document.removeEventListener("keydown", onKeydown)
 
 			name.value = ""
+			enablePersistentHistory.value = false
 		} else {
 			document.addEventListener("keydown", onKeydown)
 
-			name.value = `Account ${appStore.accounts.sort((a, b) => b.index - a.index)[0].index + 1}`
+			// Can't use account.index for naming - indexes are per account type, not global
+			let n = 1
+			while (appStore.accounts.some(a => a.name === `Account ${n}`)) n++
+			name.value = `Account ${n}`
 
 			await nextTick()
 			inputEl.value.inputEl.focus()
@@ -101,6 +107,18 @@ const onKeydown = e => {
 						</Transition>
 					</template>
 				</Input>
+
+				<Flex direction="column" gap="8">
+					<Flex align="center" justify="between">
+						<Flex direction="column" gap="4">
+							<Text size="13" weight="600" color="primary">Enable persistent history</Text>
+							<Text size="11" weight="500" color="tertiary" height="140" style="max-width: 220px">
+								Stores transaction history on-chain.
+							</Text>
+						</Flex>
+						<Toggle v-model="enablePersistentHistory" />
+					</Flex>
+				</Flex>
 
 				<Flex direction="column" gap="12">
 					<Button

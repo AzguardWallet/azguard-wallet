@@ -7,7 +7,7 @@ import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, hasIntersectionByKeys } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import { AzguardV0, IAccountContract } from "./contracts";
+import { AzguardV0, AzguardV0Persistent, IAccountContract } from "./contracts";
 import { ACCOUNT_SERVICE_NAME, AccountType, Account, Events, Methods } from "./spec";
 
 export * from "./spec";
@@ -56,6 +56,9 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
         switch (type) {
             case AccountType.Azguard_v0:
                 address = (await AzguardV0.new(secret, this.logger)).address.toString();
+                break;
+            case AccountType.Azguard_v0_persistent:
+                address = (await AzguardV0Persistent.new(secret, this.logger)).address.toString();
                 break;
             default:
                 throw new Error("unsupported account type");
@@ -121,6 +124,11 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
             case AccountType.Azguard_v0: {
                 const secret = await this.deriveAccountSecret(profileId, chainId, account.type, account.index);
                 accountContract = await AzguardV0.new(secret, this.logger);
+                break;
+            }
+            case AccountType.Azguard_v0_persistent: {
+                const secret = await this.deriveAccountSecret(profileId, chainId, account.type, account.index);
+                accountContract = await AzguardV0Persistent.new(secret, this.logger);
                 break;
             }
             default:
