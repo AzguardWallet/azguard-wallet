@@ -22,4 +22,8 @@ export class TransactionServiceClient extends ServiceClient<Methods, Events> imp
     public getTransaction(hash: string): Promise<Tx> {
         return this.request("getTransaction", hash);
     }
+
+    public syncTransactionHistory(chainId: number, address: string): Promise<void> {
+        return this.request("syncTransactionHistory", chainId, address);
+    }
 }

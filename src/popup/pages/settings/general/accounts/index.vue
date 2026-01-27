@@ -14,6 +14,8 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
+import { AccountType } from "@/wallet/services/account/spec"
+
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
@@ -77,6 +79,10 @@ const handleCopyAddress = target => {
 						:iconFillColor="account?.address === appStore.account?.address ? 'blue' : 'tertiary'"
 						iconBgColor="transparent"
 					>
+						<template v-if="account.type === AccountType.Azguard_v0_persistent" #titleSuffix>
+							<PersistentAccountBadge />
+						</template>
+
 						<template #right>
 							<Flex align="center" gap="8">
 								<Tooltip position="end" delay="350">
@@ -149,6 +155,10 @@ const handleCopyAddress = target => {
 						:description="account.address"
 						icon="vault"
 					>
+						<template v-if="account.type === AccountType.Azguard_v0_persistent" #titleSuffix>
+							<PersistentAccountBadge />
+						</template>
+
 						<template #right>
 							<Icon name="arrow-back-up" size="14" color="secondary" />
 						</template>

@@ -8,11 +8,14 @@ import type { Capsule, HashedValues, TxExecutionRequest } from "@aztec/stdlib/tx
 import type { IPXE } from "@/wallet/services/pxe/client";
 
 export * from "./azguard-v0";
+export * from "./azguard-v0-persistent";
 
 export interface IAccountContract {
     readonly address: AztecAddress;
 
     ensureRegistered(pxe: IPXE): Promise<void>;
+
+    ensureContractRegistered(pxe: IPXE): Promise<void>;
 
     getCompleteAddress(): Promise<CompleteAddress>;
 

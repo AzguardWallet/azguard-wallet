@@ -3,6 +3,8 @@ export const ACCOUNT_SERVICE_NAME = "account";
 export enum AccountType {
     /** Default implementation v0. */
     Azguard_v0 = 0,
+    /** Persistent implementation of v0 (with transaction history). */
+    Azguard_v0_persistent = 1,
 }
 
 export type Account = {

@@ -18,7 +18,7 @@ import BN from "bignumber.js";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
-import { TransactionService, TxOrigin, OriginType } from "@/wallet/services/transaction/service";
+import { TransactionService, LocalTxOrigin, OriginType } from "@/wallet/services/transaction/service";
 import { NetworkService } from "@/wallet/services/network/service";
 import { AccountService } from "@/wallet/services/account/service";
 import { ProfileService } from "@/wallet/services/profile/service";
@@ -87,7 +87,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
         let deployActions: Action[];
         let deployOps: Operation[];
         let instance: ContractInstanceWithAddress;
-        const origin: TxOrigin = { type: OriginType.UI, name: "Faucet" };
+        const origin: LocalTxOrigin = { type: OriginType.UI, name: "Faucet" };
 
         const rootTask = this.taskService.startNewTask(
             new TokenMintContent(name, symbol, decimals, amount, accountAddress),

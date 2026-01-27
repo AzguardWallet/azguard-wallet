@@ -76,7 +76,10 @@ const slots = defineSlots()
 
 				<!-- Labels: Title & Description -->
 				<Flex direction="column" gap="4" wide>
-					<Text size="14" weight="600" color="primary" :class="$style.title"> {{ title }} </Text>
+					<Flex align="center" gap="6">
+						<Text size="14" weight="600" color="primary" :class="[$style.title, slots.titleSuffix && $style.titleWithSuffix]"> {{ title }} </Text>
+						<slot name="titleSuffix" />
+					</Flex>
 					<Text v-if="description" size="12" weight="500" color="tertiary" :class="$style.description">
 						{{ description }}
 					</Text>
@@ -221,6 +224,11 @@ const slots = defineSlots()
 	text-overflow: ellipsis;
 	overflow: hidden;
 	white-space: nowrap;
+
+	&.titleWithSuffix {
+		min-width: unset;
+		width: auto;
+	}
 }
 
 .description {

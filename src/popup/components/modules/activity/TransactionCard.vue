@@ -46,7 +46,7 @@ const mintAmount = computed(() => {
 	const decimals = new BN(10).pow(props.tx?.origin?.type === OriginType.UI ? 8 : 0)
 	let amount = new BN(0)
 	for (const c of props.tx.calls) {
-		amount = amount.plus(new BN(c.args.at(-1) || 0))
+		amount = amount.plus(new BN(c.args?.at(-1) || 0))
 	}
 
 	return balanceFormatted(amount.dividedBy(decimals), 8).value

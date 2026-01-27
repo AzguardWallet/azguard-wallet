@@ -55,7 +55,7 @@ import {
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
 import { FpcService } from "@/wallet/services/fpc/service";
-import { TransactionService, OriginType, TransferType, TxCall, TxOrigin } from "@/wallet/services/transaction/service";
+import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin } from "@/wallet/services/transaction/service";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
@@ -162,7 +162,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     ): Promise<string> {
         await this.ensureInitialized();
         amount = BigInt(amount);
-        const origin: TxOrigin = { type: OriginType.UI };
+        const origin: LocalTxOrigin = { type: OriginType.UI };
         const transferContent = new TransferContent(tokenId, transferType, accountAddress, recipientAddress, amount);
         const transferTask = this.taskService.startNewTask(transferContent, undefined, origin);
 
@@ -282,7 +282,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     public async executeOperations(
         operations: Operation[],
-        origin: TxOrigin,
+        origin: LocalTxOrigin,
         parentTask?: WrappedTask,
     ): Promise<OperationResult[]> {
         await this.ensureInitialized();
@@ -474,7 +474,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     public async executeSendTransaction(
         op: SendTransactionOperation,
-        origin: TxOrigin,
+        origin: LocalTxOrigin,
         parentTask?: WrappedTask,
     ): Promise<string> {
         await this.ensureInitialized();
@@ -925,7 +925,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeAztecSendTx(
         op: AztecSendTxOperation,
-        origin: TxOrigin,
+        origin: LocalTxOrigin,
         parentTask?: WrappedTask,
     ): Promise<TxHash> {
         if (op.accountAddress !== op.opts?.from?.toString()) {
@@ -1344,7 +1344,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const args: HashedValues[] = [];
             const calls: AzguardFunctionCall[] = [];
             const nonce = Fr.random();
-            const txCalls = [];
+            const txCalls: TxCall[] = [];
 
             for (const action of op.actions) {
                 switch (action.kind) {
