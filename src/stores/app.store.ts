@@ -3,6 +3,7 @@ import { defineStore } from "pinia"
 
 import type { Account } from "@/wallet/services/account/client"
 import { NodeStatus } from "@/wallet/services/network/client"
+import type { BlockExplorerType } from "@/wallet/constants/explorers"
 
 import { useSyncedRef } from "@/composables/syncedRef.js"
 
@@ -158,6 +159,8 @@ export const useAppStore = defineStore("app", () => {
 
 	const isPrivacyModeEnabled = ref(false)
 
+	const defaultExplorer = ref<BlockExplorerType | null>("aztecscan")
+
 	const loggerWindowId = useSyncedRef("loggerWindowId", null)
 
 	return {
@@ -191,6 +194,7 @@ export const useAppStore = defineStore("app", () => {
 		showSendPopup,
 		showRegisterPopup,
 		isPrivacyModeEnabled,
+		defaultExplorer,
 		loggerWindowId,
 	}
 })

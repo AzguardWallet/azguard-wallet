@@ -24,6 +24,7 @@ configService.onUpdate.add(onSettingUpdate)
 const defaultConfig = new Config()
 const indicateFailures = ref(defaultConfig.indicateFailures)
 const showNode = ref(defaultConfig.showNode)
+const stealthMode = ref(defaultConfig.stealthMode)
 
 const HEADER_INDICATION_DURATION = 5_000
 let headerIndicateFailureTimer = null
@@ -63,7 +64,7 @@ const highlightColor = computed(() => {
 	} else if (currentFailureType.value === "warning") {
 		return "var(--yellow)"
 	} else if (activeTasksCount.value) {
-		return "var(--green)"
+		return "" // "var(--green)"
 	} else {
 		return ""
 	}
@@ -123,7 +124,10 @@ function onSettingUpdate(setting) {
 		case "showNode":
 			showNode.value = setting.value
 			break;
-	
+		case "stealthMode":
+			stealthMode.value = setting.value
+			break;
+
 		default:
 			break;
 	}
@@ -179,6 +183,8 @@ watch(
 onMounted(async () => {
 	indicateFailures.value = await configService.getValue("indicateFailures")
 	showNode.value = await configService.getValue("showNode")
+	stealthMode.value = await configService.getValue("stealthMode")
+
 	tasks.value = (await taskService.getTasks()).filter(t => !t.parentId && !t.finishedAt)
 	activeTasksCount.value = tasks.value?.length
 	
@@ -210,6 +216,9 @@ onBeforeUnmount(() => {
 			:style="highlightColor ? { '--highlight-color': highlightColor } : {}"
 		>
 			<Icon name="logo" size="14" color="primary" />
+			<div v-if="stealthMode" :class="$style.stealth_badge">
+				<Icon name="eye-off" size="10" color="primary" />
+			</div>
 		</Flex>
 
 		<Flex align="center" gap="8">
@@ -387,6 +396,22 @@ onBeforeUnmount(() => {
 		background: var(--gray);
 		animation: loading 1.5s infinite linear;
 	}
+}
+
+.stealth_badge {
+	position: absolute;
+	bottom: -4px;
+	right: -4px;
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 16px;
+	height: 16px;
+
+	border-radius: 50%;
+	background: var(--purple);
 }
 
 .active {

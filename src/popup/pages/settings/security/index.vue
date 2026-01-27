@@ -29,10 +29,10 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 			/>
 			<SettingItem
 				size="large"
-				title="Wallet"
-				description="Edit or reset your wallet"
-				icon="wallet"
-				disabled
+				title="Privacy Settings"
+				description="Control external service connections"
+				icon="eye-off"
+				to="/popup/settings/external-services"
 			/>
 		</ItemsContainer>
 

@@ -26,12 +26,12 @@ import { confirmationPolicies } from "@/utils/confirmation-policies"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
+const { openToast } = useToast()
+const { loadExternalImage } = useExternalImage()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
-
-const { openToast } = useToast()
 
 const route = useRoute()
 const router = useRouter()
@@ -53,23 +53,10 @@ const fetchSession = async () => {
 	if (session.value.dappMetadata.logo) {
 		session.value.loadingLogo = true
 		try {
-			session.value.dappMetadata.logoBlobUrl = await loadImageBlob(session.value.dappMetadata.logo)
+			session.value.dappMetadata.logoBlobUrl = await loadExternalImage(session.value.dappMetadata.logo)
 		} finally {
 			session.value.loadingLogo = false
 		}
-	}
-}
-
-async function loadImageBlob(url) {
-	try {
-		const res = await fetch(url, { mode: 'cors' })
-		if (!res.ok) return null
-
-		const blob = await res.blob()
-
-		return URL.createObjectURL(blob)
-	} catch {
-		return null
 	}
 }
 
@@ -115,7 +102,6 @@ async function fetchSessionParams() {
 
 const handleDropSession = () => {
 	dappSessionService.deleteDappSession(session.value.id)
-	router.push("/popup/settings/general/sessions")
 }
 
 const handleCopyAddress = target => {
@@ -135,7 +121,7 @@ function onDappSessionDeleted(ds) {
 	if (ds.id !== session.value.id) return
 
 	openToast({ label: "The session was interrupted" })
-	router.push("/popup/settings/general/sessions")
+	router.go(-1)
 }
 
 

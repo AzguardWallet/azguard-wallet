@@ -30,7 +30,8 @@ export default {
 			run_at: "document_start",
 		},
 	],
-	permissions: ["downloads", "offscreen", "storage", "sidePanel", "unlimitedStorage"],
+	permissions: ["offscreen", "storage", "sidePanel", "unlimitedStorage"],
+	optional_permissions: ["downloads"],
 	content_security_policy: {
 		extension_pages: "script-src 'self' 'wasm-unsafe-eval'",
 	},

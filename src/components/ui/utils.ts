@@ -1,5 +1,15 @@
 export const colors = ["blue", "green", "mint", "neutral-mint", "orange", "yellow", "red", "purple", "gray", "sand"]
 
+/**
+ * Known Aztec network chain IDs.
+ * Computed as: l1ChainId ^ rollupVersion
+ */
+export const CHAIN_IDS = {
+	TESTNET: 1721521349,  // 11155111 ^ 1714840162
+	DEVNET: 1654394782,   // 11155111 ^ 1667575857
+	SANDBOX: 0,           // localhost:8080
+} as const
+
 export function getColorFromAddress(address: string): string {
 	if (!address) return colors[0]
 
@@ -16,11 +26,11 @@ export function getColorFromAddress(address: string): string {
 
 export function getChainPosition(chainId: number): number {
 	switch (chainId) {
-		case 1721521349: // 11155111 ^ 1714840162
+		case CHAIN_IDS.TESTNET:
 			return 1
-		case 1674512022: // 11155111 ^ 1667575857
+		case CHAIN_IDS.DEVNET:
 			return 2
-		case 0: // localhost:8080
+		case CHAIN_IDS.SANDBOX:
 			return 3
 		default:
 			return 4
@@ -29,11 +39,11 @@ export function getChainPosition(chainId: number): number {
 
 export function getChainColor(chainId: number): string {
 	switch (chainId) {
-		case 1721521349: // 11155111 ^ 1714840162
+		case CHAIN_IDS.TESTNET:
 			return "neutral-mint"
-		case 1674512022: // 11155111 ^ 1667575857
+		case CHAIN_IDS.DEVNET:
 			return "blue"
-		case 0: // localhost:8080
+		case CHAIN_IDS.SANDBOX:
 			return "sand"
 		default:
 			return "purple"
@@ -42,11 +52,11 @@ export function getChainColor(chainId: number): string {
 
 export function getChainName(chainId: number): string {
 	switch (chainId) {
-		case 1721521349: // 11155111 ^ 1714840162
+		case CHAIN_IDS.TESTNET:
 			return "Testnet"
-		case 1674512022: // 11155111 ^ 1667575857
+		case CHAIN_IDS.DEVNET:
 			return "Devnet"
-		case 0: // localhost:8080
+		case CHAIN_IDS.SANDBOX:
 			return "Sandbox"
 		default:
 			return `Aztec:${chainId}`

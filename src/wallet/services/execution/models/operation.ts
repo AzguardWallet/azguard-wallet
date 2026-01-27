@@ -1,14 +1,12 @@
 import type { CallIntent, IntentInnerHash } from "@aztec/aztec.js/authorization";
-import type { ContractInstanceAndArtifact, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
-import type { ExecutionPayload } from "@aztec/entrypoints/payload";
-import type { Fr } from "@aztec/foundation/fields";
-import type { ContractArtifact, EventMetadataDefinition } from "@aztec/stdlib/abi";
+import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
+import type { Fr } from "@aztec/foundation/curves/bn254";
+import type { ContractArtifact, EventMetadataDefinition, FunctionCall } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { ContractInstanceWithAddress, ContractInstantiationData } from "@aztec/stdlib/contract";
-import type { TxHash } from "@aztec/stdlib/tx";
+import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract";
+import type { ExecutionPayload, TxHash } from "@aztec/stdlib/tx";
 import type { Action, CallAction, EncodedCallAction, FeeSettings } from ".";
-import { AzguardFeePaymentMethod } from "@/wallet/services/account/contracts";
 
 export type OperationKind = Operation["kind"];
 
@@ -131,11 +129,8 @@ export type AztecGetContractMetadataOperation = {
 export type AztecGetPrivateEventsOperation = {
     readonly kind: "aztec_getPrivateEvents";
     readonly networkId: string;
-    readonly contractAddress: AztecAddress;
     readonly eventMetadata: EventMetadataDefinition;
-    readonly from: number;
-    readonly numBlocks: number;
-    recipients: AztecAddress[];
+    readonly eventFilter: PrivateEventFilter;
 };
 
 export type AztecGetChainInfoOperation = {
@@ -164,11 +159,7 @@ export type AztecGetAddressBookOperation = {
 export type AztecRegisterContractOperation = {
     readonly kind: "aztec_registerContract";
     readonly networkId: string;
-    readonly instanceData:
-        | AztecAddress
-        | ContractInstanceWithAddress
-        | ContractInstantiationData
-        | ContractInstanceAndArtifact;
+    readonly instance: ContractInstanceWithAddress;
     readonly artifact?: ContractArtifact;
     readonly secretKey?: Fr;
 };
@@ -185,9 +176,7 @@ export type AztecSimulateUtilityOperation = {
     readonly kind: "aztec_simulateUtility";
     readonly networkId: string;
     readonly accountAddress: string;
-    readonly functionName: string;
-    readonly args: any[];
-    readonly to: AztecAddress;
+    readonly call: FunctionCall;
     readonly authwits?: AuthWitness[];
 };
 
@@ -212,5 +201,5 @@ export type AztecCreateAuthWitOperation = {
     readonly kind: "aztec_createAuthWit";
     readonly networkId: string;
     readonly accountAddress: string;
-    readonly messageHashOrIntent: Fr | Buffer<ArrayBuffer> | IntentInnerHash | CallIntent;
+    readonly messageHashOrIntent: Fr | IntentInnerHash | CallIntent;
 };

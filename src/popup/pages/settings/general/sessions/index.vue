@@ -16,15 +16,32 @@ import Navigation from "../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 
+/** Utils */
+import { ConfigServiceClient } from "@/wallet/services/config/client"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
 const popupStore = usePopupStore()
 
+/** Composables */
+const { loadExternalImage } = useExternalImage()
+
 const router = useRouter()
 
 const dappSessions = ref([])
+const walletConnectEnabled = ref(true)
+const isLoading = ref(true)
+
+const configService = new ConfigServiceClient()
+
+// Listen for config changes
+configService.onUpdate.add((setting) => {
+	if (setting.key === "walletConnectEnabled") {
+		walletConnectEnabled.value = setting.value
+	}
+})
 
 const dappSessionService = new DappSessionServiceClient()
 dappSessionService.onDappSessionAdded.add(onDappSessionAdded)
@@ -60,31 +77,27 @@ const handleDropAllSessions = () => {
 	}
 }
 
-async function loadImageBlob(url) {
-	try {
-		const res = await fetch(url, { mode: 'cors' })
-		if (!res.ok) return null
-
-		const blob = await res.blob()
-
-		return URL.createObjectURL(blob)
-	} catch {
-		return null
-	}
-}
-
 watchEffect(() => {
 	dappSessions.value.sort((a, b) => a.expiry - b.expiry)
 	dappSessions.value.forEach(async (s) => {
 		if (s.dappMetadata.logo) {
 			s.loadingLogo = true
 			try {
-				s.dappMetadata.logoBlobUrl = await loadImageBlob(s.dappMetadata.logo)
+				s.dappMetadata.logoBlobUrl = await loadExternalImage(s.dappMetadata.logo)
 			} finally {
 				s.loadingLogo = false
 			}
 		}
 	})
+})
+
+onBeforeMount(async () => {
+	const wcSetting = await configService.getValue("walletConnectEnabled")
+	walletConnectEnabled.value = wcSetting
+
+	dappSessions.value = await dappSessionService.getDappSessions()
+
+	isLoading.value = false
 })
 </script>
 
@@ -96,39 +109,61 @@ watchEffect(() => {
 			<PageHeader title="Sessions" icon="plug-circle" iconColor="sand" />
 
 			<Flex direction="column" gap="16" :class="$style.section_wrapper">
-				<Flex align="center" justify="end" gap="10" wide>
-					<Tooltip position="end">
-						<Icon
-							@click="handleOpenConnectByURIPopup"
-							name="plug-circle"
-							size="20"
-							color="tertiary"
-							:class="$style.connect_by_uri"
-						/>
+				<!-- WalletConnect Disabled State -->
+				<Flex v-if="!isLoading && !walletConnectEnabled" direction="column" align="center" justify="center" :class="$style.disabled_section">
+					<Flex direction="column" align="center" gap="12" :class="$style.disabled_banner">
+						<Icon name="plug-circle" size="24" color="tertiary" />
 
-						<template #content>
-							<Text size="12" color="secondary">Connect new dApp by URI</Text>
-						</template>
-					</Tooltip>
+						<Flex direction="column" align="center" gap="6">
+							<Text size="13" weight="600" color="secondary" align="center">
+								WalletConnect is disabled
+							</Text>
+							<Text size="12" weight="500" height="140" color="tertiary" align="center">
+								Enable it in Settings → External Services to connect dApps
+							</Text>
+						</Flex>
 
-					<Tooltip v-if="dappSessions.length" position="end">
-						<Icon
-							@click="handleDropAllSessions"
-							name="log-out"
-							size="16"
-							color="tertiary"
-							:class="$style.disconnect_all"
-						>
-							Disconnect All
-						</Icon>
-
-						<template #content>
-							<Text size="12" color="secondary">Disconnect all dApps</Text>
-						</template>
-					</Tooltip>
+						<Button @click="router.push('/popup/settings/external-services')" type="secondary" size="small">
+							Go to Settings
+						</Button>
+					</Flex>
 				</Flex>
-				
-				<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
+
+				<!-- Normal Content (when WalletConnect enabled) -->
+				<template v-else-if="!isLoading">
+					<Flex align="center" justify="end" gap="10" wide>
+						<Tooltip position="end">
+							<Icon
+								@click="handleOpenConnectByURIPopup"
+								name="plug-circle"
+								size="20"
+								color="tertiary"
+								:class="$style.connect_by_uri"
+							/>
+
+							<template #content>
+								<Text size="12" color="secondary">Connect new dApp by URI</Text>
+							</template>
+						</Tooltip>
+
+						<Tooltip v-if="dappSessions.length" position="end">
+							<Icon
+								@click="handleDropAllSessions"
+								name="log-out"
+								size="16"
+								color="tertiary"
+								:class="$style.disconnect_all"
+							>
+								Disconnect All
+							</Icon>
+
+							<template #content>
+								<Text size="12" color="secondary">Disconnect all dApps</Text>
+							</template>
+						</Tooltip>
+					</Flex>
+
+					<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
 					<Flex
 						v-for="ds in dappSessions"
 						@click="router.push(`/popup/settings/general/sessions/session/${ds.id}`)"
@@ -179,6 +214,7 @@ watchEffect(() => {
                         Connect new Dapp
                     </Button>
                 </Flex>
+				</template>
 			</Flex>
 		</Flex>
 
@@ -290,5 +326,17 @@ watchEffect(() => {
 	max-width: 250px;
 
 	margin: 40px auto 0 auto;
+}
+
+.disabled_section {
+	flex: 1;
+
+	margin-bottom: 50px;
+}
+
+.disabled_banner {
+	max-width: 250px;
+
+	margin: 60px auto 0 auto;
 }
 </style>

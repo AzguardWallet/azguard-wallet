@@ -1,7 +1,7 @@
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { HashedValues, NestedProcessReturnValues } from "@aztec/stdlib/tx";
-import { AbiType, encodeArguments, FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
+import { AbiType, encodeArguments, FunctionAbi, FunctionCall, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
 import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { IPXE } from "@/wallet/services/pxe/proxy";
@@ -56,20 +56,33 @@ export async function simulate(
     viewFn: ViewFn,
     args: any[],
 ): Promise<any> {
+    const contractAddress = AztecAddress.fromString(contract);
+    const fnSelector = await viewFn.getSelector();
+    const encodedArgs = viewFn.encodeArgs(args);
+
     if (viewFn.type === FunctionType.UTILITY) {
-        const { result } = await pxe.simulateUtility(viewFn.name, args, AztecAddress.fromString(contract));
-        return result;
+        const call = new FunctionCall(
+            viewFn.name,
+            contractAddress,
+            fnSelector,
+            viewFn.type,
+            false,
+            viewFn.isStatic,
+            encodedArgs,
+            viewFn.getReturnTypes(),
+        );
+        const { result } = await pxe.simulateUtility(call, [], [account.address]);
+        return viewFn.unpackResult(result);
     }
 
-    const encodedArgs = viewFn.encodeArgs(args);
     const packedArgs =
         viewFn.type === FunctionType.PUBLIC
-            ? await HashedValues.fromCalldata([(await viewFn.getSelector()).toField(), ...encodedArgs])
+            ? await HashedValues.fromCalldata([fnSelector.toField(), ...encodedArgs])
             : await HashedValues.fromArgs(encodedArgs);
 
     const call = new AzguardFunctionCall(
-        AztecAddress.fromString(contract),
-        await viewFn.getSelector(),
+        contractAddress,
+        fnSelector,
         packedArgs.hash,
         viewFn.type === FunctionType.PUBLIC,
         viewFn.isStatic,

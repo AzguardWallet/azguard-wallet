@@ -369,7 +369,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                     tb.publicBalance = "0";
                 }
             }
-            if (chainId) {
+            if (chainId !== undefined) {
                 const network = (await this.networkService.getNetworks(chainId)).find(x => x.isDefault);
                 if (!network) {
                     throw new Error(`Failed to find network #${chainId}`);

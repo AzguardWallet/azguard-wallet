@@ -13,7 +13,7 @@ import { getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 
 export * from "./fpc";
 export * from "./spec";
@@ -53,7 +53,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
         );
         // TODO: remove it
-        if (!result.length && chainId) {
+        if (!result.length && chainId !== undefined) {
             this.logInfo("Discovering FPCs...");
             try {
                 await this.lock.enter();

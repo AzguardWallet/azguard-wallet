@@ -101,7 +101,13 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
 
         const result: BackupAccountState[] = [];
 
-        for (const n of networks) {
+        const seenChainIds = new Set<number>();
+        const uniqueNetworks = networks.filter(n => {
+            if (seenChainIds.has(n.chainId)) return false;
+            seenChainIds.add(n.chainId);
+            return true;
+        });
+        for (const n of uniqueNetworks) {
             if ((await this.networkService.getNodeStatus(n.id)) === NodeStatus.Active) {
                 const senders = await this.getSenders(n.id);
                 const contracts = await this.getContracts(n.id);
@@ -148,8 +154,8 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
             for (const sender of item.senders) {
                 try {
                     if (!network) throw new Error("Network not found");
-                    
-                    await this.addSender(item.networkId, sender.address);
+
+                    await this.pxeService.registerSender(network, AztecAddress.fromString(sender.address));
                     senders.push(sender);
                 } catch (err) {
                     senders.push({
@@ -162,6 +168,13 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
             for (const contract of item.contracts) {
                 try {
                     if (!network) throw new Error("Network not found");
+                    
+                    const addressNum = AztecAddress.fromString(contract.address).toBigInt();
+                    if (addressNum >= 0 && addressNum <= 6) {
+                        // ignore protocol contracts registration,
+                        // because we cannot validate it due to hardcoded addresses
+                        continue;
+                    }
                     
                     await this.pxeService.registerContract(network, {
                         instance: contract.instance,

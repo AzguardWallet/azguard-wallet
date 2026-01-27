@@ -1,13 +1,21 @@
 <script setup>
 /** Vendor */
 import BN from "bignumber.js"
-import { DateTime } from "luxon"
 
 /** Services */
 import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
+import { trimAddress } from "@/utils/string"
+import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
+
+/** Composables */
+const { handleExternalLink } = useExternalLink()
+
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+const appStore = useAppStore()
 
 const emits = defineEmits(["cancelTx"])
 const props = defineProps({
@@ -29,7 +37,7 @@ const transferAmount = computed(() => {
 		const decimals = new BN(10).pow(token.value?.decimals || 0)
 		return balanceFormatted(new BN((transfer.value.amount || 0)).dividedBy(decimals), 8).value
 	}
-	
+
 	return 0
 })
 
@@ -69,6 +77,18 @@ const title = computed(() => {
 	return "Transaction"
 })
 
+const shortHash = computed(() => trimAddress(props.tx.hash, 4, 4))
+
+const explorerUrl = computed(() => {
+	if (!appStore.network?.chainId) return null
+
+	return getTransactionExplorerUrl(
+		appStore.network.chainId,
+		appStore.defaultExplorer,
+		props.tx.hash
+	)
+})
+
 const handleCancelTx = () => {
 	emits("cancelTx", props.tx)
 }
@@ -87,27 +107,39 @@ const handleCancelTx = () => {
 				<Text size="13" weight="600" color="primary">
 					{{ title }}
 				</Text>
-				<Text size="12" weight="500" color="tertiary">
-					{{ DateTime.fromSeconds(tx.updatedAt / 1_000).toFormat("LLL dd, HH:mm") }}
-				</Text>
+				<!-- Short hash with optional explorer link -->
+				<a
+					v-if="explorerUrl"
+					:href="explorerUrl"
+					target="_blank"
+					rel="noopener noreferrer"
+					@click.stop="handleExternalLink($event, explorerUrl)"
+					:class="$style.hash_link"
+				>
+					<Text size="12" weight="500" color="blue">{{ shortHash }}</Text>
+					<Icon name="external-link" size="12" color="blue" />
+				</a>
+				<Text v-else size="12" weight="500" color="tertiary">{{ shortHash }}</Text>
 			</Flex>
 		</Flex>
 
-		<Flex v-if="tx.status !== TxStatus.Pending" align="center">
+		<Flex align="center" gap="8">
+			<Flex v-if="tx.status !== TxStatus.Pending" align="center">
 			<Text @click.stop="handleCancelTx" size="12" weight="500" color="tertiary">
 				Pending
 			</Text>
 		</Flex>
 		<Flex v-else-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
-			<Text size="12" weight="600" color="primary">
-				{{ transferAmount }}
-				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
-			</Text>
-		</Flex>
-		<Flex v-else-if="type === 'mint'" align="center" :class="$style.amount_badge">
-			<Text size="12" weight="600" color="primary">
-				{{ mintAmount }}
-			</Text>
+				<Text size="12" weight="600" color="primary">
+					{{ transferAmount }}
+					<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
+				</Text>
+			</Flex>
+			<Flex v-else-if="type === 'mint'" align="center" :class="$style.amount_badge">
+				<Text size="12" weight="600" color="primary">
+					{{ mintAmount }}
+				</Text>
+			</Flex>
 		</Flex>
 	</Flex>
 </template>
@@ -155,5 +187,19 @@ const handleCancelTx = () => {
 	border-radius: 6px;
 
 	padding: 4px 6px;
+}
+
+.hash_link {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+
+	text-decoration: none;
+
+	transition: opacity 0.2s var(--bezier);
+
+	&:hover {
+		opacity: 0.8;
+	}
 }
 </style>

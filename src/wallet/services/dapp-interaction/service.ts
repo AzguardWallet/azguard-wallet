@@ -245,7 +245,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 }
                 case "aztec_getPrivateEvents": {
                     this.checkMethodPermission(session, operation.kind, operation.chain);
-                    this.checkScopesPermissions(session, operation.recipients);
+                    this.checkScopesPermissions(session, operation.eventFilter.scopes);
                     break;
                 }
                 case "get_complete_address":
@@ -314,7 +314,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             payload.params.operations.find(
                 x =>
                     (x.kind === "send_transaction" && x.fee?.embeddedFeePayment === undefined) ||
-                    (x.kind === "aztec_sendTx" && x.opts?.fee?.embeddedPaymentMethodFeePayer === undefined),
+                    (x.kind === "aztec_sendTx" && x.exec.feePayer === undefined),
             )
         ) {
             return true;

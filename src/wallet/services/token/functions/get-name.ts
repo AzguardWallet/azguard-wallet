@@ -1,4 +1,4 @@
-import { Fr } from "@aztec/foundation/fields";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
 
@@ -74,7 +74,7 @@ export class DefaultPublicGetNameFn extends GetNameFn {
             name: this.name,
             isInitializer: false,
             functionType: FunctionType.PUBLIC,
-            isInternal: false,
+            isOnlySelf: false,
             isStatic: true,
             parameters: [],
             returnTypes: [
@@ -97,7 +97,7 @@ export class DefaultPublicGetNameFn extends GetNameFn {
         for (const fn of artifact.nonDispatchPublicFunctions) {
             if (
                 !fn.isInitializer &&
-                !fn.isInternal &&
+                !fn.isOnlySelf &&
                 fn.isStatic &&
                 fn.functionType === FunctionType.PUBLIC &&
                 fn.parameters.length === 0 &&
@@ -122,7 +122,7 @@ export class DefaultPrivateGetNameFn extends GetNameFn {
             name: this.name,
             isInitializer: false,
             functionType: FunctionType.PRIVATE,
-            isInternal: false,
+            isOnlySelf: false,
             isStatic: true,
             parameters: [],
             returnTypes: [
@@ -145,7 +145,7 @@ export class DefaultPrivateGetNameFn extends GetNameFn {
         for (const fn of artifact.functions) {
             if (
                 !fn.isInitializer &&
-                !fn.isInternal &&
+                !fn.isOnlySelf &&
                 fn.isStatic &&
                 fn.functionType === FunctionType.PRIVATE &&
                 fn.parameters.length === 0 &&

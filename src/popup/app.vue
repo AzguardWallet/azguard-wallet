@@ -52,6 +52,9 @@ const settingHandlers = {
 		chrome.sidePanel.setPanelBehavior({
 			openPanelOnActionClick: Boolean(value)
 		})
+	},
+	defaultExplorer(value) {
+		appStore.defaultExplorer = value
 	}
 }
 function applySetting(setting) {
@@ -64,8 +67,9 @@ function applySetting(setting) {
 const initNetworks = async () => {
 	appStore.networks = []
 	appStore.network = null
-	
+
 	managers.network = new NetworkServiceClient()
+
 	appStore.networks = await managers.network.getOrInitNetworks()
 
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
@@ -76,7 +80,7 @@ const initNetworks = async () => {
 
 	const key = `azguard:ui:lastActiveNetwork@${appStore.profile?.id}`
 	const lastActiveNetworkId = (await chrome.storage.local.get(key))[key]
-	
+
 	if (lastActiveNetworkId) {
 		appStore.network = appStore.networks.find(n => n.id === lastActiveNetworkId)
 	}

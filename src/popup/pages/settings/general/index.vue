@@ -57,7 +57,7 @@ const handleOpenLogs = async () => {
 		</ItemsContainer>
 
 		<ItemsContainer title="Activity">
-			<SettingItem to="/popup/settings/general/tasks" title="Task tracker" icon="task-tracker" iconBgColor="gray" />
+			<SettingItem to="/popup/settings/general/tasks" title="Task tracker" icon="task-tracker" iconBgColor="gray" disabled />
 			<SettingItem
 				@click="handleOpenLogs"
 				title="Logs"

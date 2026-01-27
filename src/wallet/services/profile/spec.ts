@@ -1,4 +1,4 @@
-import type { Fr } from "@aztec/foundation/fields";
+import type { Fr } from "@aztec/foundation/curves/bn254";
 
 export const PROFILE_SERVICE_NAME = "profile";
 
@@ -15,17 +15,18 @@ export type ProfileInfo = {
     type: ProfileType;
 };
 
-export type Profile = ProfileInfo & (
-    | {
-            type: "password";
-            guard: string;
-            secret: string;
-        }
-    | {
-            type: "passkey";
-            credentialId: string;
-        }
-);
+export type Profile = ProfileInfo &
+    (
+        | {
+              type: "password";
+              guard: string;
+              secret: string;
+          }
+        | {
+              type: "passkey";
+              credentialId: string;
+          }
+    );
 
 export type Session = {
     /** Profile id. */
