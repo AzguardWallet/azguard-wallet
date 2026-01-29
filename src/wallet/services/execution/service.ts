@@ -1103,7 +1103,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         txRequest.txContext.gasSettings = new GasSettings(
             simulatedTx.gasUsed.totalGas.mul(gasPadding),
             simulatedTx.gasUsed.teardownGas.mul(gasPadding),
-            txRequest.txContext.gasSettings.maxFeesPerGas.mul(2), // TODO: remove multiplier when base fees are fixed
+            txRequest.txContext.gasSettings.maxFeesPerGas, // NOTE: multiplier applied in buildTxRequest
             txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
         );
     }
@@ -1205,7 +1205,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const baseFees = txRequest.txContext.gasSettings.maxFeesPerGas;
                     let maxFee = simulatedTx.gasUsed.totalGas
                         .add(fpc.getTotalGas(inPublic))
-                        .computeFee(baseFees.mul(2)); // TODO: remove multiplier when base fees are fixed
+                        .computeFee(baseFees); // NOTE: multiplier applied in buildTxRequest
                     op.actions.unshift(...fpc.getFeePayload(op.accountAddress, maxFee, inPublic));
                     // precise estimation
                     [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
@@ -1229,7 +1229,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         task,
                     );
-                    maxFee = simulatedTx.gasUsed.totalGas.mul(gasPadding).computeFee(baseFees.mul(2)); // TODO: remove multiplier when base fees are fixed
+                    maxFee = simulatedTx.gasUsed.totalGas
+                        .mul(gasPadding)
+                        .computeFee(baseFees); // NOTE: multiplier applied in buildTxRequest
                     op.actions.splice(
                         0,
                         op.actions.length,
@@ -1587,6 +1589,15 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 args,
                 authwits,
                 capsules,
+            );
+
+            // Apply 2x multiplier to maxFeesPerGas to handle fee increases during simulation
+            // TODO: remove multiplier when base fees are fixed (?)
+            txRequest.txContext.gasSettings = new GasSettings(
+                txRequest.txContext.gasSettings.gasLimits,
+                txRequest.txContext.gasSettings.teardownGasLimits,
+                txRequest.txContext.gasSettings.maxFeesPerGas.mul(2),
+                txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
             );
 
             task.complete();
