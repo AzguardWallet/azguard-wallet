@@ -17,6 +17,7 @@ import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/servic
 import { OriginType, TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
 import type { ViewFn } from "@/wallet/utils/fn";
 import { getErrorMessage } from "@/wallet/utils/errors";
+import { getFeeJuiceBalance } from "@/wallet/utils/fee-juice";
 import { TOKEN_BALANCE_SERVICE_NAME, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec";
 
 export * from "./spec";
@@ -104,6 +105,14 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
         for (const balance of (await this.balances.getValues()).filter(x => x.account === account)) {
             this.addBalanceToRefreshQueue(balance);
         }
+    }
+
+    public async getFeeJuiceBalance(networkId: string, accountAddress: string): Promise<string> {
+        await this.ensureInitialized();
+        const network = await this.networkService.getNetwork(networkId);
+        const node = await this.networkService.getNode(network.chainId);
+        const balance = await getFeeJuiceBalance(node, accountAddress);
+        return balance.toString();
     }
 
     private addBalanceToRefreshQueue(balance: TokenBalanceRaw): void {

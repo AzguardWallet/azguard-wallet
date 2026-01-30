@@ -39,6 +39,14 @@ export type Methods = {
      * @param id Token balance id.
      */
     refreshTokenBalance(id: number): void;
+
+    /**
+     * Returns the Fee Juice balance for an account.
+     * Fee Juice is a protocol contract, so we read its balance directly from public storage.
+     * @param networkId Network id.
+     * @param accountAddress Account address.
+     */
+    getFeeJuiceBalance(networkId: string, accountAddress: string): string;
 };
 
 export type Events = {

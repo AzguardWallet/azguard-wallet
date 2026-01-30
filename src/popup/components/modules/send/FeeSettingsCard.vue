@@ -14,6 +14,9 @@ import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
+/** Fee Juice */
+import { feeJuiceDecimals } from "@/wallet/utils/fee-juice"
+
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
@@ -62,7 +65,7 @@ const selectedMethod = ref()
 const isMethodsDropdownOpen = ref(false)
 
 const balances = ref([])
-const feeJuiceBalance = computed(() => balances.value?.find(isFeeJuice))
+const feeJuiceBalance = ref("0")
 const isLoading = ref(false)
 const error = ref("")
 
@@ -77,12 +80,18 @@ const handleSelectFPC = () => {
 	popupStore.open("select_fpc", { id: methodId })
 }
 
-const isFeeJuice = (tb) => {
-	return tb.token.contract === "0x0000000000000000000000000000000000000000000000000000000000000005"
+const isZeroBalance = (method) => {
+	// Fee Juice methods use feeJuiceBalance directly
+	if (method?.type === "fj" || method?.type === "fjwc") {
+		return feeJuiceBalance.value === "0"
+	}
+	return ((method.inPublic ? method.balance?.publicBalance : method.balance?.privateBalance) ?? "0") === "0"
 }
 
-const isZeroBalance = (method) => {
-	return ((method.inPublic ? method.balance?.publicBalance : method.balance?.privateBalance) ?? "0") === "0"
+const formatFeeJuiceBalance = () => {
+	let amount = new BigNumber(feeJuiceBalance.value)
+	amount = amount.div(new BigNumber(`1${"0".repeat(feeJuiceDecimals)}`))
+	return amount.toFormat()
 }
 
 const formatBalance = (tb, inPublic) => {
@@ -167,11 +176,16 @@ const saveSelectedMethod = async (method) => {
 const init = async () => {
 	try {
 		isLoading.value = true
-		
+
 		if (props.network && props.account && !isCustomMethod.value) {
 			balances.value = await tokenBalanceService.getTokenBalances(undefined, props.account.address)
-			methods.value[0].balance = feeJuiceBalance.value
-			methods.value[1].balance = feeJuiceBalance.value
+
+			// Query Fee Juice balance directly from public storage
+			try {
+				feeJuiceBalance.value = await tokenBalanceService.getFeeJuiceBalance(props.network.id, props.account.address)
+			} catch (e) {
+				console.warn("Failed to fetch Fee Juice balance", e)
+			}
 
 			const fpcs = (await chrome.storage.local.get(FEE_METHOD_LS_KEY))[FEE_METHOD_LS_KEY] || {}
 			if (fpcs[props.account.address]) {
@@ -408,7 +422,7 @@ onBeforeUnmount(() => {
 			<Flex align="center" justify="between" :class="$style.fjc_price">
 				<Text size="12" weight="600" color="secondary"> Available </Text>
 				<Text size="12" weight="600" :color="isZeroBalance(selectedMethod) ? 'red' : 'primary'">
-					{{ feeJuiceBalance?.publicBalance ?? "0" }} Fee Juice
+					{{ formatFeeJuiceBalance() }} Fee Juice
 				</Text>
 			</Flex>
 		</template>

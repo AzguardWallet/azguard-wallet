@@ -10,7 +10,6 @@ import { TaskService, StepContent, WrappedTask } from "@/wallet/services/task/se
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
 import { simulate } from "@/wallet/utils/fn";
 import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, Methods, Events } from "./spec";
 import {
@@ -434,13 +433,9 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         return [
             getNameFn
                 ? await simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
-                : ti.contract === feeJuiceAddress
-                ? feeJuiceName
                 : "<name>",
             getSymbolFn
                 ? await simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
-                : ti.contract === feeJuiceAddress
-                ? feeJuiceSymbol
                 : "<symbol>",
             getDecimalsFn
                 ? await simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())

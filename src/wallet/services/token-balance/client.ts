@@ -26,4 +26,8 @@ export class TokenBalanceServiceClient extends ServiceClient<Methods, Events> im
     public refreshTokenBalance(id: number): Promise<void> {
         return this.request("refreshTokenBalance", id);
     }
+
+    public getFeeJuiceBalance(networkId: string, accountAddress: string): Promise<string> {
+        return this.request("getFeeJuiceBalance", networkId, accountAddress);
+    }
 }
