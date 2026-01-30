@@ -93,14 +93,15 @@ const init = async () => {
 }
 
 const handleSelectFpc = (fpc) => {
+	const enrichedFpc = prepareFpc(fpc)
 	const methodIx = cacheStore.feePaymentMethods.findIndex(m => m.id === props.payload?.id)
 	if (methodIx === -1) {
 		cacheStore.feePaymentMethods.push({
 			id: props.payload?.id,
-			fpc: fpc,
+			fpc: enrichedFpc,
 		})
 	} else {
-		cacheStore.feePaymentMethods[methodIx].fpc = fpc
+		cacheStore.feePaymentMethods[methodIx].fpc = enrichedFpc
 	}
 	emit("onClose")
 }

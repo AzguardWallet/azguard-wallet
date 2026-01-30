@@ -176,6 +176,14 @@ const init = async () => {
 			const fpcs = (await chrome.storage.local.get(FEE_METHOD_LS_KEY))[FEE_METHOD_LS_KEY] || {}
 			if (fpcs[props.account.address]) {
 				selectedMethod.value = fpcs[props.account.address]
+				// Attach fresh balance to cached FPC
+				if (selectedMethod.value.fpc?.asset) {
+					const balance = balances.value?.find(b => b.token.contract === selectedMethod.value.fpc.asset)
+					if (balance) {
+						selectedMethod.value.fpc.balance = balance
+						selectedMethod.value.balance = balance
+					}
+				}
 			} else {
 				const fpcs = (await fpcService.getFpcs(props.network.chainId))?.filter(f => f.type === FpcType.DefaultSponsoredFpc)
 				if (fpcs?.length) {
