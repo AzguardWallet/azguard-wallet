@@ -25,7 +25,7 @@ import {
     type NodeInfo,
     computePartialAddress,
 } from "@aztec/stdlib/contract";
-import { Gas, GasSettings } from "@aztec/stdlib/gas";
+import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import {
     Capsule,
     ExecutionPayload,
@@ -115,6 +115,10 @@ import { Aliased, FunctionCallSchema, ProfileOptions, SendOptions, SimulateOptio
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export * from "./spec";
+
+// Multiplier for maxFeesPerGas to handle gas fee fluctuations
+// TODO: consider dynamic adjustment / better coefficient
+const FEE_PADDING_MULTIPLIER = 2;
 
 export class ExecutionService extends Service<Methods> implements ServiceSpec<Methods> {
     public static name = EXECUTION_SERVICE_NAME;
@@ -1104,12 +1108,18 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         txRequest: TxExecutionRequest,
         simulatedTx: TxSimulationResult,
         gasPadding: number,
+        maxFeesPerGas?: GasFees,
     ) {
-        const baseFees = await node.getCurrentBaseFees();
+        if (!maxFeesPerGas) {
+            maxFeesPerGas = await node.getCurrentBaseFees()
+            // TODO: replace x2 multiplier with better coefficient
+            maxFeesPerGas = maxFeesPerGas.mul(FEE_PADDING_MULTIPLIER);
+        }
+
         txRequest.txContext.gasSettings = new GasSettings(
             simulatedTx.gasUsed.totalGas.mul(gasPadding),
             simulatedTx.gasUsed.teardownGas.mul(gasPadding),
-            baseFees.mul(2),
+            maxFeesPerGas,
             txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
         );
     }
@@ -1208,8 +1218,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         task,
                     );
-                    // Fetch actual fees for correct FPC fee token payload (with x2 padding)
-                    const baseFees = (await node.getCurrentBaseFees()).mul(2);
+                    // Fetch actual fees for correct FPC fee token payload (with FEE_PADDING_MULTIPLIER)
+                    const baseFees = (await node.getCurrentBaseFees()).mul(FEE_PADDING_MULTIPLIER);
                     let maxFee = simulatedTx.gasUsed.totalGas
                         .add(fpc.getTotalGas(inPublic))
                         .computeFee(baseFees);
@@ -1245,7 +1255,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         ...fpc.getFeePayload(op.accountAddress, maxFee, inPublic),
                         ...originalActions,
                     );
-                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, baseFees);
                     task.complete();
                     return [txRequest, node, pxe, account, network, nonce, txCalls, AzguardFeePaymentMethod.External];
                 }
