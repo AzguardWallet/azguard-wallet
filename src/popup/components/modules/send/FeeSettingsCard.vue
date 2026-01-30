@@ -301,12 +301,20 @@ watch(
 watch(
 	() => claimParameters.value,
 	() => {
-		if (selectedMethod.value?.type === "fjwc") {
+		if (selectedMethod.value?.type === "fjwc" && claimParameters.value) {
 			selectedMethod.value = {
 				...selectedMethod.value,
 				claimAmount: claimParameters.value.claimAmount,
 				claimSecret: claimParameters.value.claimSecret,
 				messageLeafIndex: claimParameters.value.messageLeafIndex,
+			}
+			settings.value = {
+				paymentMethod: {
+					kind: "fjwc",
+					claimAmount: claimParameters.value.claimAmount,
+					claimSecret: claimParameters.value.claimSecret,
+					messageLeafIndex: claimParameters.value.messageLeafIndex,
+				},
 			}
 		}
 	},
