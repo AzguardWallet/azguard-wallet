@@ -3,6 +3,7 @@ import { defineStore } from "pinia"
 
 import type { Account } from "@/wallet/services/account/client"
 import { NodeStatus } from "@/wallet/services/network/client"
+import { Tx, TxStatus } from "@/wallet/services/transaction/client"
 import type { BlockExplorerType } from "@/wallet/constants/explorers"
 
 import { useSyncedRef } from "@/composables/syncedRef.js"
@@ -129,8 +130,11 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const awaitingTransactions = ref([])
-	const transactions = ref([])
-	const onTxAdded = async (tx) => {
+	const transactions = ref<Tx[]>([])
+	const cancellingTxs = computed(() => {
+		return transactions.value.filter(t => t.status === TxStatus.Cancelling)
+	})
+	const onTxAdded = async (tx: Tx) => {
 		transactions.value.unshift(tx)
 		const call = tx.calls[0]
 		const destination = call?.transfers?.length ? call?.transfers[0].to : call?.args[1]
@@ -188,6 +192,7 @@ export const useAppStore = defineStore("app", () => {
 		updateNetwork,
 		removeNetwork,
 		transactions,
+		cancellingTxs,
 		onTxAdded,
 		onTxUpdated,
 		syncTransactions,

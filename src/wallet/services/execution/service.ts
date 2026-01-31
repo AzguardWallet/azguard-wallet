@@ -431,6 +431,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const tx = await provedTx.toTx();
             await this.sendTxTask(node, tx, cancelTxTask);
 
+            await this.transactionService.updateTxStatus(cancellingTx, TxStatus.Cancelling);
+
             const txHash = tx.getTxHash().toString();
             await this.transactionService.addTransaction(
                 origin,

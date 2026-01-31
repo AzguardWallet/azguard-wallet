@@ -18,7 +18,7 @@ import FeeSettingsCard from "../modules/send/FeeSettingsCard.vue"
 import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 
 /** Utils */
-import { capitalize, isValidHex, trimAddress } from "@/utils/string"
+import { capitalize, isValidHex, stringCompare, trimAddress } from "@/utils/string"
 import { getChainColor, getChainName } from "@/components/ui/utils.js"
 
 /** Composables */
@@ -160,15 +160,20 @@ function onContactDeleted(contact) {
 }
 
 const contacts = ref([])
+const availableContacts = computed(() => {
+	return [...contacts.value, ...appStore.accounts].sort((a, b) => stringCompare(a.name, b.name))
+})
 const selectedContact = ref()
 const searchTerm = ref("")
 const isSearchInputFocused = ref(false)
 const filteredContacts = computed(() => {
-	if (!searchTerm.value) return []
+	if (!isSearchInputFocused.value) return []
 
+	if (!searchTerm.value) return availableContacts.value
+	
 	const lowTerm = searchTerm.value?.toLowerCase() || ""
 
-	return [...contacts.value, ...appStore.accounts]?.filter(c => {
+	return availableContacts.value?.filter(c => {
 		return (
 			c.name?.toLowerCase().includes(lowTerm) ||
 			c.address === searchTerm.value ||
@@ -190,7 +195,7 @@ function handleSearchBlur() {
 
 	setTimeout(() => {
 		isSearchInputFocused.value = false
-	}, 250)
+	}, 100)
 }
 function handleSelectContact(contact) {
 	selectedContact.value = contact

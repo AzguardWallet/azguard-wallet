@@ -3,6 +3,9 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
+/** Composables */
+const { handleExternalLink } = useExternalLink()
+
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
 const popupStore = usePopupStore()
@@ -18,13 +21,13 @@ const displaceIdx = computed(() => {
 })
 
 const depositMethods = [
-    // {
-    //     title: "Human Tech Bridge",
-    //     alias: "human_tech",
-    //     description: "Bridge between Etherium and Aztec",
-    //     target: "https://bridge.human.tech/",
-    //     icon: "human_tech",
-    // },
+    {
+        title: "Human Tech Bridge",
+        alias: "human_tech",
+        description: "Bridge between Etherium and Aztec",
+        target: "https://bridge.human.tech/",
+        icon: "human_tech",
+    },
     {
         title: "Azguard Faucet",
         alias: "faucet",
@@ -34,7 +37,7 @@ const depositMethods = [
     },
 ]
 
-const handleSelectDepositMethod = (deposit) => {
+const handleSelectDepositMethod = (event, deposit) => {
 	emit("onClose")
 
     switch (deposit.alias) {
@@ -42,7 +45,7 @@ const handleSelectDepositMethod = (deposit) => {
             popupStore.open(deposit.target)
             break;
         case "human_tech":
-            chrome.tabs.create({ url: deposit.target });
+			handleExternalLink(event, deposit.target)
             break;
         default:
             break;
@@ -63,7 +66,7 @@ const handleSelectDepositMethod = (deposit) => {
 				<ItemsContainer>
 					<SettingItem
 						v-for="d in depositMethods"
-						@click="handleSelectDepositMethod(d)"
+						@click="handleSelectDepositMethod($event, d)"
 						:title="d.title"
                         :description="d.description"
 						:icon="d.icon"

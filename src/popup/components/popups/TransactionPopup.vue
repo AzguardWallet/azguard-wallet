@@ -5,11 +5,7 @@ import { DateTime } from "luxon"
 
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
-import { OriginType } from "@/wallet/services/transaction/client"
-
-/** Services */
-import { TokenServiceClient } from "@/wallet/services/token/client"
-import { OriginType } from "@/wallet/services/transaction/client"
+import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
@@ -43,17 +39,36 @@ const props = defineProps({
 const tokenService = new TokenServiceClient()
 
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
+const statusIcon = computed(() => {
+	if (tx.value.status === TxStatus.Pending || tx.value.status === TxStatus.Cancelling) return "clock-circle"
+	return "zap-circle"
+})
+const statusColor = computed(() => {
+	if ([TxStatus.Pending, TxStatus.Cancelling, TxStatus.Cancelled].includes(tx.value.status)) return "gray"
+	if (tx.value.status === TxStatus.Success) return "green"
+	return "red"
+})
+const statusText = computed(() => {
+	if (tx.value.status === TxStatus.Pending) return "Pending"
+	if (tx.value.status === TxStatus.Cancelling) return "Cancelling"
+	if (tx.value.status === TxStatus.Cancelled) return "Cancelled"
+	if (tx.value.status === TxStatus.Success) return "Success"
+	return "Failed"
+})
+const txTime = computed(() => {
+	if (!tx.value?.updatedAt) return null
+	return DateTime.fromMillis(tx.value.updatedAt).toFormat("MMM dd, yyyy 'at' HH:mm")
+})
+
 const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
 const type = computed(() => {
 	if (call.value?.method.startsWith("transfer")) return "transfer"
 	if (call.value?.method.startsWith("mint_to_")) return "mint"
 	return "tx"
 })
-
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
 const tokens = ref([])
 const token = computed(() => tokens.value.find(t => call.value?.contract === t.contract))
-
 const transferAmount = computed(() => {
 	if (transfer.value) {
 		const decimals = new BN(10).pow(token.value?.decimals || 0)
@@ -62,7 +77,6 @@ const transferAmount = computed(() => {
 	
 	return 0
 })
-
 const mintAmount = computed(() => {
 	if (type.value !== "mint") return 0
 	
@@ -75,6 +89,18 @@ const mintAmount = computed(() => {
 	return balanceFormatted(amount.dividedBy(decimals), 8).value
 })
 
+const isCopied = ref(false)
+const handleCopy = (target) => {
+	isCopied.value = true
+
+	window.navigator.clipboard.writeText(target)
+	openToast({ label: "Successfully copied", icon: "copy" }, 2_000)
+
+	setTimeout(() => {
+		isCopied.value = false
+	}, 1_500)
+}
+
 watch(
 	() => props.show,
 	async () => {
@@ -85,16 +111,6 @@ watch(
 		}
 	},
 )
-
-const txTime = computed(() => {
-	if (!tx.value?.updatedAt) return null
-	return DateTime.fromMillis(tx.value.updatedAt).toFormat("MMM dd, yyyy 'at' HH:mm")
-})
-
-const handleCopy = (target) => {
-	window.navigator.clipboard.writeText(target)
-	openToast({ label: "Successfully copied", icon: "copy" })
-}
 </script>
 
 <template>
@@ -102,21 +118,34 @@ const handleCopy = (target) => {
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" align="center" gap="32" :class="$style.wrapper">
 				<Flex direction="column" align="center" gap="12">
-					<Flex align="center" gap="6">
-						<Icon name="zap-circle" size="16" color="primary" />
-						<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
-							Transaction
-						</Text>
-					</Flex>
+					<Tooltip>
+						<Flex align="center" gap="6">
+							<Icon :name="statusIcon" size="16" :color="statusColor" />
+							<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
+								Transaction
+							</Text>
+						</Flex>
 
-					<Flex align="center" gap="8">
+						<template #content>
+							<Flex align="center" gap="4">
+								<Text size="12" color="secondary">Tx status:</Text>
+								<Text size="12" :color="statusColor"> {{ statusText }} </Text>
+							</Flex>
+						</template>
+					</Tooltip>
+
+					<Flex direction="column" align="center" gap="4">
 						<Flex @click="handleCopy(tx.hash)" align="center" gap="6" class="copyable">
 							<Text size="12" weight="600" color="tertiary">
 								{{ tx.hash.slice(0, 4) }}
 								<Text color="dark">•••</Text>
 								{{ tx.hash.slice(-4) }}
 							</Text>
-							<Icon name="copy" size="12" color="tertiary" />
+							<Icon
+								:name="isCopied ? 'check-circle' : 'copy'"
+								size="12"
+								:color="isCopied ? 'green' : 'tertiary'"
+							/>
 						</Flex>
 						<Text v-if="txTime" size="12" weight="500" color="tertiary">
 							{{ txTime }}

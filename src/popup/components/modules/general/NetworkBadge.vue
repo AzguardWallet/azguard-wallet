@@ -1,22 +1,20 @@
 <script setup>
-/** Store */
-import { useAppStore } from "@/stores/app.store"
-const appStore = useAppStore()
-
 /** Utils */
 import { getChainColor, getChainName } from "@/components/ui/utils.js"
 
 const props = defineProps({
+	network: {
+		type: Object,
+		required: false,
+	},
 	chainId: {
 		type: Number,
-		required: true,
-	},
+		required: false,
+	}
 })
 
-const node = computed(() => appStore.networks.find(n => n.chainId === props.chainId))
-
-const chain = computed(() => {
-	const chainName = getChainName(props.chainId)
+const chainName = computed(() => {
+	const chainName = getChainName(props.network?.chainId ?? props.chainId)
 	if (chainName.startsWith("Aztec:")) {
 		return "Custom"
 	}
@@ -25,26 +23,29 @@ const chain = computed(() => {
 </script>
 
 <template>
-	<Tooltip position="end">
+	<Tooltip position="end" :disabled="!network">
 		<Flex
 			align="center"
 			gap="6"
 			:class="$style.wrapper"
-			:style="{ background: `var(--${getChainColor(chainId)})` }"
+			:style="{ background: `var(--${getChainColor(network?.chainId ?? chainId)})` }"
 		>
-			<Flex v-if="chain === 'Custom'" align="center" gap="2">
-				<Text size="11" weight="700"> {{ chain }} </Text>
+			<Flex v-if="chainName === 'Custom'" align="center" gap="2">
+				<Text size="11" weight="700"> {{ chainName }} </Text>
 				<div :class="$style.divider" />
-				<Text size="10" weight="600"> {{ chainId }} </Text>
+				<Text size="10" weight="600"> {{ network?.chainId ?? chainId }} </Text>
 			</Flex>
 
-			<Text v-else size="11" weight="700"> {{ chain }} </Text>
+			<Text v-else size="11" weight="700"> {{ chainName }} </Text>
 		</Flex>
 
-		<template #content>
+		<template v-if="network" #content>
 			<Flex direction="column" gap="6" align="end">
-				<Text v-if="node"> <Text color="secondary">URL:</Text> {{ node.rpcUrl }} </Text>
-				<Text> <Text color="secondary">ID:</Text> {{ chainId }} </Text>
+				<Text> <Text color="secondary">URL:</Text> {{ network?.rpcUrl }} </Text>
+				<Text>
+					<Text color="secondary">ID:</Text>
+					{{ network?.chainId }}
+				</Text>
 			</Flex>
 		</template>
 	</Tooltip>

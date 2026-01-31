@@ -1,4 +1,8 @@
 <script setup>
+/** Vendor */
+import BN from "bignumber.js"
+import { DateTime } from "luxon"
+
 /** Services */
 import { FaucetServiceClient } from "@/wallet/services/faucet/client"
 import { ExecutionServiceClient } from "@/wallet/services/execution/client"
@@ -6,9 +10,6 @@ import { TokenServiceClient } from "@/wallet/services/token/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { TxStatus } from "@/wallet/services/transaction/spec"
-
-/** Vendor */
-import BN from "bignumber.js"
 
 /** Components */
 import FeeSettingsCard from "@/popup/components/modules/send/FeeSettingsCard.vue"
@@ -47,6 +48,7 @@ const props = defineProps({
 const feeSettings = ref()
 
 const cancellingTx = ref()
+const isLoading = ref(false)
 
 const executionService = new ExecutionServiceClient()
 const transactionService = new TransactionServiceClient()
@@ -54,14 +56,30 @@ transactionService.onTransactionUpdated.add(onTransactionUpdated)
 function onTransactionUpdated(tx) {
 	if (cancellingTx.value.hash !== tx.hash) return
 
-	if (tx.status !== TxStatus.Pending) {
-		openToast({ label: "Selected tx is no longer pending", icon: "info" })
+	cancellingTx.value = tx
+
+	if (tx.status !== TxStatus.Pending && tx.status !== TxStatus.Cancelling) {
+		openToast({ label: "Cancelling tx is no longer pending", icon: "info" })
+		isLoading.value = false
+		executionService.disconnect()
+		transactionService.disconnect()
+		cancellingTx.value = null
 		emit("onClose")
 		return
 	}
-
-	cancellingTx.value = tx
 }
+
+const statusColor = computed(() => {
+	if ([TxStatus.Pending, TxStatus.Cancelling, TxStatus.Cancelled].includes(cancellingTx.value?.status)) return "gray"
+	if (cancellingTx.value?.status === TxStatus.Success) return "green"
+	return "red"
+})
+const statusText = computed(() => {
+	if (cancellingTx.value?.status === TxStatus.Pending) return "Pending"
+	if (cancellingTx.value?.status === TxStatus.Cancelling) return "Cancelling"
+	if (cancellingTx.value?.status === TxStatus.Success) return "Success"
+	return "Failed"
+})
 
 const isAllowedToCancelTx = computed(() => {
 	if (!cancellingTx.value) return
@@ -71,19 +89,43 @@ const isAllowedToCancelTx = computed(() => {
 	return true
 })
 
-function handleCancelTx() {
-	if (!isAllowedToCancelTx) return
+async function handleCancelTx() {
+	if (!isAllowedToCancelTx.value) return
 
 	try {
-		executionService.cancelTx(
+		isLoading.value = true
+
+		await executionService.cancelTx(
 			cancellingTx.value,
 			appStore.network.id,
 			feeSettings.value,
 		)
 	} catch (err) {
-		console.error(err);
+		openToast({ label: "Failed to cancel Tx", icon: "warning" }, 2_000)
+	} finally {
+		isLoading.value = false
+		executionService.disconnect()
+		transactionService.disconnect()
+		cancellingTx.value = null
 		emit("onClose")
 	}
+}
+
+const showJson = () => {
+	cacheStore.viewerData = cancellingTx.value
+	popupStore.open("data_viewer")
+}
+
+const isCopied = ref(false)
+const handleCopy = (target) => {
+	isCopied.value = true
+
+	window.navigator.clipboard.writeText(target)
+	openToast({ label: "Successfully copied", icon: "copy" }, 2_000)
+
+	setTimeout(() => {
+		isCopied.value = false
+	}, 1_500)
 }
 
 watch(
@@ -106,16 +148,20 @@ watch(
 		if (!props.show) {
 			document.removeEventListener("keydown", onKeydown)
 
-			executionService.disconnect()
-			transactionService.disconnect()
-
-			cancellingTx.value = null
+			if (!isLoading.value) {
+				executionService.disconnect()
+				transactionService.disconnect()
+				cancellingTx.value = null
+			}
 		} else {
 			document.addEventListener("keydown", onKeydown)
 
-			cancellingTx.value = await transactionService.getTransaction(cacheStore.activeTxHash)
-			console.log('cancellingTx.value', cancellingTx.value);
-			
+			if (!cancellingTx.value) {
+				cancellingTx.value = await transactionService.getTransaction(cacheStore.activeTxHash)
+				if (cancellingTx.value?.status === TxStatus.Cancelling) {
+					isLoading.value = true
+				}
+			}
 		}
 	},
 )
@@ -135,6 +181,46 @@ const onKeydown = e => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
+				<Flex direction="column" gap="8" :class="$style.transaction" >
+					<Flex justify="between" wide>
+						<Text size="13" weight="600" color="secondary">Cancelling transaction</Text>
+						<Tooltip position="end">
+							<Icon @click="showJson" name="brackets" size="16" color="tertiary" hoverColor="secondary" style="cursor: pointer;" />
+
+							<template #content>
+								<Text size="12" color="secondary"> View raw tx </Text>
+							</template>
+						</Tooltip>
+					</Flex>
+
+					<Flex wide :class="$style.divider" />
+
+					<Flex justify="between" wide>
+						<Text size="12" color="secondary">Status:</Text>
+						<Text size="12" weight="600" :color="statusColor">{{ statusText }}</Text>
+					</Flex>
+					<Flex justify="between" wide>
+						<Text size="12" color="secondary">Hash:</Text>
+						<Flex @click="handleCopy(cancellingTx?.hash)" align="center" gap="6" class="copyable">
+							<Text size="12" weight="600" color="tertiary">
+								{{ cancellingTx?.hash?.slice(0, 6) }}
+								<Text color="dark">•••</Text>
+								{{ cancellingTx?.hash?.slice(-6) }}
+							</Text>
+							<Icon
+								:name="isCopied ? 'check-circle' : 'copy'"
+								size="12"
+								:color="isCopied ? 'green' : 'tertiary'"
+							/>
+						</Flex>
+					</Flex>
+					<Flex justify="between" wide>
+						<Text size="12" color="secondary">Created at:</Text>
+						<Text v-if="cancellingTx?.createdAt"size="12" weight="500" color="tertiary">
+							{{ DateTime.fromMillis(cancellingTx.createdAt).toFormat("MMM dd, yyyy 'at' HH:mm") }}
+						</Text>
+					</Flex>
+				</Flex>
 				<Flex direction="column" wide>
 					<Flex
 						:class="$style.transaction"
@@ -149,7 +235,7 @@ const onKeydown = e => {
 					>
 						<Flex wide justify="between">
 							<Text size="14" color="primary"> Send transaction</Text>
-							<NetworkBadge :chainId="appStore.network.chainId" />
+							<NetworkBadge :network="appStore.network" />
 						</Flex>
 						<Flex v-if="cancellingTx?.account" :class="$style.prop">
 							<Text size="12" color="secondary">From account:</Text>
@@ -185,6 +271,7 @@ const onKeydown = e => {
 						:account="appStore.account"
 						v-model="feeSettings"
 						style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"
+						:disabled="!isAllowedToCancelTx"
 					/>
 				</Flex>
 				<!-- <Banner direction="vertical">
@@ -194,12 +281,12 @@ const onKeydown = e => {
 
 
 
-				<FeeSettingsCard
+				<!-- <FeeSettingsCard
 					:profile="appStore.profile"
 					:network="appStore.network"
 					:account="appStore.account"
 					v-model="feeSettings"
-				/>
+				/> -->
 
 				<Flex align="center" direction="column" gap="12">
 					<Button
@@ -207,9 +294,10 @@ const onKeydown = e => {
 						type="primary"
 						size="medium"
 						wide
-						:disabled="!isAllowedToCancelTx"
+						:loading="isLoading"
+						:disabled="!isAllowedToCancelTx || isLoading"
 					>
-						Cancel Transaction
+						{{ isLoading  ? "Cancelling Transaction" : "Cancel Transaction" }}
 					</Button>
 
 					<!-- <Tooltip v-if="isErrorOccurred" side="top">
@@ -233,25 +321,19 @@ const onKeydown = e => {
 	padding: 0 20px 24px 20px;
 }
 
-.wrapper {
-	overflow: auto;
-	flex: 1;
-
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 12px;
-}
-
 .transaction {
 	width: 100%;
 	border-radius: 12px;
 	border: 1px solid var(--gray-10);
 
 	padding: 12px;
+}
+
+.divider {
+	height: 1px;
+	background: var(--gray-8);
+	/* margin: 0 -20px; */
+	padding: 0;
 }
 
 .prop {

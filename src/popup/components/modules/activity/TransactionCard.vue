@@ -26,11 +26,11 @@ const props = defineProps({
 
 const call = computed(() => props.tx.calls.at(1)?.method?.startsWith("mint") ? props.tx.calls[1] : props.tx.calls[0])
 const type = computed(() => {
-	if (call.value.method.startsWith("transfer")) return "transfer"
-	if (call.value.method.startsWith("mint_to_")) return "mint"
+	if (call.value?.method.startsWith("transfer")) return "transfer"
+	if (call.value?.method.startsWith("mint_to_")) return "mint"
 	return "tx"
 })
-const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
+const transfer = computed(() => (call.value?.transfers ? call.value?.transfers[0] : null))
 const token = computed(() => transfer.value?.token)
 const transferAmount = computed(() => {
 	if (transfer.value) {
@@ -60,13 +60,13 @@ const icon = computed(() => {
 })
 
 const statusIcon = computed(() => {
-	if (props.tx.status === TxStatus.Pending) return "clock-circle"
+	if (props.tx.status === TxStatus.Pending || props.tx.status === TxStatus.Cancelling) return "clock-circle"
 	if (props.tx.status === TxStatus.Success) return "check-circle"
 	return "close-circle"
 })
 
 const statusColor = computed(() => {
-	if (props.tx.status === TxStatus.Pending) return "gray"
+	if (props.tx.status === TxStatus.Pending || props.tx.status === TxStatus.Cancelling || props.tx.status === TxStatus.Cancelled) return "gray"
 	if (props.tx.status === TxStatus.Success) return "green"
 	return "red"
 })
@@ -77,7 +77,7 @@ const title = computed(() => {
 	return "Transaction"
 })
 
-const shortHash = computed(() => trimAddress(props.tx.hash, 4, 4))
+const shortHash = computed(() => trimAddress(props.tx.hash, 6, 6))
 
 const explorerUrl = computed(() => {
 	if (!appStore.network?.chainId) return null
@@ -123,23 +123,33 @@ const handleCancelTx = () => {
 			</Flex>
 		</Flex>
 
-		<Flex align="center" gap="8">
-			<Flex v-if="tx.status !== TxStatus.Pending" align="center">
-			<Text @click.stop="handleCancelTx" size="12" weight="500" color="tertiary">
-				Pending
-			</Text>
+		<Flex v-if="tx.status === TxStatus.Pending" align="center" gap="8">
+			<Tooltip position="end">
+				<Flex align="center" justify="center" :class="$style.cancel_icon_wrapper">
+					<Icon
+						@click.stop="handleCancelTx"
+						name="cancel"
+						color="tertiary"
+						hoverColor="error"
+						size="20"
+					/>
+				</Flex>
+
+				<template #content>
+					<Text size="12" color="secondary">Cancel pending Tx</Text>
+				</template>
+			</Tooltip>
 		</Flex>
 		<Flex v-else-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
-				<Text size="12" weight="600" color="primary">
-					{{ transferAmount }}
-					<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
-				</Text>
-			</Flex>
-			<Flex v-else-if="type === 'mint'" align="center" :class="$style.amount_badge">
-				<Text size="12" weight="600" color="primary">
-					{{ mintAmount }}
-				</Text>
-			</Flex>
+			<Text size="12" weight="600" color="primary">
+				{{ transferAmount }}
+				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
+			</Text>
+		</Flex>
+		<Flex v-else-if="type === 'mint'" align="center" :class="$style.amount_badge">
+			<Text size="12" weight="600" color="primary">
+				{{ mintAmount }}
+			</Text>
 		</Flex>
 	</Flex>
 </template>
@@ -194,12 +204,14 @@ const handleCancelTx = () => {
 	align-items: center;
 	gap: 4px;
 
+	opacity: 0.8;
+
 	text-decoration: none;
 
 	transition: opacity 0.2s var(--bezier);
 
 	&:hover {
-		opacity: 0.8;
+		opacity: 1;
 	}
 }
 </style>

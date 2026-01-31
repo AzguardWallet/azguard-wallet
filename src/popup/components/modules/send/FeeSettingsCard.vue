@@ -34,6 +34,10 @@ const props = defineProps({
 	account: {
 		type: Object,
 	},
+	disabled: {
+		type: Boolean,
+		default: false,
+	}
 })
 
 const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
@@ -336,7 +340,7 @@ onBeforeUnmount(() => {
 			<Text size="13" weight="600" color="primary">Pay fee with</Text>
 
 			<Text v-if="isCustomMethod" size="13" weight="600" color="primary"> Embedded payload </Text>
-			<Dropdown v-else @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false">
+			<Dropdown v-else @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false" :disabled="disabled" :class="disabled && $style.disabled">
 				<template #trigger>
 					<Spinner v-if="isLoading" color="--txt-primary" />
 					<Flex v-else align="center" gap="8" class="clickable">
@@ -412,7 +416,7 @@ onBeforeUnmount(() => {
 				</Flex>
 			</Flex>
 			<Flex align="center" justify="end" :class="$style.fjc_price" :style="{paddingTop: `${isClaimParametersFilled ? '0px' : '12px'}` }">
-				<Flex @click="handleFillClaimParameters" :style="{ cursor: 'pointer'}">
+				<Flex @click="handleFillClaimParameters" :style="{ cursor: 'pointer'}" :class="disabled && $style.disabled">
 					<Flex align="center" gap="6">
 						<Text
 							size="12"
@@ -435,7 +439,7 @@ onBeforeUnmount(() => {
 			<Flex align="center" justify="between" :class="$style.fjc_price">
 				<Text size="12" weight="600" color="secondary"> FPC </Text>
 
-				<Flex @click="handleSelectFPC" :style="{ cursor: 'pointer'}">
+				<Flex @click="handleSelectFPC" :style="{ cursor: 'pointer'}" :class="disabled && $style.disabled">
 					<Text v-if="!selectedMethod.fpc" size="13" weight="600" color="red" :style="{paddingRight: '8px'}"> Select FPC </Text>
 					<Text v-else size="12" weight="600" color="primary"> {{ selectedMethod.fpc.name || trimAddress(selectedMethod.fpc.address) }} </Text>
 				</Flex>
@@ -502,5 +506,12 @@ onBeforeUnmount(() => {
 	border-radius: 6px;
 
 	padding: 4px;
+}
+
+.disabled {
+	cursor: default;
+	pointer-events: none;
+	
+	opacity: 0.5;
 }
 </style>

@@ -22,6 +22,8 @@ export enum TxStatus {
     AppLogicReverted,
     TeardownReverted,
     BothReverted,
+    Cancelling,
+    Cancelled,
 }
 
 export type TxCall = {

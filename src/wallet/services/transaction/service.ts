@@ -1,4 +1,4 @@
-import { TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
+import { TxHash, TxReceipt, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -117,7 +117,16 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                     try {
                         this.logDebug(`Sync ${this.pending.size} transactions...`);
                         const start = Date.now();
-                        await Promise.allSettled(this.pending.values().map(x => this.updateTx(x)));
+                        
+                        const groups = this.groupPendingByNonce();
+                        const tasks: Promise<void>[] = [];
+
+                        for (const txs of groups.values()) {
+                            tasks.push(this.updateTxGroup(txs));
+                        }
+
+                        await Promise.allSettled(tasks);
+
                         const end = Date.now();
                         this.logDebug(`Transactions synced in ${end - start}ms`);
                     } catch (error) {
@@ -129,18 +138,69 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         }
     }
 
-    private async updateTx(tx: Tx) {
-        this.logDebug(`Sync tx ${tx.hash.slice(0, 8)}`);
-        const node = await this.networkService.getNode(tx.chainId);
+    private groupPendingByNonce() {
+        const groups = new Map<string, Tx[]>();
+
+        for (const tx of this.pending.values()) {
+            const key = `${tx.account}:${tx.nonce}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key)!.push(tx);
+        }
+
+        return groups;
+    }
+
+    private async updateTxGroup(txs: Tx[]) {
+        const node = await this.networkService.getNode(txs[0].chainId);
         if (!node) {
             this.logError("Unknown network");
             return;
         }
 
-        const receipt = await node.getTxReceipt(TxHash.fromString(tx.hash));
+        const receipts = await Promise.all(
+            txs.map(tx => {
+                this.logDebug(`Sync tx ${tx.hash.slice(0, 8)}`);
+                
+                return node.getTxReceipt(TxHash.fromString(tx.hash))
+                    .then(r => ({ tx, receipt: r }))
+                }
+            )
+        );
+
+        const finalized = receipts.filter(r => r.receipt.status !== AztecTxStatus.PENDING);
+        if (!finalized.length || finalized.length === receipts.length) {
+            for (const r of receipts) {
+                await this.applyReceipt(r.tx, r.receipt);
+            }
+            
+            return;
+        } else {
+            const successful = finalized.find(r => r.receipt.status === AztecTxStatus.SUCCESS);
+            if (successful) {
+                for (const r of receipts) {
+                    if (r.receipt.status === AztecTxStatus.PENDING) {
+                        await this.updateTxStatus(r.tx, TxStatus.Cancelled);
+                        this.pending.delete(r.tx.hash);
+                    } else {
+                        await this.applyReceipt(r.tx, r.receipt);
+                    }
+                }
+            } else {
+                for (const r of receipts) {
+                    if (r.receipt.status === AztecTxStatus.PENDING && r.tx.status == TxStatus.Cancelling) {
+                        await this.updateTxStatus(r.tx, TxStatus.Pending);
+                    } else {
+                        await this.applyReceipt(r.tx, r.receipt);
+                    }
+                }
+            }
+        }
+    }
+
+    private async applyReceipt(tx: Tx, receipt: TxReceipt) {
         const status = this.getTxStatus(receipt.status);
-        if (status === tx.status) {
-            this.logDebug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
+        if (status == TxStatus.Pending) {
+            this.logDebug(`Tx ${tx.hash.slice(0, 8)} still ${TxStatus[tx.status]}`);
             return;
         }
 
@@ -155,10 +215,22 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
         await this.txs.set(tx.hash, tx);
         this.emit("onTransactionUpdated", tx);
-        if (tx.status != TxStatus.Pending) {
-            this.pending.delete(tx.hash);
-        }
+        this.pending.delete(tx.hash);
         this.logDebug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
+    }
+
+    public async updateTxStatus(tx: Tx, status: TxStatus) {
+        if (tx.status != TxStatus.Pending && status == TxStatus.Cancelling) {
+            throw new Error("Only pending transactions can be cancelled");
+        }
+
+        tx.updatedAt = Date.now();
+        tx.status = status;
+
+        await this.txs.set(tx.hash, tx);
+        
+        this.emit("onTransactionUpdated", tx);
+        this.logDebug(`Tx ${tx.hash.slice(0, 8)} status updated to ${TxStatus[status]}`);
     }
 
     private getTxStatus(status: AztecTxStatus): TxStatus {

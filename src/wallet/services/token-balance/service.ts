@@ -186,7 +186,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     };
 
     private readonly onTransactionUpdated = async (tx: Tx) => {
-        if (tx.status !== TxStatus.Pending) {
+        if (![TxStatus.Pending, TxStatus.Cancelling, TxStatus.Cancelled].includes(tx.status)) {
             if (tx.origin?.type === OriginType.UI) {
                 const addresses = new Set<string>()
                 const contracts = new Set<string>()

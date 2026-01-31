@@ -24,7 +24,7 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 				size="large"
 				title="Backup profile"
 				description="Get the seed phrase or secret key"
-				icon="download"
+				icon="key-square"
 				to="/popup/settings/security/export"
 			/>
 			<SettingItem
