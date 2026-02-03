@@ -22,6 +22,8 @@ const inputEl = useTemplateRef("inputEl")
 
 const warning = ref("")
 
+const decimals = computed(() => props.token?.decimals ?? 8)
+
 const handleAmountInput = e => {
 	const purgedAmount = purgeNumber(model.value)
 
@@ -51,11 +53,9 @@ const parseAmountBN = () => {
 }
 
 const formatAmount = (bn) => {
-	const decimals = props.token?.decimals ?? 8
-
 	const formatted = bn
-		.decimalPlaces(decimals, BN.ROUND_HALF_UP)
-		.toFormat(decimals)
+		.decimalPlaces(decimals.value, BN.ROUND_HALF_UP)
+		.toFormat(decimals.value)
 		.replace(/\.?0+$/, '')
 
 	return formatted.replace(
@@ -83,6 +83,15 @@ const handleFocus = () => {
 	if (props.tokenBalanceByType) inputEl.value.focus()
 }
 
+const normalizeToTokenStep = (bn, decimals) => {
+	const step = new BN(1).div(new BN(10).pow(decimals))
+
+	return bn
+		.div(step)
+		.integerValue(BN.ROUND_CEIL)
+		.times(step)
+}
+
 const handleAmountBlur = () => {
 	isFocused.value = false
 	warning.value = ""
@@ -90,14 +99,13 @@ const handleAmountBlur = () => {
 	const bn = parseAmountBN()
 	if (!bn) return
 
-	const min = new BN(1).div(new BN(10).pow(props.token?.decimals ?? 8))
-	if (bn.gt(0) && bn.lt(min)) {
-		model.value = formatAmount(min)
-		warning.value = "Amount cannot be less than the token’s minimum unit."
-		return
+	const normalized = normalizeToTokenStep(bn, decimals.value)
+
+	if (!bn.eq(normalized)) {
+		warning.value = `Amount adjusted to token precision (${decimals.value} decimals).`
 	}
 
-	model.value = formatAmount(bn)
+	model.value = formatAmount(normalized)
 }
 
 const handleMax = () => {
