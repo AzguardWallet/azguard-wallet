@@ -93,7 +93,7 @@ const handleAmountBlur = () => {
 	const min = new BN(1).div(new BN(10).pow(props.token?.decimals ?? 8))
 	if (bn.gt(0) && bn.lt(min)) {
 		model.value = formatAmount(min)
-		warning.value = "Amount must not be less than token.decimals"
+		warning.value = "Amount cannot be less than the token’s minimum unit."
 		return
 	}
 
