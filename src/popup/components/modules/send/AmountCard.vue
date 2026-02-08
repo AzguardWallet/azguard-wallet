@@ -3,7 +3,7 @@
 import BN from "bignumber.js"
 
 /** Utils */
-import { purgeNumber, normalizeAmount, comma } from "@/utils/amount.js"
+import { comma, formatAmount, normalizeAmount, normalizeAmountToTokenStep, parseAmountBN, purgeNumber } from "@/utils/amount.js"
 
 const props = defineProps({
 	selectedSendType: {
@@ -25,46 +25,24 @@ const warning = ref("")
 const decimals = computed(() => props.token?.decimals ?? 8)
 
 const handleAmountInput = e => {
+	warning.value = ""
 	const purgedAmount = purgeNumber(model.value)
 
 	model.value = purgedAmount
 
 	if (["0", ","].includes(e.data) && model.value.length === 1) model.value = "0."
+	
+	if (Number.parseFloat(purgedAmount) >= 9_999_999_999_999) {
+		warning.value = "Amount adjusted to max value."
+		model.value = "9999999999999"
+		return
+	}
 
 	const normalizedAmount = normalizeAmount(purgedAmount)
 	if (typeof normalizedAmount === "string") {
 		model.value = normalizedAmount
 		return
 	}
-}
-
-const parseAmountBN = () => {
-	const raw = model.value
-	if (!raw) return null
-
-	const normalized = purgeNumber(raw)
-	if (!normalized || normalized === '.') return null
-
-	try {
-		return new BN(normalized)
-	} catch {
-		return null
-	}
-}
-
-const formatAmount = (bn) => {
-	const formatted = bn
-		.decimalPlaces(decimals.value, BN.ROUND_HALF_UP)
-		.toFormat(decimals.value)
-		.replace(/\.?0+$/, '')
-
-	return formatted.replace(
-		new RegExp(`\\${getDecimalSeparator()}0+$`),
-		''
-	).replace(
-		new RegExp(`\\${getDecimalSeparator()}$`),
-		''
-	)
 }
 
 const isFocused = ref(false)
@@ -83,29 +61,19 @@ const handleFocus = () => {
 	if (props.tokenBalanceByType) inputEl.value.focus()
 }
 
-const normalizeToTokenStep = (bn, decimals) => {
-	const step = new BN(1).div(new BN(10).pow(decimals))
-
-	return bn
-		.div(step)
-		.integerValue(BN.ROUND_CEIL)
-		.times(step)
-}
-
 const handleAmountBlur = () => {
 	isFocused.value = false
-	warning.value = ""
 
-	const bn = parseAmountBN()
+	const bn = parseAmountBN(model.value)
 	if (!bn) return
 
-	const normalized = normalizeToTokenStep(bn, decimals.value)
+	const normalized = normalizeAmountToTokenStep(bn, decimals.value)
 
 	if (!bn.eq(normalized)) {
 		warning.value = `Amount adjusted to token precision (${decimals.value} decimals).`
 	}
 
-	model.value = formatAmount(normalized)
+	model.value = formatAmount(normalized, decimals.value)
 }
 
 const handleMax = () => {

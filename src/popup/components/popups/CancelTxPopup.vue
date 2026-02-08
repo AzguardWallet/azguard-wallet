@@ -1,13 +1,9 @@
 <script setup>
 /** Vendor */
-import BN from "bignumber.js"
 import { DateTime } from "luxon"
 
 /** Services */
-import { FaucetServiceClient } from "@/wallet/services/faucet/client"
 import { ExecutionServiceClient } from "@/wallet/services/execution/client"
-import { TokenServiceClient } from "@/wallet/services/token/client"
-import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { TxStatus } from "@/wallet/services/transaction/spec"
 
@@ -18,9 +14,6 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 
-/** Utils */
-import { purgeNumber, normalizeAmount } from "@/utils/amount.js"
-
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
@@ -29,7 +22,6 @@ const { openToast } = useToast()
 import { useAppStore } from "@/stores/app.store"
 import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"
-import { trim } from "@/wallet/logger"
 const appStore = useAppStore()
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
