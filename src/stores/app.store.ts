@@ -58,27 +58,26 @@ export const useAppStore = defineStore("app", () => {
 	const isSessionChecked = ref<boolean>(false)
 	const pageAwaitingAuth = ref<string>("")
 
+	const activeAccountKey = computed(() => `azguard:ui:activeAccount@${profile.value?.id}`)
+	async function setActiveAccount(address: String) {
+		if (!address || !profile.value?.id) return
+
+		await chrome.storage.local.set({ [activeAccountKey.value]: address })
+	}
 	const setupActiveAccount = async () => {
-		const activeAccountResult = await chrome.storage.local.get("azguard:ui:activeAccount")
-		if ("azguard:ui:activeAccount" in activeAccountResult) {
-			const activeAccountAddress = activeAccountResult["azguard:ui:activeAccount"]
-			const activeAccount = accounts.value.find(a => a.address === activeAccountAddress)
-			if (activeAccount) {
-				account.value = activeAccount
-				return
-			}
+		const activeAccountAddress = (await chrome.storage.local.get(activeAccountKey.value))[activeAccountKey.value]
+		const activeAccount = accounts.value.find(a => a.address === activeAccountAddress)
+		if (activeAccount) {
+			account.value = activeAccount
+			return
 		}
 
 		account.value = accounts.value[0]
-		await chrome.storage.local.set({
-			"azguard:ui:activeAccount": account.value?.address,
-		})
+		await setActiveAccount(account.value?.address)
 	}
 	const selectAccount = async (acc: Account) => {
 		account.value = acc
-		await chrome.storage.local.set({
-			"azguard:ui:activeAccount": acc.address,
-		})
+		await setActiveAccount(account.value?.address)
 	}
 	const changeAccountVisibility = async (acc: Account, value: boolean) => {
 		const accIdx = accounts.value.findIndex(a => acc.address === a.address)
@@ -89,9 +88,7 @@ export const useAppStore = defineStore("app", () => {
 		if (!value) {
 			if (accounts.value.length) {
 				account.value = accounts.value.filter(a => a.visible).sort((a, b) => a.index - b.index)[0]
-				await chrome.storage.local.set({
-					"azguard:ui:activeAccount": account.value?.address,
-				})
+				await setActiveAccount(account.value?.address)
 			}
 		}
 	}
@@ -180,6 +177,7 @@ export const useAppStore = defineStore("app", () => {
 		isSessionChecked,
 		pageAwaitingAuth,
 		accounts,
+		setActiveAccount,
 		setupActiveAccount,
 		selectAccount,
 		changeAccountVisibility,

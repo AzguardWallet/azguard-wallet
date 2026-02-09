@@ -109,10 +109,7 @@ const handleCreateProfile = async () => {
 	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 	initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
-
-	await chrome.storage.local.set({
-		"azguard:ui:activeAccount": appStore.account?.address,
-	})
+	await appStore.setActiveAccount(appStore.account?.address)
 
 	await setSentinel()
 
