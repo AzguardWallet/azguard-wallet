@@ -2,7 +2,7 @@ import { ServiceSpec } from "@/wallet/base";
 import { ServiceClient } from "@/wallet/base/background";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import { Events, Methods, TRANSACTION_SERVICE_NAME, Tx } from "./spec";
+import { Events, Methods, TRANSACTION_SERVICE_NAME, Tx, TxIndexerCursor } from "./spec";
 
 export * from "./spec";
 
@@ -25,5 +25,9 @@ export class TransactionServiceClient extends ServiceClient<Methods, Events> imp
 
     public syncTransactionHistory(chainId: number, address: string): Promise<void> {
         return this.request("syncTransactionHistory", chainId, address);
+    }
+
+    public getTxSyncCursor(address: string): Promise<TxIndexerCursor | null> {
+        return this.request("getTxSyncCursor", address);
     }
 }

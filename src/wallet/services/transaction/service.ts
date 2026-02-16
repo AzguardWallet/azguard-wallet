@@ -16,7 +16,8 @@ import { sleep } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
-import { Tx, SyncedTx, TRANSACTION_SERVICE_NAME, LocalTxOrigin, TxCall, SyncedTxCall, TxStatus, Methods, Events, OriginType, isSyncedTx } from "./spec";
+import { BlockNumber } from "@aztec/foundation/branded-types";
+import { Tx, SyncedTx, TxIndexerCursor, TRANSACTION_SERVICE_NAME, LocalTxOrigin, TxCall, SyncedTxCall, TxStatus, Methods, Events, OriginType, isSyncedTx } from "./spec";
 import { AzguardFeePaymentMethod } from "../account/contracts";
 import { FUNCTION_CALL_LOG_EVENT_SELECTOR } from "../account/contracts/azguard-v0-persistent";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
@@ -24,6 +25,11 @@ import { Fr } from "@aztec/foundation/curves/bn254";
 import type { ContractMetadata } from "@aztec/stdlib/contract";
 
 export * from "./spec";
+
+/** Number of blocks fetched per batch during transaction history sync. */
+const SYNC_BATCH_SIZE = 200_000;
+/** Pause (ms) between sync batches to reduce PXE/node load. */
+const SYNC_BATCH_PAUSE_MS = 1000;
 
 /** Session-scoped caches for sync operation */
 type SyncCaches = {
@@ -54,6 +60,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
     public readonly onTransactionDeleted = new EventHandler<Tx>();
 
     private readonly txs = new EntityStorage<Tx>("azguard:core:txs", StorageType.Local);
+    private readonly cursors = new EntityStorage<TxIndexerCursor>("azguard:core:tx-cursors", StorageType.Local);
     private readonly pending = new Map<string, Tx>();
     private readonly syncingAccounts = new Map<string, string>(); // account address -> task id
 
@@ -77,6 +84,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
         this.accountService.onAccountDeleted.add(this.onAccountDeleted);
         this.accountService.onAccountAdded.add(this.onAccountAdded);
+        this.profileService.onActiveProfileChanged.add(this.onActiveProfileChanged);
 
         for (const tx of (await this.txs.getValues()).filter(x => x.status === TxStatus.Pending)) {
             this.pending.set(tx.hash, tx);
@@ -95,6 +103,10 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             throw new Error("unknown hash");
         }
         return tx;
+    }
+
+    public async getTxSyncCursor(address: string): Promise<TxIndexerCursor | null> {
+        return (await this.cursors.get(address)) ?? null;
     }
 
     public async addTransaction(
@@ -144,11 +156,22 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             await this.txs.delete(tx.hash);
             this.emit("onTransactionDeleted", tx);
         }
+        await this.cursors.delete(account.address);
     };
 
     private readonly onAccountAdded = async (account: Account) => {
         if (account.type === AccountType.Azguard_v0_persistent) {
             await this.syncTransactionHistory(account.chainId, account.address);
+        }
+    };
+
+    private readonly onActiveProfileChanged = async () => {
+        // Resume incomplete syncs (cursors where updatedAt is null - never finished)
+        for (const cursor of await this.cursors.getValues()) {
+            if (cursor.updatedAt === null) {
+                this.logInfo(`Resuming incomplete sync for account=${cursor.account}`);
+                await this.syncTransactionHistory(cursor.chainId, cursor.account);
+            }
         }
     };
 
@@ -192,8 +215,8 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             this.logError("Sync: no active profile");
             return;
         }
-        const networks = await this.networkService.getNetworks();
-        const network = networks.find(n => n.chainId === chainId);
+        const networks = await this.networkService.getNetworks(chainId);
+        const network = networks.find(n => n.isDefault) ?? networks.at(0);
         if (!network) {
             this.logError(`Sync: network not found for chainId=${chainId}`);
             return;
@@ -214,6 +237,15 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         try {
             this.logInfo(`Sync: starting for account=${address}`);
 
+            let cursor: TxIndexerCursor = (await this.cursors.get(address)) ?? {
+                account: address,
+                chainId,
+                head: 1,
+                updatedAt: null,
+            };
+
+            // Persist immediately so onActiveProfileChanged can resume if we crash before the first batch
+            await this.cursors.set(address, cursor);
             const node = await this.networkService.getNode(account.chainId);
             const contractAddress = AztecAddress.fromString(address);
 
@@ -228,19 +260,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             await accountContract.ensureRegistered(pxe);
             await accountContract.ensureContractRegistered(pxe);
 
-            const start = Date.now();
-            const filter: PrivateEventFilter = {
-                contractAddress,
-                scopes: [contractAddress],
-            };
-            const events = await this.pxeService.getPrivateEvents(
-                network,
-                FUNCTION_CALL_LOG_EVENT_SELECTOR,
-                filter,
-            );
-            const duration = Date.now() - start;
-
-            this.logDebug(`Sync: account=${address} events=${events.length} time=${duration}ms`);
+            const tip = await node.getBlockNumber();
 
             // Session-scoped caches to avoid redundant metadata fetches and selector computations
             const caches: SyncCaches = {
@@ -248,9 +268,41 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 selectorMap: new Map(),
             };
 
-            for (const ev of events) {
-                await this.processFnCallEvent(account, node, pxe, ev, caches);
+            while (cursor.head <= tip) {
+                const endExclusive = Math.min(cursor.head + SYNC_BATCH_SIZE, tip + 1);
+                const filter: PrivateEventFilter = {
+                    contractAddress,
+                    scopes: [contractAddress],
+                    fromBlock: BlockNumber(cursor.head),
+                    toBlock: BlockNumber(endExclusive),
+                };
+
+                const start = Date.now();
+                const events = await this.pxeService.getPrivateEvents(
+                    network,
+                    FUNCTION_CALL_LOG_EVENT_SELECTOR,
+                    filter,
+                );
+                const duration = Date.now() - start;
+
+                this.logDebug(
+                    `Sync: account=${address} blocks=${cursor.head}-${endExclusive - 1} events=${events.length} time=${duration}ms`,
+                );
+
+                for (const ev of events) {
+                    await this.processFnCallEvent(account, node, pxe, ev, caches);
+                }
+
+                cursor.head = endExclusive;
+                await this.cursors.set(address, cursor);
+
+                if (cursor.head <= tip) {
+                    await sleep(SYNC_BATCH_PAUSE_MS);
+                }
             }
+
+            cursor.updatedAt = Date.now();
+            await this.cursors.set(address, cursor);
 
             this.taskService.completeTask(task.id);
             this.logInfo(`Sync: completed for account=${address}`);
@@ -397,6 +449,9 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             // Check selector map cache for this class
             let selectorMap = caches.selectorMap.get(classId);
             if (!selectorMap) {
+                selectorMap = new Map();
+                caches.selectorMap.set(classId, selectorMap);
+
                 // Build selector -> methodName map for this class
                 const classMetadata = await pxe.getContractClassMetadata(
                     contractMetadata.contractInstance.currentContractClassId,
@@ -407,7 +462,6 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                     return null;
                 }
 
-                selectorMap = new Map();
                 const { artifact } = classMetadata;
                 const functions = artifact.functions ?? [];
                 const nonDispatchFunctions = artifact.nonDispatchPublicFunctions ?? [];
@@ -418,7 +472,6 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                     selectorMap.set(fnSelector.toString(), fn.name);
                 }
 
-                caches.selectorMap.set(classId, selectorMap);
                 this.logDebug(`resolveMethodName: built selector map for classId=${classId} with ${selectorMap.size} entries`);
             }
 

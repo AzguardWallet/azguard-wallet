@@ -97,6 +97,17 @@ export type TxBlock = {
     number: number;
 };
 
+export type TxIndexerCursor = {
+    /** Account address (used as EntityStorage key). */
+    account: string;
+    /** Chain ID. */
+    chainId: number;
+    /** Next block to sync from (inclusive). Starts at 1. */
+    head: number;
+    /** Timestamp (ms) of last successful sync completion. null if never completed. */
+    updatedAt: number | null;
+};
+
 /** Common fields for all transaction types. */
 type TxBase = {
     /** Chain id. */
@@ -168,6 +179,9 @@ export type Methods = {
      * @param address Account address to sync.
      */
     syncTransactionHistory(chainId: number, address: string): void;
+
+    /** Returns the sync cursor for a persistent account, or null if none exists. */
+    getTxSyncCursor(address: string): TxIndexerCursor | null;
 };
 
 export type Events = {
