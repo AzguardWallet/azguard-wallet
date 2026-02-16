@@ -147,6 +147,7 @@ export abstract class AzguardV0Base implements IAccountContract {
 
         const request = new TxExecutionRequest(this.address, fnSelector, fnArgs.hash, txContext, batchArgs, batchAuthwits, batchCapsules);
 
+        // TODO: consider reusing ensureRegistered() / ensureContractRegistered() here
         const accounts = await pxe.getRegisteredAccounts();
         if (!accounts.find(x => x.address.toString() === this.address.toString())) {
             this.logger.log(this.name, LogLevel.Debug, 'register account...');
