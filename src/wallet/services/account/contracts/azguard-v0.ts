@@ -43,9 +43,9 @@ import { AztecNode } from '@aztec/stdlib/interfaces/client';
 const azguardV0Artifact = loadContractArtifact(compiled as NoirCompiledContract);
 const CHUNK_SIZE = 4;
 
-// Max fee values (real max fee ~10**10, and 10**18 doesn't work with Sponsored FPC):
-const MAX_FEE_PER_DA_GAS = BigInt(10 ** 15);
-const MAX_FEE_PER_L2_GAS = BigInt(10 ** 15);
+// Max fee values for simulation - actual fees are set in ExecutionService.finalizeGasLimits
+const MAX_FEE_PER_DA_GAS = BigInt(10 ** 18);
+const MAX_FEE_PER_L2_GAS = BigInt(10 ** 18);
 
 export class AzguardV0 implements IAccountContract {
     public readonly name = "azguard-v0";

@@ -54,7 +54,7 @@ import {
     TransferPublicFn,
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
-import { FpcService, FpcType } from "@/wallet/services/fpc/service";
+import { FpcService } from "@/wallet/services/fpc/service";
 import { TransactionService, OriginType, TransferType, TxCall, TxOrigin } from "@/wallet/services/transaction/service";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
@@ -1218,14 +1218,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         task,
                     );
-                    // Fetch actual fees for Token FPC payload (with FEE_PADDING_MULTIPLIER)
-                    const isSponsored = fpc.infoData.type === FpcType.DefaultSponsoredFpc;
-                    const baseFees = isSponsored
-                        ? txRequest.txContext.gasSettings.maxFeesPerGas
-                        : (await node.getCurrentBaseFees()).mul(FEE_PADDING_MULTIPLIER);
-                    let maxFee = isSponsored
-                        ? Fr.ZERO
-                        : simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)).computeFee(baseFees);
+                    // Fetch actual fees for FPC fee payload (with FEE_PADDING_MULTIPLIER)
+                    const baseFees = (await node.getCurrentBaseFees()).mul(FEE_PADDING_MULTIPLIER);
+                    let maxFee = simulatedTx.gasUsed.totalGas
+                        .add(fpc.getTotalGas(inPublic))
+                        .computeFee(baseFees);
                     op.actions.unshift(...fpc.getFeePayload(op.accountAddress, maxFee, inPublic));
                     // precise estimation
                     [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
