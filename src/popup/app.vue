@@ -152,6 +152,9 @@ const loadProfile = async () => {
 			await initNetworks()
 			await initAccount()
 
+			initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
+			await appStore.syncTransactions()
+
 			appStore.isLogined = true
 			// TODO: initialize all services here
 			// TODO: redirect to /general
