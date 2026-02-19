@@ -25,7 +25,7 @@ import {
     type NodeInfo,
     computePartialAddress,
 } from "@aztec/stdlib/contract";
-import { Gas, GasSettings } from "@aztec/stdlib/gas";
+import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import {
     Capsule,
     ExecutionPayload,
@@ -115,6 +115,10 @@ import { Aliased, FunctionCallSchema, ProfileOptions, SendOptions, SimulateOptio
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export * from "./spec";
+
+// Multiplier for maxFeesPerGas to handle gas fee fluctuations
+// TODO: consider dynamic adjustment / better coefficient
+const FEE_PADDING_MULTIPLIER = 2;
 
 export class ExecutionService extends Service<Methods> implements ServiceSpec<Methods> {
     public static name = EXECUTION_SERVICE_NAME;
@@ -1099,11 +1103,23 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
     }
 
-    private finalizeGasLimits(txRequest: TxExecutionRequest, simulatedTx: TxSimulationResult, gasPadding: number) {
+    private async finalizeGasLimits(
+        node: AztecNode,
+        txRequest: TxExecutionRequest,
+        simulatedTx: TxSimulationResult,
+        gasPadding: number,
+        maxFeesPerGas?: GasFees,
+    ) {
+        if (!maxFeesPerGas) {
+            maxFeesPerGas = await node.getCurrentBaseFees()
+            // TODO: replace x2 multiplier with better coefficient
+            maxFeesPerGas = maxFeesPerGas.mul(FEE_PADDING_MULTIPLIER);
+        }
+
         txRequest.txContext.gasSettings = new GasSettings(
             simulatedTx.gasUsed.totalGas.mul(gasPadding),
             simulatedTx.gasUsed.teardownGas.mul(gasPadding),
-            txRequest.txContext.gasSettings.maxFeesPerGas.mul(2), // TODO: remove multiplier when base fees are fixed
+            maxFeesPerGas,
             txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
         );
     }
@@ -1143,7 +1159,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         task,
                     );
-                    this.finalizeGasLimits(txRequest, simulatedTx, gasPadding);
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
                     return [txRequest, node, pxe, account, network, nonce, txCalls, AzguardFeePaymentMethod.FeeJuice];
                 }
@@ -1168,7 +1184,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         task,
                     );
-                    this.finalizeGasLimits(txRequest, simulatedTx, gasPadding);
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
                     return [
                         txRequest,
@@ -1202,10 +1218,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         task,
                     );
-                    const baseFees = txRequest.txContext.gasSettings.maxFeesPerGas;
+                    // Fetch actual fees for FPC fee payload (with FEE_PADDING_MULTIPLIER)
+                    const baseFees = (await node.getCurrentBaseFees()).mul(FEE_PADDING_MULTIPLIER);
                     let maxFee = simulatedTx.gasUsed.totalGas
                         .add(fpc.getTotalGas(inPublic))
-                        .computeFee(baseFees.mul(2)); // TODO: remove multiplier when base fees are fixed
+                        .computeFee(baseFees);
                     op.actions.unshift(...fpc.getFeePayload(op.accountAddress, maxFee, inPublic));
                     // precise estimation
                     [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
@@ -1216,7 +1233,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     txRequest.txContext.gasSettings = new GasSettings(
                         simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)),
                         simulatedTx.gasUsed.teardownGas.add(fpc.getTeardownGas(inPublic)),
-                        txRequest.txContext.gasSettings.maxFeesPerGas,
+                        baseFees,
                         txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
                     );
                     simulatedTx = await this.simulateTxTask(
@@ -1229,14 +1246,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         task,
                     );
-                    maxFee = simulatedTx.gasUsed.totalGas.mul(gasPadding).computeFee(baseFees.mul(2)); // TODO: remove multiplier when base fees are fixed
+                    maxFee = simulatedTx.gasUsed.totalGas
+                        .mul(gasPadding)
+                        .computeFee(baseFees);
                     op.actions.splice(
                         0,
                         op.actions.length,
                         ...fpc.getFeePayload(op.accountAddress, maxFee, inPublic),
                         ...originalActions,
                     );
-                    this.finalizeGasLimits(txRequest, simulatedTx, gasPadding);
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, baseFees);
                     task.complete();
                     return [txRequest, node, pxe, account, network, nonce, txCalls, AzguardFeePaymentMethod.External];
                 }
@@ -1264,7 +1283,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         [account.address], // scopes
                         task,
                     );
-                    this.finalizeGasLimits(txRequest, simulatedTx, gasPadding);
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
                     return [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod];
                 }

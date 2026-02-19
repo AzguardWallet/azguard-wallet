@@ -43,6 +43,10 @@ import { AztecNode } from '@aztec/stdlib/interfaces/client';
 const azguardV0Artifact = loadContractArtifact(compiled as NoirCompiledContract);
 const CHUNK_SIZE = 4;
 
+// Max fee values for simulation - actual fees are set in ExecutionService.finalizeGasLimits
+const MAX_FEE_PER_DA_GAS = BigInt(10 ** 18);
+const MAX_FEE_PER_L2_GAS = BigInt(10 ** 18);
+
 export class AzguardV0 implements IAccountContract {
     public readonly name = "azguard-v0";
     public readonly address: AztecAddress;
@@ -142,11 +146,10 @@ export class AzguardV0 implements IAccountContract {
         batchAuthwits.push(authwit);
 
         const { l1ChainId, rollupVersion } = await node.getNodeInfo();
-        const baseFees = await node.getCurrentBaseFees();
         const gasSettings = new GasSettings(
             new Gas(GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT),
             new Gas(GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT),
-            baseFees,
+            new GasFees(MAX_FEE_PER_DA_GAS, MAX_FEE_PER_L2_GAS),
             new GasFees(0, 0),
         )
         const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
