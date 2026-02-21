@@ -7,7 +7,7 @@ import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-r
 import { FeeJuiceArtifact } from "@aztec/protocol-contracts/fee-juice";
 import { ContractInstanceRegistryArtifact } from "@aztec/protocol-contracts/instance-registry";
 import { MultiCallEntrypointArtifact } from "@aztec/protocol-contracts/multi-call-entrypoint";
-import { RouterArtifact } from "@aztec/protocol-contracts/router";
+import { PublicChecksArtifact } from "@aztec/protocol-contracts/public-checks";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
@@ -16,9 +16,6 @@ import { type ContractArtifact, ContractArtifactSchema, EventSelector, FunctionC
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
-    type ContractClassMetadata,
-    type ContractMetadata,
-    type ContractClassWithId,
     type ContractInstanceWithAddress,
     ContractInstanceWithAddressSchema,
     getContractClassFromArtifact,
@@ -27,7 +24,8 @@ import {
     PartialAddress,
 } from "@aztec/stdlib/contract";
 import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
-import { NotesFilterSchema, NotesFilter, NoteDao } from "@aztec/stdlib/note";
+import { NoteDao } from "@aztec/stdlib/note";
+import type { NotesFilter } from "./spec";
 import {
     SimulationOverrides,
     TxExecutionRequest,
@@ -46,7 +44,7 @@ import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/cli
 import { Lock } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
-import { FunctionCallSchema, PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet";
+import { PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet";
 
 export * from "./spec";
 
@@ -61,7 +59,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private readonly lock = new Lock();
 
     private readonly knownArtifacts = new Map<string, ContractArtifact>();
-    private readonly knownClasses = new Map<string, ContractClassWithId>();
     private readonly knownInstances = new Map<string, ContractInstanceWithAddress>();
 
     public constructor() {
@@ -97,66 +94,47 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         network: Network,
         address: AztecAddress,
     ): Promise<ContractInstanceWithAddress | undefined> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getContractInstance(address);
-    }
-
-    public async getContractClassMetadata(
-        network: Network,
-        id: Fr,
-        includeArtifact?: boolean,
-    ): Promise<ContractClassMetadata> {
-        id = await Fr.schema.parseAsync(id);
-        const pxe = await this.getPxeClient(network);
-        const metadata = await pxe.getContractClassMetadata(id, includeArtifact);
-        if (!metadata.artifact && (includeArtifact || !metadata.contractClass)) {
-            // check known
-            if (!this.knownArtifacts.size) {
-                await this.initKnown();
-            }
-            metadata.artifact = this.knownArtifacts.get(id.toString());
-            if (!metadata.artifact) {
-                // check registry
-                metadata.artifact = await this.fetchArtifactFromRegistry(network, id);
-            }
-        }
-        if (!metadata.contractClass) {
-            if (!this.knownClasses.size) {
-                await this.initKnown();
-            }
-            metadata.contractClass = this.knownClasses.get(id.toString());
-            // compute manually
-            if (!metadata.contractClass && metadata.artifact) {
-                metadata.contractClass = await getContractClassFromArtifact(metadata.artifact);
-            }
-        }
-        if (includeArtifact !== true) {
-            delete metadata.artifact;
-        }
-        return metadata;
-    }
-
-    public async getContractMetadata(network: Network, address: AztecAddress): Promise<ContractMetadata> {
         address = await AztecAddress.schema.parseAsync(address);
         const pxe = await this.getPxeClient(network);
-        const metadata = await pxe.getContractMetadata(address);
-        if (!metadata.contractInstance) {
+        let instance = await pxe.getContractInstance(address);
+        if (!instance) {
             // check node
             const node = await this.getNodeClient(network);
-            metadata.contractInstance = await node.getContract(address);
-            if (!metadata.contractInstance) {
+            instance = await node.getContract(address);
+            if (!instance) {
                 // check known
                 if (!this.knownInstances.size) {
                     await this.initKnown();
                 }
-                metadata.contractInstance = this.knownInstances.get(address.toString());
-                if (!metadata.contractInstance) {
+                instance = this.knownInstances.get(address.toString());
+                if (!instance) {
                     // check registry
-                    metadata.contractInstance = await this.fetchInstanceFromRegistry(network, address);
+                    instance = await this.fetchInstanceFromRegistry(network, address);
                 }
             }
         }
-        return metadata;
+        return instance;
+    }
+
+    public async getContractArtifact(
+        network: Network,
+        id: Fr,
+    ): Promise<ContractArtifact | undefined> {
+        id = await Fr.schema.parseAsync(id);
+        const pxe = await this.getPxeClient(network);
+        let artifact = await pxe.getContractArtifact(id);
+        if (!artifact) {
+            // check known
+            if (!this.knownArtifacts.size) {
+                await this.initKnown();
+            }
+            artifact = this.knownArtifacts.get(id.toString());
+            if (!artifact) {
+                // check registry
+                artifact = await this.fetchArtifactFromRegistry(network, id);
+            }
+        }
+        return artifact;
     }
 
     public async registerAccount(
@@ -226,12 +204,19 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     public async getNotes(network: Network, filter: NotesFilter): Promise<NoteDao[]> {
         const pxe = await this.getPxeClient(network);
-        return await pxe.getNotes(await NotesFilterSchema.parseAsync(filter));
+        return await pxe.debug.getNotes(filter);
     }
 
-    public async proveTx(network: Network, txRequest: TxExecutionRequest): Promise<TxProvingResult> {
+    public async proveTx(
+        network: Network,
+        txRequest: TxExecutionRequest,
+        scopes: AztecAddress[],
+    ): Promise<TxProvingResult> {
         const pxe = await this.getPxeClient(network);
-        return await pxe.proveTx(await TxExecutionRequest.schema.parseAsync(txRequest));
+        return await pxe.proveTx(
+            await TxExecutionRequest.schema.parseAsync(txRequest),
+            await z.array(AztecAddress.schema).parseAsync(scopes),
+        );
     }
 
     public async profileTx(
@@ -239,12 +224,14 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         txRequest: TxExecutionRequest,
         profileMode: "full" | "execution-steps" | "gates",
         skipProofGeneration?: boolean,
+        scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
     ): Promise<TxProfileResult> {
         const pxe = await this.getPxeClient(network);
+        const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
+            : await z.array(AztecAddress.schema).parseAsync(scopes);
         return await pxe.profileTx(
             await TxExecutionRequest.schema.parseAsync(txRequest),
-            profileMode,
-            skipProofGeneration,
+            { profileMode, skipProofGeneration, scopes: resolvedScopes },
         );
     }
 
@@ -255,16 +242,20 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         skipTxValidation?: boolean,
         skipFeeEnforcement?: boolean,
         overrides?: SimulationOverrides,
-        scopes?: AztecAddress[],
+        scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
     ): Promise<TxSimulationResult> {
         const pxe = await this.getPxeClient(network);
+        const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
+            : await z.array(AztecAddress.schema).parseAsync(scopes);
         return await pxe.simulateTx(
             await TxExecutionRequest.schema.parseAsync(txRequest),
-            simulatePublic,
-            skipTxValidation,
-            skipFeeEnforcement,
-            await SimulationOverrides.schema.optional().parseAsync(overrides),
-            await z.array(AztecAddress.schema).optional().parseAsync(scopes),
+            {
+                simulatePublic,
+                skipTxValidation,
+                skipFeeEnforcement,
+                overrides: await SimulationOverrides.schema.optional().parseAsync(overrides),
+                scopes: resolvedScopes,
+            },
         );
     }
 
@@ -272,13 +263,17 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         network: Network,
         call: FunctionCall,
         authwits?: AuthWitness[],
-        scopes?: AztecAddress[],
+        scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
     ): Promise<UtilitySimulationResult> {
         const pxe = await this.getPxeClient(network);
+        const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
+            : await z.array(AztecAddress.schema).parseAsync(scopes);
         return await pxe.simulateUtility(
-            await FunctionCallSchema.parseAsync(call),
-            await z.array(AuthWitness.schema).optional().parseAsync(authwits),
-            await z.array(AztecAddress.schema).optional().parseAsync(scopes),
+            await FunctionCall.schema.parseAsync(call),
+            {
+                authwits: await z.array(AuthWitness.schema).optional().parseAsync(authwits),
+                scopes: resolvedScopes,
+            },
         );
     }
 
@@ -302,7 +297,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             FeeJuiceArtifact,
             ContractInstanceRegistryArtifact,
             MultiCallEntrypointArtifact,
-            RouterArtifact,
+            PublicChecksArtifact,
             // other
             FPCContractArtifact,
             NFTContractArtifact,
@@ -311,7 +306,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         ]) {
             const contractClass = await getContractClassFromArtifact(artifact);
             this.knownArtifacts.set(contractClass.id.toString(), artifact);
-            this.knownClasses.set(contractClass.id.toString(), contractClass);
         }
 
         const sponsoredFpcInstance = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
@@ -350,10 +344,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private async initChain(network: Network): Promise<void> {
         const node = createAztecNodeClient(network.rpcUrl);
-        const l1Contracts = await node.getL1ContractAddresses();
         const config = {
             ...getPXEConfig(),
-            l1Contracts,
             dataDirectory: `pxe/${network.profileId}/${network.chainId}`,
             proverEnabled: true,
         } as PXEConfig;
@@ -424,7 +416,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         switch (network.chainId) {
             case 1721521349: // 11155111 ^ 1714840162
                 return "https://testnet.aztec-registry.xyz";
-            case 1654394782: // 11155111 ^ 1667575857
+            case 604129785: // 11155111 ^ 615022430
                 return "https://devnet.aztec-registry.xyz";
             default:
                 return undefined;

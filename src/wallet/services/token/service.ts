@@ -235,17 +235,15 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
         const pxe = this.pxeService.getPXE(network);
 
-        const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(token.contract));
-        if (!contractMetadata.contractInstance) {
+        const instance = await pxe.getContractInstance(AztecAddress.fromString(token.contract));
+        if (!instance) {
             throw new Error("contract instance not found");
         }
-        const instance = contractMetadata.contractInstance;
 
-        const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId, true);
-        if (!classMetadata.artifact) {
+        const artifact = await pxe.getContractArtifact(instance.currentContractClassId);
+        if (!artifact) {
             throw new Error("contract artifact not found");
         }
-        const artifact = classMetadata.artifact;
 
         const registeredContracts = await pxe.getContracts();
         if (!registeredContracts.find(x => x.toString() === token.contract)) {
@@ -330,17 +328,15 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
             const pxe = this.pxeService.getPXE(network);
 
-            const contractMetadata = await pxe.getContractMetadata(AztecAddress.fromString(contract));
-            if (!contractMetadata.contractInstance) {
+            const instance = await pxe.getContractInstance(AztecAddress.fromString(contract));
+            if (!instance) {
                 throw new Error("contract instance not found");
             }
-            const instance = contractMetadata.contractInstance;
 
-            const classMetadata = await pxe.getContractClassMetadata(instance.currentContractClassId, true);
-            if (!classMetadata.artifact) {
+            const artifact = await pxe.getContractArtifact(instance.currentContractClassId);
+            if (!artifact) {
                 throw new Error("contract artifact not found");
             }
-            const artifact = classMetadata.artifact;
 
             const registeredContracts = await pxe.getContracts();
             if (!registeredContracts.find(x => x.toString() === contract)) {

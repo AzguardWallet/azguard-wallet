@@ -1,10 +1,13 @@
 import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/constants";
 import { Fr } from "@aztec/foundation/curves/bn254";
-import { AuthRegistryContract } from "@aztec/noir-contracts.js/AuthRegistry";
 import { FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { deriveStorageSlotInMap } from "@aztec/stdlib/hash";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
+
+// Auth Registry storage slots (derived from Noir contract storage layout)
+const APPROVED_ACTIONS_SLOT = new Fr(1);
+const REJECT_ALL_SLOT = new Fr(2);
 
 export const getAuthRegistryAddress = () => AztecAddress.fromNumber(CANONICAL_AUTH_REGISTRY_ADDRESS);
 
@@ -39,7 +42,7 @@ export const getSetAuthorizedSelector = async () => {
 export const isAuthwitConsumable = async (node: AztecNode, account: string, message_hash: string) => {
     const slot = await deriveStorageSlotInMap(
         await deriveStorageSlotInMap(
-            AuthRegistryContract.storage.approved_actions.slot,
+            APPROVED_ACTIONS_SLOT,
             AztecAddress.fromString(account),
         ),
         Fr.fromString(message_hash),
@@ -50,7 +53,7 @@ export const isAuthwitConsumable = async (node: AztecNode, account: string, mess
 
 export const isAuthRegistryEnabled = async (node: AztecNode, account: string) => {
     const slot = await deriveStorageSlotInMap(
-        AuthRegistryContract.storage.reject_all.slot,
+        REJECT_ALL_SLOT,
         AztecAddress.fromString(account),
     );
     const rejectAll = await node.getPublicStorageAt("latest", getAuthRegistryAddress(), slot);

@@ -15,7 +15,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         const fnSelector = await FunctionSelector.fromSignature("get_accepted_asset()");
         const packedArgs = await HashedValues.fromArgs([]);
         const { l1ChainId, rollupVersion } = await node.getNodeInfo();
-        const baseFees = await node.getCurrentBaseFees();
+        const baseFees = await node.getCurrentMinFees();
         const gasSettings = new GasSettings(
             new Gas(GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT),
             new Gas(0, 0),

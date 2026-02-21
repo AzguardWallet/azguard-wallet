@@ -21,10 +21,18 @@ export type LocalTxOrigin = {
     name?: string;
 };
 
+/** Block inclusion/finalization status. */
 export enum TxStatus {
-    Created,
-    Dropped,
     Pending,
+    Dropped,
+    Proposed,
+    Checkpointed,
+    Proven,
+    Finalized,
+}
+
+/** Execution result — only meaningful when tx is in a block. */
+export enum TxExecutionResult {
     Success,
     AppLogicReverted,
     TeardownReverted,
@@ -126,6 +134,8 @@ type TxBase = {
     updatedAt: number;
     /** Transaction status. */
     status: TxStatus;
+    /** Execution result (success/revert info). */
+    executionResult?: TxExecutionResult;
     /** Block in which the transaction is included. */
     block?: TxBlock;
     /** Fee paid. */

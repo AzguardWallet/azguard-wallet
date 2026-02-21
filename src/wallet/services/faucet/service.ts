@@ -115,8 +115,8 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 salt: Fr.zero(),
             });
 
-            const classMetadata = await pxe.getContractClassMetadata(contractClass.id, true);
-            if (!classMetadata.isContractClassPubliclyRegistered) {
+            const existingArtifact = await pxe.getContractArtifact(contractClass.id);
+            if (!existingArtifact) {
                 this.logDebug("register faucet token class id");
                 const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
                 const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
@@ -136,8 +136,8 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 );
             }
 
-            const contractMetadata = await pxe.getContractMetadata(instance.address);
-            if (!contractMetadata.isContractPublished) {
+            const existingInstance = await pxe.getContractInstance(instance.address);
+            if (!existingInstance) {
                 this.logDebug("deploy faucet token");
                 const { salt, currentContractClassId, initializationHash, publicKeys } = instance;
                 deployActions.push({
@@ -148,7 +148,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 });
             }
 
-            if (!contractMetadata.isContractInitialized) {
+            if (!existingInstance) {
                 this.logDebug("initialize faucet token");
                 deployOps.unshift({
                     kind: "register_contract",
