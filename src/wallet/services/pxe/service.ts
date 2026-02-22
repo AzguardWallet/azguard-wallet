@@ -95,25 +95,25 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         address: AztecAddress,
     ): Promise<ContractInstanceWithAddress | undefined> {
         address = await AztecAddress.schema.parseAsync(address);
-        const pxe = await this.getPxeClient(network);
-        let instance = await pxe.getContractInstance(address);
-        if (!instance) {
-            // check node
-            const node = await this.getNodeClient(network);
-            instance = await node.getContract(address);
+        return this.withPxe(network, async (pxe, node) => {
+            let instance = await pxe.getContractInstance(address);
             if (!instance) {
-                // check known
-                if (!this.knownInstances.size) {
-                    await this.initKnown();
-                }
-                instance = this.knownInstances.get(address.toString());
+                // check node
+                instance = await node.getContract(address);
                 if (!instance) {
-                    // check registry
-                    instance = await this.fetchInstanceFromRegistry(network, address);
+                    // check known
+                    if (!this.knownInstances.size) {
+                        await this.initKnown();
+                    }
+                    instance = this.knownInstances.get(address.toString());
+                    if (!instance) {
+                        // check registry
+                        instance = await this.fetchInstanceFromRegistry(network, address);
+                    }
                 }
             }
-        }
-        return instance;
+            return instance;
+        });
     }
 
     public async getContractArtifact(
@@ -121,20 +121,21 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         id: Fr,
     ): Promise<ContractArtifact | undefined> {
         id = await Fr.schema.parseAsync(id);
-        const pxe = await this.getPxeClient(network);
-        let artifact = await pxe.getContractArtifact(id);
-        if (!artifact) {
-            // check known
-            if (!this.knownArtifacts.size) {
-                await this.initKnown();
-            }
-            artifact = this.knownArtifacts.get(id.toString());
+        return this.withPxe(network, async (pxe) => {
+            let artifact = await pxe.getContractArtifact(id);
             if (!artifact) {
-                // check registry
-                artifact = await this.fetchArtifactFromRegistry(network, id);
+                // check known
+                if (!this.knownArtifacts.size) {
+                    await this.initKnown();
+                }
+                artifact = this.knownArtifacts.get(id.toString());
+                if (!artifact) {
+                    // check registry
+                    artifact = await this.fetchArtifactFromRegistry(network, id);
+                }
             }
-        }
-        return artifact;
+            return artifact;
+        });
     }
 
     public async registerAccount(
@@ -142,47 +143,50 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         secretKey: Fr,
         partialAddress: PartialAddress,
     ): Promise<CompleteAddress> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.registerAccount(
-            await Fr.schema.parseAsync(secretKey),
-            await Fr.schema.parseAsync(partialAddress),
+        return this.withPxe(network, async (pxe) =>
+            pxe.registerAccount(
+                await Fr.schema.parseAsync(secretKey),
+                await Fr.schema.parseAsync(partialAddress),
+            ),
         );
     }
 
     public async registerSender(network: Network, address: AztecAddress): Promise<AztecAddress> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.registerSender(await AztecAddress.schema.parseAsync(address));
+        return this.withPxe(network, async (pxe) =>
+            pxe.registerSender(await AztecAddress.schema.parseAsync(address)),
+        );
     }
 
     public async getSenders(network: Network): Promise<AztecAddress[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getSenders();
+        return this.withPxe(network, (pxe) => pxe.getSenders());
     }
 
     public async removeSender(network: Network, address: AztecAddress): Promise<void> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.removeSender(await AztecAddress.schema.parseAsync(address));
+        return this.withPxe(network, async (pxe) =>
+            pxe.removeSender(await AztecAddress.schema.parseAsync(address)),
+        );
     }
 
     public async getRegisteredAccounts(network: Network): Promise<CompleteAddress[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getRegisteredAccounts();
+        return this.withPxe(network, (pxe) => pxe.getRegisteredAccounts());
     }
 
     public async registerContractClass(network: Network, artifact: ContractArtifact): Promise<void> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.registerContractClass(await ContractArtifactSchema.parseAsync(artifact));
+        return this.withPxe(network, async (pxe) =>
+            pxe.registerContractClass(await ContractArtifactSchema.parseAsync(artifact)),
+        );
     }
 
     public async registerContract(
         network: Network,
         contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
     ): Promise<void> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.registerContract({
-            instance: await ContractInstanceWithAddressSchema.parseAsync(contract.instance),
-            artifact: await ContractArtifactSchema.optional().parseAsync(contract.artifact),
-        });
+        return this.withPxe(network, async (pxe) =>
+            pxe.registerContract({
+                instance: await ContractInstanceWithAddressSchema.parseAsync(contract.instance),
+                artifact: await ContractArtifactSchema.optional().parseAsync(contract.artifact),
+            }),
+        );
     }
 
     public async updateContract(
@@ -190,21 +194,20 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         contractAddress: AztecAddress,
         artifact: ContractArtifact,
     ): Promise<void> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.updateContract(
-            await AztecAddress.schema.parseAsync(contractAddress),
-            await ContractArtifactSchema.parseAsync(artifact),
+        return this.withPxe(network, async (pxe) =>
+            pxe.updateContract(
+                await AztecAddress.schema.parseAsync(contractAddress),
+                await ContractArtifactSchema.parseAsync(artifact),
+            ),
         );
     }
 
     public async getContracts(network: Network): Promise<AztecAddress[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getContracts();
+        return this.withPxe(network, (pxe) => pxe.getContracts());
     }
 
     public async getNotes(network: Network, filter: NotesFilter): Promise<NoteDao[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.debug.getNotes(filter);
+        return this.withPxe(network, (pxe) => pxe.debug.getNotes(filter));
     }
 
     public async proveTx(
@@ -212,10 +215,11 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         txRequest: TxExecutionRequest,
         scopes: AztecAddress[],
     ): Promise<TxProvingResult> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.proveTx(
-            await TxExecutionRequest.schema.parseAsync(txRequest),
-            await z.array(AztecAddress.schema).parseAsync(scopes),
+        return this.withPxe(network, async (pxe) =>
+            pxe.proveTx(
+                await TxExecutionRequest.schema.parseAsync(txRequest),
+                await z.array(AztecAddress.schema).parseAsync(scopes),
+            ),
         );
     }
 
@@ -226,13 +230,14 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         skipProofGeneration?: boolean,
         scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
     ): Promise<TxProfileResult> {
-        const pxe = await this.getPxeClient(network);
-        const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
-            : await z.array(AztecAddress.schema).parseAsync(scopes);
-        return await pxe.profileTx(
-            await TxExecutionRequest.schema.parseAsync(txRequest),
-            { profileMode, skipProofGeneration, scopes: resolvedScopes },
-        );
+        return this.withPxe(network, async (pxe) => {
+            const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
+                : await z.array(AztecAddress.schema).parseAsync(scopes);
+            return await pxe.profileTx(
+                await TxExecutionRequest.schema.parseAsync(txRequest),
+                { profileMode, skipProofGeneration, scopes: resolvedScopes },
+            );
+        });
     }
 
     public async simulateTx(
@@ -244,19 +249,20 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         overrides?: SimulationOverrides,
         scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
     ): Promise<TxSimulationResult> {
-        const pxe = await this.getPxeClient(network);
-        const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
-            : await z.array(AztecAddress.schema).parseAsync(scopes);
-        return await pxe.simulateTx(
-            await TxExecutionRequest.schema.parseAsync(txRequest),
-            {
-                simulatePublic,
-                skipTxValidation,
-                skipFeeEnforcement,
-                overrides: await SimulationOverrides.schema.optional().parseAsync(overrides),
-                scopes: resolvedScopes,
-            },
-        );
+        return this.withPxe(network, async (pxe) => {
+            const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
+                : await z.array(AztecAddress.schema).parseAsync(scopes);
+            return await pxe.simulateTx(
+                await TxExecutionRequest.schema.parseAsync(txRequest),
+                {
+                    simulatePublic,
+                    skipTxValidation,
+                    skipFeeEnforcement,
+                    overrides: await SimulationOverrides.schema.optional().parseAsync(overrides),
+                    scopes: resolvedScopes,
+                },
+            );
+        });
     }
 
     public async simulateUtility(
@@ -265,16 +271,17 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         authwits?: AuthWitness[],
         scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
     ): Promise<UtilitySimulationResult> {
-        const pxe = await this.getPxeClient(network);
-        const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
-            : await z.array(AztecAddress.schema).parseAsync(scopes);
-        return await pxe.simulateUtility(
-            await FunctionCall.schema.parseAsync(call),
-            {
-                authwits: await z.array(AuthWitness.schema).optional().parseAsync(authwits),
-                scopes: resolvedScopes,
-            },
-        );
+        return this.withPxe(network, async (pxe) => {
+            const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
+                : await z.array(AztecAddress.schema).parseAsync(scopes);
+            return await pxe.simulateUtility(
+                await FunctionCall.schema.parseAsync(call),
+                {
+                    authwits: await z.array(AuthWitness.schema).optional().parseAsync(authwits),
+                    scopes: resolvedScopes,
+                },
+            );
+        });
     }
 
     public async getPrivateEvents(
@@ -282,10 +289,11 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         eventSelector: EventSelector,
         filter: PrivateEventFilter,
     ): Promise<PackedPrivateEvent[]> {
-        const pxe = await this.getPxeClient(network);
-        return await pxe.getPrivateEvents(
-            await EventSelector.schema.parseAsync(eventSelector),
-            await PrivateEventFilterSchema.parseAsync(filter),
+        return this.withPxe(network, async (pxe) =>
+            pxe.getPrivateEvents(
+                await EventSelector.schema.parseAsync(eventSelector),
+                await PrivateEventFilterSchema.parseAsync(filter),
+            ),
         );
     }
 
@@ -314,25 +322,13 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         this.knownInstances.set(sponsoredFpcInstance.address.toString(), sponsoredFpcInstance);
     }
 
-    private async getNodeClient(network: Network): Promise<AztecNode> {
+    private async withPxe<T>(network: Network, fn: (pxe: PXE, node: AztecNode) => Promise<T>): Promise<T> {
         try {
             await this.lock.enter();
             if (!this.hasChain(network)) {
                 await this.initChain(network);
             }
-            return this.nodes.get(network.chainId)!;
-        } finally {
-            this.lock.leave();
-        }
-    }
-
-    private async getPxeClient(network: Network): Promise<PXE> {
-        try {
-            await this.lock.enter();
-            if (!this.hasChain(network)) {
-                await this.initChain(network);
-            }
-            return this.pxes.get(network.chainId)!;
+            return await fn(this.pxes.get(network.chainId)!, this.nodes.get(network.chainId)!);
         } finally {
             this.lock.leave();
         }
