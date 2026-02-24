@@ -1,6 +1,6 @@
 import type { Fr } from "@aztec/foundation/curves/bn254";
+import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
-import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     CompleteAddress,
@@ -10,7 +10,6 @@ import {
 import { NoteDao } from "@aztec/stdlib/note";
 import type { NotesFilter } from "./spec";
 import {
-    SimulationOverrides,
     TxExecutionRequest,
     TxProfileResult,
     TxProvingResult,
@@ -36,25 +35,9 @@ export interface IPXE {
     getContracts(): Promise<AztecAddress[]>;
     getNotes(filter: NotesFilter): Promise<NoteDao[]>;
     proveTx(txRequest: TxExecutionRequest, scopes: AztecAddress[]): Promise<TxProvingResult>;
-    profileTx(
-        txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): Promise<TxProfileResult>;
-    simulateTx(
-        txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): Promise<TxSimulationResult>;
-    simulateUtility(
-        call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): Promise<UtilitySimulationResult>;
+    profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult>;
+    simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts): Promise<TxSimulationResult>;
+    simulateUtility(call: FunctionCall, opts: SimulateUtilityOpts): Promise<UtilitySimulationResult>;
     getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]>;
 }
 
@@ -113,40 +96,16 @@ export class PXEProxy implements IPXE {
         return this.pxeService.proveTx(this.network, txRequest, scopes);
     }
 
-    profileTx(
-        txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): Promise<TxProfileResult> {
-        return this.pxeService.profileTx(this.network, txRequest, profileMode, skipProofGeneration, scopes);
+    profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult> {
+        return this.pxeService.profileTx(this.network, txRequest, opts);
     }
 
-    simulateTx(
-        txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): Promise<TxSimulationResult> {
-        return this.pxeService.simulateTx(
-            this.network,
-            txRequest,
-            simulatePublic,
-            skipTxValidation,
-            skipFeeEnforcement,
-            overrides,
-            scopes,
-        );
+    simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts): Promise<TxSimulationResult> {
+        return this.pxeService.simulateTx(this.network, txRequest, opts);
     }
 
-    simulateUtility(
-        call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): Promise<UtilitySimulationResult> {
-        return this.pxeService.simulateUtility(this.network, call, authwits, scopes);
+    simulateUtility(call: FunctionCall, opts: SimulateUtilityOpts): Promise<UtilitySimulationResult> {
+        return this.pxeService.simulateUtility(this.network, call, opts);
     }
 
     async getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]> {

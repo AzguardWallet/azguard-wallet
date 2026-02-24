@@ -1,5 +1,6 @@
 import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
 import type { InteractionWaitOptions, SendReturn } from "@aztec/aztec.js/contracts";
+import type { SimulateTxOpts } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import {
     type AbiDecoded,
@@ -36,7 +37,6 @@ import {
     TxSimulationResult,
     UtilitySimulationResult,
     Tx,
-    SimulationOverrides,
 } from "@aztec/stdlib/tx";
 import z from "zod";
 import { NetworkService, Network } from "@/wallet/services/network/service";
@@ -497,14 +497,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeSimulateTransaction(op: SimulateTransactionOperation): Promise<unknown> {
         const [txRequest, _, pxe, account] = await this.buildTxRequest(op, AzguardFeePaymentMethod.FeeJuice);
-        const simulatedTx = await pxe.simulateTx(
-            txRequest, // txRequest
-            op.simulatePublic ?? false, // simulatePublic
-            undefined, // skipTxValidation
-            true, // skipFeeEnforcement
-            undefined, // overrides
-            [account.address], // scopes
-        );
+        const simulatedTx = await pxe.simulateTx(txRequest, {
+            simulatePublic: op.simulatePublic ?? false,
+            skipFeeEnforcement: true,
+            scopes: [account.address],
+        });
         return {
             gasUsed: simulatedTx.gasUsed,
             privateReturn: simulatedTx.getPrivateReturnValues(),
@@ -553,11 +550,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         );
 
         await account.ensureRegistered(pxe);
-        const { result } = await pxe.simulateUtility(
-            call, // call
-            undefined, // authwits
-            [account.address], // scopes
-        );
+        const { result } = await pxe.simulateUtility(call, {
+            scopes: [account.address],
+        });
 
         try {
             return decodeFromAbi(fn.returnTypes, result);
@@ -642,8 +637,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                     encodedArgs,
                                     fn.returnTypes,
                                 ),
-                                undefined, // authwits
-                                [account.address],
+                                { scopes: [account.address] },
                             ),
                             i,
                             fn.returnTypes,
@@ -713,8 +707,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                     call.args.map(x => Fr.fromString(x)),
                                     fn.returnTypes,
                                 ),
-                                undefined, // authwits
-                                [account.address],
+                                { scopes: [account.address] },
                             ),
                             i,
                             fn.returnTypes,
@@ -757,14 +750,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 AzguardFeePaymentMethod.FeeJuice,
                 args,
             );
-            const simulatedTx = await pxe.simulateTx(
-                txRequest, // txRequest
-                true, // simulatePublic
-                undefined, // skipTxValidation
-                true, // skipFeeEnforcement
-                undefined, // overrides
-                [account.address], // scopes
-            );
+            const simulatedTx = await pxe.simulateTx(txRequest, {
+                simulatePublic: true,
+                skipFeeEnforcement: true,
+                scopes: [account.address],
+            });
 
             const publicReturn = simulatedTx.getPublicReturnValues();
             const privateReturn =
@@ -898,14 +888,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
         const [txRequest, _, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
-        return pxe.simulateTx(
-            txRequest, // txRequest
-            true, // simulatePublic
-            op.opts.skipTxValidation, // skipTxValidation
-            op.opts.skipFeeEnforcement ?? true, // skipFeeEnforcement
-            undefined, // overrides
-            [account.address], // scopes
-        );
+        return pxe.simulateTx(txRequest, {
+            simulatePublic: true,
+            skipTxValidation: op.opts.skipTxValidation,
+            skipFeeEnforcement: op.opts.skipFeeEnforcement ?? true,
+            scopes: [account.address],
+        });
     }
 
     private async executeAztecSimulateUtility(op: AztecSimulateUtilityOperation): Promise<UtilitySimulationResult> {
@@ -917,11 +905,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         const pxe = this.pxeService.getPXE(network);
         await account.ensureRegistered(pxe);
-        return pxe.simulateUtility(
-            op.call,
-            await z.array(AuthWitness.schema).optional().parseAsync(op.opts?.authWitnesses),
-            op.opts?.scope ? [await AztecAddress.schema.parseAsync(op.opts.scope)] : [account.address],
-        );
+        return pxe.simulateUtility(op.call, {
+            authwits: await z.array(AuthWitness.schema).optional().parseAsync(op.opts.authWitnesses),
+            scopes: [await AztecAddress.schema.parseAsync(op.opts.scope)],
+        });
     }
 
     private async executeAztecProfileTx(op: AztecProfileTxOperation): Promise<TxProfileResult> {
@@ -931,7 +918,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
         const [txRequest, _, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
-        return pxe.profileTx(txRequest, op.opts.profileMode, op.opts.skipProofGeneration, [AztecAddress.fromString(op.accountAddress)]);
+        return pxe.profileTx(txRequest, {
+            profileMode: op.opts.profileMode,
+            skipProofGeneration: op.opts.skipProofGeneration,
+            scopes: [AztecAddress.fromString(op.accountAddress)],
+        });
     }
 
     private async executeAztecSendTx(
@@ -962,7 +953,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             txHash.toString(),
         );
 
-        if (op.opts?.wait === "NO_WAIT") {
+        if (op.opts.wait === "NO_WAIT") {
             return txHash;
         }
         return node.getTxReceipt(txHash);
@@ -1167,12 +1158,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.suggestGasLimits(txRequest, op.fee);
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
@@ -1192,12 +1179,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.suggestGasLimits(txRequest, op.fee);
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
@@ -1226,12 +1209,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.suggestGasLimits(txRequest, op.fee);
                     let simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     // Fetch actual fees for FPC fee payload (with FEE_PADDING_MULTIPLIER)
@@ -1254,12 +1233,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     );
                     simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     maxFee = simulatedTx.gasUsed.totalGas
@@ -1291,12 +1266,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.suggestGasLimits(txRequest, op.fee);
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
@@ -1635,24 +1606,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async simulateTxTask(
         pxe: IPXE,
         txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[],
+        opts: SimulateTxOpts,
         parentTask?: WrappedTask,
     ) {
         const step = new StepContent("Simulating transaction");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
         try {
-            const simulatedTx = await pxe.simulateTx(
-                txRequest,
-                simulatePublic,
-                skipTxValidation,
-                skipFeeEnforcement,
-                overrides,
-                scopes,
-            );
+            const simulatedTx = await pxe.simulateTx(txRequest, opts);
             task.complete();
             return simulatedTx;
         } catch (error) {

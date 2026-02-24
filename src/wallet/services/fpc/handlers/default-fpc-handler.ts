@@ -32,14 +32,11 @@ export class DefaultFpcHandler implements IFpcHandler {
             [],
             [],
         );
-        const simulatedTx = await pxe.simulateTx(
-            txRequest, // txRequest
-            true, // simulatePublic
-            undefined, // skipTxValidation
-            true, // skipFeeEnforcement
-            undefined, // overrides
-            undefined, // scopes
-        );
+        const simulatedTx = await pxe.simulateTx(txRequest, {
+            simulatePublic: true,
+            skipFeeEnforcement: true,
+            scopes: "ALL_SCOPES",
+        });
         const returnValues = simulatedTx.getPrivateReturnValues();
         if (!returnValues.values || returnValues.values.length !== 1) {
             throw new Error("Failed to get FPC asset");

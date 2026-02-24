@@ -1,7 +1,7 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
+import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import { ContractArtifactSchema } from "@aztec/stdlib/abi";
-import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     CompleteAddress,
@@ -12,7 +12,6 @@ import {
 import { NoteDao } from "@aztec/stdlib/note";
 import type { NotesFilter } from "./spec";
 import {
-    SimulationOverrides,
     type TxExecutionRequest,
     TxProfileResult,
     TxProvingResult,
@@ -147,46 +146,30 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
     public async profileTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
-        scopes?: AztecAddress[] | "ALL_SCOPES",
+        opts: ProfileTxOpts,
     ): Promise<TxProfileResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("profileTx", network, txRequest, profileMode, skipProofGeneration, scopes);
+        const result = await this.request("profileTx", network, txRequest, opts);
         return await TxProfileResult.schema.parseAsync(result);
     }
 
     public async simulateTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[] | "ALL_SCOPES",
+        opts: SimulateTxOpts,
     ): Promise<TxSimulationResult> {
         await ensureOffscreenRunning();
-        const result = await this.request(
-            "simulateTx",
-            network,
-            txRequest,
-            simulatePublic,
-            skipTxValidation,
-            skipFeeEnforcement,
-            overrides,
-            scopes,
-        );
+        const result = await this.request("simulateTx", network, txRequest, opts);
         return await TxSimulationResult.schema.parseAsync(result);
     }
 
     public async simulateUtility(
         network: Network,
         call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes?: AztecAddress[] | "ALL_SCOPES",
+        opts: SimulateUtilityOpts,
     ): Promise<UtilitySimulationResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("simulateUtility", network, call, authwits, scopes);
+        const result = await this.request("simulateUtility", network, call, opts);
         return await UtilitySimulationResult.schema.parseAsync(result);
     }
 

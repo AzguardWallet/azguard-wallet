@@ -71,7 +71,7 @@ export async function simulate(
             encodedArgs,
             viewFn.getReturnTypes(),
         );
-        const { result } = await pxe.simulateUtility(call, [], [account.address]);
+        const { result } = await pxe.simulateUtility(call, { scopes: [account.address] });
         return viewFn.unpackResult(result);
     }
 
@@ -98,14 +98,11 @@ export async function simulate(
         [packedArgs],
     );
 
-    const tx = await pxe.simulateTx(
-        txRequest, // txRequest
-        true, // simulatePublic
-        undefined, // skipTxValidation
-        true, // skipFeeEnforcement
-        undefined, // overrides
-        [account.address], // scopes
-    );
+    const tx = await pxe.simulateTx(txRequest, {
+        simulatePublic: true,
+        skipFeeEnforcement: true,
+        scopes: [account.address],
+    });
 
     return viewFn.type === FunctionType.PUBLIC
         ? viewFn.unpackResult(extractReturnValues(tx.getPublicReturnValues()))

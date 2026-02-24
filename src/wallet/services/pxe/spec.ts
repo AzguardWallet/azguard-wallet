@@ -2,8 +2,8 @@ import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
 import type { Fr } from "@aztec/foundation/curves/bn254";
 import { PackedPrivateEvent, type NotesFilter } from "@aztec/pxe/client/bundle";
 export type { NotesFilter };
+import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
-import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type {
     CompleteAddress,
@@ -12,7 +12,6 @@ import type {
 } from "@aztec/stdlib/contract";
 import type { NoteDao } from "@aztec/stdlib/note";
 import type {
-    SimulationOverrides,
     TxExecutionRequest,
     TxProfileResult,
     TxProvingResult,
@@ -40,28 +39,9 @@ export type Methods = {
     getContracts(network: Network): AztecAddress[];
     getNotes(network: Network, filter: NotesFilter): NoteDao[];
     proveTx(network: Network, txRequest: TxExecutionRequest, scopes: AztecAddress[]): TxProvingResult;
-    profileTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): TxProfileResult;
-    simulateTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): TxSimulationResult;
-    simulateUtility(
-        network: Network,
-        call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes?: AztecAddress[] | "ALL_SCOPES",
-    ): UtilitySimulationResult;
+    profileTx(network: Network, txRequest: TxExecutionRequest, opts: ProfileTxOpts): TxProfileResult;
+    simulateTx(network: Network, txRequest: TxExecutionRequest, opts: SimulateTxOpts): TxSimulationResult;
+    simulateUtility(network: Network, call: FunctionCall, opts: SimulateUtilityOpts): UtilitySimulationResult;
     getPrivateEvents<T>(
         network: Network,
         eventSelector: EventSelector,

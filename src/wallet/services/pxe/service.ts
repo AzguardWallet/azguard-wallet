@@ -34,7 +34,10 @@ import {
     UtilitySimulationResult,
     TxProfileResult,
 } from "@aztec/stdlib/tx";
+import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import z from "zod";
+
+const AccessScopesSchema = z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)]);
 import { ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/offscreen";
 import { ConfigServiceClient } from "@/wallet/services/config/client";
@@ -223,43 +226,20 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         );
     }
 
-    public async profileTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
-        scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
-    ): Promise<TxProfileResult> {
-        return this.withPxe(network, async (pxe) => {
-            const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
-                : await z.array(AztecAddress.schema).parseAsync(scopes);
-            return await pxe.profileTx(
-                await TxExecutionRequest.schema.parseAsync(txRequest),
-                { profileMode, skipProofGeneration, scopes: resolvedScopes },
-            );
-        });
-    }
-
     public async simulateTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
+        opts: SimulateTxOpts,
     ): Promise<TxSimulationResult> {
         return this.withPxe(network, async (pxe) => {
-            const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
-                : await z.array(AztecAddress.schema).parseAsync(scopes);
             return await pxe.simulateTx(
                 await TxExecutionRequest.schema.parseAsync(txRequest),
                 {
-                    simulatePublic,
-                    skipTxValidation,
-                    skipFeeEnforcement,
-                    overrides: await SimulationOverrides.schema.optional().parseAsync(overrides),
-                    scopes: resolvedScopes,
+                    simulatePublic: opts.simulatePublic,
+                    skipTxValidation: opts.skipTxValidation,
+                    skipFeeEnforcement: opts.skipFeeEnforcement,
+                    overrides: await SimulationOverrides.schema.optional().parseAsync(opts.overrides),
+                    scopes: await AccessScopesSchema.parseAsync(opts.scopes),
                 },
             );
         });
@@ -268,17 +248,31 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public async simulateUtility(
         network: Network,
         call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes: AztecAddress[] | "ALL_SCOPES" = "ALL_SCOPES",
+        opts: SimulateUtilityOpts,
     ): Promise<UtilitySimulationResult> {
         return this.withPxe(network, async (pxe) => {
-            const resolvedScopes = scopes === "ALL_SCOPES" ? scopes
-                : await z.array(AztecAddress.schema).parseAsync(scopes);
             return await pxe.simulateUtility(
                 await FunctionCall.schema.parseAsync(call),
                 {
-                    authwits: await z.array(AuthWitness.schema).optional().parseAsync(authwits),
-                    scopes: resolvedScopes,
+                    authwits: await z.array(AuthWitness.schema).optional().parseAsync(opts.authwits),
+                    scopes: await AccessScopesSchema.parseAsync(opts.scopes),
+                },
+            );
+        });
+    }
+
+    public async profileTx(
+        network: Network,
+        txRequest: TxExecutionRequest,
+        opts: ProfileTxOpts,
+    ): Promise<TxProfileResult> {
+        return this.withPxe(network, async (pxe) => {
+            return await pxe.profileTx(
+                await TxExecutionRequest.schema.parseAsync(txRequest),
+                {
+                    profileMode: opts.profileMode,
+                    skipProofGeneration: opts.skipProofGeneration,
+                    scopes: await AccessScopesSchema.parseAsync(opts.scopes),
                 },
             );
         });
