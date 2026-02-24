@@ -48,6 +48,7 @@ import { Lock } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
 import { PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet";
+import { NotesFilterSchema } from "@/wallet/utils/schemas";
 
 export * from "./spec";
 
@@ -210,7 +211,9 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     public async getNotes(network: Network, filter: NotesFilter): Promise<NoteDao[]> {
-        return this.withPxe(network, (pxe) => pxe.debug.getNotes(filter));
+        return this.withPxe(network, async (pxe) =>
+            pxe.debug.getNotes(await NotesFilterSchema.parseAsync(filter)),
+        );
     }
 
     public async proveTx(

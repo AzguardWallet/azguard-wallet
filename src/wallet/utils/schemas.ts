@@ -1,11 +1,11 @@
 import { EventSelector } from "@aztec/stdlib/abi";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { ZodFor } from "@aztec/foundation/schemas";
-import { Note } from "@aztec/stdlib/note";
+import { Note, NoteStatus } from "@aztec/stdlib/note";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { inTxSchema, TxHash } from "@aztec/stdlib/tx";
 import { BlockNumberSchema } from "@aztec/foundation/branded-types";
-import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
+import { PackedPrivateEvent, type NotesFilter } from "@aztec/pxe/client/bundle";
 import z from "zod";
 
 export const NoteDaoSchema = z.object({
@@ -31,3 +31,12 @@ export const PackedPrivateEventSchema = z.intersection(
         eventSelector: EventSelector.schema,
     }),
 ) satisfies ZodFor<PackedPrivateEvent>;
+
+export const NotesFilterSchema = z.object({
+    contractAddress: AztecAddress.schema,
+    owner: AztecAddress.schema.optional(),
+    storageSlot: Fr.schema.optional(),
+    status: z.nativeEnum(NoteStatus).optional(),
+    siloedNullifier: Fr.schema.optional(),
+    scopes: z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)]),
+}) satisfies ZodFor<NotesFilter>;
