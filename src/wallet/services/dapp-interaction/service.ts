@@ -178,7 +178,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_getContractClassMetadata":
                 case "aztec_getContractMetadata":
                 case "aztec_getChainInfo":
-                case "aztec_getTxReceipt":
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
                 case "aztec_registerContract":
@@ -236,7 +235,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_getContractClassMetadata":
                 case "aztec_getContractMetadata":
                 case "aztec_getChainInfo":
-                case "aztec_getTxReceipt":
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
                 case "aztec_registerContract": {
@@ -355,8 +353,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             case "aztec_getPrivateEvents":
                 return AccessLevel.PrivateData;
             case "aztec_getChainInfo":
-                return AccessLevel.PublicData;
-            case "aztec_getTxReceipt":
                 return AccessLevel.PublicData;
             case "aztec_registerSender":
                 return AccessLevel.PxeState;

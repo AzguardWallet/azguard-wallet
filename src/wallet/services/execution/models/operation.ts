@@ -5,7 +5,7 @@ import type { ContractArtifact, EventMetadataDefinition, FunctionCall } from "@a
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract";
-import type { ExecutionPayload, TxHash } from "@aztec/stdlib/tx";
+import type { ExecutionPayload } from "@aztec/stdlib/tx";
 import type { Action, CallAction, EncodedCallAction, FeeSettings } from ".";
 
 export type OperationKind = Operation["kind"];
@@ -25,7 +25,6 @@ export type Operation =
     | AztecGetContractMetadataOperation
     | AztecGetPrivateEventsOperation
     | AztecGetChainInfoOperation
-    | AztecGetTxReceiptOperation
     | AztecRegisterSenderOperation
     | AztecGetAddressBookOperation
     | AztecRegisterContractOperation
@@ -116,7 +115,6 @@ export type AztecGetContractClassMetadataOperation = {
     readonly kind: "aztec_getContractClassMetadata";
     readonly networkId: string;
     readonly id: Fr;
-    readonly includeArtifact?: boolean;
 };
 
 export type AztecGetContractMetadataOperation = {
@@ -135,12 +133,6 @@ export type AztecGetPrivateEventsOperation = {
 export type AztecGetChainInfoOperation = {
     readonly kind: "aztec_getChainInfo";
     readonly networkId: string;
-};
-
-export type AztecGetTxReceiptOperation = {
-    readonly kind: "aztec_getTxReceipt";
-    readonly networkId: string;
-    readonly txHash: TxHash;
 };
 
 export type AztecRegisterSenderOperation = {
@@ -176,7 +168,7 @@ export type AztecSimulateUtilityOperation = {
     readonly networkId: string;
     readonly accountAddress: string;
     readonly call: FunctionCall;
-    readonly authwits?: AuthWitness[];
+    readonly opts: { scope?: AztecAddress; authWitnesses?: AuthWitness[] };
 };
 
 export type AztecProfileTxOperation = {
@@ -200,5 +192,5 @@ export type AztecCreateAuthWitOperation = {
     readonly kind: "aztec_createAuthWit";
     readonly networkId: string;
     readonly accountAddress: string;
-    readonly messageHashOrIntent: Fr | IntentInnerHash | CallIntent;
+    readonly messageHashOrIntent: IntentInnerHash | CallIntent;
 };

@@ -92,7 +92,6 @@ import {
     type AztecGetContractMetadataOperation,
     type AztecGetPrivateEventsOperation,
     type AztecGetChainInfoOperation,
-    type AztecGetTxReceiptOperation,
     type AztecRegisterSenderOperation,
     type AztecGetAddressBookOperation,
     type AztecRegisterContractOperation,
@@ -345,10 +344,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     }
                     case "aztec_getChainInfo": {
                         result = await this.executeAztecGetChainInfo(operation);
-                        break;
-                    }
-                    case "aztec_getTxReceipt": {
-                        result = await this.executeAztecGetTxReceipt(operation);
                         break;
                     }
                     case "aztec_registerSender": {
@@ -804,27 +799,34 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeAztecGetContractClassMetadata(
         op: AztecGetContractClassMetadataOperation,
-    ): Promise<{ artifact?: ContractArtifact; isContractClassPubliclyRegistered: boolean; isArtifactRegistered: boolean }> {
+    ): Promise<{ isContractClassPubliclyRegistered: boolean; isArtifactRegistered: boolean }> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const artifact = op.includeArtifact
-            ? await this.pxeService.getContractArtifact(network, op.id)
-            : undefined;
+        const artifact = await this.pxeService.getContractArtifact(network, op.id);
         return {
-            artifact,
+            // TODO: check on-chain class registration via node — pxeService.getContractArtifact
+            // falls back to known artifacts and contract registry, which doesn't mean on-chain registration
             isContractClassPubliclyRegistered: !!artifact,
+            // TODO: same issue — artifact from registry/known set doesn't mean it's registered in PXE
             isArtifactRegistered: !!artifact,
         };
     }
 
     private async executeAztecGetContractMetadata(
         op: AztecGetContractMetadataOperation,
-    ): Promise<{ instance?: ContractInstanceWithAddress; isContractInitialized: boolean; isContractPublished: boolean }> {
+    ): Promise<{ instance?: ContractInstanceWithAddress; isContractInitialized: boolean; isContractPublished: boolean; isContractUpdated: boolean; updatedContractClassId?: Fr }> {
         const network = await this.networkService.getNetwork(op.networkId);
         const instance = await this.pxeService.getContractInstance(network, op.address);
         return {
             instance,
+            // TODO: check on-chain initialization via nullifier inclusion — pxeService.getContractInstance
+            // falls back to known instances and contract registry, which doesn't prove on-chain initialization
             isContractInitialized: !!instance,
+            // TODO: same issue — instance from known set/registry doesn't mean it's published on-chain
+            // (node.getContract result would be reliable, but we don't distinguish the source here)
             isContractPublished: !!instance,
+            // TODO: query node for contract upgrade status
+            isContractUpdated: false,
+            updatedContractClassId: undefined,
         };
     }
 
@@ -838,12 +840,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const node = await this.networkService.getNode(network.chainId);
         const { l1ChainId, rollupVersion } = await node.getNodeInfo();
         return { chainId: new Fr(l1ChainId), version: new Fr(rollupVersion) };
-    }
-
-    private async executeAztecGetTxReceipt(op: AztecGetTxReceiptOperation): Promise<TxReceipt> {
-        const network = await this.networkService.getNetwork(op.networkId);
-        const node = await this.networkService.getNode(network.chainId);
-        return node.getTxReceipt(op.txHash);
     }
 
     private async executeAztecRegisterSender(op: AztecRegisterSenderOperation): Promise<AztecAddress> {
@@ -922,8 +918,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         await account.ensureRegistered(pxe);
         return pxe.simulateUtility(
             op.call,
-            await z.array(AuthWitness.schema).optional().parseAsync(op.authwits),
-            [account.address],
+            await z.array(AuthWitness.schema).optional().parseAsync(op.opts?.authWitnesses),
+            op.opts?.scope ? [await AztecAddress.schema.parseAsync(op.opts.scope)] : [account.address],
         );
     }
 
@@ -941,7 +937,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         op: AztecSendTxOperation,
         origin: LocalTxOrigin,
         parentTask?: WrappedTask,
-    ): Promise<TxHash> {
+    ): Promise<TxHash | TxReceipt> {
         if (op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
@@ -965,7 +961,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             txHash.toString(),
         );
 
-        return txHash;
+        if (op.opts?.wait === "NO_WAIT") {
+            return txHash;
+        }
+        return node.getTxReceipt(txHash);
     }
 
     public async executeAztecCreateAuthWit(op: AztecCreateAuthWitOperation): Promise<AuthWitness> {
@@ -1012,7 +1011,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
             messageHash = await computeAuthWitMessageHash(intentHash, metadata);
         } else {
-            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
+            // TODO: why did we throw error here?
+            // messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
+            throw new Error("Invalid messageHashOrIntent: expected IntentInnerHash or CallIntent");
         }
 
         return await account.buildAuthWitness(messageHash);

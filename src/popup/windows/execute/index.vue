@@ -139,7 +139,6 @@ const init = async () => {
 				case "aztec_getContractClassMetadata":
 				case "aztec_getContractMetadata":
 				case "aztec_getChainInfo":
-				case "aztec_getTxReceipt":
 				case "aztec_registerSender":
 				case "aztec_getAddressBook":
 				case "aztec_registerContract":
@@ -610,12 +609,6 @@ const showJson = () => {
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
 								<AddressDisplay :address="op.eventFilter.contractAddress.toString()" />
-							</Flex>
-						</template>
-						<template v-else-if="op.kind === 'aztec_getTxReceipt'">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">Tx hash:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.txHash.toString()) }}</Text>
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'aztec_registerSender'">

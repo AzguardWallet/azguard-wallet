@@ -33,7 +33,6 @@ import {
     AztecGetContractMetadataRequest,
     AztecGetPrivateEventsRequest,
     AztecGetChainInfoRequest,
-    AztecGetTxReceiptRequest,
     AztecRegisterSenderRequest,
     AztecGetAddressBookRequest,
     AztecRegisterContractRequest,
@@ -109,7 +108,6 @@ export function parseMethod(data: OperationKind | ActionKind): string {
         case "aztec_getContractMetadata":
         case "aztec_getPrivateEvents":
         case "aztec_getChainInfo":
-        case "aztec_getTxReceipt":
         case "aztec_registerSender":
         case "aztec_getAddressBook":
         case "aztec_registerContract":
@@ -127,7 +125,7 @@ export function parseMethod(data: OperationKind | ActionKind): string {
         case "encoded_call":
             return data;
         default:
-            throw new Error("Invalid method");
+            throw new Error(`Invalid method: ${JSON.stringify(data)}`);
     }
 }
 
@@ -188,9 +186,6 @@ function parseOperation(op: OperationRequest): OperationRequest {
         }
         case "aztec_getChainInfo": {
             return parseAztecGetChainInfoRequest(op);
-        }
-        case "aztec_getTxReceipt": {
-            return parseAztecGetTxReceiptRequest(op);
         }
         case "aztec_registerSender": {
             return parseAztecRegisterSenderRequest(op);
@@ -297,7 +292,6 @@ function parseAztecGetContractClassMetadataRequest(data: any): AztecGetContractC
         kind: "aztec_getContractClassMetadata",
         chain: parseChainProp(data, "chain"),
         id: parseRequiredProp(data, "id"),
-        includeArtifact: parseOptionalProp(data, "includeArtifact"),
     };
 }
 
@@ -322,14 +316,6 @@ function parseAztecGetChainInfoRequest(data: any): AztecGetChainInfoRequest {
     return {
         kind: "aztec_getChainInfo",
         chain: parseChainProp(data, "chain"),
-    };
-}
-
-function parseAztecGetTxReceiptRequest(data: any): AztecGetTxReceiptRequest {
-    return {
-        kind: "aztec_getTxReceipt",
-        chain: parseChainProp(data, "chain"),
-        txHash: parseRequiredProp(data, "txHash"),
     };
 }
 
@@ -372,7 +358,8 @@ function parseAztecSimulateUtilityRequest(data: any): AztecSimulateUtilityReques
         kind: "aztec_simulateUtility",
         account: parseAccountProp(data, "account"),
         call: parseRequiredProp(data, "call"),
-        authwits: parseOptionalArrayProp(data, "authwits"),
+        // TODO: this is strange ?? {} -- probably artifact from PXE type mismatch
+        opts: parseOptionalProp(data, "opts") ?? {},
     };
 }
 

@@ -13,7 +13,6 @@ import type {
     AztecGetContractMetadataOperation,
     AztecGetPrivateEventsOperation,
     AztecGetChainInfoOperation,
-    AztecGetTxReceiptOperation,
     AztecRegisterSenderOperation,
     AztecGetAddressBookOperation,
     AztecRegisterContractOperation,
@@ -77,7 +76,6 @@ export type OperationRequest =
     | AztecGetContractMetadataRequest
     | AztecGetPrivateEventsRequest
     | AztecGetChainInfoRequest
-    | AztecGetTxReceiptRequest
     | AztecRegisterSenderRequest
     | AztecGetAddressBookRequest
     | AztecRegisterContractRequest
@@ -143,10 +141,6 @@ export type AztecGetPrivateEventsRequest = Omit<AztecGetPrivateEventsOperation, 
 };
 
 export type AztecGetChainInfoRequest = Omit<AztecGetChainInfoOperation, NetworkParams> & {
-    chain: CaipChain;
-};
-
-export type AztecGetTxReceiptRequest = Omit<AztecGetTxReceiptOperation, NetworkParams> & {
     chain: CaipChain;
 };
 
