@@ -42,6 +42,7 @@ import {
     AztecSendTxRequest,
     AztecCreateAuthWitRequest,
 } from "@/wallet/services/dapp-interaction/spec";
+import type { SimulateUtilityOptions } from "@aztec/aztec.js/wallet";
 import { RpcEvent /*, RpcMethod*/ } from "./types";
 
 export function parseConnectionParams(data: any): ConnectionParams {
@@ -358,8 +359,8 @@ function parseAztecSimulateUtilityRequest(data: any): AztecSimulateUtilityReques
         kind: "aztec_simulateUtility",
         account: parseAccountProp(data, "account"),
         call: parseRequiredProp(data, "call"),
-        // TODO: this is strange ?? {} -- probably artifact from PXE type mismatch
-        opts: parseOptionalProp(data, "opts") ?? {},
+        // TODO: this is a lie:
+        opts: parseOptionalProp(data, "opts") ?? {} as SimulateUtilityOptions,
     };
 }
 

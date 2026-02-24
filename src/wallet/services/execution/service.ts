@@ -1,4 +1,5 @@
 import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
+import type { InteractionWaitOptions, SendReturn } from "@aztec/aztec.js/contracts";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import {
     type AbiDecoded,
@@ -937,7 +938,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         op: AztecSendTxOperation,
         origin: LocalTxOrigin,
         parentTask?: WrappedTask,
-    ): Promise<TxHash | TxReceipt> {
+    ): Promise<SendReturn<InteractionWaitOptions>> {
         if (op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
@@ -1023,7 +1024,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async processAztecJsPayload(
         exec: ExecutionPayload,
-        opts: SimulateOptions | ProfileOptions | SendOptions,
+        opts: SimulateOptions | ProfileOptions | SendOptions<InteractionWaitOptions>,
     ): Promise<[Action[], AzguardFeePaymentMethod, FeeOptions]> {
         const actions: Action[] = [];
 
