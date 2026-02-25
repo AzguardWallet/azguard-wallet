@@ -144,6 +144,6 @@ export class DefaultFpcHandler implements IFpcHandler {
     }
 
     public getTotalGas(inPublic?: boolean): Gas {
-        return inPublic ? new Gas(10_000, 500_000) : new Gas(100_000, 500_000);
+        return inPublic ? new Gas(10_000, 850_000) : new Gas(100_000, 850_000);
     }
 }
