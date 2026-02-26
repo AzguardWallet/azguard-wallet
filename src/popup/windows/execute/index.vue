@@ -676,6 +676,28 @@ const showJson = () => {
 								</Flex>
 							</Flex>
 						</template>
+						<template v-else-if="op.kind === 'aztec_getChainInfo'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Retrieves chain ID and protocol version</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getAddressBook'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Retrieves registered addresses</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_registerContract'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.instance.address.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_createAuthWit'">
+							<Flex v-if="op.messageHashOrIntent?.caller" :class="$style.prop">
+								<Text size="12" color="secondary">Authorized caller:</Text>
+								<AddressDisplay :address="op.messageHashOrIntent.caller.toString()" />
+							</Flex>
+						</template>
 					</Flex>
 				</template>
 			</Flex>
