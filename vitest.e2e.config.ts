@@ -8,9 +8,11 @@ export default defineConfig({
         },
     },
     test: {
-        globals: true,
-        environment: "jsdom",
-        setupFiles: "./tests/vitest.setup.ts",
-        exclude: ["tests/e2e/**", "node_modules/**"],
+        include: ["tests/e2e/**/*.test.ts"],
+        environment: "node",
+        globalSetup: "./tests/e2e/global-setup.ts",
+        testTimeout: 60_000,
+        hookTimeout: 60_000,
+        fileParallelism: false,
     },
-});
+})

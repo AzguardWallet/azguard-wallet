@@ -15,7 +15,8 @@
 		"dev:firefox": "vite build --mode development --watch -c vite.firefox.config.mts",
 		"preview": "vite preview",
 		"typecheck": "vue-tsc --noEmit",
-		"test": "vitest"
+		"test": "vitest",
+		"test:e2e": "vitest run --config vitest.e2e.config.ts"
 	},
 	"dependencies": {
 		"@aztec/aztec.js": "3.0.0-devnet.20251212",
@@ -56,6 +57,7 @@
 		"globals": "^16.3.0",
 		"jsdom": "^26.1.0",
 		"postcss": "^8.5.6",
+		"puppeteer": "^24.37.5",
 		"sass": "^1.90.0",
 		"typescript": "^5.9.2",
 		"unplugin-auto-import": "^20.0.0",
