@@ -35,7 +35,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         const simulatedTx = await pxe.simulateTx(txRequest, {
             simulatePublic: true,
             skipFeeEnforcement: true,
-            scopes: "ALL_SCOPES",
+            scopes: [],
         });
         const returnValues = simulatedTx.getPrivateReturnValues();
         if (!returnValues.values || returnValues.values.length !== 1) {
