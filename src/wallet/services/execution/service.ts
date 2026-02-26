@@ -95,6 +95,7 @@ import {
     type AztecGetChainInfoOperation,
     type AztecRegisterSenderOperation,
     type AztecGetAddressBookOperation,
+    type AztecGetAccountsOperation,
     type AztecRegisterContractOperation,
     type AztecSimulateTxOperation,
     type AztecSimulateUtilityOperation,
@@ -353,6 +354,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     }
                     case "aztec_getAddressBook": {
                         result = await this.executeAztecGetAddressBook(operation);
+                        break;
+                    }
+                    case "aztec_getAccounts": {
+                        result = await this.executeAztecGetAccounts(operation);
                         break;
                     }
                     case "aztec_registerContract": {
@@ -844,6 +849,21 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             alias: x.name,
             item: AztecAddress.fromString(x.address),
         }));
+    }
+
+    private async executeAztecGetAccounts(op: AztecGetAccountsOperation): Promise<Aliased<AztecAddress>[]> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(op.networkId);
+        const allAccounts = await this.accountService.getAccounts(profile.id, network.chainId, true);
+        return allAccounts
+            .filter(x => op.accounts.includes(x.address))
+            .map(x => ({
+                alias: x.name,
+                item: AztecAddress.fromString(x.address),
+            }));
     }
 
     private async executeAztecRegisterContract(

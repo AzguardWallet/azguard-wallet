@@ -35,6 +35,7 @@ import {
     AztecGetChainInfoRequest,
     AztecRegisterSenderRequest,
     AztecGetAddressBookRequest,
+    AztecGetAccountsRequest,
     AztecRegisterContractRequest,
     AztecSimulateTxRequest,
     AztecSimulateUtilityRequest,
@@ -110,6 +111,7 @@ export function parseMethod(data: OperationKind | ActionKind): string {
         case "aztec_getChainInfo":
         case "aztec_registerSender":
         case "aztec_getAddressBook":
+        case "aztec_getAccounts":
         case "aztec_registerContract":
         case "aztec_simulateTx":
         case "aztec_simulateUtility":
@@ -192,6 +194,9 @@ function parseOperation(op: OperationRequest): OperationRequest {
         }
         case "aztec_getAddressBook": {
             return parseAztecGetAddressBookRequest(op);
+        }
+        case "aztec_getAccounts": {
+            return parseAztecGetAccountsRequest(op);
         }
         case "aztec_registerContract": {
             return parseAztecRegisterContractRequest(op);
@@ -330,6 +335,13 @@ function parseAztecRegisterSenderRequest(data: any): AztecRegisterSenderRequest 
 function parseAztecGetAddressBookRequest(data: any): AztecGetAddressBookRequest {
     return {
         kind: "aztec_getAddressBook",
+        chain: parseChainProp(data, "chain"),
+    };
+}
+
+function parseAztecGetAccountsRequest(data: any): AztecGetAccountsRequest {
+    return {
+        kind: "aztec_getAccounts",
         chain: parseChainProp(data, "chain"),
     };
 }

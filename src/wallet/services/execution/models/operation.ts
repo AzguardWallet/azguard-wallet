@@ -32,6 +32,7 @@ export type Operation =
     | AztecSimulateTxOperation
     | AztecSimulateUtilityOperation
     | AztecProfileTxOperation
+    | AztecGetAccountsOperation
     | AztecSendTxOperation
     | AztecCreateAuthWitOperation;
 
@@ -146,6 +147,12 @@ export type AztecRegisterSenderOperation = {
 export type AztecGetAddressBookOperation = {
     readonly kind: "aztec_getAddressBook";
     readonly networkId: string;
+};
+
+export type AztecGetAccountsOperation = {
+    readonly kind: "aztec_getAccounts";
+    readonly networkId: string;
+    readonly accounts: string[];
 };
 
 export type AztecRegisterContractOperation = {

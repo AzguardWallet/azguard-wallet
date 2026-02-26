@@ -186,6 +186,14 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     operations.push({ ...op, networkId: network.id });
                     break;
                 }
+                case "aztec_getAccounts": {
+                    const network = await getNetwork(op.chain);
+                    const accounts = payload.session.accounts
+                        .filter(x => x.startsWith(op.chain))
+                        .map(x => x.split(":").at(-1)!);
+                    operations.push({ ...op, networkId: network.id, accounts });
+                    break;
+                }
                 case "get_complete_address":
                 case "register_token":
                 case "simulate_transaction":
@@ -237,6 +245,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_getChainInfo":
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
+                case "aztec_getAccounts":
                 case "aztec_registerContract": {
                     this.checkMethodPermission(session, operation.kind, operation.chain);
                     break;
@@ -357,6 +366,8 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             case "aztec_registerSender":
                 return AccessLevel.PxeState;
             case "aztec_getAddressBook":
+                return AccessLevel.AppState;
+            case "aztec_getAccounts":
                 return AccessLevel.AppState;
             case "aztec_registerContract":
                 return AccessLevel.PxeState;

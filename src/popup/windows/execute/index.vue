@@ -151,6 +151,19 @@ const init = async () => {
 					})
 					break
 				}
+				case "aztec_getAccounts": {
+					const network = await getNetwork(op.chain)
+					const sessionAccounts = payload.value!.session.accounts
+						.filter(x => x.startsWith(op.chain))
+						.map(x => x.split(":").at(-1)!)
+					_operations.push({
+						...op,
+						network,
+						networkId: network.id,
+						accounts: sessionAccounts,
+					})
+					break
+				}
 				case "get_complete_address":
 				case "register_token":
 				case "simulate_transaction":
