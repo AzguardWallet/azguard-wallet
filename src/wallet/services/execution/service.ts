@@ -1,4 +1,7 @@
 import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
+import type { InteractionWaitOptions, SendReturn } from "@aztec/aztec.js/contracts";
+import { waitForTx } from "@aztec/aztec.js/node";
+import type { SimulateTxOpts } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import {
     type AbiDecoded,
@@ -15,8 +18,6 @@ import {
 import { AuthWitness, computeInnerAuthWitHash } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
-    ContractClassMetadata,
-    ContractMetadata,
     type CompleteAddress,
     computeContractAddressFromInstance,
     type ContractInstanceWithAddress,
@@ -31,13 +32,10 @@ import {
     ExecutionPayload,
     HashedValues,
     TxExecutionRequest,
-    TxHash,
     TxProfileResult,
-    TxReceipt,
     TxSimulationResult,
     UtilitySimulationResult,
     Tx,
-    SimulationOverrides,
 } from "@aztec/stdlib/tx";
 import z from "zod";
 import { NetworkService, Network } from "@/wallet/services/network/service";
@@ -59,6 +57,7 @@ import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin } f
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
+import { trimAddress } from "@/utils/string";
 import {
     TaskService,
     WrappedTask,
@@ -94,9 +93,9 @@ import {
     type AztecGetContractMetadataOperation,
     type AztecGetPrivateEventsOperation,
     type AztecGetChainInfoOperation,
-    type AztecGetTxReceiptOperation,
     type AztecRegisterSenderOperation,
     type AztecGetAddressBookOperation,
+    type AztecGetAccountsOperation,
     type AztecRegisterContractOperation,
     type AztecSimulateTxOperation,
     type AztecSimulateUtilityOperation,
@@ -111,8 +110,9 @@ import {
 } from "./spec";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
-import { Aliased, FunctionCallSchema, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
+import { Aliased, ContractClassMetadata, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
+import { siloNullifier } from "@aztec/stdlib/hash";
 
 export * from "./spec";
 
@@ -239,10 +239,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 ],
             };
 
-            const [txRequest, node, pxe, _, network, nonce, __, feePaymentMethod] =
+            const [txRequest, node, pxe, account, network, nonce, __, feePaymentMethod] =
                 await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, transferTask);
 
-            const provedTx = await this.proveTxTask(pxe, txRequest, transferTask);
+            const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], transferTask);
 
             const tx = await provedTx.toTx();
             await this.sendTxTask(node, tx, transferTask);
@@ -349,16 +349,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         result = await this.executeAztecGetChainInfo(operation);
                         break;
                     }
-                    case "aztec_getTxReceipt": {
-                        result = await this.executeAztecGetTxReceipt(operation);
-                        break;
-                    }
                     case "aztec_registerSender": {
                         result = await this.executeAztecRegisterSender(operation);
                         break;
                     }
                     case "aztec_getAddressBook": {
                         result = await this.executeAztecGetAddressBook(operation);
+                        break;
+                    }
+                    case "aztec_getAccounts": {
+                        result = await this.executeAztecGetAccounts(operation);
                         break;
                     }
                     case "aztec_registerContract": {
@@ -424,7 +424,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const providedInstance = await ContractInstanceWithAddressSchema.optional().parseAsync(op.instance);
         const instance =
             providedInstance ??
-            (await this.pxeService.getContractMetadata(network, AztecAddress.fromString(op.address))).contractInstance;
+            (await this.pxeService.getContractInstance(network, AztecAddress.fromString(op.address)));
         if (!instance) {
             throw new Error("Contract instance not found");
         }
@@ -432,7 +432,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
         const artifact =
             providedArtifact ??
-            (await this.pxeService.getContractClassMetadata(network, instance.currentContractClassId, true)).artifact;
+            (await this.pxeService.getContractArtifact(network, instance.currentContractClassId));
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
@@ -482,7 +482,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
             await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, parentTask);
 
-        const provedTx = await this.proveTxTask(pxe, txRequest, parentTask);
+        const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], parentTask);
 
         const tx = await provedTx.toTx();
         await this.sendTxTask(node, tx, parentTask);
@@ -503,14 +503,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeSimulateTransaction(op: SimulateTransactionOperation): Promise<unknown> {
         const [txRequest, _, pxe, account] = await this.buildTxRequest(op, AzguardFeePaymentMethod.FeeJuice);
-        const simulatedTx = await pxe.simulateTx(
-            txRequest, // txRequest
-            op.simulatePublic ?? false, // simulatePublic
-            undefined, // skipTxValidation
-            true, // skipFeeEnforcement
-            undefined, // overrides
-            [account.address], // scopes
-        );
+        const simulatedTx = await pxe.simulateTx(txRequest, {
+            simulatePublic: op.simulatePublic ?? false,
+            skipFeeEnforcement: true,
+            scopes: [account.address],
+        });
         return {
             gasUsed: simulatedTx.gasUsed,
             privateReturn: simulatedTx.getPrivateReturnValues(),
@@ -559,11 +556,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         );
 
         await account.ensureRegistered(pxe);
-        const { result } = await pxe.simulateUtility(
-            call, // call
-            undefined, // authwits
-            [account.address], // scopes
-        );
+        const { result } = await pxe.simulateUtility(call, {
+            scopes: [account.address],
+        });
 
         try {
             return decodeFromAbi(fn.returnTypes, result);
@@ -648,8 +643,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                     encodedArgs,
                                     fn.returnTypes,
                                 ),
-                                undefined, // authwits
-                                [account.address],
+                                { scopes: [account.address] },
                             ),
                             i,
                             fn.returnTypes,
@@ -719,8 +713,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                     call.args.map(x => Fr.fromString(x)),
                                     fn.returnTypes,
                                 ),
-                                undefined, // authwits
-                                [account.address],
+                                { scopes: [account.address] },
                             ),
                             i,
                             fn.returnTypes,
@@ -763,14 +756,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 AzguardFeePaymentMethod.FeeJuice,
                 args,
             );
-            const simulatedTx = await pxe.simulateTx(
-                txRequest, // txRequest
-                true, // simulatePublic
-                undefined, // skipTxValidation
-                true, // skipFeeEnforcement
-                undefined, // overrides
-                [account.address], // scopes
-            );
+            const simulatedTx = await pxe.simulateTx(txRequest, {
+                simulatePublic: true,
+                skipFeeEnforcement: true,
+                scopes: [account.address],
+            });
 
             const publicReturn = simulatedTx.getPublicReturnValues();
             const privateReturn =
@@ -808,12 +798,34 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         op: AztecGetContractClassMetadataOperation,
     ): Promise<ContractClassMetadata> {
         const network = await this.networkService.getNetwork(op.networkId);
-        return this.pxeService.getContractClassMetadata(network, op.id, op.includeArtifact);
+        const artifact = await this.pxeService.getContractArtifact(network, op.id);
+        const node = await this.networkService.getNode(network.chainId);
+        const publiclyRegisteredContractClass = await node.getContractClass(op.id);
+        return {
+            isArtifactRegistered: !!artifact,
+            isContractClassPubliclyRegistered: !!publiclyRegisteredContractClass,
+        };
     }
 
-    private async executeAztecGetContractMetadata(op: AztecGetContractMetadataOperation): Promise<ContractMetadata> {
+    private async executeAztecGetContractMetadata(
+        op: AztecGetContractMetadataOperation,
+    ): Promise<ContractMetadata> {
         const network = await this.networkService.getNetwork(op.networkId);
-        return this.pxeService.getContractMetadata(network, op.address);
+        const node = await this.networkService.getNode(network.chainId);
+        const instance = await this.pxeService.getContractInstance(network, op.address);
+        const initNullifier = await siloNullifier(op.address, op.address.toField());
+        const publiclyRegisteredContract = await node.getContract(op.address);
+        const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
+        const isContractUpdated =
+            publiclyRegisteredContract &&
+            !publiclyRegisteredContract.currentContractClassId.equals(publiclyRegisteredContract.originalContractClassId);
+        return {
+            instance,
+            isContractInitialized: !!initWitness,
+            isContractPublished: !!publiclyRegisteredContract,
+            isContractUpdated: !!isContractUpdated,
+            updatedContractClassId: isContractUpdated ? publiclyRegisteredContract.currentContractClassId : undefined,
+        };
     }
 
     private async executeAztecGetPrivateEvents(op: AztecGetPrivateEventsOperation): Promise<PackedPrivateEvent[]> {
@@ -828,12 +840,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return { chainId: new Fr(l1ChainId), version: new Fr(rollupVersion) };
     }
 
-    private async executeAztecGetTxReceipt(op: AztecGetTxReceiptOperation): Promise<TxReceipt> {
-        const network = await this.networkService.getNetwork(op.networkId);
-        const node = await this.networkService.getNode(network.chainId);
-        return node.getTxReceipt(op.txHash);
-    }
-
     private async executeAztecRegisterSender(op: AztecRegisterSenderOperation): Promise<AztecAddress> {
         const network = await this.networkService.getNetwork(op.networkId);
         return this.pxeService.registerSender(network, op.address);
@@ -841,10 +847,28 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeAztecGetAddressBook(op: AztecGetAddressBookOperation): Promise<Aliased<AztecAddress>[]> {
         // TODO: filter by chainId
+        // TODO: `x.name` leaks internal contact labels to dApps — consider permissions
+        //       or returning trimAddress(x.address) like getAccounts does
         return (await this.contactService.getContacts()).map(x => ({
             alias: x.name,
             item: AztecAddress.fromString(x.address),
         }));
+    }
+
+    private async executeAztecGetAccounts(op: AztecGetAccountsOperation): Promise<Aliased<AztecAddress>[]> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(op.networkId);
+        const allAccounts = await this.accountService.getAccounts(profile.id, network.chainId, true);
+        return allAccounts
+            .filter(x => op.accounts.includes(x.address))
+            .map(x => ({
+                // TODO: provide user with a flow showing internal account names for dApps
+                alias: trimAddress(x.address),
+                item: AztecAddress.fromString(x.address),
+            }));
     }
 
     private async executeAztecRegisterContract(
@@ -863,7 +887,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
         const artifact =
             providedArtifact ??
-            (await this.pxeService.getContractClassMetadata(network, instance.currentContractClassId, true)).artifact;
+            (await this.pxeService.getContractArtifact(network, instance.currentContractClassId));
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
@@ -889,14 +913,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
         const [txRequest, _, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
-        return pxe.simulateTx(
-            txRequest, // txRequest
-            true, // simulatePublic
-            op.opts.skipTxValidation, // skipTxValidation
-            op.opts.skipFeeEnforcement ?? true, // skipFeeEnforcement
-            undefined, // overrides
-            [account.address], // scopes
-        );
+        return pxe.simulateTx(txRequest, {
+            simulatePublic: true,
+            skipTxValidation: op.opts.skipTxValidation,
+            skipFeeEnforcement: op.opts.skipFeeEnforcement ?? true,
+            scopes: [account.address],
+        });
     }
 
     private async executeAztecSimulateUtility(op: AztecSimulateUtilityOperation): Promise<UtilitySimulationResult> {
@@ -908,9 +930,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         const pxe = this.pxeService.getPXE(network);
         await account.ensureRegistered(pxe);
-        return pxe.simulateUtility(op.call, await z.array(AuthWitness.schema).optional().parseAsync(op.authwits), [
-            account.address,
-        ]);
+        return pxe.simulateUtility(op.call, {
+            authwits: await z.array(AuthWitness.schema).optional().parseAsync(op.opts.authWitnesses),
+            scopes: [await AztecAddress.schema.parseAsync(op.opts.scope)],
+        });
     }
 
     private async executeAztecProfileTx(op: AztecProfileTxOperation): Promise<TxProfileResult> {
@@ -920,14 +943,18 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
         const [txRequest, _, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
-        return pxe.profileTx(txRequest, op.opts.profileMode, op.opts.skipProofGeneration);
+        return pxe.profileTx(txRequest, {
+            profileMode: op.opts.profileMode,
+            skipProofGeneration: op.opts.skipProofGeneration,
+            scopes: [AztecAddress.fromString(op.accountAddress)],
+        });
     }
 
     private async executeAztecSendTx(
         op: AztecSendTxOperation,
         origin: LocalTxOrigin,
         parentTask?: WrappedTask,
-    ): Promise<TxHash> {
+    ): Promise<SendReturn<InteractionWaitOptions>> {
         if (op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
@@ -935,7 +962,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
             await this.buildAndEstimateTxRequest({ ...op, actions, fee }, op.feeSettings.paymentMethod, parentTask);
 
-        const provedTx = await this.proveTxTask(pxe, txRequest, parentTask);
+        const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], parentTask);
 
         const tx = await provedTx.toTx();
         await this.sendTxTask(node, tx, parentTask);
@@ -951,7 +978,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             txHash.toString(),
         );
 
-        return txHash;
+        if (op.opts.wait === "NO_WAIT") {
+            return txHash;
+        }
+        return waitForTx(node, txHash, op.opts.wait);
     }
 
     public async executeAztecCreateAuthWit(op: AztecCreateAuthWitOperation): Promise<AuthWitness> {
@@ -978,16 +1008,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const { caller, call } = op.messageHashOrIntent;
             const intentAction: CallIntent = {
                 caller: await AztecAddress.schema.parseAsync(caller),
-                call: {
-                    name: call.name,
-                    to: await AztecAddress.schema.parseAsync(call.to),
-                    selector: await FunctionSelector.schema.parseAsync(call.selector),
-                    type: call.type,
-                    hideMsgSender: call.hideMsgSender,
-                    isStatic: call.isStatic,
-                    args: await z.array(Fr.schema).parseAsync(call.args),
-                    returnTypes: await z.array(AbiTypeSchema).parseAsync(call.returnTypes),
-                } satisfies FunctionCall,
+                call: new FunctionCall(
+                    call.name,
+                    await AztecAddress.schema.parseAsync(call.to),
+                    await FunctionSelector.schema.parseAsync(call.selector),
+                    call.type,
+                    call.hideMsgSender,
+                    call.isStatic,
+                    await z.array(Fr.schema).parseAsync(call.args),
+                    await z.array(AbiTypeSchema).parseAsync(call.returnTypes),
+                ),
             };
             messageHash = await computeAuthWitMessageHash(intentAction, metadata);
         } else if (typeof op.messageHashOrIntent === "object" && "consumer" in op.messageHashOrIntent) {
@@ -998,7 +1028,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
             messageHash = await computeAuthWitMessageHash(intentHash, metadata);
         } else {
-            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
+            throw new Error("Invalid messageHashOrIntent: expected IntentInnerHash or CallIntent");
         }
 
         return await account.buildAuthWitness(messageHash);
@@ -1008,7 +1038,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async processAztecJsPayload(
         exec: ExecutionPayload,
-        opts: SimulateOptions | ProfileOptions | SendOptions,
+        opts: SimulateOptions | ProfileOptions | SendOptions<InteractionWaitOptions>,
     ): Promise<[Action[], AzguardFeePaymentMethod, FeeOptions]> {
         const actions: Action[] = [];
 
@@ -1043,7 +1073,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         for (const _call of exec.calls ?? []) {
-            const call = await FunctionCallSchema.parseAsync(_call);
+            const call = await FunctionCall.schema.parseAsync(_call);
             actions.push({
                 kind: "encoded_call",
                 to: call.to.toString(),
@@ -1111,7 +1141,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         maxFeesPerGas?: GasFees,
     ) {
         if (!maxFeesPerGas) {
-            maxFeesPerGas = await node.getCurrentBaseFees()
+            maxFeesPerGas = await node.getCurrentMinFees()
             // TODO: replace x2 multiplier with better coefficient
             maxFeesPerGas = maxFeesPerGas.mul(FEE_PADDING_MULTIPLIER);
         }
@@ -1151,12 +1181,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.suggestGasLimits(txRequest, op.fee);
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
@@ -1176,12 +1202,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.suggestGasLimits(txRequest, op.fee);
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
@@ -1210,16 +1232,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.suggestGasLimits(txRequest, op.fee);
                     let simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     // Fetch actual fees for FPC fee payload (with FEE_PADDING_MULTIPLIER)
-                    const baseFees = (await node.getCurrentBaseFees()).mul(FEE_PADDING_MULTIPLIER);
+                    const baseFees = (await node.getCurrentMinFees()).mul(FEE_PADDING_MULTIPLIER);
                     let maxFee = simulatedTx.gasUsed.totalGas
                         .add(fpc.getTotalGas(inPublic))
                         .computeFee(baseFees);
@@ -1238,12 +1256,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     );
                     simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     maxFee = simulatedTx.gasUsed.totalGas
@@ -1275,12 +1289,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     this.suggestGasLimits(txRequest, op.fee);
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
-                        txRequest, // txRequest
-                        true, // simulatePublic
-                        undefined, // skipTxValidation
-                        true, // skipFeeEnforcement
-                        undefined, // overrides
-                        [account.address], // scopes
+                        txRequest,
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
@@ -1619,24 +1629,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async simulateTxTask(
         pxe: IPXE,
         txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[],
+        opts: SimulateTxOpts,
         parentTask?: WrappedTask,
     ) {
         const step = new StepContent("Simulating transaction");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
         try {
-            const simulatedTx = await pxe.simulateTx(
-                txRequest,
-                simulatePublic,
-                skipTxValidation,
-                skipFeeEnforcement,
-                overrides,
-                scopes,
-            );
+            const simulatedTx = await pxe.simulateTx(txRequest, opts);
             task.complete();
             return simulatedTx;
         } catch (error) {
@@ -1645,11 +1644,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
     }
 
-    private async proveTxTask(pxe: IPXE, txRequest: TxExecutionRequest, parentTask?: WrappedTask) {
+    private async proveTxTask(pxe: IPXE, txRequest: TxExecutionRequest, scopes: AztecAddress[], parentTask?: WrappedTask) {
         const step = new StepContent("Generating proof");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
         try {
-            const provedTx = await pxe.proveTx(txRequest);
+            const provedTx = await pxe.proveTx(txRequest, scopes);
             task.complete();
             return provedTx;
         } catch (error) {
@@ -1830,11 +1829,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     private async getInstance(pxe: IPXE, contract: string): Promise<[string, ContractInstanceWithAddress]> {
-        const metadata = await pxe.getContractMetadata(AztecAddress.fromString(contract));
-        if (!metadata.contractInstance) {
+        const instance = await pxe.getContractInstance(AztecAddress.fromString(contract));
+        if (!instance) {
             throw new Error("Contract instance not found");
         }
-        return [contract, metadata.contractInstance];
+        return [contract, instance];
     }
 
     private async getArtifacts(
@@ -1859,10 +1858,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     private async getArtifact(pxe: IPXE, classId: string): Promise<[string, ContractArtifact]> {
-        const metadata = await pxe.getContractClassMetadata(Fr.fromString(classId), true);
-        if (!metadata.artifact) {
+        const artifact = await pxe.getContractArtifact(Fr.fromString(classId));
+        if (!artifact) {
             throw new Error("Contract artifact not found");
         }
-        return [classId, metadata.artifact];
+        return [classId, artifact];
     }
 }

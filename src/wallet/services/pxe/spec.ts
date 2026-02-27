@@ -1,19 +1,17 @@
 import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
 import type { Fr } from "@aztec/foundation/curves/bn254";
-import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
+import { PackedPrivateEvent, type NotesFilter } from "@aztec/pxe/client/bundle";
+export type { NotesFilter };
+import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
-import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type {
     CompleteAddress,
-    ContractClassMetadata,
     ContractInstanceWithAddress,
-    ContractMetadata,
     PartialAddress,
 } from "@aztec/stdlib/contract";
-import type { NotesFilter, NoteDao } from "@aztec/stdlib/note";
+import type { NoteDao } from "@aztec/stdlib/note";
 import type {
-    SimulationOverrides,
     TxExecutionRequest,
     TxProfileResult,
     TxProvingResult,
@@ -26,8 +24,7 @@ export const PXE_SERVICE_NAME = "pxe";
 
 export type Methods = {
     getContractInstance(network: Network, address: AztecAddress): ContractInstanceWithAddress | undefined;
-    getContractClassMetadata(network: Network, id: Fr, includeArtifact?: boolean): ContractClassMetadata;
-    getContractMetadata(network: Network, address: AztecAddress): ContractMetadata;
+    getContractArtifact(network: Network, id: Fr): ContractArtifact | undefined;
     registerAccount(network: Network, secretKey: Fr, partialAddress: PartialAddress): CompleteAddress;
     registerSender(network: Network, address: AztecAddress): AztecAddress;
     getSenders(network: Network): AztecAddress[];
@@ -41,28 +38,10 @@ export type Methods = {
     updateContract(network: Network, contractAddress: AztecAddress, artifact: ContractArtifact): void;
     getContracts(network: Network): AztecAddress[];
     getNotes(network: Network, filter: NotesFilter): NoteDao[];
-    proveTx(network: Network, txRequest: TxExecutionRequest): TxProvingResult;
-    profileTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
-    ): TxProfileResult;
-    simulateTx(
-        network: Network,
-        txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[],
-    ): TxSimulationResult;
-    simulateUtility(
-        network: Network,
-        call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes?: AztecAddress[],
-    ): UtilitySimulationResult;
+    proveTx(network: Network, txRequest: TxExecutionRequest, scopes: AztecAddress[]): TxProvingResult;
+    profileTx(network: Network, txRequest: TxExecutionRequest, opts: ProfileTxOpts): TxProfileResult;
+    simulateTx(network: Network, txRequest: TxExecutionRequest, opts: SimulateTxOpts): TxSimulationResult;
+    simulateUtility(network: Network, call: FunctionCall, opts: SimulateUtilityOpts): UtilitySimulationResult;
     getPrivateEvents<T>(
         network: Network,
         eventSelector: EventSelector,

@@ -1,4 +1,4 @@
-import { TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
+import { TxHash, TxReceipt, TxStatus as AztecTxStatus, TxExecutionResult as AztecTxExecutionResult } from "@aztec/stdlib/tx";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { FunctionSelector } from "@aztec/stdlib/abi";
@@ -17,12 +17,12 @@ import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
 import { BlockNumber } from "@aztec/foundation/branded-types";
-import { Tx, SyncedTx, TxIndexerCursor, TRANSACTION_SERVICE_NAME, LocalTxOrigin, TxCall, SyncedTxCall, TxStatus, Methods, Events, OriginType, isSyncedTx } from "./spec";
+import { Tx, SyncedTx, TxIndexerCursor, TRANSACTION_SERVICE_NAME, LocalTxOrigin, TxCall, SyncedTxCall, TxStatus, TxExecutionResult, Methods, Events, OriginType, isSyncedTx } from "./spec";
 import { AzguardFeePaymentMethod } from "../account/contracts";
 import { FUNCTION_CALL_LOG_EVENT_SELECTOR } from "../account/contracts/azguard-v0-persistent";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
-import type { ContractMetadata } from "@aztec/stdlib/contract";
+import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract";
 
 export * from "./spec";
 
@@ -33,10 +33,12 @@ const SYNC_BATCH_PAUSE_MS = 1000;
 
 /** Session-scoped caches for sync operation */
 type SyncCaches = {
-    /** contractAddress -> ContractMetadata */
-    contractMetadata: Map<string, ContractMetadata>;
+    /** contractAddress -> ContractInstanceWithAddress */
+    contractInstances: Map<string, ContractInstanceWithAddress | undefined>;
     /** classId -> (selector -> methodName) */
     selectorMap: Map<string, Map<string, string>>;
+    /** txHash -> TxReceipt */
+    txReceipts: Map<string, TxReceipt>;
 };
 
 export type FunctionCallLogEvent = {
@@ -264,8 +266,9 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
             // Session-scoped caches to avoid redundant metadata fetches and selector computations
             const caches: SyncCaches = {
-                contractMetadata: new Map(),
+                contractInstances: new Map(),
                 selectorMap: new Map(),
+                txReceipts: new Map(),
             };
 
             while (cursor.head <= tip) {
@@ -375,6 +378,14 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 this.logError(`Sync: block ${ev.l2BlockNumber} not found`);
                 return;
             }
+
+            // Fetch receipt from node to get real status and execution result
+            let receipt = caches.txReceipts.get(txHash);
+            if (!receipt) {
+                receipt = await node.getTxReceipt(TxHash.fromString(txHash));
+                caches.txReceipts.set(txHash, receipt);
+            }
+
             const newTx: SyncedTx = {
                 origin: { type: OriginType.Synced, name: "Sync" },
                 chainId: account.chainId,
@@ -385,8 +396,11 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 hash: txHash,
                 createdAt: Number(block.timestamp) * 1000,
                 updatedAt: Date.now(),
-                status: TxStatus.Success,
+                status: this.getTxStatus(receipt.status),
+                executionResult: this.getTxExecutionResult(receipt.executionResult),
                 block: { hash: ev.l2BlockHash.toString(), number: ev.l2BlockNumber },
+                fee: receipt.transactionFee?.toString(),
+                error: receipt.error,
             };
 
             await this.txs.set(newTx.hash, newTx);
@@ -431,20 +445,22 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         caches: SyncCaches,
     ): Promise<string | null> {
         try {
-            // Check contract metadata cache
-            let contractMetadata = caches.contractMetadata.get(contractAddress);
-            if (!contractMetadata) {
+            // Check contract instance cache
+            let contractInstance: ContractInstanceWithAddress | undefined;
+            if (caches.contractInstances.has(contractAddress)) {
+                contractInstance = caches.contractInstances.get(contractAddress);
+            } else {
                 const address = AztecAddress.fromString(contractAddress);
-                contractMetadata = await pxe.getContractMetadata(address);
-                caches.contractMetadata.set(contractAddress, contractMetadata);
+                contractInstance = await pxe.getContractInstance(address);
+                caches.contractInstances.set(contractAddress, contractInstance);
             }
 
-            if (!contractMetadata.contractInstance) {
+            if (!contractInstance) {
                 this.logDebug(`resolveMethodName: no contractInstance for ${contractAddress}`);
                 return null;
             }
 
-            const classId = contractMetadata.contractInstance.currentContractClassId.toString();
+            const classId = contractInstance.currentContractClassId.toString();
 
             // Check selector map cache for this class
             let selectorMap = caches.selectorMap.get(classId);
@@ -453,16 +469,14 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 caches.selectorMap.set(classId, selectorMap);
 
                 // Build selector -> methodName map for this class
-                const classMetadata = await pxe.getContractClassMetadata(
-                    contractMetadata.contractInstance.currentContractClassId,
-                    true,
+                const artifact = await pxe.getContractArtifact(
+                    contractInstance.currentContractClassId,
                 );
-                if (!classMetadata.artifact) {
+                if (!artifact) {
                     this.logDebug(`resolveMethodName: no artifact for classId=${classId}`);
                     return null;
                 }
 
-                const { artifact } = classMetadata;
                 const functions = artifact.functions ?? [];
                 const nonDispatchFunctions = artifact.nonDispatchPublicFunctions ?? [];
                 const allFunctions = [...functions, ...nonDispatchFunctions];
@@ -496,13 +510,15 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
         const receipt = await node.getTxReceipt(TxHash.fromString(tx.hash));
         const status = this.getTxStatus(receipt.status);
-        if (status === tx.status) {
+        const executionResult = this.getTxExecutionResult(receipt.executionResult);
+        if (status === tx.status && executionResult === tx.executionResult) {
             this.logDebug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
             return;
         }
 
         tx.updatedAt = Date.now();
         tx.status = status;
+        tx.executionResult = executionResult;
         tx.block =
             receipt.blockHash && receipt.blockNumber
                 ? { hash: receipt.blockHash.toString(), number: receipt.blockNumber }
@@ -524,16 +540,32 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 return TxStatus.Pending;
             case AztecTxStatus.DROPPED:
                 return TxStatus.Dropped;
-            case AztecTxStatus.SUCCESS:
-                return TxStatus.Success;
-            case AztecTxStatus.APP_LOGIC_REVERTED:
-                return TxStatus.AppLogicReverted;
-            case AztecTxStatus.TEARDOWN_REVERTED:
-                return TxStatus.TeardownReverted;
-            case AztecTxStatus.BOTH_REVERTED:
-                return TxStatus.BothReverted;
+            case AztecTxStatus.PROPOSED:
+                return TxStatus.Proposed;
+            case AztecTxStatus.CHECKPOINTED:
+                return TxStatus.Checkpointed;
+            case AztecTxStatus.PROVEN:
+                return TxStatus.Proven;
+            case AztecTxStatus.FINALIZED:
+                return TxStatus.Finalized;
             default:
                 throw new Error("unknown tx status");
+        }
+    }
+
+    private getTxExecutionResult(result: AztecTxExecutionResult | undefined): TxExecutionResult | undefined {
+        if (!result) return undefined;
+        switch (result) {
+            case AztecTxExecutionResult.SUCCESS:
+                return TxExecutionResult.Success;
+            case AztecTxExecutionResult.APP_LOGIC_REVERTED:
+                return TxExecutionResult.AppLogicReverted;
+            case AztecTxExecutionResult.TEARDOWN_REVERTED:
+                return TxExecutionResult.TeardownReverted;
+            case AztecTxExecutionResult.BOTH_REVERTED:
+                return TxExecutionResult.BothReverted;
+            default:
+                return undefined;
         }
     }
 

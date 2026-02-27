@@ -1,17 +1,15 @@
 import type { Fr } from "@aztec/foundation/curves/bn254";
+import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
-import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     CompleteAddress,
     type ContractInstanceWithAddress,
     type PartialAddress,
-    ContractClassMetadata,
-    ContractMetadata,
 } from "@aztec/stdlib/contract";
-import { NotesFilter, NoteDao } from "@aztec/stdlib/note";
+import { NoteDao } from "@aztec/stdlib/note";
+import type { NotesFilter } from "./spec";
 import {
-    SimulationOverrides,
     TxExecutionRequest,
     TxProfileResult,
     TxProvingResult,
@@ -25,8 +23,7 @@ import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export interface IPXE {
     getContractInstance(address: AztecAddress): Promise<ContractInstanceWithAddress | undefined>;
-    getContractClassMetadata(id: Fr, includeArtifact?: boolean): Promise<ContractClassMetadata>;
-    getContractMetadata(address: AztecAddress): Promise<ContractMetadata>;
+    getContractArtifact(id: Fr): Promise<ContractArtifact | undefined>;
     registerAccount(secretKey: Fr, partialAddress: PartialAddress): Promise<CompleteAddress>;
     registerSender(address: AztecAddress): Promise<AztecAddress>;
     getSenders(): Promise<AztecAddress[]>;
@@ -37,25 +34,10 @@ export interface IPXE {
     updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void>;
     getContracts(): Promise<AztecAddress[]>;
     getNotes(filter: NotesFilter): Promise<NoteDao[]>;
-    proveTx(txRequest: TxExecutionRequest): Promise<TxProvingResult>;
-    profileTx(
-        txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
-    ): Promise<TxProfileResult>;
-    simulateTx(
-        txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[],
-    ): Promise<TxSimulationResult>;
-    simulateUtility(
-        call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes?: AztecAddress[],
-    ): Promise<UtilitySimulationResult>;
+    proveTx(txRequest: TxExecutionRequest, scopes: AztecAddress[]): Promise<TxProvingResult>;
+    profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult>;
+    simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts): Promise<TxSimulationResult>;
+    simulateUtility(call: FunctionCall, opts: SimulateUtilityOpts): Promise<UtilitySimulationResult>;
     getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]>;
 }
 
@@ -66,12 +48,8 @@ export class PXEProxy implements IPXE {
         return this.pxeService.getContractInstance(this.network, address);
     }
 
-    getContractClassMetadata(id: Fr, includeArtifact?: boolean): Promise<ContractClassMetadata> {
-        return this.pxeService.getContractClassMetadata(this.network, id, includeArtifact);
-    }
-
-    getContractMetadata(address: AztecAddress): Promise<ContractMetadata> {
-        return this.pxeService.getContractMetadata(this.network, address);
+    getContractArtifact(id: Fr): Promise<ContractArtifact | undefined> {
+        return this.pxeService.getContractArtifact(this.network, id);
     }
 
     registerAccount(secretKey: Fr, partialAddress: PartialAddress): Promise<CompleteAddress> {
@@ -114,43 +92,20 @@ export class PXEProxy implements IPXE {
         return this.pxeService.getNotes(this.network, filter);
     }
 
-    proveTx(txRequest: TxExecutionRequest): Promise<TxProvingResult> {
-        return this.pxeService.proveTx(this.network, txRequest);
+    proveTx(txRequest: TxExecutionRequest, scopes: AztecAddress[]): Promise<TxProvingResult> {
+        return this.pxeService.proveTx(this.network, txRequest, scopes);
     }
 
-    profileTx(
-        txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
-    ): Promise<TxProfileResult> {
-        return this.pxeService.profileTx(this.network, txRequest, profileMode, skipProofGeneration);
+    profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult> {
+        return this.pxeService.profileTx(this.network, txRequest, opts);
     }
 
-    simulateTx(
-        txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[],
-    ): Promise<TxSimulationResult> {
-        return this.pxeService.simulateTx(
-            this.network,
-            txRequest,
-            simulatePublic,
-            skipTxValidation,
-            skipFeeEnforcement,
-            overrides,
-            scopes,
-        );
+    simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts): Promise<TxSimulationResult> {
+        return this.pxeService.simulateTx(this.network, txRequest, opts);
     }
 
-    simulateUtility(
-        call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes?: AztecAddress[],
-    ): Promise<UtilitySimulationResult> {
-        return this.pxeService.simulateUtility(this.network, call, authwits, scopes);
+    simulateUtility(call: FunctionCall, opts: SimulateUtilityOpts): Promise<UtilitySimulationResult> {
+        return this.pxeService.simulateUtility(this.network, call, opts);
     }
 
     async getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]> {

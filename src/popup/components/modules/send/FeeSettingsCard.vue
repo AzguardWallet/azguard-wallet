@@ -67,6 +67,7 @@ const isLoading = ref(false)
 const error = ref("")
 
 const selectedFpc = computed(() => cacheStore.feePaymentMethods.find(m => m.id === methodId)?.fpc)
+const fpcBalance = computed(() => balances.value?.find(b => b.token.contract === selectedFpc.value?.asset))
 const claimParameters = computed(() => cacheStore.feePaymentMethods.find(m => m.id === methodId)?.claimParameters)
 const isClaimParametersFilled = computed(() => !!(selectedMethod.value?.claimAmount && selectedMethod.value?.claimSecret && selectedMethod.value?.messageLeafIndex))
 
@@ -97,10 +98,8 @@ const onBalanceAdded = async (balance) => {
 	}
 
 	balances.value.push(balance)
-	if (selectedMethod.value.fpc?.type === FpcType.DefaultFpc) {
-		if (selectedMethod.value.fpc?.balance.id === balance.id) {
-			selectedMethod.value.balance = balance
-		}
+	if (selectedMethod.value?.balance?.id === balance.id) {
+		selectedMethod.value.balance = balance
 	}
 }
 const onBalanceUpdated = (balance) => {
@@ -176,6 +175,9 @@ const init = async () => {
 			const fpcs = (await chrome.storage.local.get(FEE_METHOD_LS_KEY))[FEE_METHOD_LS_KEY] || {}
 			if (fpcs[props.account.address]) {
 				selectedMethod.value = fpcs[props.account.address]
+				if (fpcBalance.value) {
+					selectedMethod.value.balance = fpcBalance.value
+				}
 			} else {
 				const fpcs = (await fpcService.getFpcs(props.network.chainId))?.filter(f => f.type === FpcType.DefaultSponsoredFpc)
 				if (fpcs?.length) {
@@ -241,8 +243,8 @@ watch(
 					selectedMethod.value = {
 						...selectedMethod.value,
 						fpc: selectedFpc.value,
-						balance: selectedFpc.value.balance,
-						inPublic: selectedFpc.value.balance?.privateBalance === "0" && selectedFpc.value.balance?.publicBalance !== "0",
+						balance: fpcBalance.value,
+						inPublic: fpcBalance.value?.privateBalance === "0" && fpcBalance.value?.publicBalance !== "0",
 					}
 					break;
 				}
@@ -292,8 +294,8 @@ watch(
 			selectedMethod.value = {
 				...selectedMethod.value,
 				fpc: selectedFpc.value,
-				balance: selectedFpc.value.balance,
-				inPublic: selectedFpc.value.balance?.privateBalance === "0" && selectedFpc.value.balance?.publicBalance !== "0",
+				balance: fpcBalance.value,
+				inPublic: fpcBalance.value?.privateBalance === "0" && fpcBalance.value?.publicBalance !== "0",
 			}
 		}
 	}
@@ -463,8 +465,8 @@ onBeforeUnmount(() => {
 				<Flex align="center" justify="between" :class="$style.fjc_price">
 					<Text size="12" weight="600" color="secondary"> Available </Text>
 					<Text size="12" weight="600" :color="isZeroBalance(selectedMethod) ? 'red' : 'primary'">
-						{{ formatBalance(selectedMethod.fpc.balance, selectedMethod.inPublic) }}
-						{{ selectedMethod.fpc.balance.token.symbol }}
+						{{ formatBalance(selectedMethod.balance, selectedMethod.inPublic) }}
+						{{ selectedMethod.balance.token.symbol }}
 					</Text>
 				</Flex>
 			</template>

@@ -33,9 +33,9 @@ import {
     AztecGetContractMetadataRequest,
     AztecGetPrivateEventsRequest,
     AztecGetChainInfoRequest,
-    AztecGetTxReceiptRequest,
     AztecRegisterSenderRequest,
     AztecGetAddressBookRequest,
+    AztecGetAccountsRequest,
     AztecRegisterContractRequest,
     AztecSimulateTxRequest,
     AztecSimulateUtilityRequest,
@@ -109,9 +109,9 @@ export function parseMethod(data: OperationKind | ActionKind): string {
         case "aztec_getContractMetadata":
         case "aztec_getPrivateEvents":
         case "aztec_getChainInfo":
-        case "aztec_getTxReceipt":
         case "aztec_registerSender":
         case "aztec_getAddressBook":
+        case "aztec_getAccounts":
         case "aztec_registerContract":
         case "aztec_simulateTx":
         case "aztec_simulateUtility":
@@ -127,7 +127,7 @@ export function parseMethod(data: OperationKind | ActionKind): string {
         case "encoded_call":
             return data;
         default:
-            throw new Error("Invalid method");
+            throw new Error(`Invalid method: ${JSON.stringify(data)}`);
     }
 }
 
@@ -189,14 +189,14 @@ function parseOperation(op: OperationRequest): OperationRequest {
         case "aztec_getChainInfo": {
             return parseAztecGetChainInfoRequest(op);
         }
-        case "aztec_getTxReceipt": {
-            return parseAztecGetTxReceiptRequest(op);
-        }
         case "aztec_registerSender": {
             return parseAztecRegisterSenderRequest(op);
         }
         case "aztec_getAddressBook": {
             return parseAztecGetAddressBookRequest(op);
+        }
+        case "aztec_getAccounts": {
+            return parseAztecGetAccountsRequest(op);
         }
         case "aztec_registerContract": {
             return parseAztecRegisterContractRequest(op);
@@ -297,7 +297,6 @@ function parseAztecGetContractClassMetadataRequest(data: any): AztecGetContractC
         kind: "aztec_getContractClassMetadata",
         chain: parseChainProp(data, "chain"),
         id: parseRequiredProp(data, "id"),
-        includeArtifact: parseOptionalProp(data, "includeArtifact"),
     };
 }
 
@@ -325,14 +324,6 @@ function parseAztecGetChainInfoRequest(data: any): AztecGetChainInfoRequest {
     };
 }
 
-function parseAztecGetTxReceiptRequest(data: any): AztecGetTxReceiptRequest {
-    return {
-        kind: "aztec_getTxReceipt",
-        chain: parseChainProp(data, "chain"),
-        txHash: parseRequiredProp(data, "txHash"),
-    };
-}
-
 function parseAztecRegisterSenderRequest(data: any): AztecRegisterSenderRequest {
     return {
         kind: "aztec_registerSender",
@@ -344,6 +335,13 @@ function parseAztecRegisterSenderRequest(data: any): AztecRegisterSenderRequest 
 function parseAztecGetAddressBookRequest(data: any): AztecGetAddressBookRequest {
     return {
         kind: "aztec_getAddressBook",
+        chain: parseChainProp(data, "chain"),
+    };
+}
+
+function parseAztecGetAccountsRequest(data: any): AztecGetAccountsRequest {
+    return {
+        kind: "aztec_getAccounts",
         chain: parseChainProp(data, "chain"),
     };
 }
@@ -372,7 +370,7 @@ function parseAztecSimulateUtilityRequest(data: any): AztecSimulateUtilityReques
         kind: "aztec_simulateUtility",
         account: parseAccountProp(data, "account"),
         call: parseRequiredProp(data, "call"),
-        authwits: parseOptionalArrayProp(data, "authwits"),
+        opts: parseRequiredProp(data, "opts"),
     };
 }
 

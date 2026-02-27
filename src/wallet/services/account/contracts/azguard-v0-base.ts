@@ -1,4 +1,4 @@
-import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT, GeneratorIndex } from '@aztec/constants';
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT, DomainSeparator } from '@aztec/constants';
 import { Fr } from '@aztec/foundation/curves/bn254';
 import { GrumpkinScalar } from '@aztec/foundation/curves/grumpkin';
 import { poseidon2HashWithSeparator } from '@aztec/foundation/crypto/poseidon';
@@ -23,6 +23,7 @@ import {
     TxContext,
     TxExecutionRequest,
 } from '@aztec/stdlib/tx';
+import { siloNullifier } from '@aztec/stdlib/hash';
 import { AztecNode } from '@aztec/stdlib/interfaces/client';
 import { ILogger, LogLevel } from '@/wallet/logger';
 import type { IPXE } from "@/wallet/services/pxe/client";
@@ -68,8 +69,8 @@ export abstract class AzguardV0Base implements IAccountContract {
     }
 
     public async ensureContractRegistered(pxe: IPXE): Promise<void> {
-        const contractMetadata = await pxe.getContractMetadata(this.address);
-        if (!contractMetadata.contractInstance) {
+        const instance = await pxe.getContractInstance(this.address);
+        if (!instance) {
             this.logger.log(this.name, LogLevel.Debug, "register contract...");
             await pxe.registerContract({ instance: this.instance, artifact: this.artifact });
         }
@@ -116,7 +117,7 @@ export abstract class AzguardV0Base implements IAccountContract {
                 batchArgs.push(chunkArgs);
 
                 const chunkPayload = chunkCalls.flatMap(x => x.toFields()).concat(chunkNonce).concat(new Fr(chunkFeePaymentMethod));
-                const chunkPayloadHash = await poseidon2HashWithSeparator(chunkPayload, GeneratorIndex.SIGNATURE_PAYLOAD);
+                const chunkPayloadHash = await poseidon2HashWithSeparator(chunkPayload, DomainSeparator.SIGNATURE_PAYLOAD);
                 const chunkAuthwit = await this.buildAuthWitness(chunkPayloadHash);
                 batchAuthwits.push(chunkAuthwit);
 
@@ -132,7 +133,7 @@ export abstract class AzguardV0Base implements IAccountContract {
         batchArgs.push(fnArgs);
 
         const payload = batchCalls.flatMap(x => x.toFields()).concat(nonce).concat(new Fr(feePaymentMethod));
-        const payloadHash = await poseidon2HashWithSeparator(payload, GeneratorIndex.SIGNATURE_PAYLOAD);
+        const payloadHash = await poseidon2HashWithSeparator(payload, DomainSeparator.SIGNATURE_PAYLOAD);
         const authwit = await this.buildAuthWitness(payloadHash);
         batchAuthwits.push(authwit);
 
@@ -153,15 +154,20 @@ export abstract class AzguardV0Base implements IAccountContract {
             this.logger.log(this.name, LogLevel.Debug, 'register account...');
             await pxe.registerAccount(this.secret, await computePartialAddress(this.instance));
         }
-        const contractMetadata = await pxe.getContractMetadata(this.address);
-        if (!contractMetadata.contractInstance) {
+        const contractInstance = await pxe.getContractInstance(this.address);
+        if (!contractInstance) {
             this.logger.log(this.name, LogLevel.Debug, 'register contract...');
             await pxe.registerContract({instance: this.instance, artifact: this.artifact});
         }
-        if (!contractMetadata.isContractInitialized) {
-            this.logger.log(this.name, LogLevel.Debug, 'initialize account contract instance...');
+        // Check if the contract is initialized on-chain via init nullifier
+        const initNullifier = await siloNullifier(this.address, this.address.toField());
+        this.logger.log(this.name, LogLevel.Debug, `checking init nullifier ${initNullifier.toString()} for ${this.address.toString()}`);
+        const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
+        if (!initWitness) {
+            this.logger.log(this.name, LogLevel.Debug, 'init nullifier NOT found, wrapping with initialization');
             return await this._withInitialization(request);
         }
+        this.logger.log(this.name, LogLevel.Debug, 'init nullifier found, account already initialized');
 
         return request;
     }
