@@ -255,11 +255,17 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     this.checkScopesPermissions(session, operation.eventFilter.scopes);
                     break;
                 }
+                case "aztec_simulateUtility": {
+                    const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
+                    this.checkAccountPermission(session, operation.account);
+                    this.checkMethodPermission(session, operation.kind, chain);
+                    this.checkScopesPermissions(session, [operation.opts.scope]);
+                    break;
+                }
                 case "get_complete_address":
                 case "register_token":
                 case "simulate_utility":
                 case "aztec_simulateTx":
-                case "aztec_simulateUtility":
                 case "aztec_profileTx":
                 case "aztec_sendTx":
                 case "aztec_createAuthWit": {
