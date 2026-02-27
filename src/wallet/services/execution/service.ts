@@ -812,9 +812,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     ): Promise<ContractMetadata> {
         const network = await this.networkService.getNetwork(op.networkId);
         const node = await this.networkService.getNode(network.chainId);
-        const instance = await this.pxeService.getContractInstance(network, op.address);
-        const initNullifier = await siloNullifier(op.address, op.address.toField());
-        const publiclyRegisteredContract = await node.getContract(op.address);
+        const address = await AztecAddress.schema.parseAsync(op.address);
+        const instance = await this.pxeService.getContractInstance(network, address);
+        const initNullifier = await siloNullifier(address, address.toField());
+        const publiclyRegisteredContract = await node.getContract(address);
         const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
         const isContractUpdated =
             publiclyRegisteredContract &&
