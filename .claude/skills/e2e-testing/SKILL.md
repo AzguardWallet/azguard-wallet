@@ -32,6 +32,7 @@ This prevents guessing at selectors and ensures tests assert on real observable 
 
 - Collect `console.error` and `pageerror` events during each test, assert empty at the end — catches silent JS errors that assertions miss
 - **Assert post-action state, not just navigation.** A route change alone doesn't prove a flow worked. After registration, verify the account address is rendered, network is shown, etc. After any mutation, check its observable side effects.
+- **Browser-per-file isolation.** Each test file launches its own browser via `test.extend()` with `scope: "file"`. This is the only reliable way to get independent extension tests — shared browsers leak SW in-memory state between files.
 
 ## Gotchas
 
@@ -42,6 +43,8 @@ This prevents guessing at selectors and ensures tests assert on real observable 
 - Many interactive elements are divs, not `<button>` — use `text/` selectors in puppeteer
 - `networkidle0` will timeout on extension pages (persistent connections) — use `domcontentloaded`
 - Don't filter console errors as "benign" — investigate and fix them. Previous "benign" errors turned out to be a broken favicon path and missing SW readiness check.
+- **Never use `chrome.runtime.reload()` for state reset** — it kills the extension and all its page contexts, crashing the browser connection. Use browser-per-file isolation instead.
+- **Vitest orders files by mtime, not alphabetically** — don't rely on file execution order. Design tests to be order-independent via fixtures.
 
 ## References
 

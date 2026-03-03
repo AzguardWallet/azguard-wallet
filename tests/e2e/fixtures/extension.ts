@@ -1,44 +1,117 @@
 import puppeteer, { type Browser, type Page, type ConsoleMessage } from "puppeteer"
-import { inject, beforeAll, afterAll, afterEach } from "vitest"
+import { test as base, inject } from "vitest"
 
 export interface ExtensionContext {
     browser: Browser
     extensionId: string
-    page: Page
     consoleErrors: string[]
     pageErrors: Error[]
 }
 
-export function useExtension(): ExtensionContext {
-    const ctx: ExtensionContext = {
-        browser: null!,
-        extensionId: "",
-        page: null!,
-        consoleErrors: [],
-        pageErrors: [],
-    }
+/** Launch a fresh browser with the extension and wait for SW liveness. */
+async function launchExtension(): Promise<ExtensionContext> {
+    const extensionPath = inject("extensionPath")
 
-    beforeAll(async () => {
-        const wsEndpoint = inject("wsEndpoint")
-        ctx.extensionId = inject("extensionId")
-        ctx.browser = await puppeteer.connect({ browserWSEndpoint: wsEndpoint })
+    const browser = await puppeteer.launch({
+        headless: false,
+        args: [
+            `--disable-extensions-except=${extensionPath}`,
+            `--load-extension=${extensionPath}`,
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--window-size=400,600",
+        ],
+        ignoreDefaultArgs: ["--disable-extensions"],
     })
 
-    afterAll(async () => {
-        ctx.browser.disconnect()
-    })
+    // Discover extension ID from service worker target
+    const workerTarget = await browser.waitForTarget(
+        (target) =>
+            target.type() === "service_worker" &&
+            target.url().includes("service-worker-loader"),
+        { timeout: 10_000 }
+    )
+    const extensionId = new URL(workerTarget.url()).hostname
 
-    afterEach(async () => {
-        const pages = await ctx.browser.pages()
-        for (const p of pages) {
-            if (p !== pages[0]) {
-                await p.close()
+    // Wait for SW to fully initialize (liveness heartbeat in chrome.storage.session)
+    const pages = await browser.pages()
+    const blankPage = pages[0]
+    await blankPage.goto(`chrome-extension://${extensionId}/src/popup/index.html`, {
+        waitUntil: "domcontentloaded",
+    })
+    await blankPage.waitForFunction(
+        async () => {
+            try {
+                const result = await chrome.storage.session.get("azguard:liveness")
+                return !!result["azguard:liveness"]
+            } catch {
+                return false
             }
-        }
-    })
+        },
+        { timeout: 15_000, polling: 500 }
+    )
+    await blankPage.goto("about:blank")
 
-    return ctx
+    return { browser, extensionId, consoleErrors: [], pageErrors: [] }
 }
+
+// ── Fixtures ────────────────────────────────────────────────────────────
+
+export const test = base.extend<{
+    /** Fresh browser with extension loaded, no profile. */
+    extension: ExtensionContext
+    /** Fresh browser with extension + registered profile on #/popup/general. */
+    registeredExtension: ExtensionContext
+}>({
+    extension: [
+        async ({}, use) => {
+            const ctx = await launchExtension()
+            await use(ctx)
+            await ctx.browser.close()
+        },
+        { scope: "file" },
+    ],
+
+    registeredExtension: [
+        async ({}, use) => {
+            const ctx = await launchExtension()
+            const page = await openPopup(ctx)
+
+            await waitForHash(page, "#/popup/register")
+
+            const createBtn = await page.waitForSelector("text/Create Profile", { visible: true })
+            await createBtn!.click()
+
+            await page.waitForSelector('input[placeholder="Strong password"]', {
+                visible: true,
+                timeout: 10_000,
+            })
+
+            const testPassword = "TestPassword123!"
+            await typeIntoInput(page, "Strong password", testPassword)
+            await typeIntoInput(page, "Repeat password", testPassword)
+
+            await page.waitForFunction(() => {
+                const buttons = [...document.querySelectorAll("button")]
+                const btn = buttons.find((b) => b.textContent?.includes("Create with Password"))
+                return btn && !btn.disabled
+            }, { timeout: 5_000 })
+
+            const submitBtn = await page.waitForSelector("text/Create with Password", { visible: true })
+            await submitBtn!.click()
+
+            await waitForHash(page, "#/popup/general", 15_000)
+            await page.waitForSelector("text/Account", { visible: true, timeout: 10_000 })
+            await page.close()
+
+            await use(ctx)
+            await ctx.browser.close()
+        },
+        { scope: "file" },
+    ],
+})
+
+// ── Helpers ─────────────────────────────────────────────────────────────
 
 /** Open the extension popup in a new page with error collection. */
 export async function openPopup(ctx: ExtensionContext): Promise<Page> {
@@ -61,7 +134,6 @@ export async function openPopup(ctx: ExtensionContext): Promise<Page> {
     const popupUrl = `chrome-extension://${ctx.extensionId}/src/popup/index.html`
     await page.goto(popupUrl, { waitUntil: "domcontentloaded" })
 
-    ctx.page = page
     return page
 }
 
@@ -69,7 +141,7 @@ export async function openPopup(ctx: ExtensionContext): Promise<Page> {
 export async function waitForHash(
     page: Page,
     expectedHash: string,
-    timeout = 30_000
+    timeout = 5_000
 ): Promise<void> {
     await page.waitForFunction(
         (hash: string) => window.location.hash === hash,
