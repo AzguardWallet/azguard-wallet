@@ -15,7 +15,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         const fnSelector = await FunctionSelector.fromSignature("get_accepted_asset()");
         const packedArgs = await HashedValues.fromArgs([]);
         const { l1ChainId, rollupVersion } = await node.getNodeInfo();
-        const baseFees = await node.getCurrentBaseFees();
+        const baseFees = await node.getCurrentMinFees();
         const gasSettings = new GasSettings(
             new Gas(GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT),
             new Gas(0, 0),
@@ -32,14 +32,11 @@ export class DefaultFpcHandler implements IFpcHandler {
             [],
             [],
         );
-        const simulatedTx = await pxe.simulateTx(
-            txRequest, // txRequest
-            true, // simulatePublic
-            undefined, // skipTxValidation
-            true, // skipFeeEnforcement
-            undefined, // overrides
-            undefined, // scopes
-        );
+        const simulatedTx = await pxe.simulateTx(txRequest, {
+            simulatePublic: true,
+            skipFeeEnforcement: true,
+            scopes: [],
+        });
         const returnValues = simulatedTx.getPrivateReturnValues();
         if (!returnValues.values || returnValues.values.length !== 1) {
             throw new Error("Failed to get FPC asset");
@@ -147,6 +144,6 @@ export class DefaultFpcHandler implements IFpcHandler {
     }
 
     public getTotalGas(inPublic?: boolean): Gas {
-        return inPublic ? new Gas(10_000, 500_000) : new Gas(100_000, 500_000);
+        return inPublic ? new Gas(10_000, 850_000) : new Gas(100_000, 850_000);
     }
 }

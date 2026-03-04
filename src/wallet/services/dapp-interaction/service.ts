@@ -178,13 +178,20 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_getContractClassMetadata":
                 case "aztec_getContractMetadata":
                 case "aztec_getChainInfo":
-                case "aztec_getTxReceipt":
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
                 case "aztec_registerContract":
                 case "aztec_getPrivateEvents": {
                     const network = await getNetwork(op.chain);
                     operations.push({ ...op, networkId: network.id });
+                    break;
+                }
+                case "aztec_getAccounts": {
+                    const network = await getNetwork(op.chain);
+                    const accounts = payload.session.accounts
+                        .filter(x => x.startsWith(op.chain))
+                        .map(x => x.split(":").at(-1)!);
+                    operations.push({ ...op, networkId: network.id, accounts });
                     break;
                 }
                 case "get_complete_address":
@@ -236,9 +243,9 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_getContractClassMetadata":
                 case "aztec_getContractMetadata":
                 case "aztec_getChainInfo":
-                case "aztec_getTxReceipt":
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
+                case "aztec_getAccounts":
                 case "aztec_registerContract": {
                     this.checkMethodPermission(session, operation.kind, operation.chain);
                     break;
@@ -248,11 +255,17 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     this.checkScopesPermissions(session, operation.eventFilter.scopes);
                     break;
                 }
+                case "aztec_simulateUtility": {
+                    const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
+                    this.checkAccountPermission(session, operation.account);
+                    this.checkMethodPermission(session, operation.kind, chain);
+                    this.checkScopesPermissions(session, [operation.opts.scope]);
+                    break;
+                }
                 case "get_complete_address":
                 case "register_token":
                 case "simulate_utility":
                 case "aztec_simulateTx":
-                case "aztec_simulateUtility":
                 case "aztec_profileTx":
                 case "aztec_sendTx":
                 case "aztec_createAuthWit": {
@@ -356,11 +369,11 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 return AccessLevel.PrivateData;
             case "aztec_getChainInfo":
                 return AccessLevel.PublicData;
-            case "aztec_getTxReceipt":
-                return AccessLevel.PublicData;
             case "aztec_registerSender":
                 return AccessLevel.PxeState;
             case "aztec_getAddressBook":
+                return AccessLevel.AppState;
+            case "aztec_getAccounts":
                 return AccessLevel.AppState;
             case "aztec_registerContract":
                 return AccessLevel.PxeState;

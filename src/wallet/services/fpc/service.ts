@@ -73,27 +73,26 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 });
 
                 for (const contract of [sponsoredFpc.address]) {
-                    const contractMeta = await pxe.getContractMetadata(contract);
-                    if (contractMeta.contractInstance) {
-                        const classMeta = await pxe.getContractClassMetadata(
-                            contractMeta.contractInstance.currentContractClassId,
-                            true,
+                    const contractInstance = await pxe.getContractInstance(contract);
+                    if (contractInstance) {
+                        const contractArtifact = await pxe.getContractArtifact(
+                            contractInstance.currentContractClassId,
                         );
-                        if (classMeta.artifact) {
+                        if (contractArtifact) {
                             this.logInfo(`Found FPC: ${contract.toString()}`);
 
                             const registeredContracts = await pxe.getContracts();
                             if (!registeredContracts.find(x => x.toString() === contract.toString())) {
                                 await pxe.registerContract({
-                                    instance: contractMeta.contractInstance,
-                                    artifact: classMeta.artifact,
+                                    instance: contractInstance,
+                                    artifact: contractArtifact,
                                 });
                             }
 
                             const type =
-                                classMeta.artifact.name === "FPC" ? FpcType.DefaultFpc : FpcType.DefaultSponsoredFpc;
+                                contractArtifact.name === "FPC" ? FpcType.DefaultFpc : FpcType.DefaultSponsoredFpc;
                             const fpcHandler = getFpcHandler(type);
-                            fpcHandler.validateArtifact(classMeta.artifact);
+                            fpcHandler.validateArtifact(contractArtifact);
 
                             const asset = await fpcHandler.getAsset(contract.toString(), pxe, node);
                             const acceptsPrivate = fpcHandler.acceptsPrivate();
@@ -149,29 +148,28 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const node = await this.networkService.getNode(network.chainId);
         const pxe = this.pxeService.getPXE(network);
 
-        const fpcMetadata = await pxe.getContractMetadata(AztecAddress.fromString(address));
-        if (!fpcMetadata.contractInstance) {
+        const fpcInstance = await pxe.getContractInstance(AztecAddress.fromString(address));
+        if (!fpcInstance) {
             throw new Error("Contract instance not found");
         }
 
-        const fpcClassMetadata = await pxe.getContractClassMetadata(
-            fpcMetadata.contractInstance.currentContractClassId,
-            true,
+        const fpcArtifact = await pxe.getContractArtifact(
+            fpcInstance.currentContractClassId,
         );
-        if (!fpcClassMetadata.artifact) {
+        if (!fpcArtifact) {
             throw new Error("Contract artifact not found");
         }
 
         const registeredContracts = await pxe.getContracts();
         if (!registeredContracts.find(x => x.toString() === address)) {
             await pxe.registerContract({
-                instance: fpcMetadata.contractInstance,
-                artifact: fpcClassMetadata.artifact,
+                instance: fpcInstance,
+                artifact: fpcArtifact,
             });
         }
 
         const fpcHandler = getFpcHandler(type);
-        fpcHandler.validateArtifact(fpcClassMetadata.artifact);
+        fpcHandler.validateArtifact(fpcArtifact);
 
         const asset = await fpcHandler.getAsset(address, pxe, node);
         const acceptsPrivate = fpcHandler.acceptsPrivate();

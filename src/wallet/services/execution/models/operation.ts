@@ -1,11 +1,12 @@
 import type { CallIntent, IntentInnerHash } from "@aztec/aztec.js/authorization";
-import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
+import type { InteractionWaitOptions } from "@aztec/aztec.js/contracts";
+import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions, SimulateUtilityOptions } from "@aztec/aztec.js/wallet";
 import type { Fr } from "@aztec/foundation/curves/bn254";
 import type { ContractArtifact, EventMetadataDefinition, FunctionCall } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract";
-import type { ExecutionPayload, TxHash } from "@aztec/stdlib/tx";
+import type { ExecutionPayload } from "@aztec/stdlib/tx";
 import type { Action, CallAction, EncodedCallAction, FeeSettings } from ".";
 
 export type OperationKind = Operation["kind"];
@@ -25,13 +26,13 @@ export type Operation =
     | AztecGetContractMetadataOperation
     | AztecGetPrivateEventsOperation
     | AztecGetChainInfoOperation
-    | AztecGetTxReceiptOperation
     | AztecRegisterSenderOperation
     | AztecGetAddressBookOperation
     | AztecRegisterContractOperation
     | AztecSimulateTxOperation
     | AztecSimulateUtilityOperation
     | AztecProfileTxOperation
+    | AztecGetAccountsOperation
     | AztecSendTxOperation
     | AztecCreateAuthWitOperation;
 
@@ -116,7 +117,6 @@ export type AztecGetContractClassMetadataOperation = {
     readonly kind: "aztec_getContractClassMetadata";
     readonly networkId: string;
     readonly id: Fr;
-    readonly includeArtifact?: boolean;
 };
 
 export type AztecGetContractMetadataOperation = {
@@ -137,12 +137,6 @@ export type AztecGetChainInfoOperation = {
     readonly networkId: string;
 };
 
-export type AztecGetTxReceiptOperation = {
-    readonly kind: "aztec_getTxReceipt";
-    readonly networkId: string;
-    readonly txHash: TxHash;
-};
-
 export type AztecRegisterSenderOperation = {
     readonly kind: "aztec_registerSender";
     readonly networkId: string;
@@ -153,6 +147,12 @@ export type AztecRegisterSenderOperation = {
 export type AztecGetAddressBookOperation = {
     readonly kind: "aztec_getAddressBook";
     readonly networkId: string;
+};
+
+export type AztecGetAccountsOperation = {
+    readonly kind: "aztec_getAccounts";
+    readonly networkId: string;
+    readonly accounts: string[];
 };
 
 export type AztecRegisterContractOperation = {
@@ -176,7 +176,7 @@ export type AztecSimulateUtilityOperation = {
     readonly networkId: string;
     readonly accountAddress: string;
     readonly call: FunctionCall;
-    readonly authwits?: AuthWitness[];
+    readonly opts: SimulateUtilityOptions;
 };
 
 export type AztecProfileTxOperation = {
@@ -193,12 +193,12 @@ export type AztecSendTxOperation = {
     readonly accountAddress: string;
     feeSettings: FeeSettings;
     readonly exec: ExecutionPayload;
-    readonly opts: SendOptions;
+    readonly opts: SendOptions<InteractionWaitOptions>;
 };
 
 export type AztecCreateAuthWitOperation = {
     readonly kind: "aztec_createAuthWit";
     readonly networkId: string;
     readonly accountAddress: string;
-    readonly messageHashOrIntent: Fr | IntentInnerHash | CallIntent;
+    readonly messageHashOrIntent: IntentInnerHash | CallIntent;
 };

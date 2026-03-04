@@ -75,8 +75,8 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             // }
             try {
                 const name = "Aztec Node";
-                const rpcUrl = "https://next.devnet.aztec-labs.com";
-                const chainId = 1654394782; // 11155111 ^ 1667575857
+                const rpcUrl = "https://v4-devnet-2.aztec-labs.com";
+                const chainId = 604129785; // 11155111 ^ 615022430
                 defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));

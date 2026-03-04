@@ -44,6 +44,6 @@ export class DefaultSponsoredFpcHandler implements IFpcHandler {
 
     public getTotalGas(): Gas {
         // NOTE: DA gas depends on the account type (wheter account emit event for FPC call or not)
-        return new Gas(15_000, 25_000);
+        return new Gas(15_000, 35_000);
     }
 }
