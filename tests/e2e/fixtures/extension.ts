@@ -55,6 +55,97 @@ async function launchExtension(): Promise<ExtensionContext> {
     return { browser, extensionId, consoleErrors: [], pageErrors: [] }
 }
 
+/** Register a profile with a test password. Leaves the extension on #/popup/general. */
+async function registerProfile(ctx: ExtensionContext): Promise<void> {
+    const page = await openPopup(ctx)
+
+    await waitForHash(page, "#/popup/register")
+
+    const createBtn = await page.waitForSelector("text/Create Profile", { visible: true })
+    await createBtn!.click()
+
+    await page.waitForSelector('input[placeholder="Strong password"]', {
+        visible: true,
+        timeout: 10_000,
+    })
+
+    const testPassword = "TestPassword123!"
+    await typeIntoInput(page, "Strong password", testPassword)
+    await typeIntoInput(page, "Repeat password", testPassword)
+
+    await page.waitForFunction(() => {
+        const buttons = [...document.querySelectorAll("button")]
+        const btn = buttons.find((b) => b.textContent?.includes("Create with Password"))
+        return btn && !btn.disabled
+    }, { timeout: 5_000 })
+
+    const submitBtn = await page.waitForSelector("text/Create with Password", { visible: true })
+    await submitBtn!.click()
+
+    await waitForHash(page, "#/popup/general", 15_000)
+    await page.waitForSelector("text/Account", { visible: true, timeout: 10_000 })
+    await page.close()
+}
+
+/** Connect a dapp to the wallet via the test dapp page. */
+async function connectDapp(ctx: ExtensionContext): Promise<void> {
+    const dappPage = await ctx.browser.newPage()
+    await dappPage.goto("https://adhoc-aztec-wallet-test.pages.dev/", {
+        waitUntil: "domcontentloaded",
+    })
+
+    // Wait for the dapp to be ready
+    await dappPage.waitForSelector("text/Ready. Click Connect to start.", {
+        visible: true,
+        timeout: 15_000,
+    })
+
+    // Start listening for the approval window BEFORE clicking Connect
+    const approvalTargetPromise = ctx.browser.waitForTarget(
+        (t) => t.type() === "page" && t.url().includes("#/windows/connect"),
+        { timeout: 15_000 }
+    )
+
+    // Click the Connect button on the dapp page
+    const connectBtn = await dappPage.waitForSelector("text/Connect", { visible: true })
+    await connectBtn!.click()
+
+    // Wait for the approval window to open and get its page
+    const approvalTarget = await approvalTargetPromise
+    const approvalPage = await approvalTarget.asPage()
+
+    // Wait for the connection request UI to fully load with accounts
+    await approvalPage.waitForSelector("text/Connection request", {
+        visible: true,
+        timeout: 15_000,
+    })
+
+    // Wait for account list to load, then click the first account (identified by address)
+    const accountItem = await approvalPage.waitForSelector("text/0x", {
+        visible: true,
+        timeout: 10_000,
+    })
+    await accountItem!.click()
+
+    // Wait for Approve button to become enabled (needs at least one account selected)
+    await approvalPage.waitForFunction(() => {
+        const buttons = [...document.querySelectorAll("button")]
+        const btn = buttons.find((b) => b.textContent?.includes("Approve"))
+        return btn && !btn.disabled
+    }, { timeout: 5_000 })
+
+    const approveBtn = await approvalPage.waitForSelector("text/Approve", { visible: true })
+    await approveBtn!.click()
+
+    // Wait for dapp to confirm the connection succeeded
+    await dappPage.waitForFunction(
+        () => document.body.innerText.includes("Connected!"),
+        { timeout: 15_000 }
+    )
+
+    await dappPage.close()
+}
+
 // ── Fixtures ────────────────────────────────────────────────────────────
 
 export const test = base.extend<{
@@ -62,6 +153,8 @@ export const test = base.extend<{
     extension: ExtensionContext
     /** Fresh browser with extension + registered profile on #/popup/general. */
     registeredExtension: ExtensionContext
+    /** Registered extension + dapp connected via test dapp page. */
+    dappConnectedExtension: ExtensionContext
 }>({
     extension: [
         async ({}, use) => {
@@ -75,37 +168,17 @@ export const test = base.extend<{
     registeredExtension: [
         async ({}, use) => {
             const ctx = await launchExtension()
-            const page = await openPopup(ctx)
-
-            await waitForHash(page, "#/popup/register")
-
-            const createBtn = await page.waitForSelector("text/Create Profile", { visible: true })
-            await createBtn!.click()
-
-            await page.waitForSelector('input[placeholder="Strong password"]', {
-                visible: true,
-                timeout: 10_000,
-            })
-
-            const testPassword = "TestPassword123!"
-            await typeIntoInput(page, "Strong password", testPassword)
-            await typeIntoInput(page, "Repeat password", testPassword)
-
-            await page.waitForFunction(() => {
-                const buttons = [...document.querySelectorAll("button")]
-                const btn = buttons.find((b) => b.textContent?.includes("Create with Password"))
-                return btn && !btn.disabled
-            }, { timeout: 5_000 })
-
-            const submitBtn = await page.waitForSelector("text/Create with Password", { visible: true })
-            await submitBtn!.click()
-
-            await waitForHash(page, "#/popup/general", 15_000)
-            await page.waitForSelector("text/Account", { visible: true, timeout: 10_000 })
-            await page.close()
-
+            await registerProfile(ctx)
             await use(ctx)
             await ctx.browser.close()
+        },
+        { scope: "file" },
+    ],
+
+    dappConnectedExtension: [
+        async ({ registeredExtension }, use) => {
+            await connectDapp(registeredExtension)
+            await use(registeredExtension)
         },
         { scope: "file" },
     ],

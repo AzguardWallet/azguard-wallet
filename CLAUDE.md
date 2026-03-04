@@ -8,9 +8,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 yarn dev              # Start dev server (Chrome, port 8088)
 yarn build            # Production build (Chrome)
 yarn test             # Run vitest tests
+yarn test:e2e         # Run E2E tests (Vitest + Puppeteer, config: vitest.e2e.config.ts)
 ```
 
 Load the extension in Chrome: `chrome://extensions` → Load unpacked → select `dist/chrome/`
+
+### E2E Tests
+
+Tests in `tests/e2e/`, fixtures in `tests/e2e/fixtures/`. Full guide: `.claude/skills/e2e-testing/SKILL.md`.
 
 ## Architecture Overview
 
