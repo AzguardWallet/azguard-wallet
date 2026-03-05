@@ -271,6 +271,29 @@ const closeWindow = (interactionCompleted: boolean) => {
 	})
 }
 
+const humanizeOperationKind = (str: string) => {
+	if (str.startsWith("aztec_")) {
+		// split camelCase
+		str = str
+			.substring(6)
+			.replace("PXE", "Pxe")
+			.replace("AuthWit", "Authwit")
+			.replace(/([A-Z])/g, " $1")
+			.toLowerCase()
+	} else {
+		// split snake_case
+		str = str.replace("_", " ")
+	}
+	return `${str[0].toUpperCase()}${str.substring(1)}`
+}
+
+const showJson = () => {
+	if (!requestId.value) return
+	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/json"))
+	url.searchParams.set("requestId", requestId.value)
+	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 900 })
+}
+
 const profileService = new ProfileServiceClient()
 profileService.onActiveProfileChanged.add(onActiveProfileChanged)
 
@@ -304,29 +327,6 @@ onUnmounted(() => {
 	interactionService.disconnect()
 	window.removeEventListener("beforeunload", reject)
 })
-
-const humanizeOperationKind = (str: string) => {
-	if (str.startsWith("aztec_")) {
-		// split camelCase
-		str = str
-			.substring(6)
-			.replace("PXE", "Pxe")
-			.replace("AuthWit", "Authwit")
-			.replace(/([A-Z])/g, " $1")
-			.toLowerCase()
-	} else {
-		// split snake_case
-		str = str.replace("_", " ")
-	}
-	return `${str[0].toUpperCase()}${str.substring(1)}`
-}
-
-const showJson = () => {
-	if (!requestId.value) return
-	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/json"))
-	url.searchParams.set("requestId", requestId.value)
-	chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 900 })
-}
 </script>
 
 <template>

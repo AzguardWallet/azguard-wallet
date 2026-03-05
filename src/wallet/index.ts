@@ -24,7 +24,6 @@ import { TokenBalanceService } from "./services/token-balance/service";
 import { TransactionService } from "./services/transaction/service";
 import { WalletConnectService } from "./services/wallet-connect/service";
 import { PasskeyService } from "./services/passkey/service";
-import { AzguardWalletService } from "./services/wallet-sdk/service";
 import { initWalletSdkHandler } from "./services/wallet-sdk/background";
 import { sleep } from "./utils";
 import { getErrorData, getErrorMessage } from "./utils/errors";
@@ -97,7 +96,6 @@ const runServices = async () => {
     services.add(new TransactionService(logger));
     services.add(new WalletConnectService(config, logger));
     services.add(new PasskeyService(logger));
-    services.add(new AzguardWalletService(logger));
 
     await services.start();
     logger.log("wallet", LogLevel.Info, "Services started");

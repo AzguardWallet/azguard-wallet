@@ -453,9 +453,6 @@ onUnmounted(() => {
 
 	& img {
 		border-radius: 50%;
-		/* filter: grayscale(1);
-		opacity: 0.5; */
-
 		transition: all 0.2s ease;
 	}
 

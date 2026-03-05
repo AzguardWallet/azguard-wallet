@@ -43,6 +43,7 @@ import type { SessionContext } from "./types";
 import type { ILogger } from "@/wallet/logger";
 import { LogLevel } from "@/wallet/logger";
 import { Fr } from "@aztec/foundation/curves/bn254";
+import packageJson from "../../../../package.json";
 
 /**
  * Initialize the wallet-sdk BackgroundConnectionHandler and wire it
@@ -85,7 +86,7 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
         {
             walletId: "azguard",
             walletName: "Azguard Wallet",
-            walletVersion: "0.9.1",
+            walletVersion: packageJson.version,
             walletIcon: chrome.runtime.getURL("/src/assets/logo.png"),
         },
         {
@@ -148,6 +149,7 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
      * Serialize decryption per-session to prevent message reordering.
      * The wallet-sdk uses `void this.handleEncryptedMessage(...)` (fire-and-forget),
      * so two messages can have their decryptions race.
+     * TODO: Remove this monkey-patch if wallet-sdk adds a proper serialization API.
      */
     const origDecrypt = (handler as any).handleEncryptedMessage.bind(handler);
     const decryptQueues = new Map<string, Promise<void>>();
@@ -267,7 +269,6 @@ async function handleDiscovery(
         // User rejected or popup was closed
         handler.rejectDiscovery(discovery.requestId);
         logger.log("wallet-sdk", LogLevel.Warn, `Discovery rejected for ${discovery.origin}: ${error instanceof Error ? error.message : String(error)}`);
-        logger.log("wallet-sdk", LogLevel.Warn, `Discovery error stack: ${error instanceof Error ? error.stack : "N/A"}`);
     }
 }
 
@@ -333,26 +334,30 @@ async function handleWalletMessage(
  * converts BigInt → string and recurses through arrays/objects so the
  * wallet-sdk's plain JSON.stringify call succeeds.
  */
-function toJsonSafe(value: unknown): unknown {
+function toJsonSafe(value: unknown, seen = new WeakSet()): unknown {
     if (value === null || value === undefined) return value;
     if (typeof value === "bigint") return value.toString();
     if (typeof value !== "object") return value;
-    if (Array.isArray(value)) return value.map(toJsonSafe);
+
+    if (seen.has(value as object)) return "[Circular]";
+    seen.add(value as object);
+
+    if (Array.isArray(value)) return value.map(v => toJsonSafe(v, seen));
     if (value instanceof Map) {
-        return Array.from(value.entries(), ([k, v]) => [toJsonSafe(k), toJsonSafe(v)]);
+        return Array.from(value.entries(), ([k, v]) => [toJsonSafe(k, seen), toJsonSafe(v, seen)]);
     }
     if (value instanceof Set) {
-        return Array.from(value, (v) => toJsonSafe(v));
+        return Array.from(value, (v) => toJsonSafe(v, seen));
     }
     // Objects with a toJSON method (Fr, AztecAddress, etc.) — let JSON.stringify
     // call it naturally, but still recurse in case the result contains BigInts.
     const obj = value as Record<string, unknown>;
     if (typeof obj.toJSON === "function") {
-        return toJsonSafe(obj.toJSON());
+        return toJsonSafe(obj.toJSON(), seen);
     }
     const out: Record<string, unknown> = {};
     for (const key of Object.keys(obj)) {
-        out[key] = toJsonSafe(obj[key]);
+        out[key] = toJsonSafe(obj[key], seen);
     }
     return out;
 }

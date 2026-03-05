@@ -50,6 +50,7 @@ import { OriginType, type LocalTxOrigin } from "@/wallet/services/transaction/se
 import type { ILogger } from "@/wallet/logger";
 import { LogLevel } from "@/wallet/logger";
 import type { SessionContext } from "./types";
+import packageJson from "../../../../package.json";
 
 /**
  * Maps wallet-sdk method names to internal Operation kinds.
@@ -178,11 +179,7 @@ export class WalletSdkDispatcher {
         // Filter to session-scoped accounts only and use per-app aliases
         const network = await this.resolveNetwork(ctx);
         const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
-        const sessionAccountAddresses = new Set(
-            dappSession.accounts
-                .filter(caip => caip.startsWith(`aztec:${ctx.chainId}:`))
-                .map(caip => caip.split(":")[2]),
-        );
+        const sessionAccountAddresses = this.getSessionAccountAddresses(dappSession, ctx.chainId);
 
         return allAccounts
             .filter(acc => sessionAccountAddresses.has(acc.address))
@@ -292,7 +289,7 @@ export class WalletSdkDispatcher {
             return {
                 version: "1.0" as const,
                 granted: [],
-                wallet: { name: "Azguard Wallet", version: "0.9.1" },
+                wallet: { name: "Azguard Wallet", version: packageJson.version },
             };
         }
 
@@ -314,7 +311,7 @@ export class WalletSdkDispatcher {
             return {
                 version: "1.0" as const,
                 granted,
-                wallet: { name: "Azguard Wallet", version: "0.9.1" },
+                wallet: { name: "Azguard Wallet", version: packageJson.version },
             };
         }
 
@@ -346,7 +343,7 @@ export class WalletSdkDispatcher {
         return {
             version: "1.0" as const,
             granted,
-            wallet: { name: "Azguard Wallet", version: "0.9.1" },
+            wallet: { name: "Azguard Wallet", version: packageJson.version },
         };
     }
 
@@ -370,11 +367,7 @@ export class WalletSdkDispatcher {
             if (cap.type === "accounts") {
                 const network = await this.resolveNetwork(ctx);
                 const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
-                const sessionAddresses = new Set(
-                    dappSession.accounts
-                        ?.filter((caip: string) => caip.startsWith(`aztec:${ctx.chainId}:`))
-                        .map((caip: string) => caip.split(":")[2]) ?? [],
-                );
+                const sessionAddresses = this.getSessionAccountAddresses(dappSession, ctx.chainId);
                 const sessionAccounts = allAccounts.filter(acc => sessionAddresses.has(acc.address));
 
                 result.push({
@@ -515,6 +508,17 @@ export class WalletSdkDispatcher {
             hideMsgSender: call.hideMsgSender,
             returnTypes: call.returnTypes ?? [],
         }));
+    }
+
+    /**
+     * Extract account addresses from a dApp session's CAIP accounts for the given chain.
+     */
+    private getSessionAccountAddresses(dappSession: any, chainId: number): Set<string> {
+        return new Set(
+            dappSession.accounts
+                ?.filter((caip: string) => caip.startsWith(`aztec:${chainId}:`))
+                .map((caip: string) => caip.split(":")[2]) ?? [],
+        );
     }
 
     /**
