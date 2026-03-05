@@ -11,6 +11,7 @@ import {
     type DappPermissions,
     type DappSession,
     type GrantedCapabilityRecord,
+    type RejectedCapabilityRecord,
     AccessLevel,
     Methods,
     Events,
@@ -239,6 +240,26 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
         const session = await this.storage.get(sessionId);
         if (!session) throw new Error("Invalid id");
         return session.capabilityGrants ?? [];
+    }
+
+    public async setCapabilityRejections(sessionId: string, rejections: RejectedCapabilityRecord[]): Promise<DappSession> {
+        try {
+            await this.lock.enter();
+            const session = await this.storage.get(sessionId);
+            if (!session) throw new Error("Invalid id");
+            session.capabilityRejections = rejections;
+            await this.storage.set(sessionId, session);
+            this.emit("onDappSessionUpdated", session);
+            return session;
+        } finally {
+            this.lock.leave();
+        }
+    }
+
+    public async getCapabilityRejections(sessionId: string): Promise<RejectedCapabilityRecord[]> {
+        const session = await this.storage.get(sessionId);
+        if (!session) throw new Error("Invalid id");
+        return session.capabilityRejections ?? [];
     }
 
     public async deleteDappSession(sessionId: string): Promise<DappSession> {

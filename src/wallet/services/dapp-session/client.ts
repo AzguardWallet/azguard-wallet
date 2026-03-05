@@ -9,6 +9,7 @@ import {
     DappPermissions,
     DappSession,
     GrantedCapabilityRecord,
+    RejectedCapabilityRecord,
     Events,
     Methods,
 } from "./spec";
@@ -72,5 +73,13 @@ export class DappSessionServiceClient extends ServiceClient<Methods, Events> imp
 
     public getCapabilityGrants(sessionId: string): Promise<GrantedCapabilityRecord[]> {
         return this.request("getCapabilityGrants", sessionId);
+    }
+
+    public setCapabilityRejections(sessionId: string, rejections: RejectedCapabilityRecord[]): Promise<DappSession> {
+        return this.request("setCapabilityRejections", sessionId, rejections);
+    }
+
+    public getCapabilityRejections(sessionId: string): Promise<RejectedCapabilityRecord[]> {
+        return this.request("getCapabilityRejections", sessionId);
     }
 }

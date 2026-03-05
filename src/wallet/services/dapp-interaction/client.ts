@@ -9,6 +9,10 @@ import {
     ConnectionResult,
     CapabilityPayload,
     CapabilityResult,
+    DiscoveryPayload,
+    DiscoveryResult,
+    AccountAuthPayload,
+    AccountAuthResult,
     DAPP_INTERACTION_SERVICE_NAME,
     Events,
     ExecutionPayload,
@@ -25,7 +29,7 @@ export class DappInteractionServiceClient extends ServiceClient<Methods, Events>
         super(DAPP_INTERACTION_SERVICE_NAME, new LoggerServiceClient(), name);
     }
 
-    public getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload> {
+    public getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload> {
         return this.request("getInteractionPayload", id);
     }
 
@@ -33,7 +37,7 @@ export class DappInteractionServiceClient extends ServiceClient<Methods, Events>
         return this.request("approveInteraction", id, operations, origin);
     }
 
-    public resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult): Promise<void> {
+    public resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult): Promise<void> {
         return this.request("resolveInteraction", id, result);
     }
 

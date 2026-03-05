@@ -29,8 +29,8 @@ export const DAPP_INTERACTION_SERVICE_NAME = "dapp-interaction";
 
 export type DappInteraction = {
     id: string;
-    payload: ConnectionPayload | ExecutionPayload | CapabilityPayload;
-    resolve: (result: ConnectionResult | ExecutionResult | CapabilityResult) => void;
+    payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload;
+    resolve: (result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult) => void;
     reject: (reason: string) => void;
     cancellationToken: string;
 };
@@ -190,16 +190,44 @@ export type CapabilityParams = {
     manifest: any;
     delta: any[];
     existingGrants: any[];
+    reRequested?: string[];
 };
 
 export type CapabilityResult = {
     granted: any[];
 };
 
+export type DiscoveryPayload = {
+    params: DiscoveryParams;
+};
+
+export type DiscoveryParams = {
+    dappMetadata: DappMetadata;
+};
+
+export type DiscoveryResult = {
+    approved: boolean;
+};
+
+export type AccountAuthPayload = {
+    params: AccountAuthParams;
+    session: DappSession;
+};
+
+export type AccountAuthParams = {
+    sessionId: string;
+    chainId: number;
+};
+
+export type AccountAuthResult = {
+    accounts: string[];
+    aliases: Record<string, string>;
+};
+
 export type Methods = {
-    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload | CapabilityPayload;
+    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload;
     approveInteraction(id: string, operations: Operation[], origin: LocalTxOrigin): void;
-    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult): void;
+    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult): void;
     rejectInteraction(id: string, reason: string): void;
 };
 

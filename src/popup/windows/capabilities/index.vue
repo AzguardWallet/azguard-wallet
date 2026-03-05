@@ -28,6 +28,7 @@ type UICapability = {
 	isNew: boolean
 	selected: boolean
 	risk: "low" | "medium" | "high"
+	reRequested: boolean
 }
 
 type UIError = {
@@ -105,6 +106,7 @@ const init = async () => {
 
 		// Build UI capabilities list
 		const items: UICapability[] = []
+		const reRequestedTypes = new Set(payload.value.params.reRequested ?? [])
 
 		// New capabilities (delta) — toggleable, default ON
 		for (const cap of payload.value.params.delta) {
@@ -116,6 +118,7 @@ const init = async () => {
 				isNew: true,
 				selected: true,
 				risk: info.risk,
+				reRequested: reRequestedTypes.has(cap.type),
 			})
 		}
 
@@ -129,6 +132,7 @@ const init = async () => {
 				isNew: false,
 				selected: true,
 				risk: info.risk,
+				reRequested: false,
 			})
 		}
 
@@ -308,7 +312,18 @@ onUnmounted(() => {
 
 							<Flex direction="column" gap="2" wide>
 								<Flex align="center" justify="between" gap="8">
-									<Text size="14" weight="600" color="primary">{{ cap.label }}</Text>
+									<Flex align="center" gap="6">
+										<Text size="14" weight="600" color="primary">{{ cap.label }}</Text>
+										<Text
+											v-if="cap.reRequested"
+											size="10"
+											weight="600"
+											color="yellow"
+											:class="$style.denied_badge"
+										>
+											previously denied
+										</Text>
+									</Flex>
 									<Flex align="center" gap="6">
 										<Text
 											size="11"
@@ -558,6 +573,13 @@ onUnmounted(() => {
 	padding: 8px;
 	margin: -8px;
 	cursor: pointer;
+}
+
+.denied_badge {
+	padding: 1px 6px;
+	border-radius: 4px;
+	background: rgba(255, 170, 0, 0.12);
+	white-space: nowrap;
 }
 
 .disabled {

@@ -18,6 +18,11 @@ export type GrantedCapabilityRecord = {
     grantedAt: number;
 };
 
+export type RejectedCapabilityRecord = {
+    capabilityType: string;
+    rejectedAt: number;
+};
+
 export type DappSession = {
     id: string;
     profileId: string;
@@ -30,6 +35,7 @@ export type DappSession = {
     trustedVerification?: boolean;
     accountAliases?: Record<string, string>;
     capabilityGrants?: GrantedCapabilityRecord[];
+    capabilityRejections?: RejectedCapabilityRecord[];
 };
 
 export enum AccessLevel {
@@ -62,6 +68,8 @@ export type Methods = {
     setAccountAliases(sessionId: string, aliases: Record<string, string>): DappSession;
     setCapabilityGrants(sessionId: string, grants: GrantedCapabilityRecord[]): DappSession;
     getCapabilityGrants(sessionId: string): GrantedCapabilityRecord[];
+    setCapabilityRejections(sessionId: string, rejections: RejectedCapabilityRecord[]): DappSession;
+    getCapabilityRejections(sessionId: string): RejectedCapabilityRecord[];
 };
 
 export type Events = {

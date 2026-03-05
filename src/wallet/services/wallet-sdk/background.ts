@@ -35,8 +35,9 @@ import { NetworkService } from "@/wallet/services/network/service";
 import { AccountService } from "@/wallet/services/account/service";
 import { ExecutionService } from "@/wallet/services/execution/service";
 import { ProfileService } from "@/wallet/services/profile/service";
-import { DappInteractionService, type ConnectionParams } from "@/wallet/services/dapp-interaction/service";
-import { DappSessionService } from "@/wallet/services/dapp-session/service";
+import { DappInteractionService } from "@/wallet/services/dapp-interaction/service";
+import type { DiscoveryParams } from "@/wallet/services/dapp-interaction/spec";
+import { DappSessionService, AccessLevel } from "@/wallet/services/dapp-session/service";
 import { WalletSdkDispatcher } from "./dispatcher";
 import { DiscoveryQueue } from "./discovery-queue";
 import type { SessionContext } from "./types";
@@ -235,18 +236,12 @@ async function handleDiscovery(
             return;
         }
 
-        // New dApp → show connect popup for user approval
-        const params: ConnectionParams = {
+        // New dApp → show discovery popup (Allow/Deny)
+        const params: DiscoveryParams = {
             dappMetadata: {
                 name: discovery.appName ?? discovery.appId,
                 url: discovery.origin,
             },
-            requiredPermissions: [
-                {
-                    chains: [`aztec:${chainInfoToChainId(discovery)}`],
-                    methods: [],
-                },
-            ],
         };
 
         // Store a promise that resolves when the popup completes so duplicate
@@ -256,8 +251,23 @@ async function handleDiscovery(
         pendingDiscoveryPromises.set(discovery.origin, popupPromise);
 
         try {
-            const _sessionResult = await dappInteractionService.connect(params, discovery.requestId);
-            // User approved — approve the wallet-sdk discovery so key exchange can proceed
+            const result = await dappInteractionService.discover(params, discovery.requestId);
+            if (!result.approved) {
+                handler.rejectDiscovery(discovery.requestId);
+                logger.log("wallet-sdk", LogLevel.Info, `Discovery denied: ${discovery.origin}`);
+                return;
+            }
+
+            // User approved — create a DappSession with empty accounts
+            // Accounts will be shared later via getAccounts() authorization popup
+            const chainId = chainInfoToChainId(discovery);
+            await dappSessionService.addDappSession(
+                params.dappMetadata,
+                [{ chains: [`aztec:${chainId}`], methods: [] }],
+                [], // empty accounts — will be populated via getAccounts()
+                AccessLevel.Transactions,
+            );
+
             pendingVerification.add(discovery.origin);
             handler.approveDiscovery(discovery.requestId);
             logger.log("wallet-sdk", LogLevel.Info, `Discovery approved: ${discovery.origin}`);

@@ -47,9 +47,11 @@ import type { ProfileService } from "@/wallet/services/profile/service";
 import type { DappInteractionService, ExecutionResult } from "@/wallet/services/dapp-interaction/service";
 import type { DappSessionService } from "@/wallet/services/dapp-session/service";
 import { OriginType, type LocalTxOrigin } from "@/wallet/services/transaction/service";
+import type { RejectedCapabilityRecord } from "@/wallet/services/dapp-session/spec";
 import type { ILogger } from "@/wallet/logger";
 import { LogLevel } from "@/wallet/logger";
 import type { SessionContext } from "./types";
+import { getRequiredCapability, isCapabilityExempt } from "./capability-map";
 import packageJson from "../../../../package.json";
 
 /**
@@ -131,6 +133,9 @@ export class WalletSdkDispatcher {
      * @throws If the method is unsupported, the operation fails, or session context is invalid
      */
     async dispatch(methodName: string, args: unknown[], ctx: SessionContext): Promise<unknown> {
+        // Enforce capability grants before processing any method
+        await this.enforceCapability(methodName, ctx);
+
         // Handle methods that don't go through ExecutionService
         if (methodName === "requestCapabilities") {
             return this.handleRequestCapabilities(args[0] as any, ctx);
@@ -163,20 +168,52 @@ export class WalletSdkDispatcher {
      * Return accounts for the current session's profile and chain.
      * Scoped to session accounts only and uses per-app aliases.
      * WalletSchema expects: Array<{ alias: string, item: AztecAddress }>
+     *
+     * If the session has no accounts (new connection via discovery popup),
+     * triggers an authorization popup for the user to select which accounts
+     * to share with the dApp.
      */
     private async handleGetAccounts(ctx: SessionContext): Promise<unknown> {
         const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
         if (!dappSession) {
-            // Fallback: no session yet, return all accounts with internal names
-            const network = await this.resolveNetwork(ctx);
-            const accounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
-            return accounts.map(acc => ({
-                alias: acc.name ?? "",
-                item: acc.address,
-            }));
+            throw new Error(`No dApp session found for origin ${ctx.origin}`);
         }
 
-        // Filter to session-scoped accounts only and use per-app aliases
+        // If session has no accounts yet (new connection), trigger account authorization popup
+        if (!dappSession.accounts || dappSession.accounts.length === 0) {
+            const result = await this.dappInteractionService.authorizeAccounts({
+                sessionId: dappSession.id,
+                chainId: ctx.chainId,
+            });
+
+            // Update the session with the selected accounts and aliases
+            await this.dappSessionService.updateDappSession(
+                dappSession.id,
+                dappSession.permissions,
+                result.accounts,
+                dappSession.confirmationLevel,
+            );
+            await this.dappSessionService.setAccountAliases(dappSession.id, result.aliases);
+
+            // Return the newly authorized accounts
+            const network = await this.resolveNetwork(ctx);
+            const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
+            const selectedAddresses = new Set(
+                result.accounts
+                    .filter(caip => caip.startsWith(`aztec:${ctx.chainId}:`))
+                    .map(caip => caip.split(":")[2]),
+            );
+
+            return allAccounts
+                .filter(acc => selectedAddresses.has(acc.address))
+                .map(acc => {
+                    const caip = `aztec:${ctx.chainId}:${acc.address}`;
+                    const alias = result.aliases[caip] ?? acc.name ?? "";
+                    return { alias, item: acc.address };
+                });
+        }
+
+        // Returning user: filter to session-scoped accounts and use per-app aliases
         const network = await this.resolveNetwork(ctx);
         const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
         const sessionAccountAddresses = this.getSessionAccountAddresses(dappSession, ctx.chainId);
@@ -275,8 +312,10 @@ export class WalletSdkDispatcher {
     /**
      * Handle requestCapabilities with 3-phase approach:
      * 1. Check stored grants → compute delta (new/changed types)
+     *    - Previously rejected types are included in delta (re-request)
      * 2. Early return if delta is empty (all already granted)
      * 3. Show popup for delta → user approves → merge and store
+     *    - Track rejected types for future re-request detection
      */
     private async handleRequestCapabilities(manifest: any, ctx: SessionContext): Promise<unknown> {
         const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
@@ -293,14 +332,22 @@ export class WalletSdkDispatcher {
             };
         }
 
-        // Phase 1: Check existing grants
+        // Phase 1: Check existing grants and rejections
         const existingGrants = dappSession.capabilityGrants ?? [];
+        const existingRejections = dappSession.capabilityRejections ?? [];
         const grantedTypes = new Set(existingGrants.map(g => g.capability.type));
+        const rejectedTypes = new Set(existingRejections.map(r => r.capabilityType));
 
-        // Compute delta: capabilities whose type is not yet granted
-        const delta = requestedCapabilities.filter(cap => !grantedTypes.has(cap.type));
+        // Delta: capabilities not yet granted OR previously rejected (re-request)
+        const delta = requestedCapabilities.filter(
+            cap => !grantedTypes.has(cap.type) || rejectedTypes.has(cap.type),
+        );
+        // Track which delta items are re-requests (previously rejected)
+        const reRequested = requestedCapabilities
+            .filter(cap => rejectedTypes.has(cap.type))
+            .map(cap => cap.type as string);
 
-        // Phase 2: Early return if all types already granted
+        // Phase 2: Early return if all types already granted and none re-requested
         if (delta.length === 0) {
             const granted = await this.enrichGrantedCapabilities(
                 existingGrants.map(g => g.capability),
@@ -316,22 +363,44 @@ export class WalletSdkDispatcher {
         }
 
         // Phase 3: Show capability popup for delta
-        const existingCaps = existingGrants.map(g => g.capability);
+        const existingCaps = existingGrants
+            .filter(g => !rejectedTypes.has(g.capability.type)) // Don't show re-requested as "existing"
+            .map(g => g.capability);
         const result = await this.dappInteractionService.requestCapabilities({
             sessionId: dappSession.id,
             manifest,
             delta,
             existingGrants: existingCaps,
+            reRequested,
         });
 
-        // Merge: new approved + existing
+        // Compute which delta types were approved vs rejected
+        const approvedTypes = new Set(result.granted.map((cap: any) => cap.type));
         const now = Date.now();
+
+        // New grants: approved delta items that weren't already granted
         const newGrants = result.granted
-            .filter((cap: any) => !grantedTypes.has(cap.type))
+            .filter((cap: any) => !grantedTypes.has(cap.type) || rejectedTypes.has(cap.type))
             .map((cap: any) => ({ capability: cap, grantedAt: now }));
-        const mergedGrants = [...existingGrants, ...newGrants];
+        // Merge: keep existing grants (excluding re-approved types) + new grants
+        const mergedGrants = [
+            ...existingGrants.filter(g => !rejectedTypes.has(g.capability.type)),
+            ...newGrants,
+        ];
 
         await this.dappSessionService.setCapabilityGrants(dappSession.id, mergedGrants);
+
+        // Track rejections: delta items that were NOT approved
+        const newRejections: RejectedCapabilityRecord[] = delta
+            .filter(cap => !approvedTypes.has(cap.type))
+            .map(cap => ({ capabilityType: cap.type, rejectedAt: now }));
+        // Merge: keep old rejections for types not in this delta + new rejections
+        const deltaTypes = new Set(delta.map((cap: any) => cap.type));
+        const mergedRejections = [
+            ...existingRejections.filter(r => !deltaTypes.has(r.capabilityType)),
+            ...newRejections,
+        ];
+        await this.dappSessionService.setCapabilityRejections(dappSession.id, mergedRejections);
 
         const granted = await this.enrichGrantedCapabilities(
             mergedGrants.map(g => g.capability),
@@ -383,6 +452,31 @@ export class WalletSdkDispatcher {
             }
         }
         return result;
+    }
+
+    /**
+     * Enforce capability grants before dispatching a method call.
+     *
+     * - Exempt methods (getChainInfo, requestCapabilities, batch) skip enforcement.
+     * - Legacy sessions (capabilityGrants === undefined) allow all methods for backward compat.
+     * - Otherwise, the method's required capability type must be in the session's grants.
+     */
+    private async enforceCapability(methodName: string, ctx: SessionContext): Promise<void> {
+        if (isCapabilityExempt(methodName)) return;
+
+        const requiredType = getRequiredCapability(methodName);
+        if (!requiredType) return; // Unknown method — let dispatch() handle it
+
+        const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
+        if (!dappSession) return; // No session yet — let the method handler deal with it
+
+        // Legacy migration: if capabilityGrants was never set, allow everything
+        if (dappSession.capabilityGrants === undefined) return;
+
+        const grantedTypes = new Set(dappSession.capabilityGrants.map(g => g.capability.type));
+        if (!grantedTypes.has(requiredType)) {
+            throw new Error(`Capability "${requiredType}" not granted. The dApp must call requestCapabilities() first.`);
+        }
     }
 
     /**

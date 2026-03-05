@@ -20,6 +20,12 @@ import {
     type CapabilityPayload,
     type CapabilityParams,
     type CapabilityResult,
+    type DiscoveryPayload,
+    type DiscoveryParams,
+    type DiscoveryResult,
+    type AccountAuthPayload,
+    type AccountAuthParams,
+    type AccountAuthResult,
     type ConnectionParams,
     type ExecutionParams,
     type CaipChain,
@@ -58,7 +64,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executionService = services.get(ExecutionService.name);
     }
 
-    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload> {
+    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -75,7 +81,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executeAndResolve(interaction, operations, origin);
     }
 
-    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult): Promise<void> {
+    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult): Promise<void> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -136,13 +142,25 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         return (await this.interaction("capabilities", payload, cancellationToken)) as CapabilityResult;
     }
 
+    public async discover(params: DiscoveryParams, cancellationToken?: string): Promise<DiscoveryResult> {
+        const payload: DiscoveryPayload = { params };
+        return (await this.interaction("discover", payload, cancellationToken)) as DiscoveryResult;
+    }
+
+    public async authorizeAccounts(params: AccountAuthParams, cancellationToken?: string): Promise<AccountAuthResult> {
+        await this.ensureInitialized();
+        const session = await this.dappSessionService.getDappSession(params.sessionId);
+        const payload: AccountAuthPayload = { params, session };
+        return (await this.interaction("accounts", payload, cancellationToken)) as AccountAuthResult;
+    }
+
     private async interaction(
         type: string,
-        payload: ConnectionPayload | ExecutionPayload | CapabilityPayload,
+        payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload,
         cancellationToken?: string,
-    ): Promise<ConnectionResult | ExecutionResult | CapabilityResult> {
+    ): Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult> {
         let interaction: DappInteraction;
-        let promise: Promise<ConnectionResult | ExecutionResult | CapabilityResult>;
+        let promise: Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult>;
 
         try {
             await this.lock.enter();
@@ -160,7 +178,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 cancellationToken: cancellationToken ?? id,
             };
 
-            promise = new Promise<ConnectionResult | ExecutionResult | CapabilityResult>((resolve, reject) => {
+            promise = new Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult>((resolve, reject) => {
                 interaction.resolve = resolve;
                 interaction.reject = reject;
             });
