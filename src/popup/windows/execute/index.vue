@@ -16,7 +16,7 @@ import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
 import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
 import { Account, AccountServiceClient } from "@/wallet/services/account/client"
-import { ExecutionServiceClient, FeeSettings, Operation } from "@/wallet/services/execution/client"
+import { FeeSettings, Operation } from "@/wallet/services/execution/client"
 import {
 	CaipAccount,
 	CaipChain,
@@ -151,19 +151,6 @@ const init = async () => {
 					})
 					break
 				}
-				case "aztec_getAccounts": {
-					const network = await getNetwork(op.chain)
-					const sessionAccounts = payload.value!.session.accounts
-						.filter(x => x.startsWith(op.chain))
-						.map(x => x.split(":").at(-1)!)
-					_operations.push({
-						...op,
-						network,
-						networkId: network.id,
-						accounts: sessionAccounts,
-					})
-					break
-				}
 				case "get_complete_address":
 				case "register_token":
 				case "simulate_transaction":
@@ -258,19 +245,13 @@ const approve = async () => {
 		return
 	}
 	try {
-		isLoading.value = true
-		await profileService.refreshSession()
-		/** @ts-ignore */
-		const result = await executionService.executeOperations(operations.value, {
+		await interactionService.approveInteraction(requestId.value!, operations.value, {
 			type: OriginType.DAPP,
 			name: dapp.value?.name ?? "Unknown dapp",
 		})
-		interactionService.resolveInteraction(requestId.value!, result)
 		closeWindow(true)
 	} catch (error) {
 		setError("Processing error.", getErrorMessage(error))
-	} finally {
-		isLoading.value = false
 	}
 }
 
@@ -296,23 +277,24 @@ profileService.onActiveProfileChanged.add(onActiveProfileChanged)
 const interactionService = new DappInteractionServiceClient()
 interactionService.onInteractionCancelled.add(onInteractionCancelled)
 
-const executionService = new ExecutionServiceClient()
-
-onBeforeMount(async () => {
-	if (!appStore.isLogined) {
-		setTimeout(() => {
-			appStore.pageAwaitingAuth = router.currentRoute.value.fullPath
-			router.push({
-				path: "/popup/auth",
-			})
-		}, 100)
-	}
-})
-
 onMounted(async () => {
 	profileService.connect()
 	interactionService.connect()
-	executionService.connect()
+
+	if (!appStore.isSessionChecked) {
+		await new Promise<void>((resolve) => {
+			const stop = watch(() => appStore.isSessionChecked, (checked) => {
+				if (checked) { stop(); resolve() }
+			}, { immediate: true })
+		})
+	}
+
+	if (!appStore.isLogined) {
+		appStore.pageAwaitingAuth = router.currentRoute.value.fullPath
+		router.push({ path: "/popup/auth" })
+		return
+	}
+
 	await init()
 	window.addEventListener("beforeunload", reject)
 })
@@ -320,7 +302,6 @@ onMounted(async () => {
 onUnmounted(() => {
 	profileService.disconnect()
 	interactionService.disconnect()
-	executionService.disconnect()
 	window.removeEventListener("beforeunload", reject)
 })
 
@@ -674,28 +655,6 @@ const showJson = () => {
 										<AddressDisplay :address="call.to" />
 									</Text>
 								</Flex>
-							</Flex>
-						</template>
-						<template v-else-if="op.kind === 'aztec_getChainInfo'">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">Retrieves chain ID and protocol version</Text>
-							</Flex>
-						</template>
-						<template v-else-if="op.kind === 'aztec_getAddressBook'">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">Retrieves registered addresses</Text>
-							</Flex>
-						</template>
-						<template v-else-if="op.kind === 'aztec_registerContract'">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">Contract address:</Text>
-								<AddressDisplay :address="op.instance.address.toString()" />
-							</Flex>
-						</template>
-						<template v-else-if="op.kind === 'aztec_createAuthWit'">
-							<Flex v-if="op.messageHashOrIntent?.caller" :class="$style.prop">
-								<Text size="12" color="secondary">Authorized caller:</Text>
-								<AddressDisplay :address="op.messageHashOrIntent.caller.toString()" />
 							</Flex>
 						</template>
 					</Flex>

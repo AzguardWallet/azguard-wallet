@@ -144,6 +144,9 @@ watch(
 )
 
 const loadProfile = async () => {
+	const t = Date.now()
+	const step = (name) => console.debug(`loadProfile: ${name} (+${Date.now() - t}ms)`)
+
 	// TODO: make sure to not add duplicated listeners
 	managers.profile.onActiveProfileChanged.add(async profile => {
 		if (profile) {
@@ -166,22 +169,29 @@ const loadProfile = async () => {
 		}
 	})
 
+	step("start")
 	appStore.profiles = await managers.profile.getProfiles()
+	step("getProfiles")
 	const activeProfile = await managers.profile.getActiveProfile()
+	step("getActiveProfile")
 	if (activeProfile) {
 		appStore.profile = activeProfile
 
 		await initNetworks()
+		step("initNetworks")
 		await initAccount()
+		step("initAccount")
 
 		initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
 
 		await appStore.syncTransactions()
+		step("syncTransactions")
 
 		appStore.isLogined = true
 		appStore.isSessionChecked = true
+		step("complete")
 
-		if (["popup-register"].includes(route.name)) router.push("/popup/general")
+		if (["popup-register", "popup-auth"].includes(route.name)) router.push("/popup/general")
 
 		return
 	}

@@ -3,6 +3,11 @@
 import TransactionCard from "../activity/TransactionCard.vue"
 import TransactionAwaitingCard from "../activity/TransactionAwaitingCard.vue"
 
+/** Services */
+import { TaskServiceClient } from "@/wallet/services/task/client"
+import { ContentKind, TaskStatus } from "@/wallet/services/task/spec"
+import { OriginType } from "@/wallet/services/transaction/spec"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { useCacheStore } from "@/stores/cache.store"
@@ -33,10 +38,78 @@ const awaitingAccountTxs = computed(() => {
 	return appStore.awaitingTransactions.filter(t => t.account === appStore.account?.address)
 })
 
+const dappExecutionTask = ref(null)
+const dappSubtasks = ref([])
+const dappProgressTitle = computed(() => {
+	return dappExecutionTask.value?.origin?.name || "Transaction"
+})
+const dappProgressSubtitle = computed(() => {
+	const active = dappSubtasks.value.find(s => s.status === TaskStatus.Processing)
+	return active ? `${active.content.label}...` : "Preparing..."
+})
+
+const taskService = new TaskServiceClient()
+taskService.onTaskCreated.add(onDappTaskCreated)
+taskService.onTaskUpdated.add(onDappTaskUpdated)
+taskService.onTaskDeleted.add(onDappTaskDeleted)
+function isDappExecTask(task) {
+	return task.content.kind === ContentKind.ExecuteOperation
+		&& task.origin?.type === OriginType.DAPP
+		&& !task.finishedAt
+		&& (task.content.operationKind === "send_transaction" || task.content.operationKind === "aztec_sendTx")
+}
+function onDappTaskCreated(task) {
+	if (isDappExecTask(task)) {
+		dappExecutionTask.value = task
+		dappSubtasks.value = task.subtasks || []
+		return
+	}
+	if (task.parentId && dappExecutionTask.value && task.parentId === dappExecutionTask.value.id) {
+		dappSubtasks.value.push(task)
+	}
+}
+function onDappTaskUpdated(task) {
+	if (dappExecutionTask.value && task.id === dappExecutionTask.value.id) {
+		if (task.finishedAt) {
+			dappExecutionTask.value = null
+			dappSubtasks.value = []
+		} else {
+			dappExecutionTask.value = task
+		}
+		return
+	}
+	if (task.parentId && dappExecutionTask.value && task.parentId === dappExecutionTask.value.id) {
+		const idx = dappSubtasks.value.findIndex(s => s.id === task.id)
+		if (idx !== -1) {
+			dappSubtasks.value[idx] = task
+		} else {
+			dappSubtasks.value.push(task)
+		}
+	}
+}
+function onDappTaskDeleted(task) {
+	if (dappExecutionTask.value && task.id === dappExecutionTask.value.id) {
+		dappExecutionTask.value = null
+		dappSubtasks.value = []
+	}
+}
+
 const handleSelectTx = () => {
 	cacheStore.activeTxHash = latestTransaction.value.hash
 	popupStore.open("tx")
 }
+
+onMounted(async () => {
+	const allTasks = await taskService.getTasks()
+	const activeExec = allTasks.find(t => isDappExecTask(t))
+	if (activeExec) {
+		dappExecutionTask.value = activeExec
+		dappSubtasks.value = activeExec.subtasks || []
+	}
+})
+onBeforeUnmount(() => {
+	taskService.disconnect()
+})
 </script>
 
 <template>
@@ -59,7 +132,7 @@ const handleSelectTx = () => {
 			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
 		</div>
 	</Flex>
-	<Flex v-else-if="!token && (latestTransaction || awaitingAccountTxs.length)" direction="column" gap="16">
+	<Flex v-else-if="!token && (latestTransaction || awaitingAccountTxs.length || dappExecutionTask)" direction="column" gap="16">
 		<Flex align="center" justify="between">
 			<Text size="13" weight="600" color="secondary"> Latest transaction </Text>
 			<Text
@@ -74,7 +147,8 @@ const handleSelectTx = () => {
 		</Flex>
 
 		<div :class="$style.list">
-			<TransactionAwaitingCard v-if="awaitingAccountTxs.length" />
+			<TransactionAwaitingCard v-if="dappExecutionTask" :title="dappProgressTitle" :subtitle="dappProgressSubtitle" />
+			<TransactionAwaitingCard v-else-if="awaitingAccountTxs.length" />
 			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
 		</div>
 	</Flex>

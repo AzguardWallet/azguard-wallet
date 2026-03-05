@@ -30,6 +30,21 @@ const { loadExternalImage } = useExternalImage()
 
 const router = useRouter()
 
+const GRANT_SHORT_LABELS = {
+	accounts: "Accounts",
+	contracts: "Contracts",
+	contractClasses: "Classes",
+	simulation: "Simulation",
+	transaction: "Transactions",
+	data: "Private data",
+}
+
+const formatGrantSummary = (grants) => {
+	return grants
+		.map(g => GRANT_SHORT_LABELS[g.capability.type] ?? g.capability.type)
+		.join(" \u00B7 ")
+}
+
 const dappSessions = ref([])
 const walletConnectEnabled = ref(true)
 const isLoading = ref(true)
@@ -181,9 +196,14 @@ onBeforeMount(async () => {
 							</div>
 							<Icon v-else name="dapp" size="22" color="blue" />
 
-							<Text size="15" weight="600" color="primary">
-								{{ ds.dappMetadata.name }}
-							</Text>
+							<Flex direction="column" gap="4">
+								<Text size="15" weight="600" color="primary">
+									{{ ds.dappMetadata.name }}
+								</Text>
+								<Text v-if="ds.capabilityGrants?.length" size="11" color="tertiary">
+									{{ formatGrantSummary(ds.capabilityGrants) }}
+								</Text>
+							</Flex>
 						</Flex>
 
 						<Flex align="center" gap="8" :class="$style.icons">

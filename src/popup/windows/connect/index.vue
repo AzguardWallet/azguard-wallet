@@ -1,44 +1,26 @@
 <script setup lang="ts">
 /** Vendor */
-import { onBeforeMount, onMounted, onUnmounted } from "vue"
+import { onMounted, onUnmounted } from "vue"
 
 /** Components */
-// @ts-ignore
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 // @ts-ignore
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
-import { getChainName } from "@/components/ui/utils"
-import { AccessLevel, confirmationPolicies, ConfirmationPolicy } from "@/utils/confirmation-policies"
+import { AccessLevel } from "@/utils/confirmation-policies"
 import { getErrorData } from "@/wallet/utils/errors"
 
 /** Services */
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
 import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
 import { Account, AccountServiceClient } from "@/wallet/services/account/client"
-import { DappMetadata, DappPermissions, DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
+import { DappMetadata, DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 import { ConnectionPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 
 type UIDappMetadata = DappMetadata & {
 	loadingLogo?: boolean
 	logoBlobUrl?: string
 }
-
-type UIDappPermission = {
-	chains: string[]
-	required: boolean
-	selected: boolean
-} & (
-	| {
-			method: string
-			type: 0
-	  }
-	| {
-			event: string
-			type: 1
-	  }
-)
 
 type UIError = {
 	title: string
@@ -62,11 +44,10 @@ const networks = ref<Network[]>()
 const requestId = ref<string>()
 const payload = ref<ConnectionPayload>()
 const dapp = ref<UIDappMetadata>()
-const permissions = ref<UIDappPermission[]>([])
 
 const accounts = ref<Account[]>([])
 const selectedAccounts = ref<Account[]>([])
-const selectedConfirmationPolicy = ref(confirmationPolicies.at(-1)!)
+const accountAliases = ref<Record<string, string>>({})
 
 const isLoading = ref(false)
 const isInteractionCancelled = ref(false)
@@ -75,7 +56,7 @@ const processingError = ref<UIError>()
 const initRequest = async () => {
 	try {
 		profile.value = await profileService.getActiveProfile()
-		networks.value = await networkService.getNetworks()
+		networks.value = await networkService.getOrInitNetworks()
 		requestId.value = router.currentRoute.value.query.requestId
 		if (!requestId.value) {
 			throw new Error("Invalid interaction request id")
@@ -91,11 +72,6 @@ const initRequest = async () => {
 				dapp.value.loadingLogo = false
 			}
 		}
-
-		permissions.value = unpackPermissions(
-			payload.value.params.requiredPermissions ?? [],
-			payload.value.params.optionalPermissions ?? [],
-		)
 	} catch (error) {
 		console.error(getErrorData(error))
 		setError("Something went wrong")
@@ -105,10 +81,10 @@ const initRequest = async () => {
 
 const initAccounts = async () => {
 	const res = []
-	if (profile.value && networks.value && permissions.value) {
+	if (profile.value && networks.value && payload.value) {
 		const set = new Set()
-		for (const p of permissions.value) {
-			for (const chain of p.chains) {
+		for (const p of payload.value.params.requiredPermissions ?? []) {
+			for (const chain of p.chains ?? []) {
 				const chainId = +chain.split(":")[1]
 				if (set.has(chainId)) {
 					continue
@@ -136,10 +112,6 @@ function setError(title: string, tooltip: string = title, type: string = "error"
 
 function clearError() {
 	processingError.value = undefined
-}
-
-const selectConfirmationPolicy = (policy: ConfirmationPolicy) => {
-	selectedConfirmationPolicy.value = policy
 }
 
 const selectAccount = (account: Account) => {
@@ -173,7 +145,11 @@ const onInteractionCancelled = (_requestId: string) => {
 
 const checkSelectedAccounts = () => {
 	const requiredChains = [
-		...new Set(permissions.value.filter(x => x.required).flatMap(x => x.chains.map(x => +x.split(":")[1]))),
+		...new Set(
+			(payload.value?.params.requiredPermissions ?? []).flatMap(p =>
+				(p.chains ?? []).map(c => +c.split(":")[1]),
+			),
+		),
 	]
 	const selectedChains = [...new Set(selectedAccounts.value.map(acc => acc.chainId))]
 	return requiredChains.every(x => selectedChains.includes(x))
@@ -190,12 +166,23 @@ const approve = async () => {
 	}
 	try {
 		isLoading.value = true
+		const caipAccounts = selectedAccounts.value.map(acc => `aztec:${acc.chainId}:${acc.address}`)
+		const defaultPermissions = payload.value?.params.requiredPermissions ?? []
 		const session = await sessionService.addDappSession(
 			dapp.value!,
-			packPermissions(permissions.value.filter(x => x.selected)),
-			selectedAccounts.value.map(acc => `aztec:${acc.chainId}:${acc.address}`),
-			selectedConfirmationPolicy.value?.confirmationLevel ?? AccessLevel.None,
+			defaultPermissions,
+			caipAccounts,
+			AccessLevel.Transactions,
 		)
+
+		// Save per-app aliases
+		const aliases: Record<string, string> = {}
+		for (const acc of selectedAccounts.value) {
+			const caip = `aztec:${acc.chainId}:${acc.address}`
+			aliases[caip] = accountAliases.value[caip] || acc.name
+		}
+		await sessionService.setAccountAliases(session.id, aliases)
+
 		const sessionInfo = {
 			id: session.id,
 			permissions: session.permissions,
@@ -239,22 +226,29 @@ const sessionService = new DappSessionServiceClient()
 const interactionService = new DappInteractionServiceClient()
 interactionService.onInteractionCancelled.add(onInteractionCancelled)
 
-onBeforeMount(async () => {
-	if (!appStore.isLogined) {
-		setTimeout(() => {
-			appStore.pageAwaitingAuth = router.currentRoute.value.fullPath
-			router.push({
-				path: "/popup/auth",
-			})
-		}, 100)
-	}
-})
-
 onMounted(async () => {
 	profileService.connect()
 	networkService.connect()
 	sessionService.connect()
 	interactionService.connect()
+
+	// Wait for app.vue's loadProfile() to finish determining auth state.
+	// loadProfile() is async and not awaited — isLogined starts false and
+	// isSessionChecked becomes true once the check completes.
+	if (!appStore.isSessionChecked) {
+		await new Promise<void>((resolve) => {
+			const stop = watch(() => appStore.isSessionChecked, (checked) => {
+				if (checked) { stop(); resolve() }
+			}, { immediate: true })
+		})
+	}
+
+	if (!appStore.isLogined) {
+		appStore.pageAwaitingAuth = router.currentRoute.value.fullPath
+		router.push({ path: "/popup/auth" })
+		return
+	}
+
 	await initRequest()
 	await initAccounts()
 	window.addEventListener("beforeunload", reject)
@@ -268,142 +262,7 @@ onUnmounted(() => {
 	window.removeEventListener("beforeunload", reject)
 })
 
-const unpackPermissions = (required: DappPermissions[], optional: DappPermissions[]): UIDappPermission[] => {
-	const result = new Map<
-		string,
-		{
-			chains: Set<string>
-			required: boolean
-			selected: boolean
-		} & (
-			| {
-					method: string
-					type: 0
-			  }
-			| {
-					event: string
-					type: 1
-			  }
-		)
-	>()
-	for (const p of required) {
-		if (!p.chains?.length) {
-			continue
-		}
-		if (p.methods?.length) {
-			for (const method of p.methods) {
-				const key = `r:m:${method}`
-				if (!result.has(key)) {
-					result.set(key, {
-						method,
-						chains: new Set(p.chains),
-						required: true,
-						selected: true,
-						type: 0,
-					})
-				} else {
-					for (const chain of p.chains) {
-						result.get(key)!.chains.add(chain)
-					}
-				}
-			}
-		}
-		if (p.events?.length) {
-			for (const event of p.events) {
-				const key = `r:e:${event}`
-				if (!result.has(key)) {
-					result.set(key, {
-						event,
-						chains: new Set(p.chains),
-						required: true,
-						selected: true,
-						type: 1,
-					})
-				} else {
-					for (const chain of p.chains) {
-						result.get(key)!.chains.add(chain)
-					}
-				}
-			}
-		}
-	}
-	for (const p of optional) {
-		if (!p.chains?.length) {
-			continue
-		}
-		if (p.methods?.length) {
-			for (const method of p.methods) {
-				for (const chain of p.chains) {
-					if (result.get(`r:m:${method}`)?.chains.has(chain)) {
-						continue
-					}
-					const key = `o:m:${method}`
-					if (!result.has(key)) {
-						result.set(key, {
-							method,
-							chains: new Set([chain]),
-							required: false,
-							selected: true,
-							type: 0,
-						})
-					} else {
-						result.get(key)!.chains.add(chain)
-					}
-				}
-			}
-		}
-		if (p.events?.length) {
-			for (const event of p.events) {
-				for (const chain of p.chains) {
-					if (result.get(`r:e:${event}`)?.chains.has(chain)) {
-						continue
-					}
-					const key = `o:e:${event}`
-					if (!result.has(key)) {
-						result.set(key, {
-							event,
-							chains: new Set([chain]),
-							required: false,
-							selected: true,
-							type: 1,
-						})
-					} else {
-						result.get(key)!.chains.add(chain)
-					}
-				}
-			}
-		}
-	}
-	return [...result.values()]
-		.map(x => ({ ...x, chains: [...x.chains] }))
-		.toSorted((a, b) => {
-			if (a.required !== b.required) {
-				return a.required ? -1 : 1
-			}
-			if (a.type !== b.type) {
-				return a.type - b.type
-			}
-			return (a.type === 0 ? a.method : a.event).localeCompare(b.type === 0 ? b.method : b.event)
-		})
-}
 
-const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => {
-	const groups = new Map<string, UIDappPermission[]>()
-	permissions.forEach(x => {
-		const key = x.chains.toSorted((a, b) => a.localeCompare(b)).join(",")
-		let arr = groups.get(key)
-		if (arr === undefined) {
-			arr = []
-			groups.set(key, arr)
-		}
-		arr.push(x)
-	})
-	return [...groups.values()].map(g => ({
-		chains: g[0].chains,
-		methods: g.filter(p => p.type === 0).map(p => p.method),
-		events: g.filter(p => p.type === 1).map(p => p.event),
-	}))
-}
 </script>
 
 <template>
@@ -448,50 +307,6 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 				</Flex>
 			</Flex>
 
-			<Flex direction="column" align="start" justify="start" gap="4">
-				<Text size="15" weight="600" color="primary">Permissions:</Text>
-				<Flex v-for="p in permissions" align="center" gap="4">
-					<Icon name="check-circle" :color="p.required ? 'green' : 'sand'" size="11" />
-					<Text size="13" color="secondary">
-						{{ p.type === 0 ? p.method : p.event }} on
-						{{ p.chains.map(c => getChainName(+c.split(":")[1]).toLowerCase()).join(", ") }}
-					</Text>
-				</Flex>
-			</Flex>
-
-			<Flex direction="column" align="start" justify="start" gap="4">
-				<Text size="15" weight="600" color="primary">Confirmation policy</Text>
-				<Dropdown style="width: 100%">
-					<template #trigger>
-						<Flex align="center" gap="8" class="clickable" :class="$style.account">
-							<Text size="13" color="secondary" style="flex: 1; line-height: 1.2">
-								{{ selectedConfirmationPolicy.description }}
-							</Text>
-							<Icon name="chevron" size="12" color="secondary" />
-						</Flex>
-					</template>
-
-					<template #popup>
-						<DropdownItem
-							v-for="policy in confirmationPolicies"
-							:key="policy.confirmationLevel"
-							@click="selectConfirmationPolicy(policy)"
-						>
-							<Flex align="center" gap="8">
-								<Text
-									size="13"
-									weight="600"
-									color="primary"
-									style="max-width: 290px; white-space: normal; line-height: 1.2"
-								>
-									{{ policy.title }}
-								</Text>
-							</Flex>
-						</DropdownItem>
-					</template>
-				</Dropdown>
-			</Flex>
-
 			<Flex
 				v-if="accounts.length"
 				direction="column"
@@ -507,31 +322,57 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
 					<Flex
 						v-for="acc in accounts"
-						@click="selectAccount(acc)"
-						gap="10"
+						direction="column"
+						gap="8"
 						:class="[$style.account, (isLoading || processingError?.type === 'error') && $style.disabled]"
 					>
-						<Flex align="center">
-							<Icon
-								v-if="selectedAccounts?.find(a => a.address === acc.address)"
-								name="check-circle"
-								size="16"
-								color="green"
-							/>
-							<Icon v-else name="circle" size="16" color="secondary" />
-						</Flex>
-
-						<Flex direction="column" gap="4" wide>
-							<Flex align="center" justify="between" gap="12">
-								<Text size="14" weight="600" color="primary">
-									{{ acc.name }}
-								</Text>
-
-								<NetworkBadge :chainId="acc.chainId" />
+						<Flex @click="selectAccount(acc)" gap="10" style="cursor: pointer">
+							<Flex align="center">
+								<Icon
+									v-if="selectedAccounts?.find(a => a.address === acc.address)"
+									name="check-circle"
+									size="16"
+									color="green"
+								/>
+								<Icon v-else name="circle" size="16" color="secondary" />
 							</Flex>
-							<Text size="13" weight="600" color="tertiary">
-								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
-							</Text>
+
+							<Flex direction="column" gap="4" wide>
+								<Flex align="center" justify="between" gap="12">
+									<Text size="14" weight="600" color="primary">
+										{{ acc.name }}
+									</Text>
+
+									<NetworkBadge :chainId="acc.chainId" />
+								</Flex>
+								<Text size="13" weight="600" color="tertiary">
+									{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
+								</Text>
+							</Flex>
+						</Flex>
+						<Flex
+							v-if="selectedAccounts?.find(a => a.address === acc.address)"
+							direction="column"
+							gap="4"
+							wide
+						>
+							<Flex align="center" gap="4">
+								<Text size="12" weight="600" color="secondary">Alias</Text>
+								<Tooltip position="start">
+									<Icon name="info" size="11" color="tertiary" />
+									<template #content>
+										<Text size="12" color="secondary" :style="{ lineHeight: '1.2' }">
+											A private name for this account visible only to this app
+										</Text>
+									</template>
+								</Tooltip>
+							</Flex>
+							<input
+								:value="accountAliases[`aztec:${acc.chainId}:${acc.address}`] ?? acc.name"
+								@input="accountAliases[`aztec:${acc.chainId}:${acc.address}`] = ($event.target as HTMLInputElement).value"
+								:class="$style.alias_input"
+								:placeholder="acc.name"
+							/>
 						</Flex>
 					</Flex>
 				</Flex>
@@ -704,6 +545,27 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 
 	&:active {
 		background: var(--gray-5);
+	}
+}
+
+.alias_input {
+	width: 100%;
+	padding: 6px 10px;
+	border-radius: 8px;
+	border: 1px solid var(--gray-10);
+	background: var(--gray-3);
+	color: var(--txt-primary);
+	font-size: 13px;
+	font-family: inherit;
+	outline: none;
+	transition: border-color 0.2s ease;
+
+	&:focus {
+		border-color: var(--blue);
+	}
+
+	&::placeholder {
+		color: var(--txt-tertiary);
 	}
 }
 

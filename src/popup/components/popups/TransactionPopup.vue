@@ -126,23 +126,20 @@ const formatFee = (fee) => {
 				<Flex direction="column" align="center" gap="12">
 					<Flex align="center" gap="6">
 						<Icon name="zap-circle" size="16" color="primary" />
-						<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
+						<Text size="16" weight="600" color="primary">
 							Transaction
 						</Text>
 					</Flex>
 
-					<Flex align="center" gap="8">
-						<Flex @click="handleCopy(tx.hash)" align="center" gap="6" class="copyable">
-							<Text size="12" weight="600" color="tertiary">
-								{{ tx.hash.slice(0, 4) }}
-								<Text color="dark">•••</Text>
-								{{ tx.hash.slice(-4) }}
-							</Text>
-							<Icon name="copy" size="12" color="tertiary" />
-						</Flex>
-						<Text v-if="txTime" size="12" weight="500" color="tertiary">
-							{{ txTime }}
+					<Text v-if="txTime" size="12" weight="500" color="tertiary">
+						{{ txTime }}
+					</Text>
+
+					<Flex @click="handleCopy(tx.hash)" align="start" gap="6" class="copyable" :class="$style.hash_row">
+						<Text size="12" weight="500" color="tertiary" :style="{ wordBreak: 'break-all', lineHeight: '1.4' }">
+							{{ tx.hash }}
 						</Text>
+						<Icon name="copy" size="12" color="tertiary" :style="{ flexShrink: 0, marginTop: '2px' }" />
 					</Flex>
 				</Flex>
 
@@ -302,6 +299,13 @@ const formatFee = (fee) => {
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.hash_row {
+	background: var(--gray-3);
+	border-radius: 8px;
+	padding: 8px 10px;
+	width: 100%;
 }
 
 .item {

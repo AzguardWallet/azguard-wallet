@@ -7,7 +7,6 @@ import { OriginType, TxStatus, TxExecutionResult } from "@/wallet/services/trans
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
-import { trimAddress } from "@/utils/string"
 import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
 
 /** Composables */
@@ -85,7 +84,7 @@ const title = computed(() => {
 	return "Transaction"
 })
 
-const shortHash = computed(() => trimAddress(props.tx.hash, 4, 4))
+const shortHash = computed(() => props.tx.hash)
 
 const explorerUrl = computed(() => {
 	if (!appStore.network?.chainId) return null
@@ -99,35 +98,35 @@ const explorerUrl = computed(() => {
 </script>
 
 <template>
-	<Flex align="center" justify="between" :class="$style.wrapper">
-		<Flex align="center" gap="12">
+	<Flex align="start" justify="between" gap="10" :class="$style.wrapper">
+		<Flex align="start" gap="12" :class="$style.left_content">
 			<Flex align="center" justify="center" :class="$style.activity_icon">
 				<Icon :name="icon" size="16" color="primary" />
 
 				<Icon :name="statusIcon" size="14" :color="statusColor" :class="$style.check_icon" />
 			</Flex>
 
-			<Flex direction="column" gap="6">
-				<Text size="13" weight="600" color="primary">
-					{{ title }}
-				</Text>
-				<!-- Short hash with optional explorer link -->
-				<a
-					v-if="explorerUrl"
-					:href="explorerUrl"
-					target="_blank"
-					rel="noopener noreferrer"
-					@click.stop="handleExternalLink($event, explorerUrl)"
-					:class="$style.hash_link"
-				>
-					<Text size="12" weight="500" color="blue">{{ shortHash }}</Text>
-					<Icon name="external-link" size="12" color="blue" />
-				</a>
-				<Text v-else size="12" weight="500" color="tertiary">{{ shortHash }}</Text>
+			<Flex direction="column" gap="4">
+				<Flex align="center" gap="6">
+					<Text size="13" weight="600" color="primary">
+						{{ title }}
+					</Text>
+					<a
+						v-if="explorerUrl"
+						:href="explorerUrl"
+						target="_blank"
+						rel="noopener noreferrer"
+						@click.stop="handleExternalLink($event, explorerUrl)"
+						:class="$style.explorer_link"
+					>
+						<Icon name="external-link" size="12" color="tertiary" />
+					</a>
+				</Flex>
+				<Text size="12" weight="500" :color="explorerUrl ? 'secondary' : 'tertiary'" :style="{ lineHeight: '1.4', wordBreak: 'break-all' }">{{ shortHash }}</Text>
 			</Flex>
 		</Flex>
 
-		<Flex align="center" gap="8">
+		<Flex align="center" gap="8" :style="{ flexShrink: 0 }">
 			<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
 				<Text size="12" weight="600" color="primary">
 					{{ transferAmount }}
@@ -161,8 +160,13 @@ const explorerUrl = computed(() => {
 	}
 }
 
+.left_content {
+	min-width: 0;
+}
+
 .activity_icon {
 	position: relative;
+	flex-shrink: 0;
 
 	width: 32px;
 	height: 32px;
@@ -188,17 +192,15 @@ const explorerUrl = computed(() => {
 	padding: 4px 6px;
 }
 
-.hash_link {
+.explorer_link {
 	display: flex;
 	align-items: center;
-	gap: 4px;
-
 	text-decoration: none;
 
 	transition: opacity 0.2s var(--bezier);
 
 	&:hover {
-		opacity: 0.8;
+		opacity: 0.7;
 	}
 }
 </style>
