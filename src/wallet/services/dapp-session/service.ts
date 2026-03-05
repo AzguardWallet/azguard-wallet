@@ -10,6 +10,7 @@ import {
     type DappMetadata,
     type DappPermissions,
     type DappSession,
+    type GrantedCapabilityRecord,
     AccessLevel,
     Methods,
     Events,
@@ -65,6 +66,29 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
             return undefined;
         }
         return session;
+    }
+
+    /**
+     * Find a non-expired DappSession by the dApp's origin URL.
+     * Used by the wallet-sdk integration to auto-approve returning users:
+     * if a valid session already exists for the origin, we can skip the
+     * connect popup and go straight to key exchange.
+     */
+    public async tryGetDappSessionByOrigin(origin: string): Promise<DappSession | undefined> {
+        await this.ensureInitialized();
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            return undefined;
+        }
+        const sessions = (await this.storage.getValues()).filter(
+            x => x.profileId === profile.id && x.dappMetadata.url === origin,
+        );
+        for (const session of sessions) {
+            if (!(await this.isExpired(session))) {
+                return session;
+            }
+        }
+        return undefined;
     }
 
     public async addDappSession(
@@ -153,6 +177,68 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
         } finally {
             this.lock.leave();
         }
+    }
+
+    public async setVerificationHash(sessionId: string, verificationHash: string): Promise<DappSession> {
+        try {
+            await this.lock.enter();
+            const session = await this.storage.get(sessionId);
+            if (!session) throw new Error("Invalid id");
+            session.verificationHash = verificationHash;
+            await this.storage.set(sessionId, session);
+            this.emit("onDappSessionUpdated", session);
+            return session;
+        } finally {
+            this.lock.leave();
+        }
+    }
+
+    public async setTrustedVerification(sessionId: string, trusted: boolean): Promise<DappSession> {
+        try {
+            await this.lock.enter();
+            const session = await this.storage.get(sessionId);
+            if (!session) throw new Error("Invalid id");
+            session.trustedVerification = trusted;
+            await this.storage.set(sessionId, session);
+            this.emit("onDappSessionUpdated", session);
+            return session;
+        } finally {
+            this.lock.leave();
+        }
+    }
+
+    public async setAccountAliases(sessionId: string, aliases: Record<string, string>): Promise<DappSession> {
+        try {
+            await this.lock.enter();
+            const session = await this.storage.get(sessionId);
+            if (!session) throw new Error("Invalid id");
+            session.accountAliases = aliases;
+            await this.storage.set(sessionId, session);
+            this.emit("onDappSessionUpdated", session);
+            return session;
+        } finally {
+            this.lock.leave();
+        }
+    }
+
+    public async setCapabilityGrants(sessionId: string, grants: GrantedCapabilityRecord[]): Promise<DappSession> {
+        try {
+            await this.lock.enter();
+            const session = await this.storage.get(sessionId);
+            if (!session) throw new Error("Invalid id");
+            session.capabilityGrants = grants;
+            await this.storage.set(sessionId, session);
+            this.emit("onDappSessionUpdated", session);
+            return session;
+        } finally {
+            this.lock.leave();
+        }
+    }
+
+    public async getCapabilityGrants(sessionId: string): Promise<GrantedCapabilityRecord[]> {
+        const session = await this.storage.get(sessionId);
+        if (!session) throw new Error("Invalid id");
+        return session.capabilityGrants ?? [];
     }
 
     public async deleteDappSession(sessionId: string): Promise<DappSession> {

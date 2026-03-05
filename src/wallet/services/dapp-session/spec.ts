@@ -13,6 +13,11 @@ export type DappPermissions = {
     events?: string[];
 };
 
+export type GrantedCapabilityRecord = {
+    capability: any;
+    grantedAt: number;
+};
+
 export type DappSession = {
     id: string;
     profileId: string;
@@ -21,6 +26,10 @@ export type DappSession = {
     accounts: string[];
     confirmationLevel: AccessLevel;
     expiry: number;
+    verificationHash?: string;
+    trustedVerification?: boolean;
+    accountAliases?: Record<string, string>;
+    capabilityGrants?: GrantedCapabilityRecord[];
 };
 
 export enum AccessLevel {
@@ -48,6 +57,11 @@ export type Methods = {
         confirmationLevel: AccessLevel,
     ): DappSession;
     deleteDappSession(sessionId: string): DappSession;
+    setVerificationHash(sessionId: string, verificationHash: string): DappSession;
+    setTrustedVerification(sessionId: string, trusted: boolean): DappSession;
+    setAccountAliases(sessionId: string, aliases: Record<string, string>): DappSession;
+    setCapabilityGrants(sessionId: string, grants: GrantedCapabilityRecord[]): DappSession;
+    getCapabilityGrants(sessionId: string): GrantedCapabilityRecord[];
 };
 
 export type Events = {

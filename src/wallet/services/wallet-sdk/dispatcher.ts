@@ -1,0 +1,564 @@
+/**
+ * WalletSdkDispatcher — Central dispatch layer for wallet-sdk protocol messages.
+ *
+ * ## Purpose
+ *
+ * This module bridges the `@aztec/wallet-sdk` communication protocol with the
+ * extension's existing service layer. When a dApp sends a wallet method call
+ * (e.g. `sendTx`, `simulateTx`, `registerToken`) over the wallet-sdk encrypted
+ * channel, the BackgroundConnectionHandler decrypts it and delivers a
+ * `WalletMessage` with `{ type: string, args: unknown[] }`.
+ *
+ * The dispatcher's job is to:
+ *   1. Map the wallet-sdk method name to an internal `Operation` kind
+ *   2. Resolve `SessionContext` (chainId, profileId) into concrete networkId / accountAddress
+ *   3. Build the `Operation[]` array expected by `ExecutionService.executeOperations()`
+ *   4. Return the result (or throw) so the caller can build a `WalletResponse`
+ *
+ * ## Architecture
+ *
+ * The dispatcher does NOT directly call PXE, account derivation, or transaction
+ * building. It delegates everything to `ExecutionService`, which already handles
+ * all operation kinds for both the Azguard custom interface and the Aztec.js
+ * Wallet interface. This keeps business logic in one place.
+ *
+ * The session-to-network resolution mirrors `DappInteractionService.silentInteraction()`,
+ * which converts CAIP-2 identifiers to internal network/account references.
+ *
+ * ## Usage
+ *
+ * ```typescript
+ * const dispatcher = new WalletSdkDispatcher(networkService, accountService, executionService);
+ *
+ * // In BackgroundConnectionHandler.onWalletMessage callback:
+ * const result = await dispatcher.dispatch(message.type, message.args, sessionContext);
+ * await bgHandler.sendResponse(session.sessionId, {
+ *     messageId: message.messageId,
+ *     result,
+ *     walletId: 'azguard',
+ * });
+ * ```
+ */
+
+import type { NetworkService, Network } from "@/wallet/services/network/service";
+import type { AccountService, Account } from "@/wallet/services/account/service";
+import type { ExecutionService, Operation, OperationResult } from "@/wallet/services/execution/service";
+import type { ProfileService } from "@/wallet/services/profile/service";
+import type { DappInteractionService, ExecutionResult } from "@/wallet/services/dapp-interaction/service";
+import type { DappSessionService } from "@/wallet/services/dapp-session/service";
+import { OriginType, type LocalTxOrigin } from "@/wallet/services/transaction/service";
+import type { ILogger } from "@/wallet/logger";
+import { LogLevel } from "@/wallet/logger";
+import type { SessionContext } from "./types";
+
+/**
+ * Maps wallet-sdk method names to internal Operation kinds.
+ *
+ * The wallet-sdk ExtensionWallet proxy calls methods by their WalletSchema key name.
+ * On the dApp side these are camelCase method names (e.g. `sendTx`, `simulateTx`).
+ * We map each to the corresponding `Operation.kind` that `ExecutionService` understands.
+ */
+const METHOD_TO_KIND: Record<string, Operation["kind"]> = {
+    // --- Standard Wallet interface (from @aztec/aztec.js/wallet WalletSchema) ---
+    getChainInfo: "aztec_getChainInfo",
+    getContractClassMetadata: "aztec_getContractClassMetadata",
+    getContractMetadata: "aztec_getContractMetadata",
+    getPrivateEvents: "aztec_getPrivateEvents",
+    registerSender: "aztec_registerSender",
+    getAddressBook: "aztec_getAddressBook",
+    registerContract: "aztec_registerContract",
+    simulateTx: "aztec_simulateTx",
+    simulateUtility: "aztec_simulateUtility",
+    profileTx: "aztec_profileTx",
+    // sendTx is handled directly in dispatch() via DappInteractionService
+    createAuthWit: "aztec_createAuthWit",
+    // --- Azguard custom methods (added via schema_patch.ts) ---
+    registerToken: "register_token",
+    getCompleteAddress: "get_complete_address",
+    simulateViews: "simulate_views",
+};
+
+/**
+ * Operations that only need a network (no account context).
+ * These map chainId → networkId.
+ */
+const NETWORK_ONLY_KINDS = new Set<Operation["kind"]>([
+    "aztec_getChainInfo",
+    "aztec_getContractClassMetadata",
+    "aztec_getContractMetadata",
+    "aztec_getPrivateEvents",
+    "aztec_registerSender",
+    "aztec_getAddressBook",
+    "aztec_registerContract",
+]);
+
+/**
+ * Operations that need both network AND account context.
+ * These map chainId → networkId AND resolve the first session account.
+ */
+const ACCOUNT_KINDS = new Set<Operation["kind"]>([
+    "aztec_simulateTx",
+    "aztec_simulateUtility",
+    "aztec_profileTx",
+    "aztec_createAuthWit",
+    "register_token",
+    "get_complete_address",
+    "simulate_views",
+]);
+
+// Note: sendTx is handled separately in handleSendTx() via DappInteractionService
+
+export class WalletSdkDispatcher {
+    constructor(
+        private readonly networkService: NetworkService,
+        private readonly accountService: AccountService,
+        private readonly executionService: ExecutionService,
+        private readonly profileService: ProfileService,
+        private readonly dappInteractionService: DappInteractionService,
+        private readonly dappSessionService: DappSessionService,
+        private readonly logger: ILogger,
+    ) {}
+
+    /**
+     * Dispatch a wallet-sdk method call to the execution layer.
+     *
+     * @param methodName - The wallet method name from `WalletMessage.type`
+     *   (e.g. "sendTx", "registerToken", "getCompleteAddress")
+     * @param args - The method arguments from `WalletMessage.args`
+     * @param ctx - Session context with chainId, profileId, origin, sessionId
+     * @returns The result value from the first (and only) operation
+     * @throws If the method is unsupported, the operation fails, or session context is invalid
+     */
+    async dispatch(methodName: string, args: unknown[], ctx: SessionContext): Promise<unknown> {
+        // Handle methods that don't go through ExecutionService
+        if (methodName === "requestCapabilities") {
+            return this.handleRequestCapabilities(args[0] as any, ctx);
+        }
+        if (methodName === "getAccounts") {
+            return this.handleGetAccounts(ctx);
+        }
+        if (methodName === "batch") {
+            return this.handleBatch(args[0] as any[], ctx);
+        }
+
+        // sendTx goes through DappInteractionService for the confirmation popup + fee selection
+        if (methodName === "sendTx") {
+            return this.handleSendTx(args, ctx);
+        }
+
+        const kind = METHOD_TO_KIND[methodName];
+        if (!kind) {
+            throw new Error(`Unsupported wallet method: ${methodName}`);
+        }
+
+        const operation = await this.buildOperation(kind, args, ctx);
+        const origin: LocalTxOrigin = { type: OriginType.DAPP, name: ctx.origin };
+
+        const results = await this.executionService.executeOperations([operation], origin);
+        return this.unwrapResult(results[0]);
+    }
+
+    /**
+     * Return accounts for the current session's profile and chain.
+     * Scoped to session accounts only and uses per-app aliases.
+     * WalletSchema expects: Array<{ alias: string, item: AztecAddress }>
+     */
+    private async handleGetAccounts(ctx: SessionContext): Promise<unknown> {
+        const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
+        if (!dappSession) {
+            // Fallback: no session yet, return all accounts with internal names
+            const network = await this.resolveNetwork(ctx);
+            const accounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
+            return accounts.map(acc => ({
+                alias: acc.name ?? "",
+                item: acc.address,
+            }));
+        }
+
+        // Filter to session-scoped accounts only and use per-app aliases
+        const network = await this.resolveNetwork(ctx);
+        const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
+        const sessionAccountAddresses = new Set(
+            dappSession.accounts
+                .filter(caip => caip.startsWith(`aztec:${ctx.chainId}:`))
+                .map(caip => caip.split(":")[2]),
+        );
+
+        return allAccounts
+            .filter(acc => sessionAccountAddresses.has(acc.address))
+            .map(acc => {
+                const caip = `aztec:${ctx.chainId}:${acc.address}`;
+                const alias = dappSession.accountAliases?.[caip] ?? acc.name ?? "";
+                return { alias, item: acc.address };
+            });
+    }
+
+    /**
+     * Handle batch: execute multiple method calls sequentially.
+     * Each entry is { name: string, args: unknown[] }.
+     * Returns array of { name: string, result: unknown }.
+     *
+     * Individual method failures do NOT abort the batch — each method gets
+     * a SDK-compatible empty result so remaining methods still execute.
+     *
+     * The dApp-side SDK (aztec.js/batch_call.ts) accesses `.result` directly
+     * and has null-checks for utility results (rawReturnValues ? decode : []).
+     * We return type-appropriate empty results to stay compatible.
+     */
+    private async handleBatch(methods: Array<{ name: string; args: unknown[] }>, ctx: SessionContext): Promise<unknown> {
+        const results: Array<{ name: string; result: unknown }> = [];
+        for (const method of methods) {
+            try {
+                const result = await this.dispatch(method.name, method.args, ctx);
+                results.push({ name: method.name, result });
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                this.logger.log("wallet-sdk", LogLevel.Error, `Batch method ${method.name} failed: ${message}`);
+                results.push({ name: method.name, result: this.emptyBatchResult(method.name) });
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Return a SDK-compatible empty result for a failed batch method.
+     *
+     * The aztec.js BatchCall.simulate() unpacks results by type:
+     * - simulateUtility: `(result as UtilitySimulationResult).result` — has null-check
+     * - simulateTx: `result as TxSimulationResult` — calls methods on it
+     *
+     * For simulateUtility, { result: null } triggers the existing null-check
+     * which returns [] (empty decoded values). For other types we return null.
+     */
+    private emptyBatchResult(methodName: string): unknown {
+        switch (methodName) {
+            case "simulateUtility":
+                // UtilitySimulationResult shape — the SDK does:
+                //   rawReturnValues = (result as UtilitySimulationResult).result
+                //   rawReturnValues ? decodeFromAbi(...) : []
+                // So { result: null } safely falls through to []
+                return { result: null };
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Handle sendTx by routing through DappInteractionService.
+     *
+     * Unlike other methods that go directly to ExecutionService, sendTx needs
+     * the confirmation popup for fee selection. DappInteractionService.execute()
+     * validates the session, checks if confirmation is needed, and opens the
+     * popup for user approval + fee method selection.
+     */
+    private async handleSendTx(args: unknown[], ctx: SessionContext): Promise<unknown> {
+        const [network, account] = await this.resolveNetworkAndAccount(ctx);
+        const caipAccount = `aztec:${ctx.chainId}:${account.address}`;
+
+        const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
+        if (!dappSession) {
+            throw new Error(`No dApp session found for origin ${ctx.origin}`);
+        }
+
+        const opts = { ...(args[1] as any ?? {}), from: account.address };
+
+        const results: ExecutionResult = await this.dappInteractionService.execute({
+            sessionId: dappSession.id,
+            operations: [{
+                kind: "aztec_sendTx" as const,
+                account: caipAccount as `aztec:${number}:${string}`,
+                exec: args[0] as any,
+                opts,
+            }],
+        });
+
+        return this.unwrapResult(results[0]);
+    }
+
+    /**
+     * Handle requestCapabilities with 3-phase approach:
+     * 1. Check stored grants → compute delta (new/changed types)
+     * 2. Early return if delta is empty (all already granted)
+     * 3. Show popup for delta → user approves → merge and store
+     */
+    private async handleRequestCapabilities(manifest: any, ctx: SessionContext): Promise<unknown> {
+        const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
+        if (!dappSession) {
+            throw new Error(`No dApp session found for origin ${ctx.origin}`);
+        }
+
+        const requestedCapabilities: any[] = manifest?.capabilities ?? [];
+        if (requestedCapabilities.length === 0) {
+            return {
+                version: "1.0" as const,
+                granted: [],
+                wallet: { name: "Azguard Wallet", version: "0.9.1" },
+            };
+        }
+
+        // Phase 1: Check existing grants
+        const existingGrants = dappSession.capabilityGrants ?? [];
+        const grantedTypes = new Set(existingGrants.map(g => g.capability.type));
+
+        // Compute delta: capabilities whose type is not yet granted
+        const delta = requestedCapabilities.filter(cap => !grantedTypes.has(cap.type));
+
+        // Phase 2: Early return if all types already granted
+        if (delta.length === 0) {
+            const granted = await this.enrichGrantedCapabilities(
+                existingGrants.map(g => g.capability),
+                requestedCapabilities,
+                ctx,
+                dappSession,
+            );
+            return {
+                version: "1.0" as const,
+                granted,
+                wallet: { name: "Azguard Wallet", version: "0.9.1" },
+            };
+        }
+
+        // Phase 3: Show capability popup for delta
+        const existingCaps = existingGrants.map(g => g.capability);
+        const result = await this.dappInteractionService.requestCapabilities({
+            sessionId: dappSession.id,
+            manifest,
+            delta,
+            existingGrants: existingCaps,
+        });
+
+        // Merge: new approved + existing
+        const now = Date.now();
+        const newGrants = result.granted
+            .filter((cap: any) => !grantedTypes.has(cap.type))
+            .map((cap: any) => ({ capability: cap, grantedAt: now }));
+        const mergedGrants = [...existingGrants, ...newGrants];
+
+        await this.dappSessionService.setCapabilityGrants(dappSession.id, mergedGrants);
+
+        const granted = await this.enrichGrantedCapabilities(
+            mergedGrants.map(g => g.capability),
+            requestedCapabilities,
+            ctx,
+            dappSession,
+        );
+
+        return {
+            version: "1.0" as const,
+            granted,
+            wallet: { name: "Azguard Wallet", version: "0.9.1" },
+        };
+    }
+
+    /**
+     * Enrich granted capabilities with runtime data.
+     * For "accounts" type: inject the actual account list with per-app aliases.
+     */
+    private async enrichGrantedCapabilities(
+        grantedCaps: any[],
+        requestedCaps: any[],
+        ctx: SessionContext,
+        dappSession: any,
+    ): Promise<any[]> {
+        const result: any[] = [];
+        // Use requested caps as the template to preserve the dApp's original fields
+        const grantedTypes = new Set(grantedCaps.map((c: any) => c.type));
+
+        for (const cap of requestedCaps) {
+            if (!grantedTypes.has(cap.type)) continue;
+
+            if (cap.type === "accounts") {
+                const network = await this.resolveNetwork(ctx);
+                const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
+                const sessionAddresses = new Set(
+                    dappSession.accounts
+                        ?.filter((caip: string) => caip.startsWith(`aztec:${ctx.chainId}:`))
+                        .map((caip: string) => caip.split(":")[2]) ?? [],
+                );
+                const sessionAccounts = allAccounts.filter(acc => sessionAddresses.has(acc.address));
+
+                result.push({
+                    ...cap,
+                    accounts: sessionAccounts.map(acc => {
+                        const caip = `aztec:${ctx.chainId}:${acc.address}`;
+                        const alias = dappSession.accountAliases?.[caip] ?? acc.name ?? "";
+                        return { alias, item: acc.address };
+                    }),
+                });
+            } else {
+                result.push(cap);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Build an Operation from wallet-sdk method args and session context.
+     *
+     * The wallet-sdk sends args as positional arrays matching the WalletSchema
+     * function signatures. For Aztec.js Wallet methods, the args map directly
+     * to the operation fields. For Azguard custom methods, we unpack them
+     * according to the schema_patch.ts definitions.
+     */
+    private async buildOperation(kind: Operation["kind"], args: unknown[], ctx: SessionContext): Promise<Operation> {
+        if (NETWORK_ONLY_KINDS.has(kind)) {
+            const network = await this.resolveNetwork(ctx);
+            return this.buildNetworkOperation(kind, args, network.id);
+        }
+
+        if (ACCOUNT_KINDS.has(kind)) {
+            const [network, account] = await this.resolveNetworkAndAccount(ctx);
+            return this.buildAccountOperation(kind, args, network.id, account.address);
+        }
+
+        throw new Error(`Unhandled operation kind: ${kind}`);
+    }
+
+    /**
+     * Build operations that only need network context.
+     *
+     * Wallet-sdk args for these methods:
+     *   - getChainInfo(): []
+     *   - getContractClassMetadata(id): [Fr]
+     *   - getContractMetadata(address): [AztecAddress]
+     *   - getPrivateEvents(eventMetadata, eventFilter): [EventMetadataDefinition, PrivateEventFilter]
+     *   - registerSender(address, alias?): [AztecAddress, string?]
+     *   - getAddressBook(): []
+     *   - registerContract(instance, artifact?, secretKey?): [ContractInstanceWithAddress, ContractArtifact?, Fr?]
+     */
+    private buildNetworkOperation(kind: Operation["kind"], args: unknown[], networkId: string): Operation {
+        switch (kind) {
+            case "aztec_getChainInfo":
+                return { kind, networkId };
+            case "aztec_getContractClassMetadata":
+                return { kind, networkId, id: args[0] as any };
+            case "aztec_getContractMetadata":
+                return { kind, networkId, address: args[0] as any };
+            case "aztec_getPrivateEvents":
+                return { kind, networkId, eventMetadata: args[0] as any, eventFilter: args[1] as any };
+            case "aztec_registerSender":
+                return { kind, networkId, address: args[0] as any, alias: args[1] as string | undefined };
+            case "aztec_getAddressBook":
+                return { kind, networkId };
+            case "aztec_registerContract":
+                return { kind, networkId, instance: args[0] as any, artifact: args[1] as any, secretKey: args[2] as any };
+            default:
+                throw new Error(`Unknown network operation: ${kind}`);
+        }
+    }
+
+    /**
+     * Build operations that need account context.
+     *
+     * Wallet-sdk args for these methods:
+     *   - simulateTx(exec, opts): [ExecutionPayload, SimulateOptions]
+     *   - simulateUtility(call, opts): [FunctionCall, SimulateUtilityOptions]
+     *   - profileTx(exec, opts): [ExecutionPayload, ProfileOptions]
+     *   - createAuthWit(messageHashOrIntent): [IntentInnerHash | CallIntent]
+     *   - registerToken(account, token): [AztecAddress, AztecAddress]
+     *   - getCompleteAddress(account): [AztecAddress]
+     *   - simulateViews(calls): [FunctionCall[]]
+     */
+    private buildAccountOperation(
+        kind: Operation["kind"],
+        args: unknown[],
+        networkId: string,
+        accountAddress: string,
+    ): Operation {
+        switch (kind) {
+            case "aztec_simulateTx":
+                return { kind, networkId, accountAddress, exec: args[0] as any, opts: { ...(args[1] as any ?? {}), from: accountAddress } };
+            case "aztec_simulateUtility":
+                return { kind, networkId, accountAddress, call: args[0] as any, opts: { ...(args[1] as any ?? {}), from: accountAddress } };
+            case "aztec_profileTx":
+                return { kind, networkId, accountAddress, exec: args[0] as any, opts: { ...(args[1] as any ?? {}), from: accountAddress } };
+            case "aztec_createAuthWit":
+                return { kind, networkId, accountAddress, messageHashOrIntent: args[0] as any };
+            case "register_token":
+                // schema_patch: registerToken(account: AztecAddress, token: AztecAddress)
+                // The first arg is the account (already resolved), second is the token address
+                return { kind, networkId, accountAddress, address: (args[1] as any).toString() };
+            case "get_complete_address":
+                // schema_patch: getCompleteAddress(account: AztecAddress)
+                return { kind, networkId, accountAddress };
+            case "simulate_views":
+                // schema_patch: simulateViews(calls: FunctionCall[])
+                // The calls come as FunctionCall[] from the schema. ExecutionService expects
+                // (CallAction | EncodedCallAction)[]. We convert FunctionCall → EncodedCallAction.
+                return {
+                    kind,
+                    networkId,
+                    accountAddress,
+                    calls: this.functionCallsToEncodedActions(args[0] as any[]),
+                };
+            default:
+                throw new Error(`Unknown account operation: ${kind}`);
+        }
+    }
+
+    /**
+     * Convert FunctionCall[] (from wallet-sdk) to EncodedCallAction[] (for ExecutionService).
+     *
+     * The wallet-sdk sends FunctionCall objects (with `to`, `selector`, `args` as Fr[], etc).
+     * The ExecutionService's SimulateViewsOperation expects `(CallAction | EncodedCallAction)[]`.
+     * We convert to EncodedCallAction format which uses string representations.
+     */
+    private functionCallsToEncodedActions(calls: any[]): any[] {
+        return calls.map((call: any) => ({
+            kind: "encoded_call" as const,
+            to: call.to?.toString(),
+            selector: call.selector?.toString(),
+            args: (call.args ?? []).map((a: any) => a.toString()),
+            name: call.name,
+            type: call.type,
+            isStatic: call.isStatic,
+            hideMsgSender: call.hideMsgSender,
+            returnTypes: call.returnTypes ?? [],
+        }));
+    }
+
+    /**
+     * Resolve a session's chainId to a Network.
+     */
+    private async resolveNetwork(ctx: SessionContext): Promise<Network> {
+        const networks = await this.networkService.getNetworks(ctx.chainId);
+        if (networks.length === 0) {
+            throw new Error(`No network configured for chainId ${ctx.chainId}`);
+        }
+        return networks.find(n => n.isDefault) ?? networks[0];
+    }
+
+    /**
+     * Resolve a session's chainId to a Network + the first available Account.
+     *
+     * For the wallet-sdk protocol, the connected session implies a single active
+     * account context. We use the first account found for the session's profile
+     * and chain. If the dApp needs a specific account, it should include the
+     * account address in the method arguments (which the Aztec.js Wallet interface
+     * does via `opts.from`).
+     */
+    private async resolveNetworkAndAccount(ctx: SessionContext): Promise<[Network, Account]> {
+        const network = await this.resolveNetwork(ctx);
+        const accounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
+        if (accounts.length === 0) {
+            throw new Error(`No accounts found for profile ${ctx.profileId} on chainId ${ctx.chainId}`);
+        }
+        // Default to first account; for Aztec.js methods the `opts.from` field
+        // inside the args provides the specific account address
+        return [network, accounts[0]];
+    }
+
+    /**
+     * Unwrap an OperationResult, returning the value or throwing on failure.
+     */
+    private unwrapResult(result: OperationResult): unknown {
+        switch (result.status) {
+            case "ok":
+                return result.result;
+            case "failed":
+                throw new Error(result.error);
+            case "skipped":
+                throw new Error("Operation was skipped");
+        }
+    }
+}

@@ -8,6 +8,7 @@ import {
     DappMetadata,
     DappPermissions,
     DappSession,
+    GrantedCapabilityRecord,
     Events,
     Methods,
 } from "./spec";
@@ -51,5 +52,25 @@ export class DappSessionServiceClient extends ServiceClient<Methods, Events> imp
 
     public deleteDappSession(sessionId: string): Promise<DappSession> {
         return this.request("deleteDappSession", sessionId);
+    }
+
+    public setVerificationHash(sessionId: string, verificationHash: string): Promise<DappSession> {
+        return this.request("setVerificationHash", sessionId, verificationHash);
+    }
+
+    public setTrustedVerification(sessionId: string, trusted: boolean): Promise<DappSession> {
+        return this.request("setTrustedVerification", sessionId, trusted);
+    }
+
+    public setAccountAliases(sessionId: string, aliases: Record<string, string>): Promise<DappSession> {
+        return this.request("setAccountAliases", sessionId, aliases);
+    }
+
+    public setCapabilityGrants(sessionId: string, grants: GrantedCapabilityRecord[]): Promise<DappSession> {
+        return this.request("setCapabilityGrants", sessionId, grants);
+    }
+
+    public getCapabilityGrants(sessionId: string): Promise<GrantedCapabilityRecord[]> {
+        return this.request("getCapabilityGrants", sessionId);
     }
 }

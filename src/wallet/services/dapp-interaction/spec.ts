@@ -8,6 +8,7 @@ import type {
     SendTransactionOperation,
     SimulateUtilityOperation,
     SimulateViewsOperation,
+    Operation,
     OperationResult,
     AztecGetContractClassMetadataOperation,
     AztecGetContractMetadataOperation,
@@ -15,7 +16,6 @@ import type {
     AztecGetChainInfoOperation,
     AztecRegisterSenderOperation,
     AztecGetAddressBookOperation,
-    AztecGetAccountsOperation,
     AztecRegisterContractOperation,
     AztecSimulateTxOperation,
     AztecSimulateUtilityOperation,
@@ -23,13 +23,14 @@ import type {
     AztecSendTxOperation,
     AztecCreateAuthWitOperation,
 } from "@/wallet/services/execution/spec";
+import type { LocalTxOrigin } from "@/wallet/services/transaction/spec";
 
 export const DAPP_INTERACTION_SERVICE_NAME = "dapp-interaction";
 
 export type DappInteraction = {
     id: string;
-    payload: ConnectionPayload | ExecutionPayload;
-    resolve: (result: ConnectionResult | ExecutionResult) => void;
+    payload: ConnectionPayload | ExecutionPayload | CapabilityPayload;
+    resolve: (result: ConnectionResult | ExecutionResult | CapabilityResult) => void;
     reject: (reason: string) => void;
     cancellationToken: string;
 };
@@ -79,7 +80,6 @@ export type OperationRequest =
     | AztecGetChainInfoRequest
     | AztecRegisterSenderRequest
     | AztecGetAddressBookRequest
-    | AztecGetAccountsRequest
     | AztecRegisterContractRequest
     | AztecSimulateTxRequest
     | AztecSimulateUtilityRequest
@@ -154,10 +154,6 @@ export type AztecGetAddressBookRequest = Omit<AztecGetAddressBookOperation, Netw
     chain: CaipChain;
 };
 
-export type AztecGetAccountsRequest = Omit<AztecGetAccountsOperation, NetworkParams | "accounts"> & {
-    chain: CaipChain;
-};
-
 export type AztecRegisterContractRequest = Omit<AztecRegisterContractOperation, NetworkParams> & {
     chain: CaipChain;
 };
@@ -184,9 +180,26 @@ export type AztecCreateAuthWitRequest = Omit<AztecCreateAuthWitOperation, Accoun
 
 export type ExecutionResult = OperationResult[];
 
+export type CapabilityPayload = {
+    params: CapabilityParams;
+    session: DappSession;
+};
+
+export type CapabilityParams = {
+    sessionId: string;
+    manifest: any;
+    delta: any[];
+    existingGrants: any[];
+};
+
+export type CapabilityResult = {
+    granted: any[];
+};
+
 export type Methods = {
-    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload;
-    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult): void;
+    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload | CapabilityPayload;
+    approveInteraction(id: string, operations: Operation[], origin: LocalTxOrigin): void;
+    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult): void;
     rejectInteraction(id: string, reason: string): void;
 };
 
