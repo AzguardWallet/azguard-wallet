@@ -111,7 +111,6 @@ import {
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
 import { Aliased, ContractClassMetadata, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
-import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 import { siloNullifier } from "@aztec/stdlib/hash";
 
 export * from "./spec";
@@ -829,9 +828,17 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         };
     }
 
-    private async executeAztecGetPrivateEvents(op: AztecGetPrivateEventsOperation): Promise<PackedPrivateEvent[]> {
+    private async executeAztecGetPrivateEvents(op: AztecGetPrivateEventsOperation) {
         const network = await this.networkService.getNetwork(op.networkId);
-        return this.pxeService.getPrivateEvents(network, op.eventMetadata.eventSelector, op.eventFilter);
+        const packedEvents = await this.pxeService.getPrivateEvents(network, op.eventMetadata.eventSelector, op.eventFilter);
+        return packedEvents.map((ev) => ({
+            event: decodeFromAbi([op.eventMetadata.abiType], ev.packedEvent),
+            metadata: {
+                l2BlockNumber: ev.l2BlockNumber,
+                l2BlockHash: ev.l2BlockHash,
+                txHash: ev.txHash,
+            },
+        }));
     }
 
     private async executeAztecGetChainInfo(op: AztecGetChainInfoOperation): Promise<ChainInfo> {

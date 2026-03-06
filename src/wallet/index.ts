@@ -25,6 +25,7 @@ import { TokenBalanceService } from "./services/token-balance/service";
 import { TransactionService } from "./services/transaction/service";
 import { WalletConnectService } from "./services/wallet-connect/service";
 import { PasskeyService } from "./services/passkey/service";
+import { AztecSdkService } from "./services/aztec-sdk/service";
 import { sleep } from "./utils";
 import { getErrorData, getErrorMessage } from "./utils/errors";
 
@@ -97,6 +98,7 @@ const runServices = async () => {
     services.add(new TransactionService(logger));
     services.add(new WalletConnectService(config, logger));
     services.add(new PasskeyService(logger));
+    services.add(new AztecSdkService(logger));
 
     await services.start();
     logger.log("wallet", LogLevel.Info, "Services started");
