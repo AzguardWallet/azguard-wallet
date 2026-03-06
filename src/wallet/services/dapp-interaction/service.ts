@@ -29,6 +29,8 @@ import {
     Events,
     DappInteraction,
 } from "./spec";
+import { enforceCapabilityScope } from "./scope-enforcement";
+
 export * from "./spec";
 
 export class DappInteractionService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
@@ -323,6 +325,12 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     operation.calls.forEach(x => this.checkMethodPermission(session, x.kind, chain));
                     break;
                 }
+            }
+        }
+        // Scope enforcement — only when capabilities are stored (SDK sessions with requestCapabilities)
+        if (session.capabilities) {
+            for (const operation of operations) {
+                enforceCapabilityScope(session.capabilities, operation);
             }
         }
         return session;
