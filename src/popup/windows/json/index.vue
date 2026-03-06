@@ -12,7 +12,10 @@ import { ProfileServiceClient } from "@/wallet/services/profile/client"
 const params = new URLSearchParams(window.location.search)
 const requestId = params.get("requestId")
 const payload = ref()
-const data = computed(() => payload.value?.params.operations)
+const data = computed(() => {
+	if (payload.value?.params?.manifest) return payload.value.params.manifest
+	return payload.value?.params?.operations
+})
 
 let profileService
 
