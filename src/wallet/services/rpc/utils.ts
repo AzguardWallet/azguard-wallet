@@ -56,6 +56,7 @@ export function parseConnectionParams(data: any): ConnectionParams {
         dappMetadata: parseDappMetadata(data.dappMetadata),
         requiredPermissions: parseArrayProp(data, "requiredPermissions", parseDappPermissions),
         optionalPermissions: parseOptionalArrayProp(data, "optionalPermissions", parseDappPermissions),
+        ...(data.source && { source: data.source }),
     };
 }
 

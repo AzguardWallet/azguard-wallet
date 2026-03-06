@@ -45,8 +45,9 @@ export class DappSessionServiceClient extends ServiceClient<Methods, Events> imp
         permissions: DappPermissions[],
         accounts: string[],
         confirmationLevel: AccessLevel,
+        capabilities?: unknown[],
     ): Promise<DappSession> {
-        return this.request("updateDappSession", sessionId, permissions, accounts, confirmationLevel);
+        return this.request("updateDappSession", sessionId, permissions, accounts, confirmationLevel, capabilities);
     }
 
     public deleteDappSession(sessionId: string): Promise<DappSession> {

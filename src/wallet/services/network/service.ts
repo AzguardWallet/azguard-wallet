@@ -288,6 +288,8 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
         try {
             const rpc = createAztecNodeClient(rpcUrl);
             const info = await rpc.getNodeInfo();
+            // Sandbox detection by URL.
+            // NOTE: resolveChainId in aztec-sdk/adapter.ts detects sandbox by l1ChainId 31337 instead.
             if (rpcUrl === "http://localhost:8080") {
                 return 0;
             }

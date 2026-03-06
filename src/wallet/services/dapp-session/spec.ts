@@ -21,6 +21,8 @@ export type DappSession = {
     accounts: string[];
     confirmationLevel: AccessLevel;
     expiry: number;
+    /** Serialized GrantedCapability[] from SDK requestCapabilities. Only set for SDK sessions. */
+    capabilities?: unknown[];
 };
 
 export enum AccessLevel {
@@ -46,6 +48,7 @@ export type Methods = {
         permissions: DappPermissions[],
         accounts: string[],
         confirmationLevel: AccessLevel,
+        capabilities?: unknown[],
     ): DappSession;
     deleteDappSession(sessionId: string): DappSession;
 };

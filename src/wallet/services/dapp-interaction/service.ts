@@ -9,9 +9,13 @@ import { DappSessionService, AccessLevel, DappSession } from "@/wallet/services/
 import { ExecutionService, type Operation, type OperationKind } from "@/wallet/services/execution/service";
 import { OriginType } from "@/wallet/services/transaction/service";
 import { getRandomHex, Lock } from "@/wallet/utils";
+import { jsonSanitize } from "@/wallet/utils/serialization";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import type { AppCapabilities } from "@aztec/aztec.js/wallet";
 import {
     DAPP_INTERACTION_SERVICE_NAME,
+    type CapabilitiesPayload,
+    type CapabilitiesResult,
     type ConnectionPayload,
     type ConnectionResult,
     type ExecutionPayload,
@@ -25,7 +29,6 @@ import {
     Events,
     DappInteraction,
 } from "./spec";
-
 export * from "./spec";
 
 export class DappInteractionService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
@@ -54,7 +57,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executionService = services.get(ExecutionService.name);
     }
 
-    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload> {
+    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilitiesPayload> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -62,7 +65,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         return interactionRequest.payload;
     }
 
-    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult): Promise<void> {
+    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilitiesResult): Promise<void> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -100,13 +103,44 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         return (await this.interaction("execute", payload, cancellationToken)) as ExecutionResult;
     }
 
+    public async requestCapabilities(
+        sessionId: string,
+        manifest: AppCapabilities,
+        chainId: number,
+        verificationHash?: string,
+    ): Promise<CapabilitiesResult> {
+        const session = await this.dappSessionService.tryGetDappSession(sessionId);
+        if (!session) {
+            throw new Error("Invalid session");
+        }
+        const payload: CapabilitiesPayload = {
+            params: {
+                sessionId,
+                manifest,
+                dappMetadata: session.dappMetadata,
+                chainId,
+                verificationHash,
+            },
+        };
+        const result = (await this.interaction("capabilities", payload)) as CapabilitiesResult;
+        const serializedCapabilities = jsonSanitize(result.granted) as unknown[];
+        await this.dappSessionService.updateDappSession(
+            sessionId,
+            result.permissions,
+            result.accounts,
+            session.confirmationLevel,
+            serializedCapabilities,
+        );
+        return result;
+    }
+
     private async interaction(
         type: string,
-        payload: ConnectionPayload | ExecutionPayload,
+        payload: ConnectionPayload | ExecutionPayload | CapabilitiesPayload,
         cancellationToken?: string,
-    ): Promise<ConnectionResult | ExecutionResult> {
+    ): Promise<ConnectionResult | ExecutionResult | CapabilitiesResult> {
         let interaction: DappInteraction;
-        let promise: Promise<ConnectionResult | ExecutionResult>;
+        let promise: Promise<ConnectionResult | ExecutionResult | CapabilitiesResult>;
 
         try {
             await this.lock.enter();
@@ -124,7 +158,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 cancellationToken: cancellationToken ?? id,
             };
 
-            promise = new Promise<ConnectionResult | ExecutionResult>((resolve, reject) => {
+            promise = new Promise<ConnectionResult | ExecutionResult | CapabilitiesResult>((resolve, reject) => {
                 interaction.resolve = resolve;
                 interaction.reject = reject;
             });

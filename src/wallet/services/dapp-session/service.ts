@@ -110,6 +110,7 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
         permissions: DappPermissions[],
         accounts: string[],
         confirmationLevel: AccessLevel,
+        capabilities?: unknown[],
     ): Promise<DappSession> {
         try {
             await this.lock.enter();
@@ -121,6 +122,7 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
             session.permissions = permissions;
             session.accounts = accounts;
             session.confirmationLevel = confirmationLevel;
+            session.capabilities = capabilities;
             await this.storage.set(sessionId, session);
             this.emit("onDappSessionUpdated", session);
 
