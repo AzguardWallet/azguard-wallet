@@ -62,11 +62,33 @@ const networks = ref<Network[]>()
 const requestId = ref<string>()
 const payload = ref<ConnectionPayload>()
 const dapp = ref<UIDappMetadata>()
+const source = ref<string>()
 const permissions = ref<UIDappPermission[]>([])
 
 const accounts = ref<Account[]>([])
 const selectedAccounts = ref<Account[]>([])
 const selectedConfirmationPolicy = ref(confirmationPolicies.at(-1)!)
+
+/**
+ * Whether this is an Aztec Wallet SDK connection.
+ *
+ * SDK sessions are created with empty accounts because account selection is deferred
+ * to the `requestCapabilities` step (getAccounts capability). This avoids asking the
+ * user to select accounts twice — once at discovery and again at capabilities approval.
+ *
+ * The discovery popup for SDK connections serves only as a trust gate:
+ * "do I trust this dApp?" + base permissions (getChainInfo, registerSender).
+ * Accounts are granted later when the dApp explicitly requests the accounts capability.
+ *
+ * Alternatives considered:
+ * - Filter capabilities accounts to discovery-selected only — forces redundant selection,
+ *   confusing UX ("why can't I see my other account?").
+ * - Remove Azguard's permission layer for SDK — loses a useful trust gate.
+ * - Current approach (no accounts at discovery) — clean single-selection UX, permission
+ *   layer stays intact, accounts populated at capabilities step.
+ */
+const isSdkSource = computed(() => source.value === "sdk")
+const rememberApp = ref(false)
 
 const isLoading = ref(false)
 const isInteractionCancelled = ref(false)
@@ -82,6 +104,7 @@ const initRequest = async () => {
 		}
 		payload.value = (await interactionService.getInteractionPayload(requestId.value)) as ConnectionPayload
 		dapp.value = payload.value.params.dappMetadata
+		source.value = payload.value.params.source
 
 		if (dapp.value.logo) {
 			dapp.value.loadingLogo = true
@@ -180,7 +203,7 @@ const checkSelectedAccounts = () => {
 }
 
 const approve = async () => {
-	if (!checkSelectedAccounts()) {
+	if (!isSdkSource.value && !checkSelectedAccounts()) {
 		setError(
 			"Validation error",
 			"You must select at least one account for each network in the required permissions",
@@ -190,16 +213,20 @@ const approve = async () => {
 	}
 	try {
 		isLoading.value = true
+		const sessionAccounts = isSdkSource.value
+			? []
+			: selectedAccounts.value.map(acc => `aztec:${acc.chainId}:${acc.address}`)
 		const session = await sessionService.addDappSession(
 			dapp.value!,
 			packPermissions(permissions.value.filter(x => x.selected)),
-			selectedAccounts.value.map(acc => `aztec:${acc.chainId}:${acc.address}`),
+			sessionAccounts,
 			selectedConfirmationPolicy.value?.confirmationLevel ?? AccessLevel.None,
 		)
 		const sessionInfo = {
 			id: session.id,
 			permissions: session.permissions,
 			accounts: session.accounts,
+			remember: rememberApp.value,
 		}
 		await interactionService.resolveInteraction(requestId.value!, sessionInfo)
 		closeWindow(true)
@@ -493,7 +520,7 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 			</Flex>
 
 			<Flex
-				v-if="accounts.length"
+				v-if="accounts.length && !isSdkSource"
 				direction="column"
 				align="start"
 				justify="start"
@@ -539,6 +566,20 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 		</Flex>
 
 		<Flex direction="column" gap="10" style="margin-top: 16px">
+			<Flex
+				v-if="isSdkSource"
+				align="center"
+				gap="8"
+				:class="$style.remember"
+				@click="rememberApp = !rememberApp"
+			>
+				<Icon
+					:name="rememberApp ? 'check-circle' : 'circle'"
+					size="16"
+					:color="rememberApp ? 'green' : 'secondary'"
+				/>
+				<Text size="13" color="secondary">Remember this app</Text>
+			</Flex>
 			<Tooltip v-if="processingError" side="top" position="start" wide :disabled="!processingError.tooltip">
 				<Flex align="center" wide>
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
@@ -565,7 +606,7 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 					type="primary"
 					size="medium"
 					:loading="isLoading"
-					:disabled="!selectedAccounts.length || processingError"
+					:disabled="(!isSdkSource && !selectedAccounts.length) || processingError"
 				>
 					<Text size="13" color="inverse">Approve</Text>
 				</Button>
@@ -710,6 +751,12 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 .disabled {
 	cursor: default;
 	pointer-events: none;
+}
+
+.remember {
+	cursor: pointer;
+	padding: 4px 0;
+	margin-top: 4px;
 }
 
 .proposal_expired_overlay {
