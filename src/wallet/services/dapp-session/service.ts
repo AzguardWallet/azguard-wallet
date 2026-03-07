@@ -213,7 +213,7 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
             await this.lock.enter();
             const session = await this.storage.get(sessionId);
             if (!session) throw new Error("Invalid id");
-            session.accountAliases = aliases;
+            session.accountAliases = { ...session.accountAliases, ...aliases };
             await this.storage.set(sessionId, session);
             this.emit("onDappSessionUpdated", session);
             return session;

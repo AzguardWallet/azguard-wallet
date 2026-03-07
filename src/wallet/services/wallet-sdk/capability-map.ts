@@ -15,12 +15,12 @@ const EXEMPT_METHODS = new Set([
     "getChainInfo",
     "requestCapabilities",
     "batch",
+    "getAccounts",
 ]);
 
 /** Maps each wallet-sdk method name to its required capability type. */
 const METHOD_CAPABILITY_MAP: Record<string, CapabilityType> = {
     // accounts
-    getAccounts: "accounts",
     getCompleteAddress: "accounts",
     createAuthWit: "accounts",
     registerToken: "accounts",

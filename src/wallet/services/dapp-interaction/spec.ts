@@ -29,8 +29,8 @@ export const DAPP_INTERACTION_SERVICE_NAME = "dapp-interaction";
 
 export type DappInteraction = {
     id: string;
-    payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload;
-    resolve: (result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult) => void;
+    payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload;
+    resolve: (result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult) => void;
     reject: (reason: string) => void;
     cancellationToken: string;
 };
@@ -191,10 +191,13 @@ export type CapabilityParams = {
     delta: any[];
     existingGrants: any[];
     reRequested?: string[];
+    availableAccounts?: Array<{ address: string; name: string; chainId: number }>;
 };
 
 export type CapabilityResult = {
     granted: any[];
+    selectedAccounts?: string[];
+    accountAliases?: Record<string, string>;
 };
 
 export type DiscoveryPayload = {
@@ -209,25 +212,10 @@ export type DiscoveryResult = {
     approved: boolean;
 };
 
-export type AccountAuthPayload = {
-    params: AccountAuthParams;
-    session: DappSession;
-};
-
-export type AccountAuthParams = {
-    sessionId: string;
-    chainId: number;
-};
-
-export type AccountAuthResult = {
-    accounts: string[];
-    aliases: Record<string, string>;
-};
-
 export type Methods = {
-    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload;
+    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload;
     approveInteraction(id: string, operations: Operation[], origin: LocalTxOrigin): void;
-    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult): void;
+    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult): void;
     rejectInteraction(id: string, reason: string): void;
 };
 

@@ -2,11 +2,13 @@
 /** Vendor */
 import { onMounted, onUnmounted } from "vue"
 
+/** Components */
+// @ts-ignore
+import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
+import CapabilityDetailPanel from "@/popup/components/modules/capabilities/CapabilityDetailPanel.vue"
+
 /** Utils */
 import { getErrorData } from "@/wallet/utils/errors"
-
-/** Components */
-import CapabilityDetailPanel from "@/popup/components/modules/capabilities/CapabilityDetailPanel.vue"
 
 /** Services */
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
@@ -19,6 +21,12 @@ import {
 type UIDappMetadata = DappMetadata & {
 	loadingLogo?: boolean
 	logoBlobUrl?: string
+}
+
+type UIAccount = {
+	address: string
+	name: string
+	chainId: number
 }
 
 type UICapability = {
@@ -53,6 +61,12 @@ const payload = ref<CapabilityPayload>()
 const dapp = ref<UIDappMetadata>()
 const capabilities = ref<UICapability[]>([])
 
+/** Account selection state */
+const needsAccountSelection = ref(false)
+const availableAccounts = ref<UIAccount[]>([])
+const selectedAccounts = ref<UIAccount[]>([])
+const accountAliases = ref<Record<string, string>>({})
+
 const isLoading = ref(false)
 const isInteractionCancelled = ref(false)
 const processingError = ref<UIError>()
@@ -85,6 +99,10 @@ function setError(title: string, tooltip: string = title, type: string = "error"
 	processingError.value = { title, tooltip, type }
 }
 
+function clearError() {
+	processingError.value = undefined
+}
+
 const init = async () => {
 	try {
 		profile.value = await profileService.getActiveProfile()
@@ -104,12 +122,20 @@ const init = async () => {
 			}
 		}
 
-		// Build UI capabilities list
+		// Check if accounts type is in delta — show account selection instead of card
+		const hasAccountsInDelta = payload.value.params.delta.some((cap: any) => cap.type === "accounts")
+		if (hasAccountsInDelta && payload.value.params.availableAccounts?.length) {
+			needsAccountSelection.value = true
+			availableAccounts.value = payload.value.params.availableAccounts
+		}
+
+		// Build UI capabilities list (filter out accounts type — handled by section)
 		const items: UICapability[] = []
 		const reRequestedTypes = new Set(payload.value.params.reRequested ?? [])
 
-		// New capabilities (delta) — toggleable, default ON
+		// New capabilities (delta) — toggleable, default ON — skip accounts type
 		for (const cap of payload.value.params.delta) {
+			if (cap.type === "accounts") continue
 			const info = getCapabilityInfo(cap.type)
 			items.push({
 				capability: cap,
@@ -150,6 +176,18 @@ const toggleCapability = (index: number) => {
 	}
 }
 
+const selectAccount = (account: UIAccount) => {
+	if (processingError.value?.type === "warning") {
+		clearError()
+	}
+	const index = selectedAccounts.value.findIndex(acc => acc.address === account.address)
+	if (index < 0) {
+		selectedAccounts.value.push(account)
+	} else {
+		selectedAccounts.value.splice(index, 1)
+	}
+}
+
 const onActiveProfileChanged = (_profile?: ProfileInfo) => {
 	if (!_profile || _profile.id !== profile.value?.id) {
 		reject()
@@ -163,6 +201,15 @@ const onInteractionCancelled = (_requestId: string) => {
 }
 
 const approve = async () => {
+	// Validate account selection if needed
+	if (needsAccountSelection.value && selectedAccounts.value.length === 0) {
+		setError(
+			"Select at least one account",
+			"You must select at least one account to share with the dApp",
+			"warning",
+		)
+		return
+	}
 	try {
 		isLoading.value = true
 		const approvedNew = capabilities.value
@@ -171,9 +218,35 @@ const approve = async () => {
 		const existing = capabilities.value
 			.filter(c => !c.isNew)
 			.map(c => c.capability)
-		const granted = [...approvedNew, ...existing]
 
-		await interactionService.resolveInteraction(requestId.value!, { granted })
+		// Re-add the accounts capability to granted if accounts were selected
+		const granted = [...approvedNew, ...existing]
+		if (needsAccountSelection.value && selectedAccounts.value.length > 0) {
+			const accountsCap = payload.value!.params.delta.find((cap: any) => cap.type === "accounts")
+			if (accountsCap) {
+				granted.push(accountsCap)
+			}
+		}
+
+		// Build account result
+		let resultSelectedAccounts: string[] | undefined
+		let resultAliases: Record<string, string> | undefined
+		if (needsAccountSelection.value && selectedAccounts.value.length > 0) {
+			resultSelectedAccounts = selectedAccounts.value.map(
+				acc => `aztec:${acc.chainId}:${acc.address}`,
+			)
+			resultAliases = {}
+			for (const acc of selectedAccounts.value) {
+				const caip = `aztec:${acc.chainId}:${acc.address}`
+				resultAliases[caip] = accountAliases.value[caip] || acc.name
+			}
+		}
+
+		await interactionService.resolveInteraction(requestId.value!, {
+			granted,
+			selectedAccounts: resultSelectedAccounts,
+			accountAliases: resultAliases,
+		})
 		closeWindow(true)
 	} catch (error) {
 		console.error(getErrorData(error))
@@ -270,14 +343,87 @@ onUnmounted(() => {
 			<Flex direction="column" align="center" justify="center" gap="8" :style="{ marginTop: '-4px' }">
 				<Flex direction="column" align="center" justify="center" gap="4">
 					<Text size="13" weight="600" color="primary"> {{ dapp?.url }} </Text>
-					<Text size="13" color="primary">The dApp is requesting capabilities</Text>
+					<Text size="13" color="primary">The dApp is requesting access</Text>
 				</Flex>
 				<Flex direction="column" align="center" justify="center" gap="4">
 					<Text size="12" color="secondary">Review what this dApp can do with your wallet</Text>
 				</Flex>
 			</Flex>
 
-			<!-- New capabilities (delta) -->
+			<!-- Account selection section -->
+			<Flex
+				v-if="needsAccountSelection"
+				direction="column"
+				align="start"
+				justify="start"
+				gap="8"
+				:class="$style.accounts_section"
+			>
+				<Flex direction="column" align="start" justify="start" gap="4">
+					<Text size="15" weight="600" color="primary">Select accounts to share</Text>
+					<Text size="12" color="secondary">Choose which accounts this dApp can see</Text>
+				</Flex>
+				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
+					<Flex
+						v-for="acc in availableAccounts"
+						:key="acc.address"
+						direction="column"
+						gap="8"
+						:class="[$style.account, (isLoading || processingError?.type === 'error') && $style.disabled]"
+					>
+						<Flex @click="selectAccount(acc)" gap="10" style="cursor: pointer">
+							<Flex align="center">
+								<Icon
+									v-if="selectedAccounts.find(a => a.address === acc.address)"
+									name="check-circle"
+									size="16"
+									color="green"
+								/>
+								<Icon v-else name="circle" size="16" color="secondary" />
+							</Flex>
+
+							<Flex direction="column" gap="4" wide>
+								<Flex align="center" justify="between" gap="12">
+									<Text size="14" weight="600" color="primary">
+										{{ acc.name }}
+									</Text>
+
+									<NetworkBadge :chainId="acc.chainId" />
+								</Flex>
+								<Text size="13" weight="600" color="tertiary">
+									{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
+								</Text>
+							</Flex>
+						</Flex>
+						<Flex
+							v-if="selectedAccounts.find(a => a.address === acc.address)"
+							direction="column"
+							gap="4"
+							wide
+						>
+							<Flex align="center" gap="4">
+								<Text size="12" weight="600" color="secondary">Alias</Text>
+								<Tooltip position="start">
+									<Icon name="info" size="11" color="tertiary" />
+									<template #content>
+										<Text size="12" color="secondary" :style="{ lineHeight: '1.2' }">
+											A private name for this account visible only to this app
+										</Text>
+									</template>
+								</Tooltip>
+							</Flex>
+							<input
+								:value="accountAliases[`aztec:${acc.chainId}:${acc.address}`] ?? acc.name"
+								@input="accountAliases[`aztec:${acc.chainId}:${acc.address}`] = ($event.target as HTMLInputElement).value"
+								:class="$style.alias_input"
+								:placeholder="acc.name"
+							/>
+						</Flex>
+					</Flex>
+				</Flex>
+			</Flex>
+
+			<!-- New capabilities (delta) — accounts type excluded, shown as section above -->
 			<Flex
 				v-if="capabilities.filter(c => c.isNew).length"
 				direction="column"
@@ -435,7 +581,7 @@ onUnmounted(() => {
 					type="primary"
 					size="medium"
 					:loading="isLoading"
-					:disabled="processingError"
+					:disabled="processingError?.type === 'error'"
 				>
 					<Text size="13" color="inverse">Approve</Text>
 				</Button>
@@ -529,6 +675,56 @@ onUnmounted(() => {
 
 .section {
 	width: 100%;
+}
+
+.accounts_section {
+	width: 100%;
+}
+
+.accounts {
+	width: 100%;
+	max-height: 172px;
+	overflow: auto;
+}
+
+.account {
+	width: 100%;
+	border-radius: 12px;
+	cursor: pointer;
+	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+
+	padding: 12px;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--gray-3);
+	}
+
+	&:active {
+		background: var(--gray-5);
+	}
+}
+
+.alias_input {
+	width: 100%;
+	padding: 6px 10px;
+	border-radius: 8px;
+	border: 1px solid var(--gray-10);
+	background: var(--gray-3);
+	color: var(--txt-primary);
+	font-size: 13px;
+	font-family: inherit;
+	outline: none;
+	transition: border-color 0.2s ease;
+
+	&:focus {
+		border-color: var(--blue);
+	}
+
+	&::placeholder {
+		color: var(--txt-tertiary);
+	}
 }
 
 .capability_card_wrapper {

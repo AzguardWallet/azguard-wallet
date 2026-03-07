@@ -169,9 +169,8 @@ export class WalletSdkDispatcher {
      * Scoped to session accounts only and uses per-app aliases.
      * WalletSchema expects: Array<{ alias: string, item: AztecAddress }>
      *
-     * If the session has no accounts (new connection via discovery popup),
-     * triggers an authorization popup for the user to select which accounts
-     * to share with the dApp.
+     * If the session has no accounts, returns empty array — the dApp should
+     * call requestCapabilities() with an `accounts` type first.
      */
     private async handleGetAccounts(ctx: SessionContext): Promise<unknown> {
         const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
@@ -179,41 +178,12 @@ export class WalletSdkDispatcher {
             throw new Error(`No dApp session found for origin ${ctx.origin}`);
         }
 
-        // If session has no accounts yet (new connection), trigger account authorization popup
+        // No accounts yet — dApp should call requestCapabilities with accounts type first
         if (!dappSession.accounts || dappSession.accounts.length === 0) {
-            const result = await this.dappInteractionService.authorizeAccounts({
-                sessionId: dappSession.id,
-                chainId: ctx.chainId,
-            });
-
-            // Update the session with the selected accounts and aliases
-            await this.dappSessionService.updateDappSession(
-                dappSession.id,
-                dappSession.permissions,
-                result.accounts,
-                dappSession.confirmationLevel,
-            );
-            await this.dappSessionService.setAccountAliases(dappSession.id, result.aliases);
-
-            // Return the newly authorized accounts
-            const network = await this.resolveNetwork(ctx);
-            const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
-            const selectedAddresses = new Set(
-                result.accounts
-                    .filter(caip => caip.startsWith(`aztec:${ctx.chainId}:`))
-                    .map(caip => caip.split(":")[2]),
-            );
-
-            return allAccounts
-                .filter(acc => selectedAddresses.has(acc.address))
-                .map(acc => {
-                    const caip = `aztec:${ctx.chainId}:${acc.address}`;
-                    const alias = result.aliases[caip] ?? acc.name ?? "";
-                    return { alias, item: acc.address };
-                });
+            return [];
         }
 
-        // Returning user: filter to session-scoped accounts and use per-app aliases
+        // Return session-scoped accounts with per-app aliases
         const network = await this.resolveNetwork(ctx);
         const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
         const sessionAccountAddresses = this.getSessionAccountAddresses(dappSession, ctx.chainId);
@@ -366,13 +336,58 @@ export class WalletSdkDispatcher {
         const existingCaps = existingGrants
             .filter(g => !rejectedTypes.has(g.capability.type)) // Don't show re-requested as "existing"
             .map(g => g.capability);
+
+        // If `accounts` type is in the delta, load available accounts for the popup
+        const hasAccountsInDelta = delta.some(cap => cap.type === "accounts");
+        let availableAccounts: Array<{ address: string; name: string; chainId: number }> | undefined;
+        if (hasAccountsInDelta) {
+            const network = await this.resolveNetwork(ctx);
+            const accounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
+            availableAccounts = accounts.map(acc => ({
+                address: acc.address,
+                name: acc.name,
+                chainId: acc.chainId,
+            }));
+        }
+
         const result = await this.dappInteractionService.requestCapabilities({
             sessionId: dappSession.id,
             manifest,
             delta,
             existingGrants: existingCaps,
             reRequested,
+            availableAccounts,
         });
+
+        // Safety net: ensure accounts capability is in granted when accounts were selected
+        if (result.selectedAccounts && result.selectedAccounts.length > 0) {
+            const hasAccountsInGranted = result.granted.some((cap: any) => cap.type === "accounts");
+            if (!hasAccountsInGranted) {
+                const accountsCap = delta.find(cap => cap.type === "accounts");
+                if (accountsCap) {
+                    result.granted.push(accountsCap);
+                }
+            }
+        }
+
+        // If accounts were selected in the popup, merge with existing (don't replace)
+        if (result.selectedAccounts && result.selectedAccounts.length > 0) {
+            const existingAccounts = new Set(dappSession.accounts ?? []);
+            for (const acc of result.selectedAccounts) {
+                existingAccounts.add(acc);
+            }
+            const mergedAccounts = [...existingAccounts];
+
+            await this.dappSessionService.updateDappSession(
+                dappSession.id,
+                dappSession.permissions,
+                mergedAccounts,
+                dappSession.confirmationLevel,
+            );
+            if (result.accountAliases) {
+                await this.dappSessionService.setAccountAliases(dappSession.id, result.accountAliases);
+            }
+        }
 
         // Compute which delta types were approved vs rejected
         const approvedTypes = new Set(result.granted.map((cap: any) => cap.type));
@@ -402,11 +417,14 @@ export class WalletSdkDispatcher {
         ];
         await this.dappSessionService.setCapabilityRejections(dappSession.id, mergedRejections);
 
+        // Reload session to pick up updated accounts/aliases
+        const updatedSession = await this.dappSessionService.getDappSession(dappSession.id);
+
         const granted = await this.enrichGrantedCapabilities(
             mergedGrants.map(g => g.capability),
             requestedCapabilities,
             ctx,
-            dappSession,
+            updatedSession,
         );
 
         return {
@@ -457,9 +475,10 @@ export class WalletSdkDispatcher {
     /**
      * Enforce capability grants before dispatching a method call.
      *
-     * - Exempt methods (getChainInfo, requestCapabilities, batch) skip enforcement.
-     * - Legacy sessions (capabilityGrants === undefined) allow all methods for backward compat.
-     * - Otherwise, the method's required capability type must be in the session's grants.
+     * - Exempt methods (getChainInfo, requestCapabilities, batch, getAccounts) skip enforcement.
+     * - The method's required capability type must be in the session's grants.
+     * - Sessions without grants (new or pre-migration) are treated as having no grants,
+     *   so non-exempt methods are blocked until requestCapabilities() is called.
      */
     private async enforceCapability(methodName: string, ctx: SessionContext): Promise<void> {
         if (isCapabilityExempt(methodName)) return;
@@ -470,10 +489,7 @@ export class WalletSdkDispatcher {
         const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
         if (!dappSession) return; // No session yet — let the method handler deal with it
 
-        // Legacy migration: if capabilityGrants was never set, allow everything
-        if (dappSession.capabilityGrants === undefined) return;
-
-        const grantedTypes = new Set(dappSession.capabilityGrants.map(g => g.capability.type));
+        const grantedTypes = new Set((dappSession.capabilityGrants ?? []).map(g => g.capability.type));
         if (!grantedTypes.has(requiredType)) {
             throw new Error(`Capability "${requiredType}" not granted. The dApp must call requestCapabilities() first.`);
         }
@@ -627,23 +643,32 @@ export class WalletSdkDispatcher {
     }
 
     /**
-     * Resolve a session's chainId to a Network + the first available Account.
+     * Resolve a session's chainId to a Network + an authorized Account.
      *
-     * For the wallet-sdk protocol, the connected session implies a single active
-     * account context. We use the first account found for the session's profile
-     * and chain. If the dApp needs a specific account, it should include the
-     * account address in the method arguments (which the Aztec.js Wallet interface
-     * does via `opts.from`).
+     * Filters accounts to those authorized in the dApp session. If the session
+     * has explicit accounts, only those are eligible. This ensures account-scoped
+     * operations (simulateTx, sendTx, etc.) use session-authorized accounts,
+     * not just the first global account.
      */
     private async resolveNetworkAndAccount(ctx: SessionContext): Promise<[Network, Account]> {
         const network = await this.resolveNetwork(ctx);
-        const accounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
-        if (accounts.length === 0) {
+        const allAccounts = await this.accountService.getAccounts(ctx.profileId, network.chainId);
+        if (allAccounts.length === 0) {
             throw new Error(`No accounts found for profile ${ctx.profileId} on chainId ${ctx.chainId}`);
         }
-        // Default to first account; for Aztec.js methods the `opts.from` field
-        // inside the args provides the specific account address
-        return [network, accounts[0]];
+
+        const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
+        if (dappSession?.accounts && dappSession.accounts.length > 0) {
+            const sessionAddresses = this.getSessionAccountAddresses(dappSession, ctx.chainId);
+            const sessionAccount = allAccounts.find(acc => sessionAddresses.has(acc.address));
+            if (sessionAccount) {
+                return [network, sessionAccount];
+            }
+            throw new Error("No authorized accounts found for this dApp session");
+        }
+
+        // No session or no accounts on session — require account authorization
+        throw new Error("No accounts authorized. The dApp must call requestCapabilities() with accounts type first.");
     }
 
     /**

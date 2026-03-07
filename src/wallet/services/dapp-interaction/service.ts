@@ -23,9 +23,6 @@ import {
     type DiscoveryPayload,
     type DiscoveryParams,
     type DiscoveryResult,
-    type AccountAuthPayload,
-    type AccountAuthParams,
-    type AccountAuthResult,
     type ConnectionParams,
     type ExecutionParams,
     type CaipChain,
@@ -64,7 +61,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executionService = services.get(ExecutionService.name);
     }
 
-    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload> {
+    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -81,7 +78,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executeAndResolve(interaction, operations, origin);
     }
 
-    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult): Promise<void> {
+    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult): Promise<void> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -147,20 +144,13 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         return (await this.interaction("discover", payload, cancellationToken)) as DiscoveryResult;
     }
 
-    public async authorizeAccounts(params: AccountAuthParams, cancellationToken?: string): Promise<AccountAuthResult> {
-        await this.ensureInitialized();
-        const session = await this.dappSessionService.getDappSession(params.sessionId);
-        const payload: AccountAuthPayload = { params, session };
-        return (await this.interaction("accounts", payload, cancellationToken)) as AccountAuthResult;
-    }
-
     private async interaction(
         type: string,
-        payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload | AccountAuthPayload,
+        payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload,
         cancellationToken?: string,
-    ): Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult> {
+    ): Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult> {
         let interaction: DappInteraction;
-        let promise: Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult>;
+        let promise: Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult>;
 
         try {
             await this.lock.enter();
@@ -178,7 +168,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 cancellationToken: cancellationToken ?? id,
             };
 
-            promise = new Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult | AccountAuthResult>((resolve, reject) => {
+            promise = new Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult>((resolve, reject) => {
                 interaction.resolve = resolve;
                 interaction.reject = reject;
             });
@@ -340,11 +330,15 @@ export class DappInteractionService extends Service<Methods, Events> implements 
     }
 
     private checkMethodPermission(session: DappSession, method: string, chain: string) {
-        // Empty methods list means "all methods allowed" — authorization is
-        // delegated to the requestCapabilities flow instead of connect-time permissions.
         const matchingChain = session.permissions.find(x => x.chains?.includes(chain));
         if (!matchingChain) {
             throw new Error("Unauthorized method/chain");
+        }
+        // Empty methods list means "all methods allowed" — wallet-SDK sessions use this,
+        // capability enforcement handles authorization separately.
+        // Non-empty methods list (legacy connect sessions) must be enforced.
+        if (matchingChain.methods && matchingChain.methods.length > 0 && !matchingChain.methods.includes(method)) {
+            throw new Error("Unauthorized method");
         }
     }
 

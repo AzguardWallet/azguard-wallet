@@ -261,12 +261,16 @@ async function handleDiscovery(
             // User approved — create a DappSession with empty accounts
             // Accounts will be shared later via getAccounts() authorization popup
             const chainId = chainInfoToChainId(discovery);
-            await dappSessionService.addDappSession(
+            const newSession = await dappSessionService.addDappSession(
                 params.dappMetadata,
                 [{ chains: [`aztec:${chainId}`], methods: [] }],
                 [], // empty accounts — will be populated via getAccounts()
                 AccessLevel.Transactions,
             );
+
+            // Initialize with empty capability grants so enforceCapability()
+            // blocks non-exempt methods until requestCapabilities() is called.
+            await dappSessionService.setCapabilityGrants(newSession.id, []);
 
             pendingVerification.add(discovery.origin);
             handler.approveDiscovery(discovery.requestId);
