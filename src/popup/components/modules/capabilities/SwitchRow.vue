@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-	denied: boolean
+	excluded: boolean
 	label: string
 	disabled?: boolean
 }>()
@@ -14,14 +14,14 @@ defineEmits<{
 	<Flex
 		align="center"
 		gap="6"
-		:class="[$style.sub_row, disabled && $style.disabled]"
+		:class="[$style.row, disabled && $style.disabled]"
 		@click.stop="$emit('toggle')"
 	>
-		<Flex align="center" gap="6" :class="denied && $style.denied_text">
+		<Flex align="center" gap="6" :class="excluded && $style.excluded_text">
 			<Icon
-				:name="denied ? 'circle' : 'check'"
+				:name="excluded ? 'circle' : 'check'"
 				size="12"
-				:color="denied ? 'tertiary' : 'green'"
+				:color="excluded ? 'tertiary' : 'green'"
 			/>
 			<Text size="13" color="secondary">{{ label }}</Text>
 		</Flex>
@@ -30,13 +30,13 @@ defineEmits<{
 			name="close"
 			size="16"
 			color="secondary"
-			:class="[$style.deny_btn, denied && $style.deny_btn_hidden]"
+			:class="[$style.exclude_btn, excluded && $style.exclude_btn_hidden]"
 		/>
 	</Flex>
 </template>
 
 <style module>
-.sub_row {
+.row {
 	cursor: pointer;
 	border-radius: 6px;
 	padding: 2px 4px;
@@ -53,11 +53,11 @@ defineEmits<{
 	pointer-events: none;
 }
 
-.denied_text {
+.excluded_text {
 	opacity: 0.5;
 }
 
-.deny_btn {
+.exclude_btn {
 	cursor: pointer;
 	flex-shrink: 0;
 	padding: 2px;
@@ -71,7 +71,7 @@ defineEmits<{
 	}
 }
 
-.deny_btn_hidden {
+.exclude_btn_hidden {
 	opacity: 0;
 	pointer-events: none;
 }

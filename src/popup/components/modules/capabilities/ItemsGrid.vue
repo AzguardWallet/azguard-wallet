@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * A grid of selectable/deniable items with consistent toggle behavior.
+ * A grid of toggleable items with consistent include/exclude behavior.
  * Used for all item lists: contracts, classes, event sources, accounts, and scope patterns.
  *
  * Renders items as rows in a CSS subgrid (icon + 2 content columns).
@@ -12,12 +12,12 @@ defineProps<{
 	items: any[]
 	/** Returns true if item at index is active (green check), false for inactive (gray circle, dimmed) */
 	isActive: (index: number) => boolean
-	/** Non-interactive and visually dimmed (e.g., parent sub-permission is denied) */
+	/** Non-interactive and visually dimmed (e.g., parent switch is excluded) */
 	disabled?: boolean
 }>()
 
 defineEmits<{
-	/** User clicked an item row. Parent determines semantics (deny/restore). */
+	/** User clicked an item row. Parent determines semantics (exclude/include). */
 	toggle: [index: number]
 }>()
 </script>

@@ -1,11 +1,9 @@
 import type { ChainInfo } from "@aztec/aztec.js/account";
-import type { AppCapabilities, Capability, GrantedCapability, WalletCapabilities } from "@aztec/aztec.js/wallet";
+import type { AppCapabilities, GrantedCapability } from "@aztec/aztec.js/wallet";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { WalletMessage, WalletResponse } from "@aztec/wallet-sdk/types";
-import type { OperationResult } from "@/wallet/services/execution/models";
+import type { WalletMessage } from "@aztec/wallet-sdk/types";
 import type { DappPermissions } from "@/wallet/services/dapp-session/spec";
 import type { CaipChain, CaipAccount, OperationRequest, CapabilitiesResult } from "@/wallet/services/dapp-interaction/spec";
-import { jsonSanitize } from "@/wallet/utils/serialization";
 import { trimAddress } from "@/utils/string";
 
 /** Validates that an account address is present and non-empty. */
@@ -16,25 +14,6 @@ function requireAccountAddress(value: unknown, errorMessage: string): string {
     }
     return address;
 }
-
-/**
- * All Aztec SDK methods used for dApp permission requests.
- */
-export const ALL_AZTEC_SDK_METHODS: string[] = [
-    "aztec_getChainInfo",
-    "aztec_getAccounts",
-    "aztec_getAddressBook",
-    "aztec_getContractMetadata",
-    "aztec_getContractClassMetadata",
-    "aztec_getPrivateEvents",
-    "aztec_registerSender",
-    "aztec_registerContract",
-    "aztec_simulateTx",
-    "aztec_simulateUtility",
-    "aztec_profileTx",
-    "aztec_sendTx",
-    "aztec_createAuthWit",
-];
 
 /**
  * Computes Azguard's internal chainId from SDK's ChainInfo.
@@ -276,28 +255,4 @@ export function capabilitiesToPermissions(
     const accounts = [...allAddresses].map(addr => `${chain}:${addr}` as CaipAccount);
 
     return { granted, permissions, accounts };
-}
-
-/**
- * Converts an OperationResult to a WalletResponse for the SDK protocol.
- * Pre-processes the result with jsonSanitize to ensure bigints, Buffers, etc.
- * are serializable via JSON.stringify (used by BackgroundConnectionHandler.sendResponse).
- */
-export function operationResultToResponse(
-    messageId: string,
-    result: OperationResult,
-    walletId: string,
-): WalletResponse {
-    if (result.status === "ok") {
-        return {
-            messageId,
-            result: jsonSanitize(result.result),
-            walletId,
-        };
-    }
-    return {
-        messageId,
-        error: result.status === "failed" ? result.error : "Operation skipped",
-        walletId,
-    };
 }

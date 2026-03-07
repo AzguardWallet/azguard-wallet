@@ -19,10 +19,12 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { AZTEC_SDK_SERVICE_NAME, type Methods, type Events } from "./spec";
 import { AppCapabilitiesSchema, type AppCapabilities, type WalletCapabilities } from "@aztec/aztec.js/wallet";
+import type { WalletResponse } from "@aztec/wallet-sdk/types";
+import type { OperationResult } from "@/wallet/services/execution/models";
+import { jsonSanitize } from "@/wallet/utils/serialization";
 import {
     resolveChainId,
     walletMessageToOperationRequest,
-    operationResultToResponse,
     capabilitiesToPermissions,
     BASE_METHODS,
 } from "./adapter";
@@ -30,6 +32,25 @@ import {
 const WALLET_ID = "azguard-wallet";
 const WALLET_NAME = "Azguard Wallet";
 const WALLET_VERSION = __VERSION__;
+
+function operationResultToResponse(
+    messageId: string,
+    result: OperationResult,
+    walletId: string,
+): WalletResponse {
+    if (result.status === "ok") {
+        return {
+            messageId,
+            result: jsonSanitize(result.result),
+            walletId,
+        };
+    }
+    return {
+        messageId,
+        error: result.status === "failed" ? result.error : "Operation skipped",
+        walletId,
+    };
+}
 
 type ConnectedApp = {
     id: string;

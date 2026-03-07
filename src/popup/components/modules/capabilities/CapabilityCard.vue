@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /** Types */
-import type { UICapability, GridSection } from "./models"
+import type { UICapability, Feature, Grid } from "./models"
 
 /** Components */
-import SubPermissionRow from "./SubPermissionRow.vue"
-import DeniableGrid from "./DeniableGrid.vue"
+import SwitchRow from "./SwitchRow.vue"
+import ItemsGrid from "./ItemsGrid.vue"
 
 /** Utils */
 import { trimAddress } from "@/utils/string"
+import { gridItemKey } from "./models"
 
 const props = defineProps<{
 	cap: UICapability
@@ -16,32 +17,25 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	toggle: []
-	deny: [key: string]
-	restore: [key: string]
+	exclude: [key: string]
+	include: [key: string]
 }>()
 
 const expanded = ref(true)
 
-const isDenied = (key: string) => props.cap.denials.has(key)
+const isExcluded = (key: string) => props.cap.exclusions.has(key)
 
-const toggleSub = (key: string) => {
-	if (isDenied(key)) {
-		emit("restore", key)
+const toggleItem = (key: string) => {
+	if (isExcluded(key)) {
+		emit("include", key)
 	} else {
-		emit("deny", key)
+		emit("exclude", key)
 	}
 }
 
-/** Derives a string identity from a grid item based on its variant. */
-const itemKey = (section: GridSection, item: any): string => {
-	switch (section.variant) {
-		case "address": return item
-		case "account": return item.address
-		case "scope-pattern": return `${item.contract}.${item.function}`
-	}
+const itemKey = (f: Feature, i: number): string => {
+	return gridItemKey(f.items as Grid, i)
 }
-
-const sections = computed(() => props.cap.getSections())
 </script>
 
 <template>
@@ -66,51 +60,52 @@ const sections = computed(() => props.cap.getSections())
 		<!-- Detail area -->
 		<div :class="[$style.detail_wrapper, expanded && $style.detail_expanded]">
 			<Flex direction="column" gap="8" :class="$style.detail_content">
-				<template v-for="(section, si) in sections" :key="si">
-					<!-- Boolean sub-permission row -->
-					<SubPermissionRow
-						v-if="section.type === 'sub'"
-						:denied="isDenied(section.key)"
-						:label="section.label"
-						@toggle="toggleSub(section.key)"
+				<template v-for="(feature, fi) in cap.features" :key="fi">
+					<!-- Boolean switch rows -->
+					<SwitchRow
+						v-for="s in feature.switches"
+						:key="s.key"
+						:excluded="isExcluded(s.key)"
+						:label="s.label"
+						@toggle="toggleItem(s.key)"
 					>
 						<Badge
-							v-if="section.badge && !isDenied(section.key)"
+							v-if="s.badge && !isExcluded(s.key)"
 							variant="purple"
 						>
-							<Text size="11" weight="600" color="inverse">{{ section.badge }}</Text>
+							<Text size="11" weight="600" color="inverse">{{ s.badge }}</Text>
 						</Badge>
-					</SubPermissionRow>
+					</SwitchRow>
 
 					<!-- Wildcard indicator -->
-					<Flex v-else-if="section.type === 'wildcard'" align="center" gap="6">
-						<Text size="13" color="tertiary">{{ section.label }}:</Text>
+					<Flex v-if="feature.items?.kind === 'wildcard'" align="center" gap="6">
+						<Text size="13" color="tertiary">{{ feature.items.label }}:</Text>
 						<Badge variant="purple">
 							<Text size="11" weight="600" color="inverse">Any</Text>
 						</Badge>
 					</Flex>
 
 					<!-- Item grid -->
-					<DeniableGrid
-						v-else
-						:items="section.items"
-						:isActive="(i: number) => !isDenied(`${section.keyPrefix}:${itemKey(section, section.items[i])}`)"
-						@toggle="(i: number) => toggleSub(`${section.keyPrefix}:${itemKey(section, section.items[i])}`)"
+					<ItemsGrid
+						v-else-if="feature.items?.kind === 'grid' && feature.items.items.length > 0"
+						:items="feature.items.items"
+						:isActive="(i: number) => !isExcluded(itemKey(feature, i))"
+						@toggle="(i: number) => toggleItem(itemKey(feature, i))"
 					>
 						<template #item="{ item }">
 							<!-- Identifier: contract address, class id, or event source -->
-							<template v-if="section.variant === 'address'">
+							<template v-if="feature.items?.kind === 'grid' && feature.items.variant === 'address'">
 								<Text size="13" color="primary" mono>{{ trimAddress(item, 6, 4) }}</Text>
 							</template>
 
 							<!-- Wallet account: name + address -->
-							<template v-else-if="section.variant === 'account'">
+							<template v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'account'">
 								<Text size="13" weight="600" color="primary">{{ item.name }}</Text>
 								<Text size="13" color="primary" mono>{{ trimAddress(item.address, 6, 4) }}</Text>
 							</template>
 
 							<!-- Scope pattern: function + "in" + contract -->
-							<template v-else-if="section.variant === 'scope-pattern'">
+							<template v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'scope-pattern'">
 								<template v-if="item.function === '*'">
 									<Flex align="center" gap="4">
 										<Badge variant="purple" :class="$style.inline_badge">
@@ -132,7 +127,7 @@ const sections = computed(() => props.cap.getSections())
 								</Flex>
 							</template>
 						</template>
-					</DeniableGrid>
+					</ItemsGrid>
 				</template>
 			</Flex>
 		</div>

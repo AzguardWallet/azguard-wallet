@@ -15,12 +15,9 @@ import { capabilitiesToPermissions } from "@/wallet/services/aztec-sdk/adapter"
 /** Types */
 import type { Capability } from "@aztec/aztec.js/wallet"
 
+
 /** Capability models */
-import {
-	type UICapability,
-	AccountsUICapability,
-	createUICapability,
-} from "@/popup/components/modules/capabilities/models"
+import { UICapability } from "@/popup/components/modules/capabilities/models"
 
 /** Services */
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
@@ -102,7 +99,7 @@ const initRequest = async () => {
 		}
 
 		capabilities.value = payload.value.params.manifest.capabilities
-			.map(createUICapability)
+			.map(UICapability.create)
 			.filter((c): c is UICapability => c !== null)
 	} catch (error) {
 		console.error(getErrorData(error))
@@ -121,8 +118,8 @@ const initAccounts = async () => {
 	const accounts = await accountClient.getAccounts(profile.value.id, network.chainId, true)
 
 	for (const cap of capabilities.value) {
-		if (cap.capability.type === "accounts") {
-			(cap as AccountsUICapability).accounts = accounts
+		if (cap.type === "accounts") {
+			cap.setAccountItems(accounts)
 		}
 	}
 }
@@ -139,14 +136,14 @@ const toggleCapability = (idx: number) => {
 	capabilities.value[idx].toggle()
 }
 
-const denySubPermission = (idx: number, key: string) => {
+const excludeItem = (idx: number, key: string) => {
 	if (processingError.value?.type === "warning") clearError()
-	capabilities.value[idx].deny(key)
+	capabilities.value[idx].exclude(key)
 }
 
-const restoreSubPermission = (idx: number, key: string) => {
+const includeItem = (idx: number, key: string) => {
 	if (processingError.value?.type === "warning") clearError()
-	capabilities.value[idx].restore(key)
+	capabilities.value[idx].include(key)
 }
 
 const showJson = () => {
@@ -173,7 +170,7 @@ const approve = async () => {
 		isLoading.value = true
 
 		const narrowedCaps = capabilities.value
-			.map(c => c.buildNarrowed())
+			.map(c => c.narrow())
 			.filter((c): c is Capability => c !== null)
 		const filteredManifest = {
 			...payload.value!.params.manifest,
@@ -184,9 +181,10 @@ const approve = async () => {
 		const accountsMap = new Map<number, string[]>()
 		let narrowedIdx = 0
 		for (const c of capabilities.value) {
-			if (c.buildNarrowed() !== null) {
-				if (c.capability.type === "accounts") {
-					accountsMap.set(narrowedIdx, (c as AccountsUICapability).getApprovedAddresses())
+			if (c.narrow() !== null) {
+				if (c.type === "accounts") {
+					const approved = c.getActiveAccountItems().map(a => a.address)
+					accountsMap.set(narrowedIdx, approved)
 				}
 				narrowedIdx++
 			}
@@ -336,8 +334,8 @@ onUnmounted(() => {
 					:cap="cap"
 					:disabled="isLoading || processingError?.type === 'error'"
 					@toggle="toggleCapability(idx)"
-					@deny="denySubPermission(idx, $event)"
-					@restore="restoreSubPermission(idx, $event)"
+					@exclude="excludeItem(idx, $event)"
+					@include="includeItem(idx, $event)"
 				/>
 			</Flex>
 		</Flex>
