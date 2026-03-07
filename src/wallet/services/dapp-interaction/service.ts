@@ -29,7 +29,7 @@ import {
     Events,
     DappInteraction,
 } from "./spec";
-import { enforceCapabilityScope } from "./scope-enforcement";
+import { enforceCapabilityScope, type SerializedCapability } from "./scope-enforcement";
 
 export * from "./spec";
 
@@ -125,7 +125,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             },
         };
         const result = (await this.interaction("capabilities", payload)) as CapabilitiesResult;
-        const serializedCapabilities = jsonSanitize(result.granted) as unknown[];
+        const serializedCapabilities = jsonSanitize(result.granted) as SerializedCapability[];
         await this.dappSessionService.updateDappSession(
             sessionId,
             result.permissions,

@@ -5,6 +5,7 @@ import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import type { SerializedCapability } from "@/wallet/services/dapp-interaction/scope-enforcement";
 import {
     DAPP_SESSION_SERVICE_NAME,
     type DappMetadata,
@@ -110,7 +111,7 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
         permissions: DappPermissions[],
         accounts: string[],
         confirmationLevel: AccessLevel,
-        capabilities?: unknown[],
+        capabilities?: SerializedCapability[],
     ): Promise<DappSession> {
         try {
             await this.lock.enter();

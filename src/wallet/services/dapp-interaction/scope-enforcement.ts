@@ -111,8 +111,8 @@ function allCallsInScope(scopes: SerializedScope[], calls: any[]): boolean {
  * Operations not subject to scope enforcement (getChainInfo, registerSender,
  * getAccounts, getAddressBook, createAuthWit) pass through without checks.
  */
-export function enforceCapabilityScope(capabilities: unknown[], operation: OperationRequest): void {
-    const caps = capabilities as SerializedCapability[];
+export function enforceCapabilityScope(capabilities: SerializedCapability[], operation: OperationRequest): void {
+    const caps = capabilities;
 
     switch (operation.kind) {
         case "aztec_registerContract": {

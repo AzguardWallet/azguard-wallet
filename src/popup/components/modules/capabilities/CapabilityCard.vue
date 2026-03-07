@@ -94,18 +94,18 @@ const itemKey = (f: Feature, i: number): string => {
 					>
 						<template #item="{ item }">
 							<!-- Identifier: contract address, class id, or event source -->
-							<template v-if="feature.items?.kind === 'grid' && feature.items.variant === 'address'">
+							<template v-if="feature.items.variant === 'address'">
 								<Text size="13" color="primary" mono>{{ trimAddress(item, 6, 4) }}</Text>
 							</template>
 
 							<!-- Wallet account: name + address -->
-							<template v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'account'">
+							<template v-else-if="feature.items.variant === 'account'">
 								<Text size="13" weight="600" color="primary">{{ item.name }}</Text>
 								<Text size="13" color="primary" mono>{{ trimAddress(item.address, 6, 4) }}</Text>
 							</template>
 
 							<!-- Scope pattern: function + "in" + contract -->
-							<template v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'scope-pattern'">
+							<template v-else-if="feature.items.variant === 'scope-pattern'">
 								<template v-if="item.function === '*'">
 									<Flex align="center" gap="4">
 										<Badge variant="purple" :class="$style.inline_badge">

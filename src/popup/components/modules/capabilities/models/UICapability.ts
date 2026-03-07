@@ -157,6 +157,35 @@ const CONTRACT_CLASSES_DEF: CapabilityDef<ContractClassesCapability> = {
 	},
 }
 
+/** Extracts a Feature for a simulation sub-capability (transactions or utilities). */
+function extractSimScope(
+	scope: "*" | ContractFunctionPattern[],
+	key: string,
+	label: string,
+	keyPrefix: string,
+): Feature {
+	return {
+		switches: [{ key, label, badge: scope === "*" ? "Any" : undefined }],
+		items: scope === "*" ? null
+			: { kind: "grid", keyPrefix, variant: "scope-pattern", items: scope.map(toScopePatternItem) },
+	}
+}
+
+/** Applies exclusions to a simulation sub-capability, returning undefined if fully excluded. */
+function reconstructSimScope(
+	scope: "*" | ContractFunctionPattern[],
+	exclusions: Set<string>,
+	switchKey: string,
+	keyPrefix: string,
+): { scope: "*" | ContractFunctionPattern[] } | undefined {
+	if (exclusions.has(switchKey)) return undefined
+	if (scope === "*") return { scope }
+	const filtered = scope.filter(
+		p => !exclusions.has(`${keyPrefix}:${String(p.contract)}.${p.function}`),
+	)
+	return filtered.length === 0 ? undefined : { scope: filtered }
+}
+
 /**
  * 0–2 features (one per sub-capability: transactions, utilities).
  * Each feature: one switch (badge "Any" if wildcard scope) + scope pattern items or null.
@@ -165,58 +194,18 @@ const SIMULATION_DEF: CapabilityDef<SimulationCapability> = {
 	label: "Transaction simulation",
 	extract: (cap) => {
 		const features: Feature[] = []
-		if (cap.transactions) {
-			const scope = cap.transactions.scope
-			features.push({
-				switches: [{
-					key: "transactions",
-					label: "Transaction simulation",
-					badge: scope === "*" ? "Any" : undefined,
-				}],
-				items: scope === "*" ? null
-					: { kind: "grid", keyPrefix: "tx_pattern", variant: "scope-pattern",
-						items: scope.map(toScopePatternItem) },
-			})
-		}
-		if (cap.utilities) {
-			const scope = cap.utilities.scope
-			features.push({
-				switches: [{
-					key: "utilities",
-					label: "Utility simulation",
-					badge: scope === "*" ? "Any" : undefined,
-				}],
-				items: scope === "*" ? null
-					: { kind: "grid", keyPrefix: "util_pattern", variant: "scope-pattern",
-						items: scope.map(toScopePatternItem) },
-			})
-		}
+		if (cap.transactions) features.push(extractSimScope(cap.transactions.scope, "transactions", "Transaction simulation", "tx_pattern"))
+		if (cap.utilities) features.push(extractSimScope(cap.utilities.scope, "utilities", "Utility simulation", "util_pattern"))
 		return features
 	},
 	reconstruct: (cap, exclusions) => {
 		const r = { ...cap }
-		if (r.transactions) {
-			if (exclusions.has("transactions")) {
-				delete r.transactions
-			} else if (r.transactions.scope !== "*") {
-				const filtered = r.transactions.scope.filter(
-					p => !exclusions.has(`tx_pattern:${String(p.contract)}.${p.function}`),
-				)
-				if (filtered.length === 0) delete r.transactions
-				else r.transactions = { scope: filtered }
-			}
-		}
-		if (r.utilities) {
-			if (exclusions.has("utilities")) {
-				delete r.utilities
-			} else if (r.utilities.scope !== "*") {
-				const filtered = r.utilities.scope.filter(
-					p => !exclusions.has(`util_pattern:${String(p.contract)}.${p.function}`),
-				)
-				if (filtered.length === 0) delete r.utilities
-				else r.utilities = { scope: filtered }
-			}
-		}
+		r.transactions = cap.transactions
+			? reconstructSimScope(cap.transactions.scope, exclusions, "transactions", "tx_pattern") as typeof r.transactions
+			: undefined
+		r.utilities = cap.utilities
+			? reconstructSimScope(cap.utilities.scope, exclusions, "utilities", "util_pattern") as typeof r.utilities
+			: undefined
 		return r
 	},
 }

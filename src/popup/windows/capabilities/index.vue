@@ -34,7 +34,7 @@ type UIDappMetadata = DappMetadata & {
 type UIError = {
 	title: string
 	tooltip: string
-	type: string
+	type: "error" | "warning"
 }
 
 /** Store */
@@ -69,8 +69,12 @@ const processingError = ref<UIError>()
 
 const initRequest = async () => {
 	try {
-		profile.value = await profileService.getActiveProfile()
-		networks.value = await networkService.getNetworks()
+		const [profileResult, networksResult] = await Promise.all([
+			profileService.getActiveProfile(),
+			networkService.getNetworks(),
+		])
+		profile.value = profileResult
+		networks.value = networksResult
 		requestId.value = router.currentRoute.value.query.requestId as string
 		if (!requestId.value) {
 			throw new Error("Invalid interaction request id")
@@ -80,19 +84,12 @@ const initRequest = async () => {
 			...payload.value.params.dappMetadata,
 		}
 
-		// Load app icon from manifest metadata if available
-		const manifestIcon = payload.value.params.manifest.metadata.icon
-		if (manifestIcon) {
+		// Load app icon from manifest metadata if available, fallback to dApp logo
+		const iconUrl = payload.value.params.manifest.metadata.icon ?? dapp.value.logo
+		if (iconUrl) {
 			dapp.value.loadingLogo = true
 			try {
-				dapp.value.logoBlobUrl = await loadExternalImage(manifestIcon)
-			} finally {
-				dapp.value.loadingLogo = false
-			}
-		} else if (dapp.value.logo) {
-			dapp.value.loadingLogo = true
-			try {
-				dapp.value.logoBlobUrl = await loadExternalImage(dapp.value.logo)
+				dapp.value.logoBlobUrl = await loadExternalImage(iconUrl)
 			} finally {
 				dapp.value.loadingLogo = false
 			}
@@ -124,7 +121,7 @@ const initAccounts = async () => {
 	}
 }
 
-function setError(title: string, tooltip: string = title, type: string = "error") {
+function setError(title: string, tooltip: string = title, type: UIError["type"] = "error") {
 	processingError.value = { title, tooltip, type }
 }
 
@@ -169,8 +166,10 @@ const approve = async () => {
 	try {
 		isLoading.value = true
 
-		const narrowedCaps = capabilities.value
-			.map(c => c.narrow())
+		// Compute narrow results once per capability
+		const narrowResults = capabilities.value.map(c => ({ cap: c, narrowed: c.narrow() }))
+		const narrowedCaps = narrowResults
+			.map(r => r.narrowed)
 			.filter((c): c is Capability => c !== null)
 		const filteredManifest = {
 			...payload.value!.params.manifest,
@@ -180,10 +179,10 @@ const approve = async () => {
 		// Build per-capability accounts map (index in narrowedCaps → addresses)
 		const accountsMap = new Map<number, string[]>()
 		let narrowedIdx = 0
-		for (const c of capabilities.value) {
-			if (c.narrow() !== null) {
-				if (c.type === "accounts") {
-					const approved = c.getActiveAccountItems().map(a => a.address)
+		for (const { cap, narrowed } of narrowResults) {
+			if (narrowed !== null) {
+				if (cap.type === "accounts") {
+					const approved = cap.getActiveAccountItems().map(a => a.address)
 					accountsMap.set(narrowedIdx, approved)
 				}
 				narrowedIdx++
