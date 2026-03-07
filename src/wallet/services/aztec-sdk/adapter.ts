@@ -4,6 +4,18 @@ import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { WalletMessage } from "@aztec/wallet-sdk/types";
 import type { DappPermissions } from "@/wallet/services/dapp-session/spec";
 import type { CaipChain, CaipAccount, OperationRequest, CapabilitiesResult } from "@/wallet/services/dapp-interaction/spec";
+import type {
+    AztecGetContractMetadataOperation,
+    AztecGetContractClassMetadataOperation,
+    AztecGetPrivateEventsOperation,
+    AztecRegisterSenderOperation,
+    AztecRegisterContractOperation,
+    AztecSimulateTxOperation,
+    AztecSimulateUtilityOperation,
+    AztecProfileTxOperation,
+    AztecSendTxOperation,
+    AztecCreateAuthWitOperation,
+} from "@/wallet/services/execution/models/operation";
 import { trimAddress } from "@/utils/string";
 
 /** Validates that an account address is present and non-empty. */
@@ -65,82 +77,86 @@ export function walletMessageToOperationRequest(
             return {
                 kind: "aztec_getContractMetadata",
                 chain,
-                address: args[0] as any,
+                address: args[0] as AztecGetContractMetadataOperation["address"],
             };
 
         case "getContractClassMetadata":
             return {
                 kind: "aztec_getContractClassMetadata",
                 chain,
-                id: args[0] as any,
+                id: args[0] as AztecGetContractClassMetadataOperation["id"],
             };
 
         case "getPrivateEvents":
             return {
                 kind: "aztec_getPrivateEvents",
                 chain,
-                eventMetadata: args[0] as any,
-                eventFilter: args[1] as any,
+                eventMetadata: args[0] as AztecGetPrivateEventsOperation["eventMetadata"],
+                eventFilter: args[1] as AztecGetPrivateEventsOperation["eventFilter"],
             };
 
         case "registerSender":
             return {
                 kind: "aztec_registerSender",
                 chain,
-                address: args[0] as any,
-                alias: args[1] as string | undefined,
+                address: args[0] as AztecRegisterSenderOperation["address"],
+                alias: args[1] as AztecRegisterSenderOperation["alias"],
             };
 
         case "registerContract":
             return {
                 kind: "aztec_registerContract",
                 chain,
-                instance: args[0] as any,
-                artifact: args[1] as any,
-                secretKey: args[2] as any,
+                instance: args[0] as AztecRegisterContractOperation["instance"],
+                artifact: args[1] as AztecRegisterContractOperation["artifact"],
+                secretKey: args[2] as AztecRegisterContractOperation["secretKey"],
             };
 
         case "simulateTx": {
-            const opts = args[1] as any;
+            const exec = args[0] as AztecSimulateTxOperation["exec"];
+            const opts = args[1] as AztecSimulateTxOperation["opts"] | undefined;
             const accountAddress = requireAccountAddress(opts?.from, "simulateTx requires opts.from");
             return {
                 kind: "aztec_simulateTx",
                 account: `${chain}:${accountAddress}` as CaipAccount,
-                exec: args[0] as any,
-                opts,
+                exec,
+                opts: opts!,
             };
         }
 
         case "simulateUtility": {
-            const opts = args[1] as any;
+            const call = args[0] as AztecSimulateUtilityOperation["call"];
+            const opts = args[1] as AztecSimulateUtilityOperation["opts"] | undefined;
             const accountAddress = requireAccountAddress(opts?.scope, "simulateUtility requires opts.scope");
             return {
                 kind: "aztec_simulateUtility",
                 account: `${chain}:${accountAddress}` as CaipAccount,
-                call: args[0] as any,
-                opts,
+                call,
+                opts: opts!,
             };
         }
 
         case "profileTx": {
-            const opts = args[1] as any;
+            const exec = args[0] as AztecProfileTxOperation["exec"];
+            const opts = args[1] as AztecProfileTxOperation["opts"] | undefined;
             const accountAddress = requireAccountAddress(opts?.from, "profileTx requires opts.from");
             return {
                 kind: "aztec_profileTx",
                 account: `${chain}:${accountAddress}` as CaipAccount,
-                exec: args[0] as any,
-                opts,
+                exec,
+                opts: opts!,
             };
         }
 
         case "sendTx": {
-            const opts = args[1] as any;
+            const exec = args[0] as AztecSendTxOperation["exec"];
+            const opts = args[1] as AztecSendTxOperation["opts"] | undefined;
             const accountAddress = requireAccountAddress(opts?.from, "sendTx requires opts.from");
             return {
                 kind: "aztec_sendTx",
                 account: `${chain}:${accountAddress}` as CaipAccount,
-                exec: args[0] as any,
-                opts,
+                exec,
+                opts: opts!,
             };
         }
 
@@ -149,7 +165,7 @@ export function walletMessageToOperationRequest(
             return {
                 kind: "aztec_createAuthWit",
                 account: `${chain}:${accountAddress}` as CaipAccount,
-                messageHashOrIntent: args[1] as any,
+                messageHashOrIntent: args[1] as AztecCreateAuthWitOperation["messageHashOrIntent"],
             };
         }
 
