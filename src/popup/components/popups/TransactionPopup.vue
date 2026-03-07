@@ -16,6 +16,7 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 import { trimAddress } from "@/utils/string"
+import { getTxCategory, getTxTitle, humanizeMethodName, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -43,12 +44,11 @@ const configService = new ConfigServiceClient()
 const isDebugMode = ref(false)
 
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
-const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
-const type = computed(() => {
-	if (call.value?.method.startsWith("transfer")) return "transfer"
-	if (call.value?.method.startsWith("mint_to_")) return "mint"
-	return "tx"
-})
+const call = computed(() => getPrimaryCall(tx.value.calls))
+const type = computed(() => getTxCategory(tx.value.calls))
+
+const popupTitle = computed(() => getTxTitle(tx.value.calls))
+const originLabel = computed(() => getOriginLabel(tx.value?.origin))
 
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
 const tokens = ref([])
@@ -59,13 +59,13 @@ const transferAmount = computed(() => {
 		const decimals = new BN(10).pow(token.value?.decimals || 0)
 		return balanceFormatted(new BN((transfer.value.amount || 0)).dividedBy(decimals), 8).value
 	}
-	
+
 	return 0
 })
 
 const mintAmount = computed(() => {
 	if (type.value !== "mint") return 0
-	
+
 	const decimals = new BN(10).pow(tx.value?.origin?.type === OriginType.UI ? 8 : 0)
 	let amount = new BN(0)
 	for (const c of tx.value.calls) {
@@ -127,7 +127,7 @@ const formatFee = (fee) => {
 					<Flex align="center" gap="6">
 						<Icon name="zap-circle" size="16" color="primary" />
 						<Text size="16" weight="600" color="primary">
-							Transaction
+							{{ popupTitle }}
 						</Text>
 					</Flex>
 
@@ -198,25 +198,39 @@ const formatFee = (fee) => {
 					</Flex>
 				</Flex>
 
+				<Flex v-if="originLabel || tx.feePaymentMethod != null || tx.calls?.length" wide direction="column" gap="8" :class="$style.info_section">
+					<Flex v-if="originLabel" wide justify="between" align="center">
+						<Text size="12" weight="500" color="tertiary">App</Text>
+						<Text size="12" weight="600" color="primary">{{ originLabel }}</Text>
+					</Flex>
+
+					<Flex v-if="tx.feePaymentMethod != null" wide justify="between" align="center">
+						<Text size="12" weight="500" color="tertiary">Fee method</Text>
+						<Text size="12" weight="600" color="primary">{{ getFeePaymentMethodName(tx.feePaymentMethod) }}</Text>
+					</Flex>
+
+					<Flex v-if="tx.calls?.length" wide direction="column" gap="4">
+						<Text size="12" weight="500" color="tertiary">Calls</Text>
+						<Flex wide direction="column" gap="2" :class="$style.calls_summary">
+							<Flex
+								v-for="(c, idx) in tx.calls"
+								:key="idx"
+								wide
+								justify="between"
+								align="center"
+								:class="$style.call_summary_item"
+							>
+								<Text size="11" weight="600" color="primary">{{ humanizeMethodName(c.method) }}</Text>
+								<Text size="11" weight="500" color="tertiary" @click="handleCopy(c.contract)" class="copyable">{{ trimAddress(c.contract, 6, 4) }}</Text>
+							</Flex>
+						</Flex>
+					</Flex>
+				</Flex>
+
 				<Flex v-if="isDebugMode" wide direction="column" gap="8" :class="$style.debug_section">
 					<Text size="11" weight="600" color="secondary" style="text-transform: uppercase; letter-spacing: 0.5px;">
 						Tx Debug Details
 					</Text>
-
-					<!-- Origin -->
-					<Flex wide direction="column" gap="2">
-						<Text size="10" weight="600" color="tertiary">Origin</Text>
-						<Text size="10" weight="500" color="primary">
-							{{ tx.origin?.type === OriginType.UI ? 'UI' : tx.origin?.type === OriginType.DAPP ? 'DApp' : 'Indexer' }}
-							<Text color="tertiary" v-if="tx.origin?.name">({{ tx.origin?.name }})</Text>
-						</Text>
-					</Flex>
-
-					<!-- Fee Payment Method -->
-					<Flex wide direction="column" gap="2">
-						<Text size="10" weight="600" color="tertiary">Fee Payment</Text>
-						<Text size="10" weight="500" color="primary">{{ getFeePaymentMethodName(tx.feePaymentMethod) }}</Text>
-					</Flex>
 
 					<!-- Nonce -->
 					<Flex wide direction="column" gap="2">
@@ -322,6 +336,23 @@ const formatFee = (fee) => {
 	&.right {
 		border-radius: 4px 8px 8px 4px;
 	}
+}
+
+.info_section {
+	background: var(--gray-3);
+	border-radius: 8px;
+	padding: 12px;
+}
+
+.calls_summary {
+	max-height: 120px;
+	overflow-y: auto;
+}
+
+.call_summary_item {
+	padding: 4px 6px;
+	background: var(--gray-5);
+	border-radius: 4px;
 }
 
 .debug_section {

@@ -79,6 +79,7 @@ export class ExecuteOperationContent implements ITaskContent {
     public readonly label = "Execute operation";
     constructor(
         public readonly operationKind: OperationKind,
+        public readonly primaryMethod?: string,
     ) {}
 }
 

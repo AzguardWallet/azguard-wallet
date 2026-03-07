@@ -8,6 +8,7 @@ import { OriginType, TxStatus, TxExecutionResult } from "@/wallet/services/trans
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
+import { getTxCategory, getTxTitle, getCallCountLabel, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
 
 /** Composables */
 const { handleExternalLink } = useExternalLink()
@@ -22,12 +23,8 @@ const props = defineProps({
 	},
 })
 
-const call = computed(() => props.tx.calls.at(1)?.method?.startsWith("mint") ? props.tx.calls[1] : props.tx.calls[0])
-const type = computed(() => {
-	if (call.value.method.startsWith("transfer")) return "transfer"
-	if (call.value.method.startsWith("mint_to_")) return "mint"
-	return "tx"
-})
+const call = computed(() => getPrimaryCall(props.tx.calls))
+const type = computed(() => getTxCategory(props.tx.calls))
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
 const token = computed(() => transfer.value?.token)
 const transferAmount = computed(() => {
@@ -78,13 +75,17 @@ const statusColor = computed(() => {
 	return "gray"
 })
 
-const title = computed(() => {
-	if (type.value === "transfer") return "Transfer"
-	if (type.value === "mint") return "Mint"
-	return "Transaction"
-})
+const title = computed(() => getTxTitle(props.tx.calls))
 
-const shortHash = computed(() => props.tx.hash)
+const subtitle = computed(() => {
+	const parts = []
+	const origin = getOriginLabel(props.tx.origin)
+	if (origin) parts.push(origin)
+	const callCount = getCallCountLabel(props.tx.calls)
+	if (callCount) parts.push(callCount)
+	return parts.length ? parts.join(" · ") : props.tx.hash
+})
+const isSubtitleHash = computed(() => !getOriginLabel(props.tx.origin) && !getCallCountLabel(props.tx.calls))
 
 const explorerUrl = computed(() => {
 	if (!appStore.network?.chainId) return null
@@ -122,7 +123,7 @@ const explorerUrl = computed(() => {
 						<Icon name="external-link" size="12" color="tertiary" />
 					</a>
 				</Flex>
-				<Text size="12" weight="500" :color="explorerUrl ? 'secondary' : 'tertiary'" :style="{ lineHeight: '1.4', wordBreak: 'break-all' }">{{ shortHash }}</Text>
+				<Text size="12" weight="500" :color="isSubtitleHash ? 'tertiary' : 'secondary'" :style="{ lineHeight: '1.4', wordBreak: isSubtitleHash ? 'break-all' : undefined }">{{ subtitle }}</Text>
 			</Flex>
 		</Flex>
 

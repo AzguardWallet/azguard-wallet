@@ -8,6 +8,9 @@ import { TaskServiceClient } from "@/wallet/services/task/client"
 import { ContentKind, TaskStatus } from "@/wallet/services/task/spec"
 import { OriginType } from "@/wallet/services/transaction/spec"
 
+/** Utils */
+import { humanizeMethodName } from "@/utils/tx-enrichment"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { useCacheStore } from "@/stores/cache.store"
@@ -41,7 +44,10 @@ const awaitingAccountTxs = computed(() => {
 const dappExecutionTask = ref(null)
 const dappSubtasks = ref([])
 const dappProgressTitle = computed(() => {
-	return dappExecutionTask.value?.origin?.name || "Transaction"
+	const name = dappExecutionTask.value?.origin?.name || "Transaction"
+	const method = dappExecutionTask.value?.content?.primaryMethod
+	if (method) return `${name} · ${humanizeMethodName(method)}`
+	return name
 })
 const dappProgressSubtitle = computed(() => {
 	const active = dappSubtasks.value.find(s => s.status === TaskStatus.Processing)

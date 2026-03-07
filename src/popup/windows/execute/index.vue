@@ -11,6 +11,7 @@ import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 /** Utils */
 import { trimAddress } from "@/utils/string"
 import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
+import { humanizeMethodName } from "@/utils/tx-enrichment"
 
 /** Services */
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
@@ -421,13 +422,11 @@ onUnmounted(() => {
 										color="primary"
 									>
 										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
-											<Text color="secondary"> call </Text>
-											{{ action.kind === "call" ? action.method : action.selector }}
-											<Text color="secondary"> in </Text>
+											<Text weight="600">{{ humanizeMethodName(action.kind === "call" ? action.method : (action.name ?? action.selector)) }}</Text>
+											<Text color="secondary"> on </Text>
 											<AddressDisplay
 												:address="action.kind === 'call' ? action.contract : action.to"
 											/>
-											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -482,9 +481,9 @@ onUnmounted(() => {
 										size="12"
 										color="primary"
 									>
-										<Text color="secondary"> call </Text>
-										{{ call.name ?? call.selector }}
-										<Text color="secondary"> in </Text>
+										<Text weight="600">{{ humanizeMethodName(call.name ?? call.selector) }}</Text>
+										
+										<Text color="secondary"> on </Text>
 										<AddressDisplay :address="call.to" />
 									</Text>
 								</Flex>
@@ -548,13 +547,12 @@ onUnmounted(() => {
 										color="primary"
 									>
 										<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
-											<Text color="secondary"> call </Text>
-											{{ action.kind === "call" ? action.method : action.selector }}
-											<Text color="secondary"> in </Text>
+											<Text weight="600">{{ humanizeMethodName(action.kind === "call" ? action.method : (action.name ?? action.selector)) }}</Text>
+											
+											<Text color="secondary"> on </Text>
 											<AddressDisplay
 												:address="action.kind === 'call' ? action.contract : action.to"
 											/>
-											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -571,7 +569,7 @@ onUnmounted(() => {
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Function:</Text>
-								<Text size="12" color="primary">{{ op.method }}</Text>
+								<Text size="12" weight="600" color="primary">{{ humanizeMethodName(op.method) }}</Text>
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'simulate_views'">
@@ -579,8 +577,8 @@ onUnmounted(() => {
 								<Text size="12" color="secondary">View calls:</Text>
 								<Flex direction="column" gap="4">
 									<Text v-for="(call, j) in op.calls" :key="`${i}:${j}`" size="12" color="primary">
-										{{ call.kind === "call" ? call.method : call.selector }}
-										<Text color="secondary"> in </Text>
+										<Text weight="600">{{ humanizeMethodName(call.kind === "call" ? call.method : call.selector) }}</Text>
+										<Text color="secondary"> on </Text>
 										<AddressDisplay :address="call.kind === 'call' ? call.contract : call.to" />
 										<!-- {{ trimAddress(call.contract || call.to) }} -->
 									</Text>
@@ -621,9 +619,9 @@ onUnmounted(() => {
 										size="12"
 										color="primary"
 									>
-										<Text color="secondary"> call </Text>
-										{{ call.name ?? call.selector }}
-										<Text color="secondary"> in </Text>
+										<Text weight="600">{{ humanizeMethodName(call.name ?? call.selector) }}</Text>
+										
+										<Text color="secondary"> on </Text>
 										<AddressDisplay :address="call.to" />
 									</Text>
 								</Flex>
@@ -636,7 +634,7 @@ onUnmounted(() => {
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Function:</Text>
-								<Text size="12" color="primary">{{ op.call.name ?? op.call.selector.toString() }}</Text>
+								<Text size="12" weight="600" color="primary">{{ humanizeMethodName(op.call.name ?? op.call.selector.toString()) }}</Text>
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'aztec_profileTx'">
@@ -649,9 +647,9 @@ onUnmounted(() => {
 										size="12"
 										color="primary"
 									>
-										<Text color="secondary"> call </Text>
-										{{ call.name ?? call.selector }}
-										<Text color="secondary"> in </Text>
+										<Text weight="600">{{ humanizeMethodName(call.name ?? call.selector) }}</Text>
+										
+										<Text color="secondary"> on </Text>
 										<AddressDisplay :address="call.to" />
 									</Text>
 								</Flex>

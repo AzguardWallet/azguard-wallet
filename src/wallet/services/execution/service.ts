@@ -278,6 +278,19 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
     }
 
+    private extractPrimaryMethod(operation: Operation): string | undefined {
+        if ('actions' in operation && Array.isArray(operation.actions)) {
+            const call = operation.actions.find((a: any) => a.kind === 'call' || a.kind === 'encoded_call');
+            if (call?.kind === 'call') return call.method;
+            if (call?.kind === 'encoded_call') return call.name ?? call.selector;
+        }
+        if ('exec' in operation && (operation as any).exec?.calls?.length) {
+            const first = (operation as any).exec.calls[0];
+            return first.name?.toString() ?? first.selector?.toString();
+        }
+        return undefined;
+    }
+
     public async executeOperations(
         operations: Operation[],
         origin: LocalTxOrigin,
@@ -291,9 +304,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 continue;
             }
 
+            const content = new ExecuteOperationContent(operation.kind, this.extractPrimaryMethod(operation));
             const operationTask = parentTask
-                ? parentTask.startSubtask(new ExecuteOperationContent(operation.kind))
-                : this.taskService.startNewTask(new ExecuteOperationContent(operation.kind), undefined, origin);
+                ? parentTask.startSubtask(content)
+                : this.taskService.startNewTask(content, undefined, origin);
 
             try {
                 let result;
@@ -1630,7 +1644,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 action.hideMsgSender === true,
                             ),
                         );
-                        txCalls.push({ contract: action.to, method: action.selector, args: action.args });
+                        txCalls.push({ contract: action.to, method: action.name || action.selector, args: action.args });
                         this.logDebug("EncodedCall enqueued.");
                         break;
                     }

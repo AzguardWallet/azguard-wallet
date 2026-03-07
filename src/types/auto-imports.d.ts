@@ -63,14 +63,21 @@ declare global {
   const ensurePermissions: typeof import('../utils/general.js').ensurePermissions
   const extendRef: typeof import("@vueuse/core")["extendRef"]
   const externalLinks: typeof import('../composables/configClient').externalLinks
+  const formatCallSummary: typeof import('../utils/tx-enrichment').formatCallSummary
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
+  const getCallCountLabel: typeof import('../utils/tx-enrichment').getCallCountLabel
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getDecimalSeparator: typeof import('../utils/amount.js').getDecimalSeparator
+  const getOriginLabel: typeof import('../utils/tx-enrichment').getOriginLabel
+  const getPrimaryCall: typeof import('../utils/tx-enrichment').getPrimaryCall
   const getTemplate: typeof import('../composables/notification.js').getTemplate
   const getThousandSeparator: typeof import('../utils/amount.js').getThousandSeparator
+  const getTxCategory: typeof import('../utils/tx-enrichment').getTxCategory
+  const getTxTitle: typeof import('../utils/tx-enrichment').getTxTitle
   const h: typeof import('vue').h
+  const humanizeMethodName: typeof import('../utils/tx-enrichment').humanizeMethodName
   const ignorableWatch: typeof import("@vueuse/core")["ignorableWatch"]
   const initConfigClient: typeof import('../composables/configClient').initConfigClient
   const initProfileService: typeof import('../utils/core.js')['initProfileService']
