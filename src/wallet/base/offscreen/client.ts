@@ -6,6 +6,9 @@ import { EventsMap, EventsSpec, MethodsMap } from "../.";
 import { EventMessage, RequestMessage, ResponseMessage } from "./messages";
 import { wrapParams } from "../utils";
 
+/** Timeout for offscreen requests (ms). PXE operations can take 60s+ (fetch timeout + proof gen). */
+const REQUEST_TIMEOUT_MS = 90_000;
+
 export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extends EventsMap = {}> {
     private readonly uid: string;
     private readonly name: string;
@@ -13,6 +16,7 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
     private readonly logger: ILogger;
 
     private readonly requests: Map<number, [(result: any) => void, (error: string) => void]> = new Map();
+    private readonly requestTimers: Map<number, NodeJS.Timeout> = new Map();
     private connected = false;
 
     protected constructor(service: string, logger: ILogger, name?: string) {
@@ -33,6 +37,8 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
         if (!this.connected) return;
         this.connected = false;
         chrome.runtime.onMessage.removeListener(this.onMessageListener);
+        this.requestTimers.forEach(timer => clearTimeout(timer));
+        this.requestTimers.clear();
         if (this.requests.size) {
             this.requests.forEach(([_, reject]) => reject("Client disconnected"));
             this.requests.clear();
@@ -75,6 +81,11 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
                 this.logDebug("Request resolved", message.content);
             }
             this.requests.delete(requestId);
+            const timer = this.requestTimers.get(requestId);
+            if (timer) {
+                clearTimeout(timer);
+                this.requestTimers.delete(requestId);
+            }
             this.logDebug("Pending requests", this.requests.size);
         } else {
             const { event, payload } = message.content;
@@ -100,8 +111,18 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
             from: this.uid,
             to: this.service,
         };
+        const requestId = request.content.requestId;
         const promise = new Promise<ReturnType<TRequests[T]>>((resolve, reject) => {
-            this.requests.set(request.content.requestId, [resolve, reject]);
+            this.requests.set(requestId, [resolve, reject]);
+            const timer = setTimeout(() => {
+                if (this.requests.delete(requestId)) {
+                    this.requestTimers.delete(requestId);
+                    const methodName = String(method);
+                    this.logError(`Request timed out after ${REQUEST_TIMEOUT_MS}ms: ${methodName}`);
+                    reject(`Offscreen request timed out: ${methodName}`);
+                }
+            }, REQUEST_TIMEOUT_MS);
+            this.requestTimers.set(requestId, timer);
         });
         await chrome.runtime.sendMessage(request);
         this.logDebug("Request sent", request);

@@ -75,11 +75,8 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	if (to.meta.isAuthRequired && !appStore.isLogined && !appStore.isSessionChecked) {
-		const activeProfile = await managers.profile.getActiveProfile()
-		if (!activeProfile) {
-			next({ name: "popup-auth" })
-			return
-		}
+		next({ name: "popup-auth" })
+		return
 	}
 
 	if (!appStore.profile && to.name !== "popup-register") {

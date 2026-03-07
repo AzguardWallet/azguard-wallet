@@ -7,8 +7,9 @@ import { NetworkService, Network } from "@/wallet/services/network/service";
 import { AccountService, Account } from "@/wallet/services/account/service";
 import { DappSessionService, AccessLevel, DappSession } from "@/wallet/services/dapp-session/service";
 import { ExecutionService, type Operation, type OperationKind } from "@/wallet/services/execution/service";
-import { OriginType } from "@/wallet/services/transaction/service";
+import { OriginType, type LocalTxOrigin } from "@/wallet/services/transaction/service";
 import { getRandomHex, Lock } from "@/wallet/utils";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import {
     DAPP_INTERACTION_SERVICE_NAME,
@@ -16,6 +17,12 @@ import {
     type ConnectionResult,
     type ExecutionPayload,
     type ExecutionResult,
+    type CapabilityPayload,
+    type CapabilityParams,
+    type CapabilityResult,
+    type DiscoveryPayload,
+    type DiscoveryParams,
+    type DiscoveryResult,
     type ConnectionParams,
     type ExecutionParams,
     type CaipChain,
@@ -54,7 +61,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executionService = services.get(ExecutionService.name);
     }
 
-    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload> {
+    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -62,20 +69,45 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         return interactionRequest.payload;
     }
 
-    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult): Promise<void> {
+    public async approveInteraction(id: string, operations: Operation[], origin: LocalTxOrigin): Promise<void> {
+        const interaction = this.storage.get(id);
+        if (!interaction) {
+            throw new Error("Invalid id");
+        }
+        this.storage.delete(id);
+        this.executeAndResolve(interaction, operations, origin);
+    }
+
+    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult): Promise<void> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
         }
+        this.storage.delete(id);
         interactionRequest.resolve(result);
     }
 
     public async rejectInteraction(id: string, reason: string): Promise<void> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
-            throw new Error("Invalid id");
+            return;
         }
+        this.storage.delete(id);
         interactionRequest.reject(reason);
+    }
+
+    private async executeAndResolve(interaction: DappInteraction, operations: Operation[], origin: LocalTxOrigin): Promise<void> {
+        const kinds = operations.map(o => o.kind).join(", ");
+        this.logInfo(`executeAndResolve: starting [${kinds}] for ${origin.name}`);
+        try {
+            await this.profileService.refreshSession();
+            const result = await this.executionService.executeOperations(operations, origin);
+            this.logInfo(`executeAndResolve: resolved [${kinds}]`);
+            interaction.resolve(result);
+        } catch (error: any) {
+            this.logError(`executeAndResolve: failed [${kinds}]`, getErrorMessage(error));
+            interaction.reject(error?.message ?? "Execution failed");
+        }
     }
 
     public cancelInteraction(cancellationToken: string) {
@@ -100,13 +132,25 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         return (await this.interaction("execute", payload, cancellationToken)) as ExecutionResult;
     }
 
+    public async requestCapabilities(params: CapabilityParams, cancellationToken?: string): Promise<CapabilityResult> {
+        await this.ensureInitialized();
+        const session = await this.dappSessionService.getDappSession(params.sessionId);
+        const payload: CapabilityPayload = { params, session };
+        return (await this.interaction("capabilities", payload, cancellationToken)) as CapabilityResult;
+    }
+
+    public async discover(params: DiscoveryParams, cancellationToken?: string): Promise<DiscoveryResult> {
+        const payload: DiscoveryPayload = { params };
+        return (await this.interaction("discover", payload, cancellationToken)) as DiscoveryResult;
+    }
+
     private async interaction(
         type: string,
-        payload: ConnectionPayload | ExecutionPayload,
+        payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload,
         cancellationToken?: string,
-    ): Promise<ConnectionResult | ExecutionResult> {
+    ): Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult> {
         let interaction: DappInteraction;
-        let promise: Promise<ConnectionResult | ExecutionResult>;
+        let promise: Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult>;
 
         try {
             await this.lock.enter();
@@ -124,7 +168,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 cancellationToken: cancellationToken ?? id,
             };
 
-            promise = new Promise<ConnectionResult | ExecutionResult>((resolve, reject) => {
+            promise = new Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult>((resolve, reject) => {
                 interaction.resolve = resolve;
                 interaction.reject = reject;
             });
@@ -186,14 +230,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     operations.push({ ...op, networkId: network.id });
                     break;
                 }
-                case "aztec_getAccounts": {
-                    const network = await getNetwork(op.chain);
-                    const accounts = payload.session.accounts
-                        .filter(x => x.startsWith(op.chain))
-                        .map(x => x.split(":").at(-1)!);
-                    operations.push({ ...op, networkId: network.id, accounts });
-                    break;
-                }
                 case "get_complete_address":
                 case "register_token":
                 case "simulate_transaction":
@@ -245,7 +281,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_getChainInfo":
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
-                case "aztec_getAccounts":
                 case "aztec_registerContract": {
                     this.checkMethodPermission(session, operation.kind, operation.chain);
                     break;
@@ -255,17 +290,11 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     this.checkScopesPermissions(session, operation.eventFilter.scopes);
                     break;
                 }
-                case "aztec_simulateUtility": {
-                    const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
-                    this.checkAccountPermission(session, operation.account);
-                    this.checkMethodPermission(session, operation.kind, chain);
-                    this.checkScopesPermissions(session, [operation.opts.scope]);
-                    break;
-                }
                 case "get_complete_address":
                 case "register_token":
                 case "simulate_utility":
                 case "aztec_simulateTx":
+                case "aztec_simulateUtility":
                 case "aztec_profileTx":
                 case "aztec_sendTx":
                 case "aztec_createAuthWit": {
@@ -301,8 +330,15 @@ export class DappInteractionService extends Service<Methods, Events> implements 
     }
 
     private checkMethodPermission(session: DappSession, method: string, chain: string) {
-        if (!session.permissions.find(x => x.methods?.includes(method) && x.chains?.includes(chain))) {
+        const matchingChain = session.permissions.find(x => x.chains?.includes(chain));
+        if (!matchingChain) {
             throw new Error("Unauthorized method/chain");
+        }
+        // Empty methods list means "all methods allowed" — wallet-SDK sessions use this,
+        // capability enforcement handles authorization separately.
+        // Non-empty methods list (legacy connect sessions) must be enforced.
+        if (matchingChain.methods && matchingChain.methods.length > 0 && !matchingChain.methods.includes(method)) {
+            throw new Error("Unauthorized method");
         }
     }
 
@@ -372,8 +408,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             case "aztec_registerSender":
                 return AccessLevel.PxeState;
             case "aztec_getAddressBook":
-                return AccessLevel.AppState;
-            case "aztec_getAccounts":
                 return AccessLevel.AppState;
             case "aztec_registerContract":
                 return AccessLevel.PxeState;

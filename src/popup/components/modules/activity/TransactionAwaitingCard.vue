@@ -1,3 +1,10 @@
+<script setup>
+defineProps({
+	title: { type: String, default: "Creating transaction" },
+	subtitle: { type: String, default: "Estimating fees, generating proofs..." },
+})
+</script>
+
 <template>
 	<Flex wide align="center" gap="12" :class="$style.wrapper">
 		<Flex align="center" justify="center" :class="$style.activity_icon">
@@ -7,8 +14,8 @@
 		</Flex>
 
 		<Flex direction="column" gap="6">
-			<Text size="13" weight="600" color="primary"> Creating transaction </Text>
-			<Text size="12" weight="500" color="tertiary"> Estimating fees, generating proofs... </Text>
+			<Text size="13" weight="600" color="primary"> {{ title }} </Text>
+			<Text size="12" weight="500" color="tertiary"> {{ subtitle }} </Text>
 		</Flex>
 	</Flex>
 </template>

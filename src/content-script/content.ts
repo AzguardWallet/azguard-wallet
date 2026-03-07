@@ -1,13 +1,21 @@
-// @ts-ignore
-import inpageScript from "./inpage?script&module";
-import { ProxyServer } from "./proxy/server";
+/**
+ * Content script — pure relay between page (postMessage/MessagePort) and
+ * background (chrome.runtime.sendMessage).
+ *
+ * Uses the standardized @aztec/wallet-sdk ContentScriptConnectionHandler
+ * which handles discovery, MessageChannel creation, key exchange relay,
+ * and encrypted message relay. No private keys or secrets touch this script.
+ */
+import { ContentScriptConnectionHandler } from "@aztec/wallet-sdk/extension/handlers";
 
-const _ = new ProxyServer();
+const handler = new ContentScriptConnectionHandler({
+    sendToBackground: (message) => chrome.runtime.sendMessage(message),
+    addBackgroundListener: (listener) => {
+        chrome.runtime.onMessage.addListener((message: any) => {
+            listener(message);
+            return undefined;
+        });
+    },
+});
 
-const script = document.createElement("script");
-script.setAttribute("id", "azguard-inpage-script");
-script.setAttribute("src", chrome.runtime.getURL(inpageScript));
-script.setAttribute("type", "module");
-
-const container = document.head || document.documentElement;
-container.insertBefore(script, container.children[0]);
+handler.start();

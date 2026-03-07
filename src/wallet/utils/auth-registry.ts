@@ -6,8 +6,6 @@ import { deriveStorageSlotInMap } from "@aztec/stdlib/hash";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 
 // Auth Registry storage slots (derived from Noir contract storage layout)
-// TODO: This is not reliable: contract may change, slot shift, alternative
-//       is to use `AuthRegistry.utility_is_consumable` & `AuthRegistry.is_reject_all`
 const APPROVED_ACTIONS_SLOT = new Fr(1);
 const REJECT_ALL_SLOT = new Fr(2);
 

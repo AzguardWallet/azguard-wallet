@@ -1,6 +1,5 @@
 import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
 import type { InteractionWaitOptions, SendReturn } from "@aztec/aztec.js/contracts";
-import { waitForTx } from "@aztec/aztec.js/node";
 import type { SimulateTxOpts } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import {
@@ -32,7 +31,9 @@ import {
     ExecutionPayload,
     HashedValues,
     TxExecutionRequest,
+    TxHash,
     TxProfileResult,
+    TxReceipt,
     TxSimulationResult,
     UtilitySimulationResult,
     Tx,
@@ -57,7 +58,6 @@ import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin } f
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
-import { trimAddress } from "@/utils/string";
 import {
     TaskService,
     WrappedTask,
@@ -95,7 +95,6 @@ import {
     type AztecGetChainInfoOperation,
     type AztecRegisterSenderOperation,
     type AztecGetAddressBookOperation,
-    type AztecGetAccountsOperation,
     type AztecRegisterContractOperation,
     type AztecSimulateTxOperation,
     type AztecSimulateUtilityOperation,
@@ -110,9 +109,8 @@ import {
 } from "./spec";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
-import { Aliased, ContractClassMetadata, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
+import { Aliased, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
-import { siloNullifier } from "@aztec/stdlib/hash";
 
 export * from "./spec";
 
@@ -355,10 +353,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     }
                     case "aztec_getAddressBook": {
                         result = await this.executeAztecGetAddressBook(operation);
-                        break;
-                    }
-                    case "aztec_getAccounts": {
-                        result = await this.executeAztecGetAccounts(operation);
                         break;
                     }
                     case "aztec_registerContract": {
@@ -796,36 +790,50 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeAztecGetContractClassMetadata(
         op: AztecGetContractClassMetadataOperation,
-    ): Promise<ContractClassMetadata> {
+    ): Promise<{ isContractClassPubliclyRegistered: boolean; isArtifactRegistered: boolean }> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const artifact = await this.pxeService.getContractArtifact(network, op.id);
-        const node = await this.networkService.getNode(network.chainId);
-        const publiclyRegisteredContractClass = await node.getContractClass(op.id);
+        const artifact = await this.pxeService.getContractArtifact(network, op.id, { pxeOnly: true });
         return {
+            isContractClassPubliclyRegistered: !!artifact,
             isArtifactRegistered: !!artifact,
-            isContractClassPubliclyRegistered: !!publiclyRegisteredContractClass,
         };
     }
 
     private async executeAztecGetContractMetadata(
         op: AztecGetContractMetadataOperation,
-    ): Promise<ContractMetadata> {
+    ): Promise<{ instance?: ContractInstanceWithAddress; isContractInitialized: boolean; isContractPublished: boolean; isContractUpdated: boolean; updatedContractClassId?: Fr }> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const node = await this.networkService.getNode(network.chainId);
-        const address = await AztecAddress.schema.parseAsync(op.address);
-        const instance = await this.pxeService.getContractInstance(network, address);
-        const initNullifier = await siloNullifier(address, address.toField());
-        const publiclyRegisteredContract = await node.getContract(address);
-        const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
-        const isContractUpdated =
-            publiclyRegisteredContract &&
-            !publiclyRegisteredContract.currentContractClassId.equals(publiclyRegisteredContract.originalContractClassId);
+
+        // Check PXE-local only: simulation requires both instance AND artifact
+        // registered in PXE. The full cascade (node/known/registry) finds on-chain
+        // data that PXE can't use for simulation.
+        const localInstance = await this.pxeService.getContractInstance(network, op.address, { pxeOnly: true });
+
+        let hasArtifact = false;
+        if (localInstance) {
+            try {
+                const artifact = await this.pxeService.getContractArtifact(network, localInstance.currentContractClassId, { pxeOnly: true });
+                hasArtifact = !!artifact;
+            } catch {
+                hasArtifact = false;
+            }
+        }
+
+        const isLocallyRegistered = !!localInstance && hasArtifact;
+
+        // Use full cascade only for isContractPublished (on-chain existence)
+        let isPublished = isLocallyRegistered;
+        if (!isPublished) {
+            const fullInstance = await this.pxeService.getContractInstance(network, op.address);
+            isPublished = !!fullInstance;
+        }
+
         return {
-            instance,
-            isContractInitialized: !!initWitness,
-            isContractPublished: !!publiclyRegisteredContract,
-            isContractUpdated: !!isContractUpdated,
-            updatedContractClassId: isContractUpdated ? publiclyRegisteredContract.currentContractClassId : undefined,
+            instance: isLocallyRegistered ? localInstance : undefined,
+            isContractInitialized: isLocallyRegistered,
+            isContractPublished: isPublished,
+            isContractUpdated: false,
+            updatedContractClassId: undefined,
         };
     }
 
@@ -848,28 +856,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeAztecGetAddressBook(op: AztecGetAddressBookOperation): Promise<Aliased<AztecAddress>[]> {
         // TODO: filter by chainId
-        // TODO: `x.name` leaks internal contact labels to dApps — consider permissions
-        //       or returning trimAddress(x.address) like getAccounts does
         return (await this.contactService.getContacts()).map(x => ({
             alias: x.name,
             item: AztecAddress.fromString(x.address),
         }));
-    }
-
-    private async executeAztecGetAccounts(op: AztecGetAccountsOperation): Promise<Aliased<AztecAddress>[]> {
-        const profile = await this.profileService.getActiveProfile();
-        if (!profile) {
-            throw new Error("Wallet locked");
-        }
-        const network = await this.networkService.getNetwork(op.networkId);
-        const allAccounts = await this.accountService.getAccounts(profile.id, network.chainId, true);
-        return allAccounts
-            .filter(x => op.accounts.includes(x.address))
-            .map(x => ({
-                // TODO: provide user with a flow showing internal account names for dApps
-                alias: trimAddress(x.address),
-                item: AztecAddress.fromString(x.address),
-            }));
     }
 
     private async executeAztecRegisterContract(
@@ -880,17 +870,20 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
         const addressNum = instance.address.toBigInt();
         if (addressNum >= 0 && addressNum <= 6) {
-            // ignore protocol contracts registration,
-            // because we cannot validate it due to hardcoded addresses
             return instance;
         }
 
-        const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
+        let providedArtifact: ContractArtifact | undefined;
+        try {
+            providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
+        } catch {
+            // artifact parse failed — will fall back to lookup below
+        }
         const artifact =
             providedArtifact ??
             (await this.pxeService.getContractArtifact(network, instance.currentContractClassId));
         if (!artifact) {
-            throw new Error("Contract artifact not found");
+            throw new Error(`Contract artifact not found for class ${instance.currentContractClassId}`);
         }
 
         const contractClass = await getContractClassFromArtifact(artifact);
@@ -911,6 +904,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         if (op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
+
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
         const [txRequest, _, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
@@ -959,30 +953,64 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         if (op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
+
         const [actions, _, fee] = await this.processAztecJsPayload(op.exec, op.opts);
-        const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
-            await this.buildAndEstimateTxRequest({ ...op, actions, fee }, op.feeSettings.paymentMethod, parentTask);
 
-        const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], parentTask);
+        // Auth witness discovery loop: if gas estimation simulation fails
+        // because of a missing auth witness, extract the hash, add an action
+        // so buildTxRequest creates it via account.buildAuthWitness(), retry.
+        const MAX_AUTH_WIT_RETRIES = 5;
+        let lastError: unknown;
+        for (let attempt = 0; attempt <= MAX_AUTH_WIT_RETRIES; attempt++) {
+            try {
+                const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
+                    await this.buildAndEstimateTxRequest(
+                        { ...op, actions, fee },
+                        op.feeSettings.paymentMethod,
+                        parentTask,
+                    );
 
-        const tx = await provedTx.toTx();
-        await this.sendTxTask(node, tx, parentTask);
+                const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], parentTask);
+                const tx = await provedTx.toTx();
+                await this.sendTxTask(node, tx, parentTask);
 
-        const txHash = tx.getTxHash();
-        await this.transactionService.addTransaction(
-            origin,
-            network.chainId,
-            account.address.toString(),
-            txCalls,
-            nonce.toString(),
-            feePaymentMethod,
-            txHash.toString(),
-        );
+                const txHash = tx.getTxHash();
+                await this.transactionService.addTransaction(
+                    origin,
+                    network.chainId,
+                    account.address.toString(),
+                    txCalls,
+                    nonce.toString(),
+                    feePaymentMethod,
+                    txHash.toString(),
+                );
 
-        if (op.opts.wait === "NO_WAIT") {
-            return txHash;
+                if (op.opts.wait === "NO_WAIT") {
+                    return txHash;
+                }
+                return node.getTxReceipt(txHash);
+            } catch (error) {
+                lastError = error;
+                const missingHash = this.extractAuthWitHash(error);
+                if (!missingHash || attempt === MAX_AUTH_WIT_RETRIES) {
+                    throw error;
+                }
+                this.logDebug(`Missing auth witness for ${missingHash}, creating (attempt ${attempt + 1})`);
+                actions.push({
+                    kind: "add_private_authwit",
+                    content: { kind: "message_hash", messageHash: missingHash },
+                } as AddPrivateAuthwitAction);
+            }
         }
-        return waitForTx(node, txHash, op.opts.wait);
+        throw lastError;
+    }
+
+    private extractAuthWitHash(error: unknown): string | null {
+        const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+        const match = message.match(
+            /Unknown auth witness for message hash (0x[0-9a-fA-F]+)/,
+        );
+        return match?.[1] ?? null;
     }
 
     public async executeAztecCreateAuthWit(op: AztecCreateAuthWitOperation): Promise<AuthWitness> {
@@ -1032,7 +1060,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Invalid messageHashOrIntent: expected IntentInnerHash or CallIntent");
         }
 
-        return await account.buildAuthWitness(messageHash);
+        const authWitness = await account.buildAuthWitness(messageHash);
+        return authWitness;
     }
 
     // internals
@@ -1849,7 +1878,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 .filter(x => !artifacts.has(x.currentContractClassId.toString()))
                 .map(x => x.currentContractClassId.toString()),
         );
-        this.logDebug(`Fetching ${classIds.size} artifacts...`);
+        this.logDebug(`Fetching ${classIds.size} artifacts for contracts: ${[...instances.keys()].join(", ")}...`);
+        this.logDebug(`Class IDs: ${[...classIds].join(", ")}`);
         const fetched = await Promise.all(classIds.values().map(x => this.getArtifact(pxe, x)));
         this.logDebug(`${fetched.length} artifacts fetched`);
         for (const [classId, artifact] of fetched) {
@@ -1861,7 +1891,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async getArtifact(pxe: IPXE, classId: string): Promise<[string, ContractArtifact]> {
         const artifact = await pxe.getContractArtifact(Fr.fromString(classId));
         if (!artifact) {
-            throw new Error("Contract artifact not found");
+            throw new Error(`Contract artifact not found for class ${classId}`);
         }
         return [classId, artifact];
     }

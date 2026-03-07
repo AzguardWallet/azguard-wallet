@@ -2,10 +2,14 @@ import { ILogger, LogLevel } from "@/wallet/logger";
 import { sleep } from "@walletconnect/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { jsonSanitize } from "@/wallet/utils/serialization";
+import { OFFSCREEN_KEEPALIVE } from "@/wallet/utils/offscreen";
 import { EventsMap, MethodsMap, MethodsSpec, IService, EventsSpec, ServiceCollection } from "../.";
 import { MessageType } from "../messages";
 import { unwrapParams } from "../utils";
 import { EventMessage, RequestMessage, ResponseMessage } from "./messages";
+
+/** Send keepalive pings every 20s to prevent Chrome from killing the service worker. */
+const KEEPALIVE_INTERVAL_MS = 20_000;
 
 export abstract class Service<TRequests extends MethodsMap, TEvents extends EventsMap = {}> implements IService {
     public readonly name: string;
@@ -55,6 +59,13 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
         }
         const params = unwrapParams(wrappedParams);
         this.logDebug("Request received", requestId, method, params);
+
+        // Keep the service worker alive during long operations (PXE proof gen, etc.).
+        // Chrome kills idle SWs after 30s — sending any message resets that timer.
+        const keepalive = setInterval(() => {
+            chrome.runtime.sendMessage(OFFSCREEN_KEEPALIVE).catch(() => {});
+        }, KEEPALIVE_INTERVAL_MS);
+
         let response: ResponseMessage<TRequests>;
         try {
             const result = await this.requests[method](...params);
@@ -80,9 +91,16 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
                 from: this.name,
                 to: message.from,
             };
+        } finally {
+            clearInterval(keepalive);
         }
-        chrome.runtime.sendMessage(response);
-        this.logDebug("Response sent", response);
+        try {
+            await chrome.runtime.sendMessage(response);
+            this.logDebug("Response sent", response);
+        } catch {
+            // Service worker is dead — response is lost. The client-side timeout
+            // (in offscreen/client.ts) will reject the caller's promise.
+        }
     };
 
     protected emit<T extends keyof TEvents>(event: T, payload: TEvents[T]) {
@@ -94,7 +112,9 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
             },
             from: this.name,
         };
-        chrome.runtime.sendMessage(message);
+        chrome.runtime.sendMessage(message).catch(() => {
+            // Service worker is dead — event is lost.
+        });
         this.events[event].invoke(payload);
         this.logDebug("Event sent", message);
     }

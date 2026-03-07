@@ -24,6 +24,7 @@ import {
     PartialAddress,
 } from "@aztec/stdlib/contract";
 import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
+import { makeFetchWithTimeout } from "@/wallet/utils/fetch";
 import { NoteDao } from "@aztec/stdlib/note";
 import type { NotesFilter } from "./spec";
 import {
@@ -60,7 +61,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private readonly nodes = new Map<number, AztecNode>();
     private readonly pxes = new Map<number, PXE>();
     private readonly rpcs = new Map<number, string>();
-    private readonly lock = new Lock();
+    private readonly loggerClient = new LoggerServiceClient();
+    private readonly lock = new Lock("pxe", this.loggerClient);
 
     private readonly knownArtifacts = new Map<string, ContractArtifact>();
     private readonly knownInstances = new Map<string, ContractInstanceWithAddress>();
@@ -70,38 +72,55 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     protected async init() {
-        // delete orhpan PXE DBs
+        // delete orphan PXE DBs
         const dbs = await indexedDB.databases();
         const pxes = dbs.filter(x => x.name?.startsWith("pxe/"));
         if (pxes.length) {
             const profiles = await this.profiles.getProfiles();
             for (let i = pxes.length - 1; i >= 0; i--) {
                 if (!profiles.some(x => pxes[i].name!.startsWith(`pxe/${x.id}/`))) {
-                    const _ = indexedDB.deleteDatabase(pxes[i].name!);
+                    await new Promise<void>((resolve, reject) => {
+                        const req = indexedDB.deleteDatabase(pxes[i].name!);
+                        req.onsuccess = () => resolve();
+                        req.onerror = () => reject(req.error);
+                        req.onblocked = () => {
+                            this.logWarn("deleteDatabase blocked (DB still in use):", pxes[i].name);
+                            resolve(); // Skip — don't hang init forever
+                        };
+                    });
                     pxes.splice(i, 1);
                 }
             }
             if (!pxes.length) {
                 const keyval = dbs.find(x => x.name === "keyval-store");
                 if (keyval) {
-                    const _ = indexedDB.deleteDatabase(keyval.name!);
+                    await new Promise<void>((resolve, reject) => {
+                        const req = indexedDB.deleteDatabase(keyval.name!);
+                        req.onsuccess = () => resolve();
+                        req.onerror = () => reject(req.error);
+                        req.onblocked = () => {
+                            this.logWarn("deleteDatabase blocked (DB still in use): keyval-store");
+                            resolve();
+                        };
+                    });
                 }
             }
         }
 
         this.profiles.onProfileDeleted.add(this.onProfileDeleted);
         this.profiles.onActiveProfileChanged.add(this.onActiveProfileChanged);
-        const _ = this.profiles.connect();
+        await this.profiles.connect();
     }
 
     public async getContractInstance(
         network: Network,
         address: AztecAddress,
+        opts?: { pxeOnly?: boolean },
     ): Promise<ContractInstanceWithAddress | undefined> {
         address = await AztecAddress.schema.parseAsync(address);
         return this.withPxe(network, async (pxe, node) => {
             let instance = await pxe.getContractInstance(address);
-            if (!instance) {
+            if (!instance && !opts?.pxeOnly) {
                 // check node
                 instance = await node.getContract(address);
                 if (!instance) {
@@ -123,11 +142,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public async getContractArtifact(
         network: Network,
         id: Fr,
+        opts?: { pxeOnly?: boolean },
     ): Promise<ContractArtifact | undefined> {
         id = await Fr.schema.parseAsync(id);
         return this.withPxe(network, async (pxe) => {
             let artifact = await pxe.getContractArtifact(id);
-            if (!artifact) {
+            if (!artifact && !opts?.pxeOnly) {
                 // check known
                 if (!this.knownArtifacts.size) {
                     await this.initKnown();
@@ -320,12 +340,18 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     private async withPxe<T>(network: Network, fn: (pxe: PXE, node: AztecNode) => Promise<T>): Promise<T> {
+        const start = Date.now();
         try {
             await this.lock.enter();
             if (!this.hasChain(network)) {
                 await this.initChain(network);
             }
-            return await fn(this.pxes.get(network.chainId)!, this.nodes.get(network.chainId)!);
+            const result = await fn(this.pxes.get(network.chainId)!, this.nodes.get(network.chainId)!);
+            this.logDebug(`withPxe completed (${Date.now() - start}ms)`);
+            return result;
+        } catch (err) {
+            this.logError(`withPxe failed after ${Date.now() - start}ms`, err instanceof Error ? err.message : String(err));
+            throw err;
         } finally {
             this.lock.leave();
         }
@@ -336,7 +362,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     private async initChain(network: Network): Promise<void> {
-        const node = createAztecNodeClient(network.rpcUrl);
+        const node = createAztecNodeClient(network.rpcUrl, {}, makeFetchWithTimeout());
         const config = {
             ...getPXEConfig(),
             dataDirectory: `pxe/${network.profileId}/${network.chainId}`,

@@ -35,7 +35,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         const simulatedTx = await pxe.simulateTx(txRequest, {
             simulatePublic: true,
             skipFeeEnforcement: true,
-            scopes: [],
+            scopes: "ALL_SCOPES",
         });
         const returnValues = simulatedTx.getPrivateReturnValues();
         if (!returnValues.values || returnValues.values.length !== 1) {
@@ -144,6 +144,6 @@ export class DefaultFpcHandler implements IFpcHandler {
     }
 
     public getTotalGas(inPublic?: boolean): Gas {
-        return inPublic ? new Gas(10_000, 850_000) : new Gas(100_000, 850_000);
+        return inPublic ? new Gas(10_000, 850_000) : new Gas(100_000, 500_000);
     }
 }

@@ -120,9 +120,19 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
             this.requests.set(request.content.requestId, [resolve, reject]);
         });
         this.port!.postMessage(request);
-        this.logDebug("Request sent", request);
-        this.logDebug("Pending requests", this.requests.size);
-        return promise;
+
+        const methodName = String(method);
+        const start = Date.now();
+        this.logDebug(`→ ${methodName}`);
+
+        const warnTimer = setTimeout(() => {
+            this.logWarn(`Request pending >10s: ${methodName} (id: ${request.content.requestId})`);
+        }, 10_000);
+
+        return promise.finally(() => {
+            clearTimeout(warnTimer);
+            this.logDebug(`← ${methodName} (${Date.now() - start}ms)`);
+        });
     }
 
     private getRequestId() {

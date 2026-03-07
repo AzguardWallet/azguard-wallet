@@ -181,7 +181,7 @@ const loadProfile = async () => {
 		appStore.isLogined = true
 		appStore.isSessionChecked = true
 
-		if (["popup-register"].includes(route.name)) router.push("/popup/general")
+		if (["popup-register", "popup-auth"].includes(route.name)) router.push("/popup/general")
 
 		return
 	}

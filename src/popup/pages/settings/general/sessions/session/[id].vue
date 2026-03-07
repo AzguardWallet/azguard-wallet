@@ -11,11 +11,15 @@
 /** Vendor */
 import { DateTime } from "luxon"
 import { onMounted } from "vue"
+import { hashToEmoji } from "@aztec/wallet-sdk/crypto"
 
 /** Components */
 import Navigation from "../../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
+// @ts-ignore
+import EmojiGrid from "@/popup/components/modules/general/EmojiGrid.vue"
+import CapabilityDetailPanel from "@/popup/components/modules/capabilities/CapabilityDetailPanel.vue"
 
 /** Utils */
 import { getChainName } from "@/components/ui/utils.js"
@@ -41,6 +45,22 @@ const accounts = ref([])
 const chains = ref([])
 const methods = ref([])
 const events = ref([])
+
+const verificationEmojis = computed(() => {
+	if (session.value?.verificationHash) {
+		return hashToEmoji(session.value.verificationHash)
+	}
+	return ""
+})
+
+const expiryFormatted = computed(() => {
+	if (!session.value?.expiry) return ""
+	return DateTime.fromSeconds(session.value.expiry / 1_000).toFormat("LLL dd 'at' HH:mm")
+})
+
+const hasSessionAllowances = computed(() => {
+	return methods.value.length > 0 || events.value.length > 0
+})
 
 const fetchSession = async () => {
 	session.value = await dappSessionService.getDappSession(route.params.id)
@@ -109,6 +129,48 @@ const handleCopyAddress = target => {
 	openToast({ label: "Address is copied", icon: "copy" })
 }
 
+const getAccountAlias = (acc) => {
+	if (!session.value?.accountAliases) return acc.name
+	const caip = `aztec:${acc.chainId}:${acc.address}`
+	return session.value.accountAliases[caip] || acc.name
+}
+
+const CAPABILITY_LABELS = {
+	accounts: "Share accounts",
+	contracts: "Register and query contracts",
+	contractClasses: "Query contract classes",
+	simulation: "Simulate transactions",
+	transaction: "Send transactions",
+	data: "Access private data",
+}
+
+const getCapabilityLabel = (type) => {
+	return CAPABILITY_LABELS[type] ?? type
+}
+
+const grantedCapabilities = computed(() => {
+	return session.value?.capabilityGrants ?? []
+})
+
+const expandedGrants = ref(new Set())
+
+const toggleGrantExpand = (index) => {
+	if (expandedGrants.value.has(index)) {
+		expandedGrants.value.delete(index)
+	} else {
+		expandedGrants.value.add(index)
+	}
+}
+
+const isGrantExpanded = (index) => expandedGrants.value.has(index)
+
+const isTrusted = computed(() => session.value?.trustedVerification ?? false)
+
+const toggleTrust = async () => {
+	if (!session.value) return
+	await dappSessionService.setTrustedVerification(session.value.id, !isTrusted.value)
+}
+
 const dappSessionService = new DappSessionServiceClient()
 dappSessionService.onDappSessionUpdated.add(onDappSessionUpdated)
 dappSessionService.onDappSessionDeleted.add(onDappSessionDeleted)
@@ -163,6 +225,10 @@ onMounted(async () => {
 						</Text>
 					</Flex>
 				</Flex>
+
+				<Text v-if="expiryFormatted" size="11" color="tertiary" :style="{ marginTop: '8px' }">
+					Expires {{ expiryFormatted }}
+				</Text>
 			</Flex>
 
 			<Flex direction="column" align="start" justify="start" gap="8" :class="$style.accounts_section">
@@ -172,9 +238,18 @@ onMounted(async () => {
 					<Flex v-for="acc in accounts" gap="10" :class="$style.account">
 						<Flex direction="column" gap="4" wide>
 							<Flex align="center" justify="between" gap="12">
-								<Text size="14" weight="600" color="primary">
-									{{ acc.name }}
-								</Text>
+								<Flex direction="column" gap="4">
+									<Text size="14" weight="600" color="primary">
+										{{ getAccountAlias(acc) }}
+									</Text>
+									<Text
+										v-if="getAccountAlias(acc) !== acc.name"
+										size="12"
+										color="tertiary"
+									>
+										Internal: {{ acc.name }}
+									</Text>
+								</Flex>
 
 								<Tooltip>
 									<NetworkBadge :chainId="acc.chainId" />
@@ -201,7 +276,7 @@ onMounted(async () => {
 				</Flex>
 			</Flex>
 
-			<Flex direction="column" align="start" justify="start" gap="8">
+			<Flex v-if="hasSessionAllowances" direction="column" align="start" justify="start" gap="8">
 				<Text size="15" weight="600" color="primary">Session allowances:</Text>
 
 				<Flex align="start" gap="4">
@@ -234,12 +309,61 @@ onMounted(async () => {
 					}}
 				</Text>
 			</Flex>
-		</Flex>
 
-		<Flex align="end" justify="end">
-			<Text size="12" weight="500" color="tertiary">
-				{{ DateTime.fromSeconds(session?.expiry / 1_000).toFormat("'Expires' LLL dd 'at' HH:mm") }}
-			</Text>
+			<Flex v-if="grantedCapabilities.length" direction="column" align="start" justify="start" gap="8" wide>
+				<Text size="15" weight="600" color="primary">Granted capabilities:</Text>
+				<Flex direction="column" gap="6" wide>
+					<Flex
+						v-for="(grant, gi) in grantedCapabilities"
+						:key="grant.capability.type"
+						direction="column"
+						:class="$style.grant_card"
+					>
+						<Flex
+							@click="toggleGrantExpand(gi)"
+							align="center"
+							justify="between"
+							:class="$style.grant_header"
+						>
+							<Flex align="center" gap="6">
+								<Icon name="check-circle" size="11" color="green" />
+								<Text size="13" color="secondary">{{ getCapabilityLabel(grant.capability.type) }}</Text>
+							</Flex>
+							<Icon
+								name="chevron"
+								size="12"
+								color="tertiary"
+								:style="{ transform: isGrantExpanded(gi) ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }"
+							/>
+						</Flex>
+						<CapabilityDetailPanel
+							v-if="isGrantExpanded(gi)"
+							:capability="grant.capability"
+							:granted="true"
+						/>
+					</Flex>
+				</Flex>
+			</Flex>
+
+			<Flex v-if="verificationEmojis" direction="column" align="start" justify="start" gap="8">
+				<Text size="15" weight="600" color="primary">Connection verification:</Text>
+				<Flex direction="column" align="center" wide>
+					<EmojiGrid :emojis="verificationEmojis" />
+				</Flex>
+				<Text size="12" color="tertiary" :style="{ lineHeight: '1.2' }">
+					These emojis should match what the connected app displays
+				</Text>
+				<Flex align="center" gap="8" :class="$style.trust_toggle" @click="toggleTrust">
+					<Flex
+						align="center"
+						justify="center"
+						:class="[$style.checkbox, isTrusted && $style.checked]"
+					>
+						<Icon v-if="isTrusted" name="check" size="10" color="inverse" />
+					</Flex>
+					<Text size="12" color="secondary">Always trust (skip verification on reconnect)</Text>
+				</Flex>
+			</Flex>
 		</Flex>
 
 		<Navigation />
@@ -249,6 +373,7 @@ onMounted(async () => {
 <style module>
 .wrapper {
 	flex: 1;
+	overflow: auto;
 
 	background: var(--card-bg);
 	box-shadow: 0 0 0 1px var(--gray-5);
@@ -274,6 +399,31 @@ img {
 	transition: all 0.2s ease;
 }
 
+.trust_toggle {
+	cursor: pointer;
+	padding: 6px 4px;
+	border-radius: 8px;
+	transition: background 0.15s ease;
+
+	&:hover {
+		background: var(--gray-3);
+	}
+}
+
+.checkbox {
+	width: 16px;
+	height: 16px;
+	min-width: 16px;
+	border-radius: 4px;
+	border: 1.5px solid var(--gray-20);
+	transition: all 0.15s ease;
+}
+
+.checked {
+	background: var(--blue);
+	border-color: var(--blue);
+}
+
 .accounts_section {
 	width: 100%;
 }
@@ -292,5 +442,23 @@ img {
 	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
+}
+
+.grant_card {
+	width: 100%;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: inset 0 0 0 1px var(--gray-10);
+}
+
+.grant_header {
+	padding: 8px 10px;
+	cursor: pointer;
+
+	transition: background 0.15s ease;
+
+	&:hover {
+		background: var(--gray-3);
+	}
 }
 </style>

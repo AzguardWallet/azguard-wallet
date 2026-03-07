@@ -1,4 +1,5 @@
 import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
+import { makeFetchWithTimeout } from "@/wallet/utils/fetch";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -21,12 +22,13 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
 
     private readonly storage = new EntityStorage<Network>("azguard:core:networks", StorageType.Local);
     private readonly nodes = new Map<number, AztecNode>();
-    private readonly lock = new Lock();
+    private readonly lock: Lock;
 
     private profileService: ProfileService = null!;
 
     public constructor(logger: ILogger) {
         super(NETWORK_SERVICE_NAME, logger);
+        this.lock = new Lock("network", logger);
     }
 
     protected async init(services: ServiceCollection) {
@@ -91,7 +93,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             }
             for (const network of defaultNetworks.filter(x => x.isDefault)) {
                 this.emit("onDefaultNetworkChanged", network);
-                this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl));
+                this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl, {}, makeFetchWithTimeout()));
             }
             return defaultNetworks;
         } finally {
@@ -209,7 +211,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             }
             network.isDefault = true;
             await this.storage.set(id, network);
-            this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl));
+            this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl, {}, makeFetchWithTimeout()));
             this.emit("onDefaultNetworkChanged", network);
             return network;
         } finally {
@@ -252,7 +254,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
                     x => x.profileId === profile.id && x.chainId === chainId,
                 );
                 const network = networks.find(x => x.isDefault) ?? networks[0];
-                node = createAztecNodeClient(network.rpcUrl);
+                node = createAztecNodeClient(network.rpcUrl, {}, makeFetchWithTimeout());
                 this.nodes.set(chainId, node);
             }
             return node;
@@ -286,7 +288,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
 
     private async getChainId(rpcUrl: string): Promise<number> {
         try {
-            const rpc = createAztecNodeClient(rpcUrl);
+            const rpc = createAztecNodeClient(rpcUrl, {}, makeFetchWithTimeout());
             const info = await rpc.getNodeInfo();
             if (rpcUrl === "http://localhost:8080") {
                 return 0;

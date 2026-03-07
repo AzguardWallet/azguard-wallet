@@ -47,4 +47,10 @@ export default {
 		32: "src/assets/logo.png",
 		128: "src/assets/logo.png",
 	},
+	web_accessible_resources: [
+		{
+			matches: ["*://*/*"],
+			resources: ["src/assets/logo.png"],
+		},
+	],
 } as ManifestV3Export

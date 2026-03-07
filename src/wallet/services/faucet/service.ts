@@ -13,7 +13,6 @@ import {
     getContractClassFromArtifact,
     type ContractInstanceWithAddress,
 } from "@aztec/stdlib/contract";
-import { siloNullifier } from "@aztec/stdlib/hash";
 import { PublicKeys } from "@aztec/stdlib/keys";
 import BN from "bignumber.js";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
@@ -23,6 +22,7 @@ import { TransactionService, LocalTxOrigin, OriginType } from "@/wallet/services
 import { NetworkService } from "@/wallet/services/network/service";
 import { AccountService } from "@/wallet/services/account/service";
 import { ProfileService } from "@/wallet/services/profile/service";
+import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { TaskService, StepContent, TokenMintContent } from "@/wallet/services/task/service";
 import {
     ExecutionService,
@@ -39,6 +39,7 @@ export * from "./spec";
 export class FaucetService extends Service<Methods> implements ServiceSpec<Methods> {
     public static name = FAUCET_SERVICE_NAME;
 
+    private pxeService: PxeServiceClient = null!;
     private profileService: ProfileService = null!;
     private networkService: NetworkService = null!;
     private accountService: AccountService = null!;
@@ -51,6 +52,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
     }
 
     protected async init(services: ServiceCollection) {
+        this.pxeService = new PxeServiceClient(this.logger);
         this.profileService = services.get(ProfileService.name);
         this.networkService = services.get(NetworkService.name);
         this.accountService = services.get(AccountService.name);
@@ -81,7 +83,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
         if (!account) {
             throw new Error("unknown account");
         }
-        const node = await this.networkService.getNode(network.chainId);
+        const pxe = this.pxeService.getPXE(network);
         let deployActions: Action[];
         let deployOps: Operation[];
         let instance: ContractInstanceWithAddress;
@@ -113,8 +115,8 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 salt: Fr.zero(),
             });
 
-            const registeredClass = await node.getContractClass(contractClass.id);
-            if (!registeredClass) {
+            const existingArtifact = await pxe.getContractArtifact(contractClass.id);
+            if (!existingArtifact) {
                 this.logDebug("register faucet token class id");
                 const { artifactHash, privateFunctionsRoot, publicBytecodeCommitment, packedBytecode } = contractClass;
                 const encodedBytecode = bufferAsFields(packedBytecode, MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS);
@@ -134,8 +136,8 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 );
             }
 
-            const deployedInstance = await node.getContract(instance.address);
-            if (!deployedInstance) {
+            const existingInstance = await pxe.getContractInstance(instance.address);
+            if (!existingInstance) {
                 this.logDebug("deploy faucet token");
                 const { salt, currentContractClassId, initializationHash, publicKeys } = instance;
                 deployActions.push({
@@ -146,9 +148,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 });
             }
 
-            const initNullifier = await siloNullifier(instance.address, instance.address.toField());
-            const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
-            if (!initWitness) {
+            if (!existingInstance) {
                 this.logDebug("initialize faucet token");
                 deployOps.unshift({
                     kind: "register_contract",

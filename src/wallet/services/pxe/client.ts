@@ -48,18 +48,20 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
     public async getContractInstance(
         network: Network,
         address: AztecAddress,
+        opts?: { pxeOnly?: boolean },
     ): Promise<ContractInstanceWithAddress | undefined> {
         await ensureOffscreenRunning();
-        const result = await this.request("getContractInstance", network, address);
+        const result = await this.request("getContractInstance", network, address, opts);
         return await ContractInstanceWithAddressSchema.optional().parseAsync(result);
     }
 
     public async getContractArtifact(
         network: Network,
         id: Fr,
+        opts?: { pxeOnly?: boolean },
     ): Promise<ContractArtifact | undefined> {
         await ensureOffscreenRunning();
-        const result = await this.request("getContractArtifact", network, id);
+        const result = await this.request("getContractArtifact", network, id, opts);
         return await ContractArtifactSchema.optional().parseAsync(result);
     }
 
