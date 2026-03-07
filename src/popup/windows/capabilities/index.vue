@@ -104,6 +104,8 @@ const initRequest = async () => {
 	}
 }
 
+const accountService = new AccountServiceClient()
+
 const initAccounts = async () => {
 	if (!profile.value || !networks.value || !payload.value) return
 
@@ -111,8 +113,7 @@ const initAccounts = async () => {
 	const network = networks.value.find(x => x.chainId === chainId)
 	if (!network) return
 
-	const accountClient = new AccountServiceClient()
-	const accounts = await accountClient.getAccounts(profile.value.id, network.chainId, true)
+	const accounts = await accountService.getAccounts(profile.value.id, network.chainId, true)
 
 	for (const cap of capabilities.value) {
 		if (cap.type === "accounts") {
@@ -243,6 +244,7 @@ onBeforeMount(async () => {
 onMounted(async () => {
 	profileService.connect()
 	networkService.connect()
+	accountService.connect()
 	interactionService.connect()
 	await initRequest()
 	await initAccounts()
@@ -252,6 +254,7 @@ onMounted(async () => {
 onUnmounted(() => {
 	profileService.disconnect()
 	networkService.disconnect()
+	accountService.disconnect()
 	interactionService.disconnect()
 	window.removeEventListener("beforeunload", reject)
 })

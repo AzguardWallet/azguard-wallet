@@ -94,7 +94,7 @@ function requireString(value: unknown, field: string): string {
 }
 
 /** Checks that every call is authorized by at least one of the given scopes. */
-function allCallsInScope(scopes: SerializedScope[], calls: any[]): boolean {
+function allCallsInScope(scopes: SerializedScope[], calls: { to: unknown; name: unknown }[]): boolean {
     return calls.every(call => {
         const contractAddr = requireString(call.to, "call.to");
         const fnName = requireString(call.name, "call.name");
@@ -112,12 +112,10 @@ function allCallsInScope(scopes: SerializedScope[], calls: any[]): boolean {
  * getAccounts, getAddressBook, createAuthWit) pass through without checks.
  */
 export function enforceCapabilityScope(capabilities: SerializedCapability[], operation: OperationRequest): void {
-    const caps = capabilities;
-
     switch (operation.kind) {
         case "aztec_registerContract": {
             const address = requireString(operation.instance.address, "instance.address");
-            const matching = caps.filter(
+            const matching = capabilities.filter(
                 (c): c is SerializedContractsCapability => c.type === "contracts" && !!c.canRegister,
             );
             if (!matching.some(c => addressInList(c.contracts, address))) {
@@ -127,7 +125,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
         }
         case "aztec_getContractMetadata": {
             const address = requireString(operation.address, "address");
-            const matching = caps.filter(
+            const matching = capabilities.filter(
                 (c): c is SerializedContractsCapability => c.type === "contracts" && !!c.canGetMetadata,
             );
             if (!matching.some(c => addressInList(c.contracts, address))) {
@@ -137,7 +135,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
         }
         case "aztec_getContractClassMetadata": {
             const id = requireString(operation.id, "id");
-            const matching = caps.filter(
+            const matching = capabilities.filter(
                 (c): c is SerializedContractClassesCapability => c.type === "contractClasses" && !!c.canGetMetadata,
             );
             if (!matching.some(c => addressInList(c.classes, id))) {
@@ -146,8 +144,8 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             break;
         }
         case "aztec_sendTx": {
-            const calls: any[] = operation.exec.calls;
-            const scopes = caps
+            const calls = operation.exec.calls as { to: unknown; name: unknown }[];
+            const scopes = capabilities
                 .filter((c): c is SerializedTransactionCapability => c.type === "transaction")
                 .map(c => c.scope);
             if (!allCallsInScope(scopes, calls)) {
@@ -157,8 +155,8 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
         }
         case "aztec_simulateTx":
         case "aztec_profileTx": {
-            const calls: any[] = operation.exec.calls;
-            const scopes = caps
+            const calls = operation.exec.calls as { to: unknown; name: unknown }[];
+            const scopes = capabilities
                 .filter((c): c is SimulationWithTransactions => c.type === "simulation" && !!c.transactions)
                 .map(c => c.transactions.scope);
             if (!allCallsInScope(scopes, calls)) {
@@ -167,10 +165,10 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             break;
         }
         case "aztec_simulateUtility": {
-            const call = operation.call as any;
-            const contractAddr = requireString(call?.to, "call.to");
-            const fnName = requireString(call?.name, "call.name");
-            const scopes = caps
+            const call = operation.call as { to: unknown; name: unknown };
+            const contractAddr = requireString(call.to, "call.to");
+            const fnName = requireString(call.name, "call.name");
+            const scopes = capabilities
                 .filter((c): c is SimulationWithUtilities => c.type === "simulation" && !!c.utilities)
                 .map(c => c.utilities.scope);
             if (!scopes.some(scope => callMatchesScope(scope, contractAddr, fnName))) {
@@ -180,7 +178,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
         }
         case "aztec_getPrivateEvents": {
             const contractAddress = requireString(operation.eventFilter.contractAddress, "eventFilter.contractAddress");
-            const matching = caps.filter(
+            const matching = capabilities.filter(
                 (c): c is DataWithPrivateEvents => c.type === "data" && !!c.privateEvents,
             );
             if (!matching.some(c => addressInList(c.privateEvents.contracts, contractAddress))) {
@@ -190,7 +188,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
         }
         case "aztec_createAuthWit": {
             const accountAddress = requireString(operation.account.split(":").at(-1), "account address");
-            const matching = caps.filter(
+            const matching = capabilities.filter(
                 (c): c is SerializedAccountsCapability => c.type === "accounts" && !!c.canCreateAuthWit,
             );
             if (!matching.some(c => c.accounts.some(a => a.item === accountAddress))) {

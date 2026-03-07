@@ -9,7 +9,7 @@
 
 defineProps<{
 	/** Array of items to render as grid rows */
-	items: any[]
+	items: unknown[]
 	/** Returns true if item at index is active (green check), false for inactive (gray circle, dimmed) */
 	isActive: (index: number) => boolean
 	/** Non-interactive and visually dimmed (e.g., parent switch is excluded) */
