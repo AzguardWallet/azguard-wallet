@@ -56,9 +56,6 @@ import NewContactPopup from "./NewContactPopup.vue"
 import EditContactPopup from "./EditContactPopup.vue"
 import ImportContactsPopup from "./ImportContactsPopup.vue"
 
-/** Dapps */
-import ConnectByURIPopup from "./ConnectByURIPopup.vue"
-
 /** Faucet */
 import SelectDepositPopup from "./SelectDepositPopup.vue"
 import FaucetPopup from "./FaucetPopup.vue"
@@ -114,8 +111,6 @@ const popupStore = usePopupStore()
 	<NewContactPopup :show="popupStore.isOpened('new_contact')" @onClose="popupStore.close('new_contact')" />
 	<EditContactPopup :show="popupStore.isOpened('edit_contact')" @onClose="popupStore.close('edit_contact')" />
 	<ImportContactsPopup :show="popupStore.isOpened('import_contacts')" @onClose="popupStore.close('import_contacts')" />
-
-	<ConnectByURIPopup :show="popupStore.isOpened('connect_by_uri')" @onClose="popupStore.close('connect_by_uri')" />
 
 	<SelectDepositPopup :show="popupStore.isOpened('select_deposit')" @onClose="popupStore.close('select_deposit')" />
 	<FaucetPopup :show="popupStore.isOpened('faucet')" @onClose="popupStore.close('faucet')" />

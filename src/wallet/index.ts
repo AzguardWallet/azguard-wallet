@@ -22,7 +22,6 @@ import { TaskService } from "./services/task/service";
 import { TokenService } from "./services/token/service";
 import { TokenBalanceService } from "./services/token-balance/service";
 import { TransactionService } from "./services/transaction/service";
-import { WalletConnectService } from "./services/wallet-connect/service";
 import { PasskeyService } from "./services/passkey/service";
 import { initWalletSdkHandler } from "./services/wallet-sdk/background";
 import { sleep } from "./utils";
@@ -94,7 +93,6 @@ const runServices = async () => {
     services.add(new TokenService(logger));
     services.add(new TokenBalanceService(logger));
     services.add(new TransactionService(logger));
-    services.add(new WalletConnectService(config, logger));
     services.add(new PasskeyService(logger));
 
     await services.start();

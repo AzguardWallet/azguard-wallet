@@ -4,7 +4,6 @@ export type ExternalLinksMode = "disabled" | "confirm" | "enabled";
 
 export type StealthModeSnapshot = {
     contractRegistry: boolean;
-    walletConnectEnabled: boolean;
     uploadExternalImages: boolean;
     externalLinks: ExternalLinksMode;
 } | null;
@@ -27,7 +26,6 @@ export class Config {
     stealthMode: boolean = false; // When ON, all external services are disabled
     stealthModeSnapshot: StealthModeSnapshot = null; // Saved state before stealth mode was enabled
     contractRegistry: boolean = true; // Enable external contract registry lookup
-    walletConnectEnabled: boolean = true; // Enable WalletConnect dApp connections
     uploadExternalImages: boolean = true; // Load images from external URLs
     externalLinks: ExternalLinksMode = "enabled"; // How to handle external link clicks
 

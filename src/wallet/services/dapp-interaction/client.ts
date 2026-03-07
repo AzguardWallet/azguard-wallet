@@ -5,8 +5,6 @@ import { EventHandler } from "@/wallet/utils/event-handler";
 import type { Operation } from "@/wallet/services/execution/spec";
 import type { LocalTxOrigin } from "@/wallet/services/transaction/spec";
 import {
-    ConnectionPayload,
-    ConnectionResult,
     CapabilityPayload,
     CapabilityResult,
     DiscoveryPayload,
@@ -27,7 +25,7 @@ export class DappInteractionServiceClient extends ServiceClient<Methods, Events>
         super(DAPP_INTERACTION_SERVICE_NAME, new LoggerServiceClient(), name);
     }
 
-    public getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload> {
+    public getInteractionPayload(id: string): Promise<ExecutionPayload | CapabilityPayload | DiscoveryPayload> {
         return this.request("getInteractionPayload", id);
     }
 
@@ -35,7 +33,7 @@ export class DappInteractionServiceClient extends ServiceClient<Methods, Events>
         return this.request("approveInteraction", id, operations, origin);
     }
 
-    public resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult): Promise<void> {
+    public resolveInteraction(id: string, result: ExecutionResult | CapabilityResult | DiscoveryResult): Promise<void> {
         return this.request("resolveInteraction", id, result);
     }
 

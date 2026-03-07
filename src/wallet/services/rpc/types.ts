@@ -25,7 +25,6 @@ export enum RpcMethod {
     get_wallet_info = "get_wallet_info",
     get_session = "get_session",
     close_session = "close_session",
-    connect = "connect",
     execute = "execute",
 };
 

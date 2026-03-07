@@ -1,4 +1,4 @@
-import type { DappSession, DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/spec";
+import type { DappSession, DappMetadata } from "@/wallet/services/dapp-session/spec";
 import type {
     GetCompleteAddressOperation,
     RegisterContractOperation,
@@ -29,29 +29,11 @@ export const DAPP_INTERACTION_SERVICE_NAME = "dapp-interaction";
 
 export type DappInteraction = {
     id: string;
-    payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload;
-    resolve: (result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult) => void;
+    payload: ExecutionPayload | CapabilityPayload | DiscoveryPayload;
+    resolve: (result: ExecutionResult | CapabilityResult | DiscoveryResult) => void;
     reject: (reason: string) => void;
     cancellationToken: string;
 };
-
-export type DappSessionInfo = {
-    id: string;
-    permissions: DappPermissions[];
-    accounts: string[];
-};
-
-export type ConnectionPayload = {
-    params: ConnectionParams;
-};
-
-export type ConnectionParams = {
-    dappMetadata: DappMetadata;
-    requiredPermissions: DappPermissions[];
-    optionalPermissions?: DappPermissions[];
-};
-
-export type ConnectionResult = DappSessionInfo;
 
 export type ExecutionPayload = {
     params: ExecutionParams;
@@ -213,9 +195,9 @@ export type DiscoveryResult = {
 };
 
 export type Methods = {
-    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload;
+    getInteractionPayload(id: string): ExecutionPayload | CapabilityPayload | DiscoveryPayload;
     approveInteraction(id: string, operations: Operation[], origin: LocalTxOrigin): void;
-    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult): void;
+    resolveInteraction(id: string, result: ExecutionResult | CapabilityResult | DiscoveryResult): void;
     rejectInteraction(id: string, reason: string): void;
 };
 

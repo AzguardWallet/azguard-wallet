@@ -35,7 +35,6 @@ const isLoading = ref(true)
 const defaultConfig = new Config()
 const stealthMode = ref(defaultConfig.stealthMode)
 const contractRegistry = ref(defaultConfig.contractRegistry)
-const walletConnectEnabled = ref(defaultConfig.walletConnectEnabled)
 const uploadExternalImages = ref(defaultConfig.uploadExternalImages)
 const externalLinks = ref(defaultConfig.externalLinks)
 
@@ -55,12 +54,6 @@ const settings = {
 		model: contractRegistry,
 		visible: ref(true),
 	},
-	walletConnectEnabled: {
-		title: "WalletConnect",
-		description: "Connect to dApps via WalletConnect",
-		model: walletConnectEnabled,
-		visible: ref(true),
-	},
 	uploadExternalImages: {
 		title: "Upload external images",
 		description: "Load images from external URLs",
@@ -78,7 +71,6 @@ const settings = {
 // Check if all privacy settings are disabled (for auto-enable stealth)
 const isAllDisabled = computed(() => {
 	return !contractRegistry.value &&
-		!walletConnectEnabled.value &&
 		!uploadExternalImages.value &&
 		externalLinks.value === "disabled"
 })
@@ -102,8 +94,6 @@ async function enableStealthMode() {
 
 	await configService.setValue("contractRegistry", false)
 	contractRegistry.value = false
-	await configService.setValue("walletConnectEnabled", false)
-	walletConnectEnabled.value = false
 	await configService.setValue("uploadExternalImages", false)
 	uploadExternalImages.value = false
 	await configService.setValue("externalLinks", "disabled")
@@ -121,8 +111,6 @@ async function disableStealthMode() {
 
 	await configService.setValue("contractRegistry", true)
 	contractRegistry.value = true
-	await configService.setValue("walletConnectEnabled", true)
-	walletConnectEnabled.value = true
 	await configService.setValue("uploadExternalImages", true)
 	uploadExternalImages.value = true
 	await configService.setValue("externalLinks", "enabled")
@@ -238,8 +226,8 @@ onBeforeUnmount(() => {
 
 			<Flex :class="$style.divider" />
 
-			<!-- Toggle Settings (contractRegistry, walletConnectEnabled, uploadExternalImages) -->
-			<template v-for="sk in ['contractRegistry', 'walletConnectEnabled', 'uploadExternalImages']" :key="sk">
+			<!-- Toggle Settings (contractRegistry, uploadExternalImages) -->
+			<template v-for="sk in ['contractRegistry', 'uploadExternalImages']" :key="sk">
 				<Flex
 					v-if="settings[sk].visible.value"
 					align="center"

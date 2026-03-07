@@ -1,4 +1,4 @@
-import { DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/spec";
+import { DappPermissions } from "@/wallet/services/dapp-session/spec";
 import {
     Action,
     ActionKind,
@@ -16,7 +16,6 @@ import {
     MessageHashAuthwitContent,
 } from "@/wallet/services/execution/models";
 import {
-    ConnectionParams,
     ExecutionParams,
     CaipChain,
     CaipAccount,
@@ -43,41 +42,6 @@ import {
     AztecCreateAuthWitRequest,
 } from "@/wallet/services/dapp-interaction/spec";
 import { RpcEvent /*, RpcMethod*/ } from "./types";
-
-export function parseConnectionParams(data: any): ConnectionParams {
-    if (!data) {
-        throw new Error("Invalid connection params");
-    }
-    if (!data.dappMetadata) {
-        throw new Error("Invalid dapp metadata");
-    }
-    return {
-        dappMetadata: parseDappMetadata(data.dappMetadata),
-        requiredPermissions: parseArrayProp(data, "requiredPermissions", parseDappPermissions),
-        optionalPermissions: parseOptionalArrayProp(data, "optionalPermissions", parseDappPermissions),
-    };
-}
-
-export function parseDappMetadata(data: any): DappMetadata {
-    if (data.name !== undefined && typeof data.name !== "string") {
-        throw new Error("Dapp name must be a string");
-    }
-    if (data.description !== undefined && typeof data.description !== "string") {
-        throw new Error("Dapp description must be a string");
-    }
-    if (data.logo !== undefined && typeof data.logo !== "string") {
-        throw new Error("Dapp logo must be a string");
-    }
-    if (data.url !== undefined && typeof data.url !== "string") {
-        throw new Error("Dapp url must be a string");
-    }
-    return {
-        name: parseOptionalStringProp(data, "name"),
-        description: parseOptionalStringProp(data, "description"),
-        logo: parseOptionalStringProp(data, "logo"),
-        url: parseOptionalStringProp(data, "url"),
-    };
-}
 
 export function parseDappPermissions(data: any): DappPermissions {
     return {

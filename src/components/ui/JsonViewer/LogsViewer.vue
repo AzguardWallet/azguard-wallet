@@ -73,7 +73,6 @@ const sources = [
 	"token",
 	"token-balance",
 	"transaction",
-	"wallet-connect",
 ]
 	.flatMap(x => [x, `${x}-client`])
 	.concat(["wallet", "ui"])

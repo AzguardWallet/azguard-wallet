@@ -13,8 +13,6 @@ import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import {
     DAPP_INTERACTION_SERVICE_NAME,
-    type ConnectionPayload,
-    type ConnectionResult,
     type ExecutionPayload,
     type ExecutionResult,
     type CapabilityPayload,
@@ -23,7 +21,6 @@ import {
     type DiscoveryPayload,
     type DiscoveryParams,
     type DiscoveryResult,
-    type ConnectionParams,
     type ExecutionParams,
     type CaipChain,
     type CaipAccount,
@@ -61,7 +58,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executionService = services.get(ExecutionService.name);
     }
 
-    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload> {
+    public async getInteractionPayload(id: string): Promise<ExecutionPayload | CapabilityPayload | DiscoveryPayload> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -78,7 +75,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executeAndResolve(interaction, operations, origin);
     }
 
-    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult): Promise<void> {
+    public async resolveInteraction(id: string, result: ExecutionResult | CapabilityResult | DiscoveryResult): Promise<void> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -117,11 +114,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         }
     }
 
-    public async connect(params: ConnectionParams, cancellationToken?: string): Promise<ConnectionResult> {
-        const payload: ConnectionPayload = { params };
-        return (await this.interaction("connect", payload, cancellationToken)) as ConnectionResult;
-    }
-
     public async execute(params: ExecutionParams, cancellationToken?: string): Promise<ExecutionResult> {
         await this.ensureInitialized();
         const session = await this.validateSession(params);
@@ -146,11 +138,11 @@ export class DappInteractionService extends Service<Methods, Events> implements 
 
     private async interaction(
         type: string,
-        payload: ConnectionPayload | ExecutionPayload | CapabilityPayload | DiscoveryPayload,
+        payload: ExecutionPayload | CapabilityPayload | DiscoveryPayload,
         cancellationToken?: string,
-    ): Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult> {
+    ): Promise<ExecutionResult | CapabilityResult | DiscoveryResult> {
         let interaction: DappInteraction;
-        let promise: Promise<ConnectionResult | ExecutionResult | CapabilityResult | DiscoveryResult>;
+        let promise: Promise<ExecutionResult | CapabilityResult | DiscoveryResult>;
 
         try {
             await this.lock.enter();

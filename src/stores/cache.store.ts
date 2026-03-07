@@ -4,7 +4,6 @@ import type { ExternalLinksMode } from "@/wallet/config/config"
 export type PrivacySettings = {
 	stealthMode: boolean
 	contractRegistry: boolean
-	walletConnectEnabled: boolean
 	uploadExternalImages: boolean
 	externalLinks: ExternalLinksMode
 } | null
