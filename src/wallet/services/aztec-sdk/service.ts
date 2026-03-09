@@ -344,7 +344,7 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
     }
 
     private getConnectedAppKey(appId: string, origin: string, chainId: number): string {
-        return `${appId}\0${origin}\0${chainId}`;
+        return JSON.stringify([appId, origin, chainId]);
     }
 
     private readonly onDappSessionDeleted = async (session: DappSession) => {
