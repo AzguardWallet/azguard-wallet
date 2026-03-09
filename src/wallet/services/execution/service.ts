@@ -407,7 +407,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Only pending transactions can be cancelled");
         }
 
-        const origin: TxOrigin = { type: OriginType.UI };
+        const origin: LocalTxOrigin = { type: OriginType.UI };
         const cancelTxContent = new CancelTxContent(cancellingTx);
         const cancelTxTask = this.taskService.startNewTask(cancelTxContent, undefined, origin);
 
@@ -427,10 +427,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 nonce: Fr.fromString(cancellingTx.nonce),
             };
 
-            const [txRequest, node, pxe, _, network, nonce, __, feePaymentMethod] =
+            const [txRequest, node, pxe, account, network, nonce, __, feePaymentMethod] =
                 await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, cancelTxTask);
 
-            const provedTx = await this.proveTxTask(pxe, txRequest, cancelTxTask);
+            const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], cancelTxTask);
 
             const tx = await provedTx.toTx();
             await this.sendTxTask(node, tx, cancelTxTask);
