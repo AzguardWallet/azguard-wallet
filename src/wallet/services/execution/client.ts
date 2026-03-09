@@ -1,8 +1,8 @@
 import { ServiceSpec } from "@/wallet/base";
 import { ServiceClient } from "@/wallet/base/background";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
-import { TransferType, Tx, TxOrigin } from "@/wallet/services/transaction/service";
-import { EXECUTION_SERVICE_NAME, FeeSettings, Methods, Operation, OperationResult } from "./spec";
+import { LocalTxOrigin, TransferType, Tx } from "@/wallet/services/transaction/service";
+import { EXECUTION_SERVICE_NAME, FeeSettings, Operation, OperationResult, Methods } from "./spec";
 
 export * from "./spec";
 
@@ -32,7 +32,7 @@ export class ExecutionServiceClient extends ServiceClient<Methods> implements Se
         );
     }
 
-    public executeOperations(operations: Operation[], origin: TxOrigin): Promise<OperationResult[]> {
+    public executeOperations(operations: Operation[], origin: LocalTxOrigin): Promise<OperationResult[]> {
         return this.request("executeOperations", operations, origin);
     }
 

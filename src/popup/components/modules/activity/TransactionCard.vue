@@ -3,7 +3,7 @@
 import BN from "bignumber.js"
 
 /** Services */
-import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
+import { OriginType, TxStatus, TxExecutionResult } from "@/wallet/services/transaction/client"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
@@ -47,7 +47,7 @@ const mintAmount = computed(() => {
 	const decimals = new BN(10).pow(props.tx?.origin?.type === OriginType.UI ? 8 : 0)
 	let amount = new BN(0)
 	for (const c of props.tx.calls) {
-		amount = amount.plus(new BN(c.args.at(-1) || 0))
+		amount = amount.plus(new BN(c.args?.at(-1) || 0))
 	}
 
 	return balanceFormatted(amount.dividedBy(decimals), 8).value
@@ -59,16 +59,27 @@ const icon = computed(() => {
 	return "zap"
 })
 
+const isMined = computed(() => {
+	const s = props.tx.status
+	return s === TxStatus.Proposed || s === TxStatus.Checkpointed || s === TxStatus.Proven || s === TxStatus.Finalized
+})
+const isPending = computed(() => props.tx.status === TxStatus.Pending)
+const isDropped = computed(() => props.tx.status === TxStatus.Dropped)
+const isCancelling = computed(() => props.tx.status === TxStatus.Cancelling)
+const isCancelled = computed(() => props.tx.status === TxStatus.Cancelled)
+const isReverted = computed(() => isMined.value && !!props.tx.executionResult && props.tx.executionResult !== TxExecutionResult.Success)
+const isSuccess = computed(() => isMined.value && !isReverted.value)
+
 const statusIcon = computed(() => {
-	if (props.tx.status === TxStatus.Pending || props.tx.status === TxStatus.Cancelling) return "clock-circle"
-	if (props.tx.status === TxStatus.Success) return "check-circle"
-	return "close-circle"
+	if (isReverted.value || isDropped.value || isCancelled.value) return "close-circle"
+	if (isSuccess.value) return "check-circle"
+	return "clock-circle"
 })
 
 const statusColor = computed(() => {
-	if (props.tx.status === TxStatus.Pending || props.tx.status === TxStatus.Cancelling || props.tx.status === TxStatus.Cancelled) return "gray"
-	if (props.tx.status === TxStatus.Success) return "green"
-	return "red"
+	if (isReverted.value || isDropped.value) return "red"
+	if (isSuccess.value) return "green"
+	return "gray"
 })
 
 const title = computed(() => {

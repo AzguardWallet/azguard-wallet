@@ -1,18 +1,17 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
+import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
-import type { AuthWitness } from "@aztec/stdlib/auth-witness";
+import { ContractArtifactSchema } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
-    ContractClassMetadata,
-    ContractMetadata,
     CompleteAddress,
     type ContractInstanceWithAddress,
     type PartialAddress,
     ContractInstanceWithAddressSchema,
 } from "@aztec/stdlib/contract";
-import { type NotesFilter, NoteDao } from "@aztec/stdlib/note";
+import { NoteDao } from "@aztec/stdlib/note";
+import type { NotesFilter } from "./spec";
 import {
-    SimulationOverrides,
     type TxExecutionRequest,
     TxProfileResult,
     TxProvingResult,
@@ -28,8 +27,6 @@ import { Network } from "@/wallet/services/network/service";
 import { ServiceClient } from "@/wallet/base/offscreen";
 import { ensureOffscreenRunning } from "@/wallet/utils/offscreen";
 import {
-    ContractClassMetadataSchema,
-    ContractMetadataSchema,
     NoteDaoSchema,
     PackedPrivateEventSchema,
 } from "@/wallet/utils/schemas";
@@ -57,20 +54,13 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         return await ContractInstanceWithAddressSchema.optional().parseAsync(result);
     }
 
-    public async getContractClassMetadata(
+    public async getContractArtifact(
         network: Network,
         id: Fr,
-        includeArtifact?: boolean,
-    ): Promise<ContractClassMetadata> {
+    ): Promise<ContractArtifact | undefined> {
         await ensureOffscreenRunning();
-        const result = await this.request("getContractClassMetadata", network, id, includeArtifact);
-        return await ContractClassMetadataSchema.parseAsync(result);
-    }
-
-    public async getContractMetadata(network: Network, address: AztecAddress): Promise<ContractMetadata> {
-        await ensureOffscreenRunning();
-        const result = await this.request("getContractMetadata", network, address);
-        return await ContractMetadataSchema.parseAsync(result);
+        const result = await this.request("getContractArtifact", network, id);
+        return await ContractArtifactSchema.optional().parseAsync(result);
     }
 
     public async registerAccount(
@@ -137,65 +127,49 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
     public async getNotes(network: Network, filter: NotesFilter): Promise<NoteDao[]> {
         await ensureOffscreenRunning();
         const result = await this.request("getNotes", network, filter);
-        return await z.array(NoteDaoSchema).parseAsync(
-            result.map(x => ({
-                ...x,
-                // crutch for zod
-                toBuffer: () => {},
-                equals: () => {},
-                getSize: () => {},
-            })),
-        );
+        // Schema rehydrates data fields (Fr, AztecAddress, etc.) after JSON round-trip from offscreen,
+        // but produces plain objects, not NoteDao class instances. Cast is safe because consumers
+        // (NoteService) only access data properties, never class methods like toBuffer/equals.
+        return await z.array(NoteDaoSchema).parseAsync(result) as unknown as NoteDao[];
     }
 
-    public async proveTx(network: Network, txRequest: TxExecutionRequest): Promise<TxProvingResult> {
+    public async proveTx(
+        network: Network,
+        txRequest: TxExecutionRequest,
+        scopes: AztecAddress[],
+    ): Promise<TxProvingResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("proveTx", network, txRequest);
+        const result = await this.request("proveTx", network, txRequest, scopes);
         return await TxProvingResult.schema.parseAsync(result);
     }
 
     public async profileTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        profileMode: "full" | "execution-steps" | "gates",
-        skipProofGeneration?: boolean,
+        opts: ProfileTxOpts,
     ): Promise<TxProfileResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("profileTx", network, txRequest, profileMode, skipProofGeneration);
+        const result = await this.request("profileTx", network, txRequest, opts);
         return await TxProfileResult.schema.parseAsync(result);
     }
 
     public async simulateTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        simulatePublic: boolean,
-        skipTxValidation?: boolean,
-        skipFeeEnforcement?: boolean,
-        overrides?: SimulationOverrides,
-        scopes?: AztecAddress[],
+        opts: SimulateTxOpts,
     ): Promise<TxSimulationResult> {
         await ensureOffscreenRunning();
-        const result = await this.request(
-            "simulateTx",
-            network,
-            txRequest,
-            simulatePublic,
-            skipTxValidation,
-            skipFeeEnforcement,
-            overrides,
-            scopes,
-        );
+        const result = await this.request("simulateTx", network, txRequest, opts);
         return await TxSimulationResult.schema.parseAsync(result);
     }
 
     public async simulateUtility(
         network: Network,
         call: FunctionCall,
-        authwits?: AuthWitness[],
-        scopes?: AztecAddress[],
+        opts: SimulateUtilityOpts,
     ): Promise<UtilitySimulationResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("simulateUtility", network, call, authwits, scopes);
+        const result = await this.request("simulateUtility", network, call, opts);
         return await UtilitySimulationResult.schema.parseAsync(result);
     }
 

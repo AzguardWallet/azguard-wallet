@@ -113,16 +113,13 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
                 const contracts = await this.getContracts(n.id);
                 const contractsFull: BackupContract[] = []
                 for (const c of contracts) {
-                    const contractMetadata = await this.pxeService.getContractMetadata(n, AztecAddress.fromString(c));
-                    if (!contractMetadata.contractInstance) continue;
+                    const instance = await this.pxeService.getContractInstance(n, AztecAddress.fromString(c));
+                    if (!instance) continue;
 
-                    const instance = contractMetadata.contractInstance;
                     if (!instance.currentContractClassId) continue;
 
-                    const classMetadata = await this.pxeService.getContractClassMetadata(n, instance.currentContractClassId, true);
-                    if (!classMetadata.artifact) continue;
-
-                    const artifact = classMetadata.artifact;
+                    const artifact = await this.pxeService.getContractArtifact(n, instance.currentContractClassId);
+                    if (!artifact) continue;
 
                     contractsFull.push({
                         address: c,

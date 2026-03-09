@@ -14,7 +14,7 @@ import { TokenService, Token, TokenInfo } from "@/wallet/services/token/service"
 import { BalanceOfPrivateFn, BalanceOfPublicFn } from "@/wallet/services/token/functions";
 import { ExecutionService, CallAction, EncodedCallAction } from "@/wallet/services/execution/service";
 import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/service";
-import { OriginType, TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
+import { isLocalTx, OriginType, TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
 import type { ViewFn } from "@/wallet/utils/fn";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { TOKEN_BALANCE_SERVICE_NAME, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec";
@@ -187,7 +187,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
 
     private readonly onTransactionUpdated = async (tx: Tx) => {
         if (![TxStatus.Pending, TxStatus.Cancelling, TxStatus.Cancelled].includes(tx.status)) {
-            if (tx.origin?.type === OriginType.UI) {
+            if (tx.origin.type === OriginType.UI && isLocalTx(tx)) {
                 const addresses = new Set<string>()
                 const contracts = new Set<string>()
                 const tokenIds = new Set<number>()
@@ -216,7 +216,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                         this.addBalanceToRefreshQueue(tb);
                     }
                 }
-                
+
                 return;
             }
 

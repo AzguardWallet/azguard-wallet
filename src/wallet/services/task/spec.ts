@@ -35,6 +35,7 @@ export enum ContentKind {
     Transfer,
     RevokeAuthwits,
     CancelTx,
+    TransactionSync,
 }
 
 export interface ITaskContent {
@@ -108,6 +109,14 @@ export class CancelTxContent implements ITaskContent {
     public readonly label = "Cancel transaction";
     constructor(
         public readonly cancellingTx: Tx,
+    ) {}
+}
+
+export class TransactionSyncContent implements ITaskContent {
+    public readonly kind = ContentKind.TransactionSync;
+    public readonly label = "Sync transaction history";
+    constructor(
+        public readonly account: string,
     ) {}
 }
 

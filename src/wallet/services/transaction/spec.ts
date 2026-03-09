@@ -5,6 +5,7 @@ export const TRANSACTION_SERVICE_NAME = "transaction";
 export enum OriginType {
     UI,
     DAPP,
+    Synced,
 }
 
 export type TxOrigin = {
@@ -14,18 +15,33 @@ export type TxOrigin = {
     name?: string;
 };
 
+/** Origin for local transactions (UI/DApp). */
+export type LocalTxOrigin = {
+    type: OriginType.UI | OriginType.DAPP;
+    name?: string;
+};
+
+/** Block inclusion/finalization status. */
 export enum TxStatus {
-    Created,
-    Dropped,
     Pending,
-    Success,
-    AppLogicReverted,
-    TeardownReverted,
-    BothReverted,
+    Dropped,
+    Proposed,
+    Checkpointed,
+    Proven,
+    Finalized,
     Cancelling,
     Cancelled,
 }
 
+/** Execution result — only meaningful when tx is in a block. */
+export enum TxExecutionResult {
+    Success,
+    AppLogicReverted,
+    TeardownReverted,
+    BothReverted,
+}
+
+/** Full transaction call from UI/DApp interaction. */
 export type TxCall = {
     /** Contract address. */
     contract: string;
@@ -35,6 +51,27 @@ export type TxCall = {
     args: any[];
     /** Additional information telling whether the call produces token transfers. */
     transfers?: TxTransfer[];
+};
+
+/**
+ * Transaction call reconstructed from on-chain events.
+ * Contains only args hash (full args are not recoverable).
+ */
+export type SyncedTxCall = {
+    /** Contract address. */
+    contract: string;
+    /** Function name (may not be resolved if contract artifact unknown). */
+    method?: string;
+    /** Function selector. */
+    selector: string;
+    /** Arguments hash (args are not recoverable from private events). */
+    argsHash: string;
+    /** Call index within the batch transaction (0-3). Used together with chunkNonce for deduplication. */
+    callIndex: number;
+    /** Chunk nonce, only set when call is part of a chunked batch (differs from Tx.nonce). */
+    chunkNonce?: string;
+    /** True if this is an internal batch call (execute call to account contract itself). */
+    isBatch?: boolean;
 };
 
 export enum TransferType {
@@ -70,18 +107,26 @@ export type TxBlock = {
     number: number;
 };
 
-export type Tx = {
-    /** Origin. */
-    origin: TxOrigin;
+export type TxIndexerCursor = {
+    /** Account address (used as EntityStorage key). */
+    account: string;
+    /** Chain ID. */
+    chainId: number;
+    /** Next block to sync from (inclusive). Starts at 1. */
+    head: number;
+    /** Timestamp (ms) of last successful sync completion. null if never completed. */
+    updatedAt: number | null;
+};
+
+/** Common fields for all transaction types. */
+type TxBase = {
     /** Chain id. */
     chainId: number;
     /** Sender address. */
     account: string;
-    /** App calls. */
-    calls: TxCall[];
     /** Nonce. */
     nonce: string;
-    /** Fee payment method */
+    /** Fee payment method. */
     feePaymentMethod: AzguardFeePaymentMethod;
     /** Transaction hash. */
     hash: string;
@@ -91,6 +136,8 @@ export type Tx = {
     updatedAt: number;
     /** Transaction status. */
     status: TxStatus;
+    /** Execution result (success/revert info). */
+    executionResult?: TxExecutionResult;
     /** Block in which the transaction is included. */
     block?: TxBlock;
     /** Fee paid. */
@@ -98,6 +145,31 @@ export type Tx = {
     /** Error message, if some. */
     error?: string;
 };
+
+/** Transaction from UI or DApp interaction (has full call details). */
+export type LocalTx = TxBase & {
+    origin: LocalTxOrigin;
+    calls: TxCall[];
+};
+
+/** Transaction reconstructed from on-chain events. */
+export type SyncedTx = TxBase & {
+    origin: { type: OriginType.Synced; name?: string };
+    calls: SyncedTxCall[];
+};
+
+/** Union of all transaction types. */
+export type Tx = LocalTx | SyncedTx;
+
+/** Type guard: check if transaction is from local origin (UI/DApp). */
+export function isLocalTx(tx: Tx): tx is LocalTx {
+    return tx.origin.type === OriginType.UI || tx.origin.type === OriginType.DAPP;
+}
+
+/** Type guard: check if transaction is synced from chain. */
+export function isSyncedTx(tx: Tx): tx is SyncedTx {
+    return tx.origin.type === OriginType.Synced;
+}
 
 export type Methods = {
     /**
@@ -111,6 +183,17 @@ export type Methods = {
      * @param hash Transaction hash.
      */
     getTransaction(hash: string): Tx;
+
+    /**
+     * Synchronizes transaction history for a persistent account.
+     * Creates a Task and runs sync asynchronously.
+     * @param chainId Chain ID of the network.
+     * @param address Account address to sync.
+     */
+    syncTransactionHistory(chainId: number, address: string): void;
+
+    /** Returns the sync cursor for a persistent account, or null if none exists. */
+    getTxSyncCursor(address: string): TxIndexerCursor | null;
 };
 
 export type Events = {

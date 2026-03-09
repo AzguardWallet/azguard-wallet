@@ -139,7 +139,6 @@ const init = async () => {
 				case "aztec_getContractClassMetadata":
 				case "aztec_getContractMetadata":
 				case "aztec_getChainInfo":
-				case "aztec_getTxReceipt":
 				case "aztec_registerSender":
 				case "aztec_getAddressBook":
 				case "aztec_registerContract":
@@ -149,6 +148,19 @@ const init = async () => {
 						...op,
 						network,
 						networkId: network.id,
+					})
+					break
+				}
+				case "aztec_getAccounts": {
+					const network = await getNetwork(op.chain)
+					const sessionAccounts = payload.value!.session.accounts
+						.filter(x => x.startsWith(op.chain))
+						.map(x => x.split(":").at(-1)!)
+					_operations.push({
+						...op,
+						network,
+						networkId: network.id,
+						accounts: sessionAccounts,
 					})
 					break
 				}
@@ -611,12 +623,6 @@ const showJson = () => {
 								<AddressDisplay :address="op.eventFilter.contractAddress.toString()" />
 							</Flex>
 						</template>
-						<template v-else-if="op.kind === 'aztec_getTxReceipt'">
-							<Flex :class="$style.prop">
-								<Text size="12" color="secondary">Tx hash:</Text>
-								<Text size="12" color="primary">{{ trimAddress(op.txHash.toString()) }}</Text>
-							</Flex>
-						</template>
 						<template v-else-if="op.kind === 'aztec_registerSender'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Sender address:</Text>
@@ -667,6 +673,28 @@ const showJson = () => {
 										<AddressDisplay :address="call.to" />
 									</Text>
 								</Flex>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getChainInfo'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Retrieves chain ID and protocol version</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_getAddressBook'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Retrieves registered addresses</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_registerContract'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.instance.address.toString()" />
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_createAuthWit'">
+							<Flex v-if="op.messageHashOrIntent?.caller" :class="$style.prop">
+								<Text size="12" color="secondary">Authorized caller:</Text>
+								<AddressDisplay :address="op.messageHashOrIntent.caller.toString()" />
 							</Flex>
 						</template>
 					</Flex>

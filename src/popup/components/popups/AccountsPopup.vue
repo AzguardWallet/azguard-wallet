@@ -6,6 +6,8 @@ import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
+import { AccountType } from "@/wallet/services/account/spec"
+
 /** Composables */
 import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()
@@ -76,6 +78,10 @@ const handleManageAccounts = () => {
 						:iconFillColor="account.address === acc.address ? 'blue' : 'tertiary'"
 						iconBgColor="transparent"
 					>
+						<template v-if="acc.type === AccountType.Azguard_v0_persistent" #titleSuffix>
+							<PersistentAccountBadge />
+						</template>
+
 						<template #right>
 							<Flex align="center" gap="8">
 								<Tooltip position="end" delay="350">
