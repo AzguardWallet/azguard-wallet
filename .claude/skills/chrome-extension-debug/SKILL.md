@@ -1,6 +1,6 @@
 ---
 name: chrome-extension-debug
-description: Debug and test the Azguard Chrome extension using Chrome DevTools MCP. Use when Chrome MCP tools are available and need to test popup UI, debug user flows, monitor network/console, or automate repetitive browser tasks.
+description: Debug and test the Azguard Chrome extension using Chrome DevTools MCP. Use when user says "walk through in browser", "open in browser", "try in browser", "check in chrome", "test in browser", "click through", "show me the flow", or when Chrome MCP tools are available and need to test popup UI, debug user flows, explore UI for e2e test writing, monitor network/console, or automate repetitive browser tasks.
 ---
 
 # Chrome Extension Debugging

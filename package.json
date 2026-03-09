@@ -16,7 +16,8 @@
 		"preview": "vite preview",
 		"typecheck": "vue-tsc --noEmit",
 		"test": "vitest",
-		"test:e2e": "vitest run --config vitest.e2e.config.ts"
+		"test:e2e": "vitest run --config vitest.e2e.config.ts",
+		"test:e2e:run": "vitest run --config vitest.e2e.all.config.ts"
 	},
 	"dependencies": {
 		"@aztec/aztec.js": "4.0.0-devnet.2-patch.2",
