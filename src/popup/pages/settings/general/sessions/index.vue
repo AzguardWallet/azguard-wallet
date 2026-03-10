@@ -108,62 +108,53 @@ onBeforeMount(async () => {
 
 			<PageHeader title="Sessions" icon="plug-circle" iconColor="sand" />
 
-			<Flex direction="column" gap="16" :class="$style.section_wrapper">
-				<!-- WalletConnect Disabled State -->
-				<Flex v-if="!isLoading && !walletConnectEnabled" direction="column" align="center" justify="center" :class="$style.disabled_section">
-					<Flex direction="column" align="center" gap="12" :class="$style.disabled_banner">
-						<Icon name="plug-circle" size="24" color="tertiary" />
-
-						<Flex direction="column" align="center" gap="6">
-							<Text size="13" weight="600" color="secondary" align="center">
-								WalletConnect is disabled
-							</Text>
-							<Text size="12" weight="500" height="140" color="tertiary" align="center">
-								Enable it in Settings → External Services to connect dApps
-							</Text>
-						</Flex>
-
-						<Button @click="router.push('/popup/settings/external-services')" type="secondary" size="small">
-							Go to Settings
-						</Button>
-					</Flex>
+			<Flex v-if="!isLoading" direction="column" gap="16" :class="$style.section_wrapper">
+				<!-- WalletConnect Disabled Banner (compact, above sessions) -->
+				<Flex v-if="!walletConnectEnabled" align="center" gap="8" :class="$style.disabled_info_banner">
+					<Icon name="plug-circle" size="16" color="tertiary" />
+					<Text size="12" weight="500" color="tertiary" style="flex: 1">
+						WalletConnect is disabled
+					</Text>
+					<Button @click="router.push('/popup/settings/external-services')" type="secondary" size="small">
+						Enable
+					</Button>
 				</Flex>
 
-				<!-- Normal Content (when WalletConnect enabled) -->
-				<template v-else-if="!isLoading">
-					<Flex align="center" justify="end" gap="10" wide>
-						<Tooltip position="end">
-							<Icon
-								@click="handleOpenConnectByURIPopup"
-								name="plug-circle"
-								size="20"
-								color="tertiary"
-								:class="$style.connect_by_uri"
-							/>
+				<!-- Action bar (connect buttons) — hidden when WC disabled -->
+				<Flex v-if="walletConnectEnabled" align="center" justify="end" gap="10" wide>
+					<Tooltip position="end">
+						<Icon
+							@click="handleOpenConnectByURIPopup"
+							name="plug-circle"
+							size="20"
+							color="tertiary"
+							:class="$style.connect_by_uri"
+						/>
 
-							<template #content>
-								<Text size="12" color="secondary">Connect new dApp by URI</Text>
-							</template>
-						</Tooltip>
+						<template #content>
+							<Text size="12" color="secondary">Connect new dApp by URI</Text>
+						</template>
+					</Tooltip>
 
-						<Tooltip v-if="dappSessions.length" position="end">
-							<Icon
-								@click="handleDropAllSessions"
-								name="log-out"
-								size="16"
-								color="tertiary"
-								:class="$style.disconnect_all"
-							>
-								Disconnect All
-							</Icon>
+					<Tooltip v-if="dappSessions.length" position="end">
+						<Icon
+							@click="handleDropAllSessions"
+							name="log-out"
+							size="16"
+							color="tertiary"
+							:class="$style.disconnect_all"
+						>
+							Disconnect All
+						</Icon>
 
-							<template #content>
-								<Text size="12" color="secondary">Disconnect all dApps</Text>
-							</template>
-						</Tooltip>
-					</Flex>
+						<template #content>
+							<Text size="12" color="secondary">Disconnect all dApps</Text>
+						</template>
+					</Tooltip>
+				</Flex>
 
-					<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
+				<!-- Sessions list -->
+				<Flex v-if="dappSessions.length" direction="column" gap="6" :class="$style.sessions_section">
 					<Flex
 						v-for="ds in dappSessions"
 						@click="router.push(`/popup/settings/general/sessions/session/${ds.id}`)"
@@ -191,30 +182,30 @@ onBeforeMount(async () => {
 						</Flex>
 					</Flex>
 
-                    <Button @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plug-circle" :style="{marginTop: '8px'}">
-                        Connect new Dapp
-                    </Button>
+					<Button v-if="walletConnectEnabled" @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plug-circle" :style="{marginTop: '8px'}">
+						Connect new Dapp
+					</Button>
 				</Flex>
 
-                <Flex v-else direction="column" align="center" justify="between" :class="$style.empty_section">
-                    <Flex direction="column" align="center" gap="12" :class="$style.empty_banner">
-                        <Icon name="plug-circle" size="20" color="tertiary" />
+				<!-- Empty state (no sessions) -->
+				<Flex v-else direction="column" align="center" justify="between" :class="$style.empty_section">
+					<Flex direction="column" align="center" gap="12" :class="$style.empty_banner">
+						<Icon name="plug-circle" size="20" color="tertiary" />
 
-                        <Flex direction="column" align="center" gap="6">
-                            <Text size="13" weight="600" color="secondary" align="center">
-                                There are no active sessions
-                            </Text>
-                            <Text size="12" weight="500" height="140" color="tertiary" align="center">
-                                You can connect dApp directly by URI
-                            </Text>
-                        </Flex>
-                    </Flex>
+						<Flex direction="column" align="center" gap="6">
+							<Text size="13" weight="600" color="secondary" align="center">
+								There are no active sessions
+							</Text>
+							<Text size="12" weight="500" height="140" color="tertiary" align="center">
+								You can connect dApp directly by URI
+							</Text>
+						</Flex>
+					</Flex>
 
-                    <Button @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plug-circle">
-                        Connect new Dapp
-                    </Button>
-                </Flex>
-				</template>
+					<Button v-if="walletConnectEnabled" @click="handleOpenConnectByURIPopup" wide type="secondary" size="medium" leftIcon="plug-circle">
+						Connect new Dapp
+					</Button>
+				</Flex>
 			</Flex>
 		</Flex>
 
@@ -328,15 +319,9 @@ onBeforeMount(async () => {
 	margin: 40px auto 0 auto;
 }
 
-.disabled_section {
-	flex: 1;
-
-	margin-bottom: 50px;
-}
-
-.disabled_banner {
-	max-width: 250px;
-
-	margin: 60px auto 0 auto;
+.disabled_info_banner {
+	padding: 10px 12px;
+	border-radius: 10px;
+	background: var(--gray-5);
 }
 </style>
