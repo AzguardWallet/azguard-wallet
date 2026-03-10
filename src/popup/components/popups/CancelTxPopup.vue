@@ -5,7 +5,7 @@ import { DateTime } from "luxon"
 /** Services */
 import { ExecutionServiceClient } from "@/wallet/services/execution/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
-import { TxStatus } from "@/wallet/services/transaction/spec"
+import { TxExecutionResult, TxStatus } from "@/wallet/services/transaction/spec"
 
 /** Components */
 import FeeSettingsCard from "@/popup/components/modules/send/FeeSettingsCard.vue"
@@ -61,15 +61,16 @@ function onTransactionUpdated(tx) {
 	}
 }
 
+const isCancellingTxSuccess = computed(() => cancellingTx.value.executionResult === TxExecutionResult.Success)
 const statusColor = computed(() => {
 	if ([TxStatus.Pending, TxStatus.Cancelling, TxStatus.Cancelled].includes(cancellingTx.value?.status)) return "gray"
-	if (cancellingTx.value?.status === TxStatus.Success) return "green"
+	if (isCancellingTxSuccess.value) return "green"
 	return "red"
 })
 const statusText = computed(() => {
 	if (cancellingTx.value?.status === TxStatus.Pending) return "Pending"
 	if (cancellingTx.value?.status === TxStatus.Cancelling) return "Cancelling"
-	if (cancellingTx.value?.status === TxStatus.Success) return "Success"
+	if (isCancellingTxSuccess.value) return "Success"
 	return "Failed"
 })
 

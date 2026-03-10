@@ -63,9 +63,7 @@ const isMined = computed(() => {
 	const s = props.tx.status
 	return s === TxStatus.Proposed || s === TxStatus.Checkpointed || s === TxStatus.Proven || s === TxStatus.Finalized
 })
-const isPending = computed(() => props.tx.status === TxStatus.Pending)
 const isDropped = computed(() => props.tx.status === TxStatus.Dropped)
-const isCancelling = computed(() => props.tx.status === TxStatus.Cancelling)
 const isCancelled = computed(() => props.tx.status === TxStatus.Cancelled)
 const isReverted = computed(() => isMined.value && !!props.tx.executionResult && props.tx.executionResult !== TxExecutionResult.Success)
 const isSuccess = computed(() => isMined.value && !isReverted.value)

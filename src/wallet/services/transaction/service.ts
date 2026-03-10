@@ -546,7 +546,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             
             return;
         } else {
-            const successful = finalized.find(r => r.receipt.status === AztecTxStatus.SUCCESS);
+            const successful = finalized.find(r => r.receipt.executionResult === AztecTxExecutionResult.SUCCESS);
             if (successful) {
                 for (const r of receipts) {
                     if (r.receipt.status === AztecTxStatus.PENDING) {
@@ -570,7 +570,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
     private async applyReceipt(tx: Tx, receipt: TxReceipt) {
         const status = this.getTxStatus(receipt.status);
-        // const executionResult = this.getTxExecutionResult(receipt.executionResult);
+        const executionResult = this.getTxExecutionResult(receipt.executionResult);
         if (status == TxStatus.Pending) {
             this.logDebug(`Tx ${tx.hash.slice(0, 8)} still ${TxStatus[tx.status]}`);
             return;
@@ -578,7 +578,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
         tx.updatedAt = Date.now();
         tx.status = status;
-        // tx.executionResult = executionResult;
+        tx.executionResult = executionResult;
         tx.block =
             receipt.blockHash && receipt.blockNumber
                 ? { hash: receipt.blockHash.toString(), number: receipt.blockNumber }

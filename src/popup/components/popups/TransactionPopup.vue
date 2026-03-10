@@ -6,8 +6,7 @@ import { DateTime } from "luxon"
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
-import { OriginType, TxStatus } from "@/wallet/services/transaction/client"
-import { AzguardFeePaymentMethod } from "@/wallet/services/account/contracts"
+import { OriginType, TxExecutionResult, TxStatus } from "@/wallet/services/transaction/client"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
@@ -43,20 +42,21 @@ const configService = new ConfigServiceClient()
 const isDebugMode = ref(false)
 
 const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
+const isSuccess = computed(() => tx.value.executionResult === TxExecutionResult.Success)
 const statusIcon = computed(() => {
 	if (tx.value.status === TxStatus.Pending || tx.value.status === TxStatus.Cancelling) return "clock-circle"
 	return "zap-circle"
 })
 const statusColor = computed(() => {
 	if ([TxStatus.Pending, TxStatus.Cancelling, TxStatus.Cancelled].includes(tx.value.status)) return "gray"
-	if (tx.value.status === TxStatus.Success) return "green"
+	if (isSuccess.value) return "green"
 	return "red"
 })
 const statusText = computed(() => {
 	if (tx.value.status === TxStatus.Pending) return "Pending"
 	if (tx.value.status === TxStatus.Cancelling) return "Cancelling"
 	if (tx.value.status === TxStatus.Cancelled) return "Cancelled"
-	if (tx.value.status === TxStatus.Success) return "Success"
+	if (isSuccess.value) return "Success"
 	return "Failed"
 })
 const txTime = computed(() => {
