@@ -1,3 +1,4 @@
+import type { AppCapabilities, GrantedCapability } from "@aztec/aztec.js/wallet";
 import type { DappSession, DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/spec";
 import type {
     GetCompleteAddressOperation,
@@ -28,8 +29,8 @@ export const DAPP_INTERACTION_SERVICE_NAME = "dapp-interaction";
 
 export type DappInteraction = {
     id: string;
-    payload: ConnectionPayload | ExecutionPayload;
-    resolve: (result: ConnectionResult | ExecutionResult) => void;
+    payload: ConnectionPayload | ExecutionPayload | CapabilitiesPayload;
+    resolve: (result: ConnectionResult | ExecutionResult | CapabilitiesResult) => void;
     reject: (reason: string) => void;
     cancellationToken: string;
 };
@@ -48,9 +49,12 @@ export type ConnectionParams = {
     dappMetadata: DappMetadata;
     requiredPermissions: DappPermissions[];
     optionalPermissions?: DappPermissions[];
+    source?: "rpc" | "walletconnect" | "sdk";
 };
 
-export type ConnectionResult = DappSessionInfo;
+export type ConnectionResult = DappSessionInfo & {
+    remember?: boolean;
+};
 
 export type ExecutionPayload = {
     params: ExecutionParams;
@@ -182,11 +186,29 @@ export type AztecCreateAuthWitRequest = Omit<AztecCreateAuthWitOperation, Accoun
     account: CaipAccount;
 };
 
+export type CapabilitiesParams = {
+    sessionId: string;
+    manifest: AppCapabilities;
+    dappMetadata: DappMetadata;
+    chainId: number;
+    verificationHash?: string;
+};
+
+export type CapabilitiesPayload = {
+    params: CapabilitiesParams;
+};
+
+export type CapabilitiesResult = {
+    granted: GrantedCapability[];
+    permissions: DappPermissions[];
+    accounts: string[];
+};
+
 export type ExecutionResult = OperationResult[];
 
 export type Methods = {
-    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload;
-    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult): void;
+    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload | CapabilitiesPayload;
+    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilitiesResult): void;
     rejectInteraction(id: string, reason: string): void;
 };
 

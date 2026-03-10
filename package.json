@@ -27,6 +27,7 @@
 		"@aztec/protocol-contracts": "4.0.0-devnet.2-patch.2",
 		"@aztec/pxe": "4.0.0-devnet.2-patch.2",
 		"@aztec/stdlib": "4.0.0-devnet.2-patch.2",
+		"@aztec/wallet-sdk": "4.0.0-devnet.2-patch.2",
 		"@codemirror/lang-json": "^6.0.2",
 		"@reown/walletkit": "^1.2.10",
 		"@replit/codemirror-indentation-markers": "^6.5.3",

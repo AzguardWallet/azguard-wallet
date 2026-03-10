@@ -943,6 +943,18 @@
     tslib "^2.4.0"
     zod "^3.23.8"
 
+"@aztec/wallet-sdk@4.0.0-devnet.2-patch.2":
+  version "4.0.0-devnet.2-patch.2"
+  resolved "https://registry.yarnpkg.com/@aztec/wallet-sdk/-/wallet-sdk-4.0.0-devnet.2-patch.2.tgz#34aa30947a89d51e6324084ee10f682dc32734b4"
+  integrity sha512-hm0cO4r535ZqmPtfD+DM2N0XEPiWhyDChqOoKDbuNB5rEowX6+iOuJ9IhyPrb5kYfRYIaUrpqnWO5n5WfNGRHA==
+  dependencies:
+    "@aztec/aztec.js" "4.0.0-devnet.2-patch.2"
+    "@aztec/constants" "4.0.0-devnet.2-patch.2"
+    "@aztec/entrypoints" "4.0.0-devnet.2-patch.2"
+    "@aztec/foundation" "4.0.0-devnet.2-patch.2"
+    "@aztec/pxe" "4.0.0-devnet.2-patch.2"
+    "@aztec/stdlib" "4.0.0-devnet.2-patch.2"
+
 "@aztec/world-state@4.0.0-devnet.2-patch.2":
   version "4.0.0-devnet.2-patch.2"
   resolved "https://registry.yarnpkg.com/@aztec/world-state/-/world-state-4.0.0-devnet.2-patch.2.tgz#da0f485ac62eb3831f46ad0a9cec92deb33317ac"

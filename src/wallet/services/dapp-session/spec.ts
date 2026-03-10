@@ -1,3 +1,5 @@
+import type { SerializedCapability } from "@/wallet/services/dapp-interaction/scope-enforcement";
+
 export const DAPP_SESSION_SERVICE_NAME = "dapp-session";
 
 export type DappMetadata = {
@@ -21,6 +23,8 @@ export type DappSession = {
     accounts: string[];
     confirmationLevel: AccessLevel;
     expiry: number;
+    /** Serialized GrantedCapability[] from SDK requestCapabilities. Only set for SDK sessions. */
+    capabilities?: SerializedCapability[];
 };
 
 export enum AccessLevel {
@@ -46,6 +50,7 @@ export type Methods = {
         permissions: DappPermissions[],
         accounts: string[],
         confirmationLevel: AccessLevel,
+        capabilities?: SerializedCapability[],
     ): DappSession;
     deleteDappSession(sessionId: string): DappSession;
 };

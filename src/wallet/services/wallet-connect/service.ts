@@ -219,6 +219,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
                 dappMetadata,
                 requiredPermissions,
                 optionalPermissions,
+                source: "walletconnect",
             });
             dappSession = await this.dappInteractions.connect(params, payload.params.id.toString());
         } catch (error) {

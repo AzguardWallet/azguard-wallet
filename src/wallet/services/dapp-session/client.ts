@@ -11,6 +11,7 @@ import {
     Events,
     Methods,
 } from "./spec";
+import type { SerializedCapability } from "@/wallet/services/dapp-interaction/scope-enforcement";
 
 export * from "./spec";
 
@@ -45,8 +46,9 @@ export class DappSessionServiceClient extends ServiceClient<Methods, Events> imp
         permissions: DappPermissions[],
         accounts: string[],
         confirmationLevel: AccessLevel,
+        capabilities?: SerializedCapability[],
     ): Promise<DappSession> {
-        return this.request("updateDappSession", sessionId, permissions, accounts, confirmationLevel);
+        return this.request("updateDappSession", sessionId, permissions, accounts, confirmationLevel, capabilities);
     }
 
     public deleteDappSession(sessionId: string): Promise<DappSession> {
