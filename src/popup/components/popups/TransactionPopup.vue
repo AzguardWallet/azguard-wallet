@@ -7,6 +7,7 @@ import { DateTime } from "luxon"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { OriginType, TxExecutionResult, TxStatus } from "@/wallet/services/transaction/client"
+import { AzguardFeePaymentMethod } from "@/wallet/services/account/contracts"
 
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
@@ -92,6 +93,26 @@ const mintAmount = computed(() => {
 
 	return balanceFormatted(amount.dividedBy(decimals), 8).value
 })
+
+const formatTimestamp = (timestamp) => {
+	if (!timestamp) return "N/A"
+	return DateTime.fromMillis(timestamp).toFormat("yyyy-MM-dd HH:mm:ss")
+}
+
+const getFeePaymentMethodName = (method) => {
+	switch (method) {
+		case AzguardFeePaymentMethod.External: return "External (FPC)"
+		case AzguardFeePaymentMethod.FeeJuice: return "FeeJuice"
+		case AzguardFeePaymentMethod.FeeJuiceWithClaim: return "FeeJuice + Claim"
+		default: return `Unknown (${method})`
+	}
+}
+
+const formatFee = (fee) => {
+	if (!fee) return "N/A"
+	const feeBN = new BN(fee)
+	return feeBN.dividedBy(new BN(10).pow(9)).toFixed(2) + " Gwei"
+}
 
 const isCopied = ref(false)
 const handleCopy = (target) => {

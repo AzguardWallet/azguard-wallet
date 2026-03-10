@@ -238,10 +238,9 @@ const executionService = new ExecutionServiceClient()
 const handleSend = async () => {
 	if (!isAllowedToSend.value) return
 
-	const amountToSend = new BN(amountTerm.value?.trim().replace(",", "")).times(10 ** activeToken.value.decimals)
+	const amountToSend = new BN(purgeNumber(amountTerm.value)).times(10 ** activeToken.value.decimals)
 
 	let type
-
 	if (selectedSendType.value === "private" && selectedReceiverType.value === "private") {
 		type = TransferType.Private
 	}
