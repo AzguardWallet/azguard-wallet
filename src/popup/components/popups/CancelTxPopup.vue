@@ -61,7 +61,7 @@ function onTransactionUpdated(tx) {
 	}
 }
 
-const isCancellingTxSuccess = computed(() => cancellingTx.value.executionResult === TxExecutionResult.Success)
+const isCancellingTxSuccess = computed(() => cancellingTx.value?.executionResult === TxExecutionResult.Success)
 const statusColor = computed(() => {
 	if ([TxStatus.Pending, TxStatus.Cancelling, TxStatus.Cancelled].includes(cancellingTx.value?.status)) return "gray"
 	if (isCancellingTxSuccess.value) return "green"
