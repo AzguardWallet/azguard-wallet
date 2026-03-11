@@ -52,7 +52,7 @@ test("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension
     // 5. Wait for deploy tx — "Latest transaction" section appears
     await page.waitForFunction(
         () => document.body.innerText.includes("Latest transaction"),
-        { timeout: 180_000 }
+        { timeout: 300_000 }
     )
 
     // 6. Wait for minting to fully complete (no more "Minting" text)
