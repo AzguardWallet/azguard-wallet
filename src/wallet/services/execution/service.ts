@@ -54,10 +54,11 @@ import {
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
 import { FpcService, FpcType } from "@/wallet/services/fpc/service";
-import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin } from "@/wallet/services/transaction/service";
+import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin, TxStatus } from "@/wallet/services/transaction/service";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { feeJuiceAddress, getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
+import { computeMaxFee } from "@/utils/fee-estimation";
 import {
     TaskService,
     WrappedTask,
@@ -119,6 +120,16 @@ export * from "./spec";
 // Default multiplier for maxFeesPerGas (backwards-compatible)
 const DEFAULT_FEE_MULTIPLIER = 2;
 
+/** Extract estimated fee from finalized gas settings on a TxExecutionRequest. */
+function getEstimatedFee(txRequest: TxExecutionRequest): string {
+    const gs = txRequest.txContext.gasSettings;
+    return computeMaxFee(
+        { daGas: gs.gasLimits.daGas, l2Gas: gs.gasLimits.l2Gas },
+        { daGas: gs.teardownGasLimits.daGas, l2Gas: gs.teardownGasLimits.l2Gas },
+        { feePerDaGas: gs.maxFeesPerGas.feePerDaGas, feePerL2Gas: gs.maxFeesPerGas.feePerL2Gas },
+    ).toString();
+}
+
 export class ExecutionService extends Service<Methods> implements ServiceSpec<Methods> {
     public static name = EXECUTION_SERVICE_NAME;
 
@@ -132,6 +143,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private transactionService: TransactionService = null!;
     private authRegistryService: AuthRegistryService = null!;
     private taskService: TaskService = null!;
+
+    /** TTL cache for gas balance queries (survives popup reopens). */
+    private static readonly GAS_BALANCE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+    private gasBalanceCache = new Map<string, { result: GasBalances; fetchedAt: number }>();
 
     public constructor(logger: ILogger) {
         super(EXECUTION_SERVICE_NAME, logger);
@@ -148,6 +163,17 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         this.transactionService = services.get(TransactionService.name);
         this.authRegistryService = services.get(AuthRegistryService.name);
         this.taskService = services.get(TaskService.name);
+
+        // Invalidate gas balance cache when a transaction settles
+        this.transactionService.onTransactionUpdated.add((tx) => {
+            if (tx.status !== TxStatus.Pending) {
+                for (const key of this.gasBalanceCache.keys()) {
+                    if (key.endsWith(`:${tx.account}`)) {
+                        this.gasBalanceCache.delete(key);
+                    }
+                }
+            }
+        });
     }
 
     public async executeTransfer(
@@ -270,6 +296,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 nonce.toString(),
                 feePaymentMethod,
                 txHash,
+                getEstimatedFee(txRequest),
             );
             transferTask.complete();
             return txHash;
@@ -505,6 +532,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             nonce.toString(),
             feePaymentMethod,
             txHash,
+            getEstimatedFee(txRequest),
         );
 
         return txHash;
@@ -801,8 +829,17 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return result;
     }
 
-    public async getGasBalances(networkId: string, accountAddress: string): Promise<GasBalances> {
+    public async getGasBalances(networkId: string, accountAddress: string, forceRefresh?: boolean): Promise<GasBalances> {
         await this.ensureInitialized();
+
+        const cacheKey = `${networkId}:${accountAddress}`;
+        if (!forceRefresh) {
+            const cached = this.gasBalanceCache.get(cacheKey);
+            if (cached && Date.now() - cached.fetchedAt < ExecutionService.GAS_BALANCE_TTL_MS) {
+                return cached.result;
+            }
+        }
+
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -855,7 +892,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             this.logError("Failed to get private FeeJuice balance", getErrorMessage(err));
         }
 
-        return { publicFeeJuice, privateFeeJuice };
+        const result = { publicFeeJuice, privateFeeJuice };
+        this.gasBalanceCache.set(cacheKey, { result, fetchedAt: Date.now() });
+        return result;
     }
 
     // Aztec.js interface:
@@ -1080,6 +1119,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     nonce.toString(),
                     feePaymentMethod,
                     txHash.toString(),
+                    getEstimatedFee(txRequest),
                 );
 
                 if (op.opts.wait === "NO_WAIT") {

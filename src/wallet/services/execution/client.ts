@@ -36,7 +36,7 @@ export class ExecutionServiceClient extends ServiceClient<Methods> implements Se
         return this.request("executeOperations", operations, origin);
     }
 
-    public getGasBalances(networkId: string, accountAddress: string): Promise<GasBalances> {
-        return this.request("getGasBalances", networkId, accountAddress);
+    public getGasBalances(networkId: string, accountAddress: string, forceRefresh?: boolean): Promise<GasBalances> {
+        return this.request("getGasBalances", networkId, accountAddress, forceRefresh);
     }
 }

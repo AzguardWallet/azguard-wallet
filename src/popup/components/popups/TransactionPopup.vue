@@ -17,6 +17,7 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import { balanceFormatted } from "@/utils/amount.js"
 import { trimAddress } from "@/utils/string"
 import { getTxCategory, getTxTitle, humanizeMethodName, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
+import { formatFeeJuice, feeToUsd } from "@/utils/fee-estimation"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -112,11 +113,25 @@ const getFeePaymentMethodName = (method) => {
 	}
 }
 
-const formatFee = (fee) => {
-	if (!fee) return "N/A"
-	const feeBN = new BN(fee)
-	return feeBN.dividedBy(new BN(10).pow(9)).toFixed(2) + " Gwei"
-}
+/** Fee display (actual fee from receipt) */
+const formattedFee = computed(() => {
+	if (!tx.value?.fee) return null
+	return formatFeeJuice(BigInt(tx.value.fee))
+})
+const formattedFeeUsd = computed(() => {
+	if (!tx.value?.fee) return null
+	return feeToUsd(BigInt(tx.value.fee))
+})
+
+/** Estimated fee display (from gas settings at submission time) */
+const formattedEstFee = computed(() => {
+	if (!tx.value?.estimatedFee) return null
+	return formatFeeJuice(BigInt(tx.value.estimatedFee))
+})
+const formattedEstFeeUsd = computed(() => {
+	if (!tx.value?.estimatedFee) return null
+	return feeToUsd(BigInt(tx.value.estimatedFee))
+})
 </script>
 
 <template>
@@ -198,7 +213,7 @@ const formatFee = (fee) => {
 					</Flex>
 				</Flex>
 
-				<Flex v-if="originLabel || tx.feePaymentMethod != null || tx.calls?.length" wide direction="column" gap="8" :class="$style.info_section">
+				<Flex v-if="originLabel || tx.feePaymentMethod != null || formattedFee || formattedEstFee || tx.calls?.length" wide direction="column" gap="8" :class="$style.info_section">
 					<Flex v-if="originLabel" wide justify="between" align="center">
 						<Text size="12" weight="500" color="tertiary">App</Text>
 						<Text size="12" weight="600" color="primary">{{ originLabel }}</Text>
@@ -207,6 +222,22 @@ const formatFee = (fee) => {
 					<Flex v-if="tx.feePaymentMethod != null" wide justify="between" align="center">
 						<Text size="12" weight="500" color="tertiary">Fee method</Text>
 						<Text size="12" weight="600" color="primary">{{ getFeePaymentMethodName(tx.feePaymentMethod) }}</Text>
+					</Flex>
+
+					<Flex v-if="formattedFee" wide justify="between" align="center">
+						<Text size="12" weight="500" color="tertiary">Fee paid</Text>
+						<Flex align="center" gap="4">
+							<Text size="12" weight="600" color="primary">{{ formattedFee }} FJ</Text>
+							<Text size="10" color="tertiary">{{ formattedFeeUsd }}</Text>
+						</Flex>
+					</Flex>
+
+					<Flex v-else-if="formattedEstFee" wide justify="between" align="center">
+						<Text size="12" weight="500" color="tertiary">Estimated fee</Text>
+						<Flex align="center" gap="4">
+							<Text size="12" weight="600" color="tertiary">~{{ formattedEstFee }} FJ</Text>
+							<Text size="10" color="tertiary">{{ formattedEstFeeUsd }}</Text>
+						</Flex>
 					</Flex>
 
 					<Flex v-if="tx.calls?.length" wide direction="column" gap="4">
@@ -289,12 +320,6 @@ const formatFee = (fee) => {
 								({{ trimAddress(tx.block.hash, 6, 4) }})
 							</Text>
 						</Text>
-					</Flex>
-
-					<!-- Fee -->
-					<Flex v-if="tx.fee" wide direction="column" gap="2">
-						<Text size="10" weight="600" color="tertiary">Fee Paid</Text>
-						<Text size="10" weight="500" color="primary">{{ formatFee(tx.fee) }}</Text>
 					</Flex>
 
 					<!-- Error -->

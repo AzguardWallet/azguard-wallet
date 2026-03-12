@@ -33,8 +33,10 @@ export type Methods = {
 
     /**
      * Returns public FeeJuice balance and private FeeJuice balance (via BridgedFPC).
+     * Cached for 5 minutes in the service worker; pass forceRefresh to bypass.
      * @param networkId Network id.
      * @param accountAddress Account address.
+     * @param forceRefresh Bypass cache and fetch fresh values.
      */
-    getGasBalances(networkId: string, accountAddress: string): GasBalances;
+    getGasBalances(networkId: string, accountAddress: string, forceRefresh?: boolean): GasBalances;
 };

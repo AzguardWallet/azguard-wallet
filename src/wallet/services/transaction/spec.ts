@@ -138,8 +138,10 @@ type TxBase = {
     executionResult?: TxExecutionResult;
     /** Block in which the transaction is included. */
     block?: TxBlock;
-    /** Fee paid. */
+    /** Fee paid (set from receipt after confirmation). */
     fee?: string;
+    /** Estimated fee from gas settings (set at submission time). */
+    estimatedFee?: string;
     /** Error message, if some. */
     error?: string;
 };

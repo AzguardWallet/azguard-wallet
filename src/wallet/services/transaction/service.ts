@@ -119,6 +119,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         nonce: string,
         feePaymentMethod: AzguardFeePaymentMethod,
         hash: string,
+        estimatedFee?: string,
     ): Promise<Tx> {
         if (await this.txs.get(hash)) {
             throw new Error("duplicated hash");
@@ -135,6 +136,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             createdAt: now,
             updatedAt: now,
             status: TxStatus.Pending,
+            estimatedFee,
         };
         await this.txs.set(tx.hash, tx);
         this.emit("onTransactionAdded", tx);

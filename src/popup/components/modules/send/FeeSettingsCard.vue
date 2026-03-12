@@ -553,6 +553,14 @@ onBeforeUnmount(() => {
 					</Flex>
 				</Flex>
 			</template>
+
+			<!-- Info note when fee not yet estimated -->
+			<template v-if="selectedMethod && !feeEstimate">
+				<Flex align="center" gap="4" :class="$style.detail_row" :style="{ padding: '8px 12px' }">
+					<Icon name="info" size="12" color="tertiary" />
+					<Text size="11" weight="500" color="tertiary">Exact fee calculated after simulation</Text>
+				</Flex>
+			</template>
 		</template>
 	</Flex>
 </template>
