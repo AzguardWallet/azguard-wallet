@@ -28,6 +28,7 @@ export default defineConfig({
 			"~": fileURLToPath(new URL("./src", import.meta.url)),
 			src: fileURLToPath(new URL("./src", import.meta.url)),
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
+			"@bridged-fpc-artifact": fileURLToPath(new URL("./node_modules/@defi-wonderland/aztec-fee-payment/target/bridged_contract-BridgedFPC.json", import.meta.url)),
 			comlink: "comlink",
 			debug: "debug",
 		},

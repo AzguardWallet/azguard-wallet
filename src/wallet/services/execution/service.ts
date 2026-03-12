@@ -53,11 +53,11 @@ import {
     TransferPublicFn,
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
-import { FpcService } from "@/wallet/services/fpc/service";
+import { FpcService, FpcType } from "@/wallet/services/fpc/service";
 import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin } from "@/wallet/services/transaction/service";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
-import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
+import { feeJuiceAddress, getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import {
     TaskService,
     WrappedTask,
@@ -89,6 +89,7 @@ import {
     type AddPrivateAuthwitAction,
     type AddPublicAuthwitAction,
     type FeeSettings,
+    PRIORITY_MULTIPLIERS,
     type AztecGetContractClassMetadataOperation,
     type AztecGetContractMetadataOperation,
     type AztecGetPrivateEventsOperation,
@@ -106,6 +107,7 @@ import {
     type EncodedCallAction,
     type FeeOptions,
     type FeePaymentMethod,
+    type GasBalances,
 } from "./spec";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
@@ -114,9 +116,8 @@ import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export * from "./spec";
 
-// Multiplier for maxFeesPerGas to handle gas fee fluctuations
-// TODO: consider dynamic adjustment / better coefficient
-const FEE_PADDING_MULTIPLIER = 2;
+// Default multiplier for maxFeesPerGas (backwards-compatible)
+const DEFAULT_FEE_MULTIPLIER = 2;
 
 export class ExecutionService extends Service<Methods> implements ServiceSpec<Methods> {
     public static name = EXECUTION_SERVICE_NAME;
@@ -238,7 +239,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
 
             const [txRequest, node, pxe, account, network, nonce, __, feePaymentMethod] =
-                await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, transferTask);
+                await this.buildAndEstimateTxRequest(op, op.feeSettings, transferTask);
 
             const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], transferTask);
 
@@ -488,7 +489,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         await this.ensureInitialized();
 
         const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
-            await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, parentTask);
+            await this.buildAndEstimateTxRequest(op, op.feeSettings, parentTask);
 
         const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], parentTask);
 
@@ -800,6 +801,63 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return result;
     }
 
+    public async getGasBalances(networkId: string, accountAddress: string): Promise<GasBalances> {
+        await this.ensureInitialized();
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Wallet locked");
+        }
+        const network = await this.networkService.getNetwork(networkId);
+
+        // Public FeeJuice balance via balance_of_public on the FeeJuice contract
+        let publicFeeJuice = "0";
+        try {
+            const publicResult = await this.executeSimulateViews({
+                kind: "simulate_views",
+                networkId,
+                accountAddress,
+                calls: [{
+                    kind: "call",
+                    contract: feeJuiceAddress,
+                    method: "balance_of_public",
+                    args: [accountAddress],
+                }],
+            });
+            if (publicResult.encoded[0]?.[0]) {
+                publicFeeJuice = publicResult.encoded[0][0].toBigInt().toString();
+            }
+        } catch (err) {
+            this.logError("Failed to get public FeeJuice balance", getErrorMessage(err));
+        }
+
+        // Private FeeJuice balance via balance_of on BridgedFPC
+        let privateFeeJuice: string | null = null;
+        try {
+            const fpcs = await this.fpcService.getFpcs(network.chainId);
+            const bridgedFpc = fpcs.find(f => f.type === FpcType.BridgedFpc);
+            if (bridgedFpc) {
+                const privateResult = await this.executeSimulateViews({
+                    kind: "simulate_views",
+                    networkId,
+                    accountAddress,
+                    calls: [{
+                        kind: "call",
+                        contract: bridgedFpc.address,
+                        method: "balance_of",
+                        args: [accountAddress],
+                    }],
+                });
+                if (privateResult.encoded[0]?.[0]) {
+                    privateFeeJuice = privateResult.encoded[0][0].toBigInt().toString();
+                }
+            }
+        } catch (err) {
+            this.logError("Failed to get private FeeJuice balance", getErrorMessage(err));
+        }
+
+        return { publicFeeJuice, privateFeeJuice };
+    }
+
     // Aztec.js interface:
 
     private async executeAztecGetContractClassMetadata(
@@ -920,8 +978,22 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
-        const [txRequest, _, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
+        const [txRequest, node, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
+        // Embedded FPC payments: the dApp's FPC has a budgeted `amount` that must cover
+        // max_gas_cost (gasLimits * maxFeesPerGas). The default maxFeesPerGas=10^18 makes
+        // max_gas_cost astronomical and fails the FPC assertion. Apply dApp fees or node base fees.
+        if (fee.embeddedFeePayment) {
+            const maxFeesPerGas = fee.maxFeesPerGas
+                ? new GasFees(BigInt(fee.maxFeesPerGas.feePerDaGas), BigInt(fee.maxFeesPerGas.feePerL2Gas))
+                : await node.getCurrentMinFees();
+            txRequest.txContext.gasSettings = new GasSettings(
+                txRequest.txContext.gasSettings.gasLimits,
+                txRequest.txContext.gasSettings.teardownGasLimits,
+                maxFeesPerGas,
+                txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+            );
+        }
         return pxe.simulateTx(txRequest, {
             simulatePublic: true,
             skipTxValidation: op.opts.skipTxValidation,
@@ -950,8 +1022,19 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Invalid `opts.from`");
         }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
-        const [txRequest, _, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
+        const [txRequest, node, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
+        if (fee.embeddedFeePayment) {
+            const maxFeesPerGas = fee.maxFeesPerGas
+                ? new GasFees(BigInt(fee.maxFeesPerGas.feePerDaGas), BigInt(fee.maxFeesPerGas.feePerL2Gas))
+                : await node.getCurrentMinFees();
+            txRequest.txContext.gasSettings = new GasSettings(
+                txRequest.txContext.gasSettings.gasLimits,
+                txRequest.txContext.gasSettings.teardownGasLimits,
+                maxFeesPerGas,
+                txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+            );
+        }
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
@@ -980,7 +1063,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
                     await this.buildAndEstimateTxRequest(
                         { ...op, actions, fee },
-                        op.feeSettings.paymentMethod,
+                        op.feeSettings,
                         parentTask,
                     );
 
@@ -1071,7 +1154,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
             messageHash = await computeAuthWitMessageHash(intentHash, metadata);
         } else {
-            throw new Error("Invalid messageHashOrIntent: expected IntentInnerHash or CallIntent");
+            // Raw Fr message hash (pre-computed by wallet-sdk)
+            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
         }
 
         const authWitness = await account.buildAuthWitness(messageHash);
@@ -1139,6 +1223,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 : "fpc",
             gasLimits: opts.fee?.gasSettings?.gasLimits,
             teardownGasLimits: opts.fee?.gasSettings?.teardownGasLimits,
+            maxFeesPerGas: opts.fee?.gasSettings?.maxFeesPerGas,
             gasPadding: 1,
         };
 
@@ -1183,16 +1268,33 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         simulatedTx: TxSimulationResult,
         gasPadding: number,
         maxFeesPerGas?: GasFees,
+        customLimits?: FeeOptions,
+        feeMultiplier?: number,
     ) {
+        const multiplier = feeMultiplier ?? DEFAULT_FEE_MULTIPLIER;
         if (!maxFeesPerGas) {
-            maxFeesPerGas = await node.getCurrentMinFees()
-            // TODO: replace x2 multiplier with better coefficient
-            maxFeesPerGas = maxFeesPerGas.mul(FEE_PADDING_MULTIPLIER);
+            if (customLimits?.maxFeesPerGas) {
+                maxFeesPerGas = new GasFees(
+                    BigInt(customLimits.maxFeesPerGas.feePerDaGas),
+                    BigInt(customLimits.maxFeesPerGas.feePerL2Gas),
+                );
+            } else {
+                maxFeesPerGas = await node.getCurrentMinFees()
+                maxFeesPerGas = maxFeesPerGas.mul(multiplier);
+            }
         }
 
+        const gasLimits = customLimits?.gasLimits
+            ? new Gas(customLimits.gasLimits.daGas, customLimits.gasLimits.l2Gas)
+            : simulatedTx.gasUsed.totalGas.mul(gasPadding);
+
+        const teardownGasLimits = customLimits?.teardownGasLimits
+            ? new Gas(customLimits.teardownGasLimits.daGas, customLimits.teardownGasLimits.l2Gas)
+            : simulatedTx.gasUsed.teardownGas.mul(gasPadding);
+
         txRequest.txContext.gasSettings = new GasSettings(
-            simulatedTx.gasUsed.totalGas.mul(gasPadding),
-            simulatedTx.gasUsed.teardownGas.mul(gasPadding),
+            gasLimits,
+            teardownGasLimits,
             maxFeesPerGas,
             txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
         );
@@ -1205,13 +1307,17 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             actions: Action[];
             fee?: FeeOptions;
         },
-        feePaymentMethod: FeePaymentMethod,
+        feeSettings: FeeSettings,
         parentTask?: WrappedTask,
     ): Promise<
         [TxExecutionRequest, AztecNode, IPXE, IAccountContract, Network, Fr, TxCall[], AzguardFeePaymentMethod]
     > {
         const step = new StepContent("Estimating fee");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
+        const feePaymentMethod = feeSettings.paymentMethod;
+        const feeMultiplier = feeSettings.priorityLevel
+            ? PRIORITY_MULTIPLIERS[feeSettings.priorityLevel]
+            : undefined;
 
         try {
             const gasPadding = op.fee?.gasPadding ?? 1.05;
@@ -1229,7 +1335,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
-                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, undefined, op.fee, feeMultiplier);
                     task.complete();
                     return [txRequest, node, pxe, account, network, nonce, txCalls, AzguardFeePaymentMethod.FeeJuice];
                 }
@@ -1250,7 +1356,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
-                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, undefined, op.fee, feeMultiplier);
                     task.complete();
                     return [
                         txRequest,
@@ -1267,6 +1373,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const { fpcId, inPublic } = feePaymentMethod;
                     const fpc = await this.fpcService.getFpcImpl(fpcId);
                     const originalActions = [...op.actions];
+                    const multiplier = feeMultiplier ?? DEFAULT_FEE_MULTIPLIER;
                     // first approach
                     let [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
                         op,
@@ -1280,8 +1387,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
-                    // Fetch actual fees for FPC fee payload (with FEE_PADDING_MULTIPLIER)
-                    const baseFees = (await node.getCurrentMinFees()).mul(FEE_PADDING_MULTIPLIER);
+                    // Fetch actual fees for FPC fee payload (with priority multiplier)
+                    const baseFees = (await node.getCurrentMinFees()).mul(multiplier);
                     let maxFee = simulatedTx.gasUsed.totalGas
                         .add(fpc.getTotalGas(inPublic))
                         .computeFee(baseFees);
@@ -1321,25 +1428,41 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     if (!op.fee?.embeddedFeePayment) {
                         throw new Error("Embedded fee payment not specified");
                     }
-                    const feePaymentMethod =
+                    const embeddedMethod =
                         op.fee.embeddedFeePayment === "fjwc"
                             ? AzguardFeePaymentMethod.FeeJuiceWithClaim
                             : AzguardFeePaymentMethod.External;
                     let [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
                         op,
-                        feePaymentMethod,
+                        embeddedMethod,
                         task,
                     );
+                    // Embedded payments: the dApp's FPC has a budgeted `amount` that must cover
+                    // max_gas_cost (gasLimits * maxFeesPerGas). The default initial gas settings
+                    // use maxFeesPerGas=10^18 which makes max_gas_cost astronomical and fails
+                    // the FPC assertion. Override with realistic fees before simulation.
                     this.suggestGasLimits(txRequest, op.fee);
+                    {
+                        const maxFeesPerGas = op.fee?.maxFeesPerGas
+                            ? new GasFees(BigInt(op.fee.maxFeesPerGas.feePerDaGas), BigInt(op.fee.maxFeesPerGas.feePerL2Gas))
+                            : await node.getCurrentMinFees();
+                        txRequest.txContext.gasSettings = new GasSettings(
+                            txRequest.txContext.gasSettings.gasLimits,
+                            txRequest.txContext.gasSettings.teardownGasLimits,
+                            maxFeesPerGas,
+                            txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                        );
+                    }
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
                         { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
-                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
+                    // Use 1x multiplier so max_gas_cost stays within the dApp's embedded amount.
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, undefined, op.fee, 1);
                     task.complete();
-                    return [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod];
+                    return [txRequest, node, pxe, account, network, nonce, txCalls, embeddedMethod];
                 }
                 default: {
                     throw new Error("Invalid fee payment method");

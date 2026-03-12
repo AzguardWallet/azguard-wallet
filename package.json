@@ -29,6 +29,7 @@
 		"@aztec/stdlib": "4.0.0-devnet.2-patch.3",
 		"@aztec/wallet-sdk": "4.0.0-devnet.2-patch.3",
 		"@codemirror/lang-json": "^6.0.2",
+		"@defi-wonderland/aztec-fee-payment": "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-b6315f1/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.b6315f1.tgz",
 		"@replit/codemirror-indentation-markers": "^6.5.3",
 		"bignumber.js": "^9.3.1",
 		"codemirror": "^6.0.2",

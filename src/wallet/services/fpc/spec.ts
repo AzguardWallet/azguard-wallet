@@ -3,6 +3,8 @@ export const FPC_SERVICE_NAME = "fpc";
 export enum FpcType {
     DefaultFpc,
     DefaultSponsoredFpc,
+    BridgedFpc,
+    // TokenFpc,  // Placeholder — Human Tech (coming soon)
 }
 
 export type FpcInfo = {

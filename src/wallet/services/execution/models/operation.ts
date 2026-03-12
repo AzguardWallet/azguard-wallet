@@ -68,6 +68,7 @@ export type FeeOptions = {
     readonly embeddedFeePayment?: "fjwc" | "fpc";
     readonly gasLimits?: GasLimits;
     readonly teardownGasLimits?: GasLimits;
+    readonly maxFeesPerGas?: { feePerDaGas: number | string; feePerL2Gas: number | string };
     readonly gasPadding?: number;
 };
 

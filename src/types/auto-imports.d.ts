@@ -18,18 +18,22 @@ declare global {
   const AccessLevel: typeof import('../utils/confirmation-policies').AccessLevel
   const CAIP: typeof import('../utils/general.js')['CAIP']
   const EffectScope: typeof import('vue').EffectScope
+  const FEE_JUICE_PRICING: typeof import('../utils/fee-estimation').FEE_JUICE_PRICING
+  const FEE_JUICE_USD_RATE: typeof import('../utils/fee-estimation').FEE_JUICE_USD_RATE
   const asyncComputed: typeof import("@vueuse/core")["asyncComputed"]
   const autoResetRef: typeof import("@vueuse/core")["autoResetRef"]
   const balanceFormatted: typeof import('../utils/amount.js').balanceFormatted
   const blobToUint8Array: typeof import('../utils/files').blobToUint8Array
   const bn: typeof import('../utils/bn.js')['default']
   const browser: typeof import('webextension-polyfill')
+  const buildFeeEstimate: typeof import('../utils/fee-estimation').buildFeeEstimate
   const capitalize: typeof import('../utils/string').capitalize
   const capitilize: typeof import('../utils/string.js')['capitilize']
   const checkNotificationsForShow: typeof import('../composables/notification.js').checkNotificationsForShow
   const checkSentinel: typeof import('../utils/core.js').checkSentinel
   const comma: typeof import('../utils/amount.js').comma
   const compressData: typeof import('../utils/files').compressData
+  const computeMaxFee: typeof import('../utils/fee-estimation').computeMaxFee
   const computed: typeof import('vue').computed
   const computedAsync: typeof import("@vueuse/core")["computedAsync"]
   const computedEager: typeof import("@vueuse/core")["computedEager"]
@@ -63,7 +67,9 @@ declare global {
   const ensurePermissions: typeof import('../utils/general.js').ensurePermissions
   const extendRef: typeof import("@vueuse/core")["extendRef"]
   const externalLinks: typeof import('../composables/configClient').externalLinks
+  const feeToUsd: typeof import('../utils/fee-estimation').feeToUsd
   const formatCallSummary: typeof import('../utils/tx-enrichment').formatCallSummary
+  const formatFeeJuice: typeof import('../utils/fee-estimation').formatFeeJuice
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
   const getCallCountLabel: typeof import('../utils/tx-enrichment').getCallCountLabel
   const getCurrentInstance: typeof import('vue').getCurrentInstance
@@ -381,4 +387,7 @@ declare global {
   // @ts-ignore
   export type { ConfirmationPolicy } from '../utils/confirmation-policies'
   import('../utils/confirmation-policies')
+  // @ts-ignore
+  export type { AssetPricing, FeeEstimate } from '../utils/fee-estimation'
+  import('../utils/fee-estimation')
 }

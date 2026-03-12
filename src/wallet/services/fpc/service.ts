@@ -12,8 +12,13 @@ import { Fpc } from "./fpc";
 import { getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
+import { loadContractArtifact } from "@aztec/stdlib/abi";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
+// @ts-ignore — raw JSON import via vite alias, bypasses @aztec/aztec.js (which references document/window)
+import BridgedFPCJson from "@bridged-fpc-artifact";
 import { Fr } from "@aztec/foundation/curves/bn254";
+
+const BridgedFPCContractArtifact = loadContractArtifact(BridgedFPCJson);
 
 export * from "./fpc";
 export * from "./spec";
@@ -52,49 +57,48 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const result = (await this.storage.getValues()).filter(
             fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
         );
-        // TODO: remove it
-        if (!result.length && chainId !== undefined) {
-            this.logInfo("Discovering FPCs...");
-            try {
-                await this.lock.enter();
-                const networks = await this.networkService.getNetworks(chainId);
-                const network = networks.find(x => x.isDefault) ?? networks[0];
-                const node = await this.networkService.getNode(network.chainId);
-                const pxe = this.pxeService.getPXE(network);
+        // Auto-discover missing protocol FPCs (SponsoredFPC, BridgedFPC)
+        if (chainId !== undefined) {
+            const hasSponsoredFpc = result.some(f => f.type === FpcType.DefaultSponsoredFpc);
+            const hasBridgedFpc = result.some(f => f.type === FpcType.BridgedFpc);
 
-                const sponsoredFpc = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
-                    constructorArgs: [],
-                    salt: Fr.zero(),
-                });
+            if (!hasSponsoredFpc || !hasBridgedFpc) {
+                this.logInfo("Discovering missing protocol FPCs...");
+                try {
+                    await this.lock.enter();
+                    const networks = await this.networkService.getNetworks(chainId);
+                    const network = networks.find(x => x.isDefault) ?? networks[0];
+                    const node = await this.networkService.getNode(network.chainId);
+                    const pxe = this.pxeService.getPXE(network);
 
-                await pxe.registerContract({
-                    instance: sponsoredFpc,
-                    artifact: SponsoredFPCContractArtifact,
-                });
+                    const toDiscover: { instance: any; artifact: any }[] = [];
 
-                for (const contract of [sponsoredFpc.address]) {
-                    const contractInstance = await pxe.getContractInstance(contract);
-                    if (contractInstance) {
-                        const contractArtifact = await pxe.getContractArtifact(
-                            contractInstance.currentContractClassId,
-                        );
-                        if (contractArtifact) {
-                            this.logInfo(`Found FPC: ${contract.toString()}`);
+                    if (!hasSponsoredFpc) {
+                        const instance = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
+                            constructorArgs: [],
+                            salt: Fr.zero(),
+                        });
+                        toDiscover.push({ instance, artifact: SponsoredFPCContractArtifact });
+                    }
+                    if (!hasBridgedFpc) {
+                        const instance = await getContractInstanceFromInstantiationParams(BridgedFPCContractArtifact, {
+                            constructorArgs: [],
+                            salt: Fr.zero(),
+                            deployer: AztecAddress.ZERO,
+                        });
+                        toDiscover.push({ instance, artifact: BridgedFPCContractArtifact });
+                    }
 
-                            const registeredContracts = await pxe.getContracts();
-                            if (!registeredContracts.find(x => x.toString() === contract.toString())) {
-                                await pxe.registerContract({
-                                    instance: contractInstance,
-                                    artifact: contractArtifact,
-                                });
-                            }
+                    for (const { instance: contractInstance, artifact: contractArtifact } of toDiscover) {
+                        try {
+                            await pxe.registerContract({ instance: contractInstance, artifact: contractArtifact });
+                            this.logInfo(`Registered protocol FPC: ${contractInstance.address.toString()}`);
 
-                            const type =
-                                contractArtifact.name === "FPC" ? FpcType.DefaultFpc : FpcType.DefaultSponsoredFpc;
+                            const type = this.detectFpcType(contractArtifact);
                             const fpcHandler = getFpcHandler(type);
                             fpcHandler.validateArtifact(contractArtifact);
 
-                            const asset = await fpcHandler.getAsset(contract.toString(), pxe, node);
+                            const asset = await fpcHandler.getAsset(contractInstance.address.toString(), pxe, node);
                             const acceptsPrivate = fpcHandler.acceptsPrivate();
                             const acceptsPublic = fpcHandler.acceptsPublic();
 
@@ -107,19 +111,21 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                                 profileId: profile.id,
                                 chainId,
                                 type,
-                                address: contract.toString(),
-                                name: undefined,
+                                address: contractInstance.address.toString(),
+                                name: type === FpcType.BridgedFpc ? "Private Fee Juice" : undefined,
                                 asset,
                                 acceptsPrivate,
                                 acceptsPublic,
                             };
                             await this.storage.set(id, fpc);
                             result.push(fpc);
+                        } catch (err) {
+                            this.logError(`Failed to discover FPC ${contractInstance.address.toString()}`, err);
                         }
                     }
+                } finally {
+                    this.lock.leave();
                 }
-            } finally {
-                this.lock.leave();
             }
         }
         return result;
@@ -253,6 +259,31 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         }
         const fpcHandler = getFpcHandler(fpcInfo.type);
         return new Fpc(fpcInfo, fpcHandler);
+    }
+
+    /**
+     * Detect FPC type from contract artifact by inspecting function signatures.
+     * - `sponsor_unconditionally` → DefaultSponsoredFpc
+     * - `pay_fee` + `balance_of` (no `sponsor_unconditionally`) → BridgedFpc
+     * - `get_accepted_asset` → DefaultFpc
+     */
+    private detectFpcType(artifact: { name: string; functions: { name: string }[] }): FpcType {
+        const hasSponsorUnconditionally = artifact.functions.some(f => f.name === "sponsor_unconditionally");
+        if (hasSponsorUnconditionally) {
+            return FpcType.DefaultSponsoredFpc;
+        }
+
+        const hasPayFee = artifact.functions.some(f => f.name === "pay_fee");
+        const hasBalanceOf = artifact.functions.some(f => f.name === "balance_of");
+        if (hasPayFee && hasBalanceOf) {
+            return FpcType.BridgedFpc;
+        }
+
+        if (artifact.name === "FPC" || artifact.functions.some(f => f.name === "get_accepted_asset")) {
+            return FpcType.DefaultFpc;
+        }
+
+        return FpcType.DefaultSponsoredFpc;
     }
 
     private readonly onProfileDeleted = async (profile: ProfileInfo) => {

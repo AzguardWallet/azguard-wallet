@@ -1779,6 +1779,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-b6315f1/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.b6315f1.tgz":
+  version: 4.0.0-devnet.2-patch.1-prerelease.b6315f1
+  resolution: "@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-b6315f1/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.b6315f1.tgz"
+  checksum: 10c0/8c34df53617527f3cf32148c7788bf9c7716cb395095832520bfc76341e5ee10ba30c8c13fbf6dd7ec2aa448c02e833c89340f28204365f022c68ab1ade60233
+  languageName: node
+  linkType: hard
+
 "@epic-web/invariant@npm:^1.0.0":
   version: 1.0.0
   resolution: "@epic-web/invariant@npm:1.0.0"
@@ -9151,6 +9158,7 @@ __metadata:
     "@biomejs/biome": "npm:^2.1.4"
     "@codemirror/lang-json": "npm:^6.0.2"
     "@crxjs/vite-plugin": "npm:^2.1.0"
+    "@defi-wonderland/aztec-fee-payment": "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-b6315f1/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.b6315f1.tgz"
     "@replit/codemirror-indentation-markers": "npm:^6.5.3"
     "@types/node": "npm:^24.2.1"
     "@types/webextension-polyfill": "npm:^0.12.3"

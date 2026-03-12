@@ -38,7 +38,11 @@ const fpcs = computed(() => {
 	const getOrder = (type) => (type === "sponsored" ? 0 : 1)
 
 	return allFpcs.value
-		?.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
+		?.filter(f =>
+			f.type === FpcType.DefaultSponsoredFpc ||
+			f.type === FpcType.BridgedFpc ||
+			(f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset))
+		)
 		.map(f => prepareFpc(f))
 		.sort((a, b) => {
 			const typeOrder = getOrder(a.type) - getOrder(b.type)
@@ -106,18 +110,26 @@ const handleSelectFpc = (fpc) => {
 }
 
 const prepareFpc = (fpc) => {
-	return fpc.type === FpcType.DefaultSponsoredFpc
-		? {
+	if (fpc.type === FpcType.DefaultSponsoredFpc) {
+		return {
 			...fpc,
 			typeName: "sponsored",
 			color: getChainColor(appStore.network.chainId),
 		}
-		: {
+	}
+	if (fpc.type === FpcType.BridgedFpc) {
+		return {
 			...fpc,
-			typeName: "fpc",
+			typeName: "private",
 			color: "green",
-			balance: balances.value.find(b => b.token.contract === fpc.asset),
 		}
+	}
+	return {
+		...fpc,
+		typeName: "fpc",
+		color: "green",
+		balance: balances.value.find(b => b.token.contract === fpc.asset),
+	}
 }
 const onFpcAdded = (fpc) => {
 	allFpcs.value.push(prepareFpc(fpc))
@@ -244,7 +256,7 @@ watch(
 							:class="$style.badge"
 							:style="{ background: `var(--${fpc.color})` }"
 						>
-							<Text size="11" weight="700"> {{ fpc.balance?.token?.symbol || 'Sponsored' }} </Text>
+							<Text size="11" weight="700"> {{ fpc.typeName === 'private' ? 'Private' : (fpc.balance?.token?.symbol || 'Sponsored') }} </Text>
 						</Flex>
 					</Flex>
 

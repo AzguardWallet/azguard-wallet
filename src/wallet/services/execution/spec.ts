@@ -1,5 +1,5 @@
 import type { TransferType, LocalTxOrigin } from "@/wallet/services/transaction/spec";
-import type { FeeSettings, Operation, OperationResult } from "./models";
+import type { FeeSettings, GasBalances, Operation, OperationResult } from "./models";
 
 export const EXECUTION_SERVICE_NAME = "execution";
 
@@ -30,4 +30,11 @@ export type Methods = {
      * @param origin Origin.
      */
     executeOperations(operations: Operation[], origin: LocalTxOrigin): OperationResult[];
+
+    /**
+     * Returns public FeeJuice balance and private FeeJuice balance (via BridgedFPC).
+     * @param networkId Network id.
+     * @param accountAddress Account address.
+     */
+    getGasBalances(networkId: string, accountAddress: string): GasBalances;
 };
