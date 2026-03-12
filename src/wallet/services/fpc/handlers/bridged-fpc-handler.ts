@@ -48,7 +48,10 @@ export class BridgedFpcHandler implements IFpcHandler {
     }
 
     public getTotalGas(): Gas {
-        // Conservative estimate — BridgedFPC is lightweight (similar to SponsoredFPC)
-        return new Gas(15_000, 35_000);
+        // BridgedFPC's pay_fee is heavy private execution — it walks encrypted notes
+        // via recurse_subtract_balance_internal to debit wFJ. Bytecode is 16x larger
+        // than SponsoredFPC. Empirically measured ~50k L2 gas overhead; pad generously
+        // for note tree depth variation.
+        return new Gas(50_000, 100_000);
     }
 }
