@@ -52,6 +52,7 @@
     "feeToUsd": true,
     "formatCallSummary": true,
     "formatFeeJuice": true,
+    "formatGas": true,
     "getCallCountLabel": true,
     "getCurrentInstance": true,
     "getCurrentScope": true,

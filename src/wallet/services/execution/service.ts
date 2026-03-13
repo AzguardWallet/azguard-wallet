@@ -54,7 +54,7 @@ import {
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
 import { FpcService, FpcType } from "@/wallet/services/fpc/service";
-import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin, TxStatus } from "@/wallet/services/transaction/service";
+import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin, TxStatus, TxGasDetails } from "@/wallet/services/transaction/service";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { feeJuiceAddress, getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
@@ -128,6 +128,19 @@ function getEstimatedFee(txRequest: TxExecutionRequest): string {
         { daGas: gs.teardownGasLimits.daGas, l2Gas: gs.teardownGasLimits.l2Gas },
         { feePerDaGas: gs.maxFeesPerGas.feePerDaGas, feePerL2Gas: gs.maxFeesPerGas.feePerL2Gas },
     ).toString();
+}
+
+/** Extract gas breakdown from finalized gas settings. */
+function getGasDetails(txRequest: TxExecutionRequest): TxGasDetails {
+    const gs = txRequest.txContext.gasSettings;
+    return {
+        l2GasLimit: gs.gasLimits.l2Gas,
+        daGasLimit: gs.gasLimits.daGas,
+        teardownL2GasLimit: gs.teardownGasLimits.l2Gas,
+        teardownDaGasLimit: gs.teardownGasLimits.daGas,
+        feePerL2Gas: gs.maxFeesPerGas.feePerL2Gas.toString(),
+        feePerDaGas: gs.maxFeesPerGas.feePerDaGas.toString(),
+    };
 }
 
 export class ExecutionService extends Service<Methods> implements ServiceSpec<Methods> {
@@ -297,6 +310,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 feePaymentMethod,
                 txHash,
                 getEstimatedFee(txRequest),
+                getGasDetails(txRequest),
             );
             transferTask.complete();
             return txHash;
@@ -533,6 +547,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             feePaymentMethod,
             txHash,
             getEstimatedFee(txRequest),
+            getGasDetails(txRequest),
         );
 
         return txHash;
@@ -1120,6 +1135,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     feePaymentMethod,
                     txHash.toString(),
                     getEstimatedFee(txRequest),
+                    getGasDetails(txRequest),
                 );
 
                 if (op.opts.wait === "NO_WAIT") {

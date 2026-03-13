@@ -17,7 +17,7 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 import { balanceFormatted } from "@/utils/amount.js"
 import { trimAddress } from "@/utils/string"
 import { getTxCategory, getTxTitle, humanizeMethodName, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
-import { formatFeeJuice, feeToUsd } from "@/utils/fee-estimation"
+import { formatFeeJuice, feeToUsd, formatGas } from "@/utils/fee-estimation"
 import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
 
 /** Composables */
@@ -87,6 +87,7 @@ watch(
 		} else {
 			tokenService.disconnect()
 			configService.disconnect()
+			showFeeBreakdown.value = false
 		}
 	},
 )
@@ -133,6 +134,41 @@ const formattedEstFee = computed(() => {
 const formattedEstFeeUsd = computed(() => {
 	if (!tx.value?.estimatedFee) return null
 	return feeToUsd(BigInt(tx.value.estimatedFee))
+})
+
+/** Fee breakdown toggle + computed details */
+const showFeeBreakdown = ref(false)
+const hasGasDetails = computed(() => !!tx.value?.gasDetails)
+const gasBreakdown = computed(() => {
+	const gd = tx.value?.gasDetails
+	if (!gd) return null
+
+	const feePerL2 = BigInt(gd.feePerL2Gas)
+	const feePerDa = BigInt(gd.feePerDaGas)
+
+	const l2Cost = BigInt(gd.l2GasLimit) * feePerL2
+	const daCost = BigInt(gd.daGasLimit) * feePerDa
+	const teardownL2Cost = BigInt(gd.teardownL2GasLimit) * feePerL2
+	const teardownDaCost = BigInt(gd.teardownDaGasLimit) * feePerDa
+
+	return {
+		l2Gas: formatGas(gd.l2GasLimit),
+		daGas: formatGas(gd.daGasLimit),
+		teardownL2Gas: formatGas(gd.teardownL2GasLimit),
+		teardownDaGas: formatGas(gd.teardownDaGasLimit),
+		l2Cost: formatFeeJuice(l2Cost),
+		daCost: formatFeeJuice(daCost),
+		teardownCost: formatFeeJuice(teardownL2Cost + teardownDaCost),
+		hasTeardown: gd.teardownL2GasLimit > 0 || gd.teardownDaGasLimit > 0,
+	}
+})
+const feeSavings = computed(() => {
+	if (!tx.value?.fee || !tx.value?.estimatedFee) return null
+	const actual = BigInt(tx.value.fee)
+	const estimated = BigInt(tx.value.estimatedFee)
+	if (estimated === 0n || actual >= estimated) return null
+	const pct = Number((estimated - actual) * 100n / estimated)
+	return `${pct}% less than estimate`
 })
 
 const explorerUrl = computed(() => {
@@ -243,19 +279,92 @@ const explorerUrl = computed(() => {
 						<Text size="12" weight="600" color="primary">{{ getFeePaymentMethodName(tx.feePaymentMethod) }}</Text>
 					</Flex>
 
-					<Flex v-if="formattedFee" wide justify="between" align="center">
-						<Text size="12" weight="500" color="tertiary">Fee paid</Text>
-						<Flex align="center" gap="4">
-							<Text size="12" weight="600" color="primary">{{ formattedFee }} FJ</Text>
-							<Text size="10" color="tertiary">{{ formattedFeeUsd }}</Text>
+					<Flex v-if="formattedFee" wide direction="column" gap="6">
+						<Flex
+							wide justify="between" align="center"
+							:class="hasGasDetails && $style.fee_row_toggle"
+							@click="hasGasDetails && (showFeeBreakdown = !showFeeBreakdown)"
+						>
+							<Flex align="center" gap="4">
+								<Text size="12" weight="500" color="tertiary">Fee paid</Text>
+								<Icon
+									v-if="hasGasDetails"
+									name="chevron"
+									size="10"
+									color="tertiary"
+									:style="{ transform: `rotate(${showFeeBreakdown ? '180' : '0'}deg)`, transition: 'transform 0.2s ease' }"
+								/>
+							</Flex>
+							<Flex align="center" gap="4">
+								<Text size="12" weight="600" color="primary">{{ formattedFee }} FJ</Text>
+								<Text size="10" color="tertiary">{{ formattedFeeUsd }}</Text>
+							</Flex>
+						</Flex>
+
+						<Flex v-if="showFeeBreakdown && gasBreakdown" wide direction="column" gap="4" :class="$style.fee_breakdown">
+							<div :class="$style.fee_grid">
+								<Text size="11" weight="500" color="tertiary">L2 Gas</Text>
+								<Text size="11" weight="500" color="tertiary" :class="$style.fee_grid_num">{{ gasBreakdown.l2Gas }}</Text>
+								<Text size="11" weight="600" color="secondary" :class="$style.fee_grid_num">{{ gasBreakdown.l2Cost }} FJ</Text>
+
+								<Text size="11" weight="500" color="tertiary">DA Gas</Text>
+								<Text size="11" weight="500" color="tertiary" :class="$style.fee_grid_num">{{ gasBreakdown.daGas }}</Text>
+								<Text size="11" weight="600" color="secondary" :class="$style.fee_grid_num">{{ gasBreakdown.daCost }} FJ</Text>
+
+								<template v-if="gasBreakdown.hasTeardown">
+									<Text size="11" weight="500" color="tertiary">Teardown</Text>
+									<Text size="11" weight="500" color="tertiary" :class="$style.fee_grid_num">{{ gasBreakdown.teardownL2Gas }} + {{ gasBreakdown.teardownDaGas }}</Text>
+									<Text size="11" weight="600" color="secondary" :class="$style.fee_grid_num">{{ gasBreakdown.teardownCost }} FJ</Text>
+								</template>
+							</div>
+							<Flex v-if="formattedEstFee" wide justify="between" align="center" :class="$style.fee_breakdown_divider">
+								<Text size="11" weight="500" color="tertiary">Estimated</Text>
+								<Text size="11" weight="600" color="secondary">{{ formattedEstFee }} FJ</Text>
+							</Flex>
+							<Flex v-if="feeSavings" wide justify="end">
+								<Text size="10" weight="500" color="green">{{ feeSavings }}</Text>
+							</Flex>
 						</Flex>
 					</Flex>
 
-					<Flex v-else-if="formattedEstFee" wide justify="between" align="center">
-						<Text size="12" weight="500" color="tertiary">Estimated fee</Text>
-						<Flex align="center" gap="4">
-							<Text size="12" weight="600" color="tertiary">~{{ formattedEstFee }} FJ</Text>
-							<Text size="10" color="tertiary">{{ formattedEstFeeUsd }}</Text>
+					<Flex v-else-if="formattedEstFee" wide direction="column" gap="6">
+						<Flex
+							wide justify="between" align="center"
+							:class="hasGasDetails && $style.fee_row_toggle"
+							@click="hasGasDetails && (showFeeBreakdown = !showFeeBreakdown)"
+						>
+							<Flex align="center" gap="4">
+								<Text size="12" weight="500" color="tertiary">Estimated fee</Text>
+								<Icon
+									v-if="hasGasDetails"
+									name="chevron"
+									size="10"
+									color="tertiary"
+									:style="{ transform: `rotate(${showFeeBreakdown ? '180' : '0'}deg)`, transition: 'transform 0.2s ease' }"
+								/>
+							</Flex>
+							<Flex align="center" gap="4">
+								<Text size="12" weight="600" color="tertiary">~{{ formattedEstFee }} FJ</Text>
+								<Text size="10" color="tertiary">{{ formattedEstFeeUsd }}</Text>
+							</Flex>
+						</Flex>
+
+						<Flex v-if="showFeeBreakdown && gasBreakdown" wide direction="column" gap="4" :class="$style.fee_breakdown">
+							<div :class="$style.fee_grid">
+								<Text size="11" weight="500" color="tertiary">L2 Gas</Text>
+								<Text size="11" weight="500" color="tertiary" :class="$style.fee_grid_num">{{ gasBreakdown.l2Gas }}</Text>
+								<Text size="11" weight="600" color="secondary" :class="$style.fee_grid_num">{{ gasBreakdown.l2Cost }} FJ</Text>
+
+								<Text size="11" weight="500" color="tertiary">DA Gas</Text>
+								<Text size="11" weight="500" color="tertiary" :class="$style.fee_grid_num">{{ gasBreakdown.daGas }}</Text>
+								<Text size="11" weight="600" color="secondary" :class="$style.fee_grid_num">{{ gasBreakdown.daCost }} FJ</Text>
+
+								<template v-if="gasBreakdown.hasTeardown">
+									<Text size="11" weight="500" color="tertiary">Teardown</Text>
+									<Text size="11" weight="500" color="tertiary" :class="$style.fee_grid_num">{{ gasBreakdown.teardownL2Gas }} + {{ gasBreakdown.teardownDaGas }}</Text>
+									<Text size="11" weight="600" color="secondary" :class="$style.fee_grid_num">{{ gasBreakdown.teardownCost }} FJ</Text>
+								</template>
+							</div>
 						</Flex>
 					</Flex>
 
@@ -386,6 +495,40 @@ const explorerUrl = computed(() => {
 	background: var(--gray-3);
 	border-radius: 8px;
 	padding: 12px;
+}
+
+.fee_row_toggle {
+	cursor: pointer;
+	border-radius: 4px;
+	padding: 2px 0;
+	transition: opacity 0.2s ease;
+
+	&:hover {
+		opacity: 0.8;
+	}
+}
+
+.fee_breakdown {
+	background: var(--gray-5);
+	border-radius: 6px;
+	padding: 8px 10px;
+}
+
+.fee_grid {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	gap: 4px 8px;
+	align-items: center;
+}
+
+.fee_grid_num {
+	text-align: right;
+}
+
+.fee_breakdown_divider {
+	border-top: 1px solid var(--gray-10);
+	padding-top: 6px;
+	margin-top: 2px;
 }
 
 .calls_summary {

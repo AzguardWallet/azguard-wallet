@@ -52,6 +52,11 @@ export function feeToUsd(feeAmount: bigint, pricing: AssetPricing = FEE_JUICE_PR
     return `$${bn.toFixed(3)}`;
 }
 
+/** Format a gas amount with thousands separators */
+export function formatGas(gas: number): string {
+    return gas.toLocaleString("en-US");
+}
+
 export type FeeEstimate = {
     gasUsed: { daGas: number; l2Gas: number };
     maxFee: bigint;

@@ -116,6 +116,22 @@ export type TxIndexerCursor = {
     updatedAt: number | null;
 };
 
+/** Gas breakdown captured at submission time from finalized GasSettings. */
+export type TxGasDetails = {
+    /** L2 gas limit (app logic). */
+    l2GasLimit: number;
+    /** DA gas limit (app logic). */
+    daGasLimit: number;
+    /** L2 gas limit (teardown/fee payment). */
+    teardownL2GasLimit: number;
+    /** DA gas limit (teardown/fee payment). */
+    teardownDaGasLimit: number;
+    /** Fee per L2 gas unit (raw bigint as string). */
+    feePerL2Gas: string;
+    /** Fee per DA gas unit (raw bigint as string). */
+    feePerDaGas: string;
+};
+
 /** Common fields for all transaction types. */
 type TxBase = {
     /** Chain id. */
@@ -142,6 +158,8 @@ type TxBase = {
     fee?: string;
     /** Estimated fee from gas settings (set at submission time). */
     estimatedFee?: string;
+    /** Gas breakdown from finalized gas settings (set at submission time). */
+    gasDetails?: TxGasDetails;
     /** Error message, if some. */
     error?: string;
 };

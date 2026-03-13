@@ -17,7 +17,7 @@ import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
 import { BlockNumber } from "@aztec/foundation/branded-types";
-import { Tx, SyncedTx, TxIndexerCursor, TRANSACTION_SERVICE_NAME, LocalTxOrigin, TxCall, SyncedTxCall, TxStatus, TxExecutionResult, Methods, Events, OriginType, isSyncedTx } from "./spec";
+import { Tx, SyncedTx, TxIndexerCursor, TxGasDetails, TRANSACTION_SERVICE_NAME, LocalTxOrigin, TxCall, SyncedTxCall, TxStatus, TxExecutionResult, Methods, Events, OriginType, isSyncedTx } from "./spec";
 import { AzguardFeePaymentMethod } from "../account/contracts";
 import { FUNCTION_CALL_LOG_EVENT_SELECTOR } from "../account/contracts/azguard-v0-persistent";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
@@ -120,6 +120,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         feePaymentMethod: AzguardFeePaymentMethod,
         hash: string,
         estimatedFee?: string,
+        gasDetails?: TxGasDetails,
     ): Promise<Tx> {
         if (await this.txs.get(hash)) {
             throw new Error("duplicated hash");
@@ -137,6 +138,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             updatedAt: now,
             status: TxStatus.Pending,
             estimatedFee,
+            gasDetails,
         };
         await this.txs.set(tx.hash, tx);
         this.emit("onTransactionAdded", tx);
