@@ -546,20 +546,20 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             
             return;
         } else {
-            const successful = finalized.find(r => r.receipt.executionResult === AztecTxExecutionResult.SUCCESS);
-            if (successful) {
+            const dropped = finalized.some(r => r.receipt.status === AztecTxStatus.DROPPED);
+            if (dropped) {
                 for (const r of receipts) {
-                    if (r.receipt.status === AztecTxStatus.PENDING) {
-                        await this.updateTxStatus(r.tx, TxStatus.Cancelled);
-                        this.pending.delete(r.tx.hash);
+                    if (r.receipt.status === AztecTxStatus.PENDING && r.tx.status == TxStatus.Cancelling) {
+                        await this.updateTxStatus(r.tx, TxStatus.Pending);
                     } else {
                         await this.applyReceipt(r.tx, r.receipt);
                     }
                 }
             } else {
                 for (const r of receipts) {
-                    if (r.receipt.status === AztecTxStatus.PENDING && r.tx.status == TxStatus.Cancelling) {
-                        await this.updateTxStatus(r.tx, TxStatus.Pending);
+                    if (r.receipt.status === AztecTxStatus.PENDING) {
+                        await this.updateTxStatus(r.tx, TxStatus.Cancelled);
+                        this.pending.delete(r.tx.hash);
                     } else {
                         await this.applyReceipt(r.tx, r.receipt);
                     }
@@ -593,17 +593,22 @@ export class TransactionService extends Service<Methods, Events> implements Serv
     }
 
     public async updateTxStatus(tx: Tx, status: TxStatus) {
-        if (tx.status != TxStatus.Pending && status == TxStatus.Cancelling) {
+        const current = await this.txs.get(tx.hash);  
+        if (!current) {  
+            throw new Error("Transaction not found in storage");  
+        }
+
+        if (current.status != TxStatus.Pending && status == TxStatus.Cancelling) {
             throw new Error("Only pending transactions can be cancelled");
         }
 
-        tx.updatedAt = Date.now();
-        tx.status = status;
+        current.updatedAt = Date.now();
+        current.status = status;
 
-        await this.txs.set(tx.hash, tx);
+        await this.txs.set(current.hash, current);
         
-        this.emit("onTransactionUpdated", tx);
-        this.logDebug(`Tx ${tx.hash.slice(0, 8)} status updated to ${TxStatus[status]}`);
+        this.emit("onTransactionUpdated", current);
+        this.logDebug(`Tx ${current.hash.slice(0, 8)} status updated to ${TxStatus[status]}`);
     }
 
     private getTxStatus(status: AztecTxStatus): TxStatus {

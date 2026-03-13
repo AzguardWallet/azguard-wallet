@@ -234,29 +234,6 @@ const onKeydown = e => {
 							<Text size="12" color="secondary">From account:</Text>
 							<AddressDisplay :address="cancellingTx.account" />
 						</Flex>
-						<!-- <Flex :class="$style.prop">
-							<Text size="12" color="secondary">Payload:</Text>
-							<Flex direction="column" gap="4">
-								<Text
-									v-for="(action, j) in op.actions"
-									:key="`${i}:${j}`"
-									size="12"
-									color="primary"
-								>
-									<template v-if="action.kind === 'call' || action.kind === 'encoded_call'">
-										<Text color="secondary"> call </Text>
-										{{ action.kind === "call" ? action.method : action.selector }}
-										<Text color="secondary"> in </Text>
-										<AddressDisplay
-											:address="action.kind === 'call' ? action.contract : action.to"
-										/>
-									</template>
-									<template v-else>
-										{{ action.kind.replace("_", " ") }}
-									</template>
-								</Text>
-							</Flex>
-						</Flex> -->
 					</Flex>
 					<FeeSettingsCard
 						:profile="appStore.profile"
@@ -267,19 +244,6 @@ const onKeydown = e => {
 						:disabled="!isAllowedToCancelTx"
 					/>
 				</Flex>
-				<!-- <Banner direction="vertical">
-					<template #title> The Faucet functionality is here temporarily </template>
-					<template #description> It will be moved elsewhere in the future </template>
-				</Banner> -->
-
-
-
-				<!-- <FeeSettingsCard
-					:profile="appStore.profile"
-					:network="appStore.network"
-					:account="appStore.account"
-					v-model="feeSettings"
-				/> -->
 
 				<Flex align="center" direction="column" gap="12">
 					<Button
@@ -292,17 +256,6 @@ const onKeydown = e => {
 					>
 						{{ isLoading  ? "Cancelling Transaction" : "Cancel Transaction" }}
 					</Button>
-
-					<!-- <Tooltip v-if="isErrorOccurred" side="top">
-						<Flex align="center" gap="6">
-							<Icon name="info" size="12" color="red" />
-							<Text size="12" weight="500" color="secondary">
-								There was an error in the minting process
-							</Text>
-						</Flex>
-
-						<template #content> {{ error }} </template>
-					</Tooltip> -->
 				</Flex>
 			</Flex>
 		</PopupCard>

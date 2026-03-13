@@ -35,7 +35,7 @@ import {
     TxProfileResult,
     TxSimulationResult,
     UtilitySimulationResult,
-    type Tx as aztecTx,
+    type Tx as AztecTx,
 } from "@aztec/stdlib/tx";
 import z from "zod";
 import { NetworkService, Network } from "@/wallet/services/network/service";
@@ -53,7 +53,7 @@ import {
     TransferPublicToPrivateFn,
 } from "@/wallet/services/token/functions";
 import { FpcService } from "@/wallet/services/fpc/service";
-import { TransactionService, OriginType, TransferType, type Tx as azguardTx, TxCall, LocalTxOrigin, TxStatus } from "@/wallet/services/transaction/service";
+import { TransactionService, OriginType, TransferType, type Tx as AzguardTx, TxCall, LocalTxOrigin, TxStatus } from "@/wallet/services/transaction/service";
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
@@ -400,7 +400,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return results;
     }
 
-    public async cancelTx(cancellingTx: azguardTx, networkId: string, feeSettings: FeeSettings): Promise<string> {
+    public async cancelTx(cancellingTx: AzguardTx, networkId: string, feeSettings: FeeSettings): Promise<string> {
         await this.ensureInitialized();
 
         if (cancellingTx.status !== TxStatus.Pending) {
@@ -457,7 +457,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     // Azguard base:
-
     private async executeGetCompleteAddress(op: GetCompleteAddressOperation): Promise<CompleteAddress> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
@@ -1717,7 +1716,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
     }
 
-    private async sendTxTask(node: AztecNode, tx: aztecTx, parentTask?: WrappedTask): Promise<void> {
+    private async sendTxTask(node: AztecNode, tx: AztecTx, parentTask?: WrappedTask): Promise<void> {
         const step = new StepContent("Sending transaction");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
         try {
