@@ -98,7 +98,7 @@ const initRequest = async () => {
 	try {
 		profile.value = await profileService.getActiveProfile()
 		networks.value = await networkService.getNetworks()
-		requestId.value = router.currentRoute.value.query.requestId
+		requestId.value = router.currentRoute.value.query.requestId?.toString()
 		if (!requestId.value) {
 			throw new Error("Invalid interaction request id")
 		}

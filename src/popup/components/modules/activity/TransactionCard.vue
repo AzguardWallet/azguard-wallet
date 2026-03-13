@@ -17,6 +17,7 @@ const { handleExternalLink } = useExternalLink()
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+const emits = defineEmits(["cancelTx"])
 const props = defineProps({
 	tx: {
 		type: Object,
@@ -25,11 +26,11 @@ const props = defineProps({
 
 const call = computed(() => props.tx.calls.at(1)?.method?.startsWith("mint") ? props.tx.calls[1] : props.tx.calls[0])
 const type = computed(() => {
-	if (call.value.method.startsWith("transfer")) return "transfer"
-	if (call.value.method.startsWith("mint_to_")) return "mint"
+	if (call.value?.method.startsWith("transfer")) return "transfer"
+	if (call.value?.method.startsWith("mint_to_")) return "mint"
 	return "tx"
 })
-const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
+const transfer = computed(() => (call.value?.transfers ? call.value?.transfers[0] : null))
 const token = computed(() => transfer.value?.token)
 const transferAmount = computed(() => {
 	if (transfer.value) {
@@ -62,13 +63,13 @@ const isMined = computed(() => {
 	const s = props.tx.status
 	return s === TxStatus.Proposed || s === TxStatus.Checkpointed || s === TxStatus.Proven || s === TxStatus.Finalized
 })
-const isPending = computed(() => props.tx.status === TxStatus.Pending)
 const isDropped = computed(() => props.tx.status === TxStatus.Dropped)
+const isCancelled = computed(() => props.tx.status === TxStatus.Cancelled)
 const isReverted = computed(() => isMined.value && !!props.tx.executionResult && props.tx.executionResult !== TxExecutionResult.Success)
 const isSuccess = computed(() => isMined.value && !isReverted.value)
 
 const statusIcon = computed(() => {
-	if (isReverted.value || isDropped.value) return "close-circle"
+	if (isReverted.value || isDropped.value || isCancelled.value) return "close-circle"
 	if (isSuccess.value) return "check-circle"
 	return "clock-circle"
 })
@@ -85,7 +86,7 @@ const title = computed(() => {
 	return "Transaction"
 })
 
-const shortHash = computed(() => trimAddress(props.tx.hash, 4, 4))
+const shortHash = computed(() => trimAddress(props.tx.hash, 6, 6))
 
 const explorerUrl = computed(() => {
 	if (!appStore.network?.chainId) return null
@@ -96,6 +97,10 @@ const explorerUrl = computed(() => {
 		props.tx.hash
 	)
 })
+
+const handleCancelTx = () => {
+	emits("cancelTx", props.tx)
+}
 </script>
 
 <template>
@@ -127,18 +132,33 @@ const explorerUrl = computed(() => {
 			</Flex>
 		</Flex>
 
-		<Flex align="center" gap="8">
-			<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
-				<Text size="12" weight="600" color="primary">
-					{{ transferAmount }}
-					<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
-				</Text>
-			</Flex>
-			<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
-				<Text size="12" weight="600" color="primary">
-					{{ mintAmount }}
-				</Text>
-			</Flex>
+		<Flex v-if="tx.status === TxStatus.Pending" align="center" gap="8">
+			<Tooltip position="end">
+				<Flex align="center" justify="center" :class="$style.cancel_icon_wrapper">
+					<Icon
+						@click.stop="handleCancelTx"
+						name="cancel"
+						color="tertiary"
+						hoverColor="error"
+						size="20"
+					/>
+				</Flex>
+
+				<template #content>
+					<Text size="12" color="secondary">Cancel pending Tx</Text>
+				</template>
+			</Tooltip>
+		</Flex>
+		<Flex v-else-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
+			<Text size="12" weight="600" color="primary">
+				{{ transferAmount }}
+				<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
+			</Text>
+		</Flex>
+		<Flex v-else-if="type === 'mint'" align="center" :class="$style.amount_badge">
+			<Text size="12" weight="600" color="primary">
+				{{ mintAmount }}
+			</Text>
 		</Flex>
 	</Flex>
 </template>
@@ -193,12 +213,14 @@ const explorerUrl = computed(() => {
 	align-items: center;
 	gap: 4px;
 
+	opacity: 0.8;
+
 	text-decoration: none;
 
 	transition: opacity 0.2s var(--bezier);
 
 	&:hover {
-		opacity: 0.8;
+		opacity: 1;
 	}
 }
 </style>

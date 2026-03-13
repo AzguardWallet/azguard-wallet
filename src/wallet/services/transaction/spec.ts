@@ -29,6 +29,8 @@ export enum TxStatus {
     Checkpointed,
     Proven,
     Finalized,
+    Cancelling,
+    Cancelled,
 }
 
 /** Execution result — only meaningful when tx is in a block. */

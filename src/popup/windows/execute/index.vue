@@ -421,7 +421,7 @@ const showJson = () => {
 						>
 							<Flex wide justify="between">
 								<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
-								<NetworkBadge :chainId="op.network.chainId" />
+								<NetworkBadge :network="op.network" />
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">From account:</Text>
@@ -446,7 +446,6 @@ const showJson = () => {
 											<AddressDisplay
 												:address="action.kind === 'call' ? action.contract : action.to"
 											/>
-											<!-- {{ trimAddress(action.contract || action.to) }} -->
 										</template>
 										<template v-else>
 											{{ action.kind.replace("_", " ") }}
@@ -483,7 +482,7 @@ const showJson = () => {
 						>
 							<Flex wide justify="between">
 								<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
-								<NetworkBadge :chainId="op.network.chainId" />
+								<NetworkBadge :network="op.network" />
 							</Flex>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">From account:</Text>
@@ -526,7 +525,7 @@ const showJson = () => {
 					<Flex v-else :class="$style.operation" direction="column" wide>
 						<Flex wide justify="between">
 							<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
-							<NetworkBadge :chainId="op.network.chainId" />
+							<NetworkBadge :network="op.network" />
 						</Flex>
 						<Flex v-if="op.account" :class="$style.prop">
 							<Text size="12" color="secondary">From account:</Text>

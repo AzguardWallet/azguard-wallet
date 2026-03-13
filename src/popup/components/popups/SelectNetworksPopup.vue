@@ -82,7 +82,7 @@ watch(
 											{{ network.name }}
 										</Text>
 
-										<NetworkBadge :chainId="network.chainId" />
+										<NetworkBadge :network="network" />
 									</Flex>
 
 									<Text size="13" weight="600" color="tertiary">

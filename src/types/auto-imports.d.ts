@@ -63,6 +63,7 @@ declare global {
   const ensurePermissions: typeof import('../utils/general.js').ensurePermissions
   const extendRef: typeof import("@vueuse/core")["extendRef"]
   const externalLinks: typeof import('../composables/configClient').externalLinks
+  const formatAmount: typeof import('../utils/amount.js').formatAmount
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
@@ -93,6 +94,7 @@ declare global {
   const markRaw: typeof import('vue').markRaw
   const nextTick: typeof import('vue').nextTick
   const normalizeAmount: typeof import('../utils/amount.js').normalizeAmount
+  const normalizeAmountToTokenStep: typeof import('../utils/amount.js').normalizeAmountToTokenStep
   const onActivated: typeof import('vue').onActivated
   const onBeforeMount: typeof import('vue').onBeforeMount
   const onBeforeRouteLeave: typeof import('vue-router').onBeforeRouteLeave
@@ -114,6 +116,7 @@ declare global {
   const onUnmounted: typeof import('vue').onUnmounted
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
+  const parseAmountBN: typeof import('../utils/amount.js').parseAmountBN
   const pausableWatch: typeof import("@vueuse/core")["pausableWatch"]
   const pickFile: typeof import('../utils/files').pickFile
   const provide: typeof import('vue').provide

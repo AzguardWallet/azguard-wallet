@@ -69,7 +69,7 @@ const handleManageNetworks = () => {
 						iconBgColor="transparent"
 					>
 						<template #right>
-							<NetworkBadge :chainId="network.chainId" />
+							<NetworkBadge :network="network" />
 						</template>
 					</SettingItem>
 				</ItemsContainer>

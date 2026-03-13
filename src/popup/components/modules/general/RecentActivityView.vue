@@ -37,6 +37,10 @@ const handleSelectTx = () => {
 	cacheStore.activeTxHash = latestTransaction.value.hash
 	popupStore.open("tx")
 }
+function handleCancelTx() {
+	cacheStore.activeTxHash = latestTransaction.value.hash
+	popupStore.open("cancel_tx")
+}
 </script>
 
 <template>
@@ -56,7 +60,12 @@ const handleSelectTx = () => {
 
 		<div :class="$style.list">
 			<TransactionAwaitingCard v-if="isTokenAwaitingTx" />
-			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
+			<TransactionCard
+				v-else
+				:tx="latestTransaction"
+				@click="handleSelectTx"
+				@cancelTx="handleCancelTx"
+			/>
 		</div>
 	</Flex>
 	<Flex v-else-if="!token && (latestTransaction || awaitingAccountTxs.length)" direction="column" gap="16">
@@ -75,7 +84,12 @@ const handleSelectTx = () => {
 
 		<div :class="$style.list">
 			<TransactionAwaitingCard v-if="awaitingAccountTxs.length" />
-			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
+			<TransactionCard
+				v-else
+				:tx="latestTransaction"
+				@click="handleSelectTx"
+				@cancelTx="handleCancelTx"
+			/>
 		</div>
 	</Flex>
 </template>

@@ -46,6 +46,30 @@ export const purgeNumber = target => {
 	return target.replace(/[^0-9.]/g, "")
 }
 
+export const parseAmountBN = (value) => {
+	const raw = value
+	if (!raw) return null
+
+	const normalized = purgeNumber(raw)
+	if (!normalized || normalized === '.') return null
+
+	try {
+		return new BN(normalized)
+	} catch {
+		return null
+	}
+}
+
+export const formatAmount = (bn, decimals = 8) => {
+	const sep = getDecimalSeparator()
+
+	return bn
+		.decimalPlaces(decimals, BN.ROUND_HALF_UP)
+		.toFormat(decimals)
+		.replace(new RegExp(`0+$`), '')
+		.replace(new RegExp(`\\${sep}$`), '')
+}
+
 export const normalizeAmount = target => {
 	if (target === ".") return "0."
 
@@ -59,7 +83,15 @@ export const normalizeAmount = target => {
 	if (target[target.length - 1] === ".") return target
 	if (!target.length) return ""
 	if (target.length === 1 && !/^(0|[1-9]\d*)(\.\d+)?$/.test(target)) return ""
-	if (Number.parseFloat(purgeNumber(target)) >= 9_999_999_999_999) return "9999999999999"
+}
+
+export const normalizeAmountToTokenStep = (bn, decimals) => {
+	const step = new BN(1).div(new BN(10).pow(decimals))
+
+	return bn
+		.div(step)
+		.integerValue(BN.ROUND_DOWN)
+		.times(step)
 }
 
 export const balanceFormatted = (balance, length) => {

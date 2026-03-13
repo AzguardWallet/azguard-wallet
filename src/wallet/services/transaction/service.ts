@@ -1,4 +1,4 @@
-import { TxHash, TxReceipt, TxStatus as AztecTxStatus, TxExecutionResult as AztecTxExecutionResult } from "@aztec/stdlib/tx";
+import { TxExecutionResult as AztecTxExecutionResult, TxHash, TxReceipt, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { FunctionSelector } from "@aztec/stdlib/abi";
@@ -185,7 +185,16 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                     try {
                         this.logDebug(`Sync ${this.pending.size} transactions...`);
                         const start = Date.now();
-                        await Promise.allSettled(this.pending.values().map(x => this.updateTx(x)));
+                        
+                        const groups = this.groupPendingByNonce();
+                        const tasks: Promise<void>[] = [];
+
+                        for (const txs of groups.values()) {
+                            tasks.push(this.updateTxGroup(txs));
+                        }
+
+                        await Promise.allSettled(tasks);
+
                         const end = Date.now();
                         this.logDebug(`Transactions synced in ${end - start}ms`);
                     } catch (error) {
@@ -194,127 +203,6 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 }
             }
             await sleep(1000);
-        }
-    }
-
-    /**
-     * Synchronizes transaction history for a persistent account.
-     * Can be called on account creation or manually to refresh history.
-     * PXE handles incremental sync internally via sliding window on tagging indexes.
-     * @param chainId Chain ID of the network.
-     * @param address Account address to sync.
-     */
-    public async syncTransactionHistory(chainId: number, address: string): Promise<void> {
-        // Skip if already syncing this account
-        if (this.syncingAccounts.has(address)) {
-            this.logDebug(`Sync: already syncing account=${address}, skipping`);
-            return;
-        }
-
-        // Look up profile, network, and account
-        const profile = await this.profileService.getActiveProfile();
-        if (!profile) {
-            this.logError("Sync: no active profile");
-            return;
-        }
-        const networks = await this.networkService.getNetworks(chainId);
-        const network = networks.find(n => n.isDefault) ?? networks.at(0);
-        if (!network) {
-            this.logError(`Sync: network not found for chainId=${chainId}`);
-            return;
-        }
-        const account = await this.accountService.getAccount(profile.id, chainId, address);
-        if (!account) {
-            this.logError(`Sync: account not found for address=${address}`);
-            return;
-        }
-        if (account.type !== AccountType.Azguard_v0_persistent) {
-            this.logDebug(`Sync: account ${address} is not persistent, skipping`);
-            return;
-        }
-
-        const task = this.taskService.startNewTask(new TransactionSyncContent(address));
-        this.syncingAccounts.set(address, task.id);
-
-        try {
-            this.logInfo(`Sync: starting for account=${address}`);
-
-            let cursor: TxIndexerCursor = (await this.cursors.get(address)) ?? {
-                account: address,
-                chainId,
-                head: 1,
-                updatedAt: null,
-            };
-
-            // Persist immediately so onActiveProfileChanged can resume if we crash before the first batch
-            await this.cursors.set(address, cursor);
-            const node = await this.networkService.getNode(account.chainId);
-            const contractAddress = AztecAddress.fromString(address);
-
-            // Ensure account contract is registered with PXE before querying private events
-            // TODO: consider moving this logic to the IAccountContract interface
-            const pxe = this.pxeService.getPXE(network);
-            const accountContract = await this.accountService.getAccountContract(
-                account.profileId,
-                account.chainId,
-                address,
-            );
-            await accountContract.ensureRegistered(pxe);
-            await accountContract.ensureContractRegistered(pxe);
-
-            const tip = await node.getBlockNumber();
-
-            // Session-scoped caches to avoid redundant metadata fetches and selector computations
-            const caches: SyncCaches = {
-                contractInstances: new Map(),
-                selectorMap: new Map(),
-                txReceipts: new Map(),
-            };
-
-            while (cursor.head <= tip) {
-                const endExclusive = Math.min(cursor.head + SYNC_BATCH_SIZE, tip + 1);
-                const filter: PrivateEventFilter = {
-                    contractAddress,
-                    scopes: [contractAddress],
-                    fromBlock: BlockNumber(cursor.head),
-                    toBlock: BlockNumber(endExclusive),
-                };
-
-                const start = Date.now();
-                const events = await this.pxeService.getPrivateEvents(
-                    network,
-                    FUNCTION_CALL_LOG_EVENT_SELECTOR,
-                    filter,
-                );
-                const duration = Date.now() - start;
-
-                this.logDebug(
-                    `Sync: account=${address} blocks=${cursor.head}-${endExclusive - 1} events=${events.length} time=${duration}ms`,
-                );
-
-                for (const ev of events) {
-                    await this.processFnCallEvent(account, node, pxe, ev, caches);
-                }
-
-                cursor.head = endExclusive;
-                await this.cursors.set(address, cursor);
-
-                if (cursor.head <= tip) {
-                    await sleep(SYNC_BATCH_PAUSE_MS);
-                }
-            }
-
-            cursor.updatedAt = Date.now();
-            await this.cursors.set(address, cursor);
-
-            this.taskService.completeTask(task.id);
-            this.logInfo(`Sync: completed for account=${address}`);
-        } catch (error) {
-            const errorMessage = getErrorMessage(error);
-            this.logError(`Sync: failed for account=${address}`, errorMessage);
-            this.taskService.failTask(task.id, errorMessage);
-        } finally {
-            this.syncingAccounts.delete(address);
         }
     }
 
@@ -500,19 +388,191 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         }
     }
 
-    private async updateTx(tx: Tx) {
-        this.logDebug(`Sync tx ${tx.hash.slice(0, 8)}`);
-        const node = await this.networkService.getNode(tx.chainId);
+    /**
+     * Synchronizes transaction history for a persistent account.
+     * Can be called on account creation or manually to refresh history.
+     * PXE handles incremental sync internally via sliding window on tagging indexes.
+     * @param chainId Chain ID of the network.
+     * @param address Account address to sync.
+     */
+    public async syncTransactionHistory(chainId: number, address: string): Promise<void> {
+        // Skip if already syncing this account
+        if (this.syncingAccounts.has(address)) {
+            this.logDebug(`Sync: already syncing account=${address}, skipping`);
+            return;
+        }
+
+        // Look up profile, network, and account
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            this.logError("Sync: no active profile");
+            return;
+        }
+        const networks = await this.networkService.getNetworks(chainId);
+        const network = networks.find(n => n.isDefault) ?? networks.at(0);
+        if (!network) {
+            this.logError(`Sync: network not found for chainId=${chainId}`);
+            return;
+        }
+        const account = await this.accountService.getAccount(profile.id, chainId, address);
+        if (!account) {
+            this.logError(`Sync: account not found for address=${address}`);
+            return;
+        }
+        if (account.type !== AccountType.Azguard_v0_persistent) {
+            this.logDebug(`Sync: account ${address} is not persistent, skipping`);
+            return;
+        }
+
+        const task = this.taskService.startNewTask(new TransactionSyncContent(address));
+        this.syncingAccounts.set(address, task.id);
+
+        try {
+            this.logInfo(`Sync: starting for account=${address}`);
+
+            let cursor: TxIndexerCursor = (await this.cursors.get(address)) ?? {
+                account: address,
+                chainId,
+                head: 1,
+                updatedAt: null,
+            };
+
+            // Persist immediately so onActiveProfileChanged can resume if we crash before the first batch
+            await this.cursors.set(address, cursor);
+            const node = await this.networkService.getNode(account.chainId);
+            const contractAddress = AztecAddress.fromString(address);
+
+            // Ensure account contract is registered with PXE before querying private events
+            // TODO: consider moving this logic to the IAccountContract interface
+            const pxe = this.pxeService.getPXE(network);
+            const accountContract = await this.accountService.getAccountContract(
+                account.profileId,
+                account.chainId,
+                address,
+            );
+            await accountContract.ensureRegistered(pxe);
+            await accountContract.ensureContractRegistered(pxe);
+
+            const tip = await node.getBlockNumber();
+
+            // Session-scoped caches to avoid redundant metadata fetches and selector computations
+            const caches: SyncCaches = {
+                contractInstances: new Map(),
+                selectorMap: new Map(),
+                txReceipts: new Map(),
+            };
+
+            while (cursor.head <= tip) {
+                const endExclusive = Math.min(cursor.head + SYNC_BATCH_SIZE, tip + 1);
+                const filter: PrivateEventFilter = {
+                    contractAddress,
+                    scopes: [contractAddress],
+                    fromBlock: BlockNumber(cursor.head),
+                    toBlock: BlockNumber(endExclusive),
+                };
+
+                const start = Date.now();
+                const events = await this.pxeService.getPrivateEvents(
+                    network,
+                    FUNCTION_CALL_LOG_EVENT_SELECTOR,
+                    filter,
+                );
+                const duration = Date.now() - start;
+
+                this.logDebug(
+                    `Sync: account=${address} blocks=${cursor.head}-${endExclusive - 1} events=${events.length} time=${duration}ms`,
+                );
+
+                for (const ev of events) {
+                    await this.processFnCallEvent(account, node, pxe, ev, caches);
+                }
+
+                cursor.head = endExclusive;
+                await this.cursors.set(address, cursor);
+
+                if (cursor.head <= tip) {
+                    await sleep(SYNC_BATCH_PAUSE_MS);
+                }
+            }
+
+            cursor.updatedAt = Date.now();
+            await this.cursors.set(address, cursor);
+
+            this.taskService.completeTask(task.id);
+            this.logInfo(`Sync: completed for account=${address}`);
+        } catch (error) {
+            const errorMessage = getErrorMessage(error);
+            this.logError(`Sync: failed for account=${address}`, errorMessage);
+            this.taskService.failTask(task.id, errorMessage);
+        } finally {
+            this.syncingAccounts.delete(address);
+        }
+    }
+
+    private groupPendingByNonce() {
+        const groups = new Map<string, Tx[]>();
+
+        for (const tx of this.pending.values()) {
+            const key = `${tx.account}:${tx.nonce}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key)!.push(tx);
+        }
+
+        return groups;
+    }
+
+    private async updateTxGroup(txs: Tx[]) {
+        const node = await this.networkService.getNode(txs[0].chainId);
         if (!node) {
             this.logError("Unknown network");
             return;
         }
 
-        const receipt = await node.getTxReceipt(TxHash.fromString(tx.hash));
+        const receipts = await Promise.all(
+            txs.map(tx => {
+                this.logDebug(`Sync tx ${tx.hash.slice(0, 8)}`);
+                
+                return node.getTxReceipt(TxHash.fromString(tx.hash))
+                    .then(r => ({ tx, receipt: r }))
+                }
+            )
+        );
+
+        const finalized = receipts.filter(r => r.receipt.status !== AztecTxStatus.PENDING);
+        if (!finalized.length || finalized.length === receipts.length) {
+            for (const r of receipts) {
+                await this.applyReceipt(r.tx, r.receipt);
+            }
+            
+            return;
+        } else {
+            const dropped = finalized.some(r => r.receipt.status === AztecTxStatus.DROPPED);
+            if (dropped) {
+                for (const r of receipts) {
+                    if (r.receipt.status === AztecTxStatus.PENDING && r.tx.status == TxStatus.Cancelling) {
+                        await this.updateTxStatus(r.tx, TxStatus.Pending);
+                    } else {
+                        await this.applyReceipt(r.tx, r.receipt);
+                    }
+                }
+            } else {
+                for (const r of receipts) {
+                    if (r.receipt.status === AztecTxStatus.PENDING) {
+                        await this.updateTxStatus(r.tx, TxStatus.Cancelled);
+                        this.pending.delete(r.tx.hash);
+                    } else {
+                        await this.applyReceipt(r.tx, r.receipt);
+                    }
+                }
+            }
+        }
+    }
+
+    private async applyReceipt(tx: Tx, receipt: TxReceipt) {
         const status = this.getTxStatus(receipt.status);
         const executionResult = this.getTxExecutionResult(receipt.executionResult);
-        if (status === tx.status && executionResult === tx.executionResult) {
-            this.logDebug(`Tx ${tx.hash.slice(0, 8)} still ${receipt.status}`);
+        if (status == TxStatus.Pending) {
+            this.logDebug(`Tx ${tx.hash.slice(0, 8)} still ${TxStatus[tx.status]}`);
             return;
         }
 
@@ -528,10 +588,27 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
         await this.txs.set(tx.hash, tx);
         this.emit("onTransactionUpdated", tx);
-        if (tx.status != TxStatus.Pending) {
-            this.pending.delete(tx.hash);
-        }
+        this.pending.delete(tx.hash);
         this.logDebug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
+    }
+
+    public async updateTxStatus(tx: Tx, status: TxStatus) {
+        const current = await this.txs.get(tx.hash);  
+        if (!current) {  
+            throw new Error("Transaction not found in storage");  
+        }
+
+        if (current.status != TxStatus.Pending && status == TxStatus.Cancelling) {
+            throw new Error("Only pending transactions can be cancelled");
+        }
+
+        current.updatedAt = Date.now();
+        current.status = status;
+
+        await this.txs.set(current.hash, current);
+        
+        this.emit("onTransactionUpdated", current);
+        this.logDebug(`Tx ${current.hash.slice(0, 8)} status updated to ${TxStatus[status]}`);
     }
 
     private getTxStatus(status: AztecTxStatus): TxStatus {

@@ -3,7 +3,7 @@
 import BN from "bignumber.js"
 
 /** Utils */
-import { purgeNumber, normalizeAmount, comma } from "@/utils/amount.js"
+import { comma, formatAmount, normalizeAmount, normalizeAmountToTokenStep, parseAmountBN, purgeNumber } from "@/utils/amount.js"
 
 const props = defineProps({
 	selectedSendType: {
@@ -20,16 +20,23 @@ const model = defineModel()
 
 const inputEl = useTemplateRef("inputEl")
 
-onMounted(() => {
-	if (props.tokenBalanceByType) inputEl.value.focus()
-})
+const warning = ref("")
+
+const decimals = computed(() => props.token?.decimals ?? 8)
 
 const handleAmountInput = e => {
+	warning.value = ""
 	const purgedAmount = purgeNumber(model.value)
 
 	model.value = purgedAmount
 
 	if (["0", ","].includes(e.data) && model.value.length === 1) model.value = "0."
+	
+	if (Number.parseFloat(purgedAmount) >= 9_999_999_999_999) {
+		warning.value = "Amount adjusted to max value."
+		model.value = "9999999999999"
+		return
+	}
 
 	const normalizedAmount = normalizeAmount(purgedAmount)
 	if (typeof normalizedAmount === "string") {
@@ -42,39 +49,59 @@ const isFocused = ref(false)
 const handleAmountFocus = () => {
 	if (props.tokenBalanceByType) isFocused.value = true
 }
-const handleAmountBlur = () => {
-	isFocused.value = false
 
-	if (!model.value) return
-	if (model.value.toString().includes(",")) return model.value
+const amountInUSD = computed(() => {
+	const bn = parseAmountBN()
+	if (!bn) return 0
 
-	model.value = comma(model.value, ",", 8)
-}
-
-const amountInUSD = computed(() => Number.parseFloat(purgeNumber(model.value || 0)) * 3.4)
+	return bn.times(3.4).toNumber()
+})
 
 const handleFocus = () => {
 	if (props.tokenBalanceByType) inputEl.value.focus()
 }
 
+const handleAmountBlur = () => {
+	isFocused.value = false
+
+	const bn = parseAmountBN(model.value)
+	if (!bn) return
+
+	const normalized = normalizeAmountToTokenStep(bn, decimals.value)
+
+	if (!bn.eq(normalized)) {
+		warning.value = `Amount adjusted to token precision (${decimals.value} decimals).`
+	}
+
+	model.value = formatAmount(normalized, decimals.value)
+}
+
 const handleMax = () => {
 	if (!props.tokenBalanceByType) return
-	model.value = props.tokenBalanceByType
+
+	model.value = formatAmount(
+		new BN(props.tokenBalanceByType)
+	)
 }
 
 const handleHalf = () => {
-	if (!model.value) {
-		if (!props.tokenBalanceByType) return
-		model.value = new BN(props.tokenBalanceByType) / 2
-	} else {
-		model.value = Number.parseFloat(purgeNumber(model.value)) / 2
-	}
+	if (!props.tokenBalanceByType) return
+
+	const base = parseAmountBN() ?? new BN(props.tokenBalanceByType)
+
+	model.value = formatAmount(
+		base.div(2)
+	)
 }
+
+onMounted(() => {
+	if (props.tokenBalanceByType) inputEl.value.focus()
+})
 </script>
 
 <template>
 	<Flex @click="handleFocus" gap="16" direction="column" :class="[$style.wrapper, isFocused && $style.focused]">
-		<Flex direction="column" gap="8">
+		<Flex direction="column" gap="8" style="position: relative;">
 			<input
 				ref="inputEl"
 				v-model="model"
@@ -85,6 +112,17 @@ const handleHalf = () => {
 				placeholder="0.00"
 				:class="$style.input_field"
 			/>
+
+			<Tooltip v-if="warning" position="end" side="top" :class="$style.warning">
+				<Icon name="warning" size="12" color="yellow" />
+
+				<template #content>
+					<Text size="12" color="secondary">
+						{{ warning }}
+					</Text>
+				</template>
+			</Tooltip>
+			
 
 			<Tooltip position="start">
 				<Flex align="center" gap="4" style="opacity: 0.5">
@@ -153,6 +191,14 @@ const handleHalf = () => {
 	&::placeholder {
 		color: var(--txt-tertiary);
 	}
+}
+
+.warning {
+	position: absolute;
+	top: 0;
+	right: 0;
+
+	cursor: help;
 }
 
 .test {

@@ -1,4 +1,4 @@
-import type { TransferType, LocalTxOrigin } from "@/wallet/services/transaction/spec";
+import type { TransferType, Tx, LocalTxOrigin } from "@/wallet/services/transaction/spec";
 import type { FeeSettings, Operation, OperationResult } from "./models";
 
 export const EXECUTION_SERVICE_NAME = "execution";
@@ -24,10 +24,18 @@ export type Methods = {
         amount: bigint,
         feeSettings: FeeSettings,
     ): string;
+
     /**
      * Executes batch of operations.
      * @param operations Operations to execute.
      * @param origin Origin.
      */
     executeOperations(operations: Operation[], origin: LocalTxOrigin): OperationResult[];
+
+    /**
+     * Cancel pending transaction.
+     * @param cancellingTx Transaction to cancel.
+     * @param networkId Network id.
+     */
+    cancelTx(cancellingTx: Tx, networkId: string, feeSettings: FeeSettings): string;
 };

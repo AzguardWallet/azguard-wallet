@@ -387,9 +387,9 @@ onBeforeUnmount(() => {
 				<Tooltip v-else>
 					<Flex @click="handleCopy(appStore.account?.address, 'Address')" align="center" gap="6" :class="[$style.badge]">
 						<Text size="12" weight="600" color="secondary">
-							{{ appStore.account.address.slice(0, 6) }}
+							{{ appStore.account?.address?.slice(0, 6) }}
 							<Text color="dark">•••</Text>
-							{{ appStore.account.address.slice(-4) }}
+							{{ appStore.account?.address?.slice(-4) }}
 						</Text>
 						<Icon
 							:name="isCopied ? 'check-circle' : 'copy'"

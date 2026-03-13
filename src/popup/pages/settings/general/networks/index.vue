@@ -90,7 +90,7 @@ const handleDelete = target => {
 					iconBgColor="transparent"
 				>
 					<template #right>
-						<NetworkBadge :chainId="network.chainId" />
+						<NetworkBadge :network="network" />
 
 						<Flex align="center" gap="8">
 							<Tooltip position="end" delay="350">

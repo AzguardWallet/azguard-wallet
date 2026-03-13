@@ -14,7 +14,7 @@ import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 import FeeSettingsCard from "@/popup/components/modules/send/FeeSettingsCard.vue"
 
 /** Utils */
-import { purgeNumber, normalizeAmount } from "@/utils/amount.js"
+import { formatAmount, normalizeAmount, normalizeAmountToTokenStep, parseAmountBN, purgeNumber } from "@/utils/amount.js"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -60,6 +60,7 @@ const tokens = ref([])
 const token = computed(() =>
 	tokens.value.find(t => t.id == route.params.id || (t.symbol === tokenSymbolTerm.value && t.name === tokenNameTerm.value)),
 )
+const decimals = 7
 
 const isPreselected = ref(false)
 const tokenNameTerm = ref("")
@@ -67,17 +68,10 @@ const tokenSymbolTerm = ref("")
 const amountTerm = ref("")
 
 const isLoading = ref(false)
+const warning = ref("")
 
 const handleAmountInput = e => {
-	if (amountTerm.value.length >= 32) {
-		amountTerm.value = amountTerm.value.slice(0, 32)
-		return
-	}
-
-	if (new BN(amountTerm.value) > 100_000) {
-		amountTerm.value = 100_000
-		return
-	}
+	warning.value = ""
 
 	if (["0", ","].includes(e.data) && amountTerm.value.length === 1) {
 		amountTerm.value = "0."
@@ -86,10 +80,28 @@ const handleAmountInput = e => {
 
 	amountTerm.value = purgeNumber(amountTerm.value)
 
+	if (Number.parseFloat(amountTerm.value) >= 100_000) {
+		warning.value = "Amount adjusted to max value"
+		amountTerm.value = 100_000
+		return
+	}
+
 	const normalizedAmount = normalizeAmount(amountTerm.value)
 	if (typeof normalizedAmount === "string") {
 		amountTerm.value = normalizedAmount
 	}
+}
+const handleAmountBlur = () => {
+	const bn = parseAmountBN(amountTerm.value)
+	if (!bn) return
+
+	const normalized = normalizeAmountToTokenStep(bn, decimals)
+
+	if (!bn.eq(normalized)) {
+		warning.value = `Precision adjusted to min value (${decimals} decimals).`
+	}
+
+	amountTerm.value = formatAmount(normalized, decimals)
 }
 
 const handleNameInput = () => {
@@ -141,7 +153,7 @@ const handleMint = async () => {
 			name,
 			symbol,
 			8,
-			new BN(amountTerm.value).times(10 ** 8),
+			new BN(purgeNumber(amountTerm.value)).times(10 ** 8),
 			feeSettings.value,
 		)
 
@@ -240,6 +252,7 @@ const onKeydown = e => {
 					:disabled="isLoading"
 					@focus="error = null"
 					@input="handleAmountInput"
+					@blur="handleAmountBlur"
 					:autofocus="!!token"
 				>
 					<template #suffix>
@@ -248,10 +261,14 @@ const onKeydown = e => {
 
 					<template v-if="amountTerm" #right>
 						<Tooltip position="end" side="top">
-							<Icon name="info" size="12" color="tertiary" hoverColor="primary" />
+							<Icon name="info" size="12" color="tertiary" hoverColor="primary" :class="warning && $style.warning_icon" />
 
 							<template #content>
 								<Flex direction="column" gap="16">
+									<Flex v-if="warning" align="center" justify="between">
+										<Text color="yellow"> {{ warning }} </Text>
+									</Flex>
+
 									<Flex direction="column" gap="8">
 										<Flex align="center" justify="between">
 											<Text color="secondary">Min:</Text>
@@ -267,20 +284,20 @@ const onKeydown = e => {
 										<Flex align="center" justify="between">
 											<Text color="secondary">Private balance:</Text>
 											<Text color="primary">
-												&nbsp;{{ new BN(amountTerm).dividedBy(2).toFormat() }}
+												&nbsp;{{ new BN(purgeNumber(amountTerm)).dividedBy(2).toFormat() }}
 											</Text>
 										</Flex>
 
 										<Flex align="center" justify="between">
 											<Text color="secondary">Public balance:</Text>
 											<Text color="primary">
-												&nbsp;{{ new BN(amountTerm).dividedBy(2).toFormat() }}
+												&nbsp;{{ new BN(purgeNumber(amountTerm)).dividedBy(2).toFormat() }}
 											</Text>
 										</Flex>
 
 										<Flex align="center" justify="between">
 											<Text color="secondary">Total amount:</Text>
-											<Text color="primary"> &nbsp;{{ new BN(amountTerm).toFormat() }} </Text>
+											<Text color="primary"> &nbsp;{{ new BN(purgeNumber(amountTerm)).toFormat() }} </Text>
 										</Flex>
 									</Flex>
 								</Flex>
@@ -327,5 +344,15 @@ const onKeydown = e => {
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.warning_icon {
+	opacity: 0.8;
+	fill: var(--yellow) !important;
+
+	&:hover {
+		fill: var(--yellow);
+		opacity: 1;
+	}
 }
 </style>

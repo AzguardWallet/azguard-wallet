@@ -45,10 +45,7 @@ const handleCreateAccount = async () => {
 
 	appStore.account = account
 	appStore.accounts.push(account)
-
-	await chrome.storage.local.set({
-		"azguard:ui:activeAccount": account.address,
-	})
+	await appStore.setActiveAccount(account.address)
 
 	emit("onClose")
 }

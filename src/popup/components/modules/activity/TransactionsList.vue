@@ -41,13 +41,18 @@ const handleSelectTx = (target) => {
 	cacheStore.activeTxHash = target.hash
 	popupStore.open("tx")
 }
+
+function handleCancelTx(tx) {
+	cacheStore.activeTxHash = tx.hash
+	popupStore.open("cancel_tx")
+}
 </script>
 
 <template>
 	<Flex direction="column" gap="16">
 		<Flex v-for="group in groupedTransactions" :key="group.date" direction="column" gap="8">
 			<!-- Date separator -->
-			<Flex align="center" gap="8" :class="$style.date_separator">
+			<Flex align="center" justify="end" gap="12" wide :class="$style.date_separator">
 				<Text size="12" weight="600" color="tertiary">{{ group.date }}</Text>
 				<div :class="$style.separator_line" />
 			</Flex>
@@ -58,6 +63,7 @@ const handleSelectTx = (target) => {
 				:key="tx.hash"
 				:tx="tx"
 				@click="handleSelectTx(tx)"
+				@cancelTx="handleCancelTx(tx)"
 			/>
 		</Flex>
 	</Flex>
@@ -65,7 +71,7 @@ const handleSelectTx = (target) => {
 
 <style module>
 .date_separator {
-	padding: 0 8px;
+	padding: 0 8px 6px 8px;
 }
 
 .separator_line {

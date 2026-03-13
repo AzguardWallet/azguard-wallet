@@ -3,6 +3,7 @@ import { defineStore } from "pinia"
 
 import type { Account } from "@/wallet/services/account/client"
 import { NodeStatus } from "@/wallet/services/network/client"
+import { Tx, TxStatus } from "@/wallet/services/transaction/client"
 import type { BlockExplorerType } from "@/wallet/constants/explorers"
 
 import { useSyncedRef } from "@/composables/syncedRef.js"
@@ -57,27 +58,26 @@ export const useAppStore = defineStore("app", () => {
 	const isSessionChecked = ref<boolean>(false)
 	const pageAwaitingAuth = ref<string>("")
 
+	const activeAccountKey = computed(() => `azguard:ui:activeAccount@${profile.value?.id}`)
+	async function setActiveAccount(address: String) {
+		if (!address || !profile.value?.id) return
+
+		await chrome.storage.local.set({ [activeAccountKey.value]: address })
+	}
 	const setupActiveAccount = async () => {
-		const activeAccountResult = await chrome.storage.local.get("azguard:ui:activeAccount")
-		if ("azguard:ui:activeAccount" in activeAccountResult) {
-			const activeAccountAddress = activeAccountResult["azguard:ui:activeAccount"]
-			const activeAccount = accounts.value.find(a => a.address === activeAccountAddress)
-			if (activeAccount) {
-				account.value = activeAccount
-				return
-			}
+		const activeAccountAddress = (await chrome.storage.local.get(activeAccountKey.value))[activeAccountKey.value]
+		const activeAccount = accounts.value.find(a => a.address === activeAccountAddress)
+		if (activeAccount) {
+			account.value = activeAccount
+			return
 		}
 
 		account.value = accounts.value[0]
-		await chrome.storage.local.set({
-			"azguard:ui:activeAccount": account.value?.address,
-		})
+		await setActiveAccount(account.value?.address)
 	}
 	const selectAccount = async (acc: Account) => {
 		account.value = acc
-		await chrome.storage.local.set({
-			"azguard:ui:activeAccount": acc.address,
-		})
+		await setActiveAccount(account.value?.address)
 	}
 	const changeAccountVisibility = async (acc: Account, value: boolean) => {
 		const accIdx = accounts.value.findIndex(a => acc.address === a.address)
@@ -88,9 +88,7 @@ export const useAppStore = defineStore("app", () => {
 		if (!value) {
 			if (accounts.value.length) {
 				account.value = accounts.value.filter(a => a.visible).sort((a, b) => a.index - b.index)[0]
-				await chrome.storage.local.set({
-					"azguard:ui:activeAccount": account.value?.address,
-				})
+				await setActiveAccount(account.value?.address)
 			}
 		}
 	}
@@ -129,8 +127,11 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const awaitingTransactions = ref([])
-	const transactions = ref([])
-	const onTxAdded = async (tx) => {
+	const transactions = ref<Tx[]>([])
+	const cancellingTxs = computed(() => {
+		return transactions.value.filter(t => t.status === TxStatus.Cancelling)
+	})
+	const onTxAdded = async (tx: Tx) => {
 		transactions.value.unshift(tx)
 		const call = tx.calls[0]
 		const destination = call?.transfers?.length ? call?.transfers[0].to : call?.args?.[1]
@@ -176,6 +177,7 @@ export const useAppStore = defineStore("app", () => {
 		isSessionChecked,
 		pageAwaitingAuth,
 		accounts,
+		setActiveAccount,
 		setupActiveAccount,
 		selectAccount,
 		changeAccountVisibility,
@@ -188,6 +190,7 @@ export const useAppStore = defineStore("app", () => {
 		updateNetwork,
 		removeNetwork,
 		transactions,
+		cancellingTxs,
 		onTxAdded,
 		onTxUpdated,
 		syncTransactions,

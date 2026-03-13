@@ -65,7 +65,7 @@ const decryptionPassword = ref('')
 const isPasswordType = ref(true)
 const hideCredentials = ref(true)
 const maxPasswordLength = 128
-
+const isSeedPhraseCorrect = ref(undefined)
 const error = ref({ type: "", title: "", tooltip: ""})
 const fillError = (type, title, tooltip) => {
 	if (!title) {
@@ -89,15 +89,25 @@ function handleCopyError(error) {
 }
 
 const handlePasswordInput = () => {
+	isSeedPhraseCorrect.value = undefined
 	if (error.value.type === "password") {
 		fillError()
 	}
 }
-
 const handleSecretInput = () => {
+	isSeedPhraseCorrect.value = undefined
+
 	if (error.value.type === "secret") {
 		fillError()
 	}
+}
+const handleSeedPhraseInputBlur = () => {
+	if (!seedPhrase.value) {
+		isSeedPhraseCorrect.value = undefined
+		return
+	}
+	
+	isSeedPhraseCorrect.value = seedPhrase.value?.split(" ").length === 24
 }
 
 const isAllowedToContinue = computed(() => {
@@ -854,12 +864,13 @@ watch(
 							v-if="selectedImportOption === 'seed'"
 							v-model="seedPhrase"
 							@input="handleSecretInput"
+							@blur="handleSeedPhraseInputBlur"
 							:type="hideCredentials ? 'password' : 'text'"
 							label="Seed Phrase"
 							placeholder="Enter seed phrase "
 						>
 							<template #labelSuffix>
-								<Tooltip position="start">
+								<Tooltip position="end" side="top">
 									<Icon name="info" size="12" color="tertiary" hoverColor="primary" />
 
 									<template #content> Words should be separated by spaces </template>
@@ -876,11 +887,16 @@ watch(
 								/>
 							</template>
 
-							<template v-if="seedPhrase?.split(' ').length === 24" #right>
-								<Flex align="center" gap="4">
+							<template v-if="isSeedPhraseCorrect !== undefined" #right>
+								<Flex v-if="isSeedPhraseCorrect" align="center" gap="4">
 									<Icon name="check-circle" size="12" color="green" />
 									<Text size="12" weight="600" color="primary">Correct</Text>
 								</Flex>
+								<Tooltip v-else position="end" side="top">
+									<Icon name="close-circle" size="12" :class="!isSeedPhraseCorrect && $style.error_icon" />
+
+									<template #content> The phrase should consist of 24 words </template>
+								</Tooltip>
 							</template>
 						</Input>
 
@@ -1101,6 +1117,16 @@ watch(
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.error_icon {
+	fill: var(--red) !important;
+	opacity: 0.8;
+
+	&:hover {
+		fill: var(--red) !important;
+		opacity: 1;
+	}
 }
 
 .error_wrapper {

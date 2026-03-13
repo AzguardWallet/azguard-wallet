@@ -26,7 +26,7 @@ const appStore = useAppStore()
 		<Flex v-if="appStore.profile.type === 'passkey'" direction="column" gap="24">
 			<Flex direction="column" align="center" gap="16" :class="$style.page_header">
 				<Flex :class="$style.page_icon">
-					<Icon name="download" size="24" color="primary" />
+					<Icon name="key-square" size="24" color="primary" />
 					<div />
 				</Flex>
 
@@ -56,7 +56,7 @@ const appStore = useAppStore()
 		<Flex v-else direction="column" gap="24">
 			<Flex direction="column" align="center" gap="16" :class="$style.page_header">
 				<Flex :class="$style.page_icon">
-					<Icon name="download" size="24" color="primary" />
+					<Icon name="key-square" size="24" color="primary" />
 					<div />
 				</Flex>
 
