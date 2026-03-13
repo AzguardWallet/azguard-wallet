@@ -105,6 +105,7 @@ const prepareFpc = (fpc) => {
 		return {
 			...fpc,
 			typeName: "sponsored",
+			typeDescription: "Fees covered by sponsor",
 			color: getChainColor(appStore.network.chainId),
 		}
 	}
@@ -112,14 +113,17 @@ const prepareFpc = (fpc) => {
 		return {
 			...fpc,
 			typeName: "private",
+			typeDescription: "Pays fees from your private Fee Juice",
 			color: "green",
 		}
 	}
+	const token = tokens.value?.get(fpc.asset)
 	return {
 		...fpc,
-		typeName: "fpc",
+		typeName: "token",
+		typeDescription: token ? `Pays fees using ${token.symbol}` : "Token FPC",
 		color: "green",
-		token: tokens.value?.get(fpc.asset),
+		token,
 	}
 }
 const fetchFpcs = async () => {
@@ -325,10 +329,11 @@ onBeforeUnmount(() => {
 					v-for="fpc in filteredFpcs"
 					size="large"
 					:title="fpc.name || fpc.address"
-					:description="fpc.name ? fpc.address : null"
+					:description="fpc.typeDescription"
 					icon="fpc"
 					iconBgColor="transparent"
 					raw
+					:class="$style.fpc_item"
 				>
 					<template #right>
 						<Flex
@@ -448,6 +453,18 @@ onBeforeUnmount(() => {
 	color: var(--txt-inverse);
 	span {
 		line-height: 1.2;
+	}
+}
+
+.fpc_item {
+	min-height: 60px;
+	height: auto !important;
+	padding-top: 8px;
+	padding-bottom: 8px;
+
+	/* Allow description to wrap instead of truncating */
+	& span:last-child {
+		white-space: normal;
 	}
 }
 

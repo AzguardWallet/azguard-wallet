@@ -18,10 +18,12 @@ import { balanceFormatted } from "@/utils/amount.js"
 import { trimAddress } from "@/utils/string"
 import { getTxCategory, getTxTitle, humanizeMethodName, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
 import { formatFeeJuice, feeToUsd } from "@/utils/fee-estimation"
+import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
+const { handleExternalLink } = useExternalLink()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -132,6 +134,11 @@ const formattedEstFeeUsd = computed(() => {
 	if (!tx.value?.estimatedFee) return null
 	return feeToUsd(BigInt(tx.value.estimatedFee))
 })
+
+const explorerUrl = computed(() => {
+	if (!appStore.network?.chainId || !tx.value?.hash) return null
+	return getTransactionExplorerUrl(appStore.network.chainId, appStore.defaultExplorer, tx.value.hash)
+})
 </script>
 
 <template>
@@ -150,11 +157,23 @@ const formattedEstFeeUsd = computed(() => {
 						{{ txTime }}
 					</Text>
 
-					<Flex @click="handleCopy(tx.hash)" align="start" gap="6" class="copyable" :class="$style.hash_row">
-						<Text size="12" weight="500" color="tertiary" :style="{ wordBreak: 'break-all', lineHeight: '1.4' }">
+					<Flex align="start" gap="6" :class="$style.hash_row">
+						<Text @click="handleCopy(tx.hash)" size="12" weight="500" color="tertiary" class="copyable" :style="{ wordBreak: 'break-all', lineHeight: '1.4', flex: 1 }">
 							{{ tx.hash }}
 						</Text>
-						<Icon name="copy" size="12" color="tertiary" :style="{ flexShrink: 0, marginTop: '2px' }" />
+						<Flex align="center" gap="4" :style="{ flexShrink: 0, marginTop: '2px' }">
+							<Icon @click="handleCopy(tx.hash)" name="copy" size="12" color="tertiary" class="copyable" />
+							<a
+								v-if="explorerUrl"
+								:href="explorerUrl"
+								target="_blank"
+								rel="noopener noreferrer"
+								@click.stop="handleExternalLink($event, explorerUrl)"
+								:class="$style.explorer_link"
+							>
+								<Icon name="external-link" size="12" color="tertiary" />
+							</a>
+						</Flex>
 					</Flex>
 				</Flex>
 
@@ -397,6 +416,21 @@ const formattedEstFeeUsd = computed(() => {
 	padding: 4px 6px;
 	background: var(--gray-3);
 	border-radius: 4px;
+}
+
+.explorer_link {
+	display: flex;
+	align-items: center;
+	text-decoration: none;
+	cursor: pointer;
+
+	& svg {
+		transition: fill 0.2s var(--bezier);
+	}
+
+	&:hover svg {
+		fill: var(--txt-primary);
+	}
 }
 
 .error_text {

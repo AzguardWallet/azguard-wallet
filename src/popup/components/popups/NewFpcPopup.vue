@@ -40,8 +40,8 @@ const fpcs = ref([])
 const balances = ref([])
 const selectedFpcType = ref(null)
 const fpcTypes = {
-	"DefaultFpc": "FPC",
-	"DefaultSponsoredFpc": "Sponsored FPC"
+	"DefaultFpc": { label: "Token FPC", description: "Pays fees using an ERC-20 token" },
+	"DefaultSponsoredFpc": { label: "Sponsored FPC", description: "A third party covers your fees" },
 }
 const isTypeDropdownOpen = ref(false)
 const nameTerm = ref("")
@@ -202,7 +202,7 @@ const onKeydown = e => {
 					<Dropdown @onOpen="isTypeDropdownOpen = true" @onClose="isTypeDropdownOpen = false" :disabled="isLoading" :style="{ cursor: 'pointer' }">
 						<Flex align="center" gap="6">
 							<Text v-if="selectedFpcType" size="13" weight="600" color="primary">
-								{{ fpcTypes[selectedFpcType] }}
+								{{ fpcTypes[selectedFpcType].label }}
 							</Text>
 							<Text v-else size="12" weight="600" color="red"> Select FPC type </Text>
 
@@ -219,12 +219,15 @@ const onKeydown = e => {
 
 						<template #popup>
 							<DropdownItem
-								v-for="(label, type) in fpcTypes"
+								v-for="(info, type) in fpcTypes"
 								@click="selectedFpcType = type"
 							>
-								<Flex align="center" gap="8">
+								<Flex direction="column" gap="2">
 									<Text size="13" weight="600" color="primary">
-										{{ label }}
+										{{ info.label }}
+									</Text>
+									<Text size="11" weight="500" color="tertiary">
+										{{ info.description }}
 									</Text>
 								</Flex>
 							</DropdownItem>
