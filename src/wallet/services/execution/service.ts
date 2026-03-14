@@ -1,4 +1,4 @@
-import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
+import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash, CallAuthorizationRequest } from "@aztec/aztec.js/authorization";
 import type { InteractionWaitOptions, SendReturn } from "@aztec/aztec.js/contracts";
 import type { SimulateTxOpts } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
@@ -37,6 +37,7 @@ import {
     TxSimulationResult,
     UtilitySimulationResult,
     Tx,
+    collectOffchainEffects,
 } from "@aztec/stdlib/tx";
 import z from "zod";
 import { NetworkService, Network } from "@/wallet/services/network/service";
@@ -58,7 +59,7 @@ import { TransactionService, OriginType, TransferType, TxCall, LocalTxOrigin, Tx
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { feeJuiceAddress, getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
-import { computeMaxFee } from "@/utils/fee-estimation";
+import { computeMaxFee, formatFeeJuice, feeToUsd } from "@/utils/fee-estimation";
 import {
     TaskService,
     WrappedTask,
@@ -109,6 +110,7 @@ import {
     type FeeOptions,
     type FeePaymentMethod,
     type GasBalances,
+    type TransferFeeEstimate,
 } from "./spec";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
@@ -189,6 +191,90 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         });
     }
 
+    private async buildTransferOperation(
+        networkId: string,
+        accountAddress: string,
+        tokenId: number,
+        transferType: TransferType,
+        recipientAddress: string,
+        amount: bigint,
+        feeSettings: FeeSettings,
+    ): Promise<{ op: SendTransactionOperation; token: any; fn: Fn; args: any[] }> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Unauthorized");
+        }
+        const token = await this.tokenService.getTokenRaw(tokenId);
+
+        let fn: Fn;
+        let args: any[];
+        switch (transferType) {
+            case TransferType.Private: {
+                if (!token.transferPrivateFn) {
+                    throw new Error("Transfer type not supported");
+                }
+                fn = TransferPrivateFn.new(token.transferPrivateFn.name, token.transferPrivateFn.impl);
+                args = (fn as TransferPrivateFn).buildArgs(accountAddress, recipientAddress, amount);
+                break;
+            }
+            case TransferType.PrivateToPublic: {
+                if (!token.transferPrivateToPublicFn) {
+                    throw new Error("Transfer type not supported");
+                }
+                fn = TransferPrivateToPublicFn.new(
+                    token.transferPrivateToPublicFn.name,
+                    token.transferPrivateToPublicFn.impl,
+                );
+                args = (fn as TransferPrivateToPublicFn)?.buildArgs(accountAddress, recipientAddress, amount);
+                break;
+            }
+            case TransferType.Public: {
+                if (!token.transferPublicFn) {
+                    throw new Error("Transfer type not supported");
+                }
+                fn = TransferPublicFn.new(token.transferPublicFn.name, token.transferPublicFn.impl);
+                args = (fn as TransferPublicFn)?.buildArgs(accountAddress, recipientAddress, amount);
+                break;
+            }
+            case TransferType.PublicToPrivate: {
+                if (!token.transferPublicToPrivateFn) {
+                    throw new Error("Transfer type not supported");
+                }
+                fn = TransferPublicToPrivateFn.new(
+                    token.transferPublicToPrivateFn.name,
+                    token.transferPublicToPrivateFn.impl,
+                );
+                args = (fn as TransferPublicToPrivateFn)?.buildArgs(accountAddress, recipientAddress, amount);
+                break;
+            }
+            default:
+                throw new Error("Invalid transfer type");
+        }
+        const selector = await fn.getSelector();
+        const encodedArgs = fn.encodeArgs(args);
+
+        const op: SendTransactionOperation = {
+            kind: "send_transaction",
+            networkId,
+            accountAddress,
+            feeSettings,
+            actions: [
+                {
+                    kind: "encoded_call",
+                    to: token.contract,
+                    selector: selector.toString(),
+                    args: encodedArgs.map(x => x.toString()),
+                    name: fn.name,
+                    type: fn.type,
+                    isStatic: fn.isStatic,
+                    returnTypes: [],
+                },
+            ],
+        };
+
+        return { op, token, fn, args };
+    }
+
     public async executeTransfer(
         networkId: string,
         accountAddress: string,
@@ -205,77 +291,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const transferTask = this.taskService.startNewTask(transferContent, undefined, origin);
 
         try {
-            const profile = await this.profileService.getActiveProfile();
-            if (!profile) {
-                throw new Error("Unauthorized");
-            }
-            const token = await this.tokenService.getTokenRaw(tokenId);
-
-            let fn: Fn;
-            let args: any[];
-            switch (transferType) {
-                case TransferType.Private: {
-                    if (!token.transferPrivateFn) {
-                        throw new Error("Transfer type not supported");
-                    }
-                    fn = TransferPrivateFn.new(token.transferPrivateFn.name, token.transferPrivateFn.impl);
-                    args = (fn as TransferPrivateFn).buildArgs(accountAddress, recipientAddress, amount);
-                    break;
-                }
-                case TransferType.PrivateToPublic: {
-                    if (!token.transferPrivateToPublicFn) {
-                        throw new Error("Transfer type not supported");
-                    }
-                    fn = TransferPrivateToPublicFn.new(
-                        token.transferPrivateToPublicFn.name,
-                        token.transferPrivateToPublicFn.impl,
-                    );
-                    args = (fn as TransferPrivateToPublicFn)?.buildArgs(accountAddress, recipientAddress, amount);
-                    break;
-                }
-                case TransferType.Public: {
-                    if (!token.transferPublicFn) {
-                        throw new Error("Transfer type not supported");
-                    }
-                    fn = TransferPublicFn.new(token.transferPublicFn.name, token.transferPublicFn.impl);
-                    args = (fn as TransferPublicFn)?.buildArgs(accountAddress, recipientAddress, amount);
-                    break;
-                }
-                case TransferType.PublicToPrivate: {
-                    if (!token.transferPublicToPrivateFn) {
-                        throw new Error("Transfer type not supported");
-                    }
-                    fn = TransferPublicToPrivateFn.new(
-                        token.transferPublicToPrivateFn.name,
-                        token.transferPublicToPrivateFn.impl,
-                    );
-                    args = (fn as TransferPublicToPrivateFn)?.buildArgs(accountAddress, recipientAddress, amount);
-                    break;
-                }
-                default:
-                    throw new Error("Invalid transfer type");
-            }
-            const selector = await fn.getSelector();
-            const encodedArgs = fn.encodeArgs(args);
-
-            const op: Operation = {
-                kind: "send_transaction",
-                networkId,
-                accountAddress,
-                feeSettings,
-                actions: [
-                    {
-                        kind: "encoded_call",
-                        to: token.contract,
-                        selector: selector.toString(),
-                        args: encodedArgs.map(x => x.toString()),
-                        name: fn.name,
-                        type: fn.type,
-                        isStatic: fn.isStatic,
-                        returnTypes: [],
-                    },
-                ],
-            };
+            const { op, token, fn, args } = await this.buildTransferOperation(
+                networkId, accountAddress, tokenId, transferType, recipientAddress, amount, feeSettings,
+            );
 
             const [txRequest, node, pxe, account, network, nonce, __, feePaymentMethod] =
                 await this.buildAndEstimateTxRequest(op, op.feeSettings, transferTask);
@@ -318,6 +336,115 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             transferTask.fail(error);
             throw error;
         }
+    }
+
+    public async estimateTransferFee(
+        networkId: string,
+        accountAddress: string,
+        tokenId: number,
+        transferType: TransferType,
+        recipientAddress: string,
+        amount: bigint,
+        feeSettings: FeeSettings,
+    ): Promise<TransferFeeEstimate> {
+        await this.ensureInitialized();
+        amount = BigInt(amount);
+
+        const { op } = await this.buildTransferOperation(
+            networkId, accountAddress, tokenId, transferType, recipientAddress, amount, feeSettings,
+        );
+
+        // Clone actions to prevent mutation side effects from FPC/FJWC fee payload prepending
+        op.actions = [...op.actions];
+
+        const [txRequest] = await this.buildAndEstimateTxRequest(op, op.feeSettings);
+
+        const maxFeeRaw = BigInt(getEstimatedFee(txRequest));
+        return {
+            maxFee: maxFeeRaw.toString(),
+            maxFeeFormatted: formatFeeJuice(maxFeeRaw),
+            maxFeeUsd: feeToUsd(maxFeeRaw),
+            gasDetails: getGasDetails(txRequest),
+        };
+    }
+
+    public async estimateOperationFee(
+        operation: Operation,
+        feeSettings: FeeSettings,
+    ): Promise<TransferFeeEstimate> {
+        await this.ensureInitialized();
+
+        if (operation.kind !== "send_transaction" && operation.kind !== "aztec_sendTx") {
+            throw new Error("Only send_transaction and aztec_sendTx operations support fee estimation");
+        }
+
+        // Build actions array — clone to prevent mutation side effects
+        let actions: Action[];
+        if (operation.kind === "aztec_sendTx") {
+            const [processedActions] = await this.processAztecJsPayload(
+                (operation as any).exec,
+                (operation as any).opts ?? {},
+            );
+            actions = [...processedActions];
+        } else {
+            actions = [...(operation as SendTransactionOperation).actions];
+        }
+
+        // Attempt single-pass auth witness discovery via offchain effects.
+        // If the discovery simulation itself fails on a missing auth witness
+        // (contracts using inline verify_private_authwit), extract the hash
+        // and fall through to the retry loop below.
+        try {
+            const authWitActions = await this.discoverRequiredAuthWitnesses(
+                { ...operation, actions: [...actions] } as any,
+            );
+            if (authWitActions.length) {
+                this.logDebug(`[estimateOperationFee] Discovered ${authWitActions.length} auth witness(es) via offchain effects`);
+                actions.push(...authWitActions);
+            }
+        } catch (discoveryError) {
+            const hash = this.extractAuthWitHash(discoveryError);
+            if (hash) {
+                this.logDebug(`[estimateOperationFee] Discovery hit inline auth wit check, extracted hash ${hash}`);
+                actions.push({
+                    kind: "add_private_authwit",
+                    content: { kind: "message_hash", messageHash: hash },
+                } as AddPrivateAuthwitAction);
+            }
+            // Non-auth-wit errors: let estimation below surface them
+        }
+
+        // TODO: Remove retry loop once Aztec contracts emit auth witness requests
+        // via offchain effects instead of inline verify_private_authwit. At that point
+        // discoverRequiredAuthWitnesses will find all needed witnesses in one pass.
+        const MAX_AUTH_WIT_RETRIES = 5;
+        let lastError: unknown;
+        for (let attempt = 0; attempt <= MAX_AUTH_WIT_RETRIES; attempt++) {
+            try {
+                const op = { ...operation, actions: [...actions] } as any;
+                const [txRequest] = await this.buildAndEstimateTxRequest(op, feeSettings);
+
+                const maxFeeRaw = BigInt(getEstimatedFee(txRequest));
+                return {
+                    maxFee: maxFeeRaw.toString(),
+                    maxFeeFormatted: formatFeeJuice(maxFeeRaw),
+                    maxFeeUsd: feeToUsd(maxFeeRaw),
+                    gasDetails: getGasDetails(txRequest),
+                };
+            } catch (error) {
+                lastError = error;
+                const missingHash = this.extractAuthWitHash(error);
+                if (!missingHash || attempt === MAX_AUTH_WIT_RETRIES) {
+                    throw error;
+                }
+                this.logDebug(`[estimateOperationFee] Missing auth witness for ${missingHash}, adding (attempt ${attempt + 1})`);
+                actions.push({
+                    kind: "add_private_authwit",
+                    content: { kind: "message_hash", messageHash: missingHash },
+                } as AddPrivateAuthwitAction);
+            }
+        }
+        throw lastError;
     }
 
     private extractPrimaryMethod(operation: Operation): string | undefined {
@@ -1107,9 +1234,28 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
         const [actions, _, fee] = await this.processAztecJsPayload(op.exec, op.opts);
 
-        // Auth witness discovery loop: if gas estimation simulation fails
-        // because of a missing auth witness, extract the hash, add an action
-        // so buildTxRequest creates it via account.buildAuthWitness(), retry.
+        // Attempt single-pass auth witness discovery via offchain effects.
+        // Falls back to retry loop for contracts using inline verify_private_authwit.
+        try {
+            const authWitActions = await this.discoverRequiredAuthWitnesses({ ...op, actions: [...actions] });
+            if (authWitActions.length) {
+                this.logDebug(`[executeAztecSendTx] Discovered ${authWitActions.length} auth witness(es) via offchain effects`);
+                actions.push(...authWitActions);
+            }
+        } catch (discoveryError) {
+            const hash = this.extractAuthWitHash(discoveryError);
+            if (hash) {
+                this.logDebug(`[executeAztecSendTx] Discovery hit inline auth wit check, extracted hash ${hash}`);
+                actions.push({
+                    kind: "add_private_authwit",
+                    content: { kind: "message_hash", messageHash: hash },
+                } as AddPrivateAuthwitAction);
+            }
+        }
+
+        // TODO: Remove retry loop once Aztec contracts emit auth witness requests
+        // via offchain effects instead of inline verify_private_authwit. At that point
+        // discoverRequiredAuthWitnesses will find all needed witnesses in one pass.
         const MAX_AUTH_WIT_RETRIES = 5;
         let lastError: unknown;
         for (let attempt = 0; attempt <= MAX_AUTH_WIT_RETRIES; attempt++) {
@@ -1148,7 +1294,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 if (!missingHash || attempt === MAX_AUTH_WIT_RETRIES) {
                     throw error;
                 }
-                this.logDebug(`Missing auth witness for ${missingHash}, creating (attempt ${attempt + 1})`);
+                this.logDebug(`[executeAztecSendTx] Missing auth witness for ${missingHash}, creating (attempt ${attempt + 1})`);
                 actions.push({
                     kind: "add_private_authwit",
                     content: { kind: "message_hash", messageHash: missingHash },
@@ -1164,6 +1310,54 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             /Unknown auth witness for message hash (0x[0-9a-fA-F]+)/,
         );
         return match?.[1] ?? null;
+    }
+
+    /**
+     * Discover auth witnesses needed by a transaction via offchain effects.
+     * Runs a single simulation with skipTxValidation to collect CallAuthorizationRequest
+     * effects without failing on missing witnesses.
+     */
+    private async discoverRequiredAuthWitnesses(
+        op: { networkId: string; accountAddress: string; actions: Action[] },
+    ): Promise<AddPrivateAuthwitAction[]> {
+        const [txRequest, node, pxe, account] = await this.buildTxRequest(
+            op,
+            AzguardFeePaymentMethod.FeeJuice,
+        );
+
+        const simulationResult = await pxe.simulateTx(txRequest, {
+            simulatePublic: true,
+            skipTxValidation: true,
+            skipFeeEnforcement: true,
+            scopes: [account.address],
+        });
+
+        const effects = collectOffchainEffects(simulationResult.privateExecutionResult);
+        if (!effects.length) {
+            return [];
+        }
+
+        const nodeInfo = await node.getNodeInfo();
+        const chainInfo = { chainId: new Fr(nodeInfo.l1ChainId), version: new Fr(nodeInfo.rollupVersion) };
+        const actions: AddPrivateAuthwitAction[] = [];
+
+        for (const effect of effects) {
+            try {
+                const authRequest = await CallAuthorizationRequest.fromFields(effect.data);
+                const messageHash = await computeAuthWitMessageHash(
+                    { consumer: effect.contractAddress, innerHash: authRequest.innerHash as IntentInnerHash },
+                    chainInfo,
+                );
+                actions.push({
+                    kind: "add_private_authwit",
+                    content: { kind: "message_hash", messageHash: messageHash.toString() },
+                });
+            } catch {
+                // Not a CallAuthorizationRequest — other offchain effect type, skip
+            }
+        }
+
+        return actions;
     }
 
     public async executeAztecCreateAuthWit(op: AztecCreateAuthWitOperation): Promise<AuthWitness> {
