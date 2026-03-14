@@ -229,26 +229,24 @@ const isAllowedToSend = computed(() => {
 	return true
 })
 
+const transferType = computed(() => {
+	if (selectedSendType.value === "private" && selectedReceiverType.value === "private") return TransferType.Private
+	if (selectedSendType.value === "private" && selectedReceiverType.value === "public") return TransferType.PrivateToPublic
+	if (selectedSendType.value === "public" && selectedReceiverType.value === "private") return TransferType.PublicToPrivate
+	if (selectedSendType.value === "public" && selectedReceiverType.value === "public") return TransferType.Public
+	return undefined
+})
+
+const feeEstimate = ref(null)
+const isEstimating = ref(false)
+let estimateTimer = null
+let estimateCounter = 0
+
 const executionService = new ExecutionServiceClient()
 const handleSend = async () => {
 	if (!isAllowedToSend.value) return
 
 	const amountToSend = new BN(amountTerm.value?.trim().replace(",", "")).times(10 ** activeToken.value.decimals)
-
-	let type
-
-	if (selectedSendType.value === "private" && selectedReceiverType.value === "private") {
-		type = TransferType.Private
-	}
-	if (selectedSendType.value === "private" && selectedReceiverType.value === "public") {
-		type = TransferType.PrivateToPublic
-	}
-	if (selectedSendType.value === "public" && selectedReceiverType.value === "private") {
-		type = TransferType.PublicToPrivate
-	}
-	if (selectedSendType.value === "public" && selectedReceiverType.value === "public") {
-		type = TransferType.Public
-	}
 
 	appStore.awaitingTransactions.push({
 		account: appStore.account.address,
@@ -261,7 +259,7 @@ const handleSend = async () => {
 			appStore.network.id,
 			appStore.account.address,
 			activeToken.value.id,
-			type,
+			transferType.value,
 			searchTerm.value,
 			amountToSend,
 			feeSettings.value,
@@ -308,6 +306,56 @@ watch(
 )
 
 watch(
+	[amountTerm, searchTerm, selectedSendType, selectedReceiverType, () => feeSettings.value],
+	() => {
+		if (estimateTimer) clearTimeout(estimateTimer)
+		feeEstimate.value = null
+
+		if (!amountTerm.value || !isValidAddress.value || !transferType.value || !feeSettings.value || !activeToken.value) {
+			isEstimating.value = false
+			return
+		}
+
+		isEstimating.value = true
+		const counter = ++estimateCounter
+
+		estimateTimer = setTimeout(async () => {
+			try {
+				const amountToEstimate = new BN(
+					typeof amountTerm.value === "string" ? amountTerm.value?.replace(",", "") : amountTerm.value,
+				).times(10 ** activeToken.value.decimals)
+
+				if (amountToEstimate.isNaN() || amountToEstimate.lte(0)) {
+					isEstimating.value = false
+					return
+				}
+
+				const result = await executionService.estimateTransferFee(
+					appStore.network.id,
+					appStore.account.address,
+					activeToken.value.id,
+					transferType.value,
+					searchTerm.value,
+					amountToEstimate,
+					feeSettings.value,
+				)
+
+				if (counter !== estimateCounter) return
+				feeEstimate.value = result
+			} catch (err) {
+				if (counter !== estimateCounter) return
+				feeEstimate.value = null
+			} finally {
+				if (counter === estimateCounter) {
+					isEstimating.value = false
+				}
+			}
+		}, 800)
+	},
+	{ deep: true },
+)
+
+watch(
 	() => props.show,
 	async () => {
 		if (props.show) {
@@ -340,7 +388,12 @@ watch(
 			contactService.disconnect()
 			tokenBalanceService.disconnect()
 			tokenService.disconnect()
-			
+
+			if (estimateTimer) clearTimeout(estimateTimer)
+			feeEstimate.value = null
+			isEstimating.value = false
+			estimateCounter++
+
 			amountTerm.value = null
 
 			searchTerm.value = ""
@@ -474,6 +527,8 @@ const onKeydown = e => {
 							:profile="appStore.profile"
 							:network="appStore.network"
 							:account="appStore.account"
+							:feeEstimate="feeEstimate"
+							:isEstimating="isEstimating"
 							v-model="feeSettings"
 						/>
 					</Flex>

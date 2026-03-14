@@ -2,7 +2,7 @@ import { ServiceSpec } from "@/wallet/base";
 import { ServiceClient } from "@/wallet/base/background";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { TransferType, LocalTxOrigin } from "@/wallet/services/transaction/service";
-import { EXECUTION_SERVICE_NAME, FeeSettings, GasBalances, Operation, OperationResult, Methods } from "./spec";
+import { EXECUTION_SERVICE_NAME, FeeSettings, GasBalances, TransferFeeEstimate, Operation, OperationResult, Methods } from "./spec";
 
 export * from "./spec";
 
@@ -38,5 +38,33 @@ export class ExecutionServiceClient extends ServiceClient<Methods> implements Se
 
     public getGasBalances(networkId: string, accountAddress: string, forceRefresh?: boolean): Promise<GasBalances> {
         return this.request("getGasBalances", networkId, accountAddress, forceRefresh);
+    }
+
+    public estimateTransferFee(
+        networkId: string,
+        accountAddress: string,
+        tokenId: number,
+        transferType: TransferType,
+        recipientAddress: string,
+        amount: bigint,
+        feeSettings: FeeSettings,
+    ): Promise<TransferFeeEstimate> {
+        return this.request(
+            "estimateTransferFee",
+            networkId,
+            accountAddress,
+            tokenId,
+            transferType,
+            recipientAddress,
+            amount,
+            feeSettings,
+        );
+    }
+
+    public estimateOperationFee(
+        operation: Operation,
+        feeSettings: FeeSettings,
+    ): Promise<TransferFeeEstimate> {
+        return this.request("estimateOperationFee", operation, feeSettings);
     }
 }

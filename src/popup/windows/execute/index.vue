@@ -17,7 +17,7 @@ import { humanizeMethodName } from "@/utils/tx-enrichment"
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
 import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
 import { Account, AccountServiceClient } from "@/wallet/services/account/client"
-import { FeeSettings, Operation } from "@/wallet/services/execution/client"
+import { ExecutionServiceClient, FeeSettings, Operation } from "@/wallet/services/execution/client"
 import {
 	CaipAccount,
 	CaipChain,
@@ -67,6 +67,36 @@ const isLoading = ref(false)
 const isInteractionCancelled = ref(false)
 const isWrongProfile = ref(false)
 const processingError = ref<UIError>()
+
+const feeEstimates = ref<Record<number, any>>({})
+const estimatingOps = ref<Record<number, boolean>>({})
+const estimateTimers: Record<number, any> = {}
+const estimateCounters: Record<number, number> = {}
+const executionService = new ExecutionServiceClient()
+
+const startEstimation = (opIndex: number, op: UIOperation, feeSettings: FeeSettings) => {
+	if (estimateTimers[opIndex]) clearTimeout(estimateTimers[opIndex])
+	feeEstimates.value[opIndex] = null
+	estimatingOps.value[opIndex] = true
+	estimateCounters[opIndex] = (estimateCounters[opIndex] ?? 0) + 1
+	const counter = estimateCounters[opIndex]
+
+	estimateTimers[opIndex] = setTimeout(async () => {
+		try {
+			const result = await executionService.estimateOperationFee(op, feeSettings)
+			if (counter !== estimateCounters[opIndex]) return
+			feeEstimates.value[opIndex] = result
+		} catch (err) {
+			console.error("[Execute] Fee estimation failed:", err)
+			if (counter !== estimateCounters[opIndex]) return
+			feeEstimates.value[opIndex] = null
+		} finally {
+			if (counter === estimateCounters[opIndex]) {
+				estimatingOps.value[opIndex] = false
+			}
+		}
+	}, 500)
+}
 
 function setError(title: string, tooltip: string = title, type: string = "error") {
 	processingError.value = {
@@ -326,6 +356,8 @@ onMounted(async () => {
 onUnmounted(() => {
 	profileService.disconnect()
 	interactionService.disconnect()
+	executionService.disconnect()
+	Object.values(estimateTimers).forEach(t => clearTimeout(t))
 	window.removeEventListener("beforeunload", reject)
 })
 </script>
@@ -439,11 +471,14 @@ onUnmounted(() => {
 							:profile="profile"
 							:network="op.network"
 							:account="op.account"
+							:feeEstimate="feeEstimates[i]"
+							:isEstimating="!!estimatingOps[i]"
 							:modelValue="op.feeSettings"
 							@update:modelValue="
 								($event?: FeeSettings) => {
 									op.feeSettings = $event!
 									clearError()
+									if ($event) startEstimation(i, op, $event)
 								}
 							"
 							style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"
@@ -493,11 +528,14 @@ onUnmounted(() => {
 							:profile="profile"
 							:network="op.network"
 							:account="op.account"
+							:feeEstimate="feeEstimates[i]"
+							:isEstimating="!!estimatingOps[i]"
 							:modelValue="op.feeSettings"
 							@update:modelValue="
 								($event?: FeeSettings) => {
 									op.feeSettings = $event!
 									clearError()
+									if ($event) startEstimation(i, op, $event)
 								}
 							"
 							style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"

@@ -36,6 +36,10 @@ const props = defineProps({
 		type: Object,
 		default: null,
 	},
+	isEstimating: {
+		type: Boolean,
+		default: false,
+	},
 })
 
 const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
@@ -518,14 +522,33 @@ onBeforeUnmount(() => {
 				</template>
 			</template>
 
-			<!-- Fee Estimate display -->
-			<template v-if="selectedMethod && estimatedFeeDisplay">
+			<!-- Fee Estimate: Estimating (shimmer) -->
+			<template v-if="selectedMethod && isEstimating && !estimatedFeeDisplay">
 				<Flex align="center" justify="between" :class="$style.detail_row">
-					<Text size="12" weight="600" color="secondary"> Estimated cost </Text>
+					<Text size="12" weight="600" color="secondary">Estimated cost</Text>
 					<Flex align="center" gap="6">
-						<Text size="12" weight="600" color="primary"> ~{{ estimatedFeeDisplay.amount }} FJ </Text>
-						<Text size="11" color="tertiary"> {{ estimatedFeeDisplay.usd }} </Text>
+						<span :class="$style.skeleton" style="width: 60px" />
+						<span :class="$style.skeleton" style="width: 36px" />
 					</Flex>
+				</Flex>
+			</template>
+
+			<!-- Fee Estimate: Ready -->
+			<template v-else-if="selectedMethod && estimatedFeeDisplay">
+				<Flex align="center" justify="between" :class="$style.detail_row">
+					<Text size="12" weight="600" color="secondary">Estimated cost</Text>
+					<Flex align="center" gap="6">
+						<Text size="12" weight="600" color="primary">~{{ estimatedFeeDisplay.amount }} FJ</Text>
+						<Text size="11" color="tertiary">{{ estimatedFeeDisplay.usd }}</Text>
+					</Flex>
+				</Flex>
+			</template>
+
+			<!-- Fee Estimate: Unavailable -->
+			<template v-else-if="selectedMethod">
+				<Flex align="center" gap="4" :class="$style.detail_row" :style="{ padding: '8px 12px' }">
+					<Icon name="info" size="12" color="tertiary" />
+					<Text size="11" weight="500" color="tertiary">Fee estimated after simulation</Text>
 				</Flex>
 			</template>
 
@@ -551,14 +574,6 @@ onBeforeUnmount(() => {
 							</Text>
 						</Flex>
 					</Flex>
-				</Flex>
-			</template>
-
-			<!-- Info note when fee not yet estimated -->
-			<template v-if="selectedMethod && !feeEstimate">
-				<Flex align="center" gap="4" :class="$style.detail_row" :style="{ padding: '8px 12px' }">
-					<Icon name="info" size="12" color="tertiary" />
-					<Text size="11" weight="500" color="tertiary">Exact fee calculated after simulation</Text>
 				</Flex>
 			</template>
 		</template>
@@ -634,5 +649,19 @@ onBeforeUnmount(() => {
 .priority_active {
 	background: var(--gray-10);
 	box-shadow: inset 0 0 0 1px var(--txt-tertiary);
+}
+
+.skeleton {
+	display: inline-block;
+	height: 12px;
+	border-radius: 4px;
+	background: linear-gradient(90deg, var(--gray-10) 25%, var(--gray-5) 50%, var(--gray-10) 75%);
+	background-size: 200% 100%;
+	animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+	0% { background-position: 200% 0; }
+	100% { background-position: -200% 0; }
 }
 </style>
