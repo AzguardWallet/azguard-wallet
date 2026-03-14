@@ -97,11 +97,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public async getContractInstance(
         network: Network,
         address: AztecAddress,
+        opts?: { pxeOnly?: boolean },
     ): Promise<ContractInstanceWithAddress | undefined> {
         address = await AztecAddress.schema.parseAsync(address);
         return this.withPxe(network, async (pxe, node) => {
             let instance = await pxe.getContractInstance(address);
-            if (!instance) {
+            if (!instance && !opts?.pxeOnly) {
                 // check node
                 instance = await node.getContract(address);
                 if (!instance) {
@@ -123,11 +124,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public async getContractArtifact(
         network: Network,
         id: Fr,
+        opts?: { pxeOnly?: boolean },
     ): Promise<ContractArtifact | undefined> {
         id = await Fr.schema.parseAsync(id);
         return this.withPxe(network, async (pxe) => {
             let artifact = await pxe.getContractArtifact(id);
-            if (!artifact) {
+            if (!artifact && !opts?.pxeOnly) {
                 // check known
                 if (!this.knownArtifacts.size) {
                     await this.initKnown();

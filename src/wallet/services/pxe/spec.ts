@@ -23,8 +23,8 @@ import type { Network } from "@/wallet/services/network/spec";
 export const PXE_SERVICE_NAME = "pxe";
 
 export type Methods = {
-    getContractInstance(network: Network, address: AztecAddress): ContractInstanceWithAddress | undefined;
-    getContractArtifact(network: Network, id: Fr): ContractArtifact | undefined;
+    getContractInstance(network: Network, address: AztecAddress, opts?: { pxeOnly?: boolean }): ContractInstanceWithAddress | undefined;
+    getContractArtifact(network: Network, id: Fr, opts?: { pxeOnly?: boolean }): ContractArtifact | undefined;
     registerAccount(network: Network, secretKey: Fr, partialAddress: PartialAddress): CompleteAddress;
     registerSender(network: Network, address: AztecAddress): AztecAddress;
     getSenders(network: Network): AztecAddress[];
