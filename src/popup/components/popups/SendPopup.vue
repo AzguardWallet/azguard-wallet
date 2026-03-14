@@ -42,6 +42,10 @@ const props = defineProps({
 })
 
 const feeSettings = ref()
+const feeEstimate = ref()
+const isEstimating = ref(false)
+let estimationTimer = null
+let estimationCounter = 0
 
 const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.send?.order
@@ -312,6 +316,45 @@ watch(
 )
 
 watch(
+	() => [feeSettings.value, amountTerm.value, searchTerm.value, selectedSendType.value],
+	() => {
+		if (!feeSettings.value || !amountTerm.value || !searchTerm.value) {
+			feeEstimate.value = undefined
+			return
+		}
+		if (estimationTimer) clearTimeout(estimationTimer)
+		estimationTimer = setTimeout(async () => {
+			isEstimating.value = true
+			const counter = ++estimationCounter
+			try {
+				const result = await executionService.estimateTransferFee(
+					appStore.network.id,
+					appStore.account.address,
+					cacheStore.activeTokenIdx,
+					selectedSendType.value,
+					searchTerm.value,
+					BigInt(new BN(amountTerm.value).times(new BN(`1${"0".repeat(activeToken.value?.decimals ?? 18)}`)).toFixed(0)),
+					feeSettings.value,
+				)
+				if (estimationCounter === counter) {
+					feeEstimate.value = result
+				}
+			} catch (e) {
+				console.warn("Fee estimation failed", e)
+				if (estimationCounter === counter) {
+					feeEstimate.value = undefined
+				}
+			} finally {
+				if (estimationCounter === counter) {
+					isEstimating.value = false
+				}
+			}
+		}, 800)
+	},
+	{ deep: true },
+)
+
+watch(
 	() => props.show,
 	async () => {
 		if (props.show) {
@@ -478,6 +521,8 @@ const onKeydown = e => {
 							:profile="appStore.profile"
 							:network="appStore.network"
 							:account="appStore.account"
+							:feeEstimate="feeEstimate"
+							:isEstimating="isEstimating"
 							v-model="feeSettings"
 						/>
 					</Flex>
