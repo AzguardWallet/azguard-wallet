@@ -1,5 +1,5 @@
 import type { TransferType, Tx, LocalTxOrigin } from "@/wallet/services/transaction/spec";
-import type { FeeSettings, Operation, OperationResult } from "./models";
+import type { FeeSettings, TransferFeeEstimate, Operation, OperationResult } from "./models";
 
 export const EXECUTION_SERVICE_NAME = "execution";
 
@@ -38,4 +38,26 @@ export type Methods = {
      * @param networkId Network id.
      */
     cancelTx(cancellingTx: Tx, networkId: string, feeSettings: FeeSettings): string;
+
+    /**
+     * Estimates the fee for a transfer without executing it.
+     * Runs simulation in the background and returns fee breakdown.
+     */
+    estimateTransferFee(
+        networkId: string,
+        accountAddress: string,
+        tokenId: number,
+        transferType: TransferType,
+        recipientAddress: string,
+        amount: bigint,
+        feeSettings: FeeSettings,
+    ): TransferFeeEstimate;
+
+    /**
+     * Estimates the fee for a pre-built operation (send_transaction or aztec_sendTx).
+     */
+    estimateOperationFee(
+        operation: Operation,
+        feeSettings: FeeSettings,
+    ): TransferFeeEstimate;
 };

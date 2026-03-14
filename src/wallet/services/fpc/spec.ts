@@ -3,6 +3,7 @@ export const FPC_SERVICE_NAME = "fpc";
 export enum FpcType {
     DefaultFpc,
     DefaultSponsoredFpc,
+    BridgedFpc,
 }
 
 export type FpcInfo = {
