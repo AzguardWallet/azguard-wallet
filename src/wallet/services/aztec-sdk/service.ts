@@ -374,10 +374,24 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
         this.handler.terminateForTab(tabId);
     };
 
-    private readonly onTabUpdated = (tabId: number, changeInfo: { status?: string }) => {
-        // When a tab navigates to a new page, terminate existing sessions
-        if (changeInfo.status === "loading") {
-            this.handler.terminateForTab(tabId);
+    private readonly onTabUpdated = (tabId: number, changeInfo: { status?: string; url?: string }) => {
+        // Only terminate sessions when the tab navigates to a different origin.
+        // SPA navigations (e.g. Next.js router.push) fire tabs.onUpdated with
+        // status "loading" but stay on the same origin — these must NOT kill
+        // the SDK session.
+        if (changeInfo.status === "loading" && changeInfo.url) {
+            try {
+                const newOrigin = new URL(changeInfo.url).origin;
+                const sessions = this.handler.getActiveSessions().filter(s => s.tabId === tabId);
+                for (const session of sessions) {
+                    if (session.origin !== newOrigin) {
+                        this.handler.terminateSession(session.sessionId);
+                    }
+                }
+            } catch (error) {
+                this.logError("onTabUpdated: failed to parse URL, terminating sessions for tab", { tabId, url: changeInfo.url, error: String(error) });
+                this.handler.terminateForTab(tabId);
+            }
         }
     };
 }
