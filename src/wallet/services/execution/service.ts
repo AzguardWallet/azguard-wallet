@@ -868,7 +868,24 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(op.networkId);
         const node = await this.networkService.getNode(network.chainId);
         const address = await AztecAddress.schema.parseAsync(op.address);
-        const instance = await this.pxeService.getContractInstance(network, address);
+
+        // Check PXE-local only: simulation requires both instance AND artifact
+        // registered in PXE. The full cascade (node/known/registry) finds on-chain
+        // data that PXE can't use for simulation, causing dApps to skip registerContract.
+        const localInstance = await this.pxeService.getContractInstance(network, address, { pxeOnly: true });
+
+        let hasArtifact = false;
+        if (localInstance) {
+            try {
+                const artifact = await this.pxeService.getContractArtifact(
+                    network, localInstance.currentContractClassId, { pxeOnly: true });
+                hasArtifact = !!artifact;
+            } catch {
+                hasArtifact = false;
+            }
+        }
+        const isLocallyRegistered = !!localInstance && hasArtifact;
+
         const initNullifier = await siloNullifier(address, address.toField());
         const publiclyRegisteredContract = await node.getContract(address);
         const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
@@ -876,8 +893,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             publiclyRegisteredContract &&
             !publiclyRegisteredContract.currentContractClassId.equals(publiclyRegisteredContract.originalContractClassId);
         return {
-            instance,
-            isContractInitialized: !!initWitness,
+            // Only report instance if locally registered (PXE can actually simulate with it)
+            instance: isLocallyRegistered ? localInstance : undefined,
+            isContractInitialized: isLocallyRegistered ? !!initWitness : false,
             isContractPublished: !!publiclyRegisteredContract,
             isContractUpdated: !!isContractUpdated,
             updatedContractClassId: isContractUpdated ? publiclyRegisteredContract.currentContractClassId : undefined,
@@ -975,8 +993,22 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Invalid `opts.from`");
         }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
-        const [txRequest, _, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
+        const [txRequest, node, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
+        // Embedded FPC payments: the dApp's FPC has a budgeted `amount` that must cover
+        // max_gas_cost (gasLimits * maxFeesPerGas). The default maxFeesPerGas=10^18 makes
+        // max_gas_cost astronomical and fails the FPC assertion. Apply dApp fees or node base fees.
+        if (fee.embeddedFeePayment) {
+            const maxFeesPerGas = fee.maxFeesPerGas
+                ? new GasFees(BigInt(fee.maxFeesPerGas.feePerDaGas), BigInt(fee.maxFeesPerGas.feePerL2Gas))
+                : await node.getCurrentMinFees();
+            txRequest.txContext.gasSettings = new GasSettings(
+                txRequest.txContext.gasSettings.gasLimits,
+                txRequest.txContext.gasSettings.teardownGasLimits,
+                maxFeesPerGas,
+                txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+            );
+        }
         return pxe.simulateTx(txRequest, {
             simulatePublic: true,
             skipTxValidation: op.opts.skipTxValidation,
@@ -1005,8 +1037,19 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Invalid `opts.from`");
         }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
-        const [txRequest, _, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
+        const [txRequest, node, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
+        if (fee.embeddedFeePayment) {
+            const maxFeesPerGas = fee.maxFeesPerGas
+                ? new GasFees(BigInt(fee.maxFeesPerGas.feePerDaGas), BigInt(fee.maxFeesPerGas.feePerL2Gas))
+                : await node.getCurrentMinFees();
+            txRequest.txContext.gasSettings = new GasSettings(
+                txRequest.txContext.gasSettings.gasLimits,
+                txRequest.txContext.gasSettings.teardownGasLimits,
+                maxFeesPerGas,
+                txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+            );
+        }
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
@@ -1092,7 +1135,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
             messageHash = await computeAuthWitMessageHash(intentHash, metadata);
         } else {
-            throw new Error("Invalid messageHashOrIntent: expected IntentInnerHash or CallIntent");
+            // Raw Fr message hash (pre-computed by wallet-sdk)
+            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
         }
 
         return await account.buildAuthWitness(messageHash);
@@ -1159,6 +1203,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 : "fpc",
             gasLimits: opts.fee?.gasSettings?.gasLimits,
             teardownGasLimits: opts.fee?.gasSettings?.teardownGasLimits,
+            maxFeesPerGas: opts.fee?.gasSettings?.maxFeesPerGas,
             gasPadding: 1,
         };
 
@@ -1351,7 +1396,22 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         feePaymentMethod,
                         task,
                     );
+                    // Embedded payments: the dApp's FPC has a budgeted `amount` that must cover
+                    // max_gas_cost (gasLimits * maxFeesPerGas). The default initial gas settings
+                    // use maxFeesPerGas=10^18 which makes max_gas_cost astronomical and fails
+                    // the FPC assertion. Override with realistic fees before simulation.
                     this.suggestGasLimits(txRequest, op.fee);
+                    {
+                        const maxFeesPerGas = op.fee?.maxFeesPerGas
+                            ? new GasFees(BigInt(op.fee.maxFeesPerGas.feePerDaGas), BigInt(op.fee.maxFeesPerGas.feePerL2Gas))
+                            : await node.getCurrentMinFees();
+                        txRequest.txContext.gasSettings = new GasSettings(
+                            txRequest.txContext.gasSettings.gasLimits,
+                            txRequest.txContext.gasSettings.teardownGasLimits,
+                            maxFeesPerGas,
+                            txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                        );
+                    }
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
