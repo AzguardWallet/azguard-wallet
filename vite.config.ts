@@ -29,6 +29,11 @@ export default defineConfig({
 			src: fileURLToPath(new URL("./src", import.meta.url)),
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
 			"@bridged-fpc-artifact": fileURLToPath(new URL("./node_modules/@defi-wonderland/aztec-fee-payment/target/bridged_contract-BridgedFPC.json", import.meta.url)),
+			// Force detect-node to return false so @aztec/foundation's pino logger
+			// uses the browser transport instead of Node.js worker-thread transport.
+			// Without this, the node-polyfills process shim makes detect-node think
+			// we're in Node.js, causing pino.transport() to fail with "window is not defined".
+			"detect-node": fileURLToPath(new URL("./src/shims/detect-node.ts", import.meta.url)),
 			comlink: "comlink",
 			debug: "debug",
 		},
@@ -42,6 +47,18 @@ export default defineConfig({
 		},
 	},
 	plugins: [
+		// Replace bb.js fetchCode module to eliminate dynamic import() of embedded WASM.
+		// Chrome MV3 service workers forbid import() at runtime. Our shim uses fetch()
+		// against the WASM files in /assets/ instead.
+		{
+			name: "bb-fetch-code-shim",
+			enforce: "pre",
+			resolveId(source, importer) {
+				if (importer?.includes("@aztec/bb.js") && source.includes("fetch_code") && source.endsWith("index.js")) {
+					return fileURLToPath(new URL("./src/shims/bb-fetch-code.ts", import.meta.url))
+				}
+			},
+		},
 		vue(),
 
 		usePages({
@@ -122,6 +139,9 @@ export default defineConfig({
 		}),
 	],
 	build: {
+		// Disable module preload polyfill — it references `window.dispatchEvent`
+		// which doesn't exist in Chrome MV3 service workers.
+		modulePreload: false,
 		target: "esnext",
 		rollupOptions: {
 			input: {

@@ -34,7 +34,7 @@ const METHOD_CAPABILITY_MAP: Record<string, CapabilityType> = {
 
     // simulation
     simulateTx: "simulation",
-    simulateUtility: "simulation",
+    executeUtility: "simulation",
     profileTx: "simulation",
     simulateViews: "simulation",
 

@@ -1,6 +1,6 @@
 import type { CallIntent, IntentInnerHash } from "@aztec/aztec.js/authorization";
 import type { InteractionWaitOptions } from "@aztec/aztec.js/contracts";
-import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions, SimulateUtilityOptions } from "@aztec/aztec.js/wallet";
+import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions, ExecuteUtilityOptions } from "@aztec/aztec.js/wallet";
 import type { Fr } from "@aztec/foundation/curves/bn254";
 import type { ContractArtifact, EventMetadataDefinition, FunctionCall } from "@aztec/stdlib/abi";
 import type { AuthWitness } from "@aztec/stdlib/auth-witness";
@@ -30,7 +30,7 @@ export type Operation =
     | AztecGetAddressBookOperation
     | AztecRegisterContractOperation
     | AztecSimulateTxOperation
-    | AztecSimulateUtilityOperation
+    | AztecExecuteUtilityOperation
     | AztecProfileTxOperation
     | AztecSendTxOperation
     | AztecCreateAuthWitOperation;
@@ -165,12 +165,12 @@ export type AztecSimulateTxOperation = {
     readonly opts: SimulateOptions;
 };
 
-export type AztecSimulateUtilityOperation = {
-    readonly kind: "aztec_simulateUtility";
+export type AztecExecuteUtilityOperation = {
+    readonly kind: "aztec_executeUtility";
     readonly networkId: string;
     readonly accountAddress: string;
     readonly call: FunctionCall;
-    readonly opts: SimulateUtilityOptions;
+    readonly opts: ExecuteUtilityOptions;
 };
 
 export type AztecProfileTxOperation = {

@@ -76,7 +76,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                     if (!hasSponsoredFpc) {
                         const instance = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
                             constructorArgs: [],
-                            salt: Fr.zero(),
+                            salt: new Fr(BigInt("0x2a0f57c183e73d3390f80b6b28e57593d6faea3517eb57604491220173ad2f32")),
                         });
                         toDiscover.push({ instance, artifact: SponsoredFPCContractArtifact });
                     }

@@ -36,7 +36,7 @@ import {
     AztecGetAddressBookRequest,
     AztecRegisterContractRequest,
     AztecSimulateTxRequest,
-    AztecSimulateUtilityRequest,
+    AztecExecuteUtilityRequest,
     AztecProfileTxRequest,
     AztecSendTxRequest,
     AztecCreateAuthWitRequest,
@@ -76,7 +76,7 @@ export function parseMethod(data: OperationKind | ActionKind): string {
         case "aztec_getAddressBook":
         case "aztec_registerContract":
         case "aztec_simulateTx":
-        case "aztec_simulateUtility":
+        case "aztec_executeUtility":
         case "aztec_profileTx":
         case "aztec_sendTx":
         case "aztec_createAuthWit":
@@ -163,8 +163,8 @@ function parseOperation(op: OperationRequest): OperationRequest {
         case "aztec_simulateTx": {
             return parseAztecSimulateTxRequest(op);
         }
-        case "aztec_simulateUtility": {
-            return parseAztecSimulateUtilityRequest(op);
+        case "aztec_executeUtility": {
+            return parseAztecExecuteUtilityRequest(op);
         }
         case "aztec_profileTx": {
             return parseAztecProfileTxRequest(op);
@@ -317,9 +317,9 @@ function parseAztecSimulateTxRequest(data: any): AztecSimulateTxRequest {
     };
 }
 
-function parseAztecSimulateUtilityRequest(data: any): AztecSimulateUtilityRequest {
+function parseAztecExecuteUtilityRequest(data: any): AztecExecuteUtilityRequest {
     return {
-        kind: "aztec_simulateUtility",
+        kind: "aztec_executeUtility",
         account: parseAccountProp(data, "account"),
         call: parseRequiredProp(data, "call"),
         opts: parseRequiredProp(data, "opts"),

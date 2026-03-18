@@ -71,7 +71,7 @@ const METHOD_TO_KIND: Record<string, Operation["kind"]> = {
     getAddressBook: "aztec_getAddressBook",
     registerContract: "aztec_registerContract",
     simulateTx: "aztec_simulateTx",
-    simulateUtility: "aztec_simulateUtility",
+    executeUtility: "aztec_executeUtility",
     profileTx: "aztec_profileTx",
     // sendTx is handled directly in dispatch() via DappInteractionService
     createAuthWit: "aztec_createAuthWit",
@@ -101,7 +101,7 @@ const NETWORK_ONLY_KINDS = new Set<Operation["kind"]>([
  */
 const ACCOUNT_KINDS = new Set<Operation["kind"]>([
     "aztec_simulateTx",
-    "aztec_simulateUtility",
+    "aztec_executeUtility",
     "aztec_profileTx",
     "aztec_createAuthWit",
     "register_token",
@@ -228,17 +228,17 @@ export class WalletSdkDispatcher {
      * Return a SDK-compatible empty result for a failed batch method.
      *
      * The aztec.js BatchCall.simulate() unpacks results by type:
-     * - simulateUtility: `(result as UtilitySimulationResult).result` — has null-check
+     * - executeUtility: `(result as UtilityExecutionResult).result` — has null-check
      * - simulateTx: `result as TxSimulationResult` — calls methods on it
      *
-     * For simulateUtility, { result: null } triggers the existing null-check
+     * For executeUtility, { result: null } triggers the existing null-check
      * which returns [] (empty decoded values). For other types we return null.
      */
     private emptyBatchResult(methodName: string): unknown {
         switch (methodName) {
-            case "simulateUtility":
-                // UtilitySimulationResult shape — the SDK does:
-                //   rawReturnValues = (result as UtilitySimulationResult).result
+            case "executeUtility":
+                // UtilityExecutionResult shape — the SDK does:
+                //   rawReturnValues = (result as UtilityExecutionResult).result
                 //   rawReturnValues ? decodeFromAbi(...) : []
                 // So { result: null } safely falls through to []
                 return { result: null };
@@ -555,7 +555,7 @@ export class WalletSdkDispatcher {
      *
      * Wallet-sdk args for these methods:
      *   - simulateTx(exec, opts): [ExecutionPayload, SimulateOptions]
-     *   - simulateUtility(call, opts): [FunctionCall, SimulateUtilityOptions]
+     *   - executeUtility(call, opts): [FunctionCall, ExecuteUtilityOptions]
      *   - profileTx(exec, opts): [ExecutionPayload, ProfileOptions]
      *   - createAuthWit(messageHashOrIntent): [IntentInnerHash | CallIntent]
      *   - registerToken(account, token): [AztecAddress, AztecAddress]
@@ -571,7 +571,7 @@ export class WalletSdkDispatcher {
         switch (kind) {
             case "aztec_simulateTx":
                 return { kind, networkId, accountAddress, exec: args[0] as any, opts: { ...(args[1] as any ?? {}), from: accountAddress } };
-            case "aztec_simulateUtility":
+            case "aztec_executeUtility":
                 return { kind, networkId, accountAddress, call: args[0] as any, opts: { ...(args[1] as any ?? {}), from: accountAddress } };
             case "aztec_profileTx":
                 return { kind, networkId, accountAddress, exec: args[0] as any, opts: { ...(args[1] as any ?? {}), from: accountAddress } };

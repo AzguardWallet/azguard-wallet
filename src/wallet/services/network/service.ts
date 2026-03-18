@@ -77,8 +77,8 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             // }
             try {
                 const name = "Aztec Node";
-                const rpcUrl = "https://v4-devnet-2.aztec-labs.com";
-                const chainId = 604129785; // 11155111 ^ 615022430
+                const rpcUrl = "https://rpc.testnet.aztec-labs.com";
+                const chainId = 4138294185; // (11155111 ^ 4127419662) >>> 0
                 defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));
@@ -293,7 +293,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             if (rpcUrl === "http://localhost:8080") {
                 return 0;
             }
-            return info.l1ChainId ^ info.rollupVersion;
+            return (info.l1ChainId ^ info.rollupVersion) >>> 0;
         } catch (error) {
             this.logError("Failed to fetch node info", getErrorMessage(error));
             throw new Error("Failed to fetch node info");

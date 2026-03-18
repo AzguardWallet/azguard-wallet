@@ -77,7 +77,7 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
      * Per-session message queue — ensures messages from the same dApp session
      * are processed sequentially (FIFO). Without this, the fire-and-forget
      * onWalletMessage callback processes messages concurrently, causing race
-     * conditions (e.g. simulateUtility runs before registerContract completes).
+     * conditions (e.g. executeUtility runs before registerContract completes).
      */
     const sessionQueues = new Map<string, Promise<void>>();
 
@@ -388,5 +388,5 @@ function chainInfoToChainId(obj: { chainInfo: { chainId: Fr | string; version: F
     const raw = obj.chainInfo;
     const chainId = typeof raw.chainId === "string" ? Number(BigInt(raw.chainId)) : Number(raw.chainId.toBigInt());
     const version = typeof raw.version === "string" ? Number(BigInt(raw.version)) : Number(raw.version.toBigInt());
-    return chainId ^ version;
+    return (chainId ^ version) >>> 0;
 }

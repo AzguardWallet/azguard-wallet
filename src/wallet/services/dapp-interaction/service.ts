@@ -228,7 +228,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "simulate_utility":
                 case "simulate_views":
                 case "aztec_simulateTx":
-                case "aztec_simulateUtility":
+                case "aztec_executeUtility":
                 case "aztec_profileTx":
                 case "aztec_createAuthWit": {
                     const [network, account] = await getNetworkAndAccount(op.account);
@@ -286,7 +286,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "register_token":
                 case "simulate_utility":
                 case "aztec_simulateTx":
-                case "aztec_simulateUtility":
+                case "aztec_executeUtility":
                 case "aztec_profileTx":
                 case "aztec_sendTx":
                 case "aztec_createAuthWit": {
@@ -405,7 +405,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 return AccessLevel.PxeState;
             case "aztec_simulateTx":
                 return AccessLevel.PrivateData;
-            case "aztec_simulateUtility":
+            case "aztec_executeUtility":
                 return AccessLevel.PrivateData;
             case "aztec_profileTx":
                 return AccessLevel.PrivateData;

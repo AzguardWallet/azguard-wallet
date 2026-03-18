@@ -18,7 +18,7 @@ import type {
     AztecGetAddressBookOperation,
     AztecRegisterContractOperation,
     AztecSimulateTxOperation,
-    AztecSimulateUtilityOperation,
+    AztecExecuteUtilityOperation,
     AztecProfileTxOperation,
     AztecSendTxOperation,
     AztecCreateAuthWitOperation,
@@ -64,7 +64,7 @@ export type OperationRequest =
     | AztecGetAddressBookRequest
     | AztecRegisterContractRequest
     | AztecSimulateTxRequest
-    | AztecSimulateUtilityRequest
+    | AztecExecuteUtilityRequest
     | AztecProfileTxRequest
     | AztecSendTxRequest
     | AztecCreateAuthWitRequest;
@@ -144,7 +144,7 @@ export type AztecSimulateTxRequest = Omit<AztecSimulateTxOperation, AccountParam
     account: CaipAccount;
 };
 
-export type AztecSimulateUtilityRequest = Omit<AztecSimulateUtilityOperation, AccountParams> & {
+export type AztecExecuteUtilityRequest = Omit<AztecExecuteUtilityOperation, AccountParams> & {
     account: CaipAccount;
 };
 

@@ -204,17 +204,24 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                     }
                 }
 
-                for (const t of this.tokens.values()) {
-                    if (contracts.has(t.contract)) {
-                        tokenIds.add(t.id);
+                // If we found specific transfer info, refresh only affected balances.
+                // Otherwise (e.g. faucet mints, generic contract calls), refresh all
+                // balances for the tx account since we can't narrow the scope.
+                if (addresses.size > 0 && contracts.size > 0) {
+                    for (const t of this.tokens.values()) {
+                        if (contracts.has(t.contract)) {
+                            tokenIds.add(t.id);
+                        }
                     }
-                }
 
-                const _balances = await this.balances.getValues();
-                for (const tb of _balances) {
-                    if (addresses.has(tb.account) && tokenIds.has(tb.token)) {
-                        this.addBalanceToRefreshQueue(tb);
+                    const _balances = await this.balances.getValues();
+                    for (const tb of _balances) {
+                        if (addresses.has(tb.account) && tokenIds.has(tb.token)) {
+                            this.addBalanceToRefreshQueue(tb);
+                        }
                     }
+                } else {
+                    await this.refreshAccountBalances(tx.account);
                 }
 
                 return;
