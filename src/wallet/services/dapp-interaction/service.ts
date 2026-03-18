@@ -170,12 +170,27 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             this.lock.leave();
         }
 
-        chrome.windows.create({
-            type: "popup",
-            url: chrome.runtime.getURL(`src/popup/index.html#/windows/${type}?requestId=${interaction.id}`),
-            height: 800,
-            width: 400,
-        });
+        chrome.windows.create(
+            {
+                type: "popup",
+                url: chrome.runtime.getURL(`src/popup/index.html#/windows/${type}?requestId=${interaction.id}`),
+                height: 800,
+                width: 400,
+            },
+            (createdWindow) => {
+                if (!createdWindow?.id) return;
+                const windowId = createdWindow.id;
+                const onWindowClosed = (closedWindowId: number) => {
+                    if (closedWindowId !== windowId) return;
+                    chrome.windows.onRemoved.removeListener(onWindowClosed);
+                    if (this.storage.has(interaction.id)) {
+                        this.storage.delete(interaction.id);
+                        interaction.reject("User closed the popup window");
+                    }
+                };
+                chrome.windows.onRemoved.addListener(onWindowClosed);
+            },
+        );
 
         return promise;
     }

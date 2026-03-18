@@ -68,6 +68,7 @@ const initNetworks = async () => {
 	appStore.networks = []
 	appStore.network = null
 
+	managers.network?.disconnect()
 	managers.network = new NetworkServiceClient()
 
 	appStore.networks = await managers.network.getOrInitNetworks()
@@ -94,6 +95,7 @@ const initNetworks = async () => {
 }
 
 const initAccount = async () => {
+	managers.account?.disconnect()
 	managers.account = new AccountServiceClient()
 	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
@@ -126,6 +128,7 @@ watch(
 
 		appStore.syncNetworkStatus()
 
+		managers.account?.disconnect()
 		managers.account = new AccountServiceClient()
 		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
@@ -143,29 +146,27 @@ watch(
 	},
 )
 
+const onActiveProfileChanged = async (profile) => {
+	if (profile) {
+		appStore.profile = profile
+
+		await initNetworks()
+		await initAccount()
+
+		initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
+		await appStore.syncTransactions()
+
+		appStore.isLogined = true
+	} else {
+		popupStore.closeAll()
+		appStore.isLogined = false
+		appStore.profiles = await managers.profile.getProfiles()
+		router.push(appStore.profiles.length ? "/popup/auth" : "/popup/register")
+	}
+}
+
 const loadProfile = async () => {
-	// TODO: make sure to not add duplicated listeners
-	managers.profile.onActiveProfileChanged.add(async profile => {
-		if (profile) {
-			appStore.profile = profile
-
-			await initNetworks()
-			await initAccount()
-
-			initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
-			await appStore.syncTransactions()
-
-			appStore.isLogined = true
-			// TODO: initialize all services here
-			// TODO: redirect to /general
-		} else {
-			// TODO: uninitialize all services here
-			popupStore.closeAll()
-			appStore.isLogined = false
-			appStore.profiles = await managers.profile.getProfiles()
-			router.push(appStore.profiles.length ? "/popup/auth" : "/popup/register")
-		}
-	})
+	managers.profile.onActiveProfileChanged.add(onActiveProfileChanged)
 
 	appStore.profiles = await managers.profile.getProfiles()
 	const activeProfile = await managers.profile.getActiveProfile()
@@ -271,7 +272,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-	clearInterval(intervalId)
+	clearInterval(intervalId.value)
 	configService.disconnect()
 })
 </script>
