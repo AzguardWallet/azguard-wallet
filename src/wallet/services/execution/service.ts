@@ -114,6 +114,7 @@ import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
 import { Aliased, ContractClassMetadata, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
 import { siloNullifier } from "@aztec/stdlib/hash";
+import { isZeroAddress } from "@/wallet/utils/constants";
 
 export * from "./spec";
 
@@ -974,7 +975,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     private async executeAztecSimulateTx(op: AztecSimulateTxOperation): Promise<TxSimulationResult> {
-        if (op.accountAddress !== op.opts?.from?.toString()) {
+        if (!isZeroAddress(op.accountAddress) && op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
@@ -1005,11 +1006,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     private async executeAztecProfileTx(op: AztecProfileTxOperation): Promise<TxProfileResult> {
-        if (op.accountAddress !== op.opts?.from?.toString()) {
+        if (!isZeroAddress(op.accountAddress) && op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
-        const [txRequest, _, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
+        const [txRequest, _, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
@@ -1023,7 +1024,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         origin: LocalTxOrigin,
         parentTask?: WrappedTask,
     ): Promise<SendReturn<InteractionWaitOptions>> {
-        if (op.accountAddress !== op.opts?.from?.toString()) {
+        if (!isZeroAddress(op.accountAddress) && op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
         const [actions, _, fee] = await this.processAztecJsPayload(op.exec, op.opts);
@@ -1242,6 +1243,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
         try {
             const gasPadding = op.fee?.gasPadding ?? 1.05;
+            const isSignerless = isZeroAddress(op.accountAddress);
+            const simOpts = (account: IAccountContract) => ({
+                simulatePublic: true,
+                skipFeeEnforcement: true,
+                scopes: isSignerless ? [] : [account.address],
+            });
+            const simAccount = (account: IAccountContract) => isSignerless ? undefined : account;
             switch (feePaymentMethod.kind) {
                 case "fj": {
                     const [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
@@ -1253,8 +1261,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        simOpts(account),
                         task,
+                        simAccount(account),
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
@@ -1274,8 +1283,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        simOpts(account),
                         task,
+                        simAccount(account),
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
@@ -1304,8 +1314,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     let simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        simOpts(account),
                         task,
+                        simAccount(account),
                     );
                     // Fetch actual fees for FPC fee payload (with FEE_PADDING_MULTIPLIER)
                     const baseFees = (await node.getCurrentMinFees()).mul(FEE_PADDING_MULTIPLIER);
@@ -1328,8 +1339,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        simOpts(account),
                         task,
+                        simAccount(account),
                     );
                     maxFee = simulatedTx.gasUsed.totalGas
                         .mul(gasPadding)
@@ -1361,8 +1373,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        simOpts(account),
                         task,
+                        simAccount(account),
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
@@ -1703,6 +1716,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         txRequest: TxExecutionRequest,
         opts: SimulateTxOpts,
         parentTask?: WrappedTask,
+        account?: IAccountContract,
     ) {
         const step = new StepContent("Simulating transaction");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
@@ -1940,8 +1954,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
 /** Merges sender address with optional additionalScopes from dApp opts. */
 function scopesFrom(from: AztecAddress, additionalScopes?: AztecAddress[]): AztecAddress[] {
+    const base = from.isZero() ? [] : [from];
     if (!additionalScopes?.length) {
-        return [from];
+        return base;
     }
-    return [from, ...additionalScopes];
+    return [...base, ...additionalScopes];
 }

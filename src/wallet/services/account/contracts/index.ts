@@ -9,6 +9,7 @@ import type { IPXE } from "@/wallet/services/pxe/client";
 
 export * from "./azguard-v0";
 export * from "./azguard-v0-persistent";
+export * from "./signerless";
 
 export interface IAccountContract {
     readonly address: AztecAddress;
