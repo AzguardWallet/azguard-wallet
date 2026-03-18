@@ -60,7 +60,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private readonly nodes = new Map<number, AztecNode>();
     private readonly pxes = new Map<number, PXE>();
     private readonly rpcs = new Map<number, string>();
-    private readonly lock = new Lock();
+    private readonly writeLock = new Lock();
+    private readonly initLock = new Lock();
 
     private readonly knownArtifacts = new Map<string, ContractArtifact>();
     private readonly knownInstances = new Map<string, ContractInstanceWithAddress>();
@@ -99,7 +100,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         address: AztecAddress,
     ): Promise<ContractInstanceWithAddress | undefined> {
         address = await AztecAddress.schema.parseAsync(address);
-        return this.withPxe(network, async (pxe, node) => {
+        return this.withPxeRead(network, async (pxe, node) => {
             let instance = await pxe.getContractInstance(address);
             if (!instance) {
                 // check node
@@ -125,7 +126,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         id: Fr,
     ): Promise<ContractArtifact | undefined> {
         id = await Fr.schema.parseAsync(id);
-        return this.withPxe(network, async (pxe) => {
+        return this.withPxeRead(network, async (pxe) => {
             let artifact = await pxe.getContractArtifact(id);
             if (!artifact) {
                 // check known
@@ -147,7 +148,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         secretKey: Fr,
         partialAddress: PartialAddress,
     ): Promise<CompleteAddress> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.registerAccount(
                 await Fr.schema.parseAsync(secretKey),
                 await Fr.schema.parseAsync(partialAddress),
@@ -156,27 +157,27 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     public async registerSender(network: Network, address: AztecAddress): Promise<AztecAddress> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.registerSender(await AztecAddress.schema.parseAsync(address)),
         );
     }
 
     public async getSenders(network: Network): Promise<AztecAddress[]> {
-        return this.withPxe(network, (pxe) => pxe.getSenders());
+        return this.withPxeRead(network, (pxe) => pxe.getSenders());
     }
 
     public async removeSender(network: Network, address: AztecAddress): Promise<void> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.removeSender(await AztecAddress.schema.parseAsync(address)),
         );
     }
 
     public async getRegisteredAccounts(network: Network): Promise<CompleteAddress[]> {
-        return this.withPxe(network, (pxe) => pxe.getRegisteredAccounts());
+        return this.withPxeRead(network, (pxe) => pxe.getRegisteredAccounts());
     }
 
     public async registerContractClass(network: Network, artifact: ContractArtifact): Promise<void> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.registerContractClass(await ContractArtifactSchema.parseAsync(artifact)),
         );
     }
@@ -185,7 +186,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         network: Network,
         contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
     ): Promise<void> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.registerContract({
                 instance: await ContractInstanceWithAddressSchema.parseAsync(contract.instance),
                 artifact: await ContractArtifactSchema.optional().parseAsync(contract.artifact),
@@ -198,7 +199,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         contractAddress: AztecAddress,
         artifact: ContractArtifact,
     ): Promise<void> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.updateContract(
                 await AztecAddress.schema.parseAsync(contractAddress),
                 await ContractArtifactSchema.parseAsync(artifact),
@@ -207,11 +208,11 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     public async getContracts(network: Network): Promise<AztecAddress[]> {
-        return this.withPxe(network, (pxe) => pxe.getContracts());
+        return this.withPxeRead(network, (pxe) => pxe.getContracts());
     }
 
     public async getNotes(network: Network, filter: NotesFilter): Promise<NoteDao[]> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.debug.getNotes(await NotesFilterSchema.parseAsync(filter)),
         );
     }
@@ -221,7 +222,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         txRequest: TxExecutionRequest,
         scopes: AztecAddress[],
     ): Promise<TxProvingResult> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.proveTx(
                 await TxExecutionRequest.schema.parseAsync(txRequest),
                 await z.array(AztecAddress.schema).parseAsync(scopes),
@@ -234,7 +235,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         txRequest: TxExecutionRequest,
         opts: SimulateTxOpts,
     ): Promise<TxSimulationResult> {
-        return this.withPxe(network, async (pxe) => {
+        return this.withPxeWrite(network, async (pxe) => {
             return await pxe.simulateTx(
                 await TxExecutionRequest.schema.parseAsync(txRequest),
                 {
@@ -253,7 +254,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         call: FunctionCall,
         opts: SimulateUtilityOpts,
     ): Promise<UtilitySimulationResult> {
-        return this.withPxe(network, async (pxe) => {
+        return this.withPxeWrite(network, async (pxe) => {
             return await pxe.simulateUtility(
                 await FunctionCall.schema.parseAsync(call),
                 {
@@ -269,7 +270,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         txRequest: TxExecutionRequest,
         opts: ProfileTxOpts,
     ): Promise<TxProfileResult> {
-        return this.withPxe(network, async (pxe) => {
+        return this.withPxeWrite(network, async (pxe) => {
             return await pxe.profileTx(
                 await TxExecutionRequest.schema.parseAsync(txRequest),
                 {
@@ -286,7 +287,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         eventSelector: EventSelector,
         filter: PrivateEventFilter,
     ): Promise<PackedPrivateEvent[]> {
-        return this.withPxe(network, async (pxe) =>
+        return this.withPxeWrite(network, async (pxe) =>
             pxe.getPrivateEvents(
                 await EventSelector.schema.parseAsync(eventSelector),
                 await PrivateEventFilterSchema.parseAsync(filter),
@@ -319,15 +320,33 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         this.knownInstances.set(sponsoredFpcInstance.address.toString(), sponsoredFpcInstance);
     }
 
-    private async withPxe<T>(network: Network, fn: (pxe: PXE, node: AztecNode) => Promise<T>): Promise<T> {
+    private async ensureChainReady(network: Network): Promise<void> {
+        if (this.hasChain(network)) return;
         try {
-            await this.lock.enter();
+            await this.initLock.enter();
             if (!this.hasChain(network)) {
                 await this.initChain(network);
             }
+        } finally {
+            this.initLock.leave();
+        }
+    }
+
+    private async withPxeRead<T>(network: Network, fn: (pxe: PXE, node: AztecNode) => Promise<T>): Promise<T> {
+        await this.ensureChainReady(network);
+        const pxe = this.pxes.get(network.chainId);
+        const node = this.nodes.get(network.chainId);
+        if (!pxe || !node) throw new Error("PXE cleared during read (profile switch?)");
+        return fn(pxe, node);
+    }
+
+    private async withPxeWrite<T>(network: Network, fn: (pxe: PXE, node: AztecNode) => Promise<T>): Promise<T> {
+        await this.ensureChainReady(network);
+        await this.writeLock.enter();
+        try {
             return await fn(this.pxes.get(network.chainId)!, this.nodes.get(network.chainId)!);
         } finally {
-            this.lock.leave();
+            this.writeLock.leave();
         }
     }
 
@@ -417,29 +436,39 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     private readonly onProfileDeleted = async (profile: ProfileInfo): Promise<void> => {
+        await this.initLock.enter();
         try {
-            await this.lock.enter();
-            this.nodes.clear();
-            this.pxes.clear();
-            this.rpcs.clear();
-            for (const db of await indexedDB.databases()) {
-                if (db.name?.startsWith(`pxe/${profile.id}/`) || db.name === "keyval-store") {
-                    const _ = indexedDB.deleteDatabase(db.name);
+            await this.writeLock.enter();
+            try {
+                this.nodes.clear();
+                this.pxes.clear();
+                this.rpcs.clear();
+                for (const db of await indexedDB.databases()) {
+                    if (db.name?.startsWith(`pxe/${profile.id}/`) || db.name === "keyval-store") {
+                        const _ = indexedDB.deleteDatabase(db.name);
+                    }
                 }
+            } finally {
+                this.writeLock.leave();
             }
         } finally {
-            this.lock.leave();
+            this.initLock.leave();
         }
     };
 
     private readonly onActiveProfileChanged = async (): Promise<void> => {
+        await this.initLock.enter();
         try {
-            await this.lock.enter();
-            this.nodes.clear();
-            this.pxes.clear();
-            this.rpcs.clear();
+            await this.writeLock.enter();
+            try {
+                this.nodes.clear();
+                this.pxes.clear();
+                this.rpcs.clear();
+            } finally {
+                this.writeLock.leave();
+            }
         } finally {
-            this.lock.leave();
+            this.initLock.leave();
         }
     };
 }
