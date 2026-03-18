@@ -162,7 +162,8 @@ const loadProfile = async () => {
 			// TODO: uninitialize all services here
 			popupStore.closeAll()
 			appStore.isLogined = false
-			router.push("/popup/auth")
+			appStore.profiles = await managers.profile.getProfiles()
+			router.push(appStore.profiles.length ? "/popup/auth" : "/popup/register")
 		}
 	})
 
