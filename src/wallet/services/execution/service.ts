@@ -853,10 +853,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         op: AztecGetContractClassMetadataOperation,
     ): Promise<ContractClassMetadata> {
         const network = await this.networkService.getNetwork(op.networkId);
-        // Use direct PXE lookup (no registry fallback) to reflect actual wallet state,
-        // consistent with how getContractMetadata returns PXE-local instance only.
-        const pxe = this.pxeService.getPXE(network);
-        const artifact = await pxe.getContractArtifact(op.id);
+        const artifact = await this.pxeService.getContractArtifact(network, op.id, { fetchFromNode: false });
         const node = await this.networkService.getNode(network.chainId);
         const publiclyRegisteredContractClass = await node.getContractClass(op.id);
         return {

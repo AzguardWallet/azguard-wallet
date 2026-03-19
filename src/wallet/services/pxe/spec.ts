@@ -31,6 +31,7 @@ export type Methods = {
     getContractArtifact(
         network: Network,
         id: Fr,
+        options?: { fetchFromNode?: boolean },
     ): ContractArtifact | undefined;
     registerAccount(network: Network, secretKey: Fr, partialAddress: PartialAddress): CompleteAddress;
     registerSender(network: Network, address: AztecAddress): AztecAddress;

@@ -58,9 +58,10 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
     public async getContractArtifact(
         network: Network,
         id: Fr,
+        options?: { fetchFromNode?: boolean },
     ): Promise<ContractArtifact | undefined> {
         await ensureOffscreenRunning();
-        const result = await this.request("getContractArtifact", network, id);
+        const result = await this.request("getContractArtifact", network, id, options);
         return await ContractArtifactSchema.optional().parseAsync(result);
     }
 
