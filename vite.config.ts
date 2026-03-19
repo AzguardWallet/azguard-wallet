@@ -28,6 +28,9 @@ export default defineConfig({
 			"~": fileURLToPath(new URL("./src", import.meta.url)),
 			src: fileURLToPath(new URL("./src", import.meta.url)),
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
+			// Use BarretenbergSync for poseidon in service worker context.
+			// v4.1 switched to async Barretenberg which spawns Web Workers — incompatible with SW.
+			"@aztec/foundation/crypto/poseidon": fileURLToPath(new URL("./src/wallet/utils/poseidon-sync.ts", import.meta.url)),
 			comlink: "comlink",
 			debug: "debug",
 		},
