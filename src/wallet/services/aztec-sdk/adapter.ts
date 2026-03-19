@@ -44,10 +44,10 @@ export function resolveChainId(chainInfo: ChainInfo): number {
     if (l1ChainId === 31337) {
         return 0;
     }
-    // Use >>> 0 to keep the XOR unsigned. JS bitwise XOR returns a signed
-    // 32-bit int, so rollupVersion > 2^31-1 produces a negative result
-    // that crashes Fr field constructors downstream.
-    return (l1ChainId ^ rollupVersion) >>> 0;
+    // Use BigInt XOR to avoid JS signed 32-bit int semantics that produce
+    // negative results when rollupVersion > 2^31-1, crashing Fr field
+    // constructors downstream.
+    return Number(BigInt(l1ChainId) ^ BigInt(rollupVersion));
 }
 
 /**
