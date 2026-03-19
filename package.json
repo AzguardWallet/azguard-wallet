@@ -18,6 +18,7 @@
 		"test": "vitest"
 	},
 	"dependencies": {
+		"@alejoamiras/tee-rex": "^4.1.0-rc.4.4",
 		"@aztec/aztec.js": "4.1.0-rc.2",
 		"@aztec/bb.js": "4.1.0-rc.2",
 		"@aztec/constants": "4.1.0-rc.2",
@@ -29,7 +30,7 @@
 		"@aztec/stdlib": "4.1.0-rc.2",
 		"@aztec/wallet-sdk": "4.1.0-rc.2",
 		"@codemirror/lang-json": "^6.0.2",
-		"@defi-wonderland/aztec-fee-payment": "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-b6315f1/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.b6315f1.tgz",
+		"@defi-wonderland/aztec-fee-payment": "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-fa29ccc/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.fa29ccc.tgz",
 		"@replit/codemirror-indentation-markers": "^6.5.3",
 		"bignumber.js": "^9.3.1",
 		"codemirror": "^6.0.2",
