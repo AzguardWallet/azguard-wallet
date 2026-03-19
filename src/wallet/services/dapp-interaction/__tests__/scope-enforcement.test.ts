@@ -68,9 +68,9 @@ const profileTxOp = (calls: { to: string; name: string }[]) =>
         },
     }) as any as OperationRequest;
 
-const simulateUtilityOp = (to: string, name: string) =>
+const executeUtilityOp = (to: string, name: string) =>
     ({
-        kind: "aztec_simulateUtility",
+        kind: "aztec_executeUtility",
         account: "aztec:1:" + ADDR_A,
         call: { to: mockAddress(to), name },
         opts: { scope: mockAddress(ADDR_A) },
@@ -365,21 +365,21 @@ describe("simulation — profileTx", () => {
     });
 });
 
-describe("simulation — simulateUtility", () => {
+describe("simulation — executeUtility", () => {
     test("wildcard scope passes", () => {
         const caps = [simulationCap({ utilities: { scope: "*" } })];
-        expect(() => enforceCapabilityScope(caps, simulateUtilityOp(ADDR_A, "balance_of"))).not.toThrow();
+        expect(() => enforceCapabilityScope(caps, executeUtilityOp(ADDR_A, "balance_of"))).not.toThrow();
     });
 
     test("pattern match passes", () => {
         const caps = [
             simulationCap({ utilities: { scope: [{ contract: ADDR_A, function: "balance_of" }] } }),
         ];
-        expect(() => enforceCapabilityScope(caps, simulateUtilityOp(ADDR_A, "balance_of"))).not.toThrow();
+        expect(() => enforceCapabilityScope(caps, executeUtilityOp(ADDR_A, "balance_of"))).not.toThrow();
     });
 
     test("no capability throws", () => {
-        expect(() => enforceCapabilityScope([], simulateUtilityOp(ADDR_A, "balance_of"))).toThrow(
+        expect(() => enforceCapabilityScope([], executeUtilityOp(ADDR_A, "balance_of"))).toThrow(
             "Operation not in capability scope",
         );
     });
@@ -388,14 +388,14 @@ describe("simulation — simulateUtility", () => {
         const caps = [
             simulationCap({ utilities: { scope: [{ contract: ADDR_B, function: "balance_of" }] } }),
         ];
-        expect(() => enforceCapabilityScope(caps, simulateUtilityOp(ADDR_A, "balance_of"))).toThrow(
+        expect(() => enforceCapabilityScope(caps, executeUtilityOp(ADDR_A, "balance_of"))).toThrow(
             "Operation not in capability scope",
         );
     });
 
     test("simulation cap without utilities sub-cap throws", () => {
         const caps = [simulationCap({ transactions: { scope: "*" } })];
-        expect(() => enforceCapabilityScope(caps, simulateUtilityOp(ADDR_A, "balance_of"))).toThrow(
+        expect(() => enforceCapabilityScope(caps, executeUtilityOp(ADDR_A, "balance_of"))).toThrow(
             "Operation not in capability scope",
         );
     });

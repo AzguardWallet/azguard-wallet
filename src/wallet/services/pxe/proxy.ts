@@ -1,5 +1,5 @@
 import type { Fr } from "@aztec/foundation/curves/bn254";
-import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
@@ -14,7 +14,7 @@ import {
     TxProfileResult,
     TxProvingResult,
     TxSimulationResult,
-    UtilitySimulationResult,
+    UtilityExecutionResult,
 } from "@aztec/stdlib/tx";
 import { Network } from "@/wallet/services/network/spec";
 import { PxeServiceClient } from "./client";
@@ -37,7 +37,7 @@ export interface IPXE {
     proveTx(txRequest: TxExecutionRequest, scopes: AztecAddress[]): Promise<TxProvingResult>;
     profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult>;
     simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts): Promise<TxSimulationResult>;
-    simulateUtility(call: FunctionCall, opts: SimulateUtilityOpts): Promise<UtilitySimulationResult>;
+    executeUtility(call: FunctionCall, opts: ExecuteUtilityOpts): Promise<UtilityExecutionResult>;
     getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]>;
 }
 
@@ -104,8 +104,8 @@ export class PXEProxy implements IPXE {
         return this.pxeService.simulateTx(this.network, txRequest, opts);
     }
 
-    simulateUtility(call: FunctionCall, opts: SimulateUtilityOpts): Promise<UtilitySimulationResult> {
-        return this.pxeService.simulateUtility(this.network, call, opts);
+    executeUtility(call: FunctionCall, opts: ExecuteUtilityOpts): Promise<UtilityExecutionResult> {
+        return this.pxeService.executeUtility(this.network, call, opts);
     }
 
     async getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]> {

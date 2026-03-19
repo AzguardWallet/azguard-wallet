@@ -71,7 +71,7 @@ export async function simulate(
             encodedArgs,
             viewFn.getReturnTypes(),
         );
-        const { result } = await pxe.simulateUtility(call, { scopes: [account.address] });
+        const { result } = await pxe.executeUtility(call, { scopes: [account.address] });
         return viewFn.unpackResult(result);
     }
 

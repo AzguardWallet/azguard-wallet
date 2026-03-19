@@ -1,5 +1,5 @@
 import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
-import type { InteractionWaitOptions, SendReturn } from "@aztec/aztec.js/contracts";
+import { extractOffchainOutput, type InteractionWaitOptions, type SendReturn } from "@aztec/aztec.js/contracts";
 import { waitForTx } from "@aztec/aztec.js/node";
 import type { SimulateTxOpts } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
@@ -34,7 +34,7 @@ import {
     TxExecutionRequest,
     TxProfileResult,
     TxSimulationResult,
-    UtilitySimulationResult,
+    UtilityExecutionResult,
     type Tx as AztecTx,
 } from "@aztec/stdlib/tx";
 import z from "zod";
@@ -100,7 +100,7 @@ import {
     type AztecGetAccountsOperation,
     type AztecRegisterContractOperation,
     type AztecSimulateTxOperation,
-    type AztecSimulateUtilityOperation,
+    type AztecExecuteUtilityOperation,
     type AztecProfileTxOperation,
     type AztecSendTxOperation,
     type AztecCreateAuthWitOperation,
@@ -370,8 +370,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         result = await this.executeAztecSimulateTx(operation);
                         break;
                     }
-                    case "aztec_simulateUtility": {
-                        result = await this.executeAztecSimulateUtility(operation);
+                    case "aztec_executeUtility": {
+                        result = await this.executeAztecExecuteUtility(operation);
                         break;
                     }
                     case "aztec_profileTx": {
@@ -611,7 +611,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         );
 
         await account.ensureRegistered(pxe);
-        const { result } = await pxe.simulateUtility(call, {
+        const { result } = await pxe.executeUtility(call, {
             scopes: [account.address],
         });
 
@@ -659,7 +659,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
         const args: HashedValues[] = [];
         const calls: [AzguardFunctionCall, number, number, AbiType[]][] = [];
-        const utility: [Promise<UtilitySimulationResult>, number, AbiType[]][] = [];
+        const utility: [Promise<UtilityExecutionResult>, number, AbiType[]][] = [];
         let privateCalls = 0;
         let publicCalls = 0;
 
@@ -687,7 +687,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const encodedArgs = encodeArguments(fn, call.args);
                     if (fn.functionType === FunctionType.UTILITY) {
                         utility.push([
-                            pxe.simulateUtility(
+                            pxe.executeUtility(
                                 new FunctionCall(
                                     fn.name,
                                     AztecAddress.fromString(call.contract),
@@ -757,7 +757,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     }
                     if (fn.functionType === FunctionType.UTILITY) {
                         utility.push([
-                            pxe.simulateUtility(
+                            pxe.executeUtility(
                                 new FunctionCall(
                                     fn.name,
                                     AztecAddress.fromString(call.to),
@@ -984,11 +984,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             simulatePublic: true,
             skipTxValidation: op.opts.skipTxValidation,
             skipFeeEnforcement: op.opts.skipFeeEnforcement ?? true,
-            scopes: [account.address],
+            scopes: scopesFrom(account.address, op.opts.additionalScopes),
         });
     }
 
-    private async executeAztecSimulateUtility(op: AztecSimulateUtilityOperation): Promise<UtilitySimulationResult> {
+    private async executeAztecExecuteUtility(op: AztecExecuteUtilityOperation): Promise<UtilityExecutionResult> {
         const profile = await this.profileService.getActiveProfile();
         if (!profile) {
             throw new Error("Wallet locked");
@@ -998,7 +998,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const pxe = this.pxeService.getPXE(network);
 
         await account.ensureRegistered(pxe);
-        return pxe.simulateUtility(op.call, {
+        return pxe.executeUtility(op.call, {
             authwits: await optional(z.array(AuthWitness.schema)).parseAsync(op.opts.authWitnesses),
             scopes: [await AztecAddress.schema.parseAsync(op.opts.scope)],
         });
@@ -1014,7 +1014,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
-            scopes: [AztecAddress.fromString(op.accountAddress)],
+            scopes: scopesFrom(AztecAddress.fromString(op.accountAddress), op.opts.additionalScopes),
         });
     }
 
@@ -1030,7 +1030,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
             await this.buildAndEstimateTxRequest({ ...op, actions, fee }, op.feeSettings.paymentMethod, parentTask);
 
-        const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], parentTask);
+        const provedTx = await this.proveTxTask(pxe, txRequest, scopesFrom(account.address, op.opts.additionalScopes), parentTask);
+        const offchainOutput = extractOffchainOutput(provedTx.getOffchainEffects());
 
         const tx = await provedTx.toTx();
         await this.sendTxTask(node, tx, parentTask);
@@ -1047,9 +1048,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         );
 
         if (op.opts.wait === "NO_WAIT") {
-            return txHash;
+            return { txHash, ...offchainOutput };
         }
-        return waitForTx(node, txHash, op.opts.wait);
+        const receipt = await waitForTx(node, txHash, op.opts.wait);
+        return { receipt, ...offchainOutput };
     }
 
     public async executeAztecCreateAuthWit(op: AztecCreateAuthWitOperation): Promise<AuthWitness> {
@@ -1934,4 +1936,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
         return [classId, artifact];
     }
+}
+
+/** Merges sender address with optional additionalScopes from dApp opts. */
+function scopesFrom(from: AztecAddress, additionalScopes?: AztecAddress[]): AztecAddress[] {
+    if (!additionalScopes?.length) {
+        return [from];
+    }
+    return [from, ...additionalScopes];
 }

@@ -31,10 +31,10 @@ import {
     TxExecutionRequest,
     TxProvingResult,
     TxSimulationResult,
-    UtilitySimulationResult,
+    UtilityExecutionResult,
     TxProfileResult,
 } from "@aztec/stdlib/tx";
-import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import z from "zod";
 
 const AccessScopesSchema = z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)]);
@@ -252,13 +252,13 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         });
     }
 
-    public async simulateUtility(
+    public async executeUtility(
         network: Network,
         call: FunctionCall,
-        opts: SimulateUtilityOpts,
-    ): Promise<UtilitySimulationResult> {
+        opts: ExecuteUtilityOpts,
+    ): Promise<UtilityExecutionResult> {
         return this.withPxe(network, async (pxe) => {
-            return await pxe.simulateUtility(
+            return await pxe.executeUtility(
                 await FunctionCall.schema.parseAsync(call),
                 {
                     authwits: await z.array(AuthWitness.schema).optional().parseAsync(opts.authwits),
@@ -414,7 +414,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private getRegistryUrl(network: Network): string | undefined {
         switch (network.chainId) {
-            case 1721521349: // 11155111 ^ 1714840162
+            case 4138294185: // 11155111 ^ 4127419662
                 return "https://testnet.aztec-registry.xyz";
             case 604129785: // 11155111 ^ 615022430
                 return "https://devnet.aztec-registry.xyz";
