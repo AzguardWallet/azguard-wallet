@@ -38,6 +38,8 @@ import {
 } from "@aztec/stdlib/tx";
 import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import z from "zod";
+// import { WASMSimulator } from "@aztec/simulator/client";
+// import { TeeRexProver } from "@alejoamiras/tee-rex";
 
 const AccessScopesSchema = z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)]);
 import { ServiceSpec } from "@/wallet/base";

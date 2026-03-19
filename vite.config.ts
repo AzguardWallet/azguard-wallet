@@ -37,6 +37,11 @@ export default defineConfig({
 			comlink: "comlink",
 			debug: "debug",
 		},
+		// Force Vite to resolve these WASM-binding packages to a single copy.
+		// Multiple nested versions exist in node_modules (rc.2 in simulator/pxe,
+		// rc.4 hoisted). Without dedup, initAbi() and abiEncode() end up in
+		// different module scopes, so the WASM instance variable is never shared.
+		dedupe: ["@aztec/noir-noirc_abi", "@aztec/noir-acvm_js"],
 	},
 	css: {
 		preprocessorOptions: {
