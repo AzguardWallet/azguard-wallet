@@ -293,7 +293,10 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             if (rpcUrl === "http://localhost:8080") {
                 return 0;
             }
-            return info.l1ChainId ^ info.rollupVersion;
+            // Use >>> 0 to keep the XOR unsigned. JS bitwise XOR returns a signed
+            // 32-bit int, so rollupVersion > 2^31-1 produces a negative result
+            // that crashes Fr field constructors downstream.
+            return (info.l1ChainId ^ info.rollupVersion) >>> 0;
         } catch (error) {
             this.logError("Failed to fetch node info", getErrorMessage(error));
             throw new Error("Failed to fetch node info");
