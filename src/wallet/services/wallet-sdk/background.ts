@@ -86,7 +86,7 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
     const handler = new BackgroundConnectionHandler(
         {
             walletId: "azguard",
-            walletName: "Azguard Wallet",
+            walletName: "Testnet Azguard",
             walletVersion: packageJson.version,
             walletIcon: chrome.runtime.getURL("/src/assets/logo.png"),
         },

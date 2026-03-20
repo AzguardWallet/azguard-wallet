@@ -298,7 +298,7 @@ export class WalletSdkDispatcher {
             return {
                 version: "1.0" as const,
                 granted: [],
-                wallet: { name: "Azguard Wallet", version: packageJson.version },
+                wallet: { name: "Testnet Azguard", version: packageJson.version },
             };
         }
 
@@ -328,7 +328,7 @@ export class WalletSdkDispatcher {
             return {
                 version: "1.0" as const,
                 granted,
-                wallet: { name: "Azguard Wallet", version: packageJson.version },
+                wallet: { name: "Testnet Azguard", version: packageJson.version },
             };
         }
 
@@ -430,7 +430,7 @@ export class WalletSdkDispatcher {
         return {
             version: "1.0" as const,
             granted,
-            wallet: { name: "Azguard Wallet", version: packageJson.version },
+            wallet: { name: "Testnet Azguard", version: packageJson.version },
         };
     }
 
