@@ -97,11 +97,13 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public async getContractInstance(
         network: Network,
         address: AztecAddress,
+        options?: { fetchFromNode?: boolean },
     ): Promise<ContractInstanceWithAddress | undefined> {
+        const fetchFromNode = options?.fetchFromNode ?? true;
         address = await AztecAddress.schema.parseAsync(address);
         return this.withPxe(network, async (pxe, node) => {
             let instance = await pxe.getContractInstance(address);
-            if (!instance) {
+            if (!instance && fetchFromNode) {
                 // check node
                 instance = await node.getContract(address);
                 if (!instance) {
@@ -123,11 +125,13 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public async getContractArtifact(
         network: Network,
         id: Fr,
+        options?: { fetchFromNode?: boolean },
     ): Promise<ContractArtifact | undefined> {
+        const fetchFromNode = options?.fetchFromNode ?? true;
         id = await Fr.schema.parseAsync(id);
         return this.withPxe(network, async (pxe) => {
             let artifact = await pxe.getContractArtifact(id);
-            if (!artifact) {
+            if (!artifact && fetchFromNode) {
                 // check known
                 if (!this.knownArtifacts.size) {
                     await this.initKnown();
@@ -349,7 +353,10 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         this.rpcs.set(network.chainId, network.rpcUrl);
     }
 
-    private async fetchArtifactFromRegistry(network: Network, classId: Fr): Promise<ContractArtifact | undefined> {
+    private async fetchArtifactFromRegistry(
+        network: Network,
+        classId: Fr,
+    ): Promise<ContractArtifact | undefined> {
         try {
             const artifact = await this.fetchFromRegistry(network, `/api/artifacts/${classId.toString()}`);
             if (!artifact) {

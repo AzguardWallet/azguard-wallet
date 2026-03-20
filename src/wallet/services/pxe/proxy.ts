@@ -23,7 +23,7 @@ import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export interface IPXE {
     getContractInstance(address: AztecAddress): Promise<ContractInstanceWithAddress | undefined>;
-    getContractArtifact(id: Fr): Promise<ContractArtifact | undefined>;
+    getContractArtifact(id: Fr, options?: { fetchFromNode?: boolean }): Promise<ContractArtifact | undefined>;
     registerAccount(secretKey: Fr, partialAddress: PartialAddress): Promise<CompleteAddress>;
     registerSender(address: AztecAddress): Promise<AztecAddress>;
     getSenders(): Promise<AztecAddress[]>;
@@ -48,8 +48,8 @@ export class PXEProxy implements IPXE {
         return this.pxeService.getContractInstance(this.network, address);
     }
 
-    getContractArtifact(id: Fr): Promise<ContractArtifact | undefined> {
-        return this.pxeService.getContractArtifact(this.network, id);
+    getContractArtifact(id: Fr, options?: { fetchFromNode?: boolean }): Promise<ContractArtifact | undefined> {
+        return this.pxeService.getContractArtifact(this.network, id, options);
     }
 
     registerAccount(secretKey: Fr, partialAddress: PartialAddress): Promise<CompleteAddress> {

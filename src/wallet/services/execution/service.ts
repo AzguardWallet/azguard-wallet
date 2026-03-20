@@ -38,6 +38,7 @@ import {
     type Tx as AztecTx,
 } from "@aztec/stdlib/tx";
 import z from "zod";
+import { optional } from "@aztec/foundation/schemas";
 import { NetworkService, Network } from "@/wallet/services/network/service";
 import { IPXE, PxeServiceClient } from "@/wallet/services/pxe/client";
 import { AccountService } from "@/wallet/services/account/service";
@@ -475,16 +476,15 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         const network = await this.networkService.getNetwork(op.networkId);
+        const address = AztecAddress.fromString(op.address);
 
-        const providedInstance = await ContractInstanceWithAddressSchema.optional().parseAsync(op.instance);
-        const instance =
-            providedInstance ??
-            (await this.pxeService.getContractInstance(network, AztecAddress.fromString(op.address)));
+        const providedInstance = await optional(ContractInstanceWithAddressSchema).parseAsync(op.instance);
+        const instance = providedInstance ?? (await this.pxeService.getContractInstance(network, address));
         if (!instance) {
             throw new Error("Contract instance not found");
         }
 
-        const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
+        const providedArtifact = await optional(ContractArtifactSchema).parseAsync(op.artifact);
         const artifact =
             providedArtifact ??
             (await this.pxeService.getContractArtifact(network, instance.currentContractClassId));
@@ -853,7 +853,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         op: AztecGetContractClassMetadataOperation,
     ): Promise<ContractClassMetadata> {
         const network = await this.networkService.getNetwork(op.networkId);
-        const artifact = await this.pxeService.getContractArtifact(network, op.id);
+        const artifact = await this.pxeService.getContractArtifact(network, op.id, { fetchFromNode: false });
         const node = await this.networkService.getNode(network.chainId);
         const publiclyRegisteredContractClass = await node.getContractClass(op.id);
         return {
@@ -868,7 +868,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(op.networkId);
         const node = await this.networkService.getNode(network.chainId);
         const address = await AztecAddress.schema.parseAsync(op.address);
-        const instance = await this.pxeService.getContractInstance(network, address);
+        const instance = await this.pxeService.getContractInstance(network, address, { fetchFromNode: false });
         const initNullifier = await siloNullifier(address, address.toField());
         const publiclyRegisteredContract = await node.getContract(address);
         const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
@@ -938,6 +938,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async executeAztecRegisterContract(
         op: AztecRegisterContractOperation,
     ): Promise<ContractInstanceWithAddress> {
+        if (!op.instance) {
+            throw new Error("Contract instance is required for registerContract");
+        }
         const instance = await ContractInstanceWithAddressSchema.parseAsync(op.instance);
         const network = await this.networkService.getNetwork(op.networkId);
 
@@ -948,7 +951,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             return instance;
         }
 
-        const providedArtifact = await ContractArtifactSchema.optional().parseAsync(op.artifact);
+        const providedArtifact = await optional(ContractArtifactSchema).parseAsync(op.artifact);
         const artifact =
             providedArtifact ??
             (await this.pxeService.getContractArtifact(network, instance.currentContractClassId));
@@ -993,9 +996,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(op.networkId);
         const account = await this.accountService.getAccountContract(profile.id, network.chainId, op.accountAddress);
         const pxe = this.pxeService.getPXE(network);
+
         await account.ensureRegistered(pxe);
         return pxe.simulateUtility(op.call, {
-            authwits: await z.array(AuthWitness.schema).optional().parseAsync(op.opts.authWitnesses),
+            authwits: await optional(z.array(AuthWitness.schema)).parseAsync(op.opts.authWitnesses),
             scopes: [await AztecAddress.schema.parseAsync(op.opts.scope)],
         });
     }
