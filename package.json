@@ -1,6 +1,6 @@
 {
 	"name": "sdk-compatible-azguard",
-	"displayName": "SDK Compatible Azguard",
+	"displayName": "Testnet Azguard",
 	"description": "User-friendly self-custody wallet for Aztec network, preserving your privacy and revealing the power of account abstraction.",
 	"version": "0.9.1",
 	"sentinel": "6",
@@ -18,7 +18,7 @@
 		"test": "vitest"
 	},
 	"dependencies": {
-		"@alejoamiras/tee-rex": "^4.1.0-rc.4.4",
+		"@alejoamiras/tee-rex": "^4.1.0-rc.4.7",
 		"@aztec/aztec.js": "4.1.0-rc.2",
 		"@aztec/bb.js": "4.1.0-rc.2",
 		"@aztec/constants": "4.1.0-rc.2",
