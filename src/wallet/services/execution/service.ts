@@ -112,7 +112,7 @@ import {
 } from "./spec";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
-import { Aliased, ContractClassMetadata, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
+import { Aliased, ContractClassMetadata, ContractInitializationStatus, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
 import { siloNullifier } from "@aztec/stdlib/hash";
 
 export * from "./spec";
@@ -877,7 +877,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             !publiclyRegisteredContract.currentContractClassId.equals(publiclyRegisteredContract.originalContractClassId);
         return {
             instance,
-            isContractInitialized: !!initWitness,
+            initializationStatus: initWitness ? ContractInitializationStatus.INITIALIZED : ContractInitializationStatus.UNINITIALIZED,
             isContractPublished: !!publiclyRegisteredContract,
             isContractUpdated: !!isContractUpdated,
             updatedContractClassId: isContractUpdated ? publiclyRegisteredContract.currentContractClassId : undefined,
@@ -1013,7 +1013,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         await account.ensureRegistered(pxe);
         return pxe.executeUtility(op.call, {
             authwits: await optional(z.array(AuthWitness.schema)).parseAsync(op.opts.authWitnesses),
-            scopes: [await AztecAddress.schema.parseAsync(op.opts.scope)],
+            scopes: await Promise.all(op.opts.scopes.map(s => AztecAddress.schema.parseAsync(s))),
         });
     }
 
@@ -1055,7 +1055,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             await this.buildAndEstimateTxRequest({ ...op, actions, fee }, op.feeSettings.paymentMethod, parentTask);
 
         const provedTx = await this.proveTxTask(pxe, txRequest, scopesFrom(account.address, op.opts.additionalScopes), parentTask);
-        const offchainOutput = extractOffchainOutput(provedTx.getOffchainEffects());
+        const offchainOutput = extractOffchainOutput(provedTx.getOffchainEffects(), provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp);
 
         const tx = await provedTx.toTx();
         await this.sendTxTask(node, tx, parentTask);

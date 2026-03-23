@@ -295,7 +295,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
                     this.checkAccountPermission(session, operation.account);
                     this.checkMethodPermission(session, operation.kind, chain);
-                    this.checkScopesPermissions(session, [operation.opts.scope]);
+                    this.checkScopesPermissions(session, operation.opts.scopes);
                     break;
                 }
                 case "get_complete_address":
