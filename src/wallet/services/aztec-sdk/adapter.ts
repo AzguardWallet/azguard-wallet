@@ -11,7 +11,7 @@ import type {
     AztecRegisterSenderOperation,
     AztecRegisterContractOperation,
     AztecSimulateTxOperation,
-    AztecSimulateUtilityOperation,
+    AztecExecuteUtilityOperation,
     AztecProfileTxOperation,
     AztecSendTxOperation,
     AztecCreateAuthWitOperation,
@@ -127,12 +127,12 @@ export function walletMessageToOperationRequest(
             };
         }
 
-        case "simulateUtility": {
-            const call = args[0] as AztecSimulateUtilityOperation["call"];
-            const opts = args[1] as AztecSimulateUtilityOperation["opts"] | undefined;
-            const accountAddress = requireAccountAddress(opts?.scope, "simulateUtility requires opts.scope");
+        case "executeUtility": {
+            const call = args[0] as AztecExecuteUtilityOperation["call"];
+            const opts = args[1] as AztecExecuteUtilityOperation["opts"] | undefined;
+            const accountAddress = requireAccountAddress(opts?.scope, "executeUtility requires opts.scope");
             return {
-                kind: "aztec_simulateUtility",
+                kind: "aztec_executeUtility",
                 account: `${chain}:${accountAddress}` as CaipAccount,
                 call,
                 opts: opts!,
@@ -240,7 +240,7 @@ export function capabilitiesToPermissions(
                     methods.add("aztec_simulateTx");
                     methods.add("aztec_profileTx");
                 }
-                if (cap.utilities) methods.add("aztec_simulateUtility");
+                if (cap.utilities) methods.add("aztec_executeUtility");
                 granted.push({ ...cap });
                 break;
             }

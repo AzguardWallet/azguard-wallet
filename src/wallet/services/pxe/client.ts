@@ -1,5 +1,5 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
-import type { SimulateTxOpts, SimulateUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import { ContractArtifactSchema } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -16,7 +16,7 @@ import {
     TxProfileResult,
     TxProvingResult,
     TxSimulationResult,
-    UtilitySimulationResult,
+    UtilityExecutionResult,
 } from "@aztec/stdlib/tx";
 import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
@@ -165,14 +165,14 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         return await TxSimulationResult.schema.parseAsync(result);
     }
 
-    public async simulateUtility(
+    public async executeUtility(
         network: Network,
         call: FunctionCall,
-        opts: SimulateUtilityOpts,
-    ): Promise<UtilitySimulationResult> {
+        opts: ExecuteUtilityOpts,
+    ): Promise<UtilityExecutionResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("simulateUtility", network, call, opts);
-        return await UtilitySimulationResult.schema.parseAsync(result);
+        const result = await this.request("executeUtility", network, call, opts);
+        return await UtilityExecutionResult.schema.parseAsync(result);
     }
 
     public async getPrivateEvents(

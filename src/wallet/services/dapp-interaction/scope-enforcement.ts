@@ -164,7 +164,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             }
             break;
         }
-        case "aztec_simulateUtility": {
+        case "aztec_executeUtility": {
             const call = operation.call as { to: unknown; name: unknown };
             const contractAddr = requireString(call.to, "call.to");
             const fnName = requireString(call.name, "call.name");

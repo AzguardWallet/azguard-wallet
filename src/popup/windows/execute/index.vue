@@ -170,7 +170,7 @@ const init = async () => {
 				case "simulate_utility":
 				case "simulate_views":
 				case "aztec_simulateTx":
-				case "aztec_simulateUtility":
+				case "aztec_executeUtility":
 				case "aztec_profileTx":
 				case "aztec_createAuthWit": {
 					const [network, account] = await getNetworkAndAccount(op.account)
@@ -647,7 +647,7 @@ const showJson = () => {
 								</Flex>
 							</Flex>
 						</template>
-						<template v-else-if="op.kind === 'aztec_simulateUtility'">
+						<template v-else-if="op.kind === 'aztec_executeUtility'">
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Contract address:</Text>
 								<AddressDisplay :address="op.call.to.toString()" />
