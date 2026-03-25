@@ -1249,7 +1249,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 skipFeeEnforcement: true,
                 scopes: isSignerless ? [] : [account.address],
             });
-            const simAccount = (account: IAccountContract) => isSignerless ? undefined : account;
             switch (feePaymentMethod.kind) {
                 case "fj": {
                     const [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
@@ -1263,7 +1262,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         txRequest,
                         simOpts(account),
                         task,
-                        simAccount(account),
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
@@ -1285,7 +1283,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         txRequest,
                         simOpts(account),
                         task,
-                        simAccount(account),
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
@@ -1316,7 +1313,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         txRequest,
                         simOpts(account),
                         task,
-                        simAccount(account),
                     );
                     // Fetch actual fees for FPC fee payload (with FEE_PADDING_MULTIPLIER)
                     const baseFees = (await node.getCurrentMinFees()).mul(FEE_PADDING_MULTIPLIER);
@@ -1341,7 +1337,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         txRequest,
                         simOpts(account),
                         task,
-                        simAccount(account),
                     );
                     maxFee = simulatedTx.gasUsed.totalGas
                         .mul(gasPadding)
@@ -1375,7 +1370,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         txRequest,
                         simOpts(account),
                         task,
-                        simAccount(account),
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
                     task.complete();
@@ -1716,7 +1710,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         txRequest: TxExecutionRequest,
         opts: SimulateTxOpts,
         parentTask?: WrappedTask,
-        account?: IAccountContract,
     ) {
         const step = new StepContent("Simulating transaction");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
