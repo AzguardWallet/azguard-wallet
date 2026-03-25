@@ -67,6 +67,7 @@ const sources = [
 	"logger",
 	"network",
 	"note",
+	"passkey",
 	"profile",
 	"pxe",
 	"rpc",
