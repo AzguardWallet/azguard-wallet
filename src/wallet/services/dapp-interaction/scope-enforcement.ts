@@ -1,4 +1,5 @@
 import type { OperationRequest } from "./spec";
+import { ZERO_ADDRESS } from "@/wallet/utils/constants";
 
 // Serialized capability types — shapes after jsonSanitize() on GrantedCapability instances.
 // AztecAddress/Fr become strings, everything else passes through.
@@ -144,6 +145,11 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             break;
         }
         case "aztec_sendTx": {
+            // Zero-address sendTx routes through MulticallEntrypoint, not the user's account.
+            // Skip transaction scope check — confirmation popup still shown.
+            const sendTxAccount = (operation.account.split(":").at(-1) ?? "");
+            if (sendTxAccount === ZERO_ADDRESS) break;
+
             const calls = operation.exec.calls as { to: unknown; name: unknown }[];
             const scopes = capabilities
                 .filter((c): c is SerializedTransactionCapability => c.type === "transaction")

@@ -7,7 +7,8 @@ import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, hasIntersectionByKeys } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import { AzguardV0, AzguardV0Persistent, IAccountContract } from "./contracts";
+import { AzguardV0, AzguardV0Persistent, IAccountContract, SignerlessAccountContract } from "./contracts";
+import { isZeroAddress } from "@/wallet/utils/constants";
 import { ACCOUNT_SERVICE_NAME, AccountType, Account, Events, Methods } from "./spec";
 
 export * from "./spec";
@@ -115,6 +116,9 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
 
     public async getAccountContract(profileId: string, chainId: number, address: string): Promise<IAccountContract> {
         await this.ensureInitialized();
+        if (isZeroAddress(address)) {
+            return new SignerlessAccountContract();
+        }
         const account = await this.storage.get(address);
         if (account?.profileId !== profileId || account.chainId !== chainId) {
             throw new Error("unknown account address");

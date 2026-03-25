@@ -9,6 +9,7 @@ import { DappSessionService, AccessLevel, DappSession } from "@/wallet/services/
 import { ExecutionService, type Operation, type OperationKind } from "@/wallet/services/execution/service";
 import { OriginType } from "@/wallet/services/transaction/service";
 import { getRandomHex, Lock } from "@/wallet/utils";
+import { isZeroAddress, ZERO_ADDRESS } from "@/wallet/utils/constants";
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import type { AppCapabilities } from "@aztec/aztec.js/wallet";
@@ -193,13 +194,16 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             }
             return networks.find(x => x.isDefault) ?? networks[0];
         };
-        const getNetworkAndAccount = async (caipAccount: CaipAccount): Promise<[Network, Account]> => {
+        const getNetworkAndAccount = async (caipAccount: CaipAccount): Promise<[Network, Account | undefined]> => {
             const [_, chainId, address] = caipAccount.split(":");
             const networks = await this.networkService.getNetworks(+chainId);
             if (networks.length === 0) {
                 throw new Error("Network no longer exists");
             }
             const network = networks.find(x => x.isDefault) ?? networks[0];
+            if (isZeroAddress(address)) {
+                return [network, undefined];
+            }
             const account = await this.accountService.getAccount(profile!.id, network.chainId, address);
             if (!account) {
                 throw new Error("Account no longer exists");
@@ -240,6 +244,9 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_profileTx":
                 case "aztec_createAuthWit": {
                     const [network, account] = await getNetworkAndAccount(op.account);
+                    if (!account) {
+                        throw new Error("Account required for this operation");
+                    }
                     operations.push({ ...op, networkId: network.id, accountAddress: account.address });
                     break;
                 }
@@ -249,7 +256,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     operations.push({
                         ...op,
                         networkId: network.id,
-                        accountAddress: account.address,
+                        accountAddress: account?.address ?? ZERO_ADDRESS,
                         feeSettings: { paymentMethod: { kind: "embedded" } },
                     });
                     break;
@@ -337,6 +344,10 @@ export class DappInteractionService extends Service<Methods, Events> implements 
     }
 
     private checkAccountPermission(session: DappSession, account: string) {
+        const accountAddress = account.split(":").at(-1) ?? "";
+        if (isZeroAddress(accountAddress)) {
+            return;
+        }
         if (!session.accounts.includes(account)) {
             throw new Error("Unauthorized account");
         }

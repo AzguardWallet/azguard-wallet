@@ -32,13 +32,10 @@ import {
     getMulticallEntrypointFn,
     getMulticallEntrypointSelector,
 } from '@/wallet/utils/multicall-entrypoint';
+import { MAX_FEE_PER_DA_GAS, MAX_FEE_PER_L2_GAS } from '@/wallet/utils/constants';
 import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from '.';
 
 const CHUNK_SIZE = 4;
-
-// Max fee values for simulation - actual fees are set in ExecutionService.finalizeGasLimits
-const MAX_FEE_PER_DA_GAS = BigInt(10 ** 18);
-const MAX_FEE_PER_L2_GAS = BigInt(10 ** 18);
 
 /**
  * Abstract base class for Azguard account contracts.

@@ -11,6 +11,7 @@ import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 /** Utils */
 import { trimAddress } from "@/utils/string"
 import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
+import { isZeroAddress, ZERO_ADDRESS } from "@/wallet/utils/constants"
 
 /** Services */
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
@@ -116,13 +117,16 @@ const init = async () => {
 			return networks.find(x => x.isDefault) ?? networks[0]
 		}
 
-		const getNetworkAndAccount = async (caipAccount: CaipAccount): Promise<[Network, Account]> => {
+		const getNetworkAndAccount = async (caipAccount: CaipAccount): Promise<[Network, Account | undefined]> => {
 			const [_, chainId, address] = caipAccount.split(":")
 			const networks = await networkService.getNetworks(+chainId)
 			if (networks.length === 0) {
 				throw new Error("Network no longer exists")
 			}
 			const network = networks.find(x => x.isDefault) ?? networks[0]
+			if (isZeroAddress(address)) {
+				return [network, undefined]
+			}
 			const account = await accountService.getAccount(profile.value!.id, network.chainId, address)
 			if (!account) {
 				throw new Error("Account no longer exists")
@@ -174,6 +178,9 @@ const init = async () => {
 				case "aztec_profileTx":
 				case "aztec_createAuthWit": {
 					const [network, account] = await getNetworkAndAccount(op.account)
+					if (!account) {
+						throw new Error("Account required for this operation")
+					}
 					_operations.push({
 						...op,
 						network,
@@ -193,17 +200,20 @@ const init = async () => {
 						network,
 						networkId: network.id,
 						account,
-						accountAddress: account.address,
+						accountAddress: account?.address ?? ZERO_ADDRESS,
 						feeSettings:
 							op.exec.feePayer !== undefined ? { paymentMethod: { kind: "embedded" } } : undefined!,
 					})
-					if (!_accounts.find(x => x.address === account.address)) {
+					if (account && !_accounts.find(x => x.address === account.address)) {
 						_accounts.push(account)
 					}
 					break
 				}
 				case "send_transaction": {
 					const [network, account] = await getNetworkAndAccount(op.account)
+					if (!account) {
+						throw new Error("Account required for this operation")
+					}
 					_operations.push({
 						...op,
 						network,
@@ -473,24 +483,35 @@ const showJson = () => {
 							:class="$style.operation"
 							direction="column"
 							wide
-							style="
-								margin-bottom: 0;
-								border-bottom-right-radius: 0;
-								border-bottom-left-radius: 0;
-								border-bottom: none;
-							"
+							:style="op.account ? {
+								marginBottom: 0,
+								borderBottomRightRadius: 0,
+								borderBottomLeftRadius: 0,
+								borderBottom: 'none',
+							} : {}"
 						>
 							<Flex wide justify="between">
 								<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
 								<NetworkBadge :network="op.network" />
 							</Flex>
-							<Flex :class="$style.prop">
+							<Flex v-if="op.account" :class="$style.prop">
 								<Text size="12" color="secondary">From account:</Text>
 								<Text size="12" color="primary">
-									{{ op.account!.name }}
-									<Text color="secondary">({{ trimAddress(op.account!.address) }})</Text>
+									{{ op.account.name }}
+									<Text color="secondary">({{ trimAddress(op.account.address) }})</Text>
 								</Text>
 							</Flex>
+							<template v-else>
+								<Flex :class="$style.prop">
+									<Text size="12" color="secondary">Entrypoint:</Text>
+									<Text size="12" color="primary">MulticallEntrypoint</Text>
+								</Flex>
+								<Flex :class="$style.prop">
+									<Text size="12" color="tertiary">
+										This is a public call routed through the shared MulticallEntrypoint — no account contract is involved
+									</Text>
+								</Flex>
+							</template>
 							<Flex :class="$style.prop">
 								<Text size="12" color="secondary">Payload:</Text>
 								<Flex direction="column" gap="4">
@@ -509,6 +530,7 @@ const showJson = () => {
 							</Flex>
 						</Flex>
 						<FeeSettingsCard
+							v-if="op.account"
 							:profile="profile"
 							:network="op.network"
 							:account="op.account"
