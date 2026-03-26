@@ -72,7 +72,8 @@ export function gridItemKey(g: Grid, index: number): string {
 function isFeatureAlive(f: Feature, exclusions: Set<string>): boolean {
 	if (f.switches.length > 0 && f.switches.every(s => exclusions.has(s.key)))
 		return false
-	if (f.items?.kind === "grid" && f.items.items.length > 0) {
+	if (f.items?.kind === "grid") {
+		if (f.items.items.length === 0) return false
 		const g = f.items
 		if (g.items.every((_, i) => exclusions.has(gridItemKey(g, i))))
 			return false
@@ -418,6 +419,9 @@ export class UICapability {
 
 		if (newSelected) {
 			this.exclusions.clear()
+			if (!this.alive) {
+				this.selected = false
+			}
 		} else {
 			for (const key of this.getExcludableKeys()) {
 				this.exclusions.add(key)
