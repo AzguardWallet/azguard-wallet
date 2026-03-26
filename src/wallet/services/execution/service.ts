@@ -1122,7 +1122,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
             messageHash = await computeAuthWitMessageHash(intentHash, metadata);
         } else {
-            throw new Error("Invalid messageHashOrIntent: expected IntentInnerHash or CallIntent");
+            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
         }
 
         return await account.buildAuthWitness(messageHash);
