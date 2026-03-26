@@ -29,7 +29,7 @@ import {
     Events,
     DappInteraction,
 } from "./spec";
-import { enforceCapabilityScope, type SerializedCapability } from "./scope-enforcement";
+import { enforceCapabilityScope, sdkName, type SerializedCapability } from "./scope-enforcement";
 
 export * from "./spec";
 
@@ -338,20 +338,20 @@ export class DappInteractionService extends Service<Methods, Events> implements 
 
     private checkAccountPermission(session: DappSession, account: string) {
         if (!session.accounts.includes(account)) {
-            throw new Error("Unauthorized account");
+            throw new Error(`Unauthorized account: ${account}`);
         }
     }
 
     private checkMethodPermission(session: DappSession, method: string, chain: string) {
         if (!session.permissions.find(x => x.methods?.includes(method) && x.chains?.includes(chain))) {
-            throw new Error("Unauthorized method/chain");
+            throw new Error(`Unauthorized method/chain: method=${sdkName(method)}, chain=${chain}`);
         }
     }
 
     private checkScopesPermissions(session: DappSession, scopes: AztecAddress[]) {
         for (const address of scopes.map(x => x.toString())) {
             if (!session.accounts.some(x => x.endsWith(address))) {
-                throw new Error("Unauthorized scopes");
+                throw new Error(`Unauthorized scope: ${address}`);
             }
         }
     }

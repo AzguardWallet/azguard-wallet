@@ -102,6 +102,16 @@ function allCallsInScope(scopes: SerializedScope[], calls: { to: unknown; name: 
     });
 }
 
+/** Strips the internal `aztec_` prefix to produce SDK-facing operation names. */
+export function sdkName(kind: string): string {
+    return kind.startsWith("aztec_") ? kind.slice(6) : kind;
+}
+
+/** Safely describes a call for error messages. */
+function describeCall(call: { to: unknown; name: unknown }): string {
+    return `${call.name ?? "?"}@${call.to ?? "?"}`;
+}
+
 // --- Main ---
 
 /**
@@ -119,7 +129,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
                 (c): c is SerializedContractsCapability => c.type === "contracts" && !!c.canRegister,
             );
             if (!matching.some(c => addressInList(c.contracts, address))) {
-                throw new Error("Operation not in capability scope");
+                throw new Error(`Operation not in capability scope: registerContract, contract=${address}`);
             }
             break;
         }
@@ -129,7 +139,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
                 (c): c is SerializedContractsCapability => c.type === "contracts" && !!c.canGetMetadata,
             );
             if (!matching.some(c => addressInList(c.contracts, address))) {
-                throw new Error("Operation not in capability scope");
+                throw new Error(`Operation not in capability scope: getContractMetadata, contract=${address}`);
             }
             break;
         }
@@ -139,7 +149,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
                 (c): c is SerializedContractClassesCapability => c.type === "contractClasses" && !!c.canGetMetadata,
             );
             if (!matching.some(c => addressInList(c.classes, id))) {
-                throw new Error("Operation not in capability scope");
+                throw new Error(`Operation not in capability scope: getContractClassMetadata, classId=${id}`);
             }
             break;
         }
@@ -149,7 +159,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
                 .filter((c): c is SerializedTransactionCapability => c.type === "transaction")
                 .map(c => c.scope);
             if (!allCallsInScope(scopes, calls)) {
-                throw new Error("Operation not in capability scope");
+                throw new Error(`Operation not in capability scope: sendTx, calls=[${calls.map(describeCall).join(", ")}]`);
             }
             break;
         }
@@ -160,7 +170,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
                 .filter((c): c is SimulationWithTransactions => c.type === "simulation" && !!c.transactions)
                 .map(c => c.transactions.scope);
             if (!allCallsInScope(scopes, calls)) {
-                throw new Error("Operation not in capability scope");
+                throw new Error(`Operation not in capability scope: ${sdkName(operation.kind)}, calls=[${calls.map(describeCall).join(", ")}]`);
             }
             break;
         }
@@ -172,7 +182,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
                 .filter((c): c is SimulationWithUtilities => c.type === "simulation" && !!c.utilities)
                 .map(c => c.utilities.scope);
             if (!scopes.some(scope => callMatchesScope(scope, contractAddr, fnName))) {
-                throw new Error("Operation not in capability scope");
+                throw new Error(`Operation not in capability scope: executeUtility, fn=${fnName}@${contractAddr}`);
             }
             break;
         }
@@ -182,7 +192,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
                 (c): c is DataWithPrivateEvents => c.type === "data" && !!c.privateEvents,
             );
             if (!matching.some(c => addressInList(c.privateEvents.contracts, contractAddress))) {
-                throw new Error("Operation not in capability scope");
+                throw new Error(`Operation not in capability scope: getPrivateEvents, contract=${contractAddress}`);
             }
             break;
         }
@@ -192,7 +202,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
                 (c): c is SerializedAccountsCapability => c.type === "accounts" && !!c.canCreateAuthWit,
             );
             if (!matching.some(c => c.accounts.some(a => a.item === accountAddress))) {
-                throw new Error("Operation not in capability scope");
+                throw new Error(`Operation not in capability scope: createAuthWit, account=${accountAddress}`);
             }
             // TODO: Consider also validating that CallIntent-based auth witnesses fall within
             // the granted transaction/simulation scopes, or prompting the user for explicit
