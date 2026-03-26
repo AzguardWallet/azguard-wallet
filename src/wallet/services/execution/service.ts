@@ -978,8 +978,21 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Invalid `opts.from`");
         }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
-        const [txRequest, _, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
+        const [txRequest, node, pxe, account] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
+        // Override default maxFeesPerGas (10^18) with dApp-provided or node base fees
+        // so the FPC's max_gas_cost assertion doesn't fail during simulation.
+        if (fee.embeddedFeePayment) {
+            const maxFeesPerGas = fee.maxFeesPerGas
+                ? new GasFees(BigInt(fee.maxFeesPerGas.feePerDaGas), BigInt(fee.maxFeesPerGas.feePerL2Gas))
+                : await node.getCurrentMinFees();
+            txRequest.txContext.gasSettings = new GasSettings(
+                txRequest.txContext.gasSettings.gasLimits,
+                txRequest.txContext.gasSettings.teardownGasLimits,
+                maxFeesPerGas,
+                txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+            );
+        }
         return pxe.simulateTx(txRequest, {
             simulatePublic: true,
             skipTxValidation: op.opts.skipTxValidation,
@@ -1009,8 +1022,19 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Invalid `opts.from`");
         }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
-        const [txRequest, _, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
+        const [txRequest, node, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
+        if (fee.embeddedFeePayment) {
+            const maxFeesPerGas = fee.maxFeesPerGas
+                ? new GasFees(BigInt(fee.maxFeesPerGas.feePerDaGas), BigInt(fee.maxFeesPerGas.feePerL2Gas))
+                : await node.getCurrentMinFees();
+            txRequest.txContext.gasSettings = new GasSettings(
+                txRequest.txContext.gasSettings.gasLimits,
+                txRequest.txContext.gasSettings.teardownGasLimits,
+                maxFeesPerGas,
+                txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+            );
+        }
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
@@ -1165,6 +1189,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 : "fpc",
             gasLimits: opts.fee?.gasSettings?.gasLimits,
             teardownGasLimits: opts.fee?.gasSettings?.teardownGasLimits,
+            maxFeesPerGas: opts.fee?.gasSettings?.maxFeesPerGas,
             gasPadding: 1,
         };
 
@@ -1358,13 +1383,24 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         task,
                     );
                     this.suggestGasLimits(txRequest, op.fee);
+                    // Override default maxFeesPerGas (10^18) with dApp-provided or node base fees
+                    // so the FPC's max_gas_cost assertion doesn't fail during simulation.
+                    const maxFeesPerGas = op.fee.maxFeesPerGas
+                        ? new GasFees(BigInt(op.fee.maxFeesPerGas.feePerDaGas), BigInt(op.fee.maxFeesPerGas.feePerL2Gas))
+                        : await node.getCurrentMinFees();
+                    txRequest.txContext.gasSettings = new GasSettings(
+                        txRequest.txContext.gasSettings.gasLimits,
+                        txRequest.txContext.gasSettings.teardownGasLimits,
+                        maxFeesPerGas,
+                        txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+                    );
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
                         { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
                         task,
                     );
-                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
+                    await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, maxFeesPerGas);
                     task.complete();
                     return [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod];
                 }
