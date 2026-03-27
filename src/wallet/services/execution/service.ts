@@ -114,7 +114,7 @@ import {
 } from "./spec";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
-import { Aliased, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
+import { Aliased, ContractInitializationStatus, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export * from "./spec";
@@ -1054,7 +1054,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeAztecGetContractMetadata(
         op: AztecGetContractMetadataOperation,
-    ): Promise<{ instance?: ContractInstanceWithAddress; isContractInitialized: boolean; isContractPublished: boolean; isContractUpdated: boolean; updatedContractClassId?: Fr }> {
+    ): Promise<{ instance?: ContractInstanceWithAddress; initializationStatus: ContractInitializationStatus; isContractPublished: boolean; isContractUpdated: boolean; updatedContractClassId?: Fr }> {
         const network = await this.networkService.getNetwork(op.networkId);
 
         // Check PXE-local only: simulation requires both instance AND artifact
@@ -1083,7 +1083,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
         return {
             instance: isLocallyRegistered ? localInstance : undefined,
-            isContractInitialized: isLocallyRegistered,
+            initializationStatus: isLocallyRegistered ? ContractInitializationStatus.INITIALIZED : ContractInitializationStatus.UNKNOWN,
             isContractPublished: isPublished,
             isContractUpdated: false,
             updatedContractClassId: undefined,
@@ -1175,11 +1175,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
             );
         }
+        const additionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
         return pxe.simulateTx(txRequest, {
             simulatePublic: true,
             skipTxValidation: op.opts.skipTxValidation,
             skipFeeEnforcement: op.opts.skipFeeEnforcement ?? true,
-            scopes: [account.address],
+            scopes: [account.address, ...additionalScopes],
         });
     }
 
@@ -1194,7 +1195,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         await account.ensureRegistered(pxe);
         return pxe.executeUtility(op.call, {
             authwits: await z.array(AuthWitness.schema).optional().parseAsync(op.opts.authWitnesses),
-            scopes: [await AztecAddress.schema.parseAsync(op.opts.scope)],
+            scopes: await z.array(AztecAddress.schema).parseAsync(op.opts.scopes),
         });
     }
 
@@ -1216,10 +1217,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
             );
         }
+        const additionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
-            scopes: [AztecAddress.fromString(op.accountAddress)],
+            scopes: [AztecAddress.fromString(op.accountAddress), ...additionalScopes],
         });
     }
 
@@ -1267,8 +1269,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         parentTask,
                     );
 
-                const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], parentTask);
-                const offchainOutput = extractOffchainOutput(provedTx.getOffchainEffects());
+                const sendAdditionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
+                const provedTx = await this.proveTxTask(pxe, txRequest, [account.address, ...sendAdditionalScopes], parentTask);
+                const offchainOutput = extractOffchainOutput(
+                    provedTx.getOffchainEffects(),
+                    provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp.toBigInt(),
+                );
                 const tx = await provedTx.toTx();
                 await this.sendTxTask(node, tx, parentTask);
 

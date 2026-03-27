@@ -576,7 +576,8 @@ export class WalletSdkDispatcher {
             case "aztec_profileTx":
                 return { kind, networkId, accountAddress, exec: args[0] as any, opts: { ...(args[1] as any ?? {}), from: accountAddress } };
             case "aztec_createAuthWit":
-                return { kind, networkId, accountAddress, messageHashOrIntent: args[0] as any };
+                // WalletSchema: createAuthWit(from: AztecAddress, messageHashOrIntent) — args[0] is from, args[1] is the intent
+                return { kind, networkId, accountAddress, messageHashOrIntent: args[1] as any };
             case "register_token":
                 // schema_patch: registerToken(account: AztecAddress, token: AztecAddress)
                 // The first arg is the account (already resolved), second is the token address
