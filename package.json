@@ -15,10 +15,10 @@
 		"dev:firefox": "vite build --mode development --watch -c vite.firefox.config.mts",
 		"preview": "vite preview",
 		"typecheck": "vue-tsc --noEmit",
-		"test": "vitest"
+		"test": "vitest",
+		"postinstall": "node -e \"const fs=require('fs');const p='node_modules/@aztec/pxe/dest/contract_function_simulator/oracle/legacy_oracle_mappings.js';const c=fs.readFileSync(p,'utf8');if(!c.includes('utilityFetchTaggedLogs')){const patched=c.replace('utilityEmitOffchainEffect: (data)=>oracle.aztec_utl_emitOffchainEffect(data),','utilityEmitOffchainEffect: (data)=>oracle.aztec_utl_emitOffchainEffect(data),utilityFetchTaggedLogs: (pendingTaggedLogArrayBaseSlot)=>oracle.aztec_utl_getPendingTaggedLogs(pendingTaggedLogArrayBaseSlot, [toACVMField(AztecAddress.ZERO)]),utilityValidateAndStoreEnqueuedNotesAndEvents: (contractAddress, a, b, c, d)=>oracle.aztec_utl_validateAndStoreEnqueuedNotesAndEvents(contractAddress, a, b, c, d, [toACVMField(AztecAddress.ZERO)]),utilityBulkRetrieveLogs: (contractAddress, a, b)=>oracle.aztec_utl_getLogsByTag(contractAddress, a, b, [toACVMField(AztecAddress.ZERO)]),');fs.writeFileSync(p,patched);console.log('Patched legacy oracle mappings')}\""
 	},
 	"dependencies": {
-		"@alejoamiras/tee-rex": "^4.1.0-rc.4.7",
 		"@aztec/aztec.js": "4.2.0-aztecnr-rc.2",
 		"@aztec/bb.js": "4.2.0-aztecnr-rc.2",
 		"@aztec/constants": "4.2.0-aztecnr-rc.2",
