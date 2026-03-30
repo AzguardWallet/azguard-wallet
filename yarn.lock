@@ -13,8 +13,8 @@ __metadata:
   linkType: hard
 
 "@alejoamiras/tee-rex@npm:^4.1.0-rc.4.7":
-  version: 4.1.0-rc.4.7
-  resolution: "@alejoamiras/tee-rex@npm:4.1.0-rc.4.7"
+  version: 4.1.0-rc.4.12
+  resolution: "@alejoamiras/tee-rex@npm:4.1.0-rc.4.12"
   dependencies:
     "@aztec/bb-prover": "npm:4.1.0-rc.4"
     "@aztec/foundation": "npm:4.1.0-rc.4"
@@ -31,7 +31,7 @@ __metadata:
     ts-essentials: "npm:^10.1.1"
     ufo: "npm:^1.6.3"
     zod: "npm:^3.23.8"
-  checksum: 10c0/1e016f0570b041d14b1deb67f95852aaa2e81b2efc74aca34cbe85feb0ee6e422e4d4d41a1a7c0e06ec090ea617eb4682ba2b012dc2639c35e8e3256da943cd4
+  checksum: 10c0/99570dac135271e4ab5967f167443c7422a73a971bb91f430f6f38afb9dcfee3fb92ed713c042a3cd6ef04cf4b02157ef6f8a96046fe1fa78a099ac7da2de6d6
   languageName: node
   linkType: hard
 
@@ -2183,10 +2183,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-fa29ccc/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.fa29ccc.tgz":
-  version: 4.0.0-devnet.2-patch.1-prerelease.fa29ccc
-  resolution: "@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-fa29ccc/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.fa29ccc.tgz"
-  checksum: 10c0/6e38e16f931131e674f2133c966d490d19924233a71f5f1eb4f46c7d821f6242d83f7bf87e03d420e661efd81facfd6cb25acf33db9f4f5a7a174784bd14792a
+"@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-07982ed/wonderland-aztec-fee-payment-4.2.0-aztecnr-rc.2-prerelease.07982ed.tgz":
+  version: 4.2.0-aztecnr-rc.2-prerelease.07982ed
+  resolution: "@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-07982ed/wonderland-aztec-fee-payment-4.2.0-aztecnr-rc.2-prerelease.07982ed.tgz"
+  checksum: 10c0/6a4f2dd207416e3dbdef1a53ca04d837876a361091de5427fcc666277d1d07ccc90ef6a6c53bae549c1d80ce51051519c4096a0d1d8117736cede170ec2a562e
+  languageName: node
+  linkType: hard
+
+"@defi-wonderland/aztec-standards@https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-1ad0e28/defi-wonderland-aztec-standards-4.2.0-aztecnr-rc.2-prerelease.1ad0e28.tgz":
+  version: 4.2.0-aztecnr-rc.2-prerelease.1ad0e28
+  resolution: "@defi-wonderland/aztec-standards@https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-1ad0e28/defi-wonderland-aztec-standards-4.2.0-aztecnr-rc.2-prerelease.1ad0e28.tgz"
+  checksum: 10c0/d848dc6360bd9fba51e43531f5c44588420393e65c262787272c9c507a4175ee5b892303ed67845d8cda278e039aeaff7ed3ddcf37e005e69bedc80590382bb1
   languageName: node
   linkType: hard
 
@@ -2611,9 +2618,9 @@ __metadata:
   linkType: hard
 
 "@logtape/logtape@npm:^2.0":
-  version: 2.0.4
-  resolution: "@logtape/logtape@npm:2.0.4"
-  checksum: 10c0/8d8fb154d473e8436b83df73fa61fd6062fcd84e3eda6b44ec1ee983d3496f1ed07910689935e31b3aebc7e1649d589ededa03f4a4f9e5a3b9d14ef9f949179d
+  version: 2.0.5
+  resolution: "@logtape/logtape@npm:2.0.5"
+  checksum: 10c0/4a1100d39fcf38c60a56c63932775380e89c9b8de28edc85842a677701483101e223ca5c5b1db1e4f3763707bbb67e0ef383228818f1fa62265495fcebffb740
   languageName: node
   linkType: hard
 
@@ -9855,7 +9862,8 @@ __metadata:
     "@biomejs/biome": "npm:^2.1.4"
     "@codemirror/lang-json": "npm:^6.0.2"
     "@crxjs/vite-plugin": "npm:^2.1.0"
-    "@defi-wonderland/aztec-fee-payment": "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-fa29ccc/defi-wonderland-aztec-fee-payment-4.0.0-devnet.2-patch.1-prerelease.fa29ccc.tgz"
+    "@defi-wonderland/aztec-fee-payment": "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-07982ed/wonderland-aztec-fee-payment-4.2.0-aztecnr-rc.2-prerelease.07982ed.tgz"
+    "@defi-wonderland/aztec-standards": "https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-1ad0e28/defi-wonderland-aztec-standards-4.2.0-aztecnr-rc.2-prerelease.1ad0e28.tgz"
     "@replit/codemirror-indentation-markers": "npm:^6.5.3"
     "@types/node": "npm:^24.2.1"
     "@types/webextension-polyfill": "npm:^0.12.3"
