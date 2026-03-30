@@ -113,7 +113,7 @@ import {
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
 import { Aliased, ContractClassMetadata, ContractInitializationStatus, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
-import { siloNullifier } from "@aztec/stdlib/hash";
+import { computeSiloedPrivateInitializationNullifier, computeSiloedPublicInitializationNullifier } from "@aztec/stdlib/hash";
 
 export * from "./spec";
 
@@ -869,15 +869,25 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const node = await this.networkService.getNode(network.chainId);
         const address = await AztecAddress.schema.parseAsync(op.address);
         const instance = await this.pxeService.getContractInstance(network, address, { fetchFromNode: false });
-        const initNullifier = await siloNullifier(address, address.toField());
         const publiclyRegisteredContract = await node.getContract(address);
-        const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
+
+        let initializationStatus: ContractInitializationStatus;
+        if (instance) {
+            const initNullifier = await computeSiloedPrivateInitializationNullifier(address, instance.initializationHash);
+            const witness = await node.getNullifierMembershipWitness('latest', initNullifier);
+            initializationStatus = witness ? ContractInitializationStatus.INITIALIZED : ContractInitializationStatus.UNINITIALIZED;
+        } else {
+            const publicNullifier = await computeSiloedPublicInitializationNullifier(address);
+            const witness = await node.getNullifierMembershipWitness('latest', publicNullifier);
+            initializationStatus = witness ? ContractInitializationStatus.INITIALIZED : ContractInitializationStatus.UNKNOWN;
+        }
+
         const isContractUpdated =
             publiclyRegisteredContract &&
             !publiclyRegisteredContract.currentContractClassId.equals(publiclyRegisteredContract.originalContractClassId);
         return {
             instance,
-            initializationStatus: initWitness ? ContractInitializationStatus.INITIALIZED : ContractInitializationStatus.UNINITIALIZED,
+            initializationStatus,
             isContractPublished: !!publiclyRegisteredContract,
             isContractUpdated: !!isContractUpdated,
             updatedContractClassId: isContractUpdated ? publiclyRegisteredContract.currentContractClassId : undefined,
