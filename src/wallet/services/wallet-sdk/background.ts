@@ -181,6 +181,32 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
         }
     });
 
+    // Terminate sessions when a tab is closed
+    chrome.tabs.onRemoved.addListener((tabId) => {
+        handler.terminateForTab(tabId);
+    });
+
+    // Terminate sessions when a tab navigates to a different origin.
+    // SPA navigations (e.g. Next.js router.push) fire tabs.onUpdated with
+    // status "loading" but stay on the same origin — these must NOT kill
+    // the session. (backport of upstream #56)
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+        if (changeInfo.status === "loading" && changeInfo.url) {
+            try {
+                const newOrigin = new URL(changeInfo.url).origin;
+                const sessions = handler.getActiveSessions().filter(s => s.tabId === tabId);
+                for (const session of sessions) {
+                    if (session.origin !== newOrigin) {
+                        logger.log("wallet-sdk", LogLevel.Info, `Tab ${tabId} navigated to ${newOrigin}, terminating session ${session.sessionId}`);
+                        handler.terminateSession(session.sessionId);
+                    }
+                }
+            } catch {
+                handler.terminateForTab(tabId);
+            }
+        }
+    });
+
     handler.initialize();
     logger.log("wallet-sdk", LogLevel.Info, "BackgroundConnectionHandler initialized");
 
