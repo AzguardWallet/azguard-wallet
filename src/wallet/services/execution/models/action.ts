@@ -15,6 +15,7 @@ export type AddCapsuleAction = {
     readonly contract: string;
     readonly storageSlot: string;
     readonly capsule: string[];
+    readonly scope?: string;
 };
 
 export type AddExtraArgsAction = {
