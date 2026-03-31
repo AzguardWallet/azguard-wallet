@@ -117,7 +117,12 @@ export function formatCallSummary(method: string, contract: string): string {
     return `${humanizeMethodName(method)} on ${trimAddress(contract, 6, 4)}`
 }
 
-const TRANSFER_TYPE_LABELS: Record<string, string> = {
+// TransferType enum values: Private=0, PrivateToPublic=1, Public=2, PublicToPrivate=3
+const TRANSFER_TYPE_LABELS: Record<number | string, string> = {
+    0: "Private → Private",
+    1: "Private → Public",
+    2: "Public → Public",
+    3: "Public → Private",
     "Private": "Private → Private",
     "PrivateToPublic": "Private → Public",
     "Public": "Public → Public",
@@ -127,6 +132,6 @@ const TRANSFER_TYPE_LABELS: Record<string, string> = {
 /**
  * Returns a human-readable transfer type label.
  */
-export function formatTransferType(type: string): string {
-    return TRANSFER_TYPE_LABELS[type] ?? type
+export function formatTransferType(type: number | string): string {
+    return TRANSFER_TYPE_LABELS[type] ?? String(type)
 }

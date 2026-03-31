@@ -82,10 +82,9 @@ const title = computed(() => {
 })
 
 const subtitle = computed(() => {
-	// For transfers, show transfer type + amount instead of dApp name/hash
+	// For transfers, show transfer type (amount is already in the badge on the right)
 	if (type.value === "transfer" && transfer.value) {
-		const typeName = formatTransferType(transfer.value.type)
-		return transferAmount.value ? `${typeName} · ${transferAmount.value}` : typeName
+		return formatTransferType(transfer.value.type)
 	}
 	const parts = []
 	const origin = getOriginLabel(props.tx.origin)

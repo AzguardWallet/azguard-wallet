@@ -92,14 +92,11 @@ const handleRefreshBalance = async () => {
 					<Text :class="$style.symbol_wrapper">&nbsp;{{ token.symbol }}</Text>
 				</Text>
 
-				<Flex v-if="hasPrivate || hasPublic" align="center" gap="6">
-					<Text v-if="hasPrivate" size="11" color="tertiary">
-						<Text color="secondary">🔒</Text> {{ privateFormatted }}
-					</Text>
-					<Text v-if="hasPublic" size="11" color="tertiary">
-						<Text color="secondary">🌐</Text> {{ publicFormatted }}
-					</Text>
-				</Flex>
+				<Text v-if="hasPrivate || hasPublic" size="11" color="secondary" noWrap>
+					<template v-if="hasPrivate">Priv {{ privateFormatted }}</template>
+					<template v-if="hasPrivate && hasPublic"> · </template>
+					<template v-if="hasPublic">Pub {{ publicFormatted }}</template>
+				</Text>
 			</Flex>
 		</template>
 	</SettingItem>
