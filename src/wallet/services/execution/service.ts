@@ -1009,11 +1009,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             this.logError("Failed to get public FeeJuice balance", getErrorMessage(err));
         }
 
-        // Private FeeJuice balance via balance_of on BridgedFPC
+        // Private FeeJuice balance via balance_of on PrivateFPC
         let privateFeeJuice: string | null = null;
         try {
             const fpcs = await this.fpcService.getFpcs(network.chainId);
-            const bridgedFpc = fpcs.find(f => f.type === FpcType.BridgedFpc);
+            const bridgedFpc = fpcs.find(f => f.type === FpcType.PrivateFpc);
             if (bridgedFpc) {
                 const privateResult = await this.executeSimulateViews({
                     kind: "simulate_views",

@@ -67,7 +67,7 @@ const filteredFpcs = computed(() => {
 			!showAllFpcs.value &&
 			!(
 				fpc.type === FpcType.DefaultSponsoredFpc ||
-				fpc.type === FpcType.BridgedFpc ||
+				fpc.type === FpcType.PrivateFpc ||
 				(fpc.type === FpcType.DefaultFpc && tokenContracts.value?.has(fpc.asset))
 			)
 		) {
@@ -89,7 +89,7 @@ const filteredFpcs = computed(() => {
 
 const getFPCBadgeTitle = (fpc) => {
 	if (fpc.type === FpcType.DefaultSponsoredFpc) return "Sponsored"
-	if (fpc.type === FpcType.BridgedFpc) return "Private"
+	if (fpc.type === FpcType.PrivateFpc) return "Private"
 	if (fpc.token?.symbol) {
 		if (fpc.token?.symbol.length > 6) {
 			return `${fpc.token?.symbol.slice(0, 6)}...`
@@ -109,7 +109,7 @@ const prepareFpc = (fpc) => {
 			color: getChainColor(appStore.network.chainId),
 		}
 	}
-	if (fpc.type === FpcType.BridgedFpc) {
+	if (fpc.type === FpcType.PrivateFpc) {
 		return {
 			...fpc,
 			typeName: "private",
@@ -337,7 +337,7 @@ onBeforeUnmount(() => {
 				>
 					<template #right>
 						<Flex
-							v-if="fpc.type === FpcType.DefaultSponsoredFpc || fpc.type === FpcType.BridgedFpc || fpc.token?.symbol"
+							v-if="fpc.type === FpcType.DefaultSponsoredFpc || fpc.type === FpcType.PrivateFpc || fpc.token?.symbol"
 							align="start"
 							:class="$style.badge"
 							:style="{ background: `var(--${fpc.color})` }"
@@ -346,7 +346,7 @@ onBeforeUnmount(() => {
 						</Flex>
 
 						<Flex align="center" gap="8">
-							<Tooltip v-if="!(fpc.type === FpcType.DefaultSponsoredFpc || fpc.type === FpcType.BridgedFpc || fpc.token?.symbol)" position="end" delay="350">
+							<Tooltip v-if="!(fpc.type === FpcType.DefaultSponsoredFpc || fpc.type === FpcType.PrivateFpc || fpc.token?.symbol)" position="end" delay="350">
 								<Icon
 									@click.stop="handleAddToken(fpc)"
 									name="banknote"

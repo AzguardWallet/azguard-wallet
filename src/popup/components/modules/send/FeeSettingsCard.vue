@@ -49,7 +49,7 @@ const settings = defineModel()
 const methodId = getRandomHex(6)
 const registeredFpcs = ref([])
 
-const bridgedFpc = computed(() => registeredFpcs.value.find(f => f.type === FpcType.BridgedFpc))
+const privateFpc = computed(() => registeredFpcs.value.find(f => f.type === FpcType.PrivateFpc))
 
 const methods = computed(() => {
 	const base = [
@@ -60,15 +60,15 @@ const methods = computed(() => {
 			inPublic: true,
 		},
 		{
-			type: "bridged_fpc",
-			title: bridgedFpc.value?.name || "Private Fee Juice",
+			type: "private_fpc",
+			title: privateFpc.value?.name || "Private Fee Juice",
 			subtitle: "private",
-			fpc: bridgedFpc.value,
+			fpc: privateFpc.value,
 		},
 	]
 
 	for (const fpc of registeredFpcs.value) {
-		if (fpc.type === FpcType.BridgedFpc) {
+		if (fpc.type === FpcType.PrivateFpc) {
 			continue // already added as static "Private Fee Juice" entry above
 		} else if (fpc.type === FpcType.DefaultSponsoredFpc) {
 			base.push({
@@ -238,7 +238,7 @@ const saveSelectedMethod = async (method) => {
 	fpms[props.account.address] = method
 	chrome.storage.local.set({ [FEE_METHOD_LS_KEY]: fpms })
 
-	if (method.type === "fpc" || method.type === "bridged_fpc") {
+	if (method.type === "fpc" || method.type === "private_fpc") {
 		cacheStore.feePaymentMethods.push({
 			id: methodId,
 			fpc: method.fpc,
@@ -299,9 +299,9 @@ watch(
 				saveSelectedMethod(selectedMethod.value)
 				break;
 			}
-			case "bridged_fpc": {
+			case "private_fpc": {
 				if (!selectedMethod.value.fpc) {
-					// No BridgedFPC registered yet
+					// No PrivateFPC registered yet
 					settings.value = undefined
 					break;
 				}
@@ -329,7 +329,7 @@ watch(
 						inPublic: selectedMethod.value.inPublic,
 					}, selectedPriority.value)
 				} else {
-					// DefaultSponsoredFpc, BridgedFpc
+					// DefaultSponsoredFpc, PrivateFpc
 					settings.value = buildSettings({
 						kind: "fpc",
 						fpcId: selectedMethod.value.fpc.id,
@@ -467,8 +467,8 @@ onBeforeUnmount(() => {
 				</Flex>
 			</template>
 
-			<!-- Private Fee Juice (BridgedFPC) details -->
-			<template v-else-if="selectedMethod?.type === 'bridged_fpc'">
+			<!-- Private Fee Juice (PrivateFPC) details -->
+			<template v-else-if="selectedMethod?.type === 'private_fpc'">
 				<template v-if="selectedMethod.fpc">
 					<Flex align="center" justify="between" :class="$style.detail_row">
 						<Flex align="center" gap="4">

@@ -6,7 +6,7 @@ import { IPXE } from "@/wallet/services/pxe/proxy";
 import { FpcInfo, FpcType } from "../spec";
 import { DefaultFpcHandler } from "./default-fpc-handler";
 import { DefaultSponsoredFpcHandler } from "./default-sponsored-fpc-handler";
-import { BridgedFpcHandler } from "./bridged-fpc-handler";
+import { PrivateFpcHandler } from "./private-fpc-handler";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 
 export interface IFpcHandler {
@@ -27,8 +27,8 @@ export function getFpcHandler(type: FpcType) {
         case FpcType.DefaultSponsoredFpc: {
             return new DefaultSponsoredFpcHandler();
         }
-        case FpcType.BridgedFpc: {
-            return new BridgedFpcHandler();
+        case FpcType.PrivateFpc: {
+            return new PrivateFpcHandler();
         }
         default: {
             throw new Error("Invalid FPC type");

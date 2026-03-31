@@ -41,7 +41,7 @@ export type FeeSettings = {
 export type GasBalances = {
     /** Public FeeJuice balance (raw, 18 decimals) */
     readonly publicFeeJuice: string;
-    /** Private FeeJuice balance via BridgedFPC (raw, 18 decimals), null if no BridgedFPC */
+    /** Private FeeJuice balance via PrivateFPC (raw, 18 decimals), null if no PrivateFPC */
     readonly privateFeeJuice: string | null;
 };
 

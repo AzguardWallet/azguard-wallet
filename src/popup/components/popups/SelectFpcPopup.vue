@@ -40,7 +40,7 @@ const fpcs = computed(() => {
 	return allFpcs.value
 		?.filter(f =>
 			f.type === FpcType.DefaultSponsoredFpc ||
-			f.type === FpcType.BridgedFpc ||
+			f.type === FpcType.PrivateFpc ||
 			(f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset))
 		)
 		.map(f => prepareFpc(f))
@@ -117,7 +117,7 @@ const prepareFpc = (fpc) => {
 			color: getChainColor(appStore.network.chainId),
 		}
 	}
-	if (fpc.type === FpcType.BridgedFpc) {
+	if (fpc.type === FpcType.PrivateFpc) {
 		return {
 			...fpc,
 			typeName: "private",

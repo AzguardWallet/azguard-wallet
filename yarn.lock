@@ -2194,17 +2194,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-07982ed/wonderland-aztec-fee-payment-4.2.0-aztecnr-rc.2-prerelease.07982ed.tgz":
-  version: 4.2.0-aztecnr-rc.2-prerelease.07982ed
-  resolution: "@defi-wonderland/aztec-fee-payment@https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-07982ed/wonderland-aztec-fee-payment-4.2.0-aztecnr-rc.2-prerelease.07982ed.tgz"
-  checksum: 10c0/6a4f2dd207416e3dbdef1a53ca04d837876a361091de5427fcc666277d1d07ccc90ef6a6c53bae549c1d80ce51051519c4096a0d1d8117736cede170ec2a562e
-  languageName: node
-  linkType: hard
-
-"@defi-wonderland/aztec-standards@https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-1ad0e28/defi-wonderland-aztec-standards-4.2.0-aztecnr-rc.2-prerelease.1ad0e28.tgz":
-  version: 4.2.0-aztecnr-rc.2-prerelease.1ad0e28
-  resolution: "@defi-wonderland/aztec-standards@https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-1ad0e28/defi-wonderland-aztec-standards-4.2.0-aztecnr-rc.2-prerelease.1ad0e28.tgz"
-  checksum: 10c0/d848dc6360bd9fba51e43531f5c44588420393e65c262787272c9c507a4175ee5b892303ed67845d8cda278e039aeaff7ed3ddcf37e005e69bedc80590382bb1
+"@defi-wonderland/aztec-standards@npm:4.2.0-aztecnr-rc.2":
+  version: 4.2.0-aztecnr-rc.2
+  resolution: "@defi-wonderland/aztec-standards@npm:4.2.0-aztecnr-rc.2"
+  checksum: 10c0/6e25e6130b4bcb0aa52b53fc2994943b280f97caff6546dbd96807ea6ebe0931e1402e16acc9eed46d582940cbc8835a60447612494ffe70ae7fb1cbd08901d9
   languageName: node
   linkType: hard
 
@@ -4852,6 +4845,13 @@ __metadata:
   version: 1.6.0
   resolution: "@webcomponents/custom-elements@npm:1.6.0"
   checksum: 10c0/8c3c3b0250ad7b063fe92b550fb725cc6074c8c5caea4a80901f9d9a93cdacf6dc0c73f715fa7b16f86e2ca1630e43cd80499bbf80e3a9b5c6ec042e074d22b4
+  languageName: node
+  linkType: hard
+
+"@wonderland/aztec-fee-payment@npm:4.2.0-aztecnr-rc.2":
+  version: 4.2.0-aztecnr-rc.2
+  resolution: "@wonderland/aztec-fee-payment@npm:4.2.0-aztecnr-rc.2"
+  checksum: 10c0/9ae81afe41cadec7d01550716239560f7863c4567d0a99634c507e24ee39043d761942500b209ad7cbc5c3fcad07b8be13cb548bc928e9a6be59ef01828d8723
   languageName: node
   linkType: hard
 
@@ -10359,13 +10359,13 @@ __metadata:
     "@biomejs/biome": "npm:^2.1.4"
     "@codemirror/lang-json": "npm:^6.0.2"
     "@crxjs/vite-plugin": "npm:^2.1.0"
-    "@defi-wonderland/aztec-fee-payment": "https://github.com/defi-wonderland/aztec-fee-payment/releases/download/prerelease-07982ed/wonderland-aztec-fee-payment-4.2.0-aztecnr-rc.2-prerelease.07982ed.tgz"
-    "@defi-wonderland/aztec-standards": "https://github.com/defi-wonderland/aztec-standards/releases/download/prerelease-1ad0e28/defi-wonderland-aztec-standards-4.2.0-aztecnr-rc.2-prerelease.1ad0e28.tgz"
+    "@defi-wonderland/aztec-standards": "npm:4.2.0-aztecnr-rc.2"
     "@replit/codemirror-indentation-markers": "npm:^6.5.3"
     "@types/node": "npm:^24.2.1"
     "@types/webextension-polyfill": "npm:^0.12.3"
     "@vitejs/plugin-vue": "npm:^6.0.1"
     "@vue/compiler-sfc": "npm:^3.5.18"
+    "@wonderland/aztec-fee-payment": "npm:4.2.0-aztecnr-rc.2"
     bignumber.js: "npm:^9.3.1"
     chrome-types: "npm:^0.1.370"
     codemirror: "npm:^6.0.2"

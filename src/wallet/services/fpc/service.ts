@@ -15,10 +15,10 @@ import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contra
 import { loadContractArtifact } from "@aztec/stdlib/abi";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 // @ts-ignore — raw JSON import via vite alias, bypasses @aztec/aztec.js (which references document/window)
-import BridgedFPCJson from "@bridged-fpc-artifact";
+import PrivateFPCJson from "@private-fpc-artifact";
 import { Fr } from "@aztec/foundation/curves/bn254";
 
-const BridgedFPCContractArtifact = loadContractArtifact(BridgedFPCJson);
+const PrivateFPCContractArtifact = loadContractArtifact(PrivateFPCJson);
 
 export * from "./fpc";
 export * from "./spec";
@@ -57,12 +57,12 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const result = (await this.storage.getValues()).filter(
             fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
         );
-        // Auto-discover missing protocol FPCs (SponsoredFPC, BridgedFPC)
+        // Auto-discover missing protocol FPCs (SponsoredFPC, PrivateFPC)
         if (chainId !== undefined) {
             const hasSponsoredFpc = result.some(f => f.type === FpcType.DefaultSponsoredFpc);
-            const hasBridgedFpc = result.some(f => f.type === FpcType.BridgedFpc);
+            const hasPrivateFpc = result.some(f => f.type === FpcType.PrivateFpc);
 
-            if (!hasSponsoredFpc || !hasBridgedFpc) {
+            if (!hasSponsoredFpc || !hasPrivateFpc) {
                 this.logInfo("Discovering missing protocol FPCs...");
                 try {
                     await this.lock.enter();
@@ -80,13 +80,13 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                         });
                         toDiscover.push({ instance, artifact: SponsoredFPCContractArtifact });
                     }
-                    if (!hasBridgedFpc) {
-                        const instance = await getContractInstanceFromInstantiationParams(BridgedFPCContractArtifact, {
+                    if (!hasPrivateFpc) {
+                        const instance = await getContractInstanceFromInstantiationParams(PrivateFPCContractArtifact, {
                             constructorArgs: [],
                             salt: Fr.zero(),
                             deployer: AztecAddress.ZERO,
                         });
-                        toDiscover.push({ instance, artifact: BridgedFPCContractArtifact });
+                        toDiscover.push({ instance, artifact: PrivateFPCContractArtifact });
                     }
 
                     for (const { instance: contractInstance, artifact: contractArtifact } of toDiscover) {
@@ -112,7 +112,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                                 chainId,
                                 type,
                                 address: contractInstance.address.toString(),
-                                name: type === FpcType.BridgedFpc ? "Private Fee Juice" : undefined,
+                                name: type === FpcType.PrivateFpc ? "Private Fee Juice" : undefined,
                                 asset,
                                 acceptsPrivate,
                                 acceptsPublic,
@@ -264,7 +264,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
     /**
      * Detect FPC type from contract artifact by inspecting function signatures.
      * - `sponsor_unconditionally` → DefaultSponsoredFpc
-     * - `pay_fee` + `balance_of` (no `sponsor_unconditionally`) → BridgedFpc
+     * - `pay_fee` + `balance_of` (no `sponsor_unconditionally`) → PrivateFpc
      * - `get_accepted_asset` → DefaultFpc
      */
     private detectFpcType(artifact: { name: string; functions: { name: string }[] }): FpcType {
@@ -276,7 +276,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const hasPayFee = artifact.functions.some(f => f.name === "pay_fee");
         const hasBalanceOf = artifact.functions.some(f => f.name === "balance_of");
         if (hasPayFee && hasBalanceOf) {
-            return FpcType.BridgedFpc;
+            return FpcType.PrivateFpc;
         }
 
         if (artifact.name === "FPC" || artifact.functions.some(f => f.name === "get_accepted_asset")) {

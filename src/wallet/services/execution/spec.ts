@@ -32,7 +32,7 @@ export type Methods = {
     executeOperations(operations: Operation[], origin: LocalTxOrigin): OperationResult[];
 
     /**
-     * Returns public FeeJuice balance and private FeeJuice balance (via BridgedFPC).
+     * Returns public FeeJuice balance and private FeeJuice balance (via PrivateFPC).
      * Cached for 5 minutes in the service worker; pass forceRefresh to bypass.
      * @param networkId Network id.
      * @param accountAddress Account address.

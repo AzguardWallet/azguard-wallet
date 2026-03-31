@@ -28,7 +28,7 @@ export default defineConfig({
 			"~": fileURLToPath(new URL("./src", import.meta.url)),
 			src: fileURLToPath(new URL("./src", import.meta.url)),
 			"@assets": fileURLToPath(new URL("src/assets", import.meta.url)),
-			"@bridged-fpc-artifact": fileURLToPath(new URL("./node_modules/@defi-wonderland/aztec-fee-payment/target/bridged_contract-BridgedFPC.json", import.meta.url)),
+			"@private-fpc-artifact": fileURLToPath(new URL("./node_modules/@wonderland/aztec-fee-payment/target/private_contract-PrivateFPC.json", import.meta.url)),
 			// Force detect-node to return false so @aztec/foundation's pino logger
 			// uses the browser transport instead of Node.js worker-thread transport.
 			// Without this, the node-polyfills process shim makes detect-node think

@@ -4,7 +4,7 @@ import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo } from "../spec";
 import { IFpcHandler } from ".";
 
-export class BridgedFpcHandler implements IFpcHandler {
+export class PrivateFpcHandler implements IFpcHandler {
     public async getAsset(): Promise<string | undefined> {
         return undefined;
     }
@@ -48,7 +48,7 @@ export class BridgedFpcHandler implements IFpcHandler {
     }
 
     public getTotalGas(): Gas {
-        // BridgedFPC's pay_fee is heavy private execution — it walks encrypted notes
+        // PrivateFPC's pay_fee is heavy private execution — it walks encrypted notes
         // via recurse_subtract_balance_internal to debit wFJ. Bytecode is 16x larger
         // than SponsoredFPC. Empirically measured ~50k L2 gas overhead; pad generously
         // for note tree depth variation.
