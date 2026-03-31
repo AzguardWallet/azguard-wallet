@@ -8,7 +8,7 @@ import { OriginType, TxStatus, TxExecutionResult } from "@/wallet/services/trans
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
-import { getTxCategory, getTxTitle, getCallCountLabel, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
+import { getTxCategory, getTxTitle, getCallCountLabel, getOriginLabel, getPrimaryCall, formatTransferType } from "@/utils/tx-enrichment"
 
 /** Composables */
 const { handleExternalLink } = useExternalLink()
@@ -75,9 +75,18 @@ const statusColor = computed(() => {
 	return "gray"
 })
 
-const title = computed(() => getTxTitle(props.tx.calls))
+const title = computed(() => {
+	// For transfers, show token symbol instead of generic "Transfer"
+	if (type.value === "transfer" && token.value?.symbol) return token.value.symbol
+	return getTxTitle(props.tx.calls)
+})
 
 const subtitle = computed(() => {
+	// For transfers, show transfer type + amount instead of dApp name/hash
+	if (type.value === "transfer" && transfer.value) {
+		const typeName = formatTransferType(transfer.value.type)
+		return transferAmount.value ? `${typeName} · ${transferAmount.value}` : typeName
+	}
 	const parts = []
 	const origin = getOriginLabel(props.tx.origin)
 	if (origin) parts.push(origin)
@@ -85,7 +94,7 @@ const subtitle = computed(() => {
 	if (callCount) parts.push(callCount)
 	return parts.length ? parts.join(" · ") : props.tx.hash
 })
-const isSubtitleHash = computed(() => !getOriginLabel(props.tx.origin) && !getCallCountLabel(props.tx.calls))
+const isSubtitleHash = computed(() => type.value !== "transfer" && !getOriginLabel(props.tx.origin) && !getCallCountLabel(props.tx.calls))
 
 const explorerUrl = computed(() => {
 	if (!appStore.network?.chainId) return null

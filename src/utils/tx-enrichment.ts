@@ -14,6 +14,11 @@ const METHOD_LABELS: Record<string, string> = {
     transfer_in_public: "Transfer (public)",
     transfer_to_private: "Transfer to private",
     transfer_to_public: "Transfer to public",
+    // Wonderland standard function names
+    transfer_private_to_private: "Transfer (private)",
+    transfer_public_to_public: "Transfer (public)",
+    transfer_private_to_public: "Transfer (private → public)",
+    transfer_public_to_private: "Transfer (public → private)",
     mint_to_public: "Mint (public)",
     mint_to_private: "Mint (private)",
     shield: "Shield",
@@ -110,4 +115,18 @@ export function getOriginLabel(origin?: TxOrigin): string | null {
  */
 export function formatCallSummary(method: string, contract: string): string {
     return `${humanizeMethodName(method)} on ${trimAddress(contract, 6, 4)}`
+}
+
+const TRANSFER_TYPE_LABELS: Record<string, string> = {
+    "Private": "Private → Private",
+    "PrivateToPublic": "Private → Public",
+    "Public": "Public → Public",
+    "PublicToPrivate": "Public → Private",
+}
+
+/**
+ * Returns a human-readable transfer type label.
+ */
+export function formatTransferType(type: string): string {
+    return TRANSFER_TYPE_LABELS[type] ?? type
 }

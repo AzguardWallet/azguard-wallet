@@ -26,15 +26,14 @@ const props = defineProps({
 })
 
 const token = computed(() => props.tokenBalance.token)
-const totalBalance = computed(() => {
-	const decimals = new BN(10).pow(token.value?.decimals || 0)
-	const publicBalance = new BN(props.tokenBalance?.publicBalance || 0).dividedBy(decimals)
-	const privateBalance = new BN(props.tokenBalance?.privateBalance || 0).dividedBy(decimals)
-
-	const total = privateBalance.plus(publicBalance)
-
-	return balanceFormatted(total, 10).value
-})
+const decimals = computed(() => new BN(10).pow(token.value?.decimals || 0))
+const publicBal = computed(() => new BN(props.tokenBalance?.publicBalance || 0).dividedBy(decimals.value))
+const privateBal = computed(() => new BN(props.tokenBalance?.privateBalance || 0).dividedBy(decimals.value))
+const totalBalance = computed(() => balanceFormatted(privateBal.value.plus(publicBal.value), 10).value)
+const privateFormatted = computed(() => balanceFormatted(privateBal.value, 6).value)
+const publicFormatted = computed(() => balanceFormatted(publicBal.value, 6).value)
+const hasPrivate = computed(() => !privateBal.value.isZero())
+const hasPublic = computed(() => !publicBal.value.isZero())
 const description = computed(() => {
 	if (props.tokenBalance?.isMinting) return "Minting more tokens..."
 	if (props.tokenBalance?.isUpdating) return "Refreshing balance..."
@@ -87,20 +86,20 @@ const handleRefreshBalance = async () => {
 		</template>
 
 		<template #right>
-			<Flex direction="column" align="end" gap="6">
+			<Flex direction="column" align="end" gap="4">
 				<Text size="13" weight="600" color="tertiary" noWrap :class="$style.balance_text">
 					<Text color="primary">{{ totalBalance || 0 }}</Text>
 					<Text :class="$style.symbol_wrapper">&nbsp;{{ token.symbol }}</Text>
 				</Text>
 
-				<Tooltip position="end">
-					<Flex align="center" gap="4">
-						<Text size="12" weight="500" color="tertiary"> $0.00 </Text>
-						<Icon name="warning" size="12" color="tertiary" />
-					</Flex>
-
-					<template #content> No quotes available at the moment </template>
-				</Tooltip>
+				<Flex v-if="hasPrivate || hasPublic" align="center" gap="6">
+					<Text v-if="hasPrivate" size="11" color="tertiary">
+						<Text color="secondary">🔒</Text> {{ privateFormatted }}
+					</Text>
+					<Text v-if="hasPublic" size="11" color="tertiary">
+						<Text color="secondary">🌐</Text> {{ publicFormatted }}
+					</Text>
+				</Flex>
 			</Flex>
 		</template>
 	</SettingItem>

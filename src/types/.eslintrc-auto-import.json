@@ -53,6 +53,7 @@
     "formatCallSummary": true,
     "formatFeeJuice": true,
     "formatGas": true,
+    "formatTransferType": true,
     "getCallCountLabel": true,
     "getCurrentInstance": true,
     "getCurrentScope": true,

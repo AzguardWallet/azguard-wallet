@@ -72,6 +72,7 @@ declare global {
   const formatFeeJuice: typeof import('../utils/fee-estimation').formatFeeJuice
   const formatGas: typeof import('../utils/fee-estimation').formatGas
   const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
+  const formatTransferType: typeof import('../utils/tx-enrichment').formatTransferType
   const getCallCountLabel: typeof import('../utils/tx-enrichment').getCallCountLabel
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
