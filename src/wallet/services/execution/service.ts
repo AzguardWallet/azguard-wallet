@@ -1271,9 +1271,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
                 const sendAdditionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
                 const provedTx = await this.proveTxTask(pxe, txRequest, [account.address, ...sendAdditionalScopes], parentTask);
+                const timestamp = provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp;
                 const offchainOutput = extractOffchainOutput(
                     provedTx.getOffchainEffects(),
-                    provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp.toBigInt(),
+                    typeof timestamp.toBigInt === "function" ? timestamp.toBigInt() : BigInt(timestamp.toString()),
                 );
                 const tx = await provedTx.toTx();
                 await this.sendTxTask(node, tx, parentTask);
