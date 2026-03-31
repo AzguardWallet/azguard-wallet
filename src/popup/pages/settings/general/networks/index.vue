@@ -1,7 +1,7 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Manage nodes",
+		"title": "Manage networks",
 		"isAuthRequired": true
 	}
 }
@@ -52,11 +52,11 @@ const handleEdit = target => {
 const handleDelete = target => {
 	if (appStore.networks.length === 1) return
 
-	cacheStore.confirm.confirm_text = "Yes, delete node"
+	cacheStore.confirm.confirm_text = "Yes, delete network"
 	cacheStore.confirm.confirm_color = "red"
-	cacheStore.confirm.title = "Delete this node?"
+	cacheStore.confirm.title = "Delete this network?"
 	cacheStore.confirm.description =
-		"By confirming this action, the selected node will be permanently deleted from your wallet"
+		"By confirming this action, the selected network will be permanently deleted from your wallet"
 	cacheStore.confirm.callback = async () => {
 		await appStore.removeNetwork(target)
 
@@ -102,7 +102,7 @@ const handleDelete = target => {
 									:class="$style.icon_btn"
 								/>
 
-								<template #content> Edit node </template>
+								<template #content> Edit network </template>
 							</Tooltip>
 
 							<Tooltip position="end" delay="350">
@@ -115,7 +115,7 @@ const handleDelete = target => {
 									:class="$style.icon_btn"
 								/>
 
-								<template #content> Delete node </template>
+								<template #content> Delete network </template>
 							</Tooltip>
 						</Flex>
 					</template>
@@ -130,7 +130,7 @@ const handleDelete = target => {
 				leftIcon="plus-circle"
 				leftIconColor="primary"
 			>
-				<Text size="13">New node</Text>
+				<Text size="13">New network</Text>
 			</Button>
 		</Flex>
 

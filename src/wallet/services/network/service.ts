@@ -76,20 +76,28 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
             // }
             try {
-                const name = "Aztec Node";
+                const name = "Alpha Mainnet";
+                const rpcUrl = "https://aztec-mainnet.drpc.org";
+                const chainId = 2934756904; // (1 ^ 2934756905) >>> 0
+                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
+            } catch (error) {
+                this.logError("Failed to add 'Alpha Mainnet'", getErrorMessage(error));
+            }
+            try {
+                const name = "Testnet";
                 const rpcUrl = "https://rpc.testnet.aztec-labs.com";
                 const chainId = 4138294185; // (11155111 ^ 4127419662) >>> 0
                 defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
-                this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));
+                this.logError("Failed to add 'Testnet'", getErrorMessage(error));
             }
             try {
-                const name = "Sandbox";
+                const name = "Local Network";
                 const rpcUrl = "http://localhost:8080";
                 const chainId = 0;
-                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
+                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
             } catch (error) {
-                this.logError("Failed to add 'Sandbox'", getErrorMessage(error));
+                this.logError("Failed to add 'Local Network'", getErrorMessage(error));
             }
             for (const network of defaultNetworks.filter(x => x.isDefault)) {
                 this.emit("onDefaultNetworkChanged", network);

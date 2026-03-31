@@ -54,7 +54,7 @@ const handleManageNetworks = () => {
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
-					<Text size="14" weight="600" color="primary">Switch node</Text>
+					<Text size="14" weight="600" color="primary">Switch network</Text>
 				</template>
 			</PopupHeader>
 
@@ -77,7 +77,7 @@ const handleManageNetworks = () => {
 				<ItemsContainer>
 					<SettingItem
 						@click="handleManageNetworks"
-						title="Manage nodes"
+						title="Manage networks"
 						size="small"
 						icon="settings"
 						iconFillColor="secondary"

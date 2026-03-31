@@ -64,11 +64,11 @@ const handleCreateNetwork = async () => {
 
 		emit("onClose")
 
-		openToast({ label: "Node is created" })
+		openToast({ label: "Network is created" })
 	} catch (error) {
 		isCreating.value = false
 
-		if (error === "failed to fetch node info") {
+		if (error === "Failed to fetch network info") {
 			isUrlHasError.value = true
 		} else {
 			openToast({ label: "Something went wrong", icon: "warning" })
@@ -100,14 +100,14 @@ const onKeydown = e => {
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
-					<Text size="14" weight="600" color="primary">New node</Text>
+					<Text size="14" weight="600" color="primary">New network</Text>
 				</template>
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<Input
 					label="Name"
-					placeholder="My node"
+					placeholder="My network"
 					autofocus
 					sanitize
 					:maxLength="25"
@@ -133,7 +133,7 @@ const onKeydown = e => {
 						<Transition name="fade">
 							<Flex v-if="isUrlHasError" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary"> Failed to fetch node info </Text>
+								<Text size="12" weight="600" color="primary"> Failed to fetch network info </Text>
 							</Flex>
 							<Flex v-else-if="isUrlAlreadyExist" align="center" gap="6">
 								<Icon name="warning" size="12" color="red" />

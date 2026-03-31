@@ -43,8 +43,8 @@ const settings = {
 		model: isSidePanelEnabled,
 	},
 	showNode: {
-		title: "Show Node name",
-		description: "Always show node name in the header",
+		title: "Show network name",
+		description: "Always show network name in the header",
 		model: isShowNodeNameEnabled,
 	},
 	showPopupFullscreen: {

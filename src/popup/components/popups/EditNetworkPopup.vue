@@ -68,7 +68,7 @@ const handleUpdateNetwork = async () => {
 
 	emit("onClose")
 
-	openToast({ label: "Node is updated" })
+	openToast({ label: "Network is updated" })
 }
 
 watch(
@@ -96,7 +96,7 @@ const onKeydown = e => {
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
-					<Text size="14" weight="600" color="primary">Edit node</Text>
+					<Text size="14" weight="600" color="primary">Edit network</Text>
 				</template>
 			</PopupHeader>
 
@@ -105,7 +105,7 @@ const onKeydown = e => {
 					<SettingItem
 						size="large"
 						:title="networkToEdit.name"
-						description="Selected node for editing"
+						description="Selected network for editing"
 						icon="globe-edit"
 						raw
 					/>
@@ -113,7 +113,7 @@ const onKeydown = e => {
 
 				<Input
 					label="New name"
-					placeholder="My node"
+					placeholder="My network"
 					v-model="nameTerm"
 					autofocus
 					sanitize

@@ -52,7 +52,7 @@ const handleOpenLogs = async () => {
 			<SettingItem to="/popup/settings/general/tokens" title="Tokens" icon="banknote" iconBgColor="blue" />
 			<SettingItem to="/popup/settings/general/fpcs" title="FPCs" icon="fpcs" iconBgColor="blue" />
 			<SettingItem to="/popup/settings/general/contacts" title="Contacts" icon="contacts" iconBgColor="blue" />
-			<SettingItem to="/popup/settings/general/networks" title="Nodes" icon="globe" iconBgColor="blue" />
+			<SettingItem to="/popup/settings/general/networks" title="Networks" icon="globe" iconBgColor="blue" />
 			<SettingItem to="/popup/settings/general/sessions" title="Sessions" icon="plug-circle" iconBgColor="sand" />
 		</ItemsContainer>
 
