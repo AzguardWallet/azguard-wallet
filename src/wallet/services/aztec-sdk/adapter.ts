@@ -130,7 +130,10 @@ export function walletMessageToOperationRequest(
         case "executeUtility": {
             const call = args[0] as AztecExecuteUtilityOperation["call"];
             const opts = args[1] as AztecExecuteUtilityOperation["opts"] | undefined;
-            const accountAddress = requireAccountAddress(opts?.scope, "executeUtility requires opts.scope");
+            // executeUtility has no `from` — derive the primary account from scopes[0].
+            // The SDK's ContractFunctionInteraction sets scopes to [from] or [] (when NO_FROM).
+            // All scopes are validated later via checkScopesPermissions; here we only need one for routing.
+            const accountAddress = requireAccountAddress(opts?.scopes?.[0], "executeUtility requires opts.scopes");
             return {
                 kind: "aztec_executeUtility",
                 account: `${chain}:${accountAddress}` as CaipAccount,

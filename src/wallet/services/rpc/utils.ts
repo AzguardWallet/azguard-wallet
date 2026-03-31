@@ -433,6 +433,7 @@ function parseAddCapsuleAction(data: any): AddCapsuleAction {
         contract: parseStringProp(data, "contract"),
         storageSlot: parseStringProp(data, "storageSlot"),
         capsule: parseArrayProp(data, "capsule", parseString),
+        scope: data.scope != null ? parseStringProp(data, "scope") : undefined,
     };
 }
 

@@ -23,7 +23,7 @@ import {
     TxContext,
     TxExecutionRequest,
 } from '@aztec/stdlib/tx';
-import { siloNullifier } from '@aztec/stdlib/hash';
+import { computeSiloedPrivateInitializationNullifier } from '@aztec/stdlib/hash';
 import { AztecNode } from '@aztec/stdlib/interfaces/client';
 import { ILogger, LogLevel } from '@/wallet/logger';
 import type { IPXE } from "@/wallet/services/pxe/client";
@@ -160,7 +160,7 @@ export abstract class AzguardV0Base implements IAccountContract {
             await pxe.registerContract({instance: this.instance, artifact: this.artifact});
         }
         // Check if the contract is initialized on-chain via init nullifier
-        const initNullifier = await siloNullifier(this.address, this.address.toField());
+        const initNullifier = await computeSiloedPrivateInitializationNullifier(this.address, this.instance.initializationHash);
         this.logger.log(this.name, LogLevel.Debug, `checking init nullifier ${initNullifier.toString()} for ${this.address.toString()}`);
         const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
         if (!initWitness) {

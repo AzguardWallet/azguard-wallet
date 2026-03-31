@@ -13,7 +13,7 @@ import {
     getContractClassFromArtifact,
     type ContractInstanceWithAddress,
 } from "@aztec/stdlib/contract";
-import { siloNullifier } from "@aztec/stdlib/hash";
+import { computeSiloedPrivateInitializationNullifier } from "@aztec/stdlib/hash";
 import { PublicKeys } from "@aztec/stdlib/keys";
 import BN from "bignumber.js";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
@@ -146,7 +146,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 });
             }
 
-            const initNullifier = await siloNullifier(instance.address, instance.address.toField());
+            const initNullifier = await computeSiloedPrivateInitializationNullifier(instance.address, instance.initializationHash);
             const initWitness = await node.getNullifierMembershipWitness('latest', initNullifier);
             if (!initWitness) {
                 this.logDebug("initialize faucet token");
