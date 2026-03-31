@@ -11,7 +11,6 @@ import { ContactService } from "./services/contact/service";
 import { DappInteractionService } from "./services/dapp-interaction/service";
 import { DappSessionService } from "./services/dapp-session/service";
 import { ExecutionService } from "./services/execution/service";
-import { FaucetService } from "./services/faucet/service";
 import { FpcService } from "./services/fpc/service";
 import { LogViewerService } from "./services/log-viewer/service";
 import { LoggerService } from "./services/logger/service";
@@ -82,7 +81,6 @@ const runServices = async () => {
     services.add(new DappInteractionService(logger));
     services.add(new DappSessionService(logger));
     services.add(new ExecutionService(logger));
-    services.add(new FaucetService(logger));
     services.add(new FpcService(logger));
     services.add(new LogViewerService(logger));
     services.add(new LoggerService(logger));

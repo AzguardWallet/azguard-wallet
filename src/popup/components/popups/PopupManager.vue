@@ -56,10 +56,6 @@ import NewContactPopup from "./NewContactPopup.vue"
 import EditContactPopup from "./EditContactPopup.vue"
 import ImportContactsPopup from "./ImportContactsPopup.vue"
 
-/** Faucet */
-import SelectDepositPopup from "./SelectDepositPopup.vue"
-import FaucetPopup from "./FaucetPopup.vue"
-
 /** Privacy */
 import StealthPromoPopup from "./StealthPromoPopup.vue"
 
@@ -111,9 +107,6 @@ const popupStore = usePopupStore()
 	<NewContactPopup :show="popupStore.isOpened('new_contact')" @onClose="popupStore.close('new_contact')" />
 	<EditContactPopup :show="popupStore.isOpened('edit_contact')" @onClose="popupStore.close('edit_contact')" />
 	<ImportContactsPopup :show="popupStore.isOpened('import_contacts')" @onClose="popupStore.close('import_contacts')" />
-
-	<SelectDepositPopup :show="popupStore.isOpened('select_deposit')" @onClose="popupStore.close('select_deposit')" />
-	<FaucetPopup :show="popupStore.isOpened('faucet')" @onClose="popupStore.close('faucet')" />
 
 	<SendPopup :show="popupStore.isOpened('send')" @onClose="popupStore.close('send')" />
 	<ReceivePopup :show="popupStore.isOpened('receive')" @onClose="popupStore.close('receive')" />

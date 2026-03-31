@@ -27,10 +27,11 @@ const handleOpenPopup = target => {
 			<Text size="14" weight="600" color="primary">Receive</Text>
 		</Flex>
 
-		<Flex @click="handleOpenPopup(`${token ? 'faucet' : 'select_deposit'}`)" align="center" justify="center" gap="6" :class="[$style.button]">
+		<!-- Deposit button removed — faucet was testnet-only, bridge/onramp TBD -->
+		<!-- <Flex @click="handleOpenPopup('deposit')" align="center" justify="center" gap="6" :class="[$style.button]">
 			<Icon name="plus-circle" size="20" color="secondary" />
 			<Text size="14" weight="600" color="primary">Deposit</Text>
-		</Flex>
+		</Flex> -->
 	</Flex>
 </template>
 
