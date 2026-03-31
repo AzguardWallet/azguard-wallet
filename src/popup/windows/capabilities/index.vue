@@ -118,6 +118,14 @@ const initAccounts = async () => {
 	for (const cap of capabilities.value) {
 		if (cap.type === "accounts") {
 			cap.setAccountItems(accounts)
+			if (accounts.length === 0) {
+				cap.selected = false
+				setError(
+					"No accounts available for this network",
+					`No accounts found for chain ${chainId}. Create an account first, then reconnect.`,
+					"warning",
+				)
+			}
 		}
 	}
 }
