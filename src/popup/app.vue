@@ -213,7 +213,7 @@ onBeforeMount(async () => {
 	const settings = await configService.getProps()
 	settings.forEach(applySetting)
 
-	loadProfile()
+	await loadProfile()
 })
 
 onMounted(async () => {
