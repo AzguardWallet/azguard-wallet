@@ -1435,6 +1435,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 contract: capsule.contractAddress.toString(),
                 storageSlot: capsule.storageSlot.toString(),
                 capsule: capsule.data.map(x => x.toString()),
+                scope: capsule.scope?.toString(),
             } satisfies AddCapsuleAction);
         }
 

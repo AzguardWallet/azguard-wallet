@@ -124,9 +124,15 @@ const init = async () => {
 
 		// Check if accounts type is in delta — show account selection instead of card
 		const hasAccountsInDelta = payload.value.params.delta.some((cap: any) => cap.type === "accounts")
-		if (hasAccountsInDelta && payload.value.params.availableAccounts?.length) {
-			needsAccountSelection.value = true
-			availableAccounts.value = payload.value.params.availableAccounts
+		if (hasAccountsInDelta) {
+			if (payload.value.params.availableAccounts?.length) {
+				needsAccountSelection.value = true
+				availableAccounts.value = payload.value.params.availableAccounts
+			} else {
+				// No accounts on this network — warn and disable accounts capability
+				const { openToast } = useToast()
+				openToast({ label: "No accounts available for this network. Create one first.", icon: "info" }, 5000)
+			}
 		}
 
 		// Build UI capabilities list (filter out accounts type — handled by section)
