@@ -73,7 +73,7 @@ const handleCopyAddress = () => {
 			</ItemsContainer>
 
 			<ItemsContainer>
-				<SettingItem to="/popup/settings/about" size="small" title="About Azguard Wallet" chevron />
+				<SettingItem to="/popup/settings/about" size="small" title="About Vibeguard" chevron />
 			</ItemsContainer>
 		</Flex>
 

@@ -41,13 +41,13 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 	const publicKey: PublicKeyCredentialCreationOptions = {
 		challenge,
 		rp: {
-			name: "Azguard Wallet",
-			id: "azguardwallet.io"
+			name: "Vibeguard",
+			id: "azguardwallet.io"  // Keep RP ID to not break existing passkeys
 		},
 		user: {
 			id: userHandle,
 			name: `profile-${request.userHandle}`,
-			displayName: "Azguard Profile",
+			displayName: "Vibeguard Profile",
 		},
 		pubKeyCredParams: [{ type: "public-key", alg: -7 }],
 		authenticatorSelection: {

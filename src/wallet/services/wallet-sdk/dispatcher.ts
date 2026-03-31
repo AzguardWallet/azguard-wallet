@@ -35,7 +35,7 @@
  * await bgHandler.sendResponse(session.sessionId, {
  *     messageId: message.messageId,
  *     result,
- *     walletId: 'azguard',
+ *     walletId: 'vibeguard',
  * });
  * ```
  */
@@ -298,7 +298,7 @@ export class WalletSdkDispatcher {
             return {
                 version: "1.0" as const,
                 granted: [],
-                wallet: { name: "Testnet Azguard", version: packageJson.version },
+                wallet: { name: "Vibeguard", version: packageJson.version },
             };
         }
 
@@ -328,7 +328,7 @@ export class WalletSdkDispatcher {
             return {
                 version: "1.0" as const,
                 granted,
-                wallet: { name: "Testnet Azguard", version: packageJson.version },
+                wallet: { name: "Vibeguard", version: packageJson.version },
             };
         }
 
@@ -430,7 +430,7 @@ export class WalletSdkDispatcher {
         return {
             version: "1.0" as const,
             granted,
-            wallet: { name: "Testnet Azguard", version: packageJson.version },
+            wallet: { name: "Vibeguard", version: packageJson.version },
         };
     }
 

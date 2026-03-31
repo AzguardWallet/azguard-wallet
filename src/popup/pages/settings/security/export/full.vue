@@ -151,8 +151,8 @@ async function handleDownloadBackup() {
 	const isEncrypted = backupStatus.value === "encrypted"
 	let filename = `_${appStore.profile.name.replace(" ", "_")}_${Math.floor(Date.now() / 1000)}`
 	filename = isEncrypted
-		? `AzguardWalletEncryptedBackup${filename}.txt`
-		: `AzguardWalletBackup${filename}.json`
+		? `VibeguardEncryptedBackup${filename}.txt`
+		: `VibeguardBackup${filename}.json`
 
 	let fileContent = ""
 	if (isEncrypted) {

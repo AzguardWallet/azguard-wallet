@@ -1,7 +1,7 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Azguard Wallet",
+		"title": "Vibeguard",
 		"isAuthRequired": true
 	}
 }
@@ -42,7 +42,7 @@ const handleOpen = target => {
 			<Breadcrumbs />
 
 			<Flex wide align="start" direction="column" gap="8">
-				<Text size="13" weight="600" color="primary"> Azguard Wallet </Text>
+				<Text size="13" weight="600" color="primary"> Vibeguard </Text>
 				<Flex align="start" direction="column" gap="4" wide>
 					<Text @click="handleCopy(version)" size="12" weight="500" color="support" class="copyable">
 						Wallet version - {{ version }} - Alpha Testing
