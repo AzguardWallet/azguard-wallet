@@ -13,7 +13,11 @@ import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
+import { loadContractArtifact } from "@aztec/stdlib/abi";
 import { type ContractArtifact, ContractArtifactSchema, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
+// @ts-ignore — raw JSON import via vite alias
+import WonderlandTokenJson from "@wonderland-token-artifact";
+const WonderlandTokenArtifact = loadContractArtifact(WonderlandTokenJson);
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
@@ -329,6 +333,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             NFTContractArtifact,
             SponsoredFPCContractArtifact,
             TokenContractArtifact,
+            // wonderland standards
+            WonderlandTokenArtifact,
         ]) {
             const contractClass = await getContractClassFromArtifact(artifact);
             this.knownArtifacts.set(contractClass.id.toString(), artifact);
