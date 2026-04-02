@@ -42,6 +42,7 @@ import {
 } from "@aztec/stdlib/tx";
 import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import z from "zod";
+import { AcceleratorProver } from "@alejoamiras/aztec-accelerator";
 
 const AccessScopesSchema = z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)]);
 import { ServiceSpec } from "@/wallet/base";
@@ -375,7 +376,9 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             dataDirectory: `pxe/${network.profileId}/${network.chainId}`,
             proverEnabled: true,
         } as PXEConfig;
-        const pxe = await createPXE(node, config);
+
+        const prover = new AcceleratorProver();
+        const pxe = await createPXE(node, config, { proverOrOptions: prover });
 
         this.nodes.set(network.chainId, node);
         this.pxes.set(network.chainId, pxe);

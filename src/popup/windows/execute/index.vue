@@ -206,6 +206,7 @@ const init = async () => {
 				}
 				case "aztec_sendTx": {
 					const [network, account] = await getNetworkAndAccount(op.account)
+					const isNoFrom = op.executionMode === "default_entrypoint"
 					_operations.push({
 						...op,
 						network,
@@ -213,7 +214,9 @@ const init = async () => {
 						account,
 						accountAddress: account.address,
 						feeSettings:
-							op.exec.feePayer !== undefined ? { paymentMethod: { kind: "embedded" } } : undefined!,
+							isNoFrom || op.exec.feePayer !== undefined
+								? { paymentMethod: { kind: "embedded" } }
+								: undefined!,
 					})
 					if (!_accounts.find(x => x.address === account.address)) {
 						_accounts.push(account)

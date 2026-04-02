@@ -188,6 +188,7 @@ export type AztecSendTxOperation = {
     feeSettings: FeeSettings;
     readonly exec: ExecutionPayload;
     readonly opts: SendOptions<InteractionWaitOptions>;
+    readonly executionMode?: "account" | "default_entrypoint";
 };
 
 export type AztecCreateAuthWitOperation = {

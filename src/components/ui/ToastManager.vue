@@ -10,8 +10,8 @@ const { toast, closeToast } = useToast()
 			<Teleport to="#toast">
 				<Flex justify="center" :class="$style.wrapper">
 					<Flex @click="closeToast" align="center" gap="8" :class="$style.card">
-						<Icon :name="toast.icon || 'check-circle'" size="14" color="primary" />
-						<Text size="13" weight="600" color="primary" style="white-space: nowrap">
+						<Icon :name="toast.icon || 'check-circle'" size="14" :color="toast.color || 'primary'" />
+						<Text size="13" weight="600" :color="toast.color || 'primary'" style="white-space: nowrap">
 							{{ toast.label }}
 						</Text>
 						<Icon name="close-circle" size="12" color="tertiary" :class="$style.close_icon" />

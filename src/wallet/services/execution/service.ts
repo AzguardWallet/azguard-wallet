@@ -30,6 +30,7 @@ import {
     Capsule,
     ExecutionPayload,
     HashedValues,
+    TxContext,
     TxExecutionRequest,
     TxHash,
     TxProfileResult,
@@ -390,61 +391,25 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             actions = [...(operation as SendTransactionOperation).actions];
         }
 
-        // Attempt single-pass auth witness discovery via offchain effects.
-        // If the discovery simulation itself fails on a missing auth witness
-        // (contracts using inline verify_private_authwit), extract the hash
-        // and fall through to the retry loop below.
-        try {
-            const authWitActions = await this.discoverRequiredAuthWitnesses(
-                { ...operation, actions: [...actions] } as any,
-            );
-            if (authWitActions.length) {
-                this.logDebug(`[estimateOperationFee] Discovered ${authWitActions.length} auth witness(es) via offchain effects`);
-                actions.push(...authWitActions);
-            }
-        } catch (discoveryError) {
-            const hash = this.extractAuthWitHash(discoveryError);
-            if (hash) {
-                this.logDebug(`[estimateOperationFee] Discovery hit inline auth wit check, extracted hash ${hash}`);
-                actions.push({
-                    kind: "add_private_authwit",
-                    content: { kind: "message_hash", messageHash: hash },
-                } as AddPrivateAuthwitAction);
-            }
-            // Non-auth-wit errors: let estimation below surface them
+        // Discover auth witnesses via offchain effects (single-pass)
+        const authWitActions = await this.discoverRequiredAuthWitnesses(
+            { ...operation, actions: [...actions] } as any,
+        );
+        if (authWitActions.length) {
+            this.logDebug(`[estimateOperationFee] Discovered ${authWitActions.length} auth witness(es) via offchain effects`);
+            actions.push(...authWitActions);
         }
 
-        // TODO: Remove retry loop once Aztec contracts emit auth witness requests
-        // via offchain effects instead of inline verify_private_authwit. At that point
-        // discoverRequiredAuthWitnesses will find all needed witnesses in one pass.
-        const MAX_AUTH_WIT_RETRIES = 5;
-        let lastError: unknown;
-        for (let attempt = 0; attempt <= MAX_AUTH_WIT_RETRIES; attempt++) {
-            try {
-                const op = { ...operation, actions: [...actions] } as any;
-                const [txRequest] = await this.buildAndEstimateTxRequest(op, feeSettings);
+        const op = { ...operation, actions: [...actions] } as any;
+        const [txRequest] = await this.buildAndEstimateTxRequest(op, feeSettings);
 
-                const maxFeeRaw = BigInt(getEstimatedFee(txRequest));
-                return {
-                    maxFee: maxFeeRaw.toString(),
-                    maxFeeFormatted: formatFeeJuice(maxFeeRaw),
-                    maxFeeUsd: feeToUsd(maxFeeRaw),
-                    gasDetails: getGasDetails(txRequest),
-                };
-            } catch (error) {
-                lastError = error;
-                const missingHash = this.extractAuthWitHash(error);
-                if (!missingHash || attempt === MAX_AUTH_WIT_RETRIES) {
-                    throw error;
-                }
-                this.logDebug(`[estimateOperationFee] Missing auth witness for ${missingHash}, adding (attempt ${attempt + 1})`);
-                actions.push({
-                    kind: "add_private_authwit",
-                    content: { kind: "message_hash", messageHash: missingHash },
-                } as AddPrivateAuthwitAction);
-            }
-        }
-        throw lastError;
+        const maxFeeRaw = BigInt(getEstimatedFee(txRequest));
+        return {
+            maxFee: maxFeeRaw.toString(),
+            maxFeeFormatted: formatFeeJuice(maxFeeRaw),
+            maxFeeUsd: feeToUsd(maxFeeRaw),
+            gasDetails: getGasDetails(txRequest),
+        };
     }
 
     private extractPrimaryMethod(operation: Operation): string | undefined {
@@ -1230,95 +1195,288 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         origin: LocalTxOrigin,
         parentTask?: WrappedTask,
     ): Promise<SendReturn<InteractionWaitOptions>> {
+        if (op.executionMode === "default_entrypoint") {
+            return this.executeNoFromSendTx(op, origin, parentTask);
+        }
+
         if (op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
 
         const [actions, _, fee] = await this.processAztecJsPayload(op.exec, op.opts);
 
-        // Attempt single-pass auth witness discovery via offchain effects.
-        // Falls back to retry loop for contracts using inline verify_private_authwit.
-        try {
-            const authWitActions = await this.discoverRequiredAuthWitnesses({ ...op, actions: [...actions] });
-            if (authWitActions.length) {
-                this.logDebug(`[executeAztecSendTx] Discovered ${authWitActions.length} auth witness(es) via offchain effects`);
-                actions.push(...authWitActions);
-            }
-        } catch (discoveryError) {
-            const hash = this.extractAuthWitHash(discoveryError);
-            if (hash) {
-                this.logDebug(`[executeAztecSendTx] Discovery hit inline auth wit check, extracted hash ${hash}`);
-                actions.push({
-                    kind: "add_private_authwit",
-                    content: { kind: "message_hash", messageHash: hash },
-                } as AddPrivateAuthwitAction);
-            }
+        // Discover auth witnesses via offchain effects (single-pass)
+        const authWitActions = await this.discoverRequiredAuthWitnesses({ ...op, actions: [...actions] });
+        if (authWitActions.length) {
+            this.logDebug(`[executeAztecSendTx] Discovered ${authWitActions.length} auth witness(es) via offchain effects`);
+            actions.push(...authWitActions);
         }
 
-        // TODO: Remove retry loop once Aztec contracts emit auth witness requests
-        // via offchain effects instead of inline verify_private_authwit. At that point
-        // discoverRequiredAuthWitnesses will find all needed witnesses in one pass.
-        const MAX_AUTH_WIT_RETRIES = 5;
-        let lastError: unknown;
-        for (let attempt = 0; attempt <= MAX_AUTH_WIT_RETRIES; attempt++) {
-            try {
-                const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
-                    await this.buildAndEstimateTxRequest(
-                        { ...op, actions, fee },
-                        op.feeSettings,
-                        parentTask,
-                    );
+        const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
+            await this.buildAndEstimateTxRequest(
+                { ...op, actions, fee },
+                op.feeSettings,
+                parentTask,
+            );
 
-                const sendAdditionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
-                const provedTx = await this.proveTxTask(pxe, txRequest, [account.address, ...sendAdditionalScopes], parentTask);
-                const timestamp = provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp;
-                const offchainOutput = extractOffchainOutput(
-                    provedTx.getOffchainEffects(),
-                    typeof timestamp.toBigInt === "function" ? timestamp.toBigInt() : BigInt(timestamp.toString()),
-                );
-                const tx = await provedTx.toTx();
-                await this.sendTxTask(node, tx, parentTask);
+        const sendAdditionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
+        const provedTx = await this.proveTxTask(pxe, txRequest, [account.address, ...sendAdditionalScopes], parentTask);
+        const timestamp = provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp;
+        const offchainOutput = extractOffchainOutput(
+            provedTx.getOffchainEffects(),
+            typeof timestamp.toBigInt === "function" ? timestamp.toBigInt() : BigInt(timestamp.toString()),
+        );
+        const tx = await provedTx.toTx();
+        await this.sendTxTask(node, tx, parentTask);
 
-                const txHash = tx.getTxHash();
-                await this.transactionService.addTransaction(
-                    origin,
-                    network.chainId,
-                    account.address.toString(),
-                    txCalls,
-                    nonce.toString(),
-                    feePaymentMethod,
-                    txHash.toString(),
-                    getEstimatedFee(txRequest),
-                    getGasDetails(txRequest),
-                );
+        const txHash = tx.getTxHash();
+        await this.transactionService.addTransaction(
+            origin,
+            network.chainId,
+            account.address.toString(),
+            txCalls,
+            nonce.toString(),
+            feePaymentMethod,
+            txHash.toString(),
+            getEstimatedFee(txRequest),
+            getGasDetails(txRequest),
+        );
 
-                if (op.opts.wait === "NO_WAIT") {
-                    return { txHash, ...offchainOutput } as SendReturn<InteractionWaitOptions>;
-                }
-                const receipt = await node.getTxReceipt(txHash);
-                return { receipt, ...offchainOutput } as SendReturn<InteractionWaitOptions>;
-            } catch (error) {
-                lastError = error;
-                const missingHash = this.extractAuthWitHash(error);
-                if (!missingHash || attempt === MAX_AUTH_WIT_RETRIES) {
-                    throw error;
-                }
-                this.logDebug(`[executeAztecSendTx] Missing auth witness for ${missingHash}, creating (attempt ${attempt + 1})`);
-                actions.push({
-                    kind: "add_private_authwit",
-                    content: { kind: "message_hash", messageHash: missingHash },
-                } as AddPrivateAuthwitAction);
-            }
+        if (op.opts.wait === "NO_WAIT") {
+            return { txHash, ...offchainOutput } as SendReturn<InteractionWaitOptions>;
         }
-        throw lastError;
+        const receipt = await node.getTxReceipt(txHash);
+        return { receipt, ...offchainOutput } as SendReturn<InteractionWaitOptions>;
     }
 
-    private extractAuthWitHash(error: unknown): string | null {
-        const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
-        const match = message.match(
-            /Unknown auth witness for message hash (0x[0-9a-fA-F]+)/,
+    /**
+     * Execute a NO_FROM (DefaultEntrypoint) transaction.
+     * The dApp's ExecutionPayload is passed directly to DefaultEntrypoint — no account
+     * contract wrapping, no wallet auth witness discovery, no call mutation.
+     */
+    private async executeNoFromSendTx(
+        op: AztecSendTxOperation,
+        origin: LocalTxOrigin,
+        parentTask?: WrappedTask,
+    ): Promise<SendReturn<InteractionWaitOptions>> {
+        console.error(`[DEBUG REMOVE] executeNoFromSendTx: starting, calls=${op.exec.calls?.length}, authWits=${(op.exec.authWitnesses ?? []).length}, optsAuthWits=${(op.opts.authWitnesses ?? []).length}, extraArgs=${(op.exec.extraHashedArgs ?? []).length}, capsules=${(op.exec.capsules ?? []).length}`);
+        if (op.feeSettings?.paymentMethod?.kind && op.feeSettings.paymentMethod.kind !== "embedded") {
+            throw new Error("DefaultEntrypoint transactions must use embedded fee payment");
+        }
+
+        const [txRequest, node, pxe, account, network, txCalls] =
+            await this.buildNoFromTxRequest(op, parentTask);
+
+        // Override gas settings with realistic fees (same pattern as case "embedded")
+        const feeOpts: FeeOptions = {
+            gasLimits: op.opts.fee?.gasSettings?.gasLimits,
+            teardownGasLimits: op.opts.fee?.gasSettings?.teardownGasLimits,
+            maxFeesPerGas: op.opts.fee?.gasSettings?.maxFeesPerGas,
+            gasPadding: 1,
+        };
+        this.suggestGasLimits(txRequest, feeOpts);
+        {
+            const maxFeesPerGas = feeOpts.maxFeesPerGas
+                ? new GasFees(BigInt(feeOpts.maxFeesPerGas.feePerDaGas), BigInt(feeOpts.maxFeesPerGas.feePerL2Gas))
+                : await node.getCurrentMinFees();
+            txRequest.txContext.gasSettings = new GasSettings(
+                txRequest.txContext.gasSettings.gasLimits,
+                txRequest.txContext.gasSettings.teardownGasLimits,
+                maxFeesPerGas,
+                txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
+            );
+        }
+
+        // Discover auth witnesses needed by the NO_FROM transaction.
+        // The dApp's createAuthWit calls are separate — authwits are NOT in the ExecutionPayload.
+        // First try offchain-effects discovery, then fall back to error-extraction retry loop
+        // for contracts that use inline verify_private_authwit.
+        const additionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
+        try {
+            const discoveryResult = await pxe.simulateTx(txRequest, {
+                simulatePublic: true,
+                skipTxValidation: true,
+                skipFeeEnforcement: true,
+                scopes: additionalScopes,
+            });
+            const effects = collectOffchainEffects(discoveryResult.privateExecutionResult);
+            if (effects.length) {
+                const nodeInfo2 = await node.getNodeInfo();
+                const chainInfo = { chainId: new Fr(nodeInfo2.l1ChainId), version: new Fr(nodeInfo2.rollupVersion) };
+                for (const effect of effects) {
+                    try {
+                        const authRequest = await CallAuthorizationRequest.fromFields(effect.data);
+                        const messageHash = await computeAuthWitMessageHash(
+                            { consumer: effect.contractAddress, innerHash: authRequest.innerHash as IntentInnerHash },
+                            chainInfo,
+                        );
+                        const authWitness = await account.buildAuthWitness(messageHash);
+                        txRequest.authWitnesses.push(authWitness);
+                        console.error(`[DEBUG REMOVE] Added auth witness via offchain effects: ${messageHash.toString()}`);
+                    } catch {
+                        // Not a CallAuthorizationRequest — skip
+                    }
+                }
+            }
+        } catch (discoveryError) {
+            // Discovery simulation failed — likely inline verify_private_authwit.
+            // Extract the missing hash from the error and build the authwit.
+            const errMsg = discoveryError instanceof Error ? discoveryError.message : String(discoveryError);
+            const match = errMsg.match(/Unknown auth witness for message hash (0x[0-9a-fA-F]+)/);
+            if (match?.[1]) {
+                console.error(`[DEBUG REMOVE] Discovery hit inline authwit check, extracted hash: ${match[1]}`);
+                const authWitness = await account.buildAuthWitness(Fr.fromString(match[1]));
+                txRequest.authWitnesses.push(authWitness);
+            }
+        }
+
+        // Retry loop for additional inline authwit checks (e.g., chained transfers)
+        const MAX_AUTHWIT_RETRIES = 5;
+        let simulatedTx: TxSimulationResult;
+        for (let attempt = 0; attempt <= MAX_AUTHWIT_RETRIES; attempt++) {
+            try {
+                simulatedTx = await this.simulateTxTask(
+                    pxe, txRequest,
+                    { simulatePublic: true, skipFeeEnforcement: true, scopes: additionalScopes },
+                    parentTask,
+                );
+                break; // Success
+            } catch (simError) {
+                const errMsg = simError instanceof Error ? simError.message : String(simError);
+                const match = errMsg.match(/Unknown auth witness for message hash (0x[0-9a-fA-F]+)/);
+                if (!match?.[1] || attempt === MAX_AUTHWIT_RETRIES) {
+                    throw simError; // Not an authwit error or max retries reached
+                }
+                console.error(`[DEBUG REMOVE] Simulation missing authwit ${match[1]}, adding (attempt ${attempt + 1})`);
+                const authWitness = await account.buildAuthWitness(Fr.fromString(match[1]));
+                txRequest.authWitnesses.push(authWitness);
+            }
+        }
+        await this.finalizeGasLimits(node, txRequest, simulatedTx!, 1, undefined, feeOpts, 1);
+
+        // Prove — additionalScopes only
+        const provedTx = await this.proveTxTask(pxe, txRequest, additionalScopes, parentTask);
+        const timestamp = provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp;
+        const offchainOutput = extractOffchainOutput(
+            provedTx.getOffchainEffects(),
+            typeof timestamp.toBigInt === "function" ? timestamp.toBigInt() : BigInt(timestamp.toString()),
         );
-        return match?.[1] ?? null;
+        const tx = await provedTx.toTx();
+        await this.sendTxTask(node, tx, parentTask);
+
+        const txHash = tx.getTxHash();
+        await this.transactionService.addTransaction(
+            origin,
+            network.chainId,
+            account.address.toString(),
+            txCalls,
+            Fr.ZERO.toString(),
+            AzguardFeePaymentMethod.External,
+            txHash.toString(),
+            getEstimatedFee(txRequest),
+            getGasDetails(txRequest),
+        );
+
+        if (op.opts.wait === "NO_WAIT") {
+            return { txHash, ...offchainOutput } as SendReturn<InteractionWaitOptions>;
+        }
+        const receipt = await node.getTxReceipt(txHash);
+        return { receipt, ...offchainOutput } as SendReturn<InteractionWaitOptions>;
+    }
+
+    /**
+     * Build a TxExecutionRequest using DefaultEntrypoint (no account contract wrapping).
+     * Passes the dApp's original ExecutionPayload directly — msg_sender will be None.
+     */
+    private async buildNoFromTxRequest(
+        op: AztecSendTxOperation,
+        parentTask?: WrappedTask,
+    ): Promise<[TxExecutionRequest, AztecNode, IPXE, IAccountContract, Network, TxCall[]]> {
+        const step = new StepContent("Processing transaction");
+        const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
+
+        try {
+            const profile = await this.profileService.getActiveProfile();
+            if (!profile) throw new Error("Wallet locked");
+
+            const network = await this.networkService.getNetwork(op.networkId);
+            const node = await this.networkService.getNode(network.chainId);
+            const pxe = this.pxeService.getPXE(network);
+            const account = await this.accountService.getAccountContract(
+                profile.id, network.chainId, op.accountAddress,
+            );
+
+            // Register account in PXE (needed for scopes)
+            await account.ensureRegistered(pxe);
+
+            // Register contracts referenced in the payload (best-effort)
+            const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
+            for (const call of (op.exec.calls ?? [])) {
+                const addr = call.to?.toString();
+                if (addr && !registeredContracts.has(addr)) {
+                    try {
+                        await pxe.getContractInstance(AztecAddress.fromString(addr));
+                    } catch { /* will fail at simulation if truly missing */ }
+                }
+            }
+
+            // Inline DefaultEntrypoint logic — calls the function directly, msg_sender = None.
+            // Cannot import @aztec/entrypoints/default in service worker (references `window`).
+            // Must parse raw JSON fields through Zod schemas (RPC bridge serializes to plain objects).
+            const rawCalls = op.exec.calls ?? [];
+            if (rawCalls.length !== 1) {
+                throw new Error(`DefaultEntrypoint requires exactly 1 call, got ${rawCalls.length}`);
+            }
+            const call = await FunctionCall.schema.parseAsync(rawCalls[0]);
+            if (call.type !== FunctionType.PRIVATE) {
+                throw new Error("DefaultEntrypoint only supports private functions");
+            }
+
+            // Parse authwits from both exec and opts (same as processAztecJsPayload)
+            const parsedAuthWits: AuthWitness[] = [];
+            for (const raw of (op.exec.authWitnesses ?? []).concat(op.opts.authWitnesses ?? [])) {
+                parsedAuthWits.push(await AuthWitness.schema.parseAsync(raw));
+            }
+            console.error(`[DEBUG REMOVE] buildNoFromTxRequest: parsed ${parsedAuthWits.length} auth witnesses (exec: ${(op.exec.authWitnesses ?? []).length}, opts: ${(op.opts.authWitnesses ?? []).length})`);
+            for (const aw of parsedAuthWits) {
+                console.error(`[DEBUG REMOVE] authwit hash: ${aw.requestHash.toString()}`);
+            }
+            const parsedCapsules: Capsule[] = [];
+            for (const raw of (op.exec.capsules ?? []).concat(op.opts.capsules ?? [])) {
+                parsedCapsules.push(await Capsule.schema.parseAsync(raw));
+            }
+            const parsedExtraArgs: HashedValues[] = [];
+            for (const raw of (op.exec.extraHashedArgs ?? [])) {
+                parsedExtraArgs.push(await HashedValues.schema.parseAsync(raw));
+            }
+
+            const hashedArguments = [await HashedValues.fromArgs(call.args)];
+            const nodeInfo = await node.getNodeInfo();
+            const currentMinFees = await node.getCurrentMinFees();
+            const gasSettings = GasSettings.default({ maxFeesPerGas: currentMinFees });
+            const txRequest = new TxExecutionRequest(
+                call.to,
+                call.selector,
+                hashedArguments[0].hash,
+                new TxContext(nodeInfo.l1ChainId, nodeInfo.rollupVersion, gasSettings),
+                [...hashedArguments, ...parsedExtraArgs],
+                parsedAuthWits,
+                parsedCapsules,
+            );
+
+            // Build txCalls for transaction history
+            const txCalls: TxCall[] = (op.exec.calls ?? []).map((call: any) => ({
+                contract: call.to?.toString(),
+                method: call.name ?? call.selector?.toString(),
+                args: (call.args ?? []).map((a: any) => a.toString()),
+            }));
+
+            task.complete();
+            return [txRequest, node, pxe, account, network, txCalls];
+        } catch (error) {
+            task.fail(error);
+            throw error;
+        }
     }
 
     /**
@@ -1418,6 +1576,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         const authWitness = await account.buildAuthWitness(messageHash);
+
         return authWitness;
     }
 

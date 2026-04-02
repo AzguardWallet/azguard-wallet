@@ -243,8 +243,11 @@ let estimateTimer = null
 let estimateCounter = 0
 
 const executionService = new ExecutionServiceClient()
+const isSending = ref(false)
 const handleSend = async () => {
-	if (!isAllowedToSend.value) return
+	if (!isAllowedToSend.value || isSending.value) return
+
+	isSending.value = true
 
 	const amountToSend = new BN(amountTerm.value?.trim().replace(",", "")).times(10 ** activeToken.value.decimals)
 
@@ -255,7 +258,7 @@ const handleSend = async () => {
 	})
 
 	try {
-		executionService.executeTransfer(
+		await executionService.executeTransfer(
 			appStore.network.id,
 			appStore.account.address,
 			activeToken.value.id,
@@ -264,14 +267,19 @@ const handleSend = async () => {
 			amountToSend,
 			feeSettings.value,
 		)
-	} catch (err) {
-		console.error('err', err);
-	} finally {
-		executionService.disconnect()
-
-		openToast({ label: "Transaction is sent" })
-
+		openToast({ label: "Transaction submitted", icon: "check-circle" })
 		emit("onClose")
+	} catch (err) {
+		const idx = appStore.awaitingTransactions.findIndex(
+			t => t.destination === searchTerm.value && t.contract === activeToken.value.contract,
+		)
+		if (idx !== -1) appStore.awaitingTransactions.splice(idx, 1)
+
+		openToast({ label: "Simulation failed, transaction not sent", icon: "warning", color: "red" }, 4000)
+		console.error("[SendPopup] executeTransfer failed:", err)
+	} finally {
+		isSending.value = false
+		executionService.disconnect()
 	}
 }
 
@@ -541,7 +549,7 @@ const onKeydown = e => {
 						type="primary"
 						size="medium"
 						rightIcon="arrow-right-circle"
-						:disabled="!isAllowedToSend"
+						:disabled="!isAllowedToSend || isSending"
 					>
 						Send
 					</Button>

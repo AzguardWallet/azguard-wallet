@@ -264,7 +264,9 @@ export class WalletSdkDispatcher {
             throw new Error(`No dApp session found for origin ${ctx.origin}`);
         }
 
-        const opts = { ...(args[1] as any ?? {}), from: account.address };
+        const rawOpts = (args[1] as any ?? {});
+        const isNoFrom = rawOpts.from === "NO_FROM";
+        const opts = isNoFrom ? rawOpts : { ...rawOpts, from: account.address };
 
         const results: ExecutionResult = await this.dappInteractionService.execute({
             sessionId: dappSession.id,
@@ -273,6 +275,7 @@ export class WalletSdkDispatcher {
                 account: caipAccount as `aztec:${number}:${string}`,
                 exec: args[0] as any,
                 opts,
+                ...(isNoFrom ? { executionMode: "default_entrypoint" as const } : {}),
             }],
         });
 
