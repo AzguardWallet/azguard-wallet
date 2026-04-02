@@ -259,15 +259,33 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         network: Network,
         txRequest: TxExecutionRequest,
         opts: SimulateTxOpts,
+        stubAccountAddresses?: string[],
     ): Promise<TxSimulationResult> {
         return this.withPxe(network, async (pxe) => {
+            let overrides = await SimulationOverrides.schema.optional().parseAsync(opts.overrides);
+
+            // Build stub account overrides for kernelless simulation.
+            // The SimulatedAccountContractArtifact stays on the offscreen side — only address strings cross the RPC bridge.
+            if (stubAccountAddresses?.length) {
+                const { SimulatedAccountContractArtifact } = await import("@aztec/noir-contracts.js/SimulatedAccount");
+                const contracts: Record<string, { instance: ContractInstanceWithAddress; artifact: ContractArtifact }> = {};
+                for (const addr of stubAccountAddresses) {
+                    const instance = await getContractInstanceFromInstantiationParams(
+                        SimulatedAccountContractArtifact,
+                        { salt: Fr.random() },
+                    );
+                    contracts[addr] = { instance, artifact: SimulatedAccountContractArtifact };
+                }
+                overrides = new SimulationOverrides(contracts);
+            }
+
             return await pxe.simulateTx(
                 await TxExecutionRequest.schema.parseAsync(txRequest),
                 {
                     simulatePublic: opts.simulatePublic,
                     skipTxValidation: opts.skipTxValidation,
                     skipFeeEnforcement: opts.skipFeeEnforcement,
-                    overrides: await SimulationOverrides.schema.optional().parseAsync(opts.overrides),
+                    overrides,
                     scopes: await AccessScopesSchema.parseAsync(opts.scopes),
                 },
             );

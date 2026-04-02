@@ -1259,7 +1259,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         origin: LocalTxOrigin,
         parentTask?: WrappedTask,
     ): Promise<SendReturn<InteractionWaitOptions>> {
-        console.error(`[DEBUG REMOVE] executeNoFromSendTx: starting, calls=${op.exec.calls?.length}, authWits=${(op.exec.authWitnesses ?? []).length}, optsAuthWits=${(op.opts.authWitnesses ?? []).length}, extraArgs=${(op.exec.extraHashedArgs ?? []).length}, capsules=${(op.exec.capsules ?? []).length}`);
         if (op.feeSettings?.paymentMethod?.kind && op.feeSettings.paymentMethod.kind !== "embedded") {
             throw new Error("DefaultEntrypoint transactions must use embedded fee payment");
         }
@@ -1287,72 +1286,43 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             );
         }
 
-        // Discover auth witnesses needed by the NO_FROM transaction.
-        // The dApp's createAuthWit calls are separate — authwits are NOT in the ExecutionPayload.
-        // First try offchain-effects discovery, then fall back to error-extraction retry loop
-        // for contracts that use inline verify_private_authwit.
+        // Kernelless auth witness discovery: stub the user's account so verify_private_authwit
+        // doesn't fail on missing witnesses. The stub accepts any authwit during simulation.
+        // The discovery result is ONLY used to read offchain effects — never for proving or gas estimation.
         const additionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
-        try {
-            const discoveryResult = await pxe.simulateTx(txRequest, {
-                simulatePublic: true,
-                skipTxValidation: true,
-                skipFeeEnforcement: true,
-                scopes: additionalScopes,
-            });
-            const effects = collectOffchainEffects(discoveryResult.privateExecutionResult);
-            if (effects.length) {
-                const nodeInfo2 = await node.getNodeInfo();
-                const chainInfo = { chainId: new Fr(nodeInfo2.l1ChainId), version: new Fr(nodeInfo2.rollupVersion) };
-                for (const effect of effects) {
-                    try {
-                        const authRequest = await CallAuthorizationRequest.fromFields(effect.data);
-                        const messageHash = await computeAuthWitMessageHash(
-                            { consumer: effect.contractAddress, innerHash: authRequest.innerHash as IntentInnerHash },
-                            chainInfo,
-                        );
-                        const authWitness = await account.buildAuthWitness(messageHash);
-                        txRequest.authWitnesses.push(authWitness);
-                        console.error(`[DEBUG REMOVE] Added auth witness via offchain effects: ${messageHash.toString()}`);
-                    } catch {
-                        // Not a CallAuthorizationRequest — skip
-                    }
+        const discoveryResult = await pxe.simulateTx(
+            txRequest,
+            { simulatePublic: true, skipTxValidation: true, skipFeeEnforcement: true, scopes: additionalScopes },
+            [account.address.toString()],
+        );
+
+        // Extract auth witness requirements from CallAuthorizationRequest offchain effects
+        const effects = collectOffchainEffects(discoveryResult.privateExecutionResult);
+        if (effects.length) {
+            const nodeInfo2 = await node.getNodeInfo();
+            const chainInfo = { chainId: new Fr(nodeInfo2.l1ChainId), version: new Fr(nodeInfo2.rollupVersion) };
+            for (const effect of effects) {
+                try {
+                    const authRequest = await CallAuthorizationRequest.fromFields(effect.data);
+                    const messageHash = await computeAuthWitMessageHash(
+                        { consumer: effect.contractAddress, innerHash: authRequest.innerHash as IntentInnerHash },
+                        chainInfo,
+                    );
+                    const authWitness = await account.buildAuthWitness(messageHash);
+                    txRequest.authWitnesses.push(authWitness);
+                } catch {
+                    // Not a CallAuthorizationRequest — skip
                 }
-            }
-        } catch (discoveryError) {
-            // Discovery simulation failed — likely inline verify_private_authwit.
-            // Extract the missing hash from the error and build the authwit.
-            const errMsg = discoveryError instanceof Error ? discoveryError.message : String(discoveryError);
-            const match = errMsg.match(/Unknown auth witness for message hash (0x[0-9a-fA-F]+)/);
-            if (match?.[1]) {
-                console.error(`[DEBUG REMOVE] Discovery hit inline authwit check, extracted hash: ${match[1]}`);
-                const authWitness = await account.buildAuthWitness(Fr.fromString(match[1]));
-                txRequest.authWitnesses.push(authWitness);
             }
         }
 
-        // Retry loop for additional inline authwit checks (e.g., chained transfers)
-        const MAX_AUTHWIT_RETRIES = 5;
-        let simulatedTx: TxSimulationResult;
-        for (let attempt = 0; attempt <= MAX_AUTHWIT_RETRIES; attempt++) {
-            try {
-                simulatedTx = await this.simulateTxTask(
-                    pxe, txRequest,
-                    { simulatePublic: true, skipFeeEnforcement: true, scopes: additionalScopes },
-                    parentTask,
-                );
-                break; // Success
-            } catch (simError) {
-                const errMsg = simError instanceof Error ? simError.message : String(simError);
-                const match = errMsg.match(/Unknown auth witness for message hash (0x[0-9a-fA-F]+)/);
-                if (!match?.[1] || attempt === MAX_AUTHWIT_RETRIES) {
-                    throw simError; // Not an authwit error or max retries reached
-                }
-                console.error(`[DEBUG REMOVE] Simulation missing authwit ${match[1]}, adding (attempt ${attempt + 1})`);
-                const authWitness = await account.buildAuthWitness(Fr.fromString(match[1]));
-                txRequest.authWitnesses.push(authWitness);
-            }
-        }
-        await this.finalizeGasLimits(node, txRequest, simulatedTx!, 1, undefined, feeOpts, 1);
+        // Real simulation with actual auth witnesses and real account contract
+        const simulatedTx = await this.simulateTxTask(
+            pxe, txRequest,
+            { simulatePublic: true, skipFeeEnforcement: true, scopes: additionalScopes },
+            parentTask,
+        );
+        await this.finalizeGasLimits(node, txRequest, simulatedTx, 1, undefined, feeOpts, 1);
 
         // Prove — additionalScopes only
         const provedTx = await this.proveTxTask(pxe, txRequest, additionalScopes, parentTask);
@@ -1436,10 +1406,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const parsedAuthWits: AuthWitness[] = [];
             for (const raw of (op.exec.authWitnesses ?? []).concat(op.opts.authWitnesses ?? [])) {
                 parsedAuthWits.push(await AuthWitness.schema.parseAsync(raw));
-            }
-            console.error(`[DEBUG REMOVE] buildNoFromTxRequest: parsed ${parsedAuthWits.length} auth witnesses (exec: ${(op.exec.authWitnesses ?? []).length}, opts: ${(op.opts.authWitnesses ?? []).length})`);
-            for (const aw of parsedAuthWits) {
-                console.error(`[DEBUG REMOVE] authwit hash: ${aw.requestHash.toString()}`);
             }
             const parsedCapsules: Capsule[] = [];
             for (const raw of (op.exec.capsules ?? []).concat(op.opts.capsules ?? [])) {

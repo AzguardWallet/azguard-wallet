@@ -40,7 +40,7 @@ export type Methods = {
     getNotes(network: Network, filter: NotesFilter): NoteDao[];
     proveTx(network: Network, txRequest: TxExecutionRequest, scopes: AztecAddress[]): TxProvingResult;
     profileTx(network: Network, txRequest: TxExecutionRequest, opts: ProfileTxOpts): TxProfileResult;
-    simulateTx(network: Network, txRequest: TxExecutionRequest, opts: SimulateTxOpts): TxSimulationResult;
+    simulateTx(network: Network, txRequest: TxExecutionRequest, opts: SimulateTxOpts, stubAccountAddresses?: string[]): TxSimulationResult;
     executeUtility(network: Network, call: FunctionCall, opts: ExecuteUtilityOpts): UtilityExecutionResult;
     getPrivateEvents<T>(
         network: Network,

@@ -159,9 +159,10 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         network: Network,
         txRequest: TxExecutionRequest,
         opts: SimulateTxOpts,
+        stubAccountAddresses?: string[],
     ): Promise<TxSimulationResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("simulateTx", network, txRequest, opts);
+        const result = await this.request("simulateTx", network, txRequest, opts, stubAccountAddresses);
         return await TxSimulationResult.schema.parseAsync(result);
     }
 

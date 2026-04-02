@@ -36,7 +36,7 @@ export interface IPXE {
     getNotes(filter: NotesFilter): Promise<NoteDao[]>;
     proveTx(txRequest: TxExecutionRequest, scopes: AztecAddress[]): Promise<TxProvingResult>;
     profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult>;
-    simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts): Promise<TxSimulationResult>;
+    simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts, stubAccountAddresses?: string[]): Promise<TxSimulationResult>;
     executeUtility(call: FunctionCall, opts: ExecuteUtilityOpts): Promise<UtilityExecutionResult>;
     getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]>;
 }
@@ -100,8 +100,8 @@ export class PXEProxy implements IPXE {
         return this.pxeService.profileTx(this.network, txRequest, opts);
     }
 
-    simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts): Promise<TxSimulationResult> {
-        return this.pxeService.simulateTx(this.network, txRequest, opts);
+    simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts, stubAccountAddresses?: string[]): Promise<TxSimulationResult> {
+        return this.pxeService.simulateTx(this.network, txRequest, opts, stubAccountAddresses);
     }
 
     executeUtility(call: FunctionCall, opts: ExecuteUtilityOpts): Promise<UtilityExecutionResult> {
