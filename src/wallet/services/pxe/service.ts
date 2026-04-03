@@ -276,7 +276,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
                     );
                     contracts[addr] = { instance, artifact: SimulatedAccountContractArtifact };
                 }
-                overrides = new SimulationOverrides(contracts);
+                overrides = new SimulationOverrides({ ...(overrides?.contracts ?? {}), ...contracts });
             }
 
             return await pxe.simulateTx(

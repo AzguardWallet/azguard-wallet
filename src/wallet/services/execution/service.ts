@@ -381,12 +381,14 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
         // Build actions array — clone to prevent mutation side effects
         let actions: Action[];
+        let detectedFee: FeeOptions | undefined;
         if (operation.kind === "aztec_sendTx") {
-            const [processedActions] = await this.processAztecJsPayload(
+            const [processedActions, , fee] = await this.processAztecJsPayload(
                 (operation as any).exec,
                 (operation as any).opts ?? {},
             );
             actions = [...processedActions];
+            detectedFee = fee;
         } else {
             actions = [...(operation as SendTransactionOperation).actions];
         }
@@ -400,7 +402,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             actions.push(...authWitActions);
         }
 
-        const op = { ...operation, actions: [...actions] } as any;
+        const op = { ...operation, actions: [...actions], ...(detectedFee ? { fee: detectedFee } : {}) } as any;
         const [txRequest] = await this.buildAndEstimateTxRequest(op, feeSettings);
 
         const maxFeeRaw = BigInt(getEstimatedFee(txRequest));
@@ -1379,14 +1381,18 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             // Register account in PXE (needed for scopes)
             await account.ensureRegistered(pxe);
 
-            // Register contracts referenced in the payload (best-effort)
+            // Register contracts referenced in the payload (same pattern as buildTxRequest)
+            const callAddresses = (op.exec.calls ?? []).map((c: any) => c.to?.toString()).filter(Boolean);
+            const uniqueAddresses = [...new Set(callAddresses)];
+            const instances = await this.getInstances(pxe, uniqueAddresses);
+            const artifacts = await this.getArtifacts(pxe, instances);
             const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
-            for (const call of (op.exec.calls ?? [])) {
-                const addr = call.to?.toString();
-                if (addr && !registeredContracts.has(addr)) {
-                    try {
-                        await pxe.getContractInstance(AztecAddress.fromString(addr));
-                    } catch { /* will fail at simulation if truly missing */ }
+            for (const [contract, instance] of instances) {
+                if (!registeredContracts.has(contract)) {
+                    await pxe.registerContract({
+                        instance,
+                        artifact: artifacts.get(instance.currentContractClassId.toString()),
+                    });
                 }
             }
 
