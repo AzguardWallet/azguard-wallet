@@ -1207,11 +1207,15 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
         const [actions, _, fee] = await this.processAztecJsPayload(op.exec, op.opts);
 
-        // Discover auth witnesses via offchain effects (single-pass)
-        const authWitActions = await this.discoverRequiredAuthWitnesses({ ...op, actions: [...actions] });
-        if (authWitActions.length) {
-            this.logDebug(`[executeAztecSendTx] Discovered ${authWitActions.length} auth witness(es) via offchain effects`);
-            actions.push(...authWitActions);
+        // Skip auth witness discovery for embedded fee payments — the dApp handles its own
+        // fee calls (e.g., FeeJuice:claim_and_end_setup) which conflict with the discovery
+        // simulation's dummy fee method.
+        if (!fee.embeddedFeePayment) {
+            const authWitActions = await this.discoverRequiredAuthWitnesses({ ...op, actions: [...actions] });
+            if (authWitActions.length) {
+                this.logDebug(`[executeAztecSendTx] Discovered ${authWitActions.length} auth witness(es) via offchain effects`);
+                actions.push(...authWitActions);
+            }
         }
 
         const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
