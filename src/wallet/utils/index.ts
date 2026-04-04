@@ -1,4 +1,5 @@
 export * from "./arrays";
 export * from "./lock";
 export * from "./random";
+export * from "./rw-guard";
 export * from "./sleep";
