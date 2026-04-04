@@ -1297,9 +1297,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         // Kernelless auth witness discovery: stub the user's account so verify_private_authwit
         // doesn't fail on missing witnesses. The stub accepts any authwit during simulation.
         // The discovery result is ONLY used to read offchain effects — never for proving or gas estimation.
-        const additionalScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes : [];
-        const scopesWithAccount = [account.address.toString(), ...additionalScopes];
-        console.error(`[DEBUG] executeNoFromSendTx: additionalScopes=${JSON.stringify(additionalScopes)}, scopesWithAccount=${JSON.stringify(scopesWithAccount)}`);
+        const dappScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes.map((s: any) => s.toString()) : [];
+        const additionalScopes = [...new Set(dappScopes)];
+        const scopesWithAccount = [...new Set([account.address.toString(), ...dappScopes])];
+        console.error(`[DEBUG] executeNoFromSendTx: dappScopes=${JSON.stringify(dappScopes)}, additionalScopes=${JSON.stringify(additionalScopes)}, scopesWithAccount=${JSON.stringify(scopesWithAccount)}`);
 
         console.error(`[DEBUG] executeNoFromSendTx: starting kernelless discovery simulation`);
         const discoveryResult = await pxe.simulateTx(
