@@ -113,6 +113,7 @@ import {
     type GasBalances,
     type TransferFeeEstimate,
 } from "./spec";
+import { detectEmbeddedFeePayment } from "./utils/fee-detection";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
 import { Aliased, ContractInitializationStatus, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
@@ -1636,11 +1637,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         const feeOptions: FeeOptions = {
-            embeddedFeePayment: exec.feePayer === undefined || exec.feePayer === null
-                ? undefined
-                : exec.feePayer.toString() === opts.from.toString()
-                ? "fjwc"
-                : "fpc",
+            embeddedFeePayment: detectEmbeddedFeePayment(exec.feePayer, opts.from),
             gasLimits: opts.fee?.gasSettings?.gasLimits,
             teardownGasLimits: opts.fee?.gasSettings?.teardownGasLimits,
             maxFeesPerGas: opts.fee?.gasSettings?.maxFeesPerGas,

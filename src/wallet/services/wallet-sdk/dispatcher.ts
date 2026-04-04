@@ -50,6 +50,7 @@ import { OriginType, type LocalTxOrigin } from "@/wallet/services/transaction/se
 import type { RejectedCapabilityRecord } from "@/wallet/services/dapp-session/spec";
 import type { ILogger } from "@/wallet/logger";
 import { LogLevel } from "@/wallet/logger";
+import { isNoFromRequest } from "@/wallet/services/execution/utils/fee-detection";
 import type { SessionContext } from "./types";
 import { getRequiredCapability, isCapabilityExempt } from "./capability-map";
 import packageJson from "../../../../package.json";
@@ -267,7 +268,7 @@ export class WalletSdkDispatcher {
         console.error(`[DEBUG] handleSendTx: session=${dappSession.id}, sessionAccounts=${JSON.stringify(dappSession.accounts)}`);
 
         const rawOpts = (args[1] as any ?? {});
-        const isNoFrom = rawOpts.from === "NO_FROM";
+        const isNoFrom = isNoFromRequest(rawOpts.from);
         const opts = isNoFrom ? rawOpts : { ...rawOpts, from: account.address };
         console.error(`[DEBUG] handleSendTx: isNoFrom=${isNoFrom}, exec.feePayer=${(args[0] as any)?.feePayer}, exec.calls=${(args[0] as any)?.calls?.length}, additionalScopes=${JSON.stringify(rawOpts.additionalScopes)}`);
 
