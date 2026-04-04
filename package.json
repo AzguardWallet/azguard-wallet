@@ -20,7 +20,7 @@
 		"test:e2e:all": "vitest run --config vitest.e2e.all.config.ts"
 	},
 	"dependencies": {
-		"@alejoamiras/tee-rex": "^4.1.0-rc.4.7",
+		"@alejoamiras/aztec-accelerator": "4.2.0-aztecnr-rc.2.2",
 		"@aztec/aztec.js": "4.2.0-aztecnr-rc.2",
 		"@aztec/bb.js": "4.2.0-aztecnr-rc.2",
 		"@aztec/constants": "4.2.0-aztecnr-rc.2",

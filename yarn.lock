@@ -12,6 +12,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@alejoamiras/aztec-accelerator@npm:4.2.0-aztecnr-rc.2.2":
+  version: 4.2.0-aztecnr-rc.2.2
+  resolution: "@alejoamiras/aztec-accelerator@npm:4.2.0-aztecnr-rc.2.2"
+  dependencies:
+    "@aztec/bb-prover": "npm:4.2.0-aztecnr-rc.2"
+    "@aztec/foundation": "npm:4.2.0-aztecnr-rc.2"
+    "@aztec/noir-acvm_js": "npm:4.2.0-aztecnr-rc.2"
+    "@aztec/noir-noirc_abi": "npm:4.2.0-aztecnr-rc.2"
+    "@aztec/stdlib": "npm:4.2.0-aztecnr-rc.2"
+    "@logtape/logtape": "npm:^2.0"
+    ky: "npm:^1.14.3"
+    ms: "npm:^2.1.3"
+  checksum: 10c0/4de68217e69870f9871302568cfaf4120373dc3787f3509dce00d4177fcf2c5ec50b71d7a3e441c97dd74c2bc821595b918f3f71bd6f5ce1f01511d7d7498c7d
+  languageName: node
+  linkType: hard
+
 "@alejoamiras/tee-rex@npm:^4.1.0-rc.4.7":
   version: 4.1.0-rc.4.12
   resolution: "@alejoamiras/tee-rex@npm:4.1.0-rc.4.12"
@@ -10345,6 +10361,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "sdk-compatible-azguard@workspace:."
   dependencies:
+    "@alejoamiras/aztec-accelerator": "npm:4.2.0-aztecnr-rc.2.2"
     "@alejoamiras/tee-rex": "npm:^4.1.0-rc.4.7"
     "@aztec/aztec.js": "npm:4.2.0-aztecnr-rc.2"
     "@aztec/bb.js": "npm:4.2.0-aztecnr-rc.2"
