@@ -281,7 +281,7 @@ const approve = async () => {
 	try {
 		await interactionService.approveInteraction(requestId.value!, operations.value, {
 			type: OriginType.DAPP,
-			name: dapp.value?.name ?? "Unknown dapp",
+			name: dapp.value?.name ?? "Unknown app",
 		})
 		closeWindow(true)
 	} catch (error) {
@@ -379,7 +379,7 @@ onUnmounted(() => {
 					<Icon v-else name="dapp" size="48" color="blue" />
 
 					<Text size="13" weight="600" color="primary">
-						{{ dapp?.name ?? "Unknown dapp" }}
+						{{ dapp?.name ?? "Unknown app" }}
 					</Text>
 				</Flex>
 
@@ -403,7 +403,7 @@ onUnmounted(() => {
 			<Flex direction="column" align="center" justify="center" gap="8" :style="{ marginTop: '-4px' }">
 				<Flex direction="column" align="center" justify="center" gap="4">
 					<Text size="13" weight="600" color="primary"> {{ dapp?.url }} </Text>
-					<Text size="13" color="primary">The dapp wants you to execute operation(s)</Text>
+					<Text size="13" color="primary">wants to execute the following</Text>
 				</Flex>
 				<Flex direction="column" align="center" justify="center" gap="4">
 					<Text size="12" color="secondary">Make sure you trust the site you interact with</Text>
@@ -470,7 +470,26 @@ onUnmounted(() => {
 								</Flex>
 							</Flex>
 						</Flex>
+						<Flex
+							v-if="op.fee?.embeddedFeePayment !== undefined"
+							align="center"
+							gap="8"
+							wide
+							style="
+								padding: 12px 16px;
+								background: var(--card-bg);
+								border-radius: 0 0 12px 12px;
+								border: 1px solid var(--border);
+								border-top: none;
+							"
+						>
+							<Icon name="check-circle" size="14" color="green" />
+							<Text size="13" weight="500" color="secondary">
+								Fee payment method set by <Text size="13" weight="600" color="primary">{{ dapp?.name ?? 'the app' }}</Text>
+							</Text>
+						</Flex>
 						<FeeSettingsCard
+							v-else
 							:profile="profile"
 							:network="op.network"
 							:account="op.account"
@@ -527,7 +546,26 @@ onUnmounted(() => {
 								</Flex>
 							</Flex>
 						</Flex>
+						<Flex
+							v-if="op.executionMode === 'default_entrypoint' || op.exec?.feePayer !== undefined"
+							align="center"
+							gap="8"
+							wide
+							style="
+								padding: 12px 16px;
+								background: var(--card-bg);
+								border-radius: 0 0 12px 12px;
+								border: 1px solid var(--border);
+								border-top: none;
+							"
+						>
+							<Icon name="check-circle" size="14" color="green" />
+							<Text size="13" weight="500" color="secondary">
+								Fee payment method set by <Text size="13" weight="600" color="primary">{{ dapp?.name ?? 'the app' }}</Text>
+							</Text>
+						</Flex>
 						<FeeSettingsCard
+							v-else
 							:profile="profile"
 							:network="op.network"
 							:account="op.account"

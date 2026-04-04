@@ -956,6 +956,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(networkId);
 
         // Public FeeJuice balance via balance_of_public on the FeeJuice contract
+        console.error(`[DEBUG] getGasBalances: networkId=${networkId}, accountAddress=${accountAddress}, forceRefresh=${forceRefresh}`);
         let publicFeeJuice = "0";
         try {
             const publicResult = await this.executeSimulateViews({
@@ -973,8 +974,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 publicFeeJuice = publicResult.encoded[0][0].toBigInt().toString();
             }
         } catch (err) {
+            console.error(`[DEBUG] getGasBalances: Failed to get public FeeJuice balance:`, getErrorMessage(err));
             this.logError("Failed to get public FeeJuice balance", getErrorMessage(err));
         }
+        console.error(`[DEBUG] getGasBalances: publicFeeJuice=${publicFeeJuice}`);
 
         // Private FeeJuice balance via balance_of on PrivateFPC
         let privateFeeJuice: string | null = null;
@@ -998,8 +1001,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 }
             }
         } catch (err) {
+            console.error(`[DEBUG] getGasBalances: Failed to get private FeeJuice balance:`, getErrorMessage(err));
             this.logError("Failed to get private FeeJuice balance", getErrorMessage(err));
         }
+        console.error(`[DEBUG] getGasBalances: publicFeeJuice=${publicFeeJuice}, privateFeeJuice=${privateFeeJuice}`);
 
         const result = { publicFeeJuice, privateFeeJuice };
         this.gasBalanceCache.set(cacheKey, { result, fetchedAt: Date.now() });
@@ -1631,7 +1636,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         const feeOptions: FeeOptions = {
-            embeddedFeePayment: !exec.feePayer
+            embeddedFeePayment: exec.feePayer === undefined || exec.feePayer === null
                 ? undefined
                 : exec.feePayer.toString() === opts.from.toString()
                 ? "fjwc"
