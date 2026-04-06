@@ -10,10 +10,7 @@ test("fresh install shows register page", async ({ extension }) => {
     await page.waitForSelector("text/Import Profile", { visible: true })
 })
 
-// Skipped: account creation calls sync_state which requires recompiled AzguardAccount
-// artifacts (utilityFetchTaggedLogs oracle not in legacy mappings). Re-enable once
-// azguard-v0.json is recompiled against current aztec-nr.
-test.skip("create profile with password", async ({ extension }) => {
+test("create profile with password", async ({ extension }) => {
     const page = await openPopup(extension)
     await waitForHash(page, "#/popup/register")
 

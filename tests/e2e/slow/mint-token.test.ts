@@ -1,8 +1,7 @@
 import { expect } from "vitest"
 import { test, openPopup, waitForHash, typeIntoInput } from "../fixtures/extension"
 
-// Skipped: requires working account creation (blocked by AzguardAccount recompilation)
-test.skip("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension }) => {
+test("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension }) => {
     const page = await openPopup(registeredExtension)
 
     // 1. Verify initial state

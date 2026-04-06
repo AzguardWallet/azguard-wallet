@@ -1,7 +1,7 @@
 import { expect } from "vitest"
 import { test, openPopup, waitForHash } from "./fixtures/extension"
 
-// Skipped: requires working account creation (blocked by AzguardAccount recompilation)
+// Skipped: requires local test dApp page (external adhoc-aztec-wallet-test.pages.dev is not under our control)
 test.skip("connectDapp fixture establishes a working dapp session", async ({ dappConnectedExtension }) => {
     // Open the popup and verify we're on the general page (profile exists)
     const page = await openPopup(dappConnectedExtension)
