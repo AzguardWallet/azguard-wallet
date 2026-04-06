@@ -505,7 +505,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         switch (network.chainId) {
             case 4138294185: // (11155111 ^ 4127419662) >>> 0
                 return "https://testnet.aztec-registry.xyz";
-            case 604129785: // 11155111 ^ 615022430
+            case 896946031: // (11155111 ^ 903641544) >>> 0 — v4-devnet-3
                 return "https://devnet.aztec-registry.xyz";
             default:
                 return undefined;
