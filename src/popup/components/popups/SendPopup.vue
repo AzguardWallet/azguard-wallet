@@ -275,7 +275,7 @@ const handleSend = async () => {
 		)
 		if (idx !== -1) appStore.awaitingTransactions.splice(idx, 1)
 
-		openToast({ label: "Simulation failed, transaction not sent", icon: "warning", color: "red" }, 4000)
+		openToast({ label: "Simulation failed, transaction not sent", icon: "warning", color: "red" }, TOAST_DURATION.LONG)
 		console.error("[SendPopup] executeTransfer failed:", err)
 	} finally {
 		isSending.value = false

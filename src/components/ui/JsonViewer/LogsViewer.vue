@@ -398,14 +398,14 @@ async function exportLogsToCSV() {
 				filename: `AzguardWalletLogs_${Math.floor(Date.now() / 1000)}.csv`,
 			})
 
-			openToast({ label: "Logs downloaded successfully", icon: "download" }, 2000)
+			openToast({ label: "Logs downloaded successfully", icon: "download" })
 		} catch (err) {
 			console.error("Download failed:", err);
-			openToast({ label: "Failed to download logs", icon: "warning" }, 2000)
+			openToast({ label: "Failed to download logs", icon: "warning" })
 		}
 	} catch (err) {
 		console.error(err)
-		openToast({ label: "Failed to download logs", icon: "warning" }, 2_000)
+		openToast({ label: "Failed to download logs", icon: "warning" })
 	}
 }
 async function handleClearLogs() {
@@ -418,7 +418,7 @@ async function handleClearLogs() {
 		await nextTick()
 		updateEditorContent()
 	} catch (err) {
-		openToast({ label: "Failed to clear logs", icon: "warning" }, 2_000)
+		openToast({ label: "Failed to clear logs", icon: "warning" })
 		console.error(err)
 	}
 }

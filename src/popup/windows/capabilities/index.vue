@@ -131,7 +131,7 @@ const init = async () => {
 			} else {
 				// No accounts on this network — warn and disable accounts capability
 				const { openToast } = useToast()
-				openToast({ label: "No accounts available for this network. Create one first.", icon: "info" }, 5000)
+				openToast({ label: "No accounts available for this network. Create one first.", icon: "info" }, TOAST_DURATION.LONG)
 			}
 		}
 

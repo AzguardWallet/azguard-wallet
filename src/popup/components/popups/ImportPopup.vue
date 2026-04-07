@@ -81,7 +81,7 @@ function handleCopyError(error) {
 
 	window.navigator.clipboard.writeText(`${error.title}${error.tooltip ? `: ${error.tooltip}` : ""}`)
 
-	openToast({ label: "Error is copied", icon: "copy" }, 2_000)
+	openToast({ label: "Error is copied", icon: "copy" })
 
 	setTimeout(() => {
 		isCopied.value = false

@@ -103,10 +103,10 @@ async function handleExportContacts() {
 				filename,
 			})
 
-			openToast({ label: "Contacts exported successfully", icon: "download" }, 2000)
+			openToast({ label: "Contacts exported successfully", icon: "download" })
 		} catch (err) {
 			console.error("Export failed:", err.message || err);
-			openToast({ label: "Failed to export contacts", icon: "warning" }, 2000)
+			openToast({ label: "Failed to export contacts", icon: "warning" })
 		}
 	} catch (err) {
 		console.error(err);

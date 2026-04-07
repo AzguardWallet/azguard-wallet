@@ -40,7 +40,7 @@ export function useExternalLink() {
 
 		if (mode === "disabled") {
 			await window.navigator.clipboard.writeText(url)
-			openToast({ label: "Link copied to clipboard", icon: "copy" }, 2_000)
+			openToast({ label: "Link copied to clipboard", icon: "copy" })
 			return
 		}
 

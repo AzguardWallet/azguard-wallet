@@ -80,7 +80,7 @@ const handleCopy = () => {
 
 	window.navigator.clipboard.writeText(JSON.stringify(props.data))
 
-	openToast({ label: "Data is copied", icon: "copy" }, 2_000)
+	openToast({ label: "Data is copied", icon: "copy" })
 
 	setTimeout(() => {
 		isCopied.value = false

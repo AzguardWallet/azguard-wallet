@@ -9,7 +9,7 @@ const props = defineProps<{
 
 const copyAddress = (addr: string) => {
 	window.navigator.clipboard.writeText(addr)
-	openToast({ label: "Address is copied", icon: "copy" }, 2000)
+	openToast({ label: "Address is copied", icon: "copy" })
 }
 
 const formatScope = (scope: any): { isWildcard: boolean; patterns: any[] } => {

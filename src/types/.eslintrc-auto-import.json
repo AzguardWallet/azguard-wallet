@@ -26,6 +26,7 @@
     "ShallowRef": true,
     "Slot": true,
     "Slots": true,
+    "TOAST_DURATION": true,
     "VNode": true,
     "WritableComputedRef": true,
     "balanceFormatted": true,

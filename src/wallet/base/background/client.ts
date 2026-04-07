@@ -17,6 +17,7 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
 
     private state: ClientState = ClientState.Disconnected;
     private readonly requests: Map<number, [(result: any) => void, (error: string) => void]> = new Map();
+    private nextRequestId = 1;
     private port?: chrome.runtime.Port;
 
     protected constructor(service: string, logger: ILogger, name?: string) {
@@ -136,11 +137,7 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
     }
 
     private getRequestId() {
-        let id;
-        do {
-            id = 1 + Math.random();
-        } while (this.requests.has(id));
-        return id;
+        return this.nextRequestId++;
     }
 
     protected logDebug(...data: any[]) {

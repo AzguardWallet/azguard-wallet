@@ -99,7 +99,7 @@ async function enableStealthMode() {
 	await configService.setValue("externalLinks", "disabled")
 	externalLinks.value = "disabled"
 
-	openToast({ label: "Stealth mode enabled", icon: "info" }, 1_500)
+	openToast({ label: "Stealth mode enabled", icon: "info" }, TOAST_DURATION.SHORT)
 }
 
 // Disable stealth mode: turn on all settings
@@ -116,7 +116,7 @@ async function disableStealthMode() {
 	await configService.setValue("externalLinks", "enabled")
 	externalLinks.value = "enabled"
 
-	openToast({ label: "Stealth mode disabled", icon: "info" }, 1_500)
+	openToast({ label: "Stealth mode disabled", icon: "info" }, TOAST_DURATION.SHORT)
 }
 
 // Exit stealth mode and apply a specific setting change
@@ -127,7 +127,7 @@ async function exitStealthAndApply(key, value) {
 	await configService.setValue(key, value)
 	settings[key].model.value = value
 
-	openToast({ label: "Stealth mode disabled", icon: "info" }, 1_500)
+	openToast({ label: "Stealth mode disabled", icon: "info" }, TOAST_DURATION.SHORT)
 }
 
 async function updateSetting(key, value) {
@@ -173,7 +173,7 @@ async function updateSetting(key, value) {
 			await configService.setValue("stealthMode", true)
 			stealthMode.value = true
 			dialogsSuppressed.value = false
-			openToast({ label: "Stealth mode auto-enabled", icon: "info" }, 1_500)
+			openToast({ label: "Stealth mode auto-enabled", icon: "info" }, TOAST_DURATION.SHORT)
 		}
 	} catch (err) {
 		openToast({ label: "Failed to update setting", icon: "warning" })

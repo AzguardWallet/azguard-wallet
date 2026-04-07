@@ -113,7 +113,7 @@ async function updateSetting(key, value) {
 
 		if (key === "sessionTtl") {
 			await profileService.refreshSession()
-			openToast({ label: "Auto-lock timeout updated", icon: "info" }, 1_500)
+			openToast({ label: "Auto-lock timeout updated", icon: "info" }, TOAST_DURATION.SHORT)
 		}
 	} catch (err) {
 		openToast({ label: "Failed to update setting", icon: "warning" })
@@ -132,7 +132,7 @@ async function applySetting(key, value) {
 			break
 
 		case "defaultExplorer":
-			openToast({ label: "Default explorer updated", icon: "info" }, 1_500)
+			openToast({ label: "Default explorer updated", icon: "info" }, TOAST_DURATION.SHORT)
 			break
 
 		default:
@@ -154,7 +154,7 @@ const handleFullReset = () => {
 		try {
 			await managers.profile.deleteProfile(appStore.profile.id)
 		} catch (error) {
-			// TODO: handle errors
+			openToast({ label: "Failed to delete profile", icon: "warning" })
 		}
 		await chrome.storage.local.clear()
 		await chrome.storage.session.clear()

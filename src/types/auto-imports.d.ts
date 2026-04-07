@@ -20,6 +20,7 @@ declare global {
   const EffectScope: typeof import('vue').EffectScope
   const FEE_JUICE_PRICING: typeof import('../utils/fee-estimation').FEE_JUICE_PRICING
   const FEE_JUICE_USD_RATE: typeof import('../utils/fee-estimation').FEE_JUICE_USD_RATE
+  const TOAST_DURATION: typeof import('../composables/toast.js').TOAST_DURATION
   const asyncComputed: typeof import("@vueuse/core")["asyncComputed"]
   const autoResetRef: typeof import("@vueuse/core")["autoResetRef"]
   const balanceFormatted: typeof import('../utils/amount.js').balanceFormatted

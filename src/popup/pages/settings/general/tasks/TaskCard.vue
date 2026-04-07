@@ -71,7 +71,7 @@ function handleCopyError(task) {
 
 	window.navigator.clipboard.writeText(`${error.value.title || `${props.task.content.label}:`}\n${error.value.description}`)
 
-	openToast({ label: "Error is copied", icon: "copy" }, 2_000)
+	openToast({ label: "Error is copied", icon: "copy" })
 
 	setTimeout(() => {
 		isCopied.value = false
