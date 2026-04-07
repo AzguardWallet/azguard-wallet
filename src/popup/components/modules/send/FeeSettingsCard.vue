@@ -9,6 +9,7 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 import { trimAddress } from "@/utils/string"
 import { getRandomHex } from "@/wallet/utils"
 import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
+import { UI_STORAGE_KEYS } from "@/popup/constants/storage-keys"
 /** Services */
 import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
 import { ExecutionServiceClient } from "@/wallet/services/execution/client"
@@ -42,7 +43,7 @@ const props = defineProps({
 	},
 })
 
-const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
+const FEE_METHOD_LS_KEY = UI_STORAGE_KEYS.FEE_PAYMENT_METHODS
 
 const settings = defineModel()
 

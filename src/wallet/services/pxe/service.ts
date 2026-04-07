@@ -137,10 +137,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
                         await this.initKnown();
                     }
                     instance = this.knownInstances.get(address.toString());
-                    if (!instance) {
-                        // check registry
-                        instance = await this.fetchInstanceFromRegistry(network, address);
-                    }
                 }
             }
             return instance;
@@ -456,23 +452,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             this.logError("Failed to parse artifact from registry", getErrorMessage(error));
             return undefined;
         }
-    }
-
-    private async fetchInstanceFromRegistry(
-        network: Network,
-        address: AztecAddress,
-    ): Promise<ContractInstanceWithAddress | undefined> {
-        return undefined;
-        // try {
-        //     const instance = await this.fetchFromRegistry(network, `/api/contracts/${address.toString()}`);
-        //     if (!instance) {
-        //         return undefined;
-        //     }
-        //     return await ContractInstanceWithAddressSchema.parseAsync(instance);
-        // } catch (error: unknown) {
-        //     this.logError("Failed to parse instance from registry", getErrorMessage(error));
-        //     return undefined;
-        // }
     }
 
     private async fetchFromRegistry(network: Network, path: string): Promise<unknown | undefined> {

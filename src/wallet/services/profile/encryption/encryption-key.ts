@@ -1,3 +1,6 @@
+/** OWASP-recommended minimum for PBKDF2-SHA256 (2023). */
+const PBKDF2_ITERATIONS = 600_000;
+
 /**
  * Provides functionality for password-based encryption and decryption.
  * Primarily used for encrypting secrets to be stored in the local storage.
@@ -10,7 +13,7 @@ export class EncryptionKey {
             {
                 name: "PBKDF2",
                 salt,
-                iterations: 600_000,
+                iterations: PBKDF2_ITERATIONS,
                 hash: "SHA-256",
             },
             this.baseKey,

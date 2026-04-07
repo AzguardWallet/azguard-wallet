@@ -62,7 +62,6 @@ const sentinelPath = "azguard:ui:sentinel"
 
 export const setSentinel = async () => {
 	await chrome.storage.local.set({ [sentinelPath]: __SENTINEL__ })
-	chrome.storage.local.remove("azguard:ui:aztecVersion") // TODO: delete me at some point
 }
 
 export const checkSentinel = async () => {

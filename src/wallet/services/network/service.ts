@@ -51,30 +51,6 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             }
 
             const defaultNetworks = [];
-            // try {
-            //     const name = "Azguard Node";
-            //     const rpcUrl = "https://node.testnet.azguardwallet.io";
-            //     const chainId = 1721521349; // 11155111 ^ 1714840162
-            //     defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
-            // } catch (error) {
-            //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
-            // }
-            // try {
-            //     const name = "Aztec Node";
-            //     const rpcUrl = "https://aztec-alpha-testnet-fullnode.zkv.xyz";
-            //     const chainId = 1721521349; // 11155111 ^ 1714840162
-            //     defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
-            // } catch (error) {
-            //     this.logError("Failed to add 'Aztec Node'", getErrorMessage(error));
-            // }
-            // try {
-            //     const name = "Azguard Node";
-            //     const rpcUrl = "https://node.devnet.azguardwallet.io";
-            //     const chainId = 1654394782; // 11155111 ^ 1667575857
-            //     defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
-            // } catch (error) {
-            //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
-            // }
             try {
                 const name = "Alpha Mainnet";
                 const rpcUrl = "https://aztec-mainnet.drpc.org";

@@ -21,6 +21,7 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 /** Utils */
 import { getChainColor } from "@/components/ui/utils.js"
 import { stringCompare} from "@/utils/string"
+import { UI_STORAGE_KEYS } from "@/popup/constants/storage-keys"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -34,7 +35,7 @@ const appStore = useAppStore()
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
-const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
+const FEE_METHOD_LS_KEY = UI_STORAGE_KEYS.FEE_PAYMENT_METHODS
 
 const allFpcs = ref([])
 const fpcs = computed(() => {
