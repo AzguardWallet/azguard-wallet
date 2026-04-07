@@ -441,6 +441,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 continue;
             }
 
+            const traceId = crypto.randomUUID().slice(0, 8);
+            this.logDebug(`[${traceId}] executeOperations: starting ${operation.kind}`);
+
             const content = new ExecuteOperationContent(operation.kind, this.extractPrimaryMethod(operation));
             const operationTask = parentTask
                 ? parentTask.startSubtask(content)
@@ -535,9 +538,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     }
                 }
                 operationTask.complete();
+                this.logDebug(`[${traceId}] executeOperations: ${operation.kind} completed`);
                 results.push({ status: "ok", result });
             } catch (error) {
                 operationTask.fail(error);
+                this.logError(`[${traceId}] executeOperations: ${operation.kind} failed:`, getErrorMessage(error));
                 results.push({ status: "failed", error: getErrorMessage(error) });
             }
         }
@@ -957,7 +962,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(networkId);
 
         // Public FeeJuice balance via balance_of_public on the FeeJuice contract
-        console.error(`[DEBUG] getGasBalances: networkId=${networkId}, accountAddress=${accountAddress}, forceRefresh=${forceRefresh}`);
+        this.logDebug(`getGasBalances: networkId=${networkId}, accountAddress=${accountAddress}, forceRefresh=${forceRefresh}`);
         let publicFeeJuice = "0";
         try {
             const publicResult = await this.executeSimulateViews({
@@ -975,10 +980,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 publicFeeJuice = publicResult.encoded[0][0].toBigInt().toString();
             }
         } catch (err) {
-            console.error(`[DEBUG] getGasBalances: Failed to get public FeeJuice balance:`, getErrorMessage(err));
+            this.logDebug(`getGasBalances: Failed to get public FeeJuice balance:`, getErrorMessage(err));
             this.logError("Failed to get public FeeJuice balance", getErrorMessage(err));
         }
-        console.error(`[DEBUG] getGasBalances: publicFeeJuice=${publicFeeJuice}`);
+        this.logDebug(`getGasBalances: publicFeeJuice=${publicFeeJuice}`);
 
         // Private FeeJuice balance via balance_of on PrivateFPC
         let privateFeeJuice: string | null = null;
@@ -1002,10 +1007,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 }
             }
         } catch (err) {
-            console.error(`[DEBUG] getGasBalances: Failed to get private FeeJuice balance:`, getErrorMessage(err));
+            this.logDebug(`getGasBalances: Failed to get private FeeJuice balance:`, getErrorMessage(err));
             this.logError("Failed to get private FeeJuice balance", getErrorMessage(err));
         }
-        console.error(`[DEBUG] getGasBalances: publicFeeJuice=${publicFeeJuice}, privateFeeJuice=${privateFeeJuice}`);
+        this.logDebug(`getGasBalances: publicFeeJuice=${publicFeeJuice}, privateFeeJuice=${privateFeeJuice}`);
 
         const result = { publicFeeJuice, privateFeeJuice };
         this.gasBalanceCache.set(cacheKey, { result, fetchedAt: Date.now() });
@@ -1271,14 +1276,14 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         origin: LocalTxOrigin,
         parentTask?: WrappedTask,
     ): Promise<SendReturn<InteractionWaitOptions>> {
-        console.error(`[DEBUG] executeNoFromSendTx: starting, accountAddress=${op.accountAddress}, calls=${op.exec?.calls?.length}, additionalScopes=${JSON.stringify(op.opts?.additionalScopes)}`);
+        this.logDebug(`executeNoFromSendTx: starting, accountAddress=${op.accountAddress}, calls=${op.exec?.calls?.length}, additionalScopes=${JSON.stringify(op.opts?.additionalScopes)}`);
         if (op.feeSettings?.paymentMethod?.kind && op.feeSettings.paymentMethod.kind !== "embedded") {
             throw new Error("DefaultEntrypoint transactions must use embedded fee payment");
         }
 
         const [txRequest, node, pxe, account, network, txCalls] =
             await this.buildNoFromTxRequest(op, parentTask);
-        console.error(`[DEBUG] executeNoFromSendTx: buildNoFromTxRequest completed, txCalls=${txCalls.length}, account=${account.address.toString()}`);
+        this.logDebug(`executeNoFromSendTx: buildNoFromTxRequest completed, txCalls=${txCalls.length}, account=${account.address.toString()}`);
 
         // Override gas settings with realistic fees (same pattern as case "embedded")
         const feeOpts: FeeOptions = {
@@ -1306,19 +1311,19 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const dappScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes.map((s: any) => s.toString()) : [];
         const additionalScopes = [...new Set(dappScopes)];
         const scopesWithAccount = [...new Set([account.address.toString(), ...dappScopes])];
-        console.error(`[DEBUG] executeNoFromSendTx: dappScopes=${JSON.stringify(dappScopes)}, additionalScopes=${JSON.stringify(additionalScopes)}, scopesWithAccount=${JSON.stringify(scopesWithAccount)}`);
+        this.logDebug(`executeNoFromSendTx: dappScopes=${JSON.stringify(dappScopes)}, additionalScopes=${JSON.stringify(additionalScopes)}, scopesWithAccount=${JSON.stringify(scopesWithAccount)}`);
 
-        console.error(`[DEBUG] executeNoFromSendTx: starting kernelless discovery simulation`);
+        this.logDebug(`executeNoFromSendTx: starting kernelless discovery simulation`);
         const discoveryResult = await pxe.simulateTx(
             txRequest,
             { simulatePublic: true, skipTxValidation: true, skipFeeEnforcement: true, scopes: additionalScopes },
             [account.address.toString()],
         );
 
-        console.error(`[DEBUG] executeNoFromSendTx: kernelless discovery completed`);
+        this.logDebug(`executeNoFromSendTx: kernelless discovery completed`);
         // Extract auth witness requirements from CallAuthorizationRequest offchain effects
         const effects = collectOffchainEffects(discoveryResult.privateExecutionResult);
-        console.error(`[DEBUG] executeNoFromSendTx: offchain effects found: ${effects.length}`);
+        this.logDebug(`executeNoFromSendTx: offchain effects found: ${effects.length}`);
         if (effects.length) {
             const nodeInfo2 = await node.getNodeInfo();
             const chainInfo = { chainId: new Fr(nodeInfo2.l1ChainId), version: new Fr(nodeInfo2.rollupVersion) };
@@ -1337,7 +1342,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             }
         }
 
-        console.error(`[DEBUG] executeNoFromSendTx: authwits added: ${txRequest.authWitnesses.length}, starting real simulation`);
+        this.logDebug(`executeNoFromSendTx: authwits added: ${txRequest.authWitnesses.length}, starting real simulation`);
         // Real simulation with actual auth witnesses and real account contract
         const simulatedTx = await this.simulateTxTask(
             pxe, txRequest,
@@ -1388,7 +1393,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
 
         try {
-            console.error(`[DEBUG] buildNoFromTxRequest: starting, accountAddress=${op.accountAddress}, networkId=${op.networkId}`);
+            this.logDebug(`buildNoFromTxRequest: starting, accountAddress=${op.accountAddress}, networkId=${op.networkId}`);
             const profile = await this.profileService.getActiveProfile();
             if (!profile) throw new Error("Wallet locked");
 
@@ -1398,31 +1403,31 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const account = await this.accountService.getAccountContract(
                 profile.id, network.chainId, op.accountAddress,
             );
-            console.error(`[DEBUG] buildNoFromTxRequest: account resolved, address=${account.address.toString()}`);
+            this.logDebug(`buildNoFromTxRequest: account resolved, address=${account.address.toString()}`);
 
             // Register account in PXE (needed for scopes)
             await account.ensureRegistered(pxe);
-            console.error(`[DEBUG] buildNoFromTxRequest: account registered in PXE`);
+            this.logDebug(`buildNoFromTxRequest: account registered in PXE`);
 
             // Register contracts referenced in the payload (same pattern as buildTxRequest)
             const callAddresses = (op.exec.calls ?? []).map((c: any) => c.to?.toString()).filter(Boolean);
             const uniqueAddresses = [...new Set(callAddresses)];
-            console.error(`[DEBUG] buildNoFromTxRequest: registering contracts, callAddresses=${JSON.stringify(callAddresses)}, unique=${uniqueAddresses.length}`);
+            this.logDebug(`buildNoFromTxRequest: registering contracts, callAddresses=${JSON.stringify(callAddresses)}, unique=${uniqueAddresses.length}`);
             const instances = await this.getInstances(pxe, uniqueAddresses);
-            console.error(`[DEBUG] buildNoFromTxRequest: got ${instances.size} instances`);
+            this.logDebug(`buildNoFromTxRequest: got ${instances.size} instances`);
             const artifacts = await this.getArtifacts(pxe, instances);
-            console.error(`[DEBUG] buildNoFromTxRequest: got ${artifacts.size} artifacts`);
+            this.logDebug(`buildNoFromTxRequest: got ${artifacts.size} artifacts`);
             const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
-            console.error(`[DEBUG] buildNoFromTxRequest: ${registeredContracts.size} already registered contracts`);
+            this.logDebug(`buildNoFromTxRequest: ${registeredContracts.size} already registered contracts`);
             for (const [contract, instance] of instances) {
                 if (!registeredContracts.has(contract)) {
-                    console.error(`[DEBUG] buildNoFromTxRequest: registering contract ${contract} with classId ${instance.currentContractClassId.toString()}`);
+                    this.logDebug(`buildNoFromTxRequest: registering contract ${contract} with classId ${instance.currentContractClassId.toString()}`);
                     await pxe.registerContract({
                         instance,
                         artifact: artifacts.get(instance.currentContractClassId.toString()),
                     });
                 } else {
-                    console.error(`[DEBUG] buildNoFromTxRequest: contract ${contract} already registered`);
+                    this.logDebug(`buildNoFromTxRequest: contract ${contract} already registered`);
                 }
             }
 

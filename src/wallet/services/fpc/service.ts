@@ -58,13 +58,13 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const result = allFpcs.filter(
             fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
         );
-        console.error(`[DEBUG] getFpcs: chainId=${chainId}, allFpcs=${allFpcs.length}, filtered=${result.length}, types=${result.map(f => `${f.type}:${f.name}`).join(', ')}`);
+        this.logDebug(`getFpcs: chainId=${chainId}, allFpcs=${allFpcs.length}, filtered=${result.length}, types=${result.map(f => `${f.type}:${f.name}`).join(', ')}`);
         // Auto-discover missing protocol FPCs (SponsoredFPC, PrivateFPC)
         if (chainId !== undefined) {
             const hasSponsoredFpc = result.some(f => f.type === FpcType.DefaultSponsoredFpc);
             const hasPrivateFpc = result.some(f => f.type === FpcType.PrivateFpc);
 
-            console.error(`[DEBUG] getFpcs: hasSponsoredFpc=${hasSponsoredFpc}, hasPrivateFpc=${hasPrivateFpc}`);
+            this.logDebug(`getFpcs: hasSponsoredFpc=${hasSponsoredFpc}, hasPrivateFpc=${hasPrivateFpc}`);
             if (!hasSponsoredFpc || !hasPrivateFpc) {
                 this.logInfo("Discovering missing protocol FPCs...");
                 try {
@@ -81,7 +81,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                             constructorArgs: [],
                             salt: Fr.zero(),
                         });
-                        console.error(`[DEBUG] getFpcs: SponsoredFPC instance address=${instance.address.toString()}`);
+                        this.logDebug(`getFpcs: SponsoredFPC instance address=${instance.address.toString()}`);
                         toDiscover.push({ instance, artifact: SponsoredFPCContractArtifact });
                     }
                     if (!hasPrivateFpc) {
@@ -90,7 +90,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                             salt: Fr.zero(),
                             deployer: AztecAddress.ZERO,
                         });
-                        console.error(`[DEBUG] getFpcs: PrivateFPC instance address=${instance.address.toString()}`);
+                        this.logDebug(`getFpcs: PrivateFPC instance address=${instance.address.toString()}`);
                         toDiscover.push({ instance, artifact: PrivateFPCContractArtifact });
                     }
 
@@ -125,7 +125,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                             await this.storage.set(id, fpc);
                             result.push(fpc);
                         } catch (err) {
-                            console.error(`[DEBUG] getFpcs: Failed to discover FPC ${contractInstance.address.toString()}:`, err);
+                            this.logWarn(`getFpcs: Failed to discover FPC ${contractInstance.address.toString()}:`, err);
                             this.logError(`Failed to discover FPC ${contractInstance.address.toString()}`, err);
                         }
                     }

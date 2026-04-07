@@ -15,7 +15,7 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 // catch console
-const logger = new LoggerServiceClient();
+const logger = new LoggerServiceClient("offscreen");
 for (const [method, level] of consoleMethods) {
     (self as any)[`on${method}`] = (...args: any[]) => {
         logger.log("pxe", level, ...args);

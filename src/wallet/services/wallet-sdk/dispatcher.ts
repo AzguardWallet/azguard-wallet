@@ -263,18 +263,18 @@ export class WalletSdkDispatcher {
     private async handleSendTx(args: unknown[], ctx: SessionContext): Promise<unknown> {
         const [network, account] = await this.resolveNetworkAndAccount(ctx);
         const caipAccount = `aztec:${ctx.chainId}:${account.address}`;
-        console.error(`[DEBUG] handleSendTx: account=${account.address}, chainId=${ctx.chainId}, origin=${ctx.origin}`);
+        this.logger.log("wallet-sdk", LogLevel.Debug, `handleSendTx: account=${account.address}, chainId=${ctx.chainId}, origin=${ctx.origin}`);
 
         const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
         if (!dappSession) {
             throw new Error(`No dApp session found for origin ${ctx.origin}`);
         }
-        console.error(`[DEBUG] handleSendTx: session=${dappSession.id}, sessionAccounts=${JSON.stringify(dappSession.accounts)}`);
+        this.logger.log("wallet-sdk", LogLevel.Debug, `handleSendTx: session=${dappSession.id}, sessionAccounts=${JSON.stringify(dappSession.accounts)}`);
 
         const rawOpts = (args[1] as any ?? {});
         const isNoFrom = isNoFromRequest(rawOpts.from);
         const opts = isNoFrom ? rawOpts : { ...rawOpts, from: account.address };
-        console.error(`[DEBUG] handleSendTx: isNoFrom=${isNoFrom}, exec.feePayer=${(args[0] as any)?.feePayer}, exec.calls=${(args[0] as any)?.calls?.length}, additionalScopes=${JSON.stringify(rawOpts.additionalScopes)}`);
+        this.logger.log("wallet-sdk", LogLevel.Debug, `handleSendTx: isNoFrom=${isNoFrom}, exec.feePayer=${(args[0] as any)?.feePayer}, exec.calls=${(args[0] as any)?.calls?.length}, additionalScopes=${JSON.stringify(rawOpts.additionalScopes)}`);
 
         const results: ExecutionResult = await this.dappInteractionService.execute({
             sessionId: dappSession.id,

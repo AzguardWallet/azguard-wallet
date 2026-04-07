@@ -3,7 +3,7 @@ import { LoggerServiceClient } from "@/wallet/services/logger/client"
 import { getErrorData } from "@/wallet/utils/errors"
 
 // catch console
-const logger = new LoggerServiceClient()
+const logger = new LoggerServiceClient("popup")
 for (const [method, level] of consoleMethods) {
 	;(self as any)[`on${method}`] = (...args: any[]) => {
 		logger.log("ui", level, ...args)

@@ -5,9 +5,10 @@ export const LOGGER_SERVICE_NAME = "logger";
 export type Methods = {
     /**
      * Proxies the data to the app logger
-     * @param source Log source
+     * @param context Execution context ("offscreen" | "popup" | etc.)
+     * @param source Log source (service name)
      * @param level Log level
      * @param data Data
      */
-    log(source: string, level: LogLevel, ...data: any[]): void;
+    log(context: string | undefined, source: string, level: LogLevel, ...data: any[]): void;
 };

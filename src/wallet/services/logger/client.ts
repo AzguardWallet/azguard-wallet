@@ -6,11 +6,14 @@ import { LOGGER_SERVICE_NAME, Methods } from "./spec";
 export * from "./spec";
 
 export class LoggerServiceClient extends ServiceClient<Methods> implements ServiceSpec<Methods>, ILogger {
-    public constructor() {
+    private readonly context?: string;
+
+    public constructor(context?: string) {
         super(LOGGER_SERVICE_NAME, new DummyLogger());
+        this.context = context;
     }
 
     public log(source: string, level: LogLevel, ...data: any[]) {
-        return this.request("log", source, level, ...data);
+        return this.request("log", this.context, source, level, ...data);
     }
 }

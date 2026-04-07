@@ -10,11 +10,14 @@ export enum LogLevel {
     Error = 3,
 }
 
+export type LogContext = "sw" | "offscreen" | "popup" | "content";
+
 export type Log = {
     id: number;
     timestamp: number;
     source: string;
     level: LogLevel;
+    context?: LogContext;
     data: any[];
 };
 

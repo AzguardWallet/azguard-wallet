@@ -114,7 +114,8 @@ export const trim = (value: any, depth: number = 0): any => {
 export const print = (log: Log) => {
     const date = new Date(log.timestamp);
     const time = `${date.toTimeString().slice(0, 8)}.${date.getMilliseconds().toString().padStart(3, "0")}`;
-    const header = `[${time}] [${log.source}]`;
+    const ctx = log.context ? `${log.context}:` : "";
+    const header = `[${time}] [${ctx}${log.source}]`;
 
     switch (log.level) {
         case LogLevel.Debug:

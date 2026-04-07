@@ -29,7 +29,6 @@ import { getErrorData, getErrorMessage } from "./utils/errors";
 const config = new ConfigStore();
 const logger = new LoggerStore(config);
 const services = new ServiceCollection();
-logger.log("wallet", LogLevel.Info, "Service worker started");
 
 const initRuntime = () => {
     // catch console
@@ -100,19 +99,25 @@ const runServices = async () => {
     initWalletSdkHandler(services, logger);
 };
 
-const runHeartbit = async () => {
+const runHeartbeat = async () => {
     while (true) {
         try {
             await chrome.storage.session.set({ "azguard:liveness": Date.now() });
         } catch (error) {
-            logger.log("wallet", LogLevel.Error, "Heartbit failed", getErrorMessage(error));
+            logger.log("wallet", LogLevel.Error, "Heartbeat failed", getErrorMessage(error));
         }
         await sleep(10_000);
     }
 };
 
 initRuntime();
-runServices();
-runHeartbit();
+// Rehydrate logs from previous SW lifecycle, then start services
+logger.rehydrate()
+    .catch(() => {}) // Session storage may not be available
+    .then(() => {
+        logger.log("wallet", LogLevel.Info, "Service worker started");
+        runServices();
+        runHeartbeat();
+    });
 
 export {};
