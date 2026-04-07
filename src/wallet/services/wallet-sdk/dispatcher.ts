@@ -47,12 +47,13 @@ import type { ProfileService } from "@/wallet/services/profile/service";
 import type { DappInteractionService, ExecutionResult } from "@/wallet/services/dapp-interaction/service";
 import type { DappSessionService } from "@/wallet/services/dapp-session/service";
 import { OriginType, type LocalTxOrigin } from "@/wallet/services/transaction/service";
-import type { RejectedCapabilityRecord } from "@/wallet/services/dapp-session/spec";
+import type { GrantedCapabilityRecord, RejectedCapabilityRecord } from "@/wallet/services/dapp-session/spec";
 import type { ILogger } from "@/wallet/logger";
 import { LogLevel } from "@/wallet/logger";
 import { isNoFromRequest } from "@/wallet/services/execution/utils/fee-detection";
 import type { SessionContext } from "./types";
 import { getRequiredCapability, isCapabilityExempt } from "./capability-map";
+import { enforceScope } from "./scope-enforcement";
 import packageJson from "../../../../package.json";
 
 /**
@@ -134,8 +135,11 @@ export class WalletSdkDispatcher {
      * @throws If the method is unsupported, the operation fails, or session context is invalid
      */
     async dispatch(methodName: string, args: unknown[], ctx: SessionContext): Promise<unknown> {
-        // Enforce capability grants before processing any method
-        await this.enforceCapability(methodName, ctx);
+        // Enforce capability grants (type-level) then scope (per-operation)
+        const grants = await this.enforceCapability(methodName, ctx);
+        if (grants.length) {
+            enforceScope(methodName, args, grants);
+        }
 
         // Handle methods that don't go through ExecutionService
         if (methodName === "requestCapabilities") {
@@ -487,19 +491,21 @@ export class WalletSdkDispatcher {
      * - Sessions without grants (new or pre-migration) are treated as having no grants,
      *   so non-exempt methods are blocked until requestCapabilities() is called.
      */
-    private async enforceCapability(methodName: string, ctx: SessionContext): Promise<void> {
-        if (isCapabilityExempt(methodName)) return;
+    private async enforceCapability(methodName: string, ctx: SessionContext): Promise<GrantedCapabilityRecord[]> {
+        if (isCapabilityExempt(methodName)) return [];
 
         const requiredType = getRequiredCapability(methodName);
-        if (!requiredType) return; // Unknown method — let dispatch() handle it
+        if (!requiredType) return []; // Unknown method — let dispatch() handle it
 
         const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin);
-        if (!dappSession) return; // No session yet — let the method handler deal with it
+        if (!dappSession) return []; // No session yet — let the method handler deal with it
 
-        const grantedTypes = new Set((dappSession.capabilityGrants ?? []).map(g => g.capability.type));
+        const grants = dappSession.capabilityGrants ?? [];
+        const grantedTypes = new Set(grants.map(g => g.capability.type));
         if (!grantedTypes.has(requiredType)) {
             throw new Error(`Capability "${requiredType}" not granted. The dApp must call requestCapabilities() first.`);
         }
+        return grants;
     }
 
     /**
