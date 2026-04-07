@@ -68,7 +68,7 @@ const handleHideAccount = async () => {
 		router.go(-1)
 	} catch (err) {
 		console.error(err)
-		openToast({ label: "Failed to hide account", icon: "error" })
+		openToast({ label: "Failed to hide account", icon: "error" }, TOAST_DURATION.LONG)
 	} finally {
 		isLoading.value = false
 	}

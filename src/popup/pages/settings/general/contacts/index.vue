@@ -106,7 +106,7 @@ async function handleExportContacts() {
 			openToast({ label: "Contacts exported successfully", icon: "download" })
 		} catch (err) {
 			console.error("Export failed:", err.message || err);
-			openToast({ label: "Failed to export contacts", icon: "warning" })
+			openToast({ label: "Failed to export contacts", icon: "warning" }, TOAST_DURATION.LONG)
 		}
 	} catch (err) {
 		console.error(err);
@@ -185,7 +185,7 @@ async function handleImportContacts() {
 							console.error(`Failed to ${e.operation} contact ${e.name} ${e.address}`, e.error);
 						}
 
-						openToast({ label: "Import ended with errors", icon: "warning" })
+						openToast({ label: "Import ended with errors", icon: "warning" }, TOAST_DURATION.LONG)
 					} else {
 						openToast({ label: "Import competed successfully", icon: "info" })
 					}
@@ -201,7 +201,7 @@ async function handleImportContacts() {
 	} catch (err) {
 		console.error("Error occurred during import", err.message || err.stack || err);
 			
-		openToast({ label: "Error occurred during import", icon: "warning" })
+		openToast({ label: "Error occurred during import", icon: "warning" }, TOAST_DURATION.LONG)
 	} finally {
 		cacheStore.importContacts = []
 		cacheStore.importPromise = null

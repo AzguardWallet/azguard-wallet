@@ -90,7 +90,7 @@ async function handleBackup() {
 		if (!isPasskeyProfile.value) {
 			isWrongPassword.value = true
 		} else {
-			openToast({ label: "Failed to authenticate by passkey", icon: "warning" })
+			openToast({ label: "Failed to authenticate by passkey", icon: "warning" }, TOAST_DURATION.LONG)
 			router.go(-1)
 		}
 
@@ -142,7 +142,7 @@ async function handleEncrypt() {
 		backupStatus.value = "encrypted"
 	} catch (error) {
 		console.error('Failed to encrypt the backup', error);
-		openToast({ label: "Failed to encrypt the backup", icon: "warning" })
+		openToast({ label: "Failed to encrypt the backup", icon: "warning" }, TOAST_DURATION.LONG)
 		
 		backupStatus.value = "finished"
 	}
@@ -171,7 +171,7 @@ async function handleDownloadBackup() {
 		openToast({ label: "Backup downloaded successfully", icon: "download" })
 	} catch (err) {
 		console.error("Download failed:", err.message || err);
-		openToast({ label: "Failed to download backup", icon: "warning" })
+		openToast({ label: "Failed to download backup", icon: "warning" }, TOAST_DURATION.LONG)
 	}
 }
 

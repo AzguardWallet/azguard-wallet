@@ -82,7 +82,7 @@ async function handleChangeRegistry() {
 		openToast({ label: "Account authwit registry is changed" })
 	} catch (err) {
 		error.value = err
-		openToast({ label: "Failed to change registry status", icon: "warning" })
+		openToast({ label: "Failed to change registry status", icon: "warning" }, TOAST_DURATION.LONG)
 	} finally {
 		emit("onClose")
 	}

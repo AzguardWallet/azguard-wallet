@@ -122,7 +122,7 @@ const handleCreateToken = async () => {
 		isLoadingParseResult.value = false
 
 		if (!parsingResult.isComplete) {
-			openToast({ label: "Something went wrong", icon: "close-circle" })
+			openToast({ label: "Something went wrong", icon: "close-circle" }, TOAST_DURATION.LONG)
 			return
 		}
 

@@ -106,7 +106,7 @@ async function handleRevokeAuthwits() {
 	isLoading.value = false
 	const errors = chunkedAuthwits.value.filter(ch => !!ch.error).map(ch => ch.error)
 	if (errors.length) {
-		openToast({ label: `Failed to revoke ${errors.length === chunksCount.value ? '' : 'some '}authwit(s)`, icon: "warning" })
+		openToast({ label: `Failed to revoke ${errors.length === chunksCount.value ? '' : 'some '}authwit(s)`, icon: "warning" }, TOAST_DURATION.LONG)
 		error.value = errors.join(", ")
 	} else {
 		openToast({ label: "Authwit(s) successfully revoked" })

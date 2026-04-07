@@ -176,7 +176,7 @@ async function updateSetting(key, value) {
 			openToast({ label: "Stealth mode auto-enabled", icon: "info" }, TOAST_DURATION.SHORT)
 		}
 	} catch (err) {
-		openToast({ label: "Failed to update setting", icon: "warning" })
+		openToast({ label: "Failed to update setting", icon: "warning" }, TOAST_DURATION.LONG)
 	}
 }
 

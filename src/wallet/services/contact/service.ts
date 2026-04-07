@@ -88,7 +88,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
                 id = getRandomHex(8);
             } while (await this.storage.contains(id));
 
-            const _color = color && contactColors.includes(color) ? color : getRandomElement(contactColors);
+            const _color = color && contactColors.includes(color) ? color : getRandomElement(contactColors) ?? contactColors[0];
             const contact: Contact = {
                 id,
                 profileId: profile.id,
@@ -222,7 +222,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
                         this.logDebug(`Updated existing contact by name: ${_c.name}`);
                     } else {
                         const _color =
-                            _c.color && contactColors.includes(_c.color) ? _c.color : getRandomElement(contactColors);
+                            _c.color && contactColors.includes(_c.color) ? _c.color : getRandomElement(contactColors) ?? contactColors[0];
                         contact = await this.addContact(_c.name, _c.address, _color);
 
                         this.logDebug(`Added new contact: ${_c.name} - ${_c.address}`);

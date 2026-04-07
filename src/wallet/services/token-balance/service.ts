@@ -232,20 +232,9 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     };
 
     private async startWorker() {
-        // let nextSync = 0
         while (true) {
             if (this.profile) {
                 try {
-                    // if (Date.now() >= nextSync) {
-                    // 	const balancesToUpdate = (await this.balances.getValues())
-                    // 		.toSorted((a, b) => a.account.localeCompare(b.account));
-
-                    // 	for (const tb of balancesToUpdate) {
-                    // 		this.queue.enqueue(tb)
-                    // 	}
-
-                    // 	nextSync = Date.now() + 60_000 // TODO: settings
-                    // }
                     if (this.queue.length) {
                         this.logDebug(`Syncing ${this.queue.length} token balances`);
                         const start = Date.now();

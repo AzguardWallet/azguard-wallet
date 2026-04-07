@@ -67,7 +67,7 @@ async function updateSetting (key, value) {
 		await configService.setValue(key, value)
 		applySetting(key, value)
 	} catch (err) {
-		openToast({ label: "Failed to update setting", icon: "warning" })
+		openToast({ label: "Failed to update setting", icon: "warning" }, TOAST_DURATION.LONG)
 	}
 }
 

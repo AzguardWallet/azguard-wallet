@@ -103,7 +103,7 @@ const handleAddFpc = async () => {
 			tooltip: err,
 		}
 
-		openToast({ label: "Something went wrong", icon: "warning" })
+		openToast({ label: "Something went wrong", icon: "warning" }, TOAST_DURATION.LONG)
 	} finally {
 		isLoading.value = false
 	}

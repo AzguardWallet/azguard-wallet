@@ -71,7 +71,7 @@ const handleCreateNetwork = async () => {
 		if (error === "Failed to fetch network info") {
 			isUrlHasError.value = true
 		} else {
-			openToast({ label: "Something went wrong", icon: "warning" })
+			openToast({ label: "Something went wrong", icon: "warning" }, TOAST_DURATION.LONG)
 		}
 	}
 }

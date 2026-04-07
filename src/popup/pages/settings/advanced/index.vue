@@ -116,7 +116,7 @@ async function updateSetting(key, value) {
 			openToast({ label: "Auto-lock timeout updated", icon: "info" }, TOAST_DURATION.SHORT)
 		}
 	} catch (err) {
-		openToast({ label: "Failed to update setting", icon: "warning" })
+		openToast({ label: "Failed to update setting", icon: "warning" }, TOAST_DURATION.LONG)
 	}
 }
 
@@ -154,7 +154,7 @@ const handleFullReset = () => {
 		try {
 			await managers.profile.deleteProfile(appStore.profile.id)
 		} catch (error) {
-			openToast({ label: "Failed to delete profile", icon: "warning" })
+			openToast({ label: "Failed to delete profile", icon: "warning" }, TOAST_DURATION.LONG)
 		}
 		await chrome.storage.local.clear()
 		await chrome.storage.session.clear()

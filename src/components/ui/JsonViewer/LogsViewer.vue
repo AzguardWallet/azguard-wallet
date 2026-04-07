@@ -401,11 +401,11 @@ async function exportLogsToCSV() {
 			openToast({ label: "Logs downloaded successfully", icon: "download" })
 		} catch (err) {
 			console.error("Download failed:", err);
-			openToast({ label: "Failed to download logs", icon: "warning" })
+			openToast({ label: "Failed to download logs", icon: "warning" }, TOAST_DURATION.LONG)
 		}
 	} catch (err) {
 		console.error(err)
-		openToast({ label: "Failed to download logs", icon: "warning" })
+		openToast({ label: "Failed to download logs", icon: "warning" }, TOAST_DURATION.LONG)
 	}
 }
 async function handleClearLogs() {
@@ -418,7 +418,7 @@ async function handleClearLogs() {
 		await nextTick()
 		updateEditorContent()
 	} catch (err) {
-		openToast({ label: "Failed to clear logs", icon: "warning" })
+		openToast({ label: "Failed to clear logs", icon: "warning" }, TOAST_DURATION.LONG)
 		console.error(err)
 	}
 }
