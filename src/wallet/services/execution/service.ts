@@ -59,6 +59,7 @@ import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } 
 import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
 import { trimAddress } from "@/utils/string";
+import { formatFeeJuice, feeToUsd } from "@/utils/fee-estimation";
 import {
     TaskService,
     WrappedTask,
@@ -109,6 +110,7 @@ import {
     type EncodedCallAction,
     type FeeOptions,
     type FeePaymentMethod,
+    type TransferFeeEstimate,
 } from "./spec";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { ChainInfo } from "@aztec/entrypoints/interfaces";
@@ -454,6 +456,125 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             cancelTxTask.fail(error);
             throw error;
         }
+    }
+
+    public async estimateTransferFee(
+        networkId: string,
+        accountAddress: string,
+        tokenId: number,
+        transferType: TransferType,
+        recipientAddress: string,
+        amount: bigint,
+        feeSettings: FeeSettings,
+    ): Promise<TransferFeeEstimate> {
+        await this.ensureInitialized();
+        amount = BigInt(amount);
+
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            throw new Error("Unauthorized");
+        }
+        const token = await this.tokenService.getTokenRaw(tokenId);
+
+        let fn: Fn;
+        let args: any[];
+        switch (transferType) {
+            case TransferType.Private: {
+                if (!token.transferPrivateFn) throw new Error("Transfer type not supported");
+                fn = TransferPrivateFn.new(token.transferPrivateFn.name, token.transferPrivateFn.impl);
+                args = (fn as TransferPrivateFn).buildArgs(accountAddress, recipientAddress, amount);
+                break;
+            }
+            case TransferType.PrivateToPublic: {
+                if (!token.transferPrivateToPublicFn) throw new Error("Transfer type not supported");
+                fn = TransferPrivateToPublicFn.new(token.transferPrivateToPublicFn.name, token.transferPrivateToPublicFn.impl);
+                args = (fn as TransferPrivateToPublicFn).buildArgs(accountAddress, recipientAddress, amount);
+                break;
+            }
+            case TransferType.Public: {
+                if (!token.transferPublicFn) throw new Error("Transfer type not supported");
+                fn = TransferPublicFn.new(token.transferPublicFn.name, token.transferPublicFn.impl);
+                args = (fn as TransferPublicFn).buildArgs(accountAddress, recipientAddress, amount);
+                break;
+            }
+            case TransferType.PublicToPrivate: {
+                if (!token.transferPublicToPrivateFn) throw new Error("Transfer type not supported");
+                fn = TransferPublicToPrivateFn.new(token.transferPublicToPrivateFn.name, token.transferPublicToPrivateFn.impl);
+                args = (fn as TransferPublicToPrivateFn).buildArgs(accountAddress, recipientAddress, amount);
+                break;
+            }
+            default:
+                throw new Error("Invalid transfer type");
+        }
+
+        const selector = await fn.getSelector();
+        const encodedArgs = fn.encodeArgs(args);
+
+        const op: Operation = {
+            kind: "send_transaction",
+            networkId,
+            accountAddress,
+            feeSettings,
+            actions: [
+                {
+                    kind: "encoded_call",
+                    to: token.contract,
+                    selector: selector.toString(),
+                    args: encodedArgs.map(x => x.toString()),
+                    name: fn.name,
+                    type: fn.type,
+                    isStatic: fn.isStatic,
+                    returnTypes: [],
+                },
+            ],
+        };
+
+        return this.doEstimateFee(op, feeSettings);
+    }
+
+    public async estimateOperationFee(
+        operation: Operation,
+        feeSettings: FeeSettings,
+    ): Promise<TransferFeeEstimate> {
+        await this.ensureInitialized();
+        return this.doEstimateFee(operation, feeSettings);
+    }
+
+    private async doEstimateFee(
+        op: Operation,
+        feeSettings: FeeSettings,
+    ): Promise<TransferFeeEstimate> {
+        const [txRequest] = await this.buildAndEstimateTxRequest(
+            op,
+            feeSettings.paymentMethod,
+        );
+
+        const gs = txRequest.txContext.gasSettings;
+        const mainFee = gs.gasLimits.computeFee(gs.maxFeesPerGas);
+        const teardownFee = gs.teardownGasLimits.computeFee(gs.maxFeesPerGas);
+        const maxFee = BigInt(mainFee.toString()) + BigInt(teardownFee.toString());
+
+        return {
+            maxFee: maxFee.toString(),
+            maxFeeFormatted: formatFeeJuice(maxFee),
+            maxFeeUsd: feeToUsd(maxFee),
+            gasDetails: {
+                l2GasLimit: gs.gasLimits.l2Gas,
+                daGasLimit: gs.gasLimits.daGas,
+                teardownL2GasLimit: gs.teardownGasLimits.l2Gas,
+                teardownDaGasLimit: gs.teardownGasLimits.daGas,
+                feePerL2Gas: gs.maxFeesPerGas.feePerL2Gas.toString(),
+                feePerDaGas: gs.maxFeesPerGas.feePerDaGas.toString(),
+            },
+        };
+    }
+
+    private extractAuthWitHash(error: unknown): string | null {
+        const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+        const match = message.match(
+            /Unknown auth witness for message hash (0x[0-9a-fA-F]+)/,
+        );
+        return match?.[1] ?? null;
     }
 
     // Azguard base:
