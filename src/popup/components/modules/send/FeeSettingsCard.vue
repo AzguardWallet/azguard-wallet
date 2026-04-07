@@ -37,7 +37,15 @@ const props = defineProps({
 	disabled: {
 		type: Boolean,
 		default: false,
-	}
+	},
+	feeEstimate: {
+		type: Object,
+		default: undefined,
+	},
+	isEstimating: {
+		type: Boolean,
+		default: false,
+	},
 })
 
 const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
@@ -475,6 +483,21 @@ onBeforeUnmount(() => {
 				</Flex>
 			</template>
 		</template>
+
+		<!-- Fee estimate display -->
+		<Flex v-if="isEstimating" align="center" justify="between" :class="$style.fjc_price">
+			<Text size="12" weight="600" color="secondary">Estimated fee</Text>
+			<Flex align="center" gap="6">
+				<div :class="$style.shimmer" :style="{ width: '80px', height: '14px', borderRadius: '4px' }" />
+			</Flex>
+		</Flex>
+		<Flex v-else-if="feeEstimate" align="center" justify="between" :class="$style.fjc_price">
+			<Text size="12" weight="600" color="secondary">Estimated fee</Text>
+			<Flex align="center" gap="6">
+				<Text size="12" weight="600" color="primary">{{ feeEstimate.maxFeeFormatted }} FJ</Text>
+				<Text size="11" weight="500" color="tertiary">{{ feeEstimate.maxFeeUsd }}</Text>
+			</Flex>
+		</Flex>
 	</Flex>
 </template>
 
@@ -513,7 +536,18 @@ onBeforeUnmount(() => {
 .disabled {
 	cursor: default;
 	pointer-events: none;
-	
+
 	opacity: 0.5;
+}
+
+.shimmer {
+	background: linear-gradient(90deg, var(--gray-10) 25%, var(--gray-15) 50%, var(--gray-10) 75%);
+	background-size: 200% 100%;
+	animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+	0% { background-position: 200% 0; }
+	100% { background-position: -200% 0; }
 }
 </style>

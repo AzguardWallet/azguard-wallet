@@ -16,7 +16,7 @@ import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
 import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
 import { Account, AccountServiceClient } from "@/wallet/services/account/client"
-import { ExecutionServiceClient, FeeSettings, Operation } from "@/wallet/services/execution/client"
+import { ExecutionServiceClient, FeeSettings, TransferFeeEstimate, Operation } from "@/wallet/services/execution/client"
 import {
 	CaipAccount,
 	CaipChain,
@@ -79,6 +79,37 @@ function clearError() {
 	processingError.value = undefined
 }
 
+/** Fee estimation state */
+const feeEstimates = ref<Record<number, TransferFeeEstimate | undefined>>({})
+const estimatingOps = ref<Record<number, boolean>>({})
+const estimationTimers = ref<Record<number, ReturnType<typeof setTimeout>>>({})
+const estimationCounters = ref<Record<number, number>>({})
+
+const startEstimation = (opIndex: number, op: UIOperation, feeSettings: FeeSettings) => {
+	if (estimationTimers.value[opIndex]) {
+		clearTimeout(estimationTimers.value[opIndex])
+	}
+	estimationTimers.value[opIndex] = setTimeout(async () => {
+		estimatingOps.value[opIndex] = true
+		const counter = (estimationCounters.value[opIndex] ?? 0) + 1
+		estimationCounters.value[opIndex] = counter
+		try {
+			const result = await executionService.estimateOperationFee(op, feeSettings)
+			if (estimationCounters.value[opIndex] === counter) {
+				feeEstimates.value[opIndex] = result
+			}
+		} catch (e) {
+			console.warn("Fee estimation failed", e)
+			if (estimationCounters.value[opIndex] === counter) {
+				feeEstimates.value[opIndex] = undefined
+			}
+		} finally {
+			if (estimationCounters.value[opIndex] === counter) {
+				estimatingOps.value[opIndex] = false
+			}
+		}
+	}, 500)
+}
 
 const init = async () => {
 	try {
@@ -459,10 +490,13 @@ const showJson = () => {
 							:network="op.network"
 							:account="op.account"
 							:modelValue="op.feeSettings"
+							:feeEstimate="feeEstimates[i]"
+							:isEstimating="estimatingOps[i]"
 							@update:modelValue="
 								($event?: FeeSettings) => {
 									op.feeSettings = $event!
 									clearError()
+									if ($event) startEstimation(i, op, $event)
 								}
 							"
 							style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"
@@ -513,10 +547,13 @@ const showJson = () => {
 							:network="op.network"
 							:account="op.account"
 							:modelValue="op.feeSettings"
+							:feeEstimate="feeEstimates[i]"
+							:isEstimating="estimatingOps[i]"
 							@update:modelValue="
 								($event?: FeeSettings) => {
 									op.feeSettings = $event!
 									clearError()
+									if ($event) startEstimation(i, op, $event)
 								}
 							"
 							style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"
