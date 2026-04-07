@@ -14,7 +14,7 @@ import {
     ITaskResult,
     ResultKind,
     Events,
-} from "../service";
+} from "./service";
 
 class TestResult implements ITaskResult {
     public readonly kind = ResultKind.Empty;

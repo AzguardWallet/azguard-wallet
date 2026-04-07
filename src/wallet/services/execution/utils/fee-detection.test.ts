@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { detectEmbeddedFeePayment, isNoFromRequest } from "../fee-detection";
+import { detectEmbeddedFeePayment, isNoFromRequest } from "./fee-detection";
 
 describe("detectEmbeddedFeePayment", () => {
     test("returns undefined when feePayer is undefined or null", () => {

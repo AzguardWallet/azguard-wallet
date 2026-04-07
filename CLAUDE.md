@@ -62,6 +62,8 @@ src/
 
 ### Key Patterns
 
+**Test placement:** Unit tests are colocated — `foo.test.ts` sits next to `foo.ts`. Do not use `__tests__/` directories. E2E tests live in `tests/e2e/`.
+
 **Route meta for auth:**
 ```vue
 <route lang="json">

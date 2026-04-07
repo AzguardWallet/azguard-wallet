@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
-import { enforceScope } from "../scope-enforcement";
-import type { Capability, GrantedCapabilityRecord } from "../../dapp-session/spec";
+import { enforceScope } from "./scope-enforcement";
+import type { Capability, GrantedCapabilityRecord } from "../dapp-session/spec";
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
