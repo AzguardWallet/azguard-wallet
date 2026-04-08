@@ -8,8 +8,6 @@
 </route>
 
 <script setup>
-
-
 /** Services */
 import { managers } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"

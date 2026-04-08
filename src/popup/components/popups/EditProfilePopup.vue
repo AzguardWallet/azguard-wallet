@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Services */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 

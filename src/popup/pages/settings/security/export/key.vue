@@ -8,8 +8,6 @@
 </route>
 
 <script setup>
-
-
 /** Services */
 import { managers } from "@/utils/core"
 

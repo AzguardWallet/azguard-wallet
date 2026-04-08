@@ -13,7 +13,6 @@ import { DateTime } from "luxon"
 import { onMounted } from "vue"
 import { hashToEmoji } from "@aztec/wallet-sdk/crypto"
 
-
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"

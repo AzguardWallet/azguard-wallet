@@ -2,7 +2,6 @@
 /** Vendor */
 import { generate } from "lean-qr"
 
-
 /** Composables */
 import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()

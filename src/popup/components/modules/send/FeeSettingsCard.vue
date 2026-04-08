@@ -2,7 +2,6 @@
 /** Vendor */
 import BigNumber from "bignumber.js"
 
-
 import { getRandomHex } from "@/wallet/utils"
 import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 import { UI_STORAGE_KEYS } from "@/popup/constants/storage-keys"

@@ -8,9 +8,6 @@
 </route>
 
 <script setup>
-
-
-
 /** Services */
 import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
 

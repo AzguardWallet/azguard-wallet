@@ -7,7 +7,6 @@ import { keymap, highlightActiveLine, Decoration } from "@codemirror/view"
 import { defaultKeymap } from "@codemirror/commands"
 import { searchKeymap } from "@codemirror/search"
 
-
 /** Utils */
 import { Config } from "@/wallet/config"
 import { LogLevel } from "@/wallet/logger"

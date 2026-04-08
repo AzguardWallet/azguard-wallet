@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Utils */
 import { AuthRegistryServiceClient, MAX_REVOKES_PER_TX } from "@/wallet/services/auth-registry/client"
 

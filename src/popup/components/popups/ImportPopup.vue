@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Services */
 import { managers, setSentinel } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"

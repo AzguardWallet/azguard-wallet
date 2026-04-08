@@ -9,7 +9,6 @@ import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { OriginType } from "@/wallet/services/transaction/client"
 import { AzguardFeePaymentMethod } from "@/wallet/services/account/contracts"
 
-
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 import { getTxCategory, getTxTitle, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"

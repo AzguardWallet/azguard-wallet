@@ -2,7 +2,6 @@
 /** Vendor */
 import { DateTime } from "luxon"
 
-
 /** Composables */
 import { useTicker } from "@/composables/ticker"
 import { useToast } from "@/composables/toast"

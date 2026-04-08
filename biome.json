@@ -27,15 +27,20 @@
 				"useEnumInitializers": "off"
 			},
 			"performance": {
-				"noDelete": "info"
+				"noDelete": "info",
+				"noAccumulatingSpread": "warn"
 			},
 			"suspicious": {
 				"noAsyncPromiseExecutor": "off",
-				"noExplicitAny": "error"
+				"noExplicitAny": "error",
+				"noImplicitAnyLet": "warn",
+				"noAssignInExpressions": "warn",
+				"useIterableCallbackReturn": "warn"
 			},
 			"complexity": {
 				"noExtraBooleanCast": "off",
-				"noForEach": "off"
+				"noForEach": "off",
+				"noBannedTypes": "warn"
 			}
 		}
 	},

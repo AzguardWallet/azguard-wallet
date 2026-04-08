@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Services */
 import { TaskServiceClient } from "@/wallet/services/task/client"
 import { ContentKind, TaskStatus } from "@/wallet/services/task/spec"

@@ -9,9 +9,8 @@ import { TransferType } from "@/wallet/services/transaction/client"
 /** Vendor */
 import BN from "bignumber.js"
 
-
 /** Utils */
-import { isValidHex, } from "@/utils/string"
+import { isValidHex } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"

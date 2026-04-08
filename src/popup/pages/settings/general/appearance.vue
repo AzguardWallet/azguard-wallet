@@ -8,8 +8,6 @@
 </route>
 
 <script setup>
-
-
 /** Utils */
 import { Config } from "@/wallet/config"
 import { ConfigServiceClient } from "@/wallet/services/config/client"

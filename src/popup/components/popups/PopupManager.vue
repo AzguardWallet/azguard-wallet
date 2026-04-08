@@ -1,17 +1,4 @@
 <script setup>
-
-
-
-
-
-
-
-
-
-
-
-
-
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
 const popupStore = usePopupStore()

@@ -69,9 +69,9 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
 				const windowId = createdWindow.id
 				const pendingMap = this.pending
 
-				function onRemoved(closedWindowId: number) {
+				const onRemoved = (closedWindowId: number) => {
 					if (closedWindowId === windowId) {
-						;(chrome.windows.onRemoved.removeListener as any)(onRemoved)
+						chrome.windows.onRemoved.removeListener(onRemoved)
 
 						const entry = pendingMap.get(id)
 						if (entry) {
@@ -81,7 +81,7 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
 					}
 				}
 
-				;(chrome.windows.onRemoved.addListener as any)(onRemoved)
+				chrome.windows.onRemoved.addListener(onRemoved)
 			},
 		)
 

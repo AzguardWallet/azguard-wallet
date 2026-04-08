@@ -8,8 +8,6 @@
 </route>
 
 <script setup>
-
-
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()

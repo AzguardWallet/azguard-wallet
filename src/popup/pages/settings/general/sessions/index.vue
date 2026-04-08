@@ -11,7 +11,6 @@
 /** Services */
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()

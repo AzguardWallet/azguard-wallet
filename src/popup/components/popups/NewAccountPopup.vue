@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Utils */
 import { AccountType } from "@/wallet/services/account/client"
 import { managers } from "@/utils/core"

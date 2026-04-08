@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Utils */
 import { managers } from "@/utils/core"
 

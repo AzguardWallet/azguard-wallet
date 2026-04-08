@@ -8,8 +8,6 @@
 </route>
 
 <script setup>
-
-
 /** Utils */
 import { managers } from "@/utils/core"
 import { Config } from "@/wallet/config"

@@ -1,18 +1,18 @@
 export interface IEventHandler<T> {
-	add: (callback: (payload: T) => any) => void
-	remove: (callback: (payload: T) => any) => void
+	add: (callback: (payload: T) => void) => void
+	remove: (callback: (payload: T) => void) => void
 }
 
 export class EventHandler<T> implements IEventHandler<T> {
-	#callbacks: ((payload: T) => any)[] = []
+	#callbacks: ((payload: T) => void)[] = []
 
-	public add(callback: (payload: T) => any) {
+	public add(callback: (payload: T) => void) {
 		if (!this.#callbacks.includes(callback)) {
 			this.#callbacks.push(callback)
 		}
 	}
 
-	public remove(callback: (payload: T) => any) {
+	public remove(callback: (payload: T) => void) {
 		const index = this.#callbacks.indexOf(callback)
 		if (index !== -1) {
 			this.#callbacks.splice(index, 1)

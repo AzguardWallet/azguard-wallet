@@ -1,7 +1,4 @@
 <script setup>
-
-
-
 /** Composables */
 import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()

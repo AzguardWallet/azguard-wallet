@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Store */
 import { useCacheStore } from "@/stores/cache.store"
 import { usePopupStore } from "@/stores/popup.store"

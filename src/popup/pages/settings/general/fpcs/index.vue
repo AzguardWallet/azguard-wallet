@@ -8,8 +8,6 @@
 </route>
 
 <script setup>
-
-
 /** Services */
 import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"

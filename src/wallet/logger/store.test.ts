@@ -19,15 +19,18 @@ function mockConfig(debugMode = false): IConfig {
 // print() calls console._debug/_log/_warn/_error (originals saved by console-sniffer).
 // In tests, the sniffer hasn't run — provide no-op stubs.
 beforeEach(() => {
-	;(console as any)._debug = vi.fn()
-	;(console as any)._log = vi.fn()
-	;(console as any)._warn = vi.fn()
-	;(console as any)._error = vi.fn()
+	// biome-ignore lint/suspicious/noExplicitAny: test setup — patching undeclared console internals from console-sniffer
+	const c = console as any
+	c._debug = vi.fn()
+	c._log = vi.fn()
+	c._warn = vi.fn()
+	c._error = vi.fn()
 })
 
 // Clean up any globals set by tests (e.g., chrome.storage mock)
 afterEach(() => {
-	(globalThis as any).chrome = undefined
+	// biome-ignore lint/suspicious/noExplicitAny: test teardown — removing chrome global mock
+	;(globalThis as any).chrome = undefined
 })
 
 // ── LoggerStore tests ─────────────────────────────────────────────────
@@ -203,6 +206,7 @@ describe("LoggerStore", () => {
 				{ id: 5, timestamp: 1000, source: "test", level: LogLevel.Info, context: "sw" as const, data: ["saved"] },
 				{ id: 10, timestamp: 2000, source: "test", level: LogLevel.Debug, context: "offscreen" as const, data: ["saved2"] },
 			]
+			// biome-ignore lint/suspicious/noExplicitAny: test setup — mocking chrome.storage.session
 			;(globalThis as any).chrome = {
 				storage: {
 					session: {

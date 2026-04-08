@@ -3,7 +3,6 @@
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { stringCompare } from "@/utils/string"
 
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"

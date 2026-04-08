@@ -7,14 +7,11 @@
 </route>
 
 <script setup>
-
-
 /** Services */
 import { AccountType } from "@/wallet/services/account/client"
 import { ContentKind } from "@/wallet/services/task/spec"
 import { TaskServiceClient } from "@/wallet/services/task/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
-
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

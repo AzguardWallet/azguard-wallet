@@ -33,7 +33,8 @@ const services = new ServiceCollection()
 const initRuntime = () => {
 	// catch console
 	for (const [method, level] of consoleMethods) {
-		;(self as any)[`on${method}`] = (...args: any[]) => {
+		// biome-ignore lint/suspicious/noExplicitAny: dynamic console hijack on ServiceWorkerGlobalScope
+		;(self as any)[`on${method}`] = (...args: unknown[]) => {
 			logger.log("wallet", level, ...args)
 		}
 	}

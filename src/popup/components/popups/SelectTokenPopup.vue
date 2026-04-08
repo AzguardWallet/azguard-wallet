@@ -2,7 +2,6 @@
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"

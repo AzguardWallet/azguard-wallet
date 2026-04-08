@@ -2,8 +2,6 @@
 /** Services */
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
-
-
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"
 import { usePopupStore } from "@/stores/popup.store"

@@ -1,5 +1,4 @@
 <script setup>
-
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 

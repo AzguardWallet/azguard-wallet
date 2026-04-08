@@ -3,7 +3,6 @@
 import { onMounted, onUnmounted } from "vue"
 import { hashToEmoji } from "@aztec/wallet-sdk/crypto"
 
-
 /** Services */
 import { DappSessionServiceClient, type DappSession } from "@/wallet/services/dapp-session/client"
 

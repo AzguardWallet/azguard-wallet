@@ -8,8 +8,6 @@
 </route>
 
 <script setup>
-
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { useCacheStore } from "@/stores/cache.store"

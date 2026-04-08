@@ -1,4 +1,3 @@
-
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
 import { NoteStatus, type NoteDao } from "@aztec/stdlib/note"
 import type { ILogger } from "@/wallet/logger"

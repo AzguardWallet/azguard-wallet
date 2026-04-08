@@ -8,12 +8,10 @@
 </route>
 
 <script setup>
-
-
 /** Utils */
 import { ContactServiceClient } from "@/wallet/services/contact/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { downloadFile, pickFile, sanitizeString, stringCompare, } from "@/utils"
+import { downloadFile, pickFile, sanitizeString, stringCompare } from "@/utils"
 
 /** Composables */
 import { useToast } from "@/composables/toast"

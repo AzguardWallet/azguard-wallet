@@ -2,7 +2,6 @@
 /** Vendor */
 import { onMounted } from "vue"
 
-
 /** Utils */
 import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"

@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Utils */
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 

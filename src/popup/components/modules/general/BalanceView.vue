@@ -2,7 +2,6 @@
 /** Vendor */
 import BN from "bignumber.js"
 
-
 /** Services */
 import { ContentKind } from "@/wallet/services/task/spec"
 import { TaskServiceClient } from "@/wallet/services/task/client"

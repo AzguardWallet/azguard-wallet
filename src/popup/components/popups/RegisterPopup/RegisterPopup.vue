@@ -1,6 +1,4 @@
 <script setup lang="ts">
-
-
 /** Utils */
 import { managers, setSentinel } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"

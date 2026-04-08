@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Services */
 import { FpcServiceClient } from "@/wallet/services/fpc/client"
 

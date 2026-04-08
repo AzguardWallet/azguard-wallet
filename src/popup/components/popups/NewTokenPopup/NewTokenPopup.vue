@@ -3,7 +3,6 @@
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-
 /** Utils */
 import { isValidHex } from "@/utils/string"
 

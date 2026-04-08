@@ -2,7 +2,6 @@
 /** Vendor */
 import { onMounted, onUnmounted } from "vue"
 
-
 import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 
 /** Services */

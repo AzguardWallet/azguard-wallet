@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Services */
 import { managers } from "@/utils/core.js"
 import { getChainPosition } from "@/components/ui/utils"

@@ -153,7 +153,8 @@ export class WalletSdkDispatcher {
 	constructor(
 		private readonly networkService: NetworkService,
 		private readonly accountService: AccountService,
-		private readonly executionService: ExecutionService,readonly _profileService: ProfileService,
+		private readonly executionService: ExecutionService,
+		readonly _profileService: ProfileService,
 		private readonly dappInteractionService: DappInteractionService,
 		private readonly dappSessionService: DappSessionService,
 		private readonly logger: ILogger,

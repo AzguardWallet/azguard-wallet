@@ -8,8 +8,6 @@
 </route>
 
 <script setup>
-
-
 /** Utils */
 import { AuthRegistryServiceClient } from "@/wallet/services/auth-registry/client"
 import { capitalize, stringCompare } from "@/utils/string"

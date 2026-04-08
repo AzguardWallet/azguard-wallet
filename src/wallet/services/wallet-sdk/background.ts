@@ -97,7 +97,7 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
 		{
 			sendToTab: (tabId, message) => chrome.tabs.sendMessage(tabId, message),
 			addContentListener: (listener) => {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Chrome message listener provides untyped messages
+				// biome-ignore lint/suspicious/noExplicitAny: Chrome message listener provides untyped messages
 				chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.MessageSender) => {
 					listener(message, sender)
 					return undefined
@@ -167,8 +167,10 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
 	 * so two messages can have their decryptions race.
 	 * TODO: Remove this monkey-patch if wallet-sdk adds a proper serialization API.
 	 */
+	// biome-ignore lint/suspicious/noExplicitAny: monkey-patching private method on BackgroundConnectionHandler to serialize decryption
 	const origDecrypt = (handler as any).handleEncryptedMessage.bind(handler)
 	const decryptQueues = new Map<string, Promise<void>>()
+	// biome-ignore lint/suspicious/noExplicitAny: monkey-patching private method on BackgroundConnectionHandler to serialize decryption
 	;(handler as any).handleEncryptedMessage = async (sessionId: string, encrypted: unknown) => {
 		const prev = decryptQueues.get(sessionId) ?? Promise.resolve()
 		const next = prev.then(() => origDecrypt(sessionId, encrypted))

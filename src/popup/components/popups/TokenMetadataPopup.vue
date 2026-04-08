@@ -2,7 +2,6 @@
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()

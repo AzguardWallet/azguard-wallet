@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Store */
 import { usePopupStore } from "@/stores/popup.store.ts"
 import { useCacheStore } from "@/stores/cache.store.ts"

@@ -1,6 +1,4 @@
 <script setup>
-
-
 import { isValidHex } from "@/utils/string"
 
 /** Services */

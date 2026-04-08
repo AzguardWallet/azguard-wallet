@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Utils */
 import { managers, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"

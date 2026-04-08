@@ -2,7 +2,6 @@
 /** Vendor */
 import BN from "bignumber.js"
 
-
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 

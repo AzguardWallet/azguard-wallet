@@ -1,6 +1,4 @@
 <script setup>
-
-
 const emit = defineEmits(["onFieldSelect", "onFieldClear"])
 const props = defineProps({
 	token: {

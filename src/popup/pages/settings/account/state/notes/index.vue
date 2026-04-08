@@ -8,11 +8,9 @@
 </route>
 
 <script setup>
-
-
 /** Utils */
 import { NoteServiceClient } from "@/wallet/services/note/client"
-import { stringCompare, } from "@/utils/string"
+import { stringCompare } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -35,7 +33,7 @@ const filteredNotes = computed(() => {
 		(n) =>
 			n.contract.toLowerCase().includes(term) ||
 			(n.type ? n.type : "custom note").toLowerCase().includes(term) ||
-			(n.location?.toLowerCase().includes(term)),
+			n.location?.toLowerCase().includes(term),
 	)
 })
 const noteService = new NoteServiceClient()

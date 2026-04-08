@@ -1,6 +1,4 @@
 <script setup>
-
-
 /** Utils */
 import { debounce } from "@/utils/general"
 import { isValidHex } from "@/utils/string"

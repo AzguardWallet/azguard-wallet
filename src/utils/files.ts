@@ -48,7 +48,7 @@ export async function downloadFile({
 	if (compressionFormat) {
 		const compressedData = await compressData(data, compressionFormat)
 		const compressedMimeType = getCompressedMimeType(compressionFormat)
-		const arrayBuffer = (await (compressedData as any).arrayBuffer()) as ArrayBuffer
+		const arrayBuffer = await compressedData.arrayBuffer()
 
 		blob = new Blob([arrayBuffer], { type: compressedMimeType })
 		finalFilename = getCompressedFilename(filename, compressionFormat)
@@ -68,7 +68,7 @@ export async function downloadFile({
 					saveAs,
 				},
 				() => {
-					const err = (chrome.runtime as any).lastError
+					const err = chrome.runtime.lastError
 					if (err) reject(new Error(err))
 					else resolve()
 				},
@@ -240,7 +240,7 @@ export async function compressData(data: string | ArrayBuffer | Blob | ReadableS
 
 	try {
 		const compressionStream = new CompressionStream(format)
-		const compressedStream = (inputStream as any).pipeThrough(compressionStream) as ReadableStream<Uint8Array>
+		const compressedStream = inputStream.pipeThrough(compressionStream) as ReadableStream<Uint8Array>
 		const response = new Response(compressedStream)
 		return await response.blob()
 	} catch (err) {

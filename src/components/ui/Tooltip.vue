@@ -134,9 +134,12 @@ const handleMouseEnter = () => {
 	if (props.disabled) return
 
 	if (props.delay) {
-		delayedHover.value = setTimeout(() => {
-			isHovered.value = true
-		}, Number.parseInt(props.delay, 10))
+		delayedHover.value = setTimeout(
+			() => {
+				isHovered.value = true
+			},
+			Number.parseInt(props.delay, 10),
+		)
 	} else {
 		isHovered.value = true
 	}

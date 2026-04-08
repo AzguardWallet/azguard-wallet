@@ -97,7 +97,7 @@ describe("getContractClassMetadata", () => {
 // ── sendTx ────────────────────────────────────────────────────────────
 
 describe("sendTx", () => {
-	const exec = (calls: { to: any; name: string }[]) => ({ calls })
+	const exec = (calls: { to: { toString(): string }; name: string }[]) => ({ calls })
 
 	test("wildcard scope passes", () => {
 		const grants = [grant({ type: "transaction", scope: "*" })]
@@ -146,7 +146,7 @@ describe("sendTx", () => {
 // ── simulateTx ────────────────────────────────────────────────────────
 
 describe("simulateTx", () => {
-	const exec = (calls: { to: any; name: string }[]) => ({ calls })
+	const exec = (calls: { to: { toString(): string }; name: string }[]) => ({ calls })
 
 	test("wildcard transactions scope passes", () => {
 		const grants = [grant({ type: "simulation", transactions: { scope: "*" } })]
@@ -196,7 +196,7 @@ describe("executeUtility", () => {
 // ── profileTx ─────────────────────────────────────────────────────────
 
 describe("profileTx", () => {
-	const exec = (calls: { to: any; name: string }[]) => ({ calls })
+	const exec = (calls: { to: { toString(): string }; name: string }[]) => ({ calls })
 
 	test("wildcard passes", () => {
 		const grants = [grant({ type: "simulation", transactions: { scope: "*" } })]
