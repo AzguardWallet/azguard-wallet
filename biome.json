@@ -3,7 +3,7 @@
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true, "defaultBranch": "master" },
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!**/node_modules/**", "!**/dist/**", "!**/src/types/typed-router.d.ts", "!**/src/types/auto-imports.d.ts"]
+		"includes": ["**", "!**/node_modules", "!**/dist", "!**/src/types"]
 	},
 	"formatter": {
 		"enabled": true,
