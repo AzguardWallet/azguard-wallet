@@ -8,7 +8,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 yarn dev              # Start dev server (Chrome, port 8088)
 yarn build            # Production build (Chrome)
 yarn test             # Run vitest tests
+yarn test:e2e         # Run Puppeteer E2E tests
+yarn lint             # Run biome linter
+yarn lint:fix         # Auto-fix lint issues
+yarn format           # Format all files with biome
+yarn check            # Lint check (biome only)
+yarn typecheck        # TypeScript check (vue-tsc)
 ```
+
+## Quality Tooling
+
+- **Biome** handles both linting and formatting. Config in `biome.json`.
+- **Commitlint** enforces Conventional Commits (`feat:`, `fix:`, `chore:`, etc.). Config in `.commitlintrc.json`.
+- **Pre-commit hook** (`.githooks/pre-commit`) runs `biome check --staged` on every commit.
+- **Commit-msg hook** (`.githooks/commit-msg`) validates commit messages via commitlint.
+- Hooks are auto-installed on `yarn install` via the `prepare` script.
+- `noExplicitAny` is enforced as an error — use `unknown` and cast at usage sites. Suppress with `// biome-ignore lint/suspicious/noExplicitAny: reason` only for genuinely untyped boundaries.
 
 Load the extension in Chrome: `chrome://extensions` → Load unpacked → select `dist/chrome/`
 

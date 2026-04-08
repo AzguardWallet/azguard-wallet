@@ -14,10 +14,15 @@
 		"dev:chrome": "vite -c vite.chrome.config.mts",
 		"dev:firefox": "vite build --mode development --watch -c vite.firefox.config.mts",
 		"preview": "vite preview",
+		"lint": "biome check src/",
+		"lint:fix": "biome check src/ --fix",
+		"format": "biome format src/ --write",
+		"check": "biome check src/",
 		"typecheck": "vue-tsc --noEmit",
 		"test": "vitest",
 		"test:e2e": "vitest run --config vitest.e2e.config.ts",
-		"test:e2e:all": "vitest run --config vitest.e2e.all.config.ts"
+		"test:e2e:all": "vitest run --config vitest.e2e.all.config.ts",
+		"prepare": "git config core.hooksPath .githooks"
 	},
 	"dependencies": {
 		"@alejoamiras/aztec-accelerator": "4.2.0-aztecnr-rc.2.2",
@@ -48,6 +53,8 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.1.4",
+		"@commitlint/cli": "^20.5.0",
+		"@commitlint/config-conventional": "^20.5.0",
 		"@crxjs/vite-plugin": "^2.1.0",
 		"@types/node": "^24.2.1",
 		"@types/webextension-polyfill": "^0.12.3",

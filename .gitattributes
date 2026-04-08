@@ -1,1 +1,5 @@
-* text=auto
+* text=auto eol=lf
+*.vue text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.scss text eol=lf
