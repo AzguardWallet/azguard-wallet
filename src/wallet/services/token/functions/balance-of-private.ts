@@ -1,6 +1,6 @@
-import { Fr } from "@aztec/foundation/curves/bn254"
-import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi"
+import type { Fr } from "@aztec/foundation/curves/bn254"
+import type { AztecAddress } from "@aztec/stdlib/aztec-address"
+import { type ContractArtifact, type FunctionAbi, FunctionType, type StructType } from "@aztec/stdlib/abi"
 import { ViewFn } from "@/wallet/utils/fn"
 
 export enum BalanceOfPrivateImpl {

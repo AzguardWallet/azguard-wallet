@@ -1,8 +1,6 @@
-import { DappPermissions } from "@/wallet/services/dapp-session/spec"
-import {
+import type { DappPermissions } from "@/wallet/services/dapp-session/spec"
+import type {
 	Action,
-	ActionKind,
-	OperationKind,
 	AddCapsuleAction,
 	AddExtraArgsAction,
 	AddPrivateAuthwitAction,
@@ -15,7 +13,7 @@ import {
 	IntentAuthwitContent,
 	MessageHashAuthwitContent,
 } from "@/wallet/services/execution/models"
-import {
+import type {
 	ExecutionParams,
 	CaipChain,
 	CaipAccount,
@@ -570,7 +568,7 @@ function parseOptionalBooleanProp(data: unknown, prop: string): boolean | undefi
 	return value as boolean | undefined
 }
 
-function parseBooleanProp(data: unknown, prop: string): boolean {
+function _parseBooleanProp(data: unknown, prop: string): boolean {
 	const value = (data as Record<string, unknown>)[prop]
 	if (typeof value !== "boolean") {
 		throw new Error(`Invalid ${prop}`)
@@ -594,7 +592,7 @@ function parseStringProp(data: unknown, prop: string): string {
 	return value
 }
 
-function parseNumberProp(data: unknown, prop: string): number {
+function _parseNumberProp(data: unknown, prop: string): number {
 	const value = (data as Record<string, unknown>)[prop]
 	if (typeof value !== "number") {
 		throw new Error(`Invalid ${prop}`)

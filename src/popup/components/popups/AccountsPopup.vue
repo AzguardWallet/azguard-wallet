@@ -1,12 +1,6 @@
 <script setup>
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
-import { AccountType } from "@/wallet/services/account/spec"
+
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"

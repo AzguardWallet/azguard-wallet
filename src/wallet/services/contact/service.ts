@@ -1,13 +1,13 @@
-import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { ILogger } from "@/wallet/logger"
-import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service"
+import type { ILogger } from "@/wallet/logger"
+import { ProfileService, type ProfileInfo } from "@/wallet/services/profile/service"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { getRandomHex, getRandomElement, Lock } from "@/wallet/utils"
 import { sanitizeString } from "@/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
 import { getErrorMessage } from "@/wallet/utils/errors"
-import { Contact, CONTACT_SERVICE_NAME, contactColors, Events, Methods } from "./spec"
+import { type Contact, CONTACT_SERVICE_NAME, contactColors, type Events, type Methods } from "./spec"
 
 export * from "./spec"
 

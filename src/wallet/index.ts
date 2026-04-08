@@ -120,5 +120,3 @@ logger
 		runServices()
 		runHeartbeat()
 	})
-
-export {}

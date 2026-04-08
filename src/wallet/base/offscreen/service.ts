@@ -1,12 +1,12 @@
-import { ILogger, LogLevel } from "@/wallet/logger"
+import { type ILogger, LogLevel } from "@/wallet/logger"
 import { sleep } from "@/wallet/utils"
 import { getErrorMessage } from "@/wallet/utils/errors"
 import { jsonSanitize } from "@/wallet/utils/serialization"
 import { OFFSCREEN_KEEPALIVE } from "@/wallet/utils/offscreen"
-import { EventsMap, MethodsMap, MethodsSpec, IService, EventsSpec, ServiceCollection } from "../."
+import type { EventsMap, MethodsMap, MethodsSpec, IService, EventsSpec, ServiceCollection } from "../."
 import { MessageType } from "../messages"
 import { unwrapParams } from "../utils"
-import { EventMessage, RequestMessage, ResponseMessage } from "./messages"
+import type { EventMessage, RequestMessage, ResponseMessage } from "./messages"
 
 /** Send keepalive pings every 20s to prevent Chrome from killing the service worker. */
 const KEEPALIVE_INTERVAL_MS = 20_000
@@ -29,7 +29,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
 		this.logDebug("Service created")
 	}
 
-	protected async init(services: ServiceCollection): Promise<void> {
+	protected async init(_services: ServiceCollection): Promise<void> {
 		// to be overridden in derived classes
 	}
 

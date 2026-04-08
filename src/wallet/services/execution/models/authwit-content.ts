@@ -1,4 +1,4 @@
-import { CallAction, EncodedCallAction } from "./action"
+import type { CallAction, EncodedCallAction } from "./action"
 
 export type AuthwitContent = CallAuthwitContent | EncodedCallAuthwitContent | IntentAuthwitContent | MessageHashAuthwitContent
 

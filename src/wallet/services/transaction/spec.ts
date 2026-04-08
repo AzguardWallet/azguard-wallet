@@ -1,4 +1,4 @@
-import { AzguardFeePaymentMethod } from "../account/contracts"
+import type { AzguardFeePaymentMethod } from "../account/contracts"
 
 export const TRANSACTION_SERVICE_NAME = "transaction"
 

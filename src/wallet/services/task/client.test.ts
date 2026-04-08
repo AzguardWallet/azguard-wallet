@@ -1,8 +1,8 @@
 import { expect, test, vi } from "vitest"
-import { EventMessage, MessageType } from "@/wallet/base/messages"
-import { OriginType, TxOrigin } from "@/wallet/services/transaction/client"
+import { type EventMessage, MessageType } from "@/wallet/base/messages"
+import { OriginType, type TxOrigin } from "@/wallet/services/transaction/client"
 import { emitPortMessage, capturePortMessage } from "../../../../tests/vitest.setup"
-import { TASK_SERVICE_NAME, TaskServiceClient, TaskStatus, StepContent, Task, Events } from "./client"
+import { TASK_SERVICE_NAME, TaskServiceClient, TaskStatus, StepContent, type Task, type Events } from "./client"
 
 const eventMessage = <T extends keyof Events>(event: T, payload: Events[T]): EventMessage<Events> => ({
 	type: MessageType.Event,

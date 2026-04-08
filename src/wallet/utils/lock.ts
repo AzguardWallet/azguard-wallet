@@ -4,7 +4,7 @@ import { type ILogger, LogLevel } from "@/wallet/logger"
 const MAX_HOLD_MS = 5 * 60_000 // 5 minutes
 
 export class Lock {
-	private readonly queue: ((value: void) => void)[] = []
+	private readonly queue: ((value: undefined) => void)[] = []
 	private locked = false
 	private readonly name?: string
 	private readonly logger?: ILogger

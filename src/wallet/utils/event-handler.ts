@@ -13,7 +13,7 @@ export class EventHandler<T> implements IEventHandler<T> {
 	}
 
 	public remove(callback: (payload: T) => any) {
-		const index = this.#callbacks.findIndex((x) => x === callback)
+		const index = this.#callbacks.indexOf(callback)
 		if (index !== -1) {
 			this.#callbacks.splice(index, 1)
 		}

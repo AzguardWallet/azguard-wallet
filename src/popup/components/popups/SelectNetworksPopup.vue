@@ -1,8 +1,5 @@
 <script setup>
-/** Components */
-import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+
 
 /** Store */
 import { useCacheStore } from "@/stores/cache.store"

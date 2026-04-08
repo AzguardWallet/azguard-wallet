@@ -1,6 +1,6 @@
-import { type ContractArtifact } from "@aztec/stdlib/abi"
-import { type ContractInstanceWithAddress } from "@aztec/stdlib/contract"
-import { Restored } from "@/wallet/base"
+import type { ContractArtifact } from "@aztec/stdlib/abi"
+import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract"
+import type { Restored } from "@/wallet/base"
 
 export const ACCOUNT_STATE_SERVICE_NAME = "account-state"
 

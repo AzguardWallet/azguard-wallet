@@ -1,13 +1,13 @@
-import { Fr } from "@aztec/foundation/curves/bn254"
-import { ContractArtifact } from "@aztec/stdlib/abi"
-import { Gas } from "@aztec/stdlib/gas"
-import { Action } from "@/wallet/services/execution/spec"
-import { IPXE } from "@/wallet/services/pxe/proxy"
-import { FpcInfo, FpcType } from "../spec"
+import type { Fr } from "@aztec/foundation/curves/bn254"
+import type { ContractArtifact } from "@aztec/stdlib/abi"
+import type { Gas } from "@aztec/stdlib/gas"
+import type { Action } from "@/wallet/services/execution/spec"
+import type { IPXE } from "@/wallet/services/pxe/proxy"
+import { type FpcInfo, FpcType } from "../spec"
 import { DefaultFpcHandler } from "./default-fpc-handler"
 import { DefaultSponsoredFpcHandler } from "./default-sponsored-fpc-handler"
 import { PrivateFpcHandler } from "./private-fpc-handler"
-import { AztecNode } from "@aztec/stdlib/interfaces/client"
+import type { AztecNode } from "@aztec/stdlib/interfaces/client"
 
 export interface IFpcHandler {
 	getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined>

@@ -2,8 +2,6 @@
 /** Vendor */
 import { onMounted } from "vue"
 
-/** Components */
-import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue"
 
 /** Utils */
 import { DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"

@@ -13,20 +13,10 @@ import { DateTime } from "luxon"
 import { onMounted } from "vue"
 import { hashToEmoji } from "@aztec/wallet-sdk/crypto"
 
-/** Components */
-import Navigation from "../../../../../components/Navigation.vue"
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
-// @ts-ignore
-import EmojiGrid from "@/popup/components/modules/general/EmojiGrid.vue"
-import CapabilityDetailPanel from "@/popup/components/modules/capabilities/CapabilityDetailPanel.vue"
 
-/** Utils */
-import { getChainName } from "@/components/ui/utils.js"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
-import { confirmationPolicies } from "@/utils/confirmation-policies"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"

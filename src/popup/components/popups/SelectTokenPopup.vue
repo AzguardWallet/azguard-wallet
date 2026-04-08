@@ -2,12 +2,6 @@
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

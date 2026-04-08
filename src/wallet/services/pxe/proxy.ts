@@ -1,15 +1,15 @@
 import type { Fr } from "@aztec/foundation/curves/bn254"
 import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle"
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi"
-import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { CompleteAddress, type ContractInstanceWithAddress, type PartialAddress } from "@aztec/stdlib/contract"
-import { NoteDao } from "@aztec/stdlib/note"
+import type { AztecAddress } from "@aztec/stdlib/aztec-address"
+import type { CompleteAddress, ContractInstanceWithAddress, PartialAddress } from "@aztec/stdlib/contract"
+import type { NoteDao } from "@aztec/stdlib/note"
 import type { NotesFilter } from "./spec"
-import { TxExecutionRequest, TxProfileResult, TxProvingResult, TxSimulationResult, UtilityExecutionResult } from "@aztec/stdlib/tx"
-import { Network } from "@/wallet/services/network/spec"
-import { PxeServiceClient } from "./client"
-import { PrivateEventFilter } from "@aztec/aztec.js/wallet"
-import { PackedPrivateEvent } from "@aztec/pxe/client/bundle"
+import type { TxExecutionRequest, TxProfileResult, TxProvingResult, TxSimulationResult, UtilityExecutionResult } from "@aztec/stdlib/tx"
+import type { Network } from "@/wallet/services/network/spec"
+import type { PxeServiceClient } from "./client"
+import type { PrivateEventFilter } from "@aztec/aztec.js/wallet"
+import type { PackedPrivateEvent } from "@aztec/pxe/client/bundle"
 
 export interface IPXE {
 	getContractInstance(address: AztecAddress): Promise<ContractInstanceWithAddress | undefined>
@@ -28,7 +28,7 @@ export interface IPXE {
 	profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult>
 	simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts, stubAccountAddresses?: string[]): Promise<TxSimulationResult>
 	executeUtility(call: FunctionCall, opts: ExecuteUtilityOpts): Promise<UtilityExecutionResult>
-	getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]>
+	getPrivateEvents<_T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]>
 }
 
 export class PXEProxy implements IPXE {
@@ -101,7 +101,7 @@ export class PXEProxy implements IPXE {
 		return this.pxeService.executeUtility(this.network, call, opts)
 	}
 
-	async getPrivateEvents<T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]> {
+	async getPrivateEvents<_T>(eventSelector: EventSelector, filter: PrivateEventFilter): Promise<PackedPrivateEvent[]> {
 		return this.pxeService.getPrivateEvents(this.network, eventSelector, filter)
 	}
 }

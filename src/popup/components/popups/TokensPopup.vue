@@ -2,12 +2,7 @@
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
-/** Utils */
-import { managers } from "@/utils/core"
 
 /** Composables */
 import { useToast } from "@/composables/toast"

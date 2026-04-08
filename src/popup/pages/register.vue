@@ -7,9 +7,7 @@
 </route>
 
 <script setup>
-/** Components */
-import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
-import StealthPromoPopup from "../components/popups/StealthPromoPopup.vue"
+
 
 /** Utils */
 import { Config } from "@/wallet/config"

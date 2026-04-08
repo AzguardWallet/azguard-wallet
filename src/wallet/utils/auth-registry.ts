@@ -1,9 +1,9 @@
 import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/constants"
 import { Fr } from "@aztec/foundation/curves/bn254"
-import { FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi"
+import { type FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi"
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
 import { deriveStorageSlotInMap } from "@aztec/stdlib/hash"
-import { AztecNode } from "@aztec/stdlib/interfaces/client"
+import type { AztecNode } from "@aztec/stdlib/interfaces/client"
 
 // Auth Registry storage slots (derived from Noir contract storage layout)
 const APPROVED_ACTIONS_SLOT = new Fr(1)

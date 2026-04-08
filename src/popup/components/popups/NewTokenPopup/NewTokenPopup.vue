@@ -3,11 +3,6 @@
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
-import CandidatesForm from "./CandidatesForm.vue"
 
 /** Utils */
 import { isValidHex } from "@/utils/string"

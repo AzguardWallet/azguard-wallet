@@ -11,10 +11,6 @@
 /** Vendor */
 import BN from "bignumber.js"
 
-/** Components */
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import Navigation from "../../../../components/Navigation.vue"
-import TaskCard from "./TaskCard.vue"
 
 /** Services */
 import { TaskServiceClient } from "@/wallet/services/task/client"
@@ -38,10 +34,10 @@ const completedTasks = computed(() => {
 })
 
 async function processTask(task) {
-	let humanizedContent = {}
+	const humanizedContent = {}
 
 	switch (task.content?.kind) {
-		case ContentKind.BalanceUpdate:
+		case ContentKind.BalanceUpdate: {
 			let balance
 			try {
 				balance = await tokenBalanceService.getTokenBalance(task.content.tbId)
@@ -56,6 +52,7 @@ async function processTask(task) {
 				humanizedContent.account = task.content.account
 			}
 			break
+		}
 		case ContentKind.TokenMint:
 			humanizedContent.token = {
 				name: task.content.name,
@@ -65,7 +62,7 @@ async function processTask(task) {
 				new BN(task.content.amount || 0).dividedBy(new BN(10).pow(task.content.decimals || 0)),
 			).value
 			break
-		case ContentKind.Transfer:
+		case ContentKind.Transfer: {
 			let token
 			try {
 				token = await tokenService.getToken(task.content.tokenId)
@@ -82,6 +79,7 @@ async function processTask(task) {
 				new BN(task.content.amount || 0).dividedBy(new BN(10).pow(token?.decimals || 0)),
 			).value
 			break
+		}
 		case ContentKind.RevokeAuthwits:
 			humanizedContent.authwitCount = task.content.authwitIds.length
 			break

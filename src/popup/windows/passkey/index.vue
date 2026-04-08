@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue"
 import { PasskeyServiceClient } from "@/wallet/services/passkey/client"
-import { PASSKEY_PRF_LABEL, PasskeyCredentialData, PasskeyRequest, PASSKEY_TIMEOUT } from "@/wallet/services/passkey/spec"
+import { PASSKEY_PRF_LABEL, type PasskeyCredentialData, type PasskeyRequest, PASSKEY_TIMEOUT } from "@/wallet/services/passkey/spec"
 import { getErrorMessage } from "@/wallet/utils/errors"
 
 const route = useRoute()
@@ -101,7 +101,7 @@ const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
 	if (!rawId || !prfResult) throw new Error("Passkey PRF not available")
 	if (!(assertion.response instanceof AuthenticatorAssertionResponse)) throw new Error("Unexpected assertion response type")
 	const userHandleOption = assertion.response.userHandle
-	let passkeyCredentialData: PasskeyCredentialData = {
+	const passkeyCredentialData: PasskeyCredentialData = {
 		id: encodeBase64(rawId),
 		prf: encodeBase64(prfResult),
 		userHandle: userHandleOption ? Buffer.from(userHandleOption).toString("hex") : undefined,

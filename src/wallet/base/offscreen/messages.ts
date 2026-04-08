@@ -1,5 +1,9 @@
-import { EventMessage as BaseEventMessage, RequestMessage as BaseRequestMessage, ResponseMessage as BaseResponseMessage } from "../messages"
-import { EventsMap, MethodsMap } from "../."
+import type {
+	EventMessage as BaseEventMessage,
+	RequestMessage as BaseRequestMessage,
+	ResponseMessage as BaseResponseMessage,
+} from "../messages"
+import type { EventsMap, MethodsMap } from "../."
 
 type MessageExt = {
 	from: string

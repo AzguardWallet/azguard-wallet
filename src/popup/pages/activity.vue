@@ -7,10 +7,7 @@
 </route>
 
 <script setup>
-/** Components */
-import TransactionsList from "../components/modules/activity/TransactionsList.vue"
-import Navigation from "../components/Navigation.vue"
-import Spinner from "@/components/ui/Spinner.vue"
+
 
 /** Services */
 import { AccountType } from "@/wallet/services/account/client"
@@ -18,8 +15,6 @@ import { ContentKind } from "@/wallet/services/task/spec"
 import { TaskServiceClient } from "@/wallet/services/task/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 
-/** Utils */
-import { DateTime } from "luxon"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

@@ -5,6 +5,7 @@ import { getErrorData } from "@/wallet/utils/errors"
 // catch console
 const logger = new LoggerServiceClient("popup")
 for (const [method, level] of consoleMethods) {
+	// biome-ignore lint/suspicious/noExplicitAny: dynamic global property + console varargs
 	;(self as any)[`on${method}`] = (...args: any[]) => {
 		logger.log("ui", level, ...args)
 	}

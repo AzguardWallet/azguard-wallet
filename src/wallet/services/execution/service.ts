@@ -28,23 +28,21 @@ import {
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas"
 import {
 	Capsule,
-	ExecutionPayload,
+	type ExecutionPayload,
 	HashedValues,
 	TxContext,
 	TxExecutionRequest,
-	TxHash,
-	TxProfileResult,
-	TxReceipt,
-	TxSimulationResult,
-	UtilityExecutionResult,
-	Tx,
+	type TxProfileResult,
+	type TxSimulationResult,
+	type UtilityExecutionResult,
+	type Tx,
 	collectOffchainEffects,
 } from "@aztec/stdlib/tx"
 import z from "zod"
-import { NetworkService, Network } from "@/wallet/services/network/service"
-import { IPXE, PxeServiceClient } from "@/wallet/services/pxe/client"
+import { NetworkService, type Network } from "@/wallet/services/network/service"
+import { type IPXE, PxeServiceClient } from "@/wallet/services/pxe/client"
 import { AccountService } from "@/wallet/services/account/service"
-import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts"
+import { AzguardFeePaymentMethod, AzguardFunctionCall, type IAccountContract } from "@/wallet/services/account/contracts"
 import { ContactService } from "@/wallet/services/contact/service"
 import { ProfileService } from "@/wallet/services/profile/service"
 import { AuthRegistryService } from "@/wallet/services/auth-registry/service"
@@ -60,23 +58,23 @@ import {
 	TransactionService,
 	OriginType,
 	TransferType,
-	TxCall,
-	LocalTxOrigin,
+	type TxCall,
+	type LocalTxOrigin,
 	TxStatus,
-	TxGasDetails,
+	type TxGasDetails,
 } from "@/wallet/services/transaction/service"
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry"
 import type { Fn } from "@/wallet/utils/fn"
 import { feeJuiceAddress, getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice"
 import { computeMaxFee, formatFeeJuice, feeToUsd } from "@/utils/fee-estimation"
-import { TaskService, WrappedTask, ExecuteOperationContent, StepContent, TransferContent } from "@/wallet/services/task/service"
-import { ILogger } from "@/wallet/logger"
-import { ServiceCollection, ServiceSpec } from "@/wallet/base"
+import { TaskService, type WrappedTask, ExecuteOperationContent, StepContent, TransferContent } from "@/wallet/services/task/service"
+import type { ILogger } from "@/wallet/logger"
+import type { ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
 import { getErrorMessage } from "@/wallet/utils/errors"
 import {
 	EXECUTION_SERVICE_NAME,
-	Methods,
+	type Methods,
 	type Operation,
 	type GetCompleteAddressOperation,
 	type RegisterSenderOperation,
@@ -111,15 +109,20 @@ import {
 	type AddExtraArgsAction,
 	type EncodedCallAction,
 	type FeeOptions,
-	type FeePaymentMethod,
 	type GasBalances,
 	type TransferFeeEstimate,
 } from "./spec"
 import { detectEmbeddedFeePayment } from "./utils/fee-detection"
-import { AztecNode } from "@aztec/stdlib/interfaces/client"
-import { ChainInfo } from "@aztec/entrypoints/interfaces"
-import { Aliased, ContractInitializationStatus, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet"
-import { PackedPrivateEvent } from "@aztec/pxe/client/bundle"
+import type { AztecNode } from "@aztec/stdlib/interfaces/client"
+import type { ChainInfo } from "@aztec/entrypoints/interfaces"
+import {
+	type Aliased,
+	ContractInitializationStatus,
+	type ProfileOptions,
+	type SendOptions,
+	type SimulateOptions,
+} from "@aztec/aztec.js/wallet"
+import type { PackedPrivateEvent } from "@aztec/pxe/client/bundle"
 
 export * from "./spec"
 
@@ -392,7 +395,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		let actions: Action[]
 		let detectedFee: FeeOptions | undefined
 		if (operation.kind === "aztec_sendTx") {
-			const [processedActions, , fee] = await this.processAztecJsPayload((operation as AztecSendTxOperation).exec, (operation as AztecSendTxOperation).opts ?? {})
+			const [processedActions, , fee] = await this.processAztecJsPayload(
+				(operation as AztecSendTxOperation).exec,
+				(operation as AztecSendTxOperation).opts ?? {},
+			)
 			actions = [...processedActions]
 			detectedFee = fee
 		} else {
@@ -1025,9 +1031,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		}
 	}
 
-	private async executeAztecGetContractMetadata(
-		op: AztecGetContractMetadataOperation,
-	): Promise<{
+	private async executeAztecGetContractMetadata(op: AztecGetContractMetadataOperation): Promise<{
 		instance?: ContractInstanceWithAddress
 		initializationStatus: ContractInitializationStatus
 		isContractPublished: boolean
@@ -1086,7 +1090,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		return this.pxeService.registerSender(network, op.address)
 	}
 
-	private async executeAztecGetAddressBook(op: AztecGetAddressBookOperation): Promise<Aliased<AztecAddress>[]> {
+	private async executeAztecGetAddressBook(_op: AztecGetAddressBookOperation): Promise<Aliased<AztecAddress>[]> {
 		// TODO: filter by chainId
 		return (await this.contactService.getContacts()).map((x) => ({
 			alias: x.name,
@@ -1756,7 +1760,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 				case "fjwc": {
 					const { claimAmount, claimSecret, messageLeafIndex } = feePaymentMethod
 					op.actions.unshift(...getFeeJuiceClaimPayload(op.accountAddress, claimAmount, claimSecret, messageLeafIndex))
-					let [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
+					const [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
 						op,
 						AzguardFeePaymentMethod.FeeJuiceWithClaim,
 						task,
@@ -1824,7 +1828,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					}
 					const embeddedMethod =
 						op.fee.embeddedFeePayment === "fjwc" ? AzguardFeePaymentMethod.FeeJuiceWithClaim : AzguardFeePaymentMethod.External
-					let [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(op, embeddedMethod, task)
+					const [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(op, embeddedMethod, task)
 					// Embedded payments: the dApp's FPC has a budgeted `amount` that must cover
 					// max_gas_cost (gasLimits * maxFeesPerGas). The default initial gas settings
 					// use maxFeesPerGas=10^18 which makes max_gas_cost astronomical and fails

@@ -1,13 +1,11 @@
 <script setup lang="ts">
-/** Local Components */
-import WalletPasswordContent from "./WalletPasswordContent.vue"
+
 
 /** Utils */
 import { managers, setSentinel } from "@/utils/core"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { sleep } from "@/wallet/utils"
-import { capitalize } from "@/utils/string"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

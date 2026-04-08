@@ -6,9 +6,9 @@ import { onMounted, onUnmounted } from "vue"
 import { getErrorData } from "@/wallet/utils/errors"
 
 /** Services */
-import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
-import { DappMetadata } from "@/wallet/services/dapp-session/client"
-import { DiscoveryPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
+import { type ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
+import type { DappMetadata } from "@/wallet/services/dapp-session/client"
+import { type DiscoveryPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 
 type UIDappMetadata = DappMetadata & {
 	loadingLogo?: boolean
@@ -26,7 +26,7 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 /** Composables */
-// @ts-ignore
+// @ts-expect-error
 const { loadExternalImage } = useExternalImage()
 
 const router = useRouter()

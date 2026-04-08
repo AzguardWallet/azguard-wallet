@@ -118,7 +118,7 @@ const handleInput = (event) => {
 			text.value = text.value.slice(0, props.maxLength)
 		}
 
-		if (text.value.length == props.maxLength) {
+		if (text.value.length === props.maxLength) {
 			fillWarning(`You can’t enter more than ${props.maxLength} characters`)
 			emit("maxLengthReached", true)
 		}

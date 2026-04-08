@@ -3,12 +3,6 @@
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { stringCompare } from "@/utils/string"
 
-/** Components */
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import RegisterPopup from "../popups/RegisterPopup/RegisterPopup.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

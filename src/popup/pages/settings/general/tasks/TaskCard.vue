@@ -2,8 +2,6 @@
 /** Vendor */
 import { DateTime } from "luxon"
 
-/** Services */
-import { ContentKind, TaskStatus } from "@/wallet/services/task/spec"
 
 /** Composables */
 import { useTicker } from "@/composables/ticker"
@@ -58,13 +56,13 @@ const error = computed(() => {
 	}
 
 	const path = findSource(props.task)
-	err.title = path.length ? path.join(" -> ") + ":" : ""
+	err.title = path.length ? `${path.join(" -> ")}:` : ""
 
 	return err
 })
 
 const isCopied = ref(false)
-function handleCopyError(task) {
+function handleCopyError(_task) {
 	isCopied.value = true
 
 	window.navigator.clipboard.writeText(`${error.value.title || `${props.task.content.label}:`}\n${error.value.description}`)

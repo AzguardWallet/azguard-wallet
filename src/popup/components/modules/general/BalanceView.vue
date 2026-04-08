@@ -1,11 +1,7 @@
 <script setup>
 /** Vendor */
 import BN from "bignumber.js"
-import { DateTime } from "luxon"
 
-/** Components */
-import ActionButtonsView from "./ActionButtonsView.vue"
-import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
 
 /** Services */
 import { ContentKind } from "@/wallet/services/task/spec"

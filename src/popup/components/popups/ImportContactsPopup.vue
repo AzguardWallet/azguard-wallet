@@ -1,11 +1,9 @@
 <script setup>
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+
 
 /** Utils */
 import { ContactServiceClient } from "@/wallet/services/contact/client"
-import { isValidHex, trimAddress } from "@/utils/string"
+import { isValidHex, } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"

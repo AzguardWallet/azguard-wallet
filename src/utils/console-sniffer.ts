@@ -1,8 +1,10 @@
+// biome-ignore lint/suspicious/noExplicitAny: console.* genuinely accepts any arguments
 const pendingLogs: any[][] = []
 
 for (const method of ["trace", "debug", "log", "info", "warn", "error"] as const) {
 	const original = console[method].bind(console)
 	console[`_${method}`] = original
+	// biome-ignore lint/suspicious/noExplicitAny: console.* genuinely accepts any arguments
 	console[method] = (...args: any[]) => {
 		const overridden = self[`on${method}`]
 		if (!overridden) {

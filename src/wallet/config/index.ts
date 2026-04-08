@@ -1,5 +1,5 @@
-import { EventHandler } from "@/wallet/utils/event-handler"
-import { Config, ConfigKey, ConfigProp } from "./config"
+import type { EventHandler } from "@/wallet/utils/event-handler"
+import type { Config, ConfigKey, ConfigProp } from "./config"
 
 export * from "./config"
 export * from "./store"

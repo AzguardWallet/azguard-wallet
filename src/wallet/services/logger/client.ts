@@ -1,7 +1,7 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { ServiceClient } from "@/wallet/base/background"
-import { DummyLogger, ILogger, LogLevel } from "@/wallet/logger"
-import { LOGGER_SERVICE_NAME, Methods } from "./spec"
+import { DummyLogger, type ILogger, type LogLevel } from "@/wallet/logger"
+import { LOGGER_SERVICE_NAME, type Methods } from "./spec"
 
 export * from "./spec"
 

@@ -1,6 +1,6 @@
 import { Fr } from "@aztec/foundation/curves/bn254"
-import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi"
+import type { AztecAddress } from "@aztec/stdlib/aztec-address"
+import { type ContractArtifact, type FunctionAbi, FunctionType, type StructType } from "@aztec/stdlib/abi"
 import { Fn } from "@/wallet/utils/fn"
 
 export enum TransferPublicToPrivateImpl {
@@ -68,7 +68,7 @@ export class DefaultTransferPublicToPrivateFn extends TransferPublicToPrivateFn 
 		super(name, TransferPublicToPrivateImpl.Default)
 	}
 
-	public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): unknown[] {
+	public override buildArgs(_from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): unknown[] {
 		return [to, amount]
 	}
 

@@ -101,10 +101,10 @@ watch(isOpen, async () => {
 
 		removeOutside()
 
-		if (Object.prototype.hasOwnProperty.call(dropdownStyles.value, "top")) {
+		if (Object.hasOwn(dropdownStyles.value, "top")) {
 			dropdownStyles.value.top = undefined
 		}
-		if (Object.prototype.hasOwnProperty.call(dropdownStyles.value, "bottom")) {
+		if (Object.hasOwn(dropdownStyles.value, "bottom")) {
 			dropdownStyles.value.bottom = undefined
 		}
 

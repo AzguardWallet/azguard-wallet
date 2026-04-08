@@ -3,13 +3,6 @@
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
-import CandidatesForm from "./NewTokenPopup/CandidatesForm.vue"
 
 /** Composables */
 import { useToast } from "@/composables/toast"

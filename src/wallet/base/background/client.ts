@@ -1,10 +1,10 @@
-import { ILogger, LogLevel } from "@/wallet/logger"
+import { type ILogger, LogLevel } from "@/wallet/logger"
 import { sleep } from "@/wallet/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
 import { getErrorMessage } from "@/wallet/utils/errors"
 import { jsonSanitize } from "@/wallet/utils/serialization"
-import { EventsMap, EventsSpec, MethodsMap } from "../."
-import { MessageType, EventMessage, RequestMessage, ResponseMessage } from "../messages"
+import type { EventsMap, EventsSpec, MethodsMap } from "../."
+import { MessageType, type EventMessage, type RequestMessage, type ResponseMessage } from "../messages"
 import { wrapParams } from "../utils"
 
 export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extends EventsMap = {}> {

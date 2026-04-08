@@ -26,7 +26,7 @@ export const managers = {
 	contact: contactService,
 }
 
-export async function refreshBalances(minutes, accounts) {
+export async function refreshBalances(_minutes, accounts) {
 	if (!accounts?.length) return
 
 	const tokenBalanceService = new TokenBalanceServiceClient()

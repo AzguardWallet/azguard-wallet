@@ -1,8 +1,5 @@
 <script setup>
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import JsonViewer from "@/components/ui/JsonViewer/JsonViewer.vue"
+
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store.ts"

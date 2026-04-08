@@ -11,11 +11,6 @@
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-/** Components */
-import Navigation from "../../../../components/Navigation.vue"
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { stringCompare } from "@/utils/string"

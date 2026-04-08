@@ -1,7 +1,7 @@
 import { StorageType, ValueStorage } from "@/wallet/storage"
 import { Lock } from "@/wallet/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { IConfigStore, Config, ConfigProp, ConfigKey } from "."
+import { type IConfigStore, Config, type ConfigProp, type ConfigKey } from "."
 
 export class ConfigStore implements IConfigStore {
 	public readonly onUpdate = new EventHandler<ConfigProp>()

@@ -1,6 +1,6 @@
-import { TxOrigin } from "@/wallet/services/transaction/spec"
+import type { TxOrigin } from "@/wallet/services/transaction/spec"
 import { getErrorMessage } from "@/wallet/utils/errors"
-import { TaskService, ITaskContent, ITaskResult, EmptyResult, TaskStatus, Task } from "./service"
+import { type TaskService, type ITaskContent, type ITaskResult, EmptyResult, TaskStatus, type Task } from "./service"
 
 export class WrappedTask {
 	constructor(

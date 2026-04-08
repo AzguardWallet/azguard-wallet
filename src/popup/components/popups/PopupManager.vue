@@ -1,63 +1,16 @@
 <script setup>
-/** Popups */
-import MenuPopup from "./MenuPopup.vue"
 
-/** Wallet */
-import ImportPopup from "./ImportPopup.vue"
-import ResetPopup from "./ResetPopup.vue"
-import ForgotPasswordPopup from "./ForgotPasswordPopup.vue"
 
-/** Services */
-import ConfirmPopup from "./ConfirmPopup.vue"
-import DataViewerPopup from "./DataViewerPopup.vue"
-import EditClaimParametersPopup from "./EditClaimParametersPopup.vue"
 
-/** Profiles */
-import ChangeProfilePasswordPopup from "./ChangeProfilePasswordPopup.vue"
-import EditProfilePopup from "./EditProfilePopup.vue"
-import SelectProfilePopup from "./SelectProfilePopup.vue"
 
-/** Networks */
-import NetworksPopup from "./NetworksPopup.vue"
-import NewNetworkPopup from "./NewNetworkPopup.vue"
-import EditNetworkPopup from "./EditNetworkPopup.vue"
-import SelectNetworksPopup from "./SelectNetworksPopup.vue"
 
-/** Accounts */
-import AccountsPopup from "./AccountsPopup.vue"
-import NewAccountPopup from "./NewAccountPopup.vue"
-import EditAccountPopup from "./EditAccountPopup.vue"
 
-/** Tokens */
-import TokensPopup from "./TokensPopup.vue"
-import TokenMetadataPopup from "./TokenMetadataPopup.vue"
-import NewTokenPopup from "./NewTokenPopup/NewTokenPopup.vue"
-import EditTokenPopup from "./EditTokenPopup.vue"
-import SelectTokenPopup from "./SelectTokenPopup.vue"
-import SelectBalanceTypePopup from "./SelectBalanceTypePopup.vue"
-import SendPopup from "./SendPopup.vue"
-import ReceivePopup from "./ReceivePopup.vue"
 
-/** Transactions */
-import TransactionPopup from "./TransactionPopup.vue"
 
-/** FPCs */
-import NewFpcPopup from "./NewFpcPopup.vue"
-import EditFpcPopup from "./EditFpcPopup.vue"
-import SelectFpcPopup from "./SelectFpcPopup.vue"
 
-/** Account state */
-import NewSenderPopup from "./NewSenderPopup.vue"
-import ChangeAuthwitsRegistryPopup from "./ChangeAuthwitsRegistryPopup.vue"
-import RevokeAuthwitsPopup from "./RevokeAuthwitsPopup.vue"
 
-/** Contacts */
-import NewContactPopup from "./NewContactPopup.vue"
-import EditContactPopup from "./EditContactPopup.vue"
-import ImportContactsPopup from "./ImportContactsPopup.vue"
 
-/** Privacy */
-import StealthPromoPopup from "./StealthPromoPopup.vue"
+
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"

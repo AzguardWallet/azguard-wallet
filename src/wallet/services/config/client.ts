@@ -1,8 +1,8 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { ServiceClient } from "@/wallet/base/background"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { CONFIG_SERVICE_NAME, Config, ConfigKey, ConfigProp, Events, Methods } from "./spec"
+import { CONFIG_SERVICE_NAME, type Config, type ConfigKey, type ConfigProp, type Events, type Methods } from "./spec"
 
 export * from "./spec"
 

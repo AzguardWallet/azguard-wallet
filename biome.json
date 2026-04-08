@@ -3,7 +3,7 @@
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true, "defaultBranch": "master" },
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!**/node_modules/**", "!**/dist/**"]
+		"includes": ["**", "!**/node_modules/**", "!**/dist/**", "!**/src/types/typed-router.d.ts", "!**/src/types/auto-imports.d.ts"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -31,9 +31,7 @@
 			},
 			"suspicious": {
 				"noAsyncPromiseExecutor": "off",
-				"noDoubleEquals": "off",
-				"noGlobalAssign": "off",
-				"noExplicitAny": "off"
+				"noExplicitAny": "error"
 			},
 			"complexity": {
 				"noExtraBooleanCast": "off",
@@ -41,6 +39,18 @@
 			}
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["**/*.vue"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedVariables": "off"
+					}
+				}
+			}
+		}
+	],
 	"javascript": {
 		"formatter": {
 			"jsxQuoteStyle": "double",

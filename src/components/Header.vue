@@ -1,6 +1,5 @@
 <script setup>
-/** Utils */
-import { getChainName } from "@/components/ui/utils.js"
+
 import { Config } from "@/wallet/config"
 import { LogLevel } from "@/wallet/logger"
 import { LogViewerServiceClient } from "@/wallet/services/log-viewer/client"

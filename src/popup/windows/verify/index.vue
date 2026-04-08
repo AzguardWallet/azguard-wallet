@@ -3,9 +3,6 @@
 import { onMounted, onUnmounted } from "vue"
 import { hashToEmoji } from "@aztec/wallet-sdk/crypto"
 
-/** Components */
-// @ts-ignore
-import EmojiGrid from "@/popup/components/modules/general/EmojiGrid.vue"
 
 /** Services */
 import { DappSessionServiceClient, type DappSession } from "@/wallet/services/dapp-session/client"

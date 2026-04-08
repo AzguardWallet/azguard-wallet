@@ -27,7 +27,7 @@ beforeEach(() => {
 
 // Clean up any globals set by tests (e.g., chrome.storage mock)
 afterEach(() => {
-	delete (globalThis as any).chrome
+	(globalThis as any).chrome = undefined
 })
 
 // ── LoggerStore tests ─────────────────────────────────────────────────

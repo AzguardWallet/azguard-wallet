@@ -1,9 +1,9 @@
-import { ILogger, LogLevel } from "@/wallet/logger"
+import { type ILogger, LogLevel } from "@/wallet/logger"
 import { sleep } from "@/wallet/utils"
 import { getErrorMessage } from "@/wallet/utils/errors"
 import { jsonSanitize } from "@/wallet/utils/serialization"
-import { EventsMap, MethodsMap, MethodsSpec, IService, EventsSpec, ServiceCollection } from "../."
-import { MessageType, EventMessage, RequestMessage, ResponseMessage } from "../messages"
+import type { EventsMap, MethodsMap, MethodsSpec, IService, EventsSpec, ServiceCollection } from "../."
+import { MessageType, type EventMessage, type RequestMessage, type ResponseMessage } from "../messages"
 import { unwrapParams } from "../utils"
 
 export abstract class Service<TRequests extends MethodsMap, TEvents extends EventsMap = {}> implements IService {
@@ -25,7 +25,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
 		this.logDebug("Service created")
 	}
 
-	protected async init(services: ServiceCollection): Promise<void> {
+	protected async init(_services: ServiceCollection): Promise<void> {
 		// to be overridden in derived classes
 	}
 
@@ -49,7 +49,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
 	private readonly onDisconnect = (client: chrome.runtime.Port) => {
 		client.onDisconnect.removeListener(this.onDisconnect)
 		client.onMessage.removeListener(this.onMessage)
-		const index = this.clients.findIndex((x) => x === client)
+		const index = this.clients.indexOf(client)
 		if (index === -1) {
 			this.logWarn("Unknown client disconnected")
 			return

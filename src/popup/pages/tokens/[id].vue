@@ -11,11 +11,6 @@
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 
-/** Components */
-import BalanceView from "../../components/modules/general/BalanceView.vue"
-import SplittedBalancesView from "../../components/modules/general/SplittedBalancesView.vue"
-import RecentActivityView from "../../components/modules/general/RecentActivityView.vue"
-import Navigation from "../../components/Navigation.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

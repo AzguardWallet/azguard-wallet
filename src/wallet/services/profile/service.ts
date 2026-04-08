@@ -1,7 +1,7 @@
 import { Fr } from "@aztec/foundation/curves/bn254"
-import { ConfigProp, IConfig } from "@/wallet/config"
-import { ILogger } from "@/wallet/logger"
-import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { ConfigProp, IConfig } from "@/wallet/config"
+import type { ILogger } from "@/wallet/logger"
+import type { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
 import { EntityStorage, StorageType, ValueStorage } from "@/wallet/storage"
 import { array_equals, getRandomHex, Lock } from "@/wallet/utils"
@@ -10,7 +10,16 @@ import { EventHandler } from "@/wallet/utils/event-handler"
 import { getEntropy, getMnemonic } from "@/wallet/utils/mnemonic"
 import { EncryptionKey } from "./encryption/encryption-key"
 import { PasskeyService } from "@/wallet/services/passkey/service"
-import { PROFILE_SERVICE_NAME, ENCRYPTION_GUARD, ProfileInfo, Profile, Session, ActiveSession, Events, Methods } from "./spec"
+import {
+	PROFILE_SERVICE_NAME,
+	ENCRYPTION_GUARD,
+	type ProfileInfo,
+	type Profile,
+	type Session,
+	type ActiveSession,
+	type Events,
+	type Methods,
+} from "./spec"
 
 export * from "./spec"
 
@@ -609,7 +618,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 				} while (await this.profiles.contains(userHandle))
 			}
 
-			let id = userHandle
+			const id = userHandle
 			const profile: Profile = {
 				id,
 				name,
@@ -656,7 +665,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 		}
 
 		const profileNames = (await this.profiles.getValues()).map((p) => p.name)
-		let base = profile.name
+		const base = profile.name
 		let name = base
 		let counter = 1
 		while (profileNames.includes(name)) {

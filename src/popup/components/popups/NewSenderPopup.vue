@@ -1,11 +1,6 @@
 <script setup>
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
 
-/** Utils */
-import { debounce } from "@/utils/general"
+
 import { isValidHex } from "@/utils/string"
 
 /** Services */

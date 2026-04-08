@@ -17,6 +17,7 @@ chrome.runtime.onMessage.addListener((message) => {
 // catch console
 const logger = new LoggerServiceClient("offscreen")
 for (const [method, level] of consoleMethods) {
+	// biome-ignore lint/suspicious/noExplicitAny: dynamic global property + console varargs
 	;(self as any)[`on${method}`] = (...args: any[]) => {
 		logger.log("pxe", level, ...args)
 	}
@@ -40,5 +41,3 @@ logger.log("pxe", LogLevel.Info, `Offscreen services initialized (${Date.now() -
 
 // notify bg only after services are actually initialized
 chrome.runtime.sendMessage(OFFSCREEN_READY_MESSAGE)
-
-export {}

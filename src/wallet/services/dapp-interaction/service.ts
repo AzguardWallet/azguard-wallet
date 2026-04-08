@@ -1,11 +1,11 @@
-import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { AztecAddress } from "@aztec/stdlib/aztec-address"
+import type { ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { ILogger } from "@/wallet/logger"
+import type { ILogger } from "@/wallet/logger"
 import { ProfileService } from "@/wallet/services/profile/service"
-import { NetworkService, Network } from "@/wallet/services/network/service"
-import { AccountService, Account } from "@/wallet/services/account/service"
-import { DappSessionService, AccessLevel, DappSession } from "@/wallet/services/dapp-session/service"
+import { NetworkService, type Network } from "@/wallet/services/network/service"
+import { AccountService, type Account } from "@/wallet/services/account/service"
+import { DappSessionService, AccessLevel, type DappSession } from "@/wallet/services/dapp-session/service"
 import { ExecutionService, type Operation, type OperationKind } from "@/wallet/services/execution/service"
 import { OriginType, type LocalTxOrigin } from "@/wallet/services/transaction/service"
 import { getRandomHex, Lock } from "@/wallet/utils"
@@ -25,9 +25,9 @@ import {
 	type CaipChain,
 	type CaipAccount,
 	type OperationRequest,
-	Methods,
-	Events,
-	DappInteraction,
+	type Methods,
+	type Events,
+	type DappInteraction,
 } from "./spec"
 
 export * from "./spec"

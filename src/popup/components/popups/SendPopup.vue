@@ -9,17 +9,9 @@ import { TransferType } from "@/wallet/services/transaction/client"
 /** Vendor */
 import BN from "bignumber.js"
 
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import SendTypesCard from "../modules/send/SendTypesCard.vue"
-import AmountCard from "../modules/send/AmountCard.vue"
-import FeeSettingsCard from "../modules/send/FeeSettingsCard.vue"
-import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
 
 /** Utils */
-import { capitalize, isValidHex, trimAddress } from "@/utils/string"
-import { getChainColor, getChainName } from "@/components/ui/utils.js"
+import { isValidHex, } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -74,7 +66,7 @@ function onTokenDeleted(token) {
 }
 
 const tokens = ref([])
-const activeToken = computed(() => tokens.value?.find((t) => t.id == cacheStore.activeTokenIdx))
+const activeToken = computed(() => tokens.value?.find((t) => t.id === cacheStore.activeTokenIdx))
 const isBlockedTransfer = computed(() => !activeToken.value?.hasPrivateTransfers && !activeToken.value?.hasPublicTransfers)
 
 const tokenBalanceService = new TokenBalanceServiceClient()
@@ -94,7 +86,7 @@ function onBalanceUpdated(balance) {
 
 const tokenBalances = ref([])
 const tokenBalance = computed(() => {
-	return tokenBalances.value?.find((b) => b?.token.id == cacheStore.activeTokenIdx)
+	return tokenBalances.value?.find((b) => b?.token.id === cacheStore.activeTokenIdx)
 })
 const tokenBalanceByType = computed(() => {
 	if (!tokenBalance.value) return 0

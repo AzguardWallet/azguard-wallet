@@ -1,8 +1,5 @@
 <script setup>
-/** Components */
-import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+
 
 /** Services */
 import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"

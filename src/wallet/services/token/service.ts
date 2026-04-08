@@ -1,18 +1,18 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { ILogger } from "@/wallet/logger"
+import type { ILogger } from "@/wallet/logger"
 import { NetworkService } from "@/wallet/services/network/service"
-import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service"
+import { ProfileService, type ProfileInfo } from "@/wallet/services/profile/service"
 import { AccountService } from "@/wallet/services/account/service"
 import { PxeServiceClient } from "@/wallet/services/pxe/client"
-import { TaskService, StepContent, WrappedTask } from "@/wallet/services/task/service"
+import { TaskService, StepContent, type WrappedTask } from "@/wallet/services/task/service"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, Lock } from "@/wallet/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice"
 import { simulate } from "@/wallet/utils/fn"
-import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, Methods, Events } from "./spec"
+import { type Token, type TokenInfo, TOKEN_SERVICE_NAME, type TokenInterface, type Methods, type Events } from "./spec"
 import {
 	BalanceOfPrivateFn,
 	BalanceOfPublicFn,
@@ -406,12 +406,12 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
 		return [
 			getNameFn
-				? (await simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())) as string
+				? ((await simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())) as string)
 				: ti.contract === feeJuiceAddress
 					? feeJuiceName
 					: "<name>",
 			getSymbolFn
-				? (await simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())) as string
+				? ((await simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())) as string)
 				: ti.contract === feeJuiceAddress
 					? feeJuiceSymbol
 					: "<symbol>",

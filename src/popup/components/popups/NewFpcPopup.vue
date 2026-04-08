@@ -1,10 +1,6 @@
 <script setup>
-/** Components */
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
+
 
 /** Utils */
 import { isValidHex } from "@/utils/string"

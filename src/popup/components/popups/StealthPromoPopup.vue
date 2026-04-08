@@ -1,8 +1,5 @@
 <script setup>
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import { Dropdown, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown"
+
 
 /** Utils */
 import { ConfigServiceClient } from "@/wallet/services/config/client"

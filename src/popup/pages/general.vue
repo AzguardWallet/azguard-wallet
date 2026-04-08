@@ -7,13 +7,7 @@
 </route>
 
 <script setup>
-/** Components */
-import BalanceView from "../components/modules/general/BalanceView.vue"
-import WarningView from "../components/modules/general/WarningView.vue"
-import TokensView from "../components/modules/general/TokensView.vue"
-import RecentActivityView from "../components/modules/general/RecentActivityView.vue"
-import GasBalanceCard from "../components/modules/general/GasBalanceCard.vue"
-import Navigation from "../components/Navigation.vue"
+
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

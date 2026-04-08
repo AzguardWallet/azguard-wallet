@@ -1,8 +1,16 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { ServiceClient } from "@/wallet/base/background"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
-import { TransferType, LocalTxOrigin } from "@/wallet/services/transaction/service"
-import { EXECUTION_SERVICE_NAME, FeeSettings, GasBalances, TransferFeeEstimate, Operation, OperationResult, Methods } from "./spec"
+import type { TransferType, LocalTxOrigin } from "@/wallet/services/transaction/service"
+import {
+	EXECUTION_SERVICE_NAME,
+	type FeeSettings,
+	type GasBalances,
+	type TransferFeeEstimate,
+	type Operation,
+	type OperationResult,
+	type Methods,
+} from "./spec"
 
 export * from "./spec"
 

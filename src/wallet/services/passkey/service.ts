@@ -1,7 +1,7 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { ILogger } from "@/wallet/logger"
-import { PASSKEY_SERVICE_NAME, Methods, PasskeyCredentialData, PasskeyRequest, PasskeyRequestPromise } from "./spec"
+import type { ILogger } from "@/wallet/logger"
+import { PASSKEY_SERVICE_NAME, type Methods, type PasskeyCredentialData, type PasskeyRequest, type PasskeyRequestPromise } from "./spec"
 import { PasskeyCredential } from "./credential"
 import { getRandomHex } from "@/wallet/utils"
 

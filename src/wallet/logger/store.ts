@@ -1,6 +1,6 @@
-import { ConfigProp, IConfig } from "@/wallet/config"
+import type { ConfigProp, IConfig } from "@/wallet/config"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { ILoggerStore, Log, LogLevel, CircularBufferIterable, print, trim } from "."
+import { type ILoggerStore, type Log, LogLevel, CircularBufferIterable, print, trim } from "."
 
 export class LoggerStore implements ILoggerStore {
 	public readonly onLog = new EventHandler<Log>()

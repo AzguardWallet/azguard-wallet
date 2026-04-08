@@ -1,5 +1,5 @@
 <script setup>
-import { isBackgroundConnected } from "@/utils/core.js"
+
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 

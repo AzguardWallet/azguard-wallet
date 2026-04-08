@@ -1,7 +1,7 @@
-import { ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { ILogger } from "@/wallet/logger"
-import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service"
+import type { ILogger } from "@/wallet/logger"
+import { ProfileService, type ProfileInfo } from "@/wallet/services/profile/service"
 import type { TxOrigin } from "@/wallet/services/transaction/service"
 import { getRandomHex } from "@/wallet/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
@@ -12,8 +12,8 @@ import {
 	type ITaskContent,
 	EmptyResult,
 	type ITaskResult,
-	Methods,
-	Events,
+	type Methods,
+	type Events,
 	TASK_RETENTION_PERIOD_MS,
 } from "./spec"
 import { WrappedTask } from "./wrapped-task"

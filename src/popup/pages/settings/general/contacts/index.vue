@@ -8,16 +8,12 @@
 </route>
 
 <script setup>
-/** Components */
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
-import Navigation from "../../../../components/Navigation.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
+
 
 /** Utils */
 import { ContactServiceClient } from "@/wallet/services/contact/client"
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { downloadFile, pickFile, sanitizeString, stringCompare, trimAddress } from "@/utils"
+import { downloadFile, pickFile, sanitizeString, stringCompare, } from "@/utils"
 
 /** Composables */
 import { useToast } from "@/composables/toast"

@@ -1,10 +1,10 @@
 import { Fr } from "@aztec/foundation/curves/bn254"
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { HashedValues, NestedProcessReturnValues } from "@aztec/stdlib/tx"
-import { AbiType, encodeArguments, FunctionAbi, FunctionCall, FunctionSelector, FunctionType } from "@aztec/stdlib/abi"
-import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts"
-import { AztecNode } from "@aztec/stdlib/interfaces/client"
-import { IPXE } from "@/wallet/services/pxe/proxy"
+import { HashedValues, type NestedProcessReturnValues } from "@aztec/stdlib/tx"
+import { type AbiType, encodeArguments, type FunctionAbi, FunctionCall, FunctionSelector, FunctionType } from "@aztec/stdlib/abi"
+import { AzguardFeePaymentMethod, AzguardFunctionCall, type IAccountContract } from "@/wallet/services/account/contracts"
+import type { AztecNode } from "@aztec/stdlib/interfaces/client"
+import type { IPXE } from "@/wallet/services/pxe/proxy"
 
 export class FnImpl {
 	constructor(

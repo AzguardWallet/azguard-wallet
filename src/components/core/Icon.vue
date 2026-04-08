@@ -25,7 +25,7 @@ const styles = computed(() => {
 
 	const ops = []
 	if (props.rotate) ops.push(`rotate(${props.rotate}deg)`)
-	if (props.scale != 1) ops.push(`scale(${props.scale})`)
+	if (props.scale !== 1) ops.push(`scale(${props.scale})`)
 	if (ops.length) s.transform = ops.join(" ")
 
 	return s

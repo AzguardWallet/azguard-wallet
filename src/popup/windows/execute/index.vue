@@ -2,24 +2,21 @@
 /** Vendor */
 import { onMounted, onUnmounted } from "vue"
 
-/** Components */
-// @ts-ignore
-import FeeSettingsCard from "../../components/modules/send/FeeSettingsCard.vue"
-// @ts-ignore
-import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
-/** Utils */
-import { trimAddress } from "@/utils/string"
 import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
-import { humanizeMethodName } from "@/utils/tx-enrichment"
 
 /** Services */
-import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
-import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
-import { Account, AccountServiceClient } from "@/wallet/services/account/client"
-import { ExecutionServiceClient, FeeSettings, Operation } from "@/wallet/services/execution/client"
-import { CaipAccount, CaipChain, DappInteractionServiceClient, ExecutionPayload } from "@/wallet/services/dapp-interaction/client"
-import { DappMetadata } from "@/wallet/services/dapp-session/client"
+import { type ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
+import { type Network, NetworkServiceClient } from "@/wallet/services/network/client"
+import { type Account, AccountServiceClient } from "@/wallet/services/account/client"
+import { ExecutionServiceClient, type FeeSettings, type Operation } from "@/wallet/services/execution/client"
+import {
+	type CaipAccount,
+	type CaipChain,
+	DappInteractionServiceClient,
+	type ExecutionPayload,
+} from "@/wallet/services/dapp-interaction/client"
+import type { DappMetadata } from "@/wallet/services/dapp-session/client"
 import { OriginType } from "@/wallet/services/transaction/client"
 
 type UIOperation = Operation & {
@@ -43,7 +40,7 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 /** Composables */
-// @ts-ignore
+// @ts-expect-error
 const { loadExternalImage } = useExternalImage()
 
 const profile = ref<ProfileInfo>()
@@ -63,9 +60,9 @@ const isInteractionCancelled = ref(false)
 const isWrongProfile = ref(false)
 const processingError = ref<UIError>()
 
-const feeEstimates = ref<Record<number, any>>({})
+const feeEstimates = ref<Record<number, unknown>>({})
 const estimatingOps = ref<Record<number, boolean>>({})
-const estimateTimers: Record<number, any> = {}
+const estimateTimers: Record<number, ReturnType<typeof setTimeout>> = {}
 const estimateCounters: Record<number, number> = {}
 const executionService = new ExecutionServiceClient()
 

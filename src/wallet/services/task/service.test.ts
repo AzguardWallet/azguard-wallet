@@ -1,8 +1,8 @@
 import { expect, test, vi, describe } from "vitest"
 import { ServiceCollection } from "@/wallet/base"
 import { DummyLogger } from "@/wallet/logger"
-import { ProfileInfo, ProfileService } from "@/wallet/services/profile/service"
-import { OriginType, TxOrigin } from "@/wallet/services/transaction/client"
+import { type ProfileInfo, ProfileService } from "@/wallet/services/profile/service"
+import { OriginType, type TxOrigin } from "@/wallet/services/transaction/client"
 import { EventHandler } from "@/wallet/utils/event-handler"
 import {
 	TaskService,
@@ -11,9 +11,9 @@ import {
 	TaskStatus,
 	ContentKind,
 	EmptyResult,
-	ITaskResult,
+	type ITaskResult,
 	ResultKind,
-	Events,
+	type Events,
 } from "./service"
 
 class TestResult implements ITaskResult {

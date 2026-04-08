@@ -1,6 +1,5 @@
 <script setup>
-/** Components */
-import LogsViewer from "@/components/ui/JsonViewer/LogsViewer.vue"
+
 
 /** Utils */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"

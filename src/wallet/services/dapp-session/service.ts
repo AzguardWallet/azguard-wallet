@@ -1,7 +1,7 @@
-import { ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { ILogger } from "@/wallet/logger"
-import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service"
+import type { ILogger } from "@/wallet/logger"
+import { ProfileService, type ProfileInfo } from "@/wallet/services/profile/service"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { getRandomHex, Lock } from "@/wallet/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
@@ -12,9 +12,9 @@ import {
 	type DappSession,
 	type GrantedCapabilityRecord,
 	type RejectedCapabilityRecord,
-	AccessLevel,
-	Methods,
-	Events,
+	type AccessLevel,
+	type Methods,
+	type Events,
 } from "./spec"
 
 export * from "./spec"

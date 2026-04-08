@@ -2,8 +2,6 @@
 /** Vendor */
 import { DateTime } from "luxon"
 
-/** Components */
-import TransactionCard from "./TransactionCard.vue"
 
 /** Store */
 import { useCacheStore } from "@/stores/cache.store"

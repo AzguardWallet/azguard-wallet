@@ -1,7 +1,5 @@
 <script setup>
-/** Components */
-import TransactionCard from "../activity/TransactionCard.vue"
-import TransactionAwaitingCard from "../activity/TransactionAwaitingCard.vue"
+
 
 /** Services */
 import { TaskServiceClient } from "@/wallet/services/task/client"

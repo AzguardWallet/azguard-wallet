@@ -91,7 +91,7 @@ export const isValidAmount = (value) => {
 		const amount = new BN(value)
 
 		return amount.isFinite() && !amount.isNaN() && amount.gt(0)
-	} catch (err) {
+	} catch (_err) {
 		return false
 	}
 }

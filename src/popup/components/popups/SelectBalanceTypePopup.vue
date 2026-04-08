@@ -2,12 +2,7 @@
 /** Services */
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
-/** Utils */
-import { comma } from "@/utils/amount.js"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store.ts"

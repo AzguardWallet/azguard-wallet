@@ -1,8 +1,8 @@
-import { ContractArtifact } from "@aztec/stdlib/abi"
+import type { ContractArtifact } from "@aztec/stdlib/abi"
 import { Gas } from "@aztec/stdlib/gas"
-import { Action } from "@/wallet/services/execution/spec"
-import { FpcInfo } from "../spec"
-import { IFpcHandler } from "."
+import type { Action } from "@/wallet/services/execution/spec"
+import type { FpcInfo } from "../spec"
+import type { IFpcHandler } from "."
 
 export class PrivateFpcHandler implements IFpcHandler {
 	public async getAsset(): Promise<string | undefined> {

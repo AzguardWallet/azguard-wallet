@@ -19,10 +19,6 @@ import type {
 	// helper types
 	// route definitions
 	RouteRecordInfo,
-	ParamValue,
-	ParamValueOneOrMore,
-	ParamValueZeroOrMore,
-	ParamValueZeroOrOne,
 	// vue-router extensions
 	_RouterTyped,
 	RouterLinkTyped,

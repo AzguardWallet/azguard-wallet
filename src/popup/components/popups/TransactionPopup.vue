@@ -9,14 +9,10 @@ import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { OriginType } from "@/wallet/services/transaction/client"
 import { AzguardFeePaymentMethod } from "@/wallet/services/account/contracts"
 
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
-import { trimAddress } from "@/utils/string"
-import { getTxCategory, getTxTitle, humanizeMethodName, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
+import { getTxCategory, getTxTitle, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
 import { formatFeeJuice, feeToUsd, formatGas } from "@/utils/fee-estimation"
 import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
 

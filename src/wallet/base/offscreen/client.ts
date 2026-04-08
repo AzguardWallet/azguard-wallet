@@ -1,9 +1,9 @@
-import { ILogger, LogLevel } from "@/wallet/logger"
+import { type ILogger, LogLevel } from "@/wallet/logger"
 import { getRandomHex } from "@/wallet/utils"
 import { jsonSanitize } from "@/wallet/utils/serialization"
 import { MessageType } from "../messages"
-import { EventsMap, EventsSpec, MethodsMap } from "../."
-import { EventMessage, RequestMessage, ResponseMessage } from "./messages"
+import type { EventsMap, EventsSpec, MethodsMap } from "../."
+import type { EventMessage, RequestMessage, ResponseMessage } from "./messages"
 import { wrapParams } from "../utils"
 
 /** Timeout for offscreen requests (ms). PXE operations can take 60s+ (fetch timeout + proof gen). */

@@ -1,11 +1,11 @@
 import { Fr } from "@aztec/foundation/curves/bn254"
 import { sha512ToGrumpkinScalar } from "@aztec/foundation/crypto/sha512"
 import { Schnorr } from "@aztec/foundation/crypto/schnorr"
-import { ContractArtifact, EventSelector, loadContractArtifact } from "@aztec/stdlib/abi"
+import { type ContractArtifact, EventSelector, loadContractArtifact } from "@aztec/stdlib/abi"
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract"
 import { deriveKeys } from "@aztec/stdlib/keys"
-import { NoirCompiledContract } from "@aztec/stdlib/noir"
-import { ILogger } from "@/wallet/logger"
+import type { NoirCompiledContract } from "@aztec/stdlib/noir"
+import type { ILogger } from "@/wallet/logger"
 import { AzguardV0Base } from "./azguard-v0-base"
 
 import compiled from "./azguard-v0-persistent.json" with { type: "json" }

@@ -1,22 +1,18 @@
-import { /*ContractNote,*/ FieldLayout } from "@aztec/stdlib/abi"
+
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { deriveStorageSlotInMap } from "@aztec/stdlib/hash"
-import { NoteStatus, NoteDao } from "@aztec/stdlib/note"
-import { ILogger } from "@/wallet/logger"
-import { ServiceCollection, ServiceSpec } from "@/wallet/base"
+import { NoteStatus, type NoteDao } from "@aztec/stdlib/note"
+import type { ILogger } from "@/wallet/logger"
+import type { ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { NetworkService, Network } from "@/wallet/services/network/service"
+import { NetworkService, type Network } from "@/wallet/services/network/service"
 import { PxeServiceClient } from "@/wallet/services/pxe/client"
 import { getErrorMessage } from "@/wallet/utils/errors"
-import { Methods, Note, NOTE_SERVICE_NAME } from "./spec"
+import { type Methods, type Note, NOTE_SERVICE_NAME } from "./spec"
 
 export * from "./spec"
 
 export class NoteService extends Service<Methods> implements ServiceSpec<Methods> {
 	public static name = NOTE_SERVICE_NAME
-
-	//private readonly contractNotesCache: Map<string, ContractNote[]> = new Map();
-	private readonly contractStorageCache: Map<string, [string, FieldLayout][]> = new Map()
 
 	private pxeService: PxeServiceClient = null!
 	private networkService: NetworkService = null!
@@ -65,7 +61,7 @@ export class NoteService extends Service<Methods> implements ServiceSpec<Methods
 		})
 	}
 
-	private async parseNote(network: Network, note: NoteDao): Promise<Note> {
+	private async parseNote(_network: Network, note: NoteDao): Promise<Note> {
 		return {
 			contract: note.contractAddress.toString(),
 			storageSlot: note.storageSlot.toString(),

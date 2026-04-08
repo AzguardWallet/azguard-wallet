@@ -39,7 +39,7 @@ import { DiscoveryQueue } from "./discovery-queue"
 import type { SessionContext } from "./types"
 import type { ILogger } from "@/wallet/logger"
 import { LogLevel } from "@/wallet/logger"
-import { Fr } from "@aztec/foundation/curves/bn254"
+import type { Fr } from "@aztec/foundation/curves/bn254"
 import packageJson from "../../../../package.json"
 
 /**
@@ -169,7 +169,7 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
 	 */
 	const origDecrypt = (handler as any).handleEncryptedMessage.bind(handler)
 	const decryptQueues = new Map<string, Promise<void>>()
-	;(handler as any).handleEncryptedMessage = async function (sessionId: string, encrypted: unknown) {
+	;(handler as any).handleEncryptedMessage = async (sessionId: string, encrypted: unknown) => {
 		const prev = decryptQueues.get(sessionId) ?? Promise.resolve()
 		const next = prev.then(() => origDecrypt(sessionId, encrypted))
 		decryptQueues.set(

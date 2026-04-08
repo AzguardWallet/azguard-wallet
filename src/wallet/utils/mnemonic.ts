@@ -2151,7 +2151,7 @@ export const getEntropy = async (mnemonic: string[]): Promise<Uint8Array<ArrayBu
 	const hashBits = bytesToBits(new Uint8Array(hash))
 
 	for (let i = 0; i < checksumBitsCnt; ++i) {
-		if (concatBits[entropyBitsCnt + i] != hashBits[i]) {
+		if (concatBits[entropyBitsCnt + i] !== hashBits[i]) {
 			throw new Error("Invalid checksum")
 		}
 	}

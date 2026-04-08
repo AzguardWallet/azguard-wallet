@@ -1,9 +1,5 @@
 <script setup>
-/** Components */
-import Header from "@/components/Header.vue"
-import LogoStar from "@/components/LogoStar.vue"
-import PopupManager from "./components/popups/PopupManager.vue"
-import GlobalLoader from "@/components/ui/GlobalLoader.vue"
+
 
 /** Utils */
 import { managers, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
@@ -22,7 +18,7 @@ const popupStore = usePopupStore()
 /** Update theme */
 const root = document.querySelector("html")
 const theme = ref(new Config().theme)
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (_event) => {
 	if (theme.value === "system") root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
 })
 

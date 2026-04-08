@@ -153,8 +153,7 @@ export class WalletSdkDispatcher {
 	constructor(
 		private readonly networkService: NetworkService,
 		private readonly accountService: AccountService,
-		private readonly executionService: ExecutionService,
-		private readonly profileService: ProfileService,
+		private readonly executionService: ExecutionService,readonly _profileService: ProfileService,
 		private readonly dappInteractionService: DappInteractionService,
 		private readonly dappSessionService: DappSessionService,
 		private readonly logger: ILogger,
@@ -297,7 +296,7 @@ export class WalletSdkDispatcher {
 	 * popup for user approval + fee method selection.
 	 */
 	private async handleSendTx(args: unknown[], ctx: SessionContext): Promise<unknown> {
-		const [network, account] = await this.resolveNetworkAndAccount(ctx)
+		const [_network, account] = await this.resolveNetworkAndAccount(ctx)
 		const caipAccount = `aztec:${ctx.chainId}:${account.address}`
 		this.logger.log(
 			"wallet-sdk",
@@ -371,7 +370,9 @@ export class WalletSdkDispatcher {
 		const rejectedTypes = new Set(existingRejections.map((r) => r.capabilityType))
 
 		// Delta: capabilities not yet granted OR previously rejected (re-request)
-		const delta = requestedCapabilities.filter((cap) => !grantedTypes.has(cap.type as Capability["type"]) || rejectedTypes.has(cap.type as string))
+		const delta = requestedCapabilities.filter(
+			(cap) => !grantedTypes.has(cap.type as Capability["type"]) || rejectedTypes.has(cap.type as string),
+		)
 		// Track which delta items are re-requests (previously rejected)
 		const reRequested = requestedCapabilities.filter((cap) => rejectedTypes.has(cap.type as string)).map((cap) => cap.type as string)
 
@@ -593,13 +594,29 @@ export class WalletSdkDispatcher {
 			case "aztec_getContractMetadata":
 				return { kind, networkId, address: args[0] as AztecGetContractMetadataOperation["address"] }
 			case "aztec_getPrivateEvents":
-				return { kind, networkId, eventMetadata: args[0] as AztecGetPrivateEventsOperation["eventMetadata"], eventFilter: args[1] as AztecGetPrivateEventsOperation["eventFilter"] }
+				return {
+					kind,
+					networkId,
+					eventMetadata: args[0] as AztecGetPrivateEventsOperation["eventMetadata"],
+					eventFilter: args[1] as AztecGetPrivateEventsOperation["eventFilter"],
+				}
 			case "aztec_registerSender":
-				return { kind, networkId, address: args[0] as AztecRegisterSenderOperation["address"], alias: args[1] as string | undefined }
+				return {
+					kind,
+					networkId,
+					address: args[0] as AztecRegisterSenderOperation["address"],
+					alias: args[1] as string | undefined,
+				}
 			case "aztec_getAddressBook":
 				return { kind, networkId }
 			case "aztec_registerContract":
-				return { kind, networkId, instance: args[0] as AztecRegisterContractOperation["instance"], artifact: args[1] as AztecRegisterContractOperation["artifact"], secretKey: args[2] as AztecRegisterContractOperation["secretKey"] }
+				return {
+					kind,
+					networkId,
+					instance: args[0] as AztecRegisterContractOperation["instance"],
+					artifact: args[1] as AztecRegisterContractOperation["artifact"],
+					secretKey: args[2] as AztecRegisterContractOperation["secretKey"],
+				}
 			default:
 				throw new Error(`Unknown network operation: ${kind}`)
 		}
@@ -633,7 +650,10 @@ export class WalletSdkDispatcher {
 					networkId,
 					accountAddress,
 					call: args[0] as AztecExecuteUtilityOperation["call"],
-					opts: { ...((args[1] as Record<string, unknown>) ?? {}), from: accountAddress } as unknown as AztecExecuteUtilityOperation["opts"],
+					opts: {
+						...((args[1] as Record<string, unknown>) ?? {}),
+						from: accountAddress,
+					} as unknown as AztecExecuteUtilityOperation["opts"],
 				}
 			case "aztec_profileTx":
 				return {
@@ -645,7 +665,12 @@ export class WalletSdkDispatcher {
 				}
 			case "aztec_createAuthWit":
 				// WalletSchema: createAuthWit(from: AztecAddress, messageHashOrIntent) — args[0] is from, args[1] is the intent
-				return { kind, networkId, accountAddress, messageHashOrIntent: args[1] as AztecCreateAuthWitOperation["messageHashOrIntent"] }
+				return {
+					kind,
+					networkId,
+					accountAddress,
+					messageHashOrIntent: args[1] as AztecCreateAuthWitOperation["messageHashOrIntent"],
+				}
 			case "register_token":
 				// schema_patch: registerToken(account: AztecAddress, token: AztecAddress)
 				// The first arg is the account (already resolved), second is the token address

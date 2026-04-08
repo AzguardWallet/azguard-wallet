@@ -1,4 +1,4 @@
-import { EventHandler } from "@/wallet/utils/event-handler"
+import type { EventHandler } from "@/wallet/utils/event-handler"
 
 export type EventsMap = Record<string, unknown>
 
@@ -6,7 +6,7 @@ export type EventsSpec<T extends EventsMap> = {
 	[P in keyof T]: EventHandler<T[P]>
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- params must be `any[]` so concrete method signatures (e.g. `(networkId: string) => ...`) satisfy this constraint
+// biome-ignore lint/suspicious/noExplicitAny: params must be `any[]` so concrete method signatures satisfy this constraint
 export type MethodsMap = Record<string, (...params: any[]) => unknown>
 
 export type MethodsSpec<T extends MethodsMap> = {

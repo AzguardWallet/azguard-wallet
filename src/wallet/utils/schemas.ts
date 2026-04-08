@@ -1,11 +1,11 @@
 import { EventSelector } from "@aztec/stdlib/abi"
 import { Fr } from "@aztec/foundation/curves/bn254"
-import { ZodFor } from "@aztec/foundation/schemas"
+import type { ZodFor } from "@aztec/foundation/schemas"
 import { Note, NoteStatus } from "@aztec/stdlib/note"
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
 import { inTxSchema, TxHash } from "@aztec/stdlib/tx"
 import { BlockNumberSchema } from "@aztec/foundation/branded-types"
-import { PackedPrivateEvent, type NotesFilter } from "@aztec/pxe/client/bundle"
+import type { PackedPrivateEvent, NotesFilter } from "@aztec/pxe/client/bundle"
 import z from "zod"
 
 export const NoteDaoSchema = z.object({

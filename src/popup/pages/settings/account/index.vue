@@ -8,14 +8,7 @@
 </route>
 
 <script setup>
-/** Components */
-import Navigation from "../../../components/Navigation.vue"
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
-import SettingField from "@/components/ui/Settings/SettingField.vue"
-import SettingValue from "@/components/ui/Settings/SettingValue.vue"
+
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

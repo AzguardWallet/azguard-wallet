@@ -3,7 +3,7 @@
 const { openToast } = useToast()
 
 const props = defineProps<{
-	capability: any
+	capability: Record<string, unknown>
 	granted: boolean
 }>()
 
@@ -12,7 +12,7 @@ const copyAddress = (addr: string) => {
 	openToast({ label: "Address is copied", icon: "copy" })
 }
 
-const formatScope = (scope: any): { isWildcard: boolean; patterns: any[] } => {
+const formatScope = (scope: unknown): { isWildcard: boolean; patterns: unknown[] } => {
 	if (scope === "*") return { isWildcard: true, patterns: [] }
 	if (Array.isArray(scope)) return { isWildcard: false, patterns: scope }
 	return { isWildcard: true, patterns: [] }

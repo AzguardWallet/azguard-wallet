@@ -1,42 +1,42 @@
-import { TxHash, TxReceipt, TxStatus as AztecTxStatus, TxExecutionResult as AztecTxExecutionResult } from "@aztec/stdlib/tx"
+import { TxHash, type TxReceipt, TxStatus as AztecTxStatus, TxExecutionResult as AztecTxExecutionResult } from "@aztec/stdlib/tx"
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
 import type { AztecNode } from "@aztec/stdlib/interfaces/client"
 import { FunctionSelector } from "@aztec/stdlib/abi"
-import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { ILogger } from "@/wallet/logger"
-import { AccountService, Account, AccountType } from "@/wallet/services/account/service"
+import type { ILogger } from "@/wallet/logger"
+import { AccountService, type Account, AccountType } from "@/wallet/services/account/service"
 import { NetworkService } from "@/wallet/services/network/service"
 import { ProfileService } from "@/wallet/services/profile/service"
-import { IPXE, PxeServiceClient } from "@/wallet/services/pxe/client"
-import { TaskService, StepContent, WrappedTask } from "@/wallet/services/task/service"
+import { type IPXE, PxeServiceClient } from "@/wallet/services/pxe/client"
+import { TaskService, StepContent, type WrappedTask } from "@/wallet/services/task/service"
 import { TransactionSyncContent } from "@/wallet/services/task/spec"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { sleep } from "@/wallet/utils"
 import { getErrorMessage } from "@/wallet/utils/errors"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { PrivateEventFilter } from "@aztec/aztec.js/wallet"
+import type { PrivateEventFilter } from "@aztec/aztec.js/wallet"
 import { BlockNumber } from "@aztec/foundation/branded-types"
 import {
-	Tx,
-	SyncedTx,
-	TxIndexerCursor,
-	TxGasDetails,
+	type Tx,
+	type SyncedTx,
+	type TxIndexerCursor,
+	type TxGasDetails,
 	TRANSACTION_SERVICE_NAME,
-	LocalTxOrigin,
-	TxCall,
-	SyncedTxCall,
+	type LocalTxOrigin,
+	type TxCall,
+	type SyncedTxCall,
 	TxStatus,
 	TxExecutionResult,
-	Methods,
-	Events,
+	type Methods,
+	type Events,
 	OriginType,
 	isSyncedTx,
 } from "./spec"
-import { AzguardFeePaymentMethod } from "../account/contracts"
+import type { AzguardFeePaymentMethod } from "../account/contracts"
 import { FUNCTION_CALL_LOG_EVENT_SELECTOR } from "../account/contracts/azguard-v0-persistent"
-import { PackedPrivateEvent } from "@aztec/pxe/client/bundle"
-import { Fr } from "@aztec/foundation/curves/bn254"
+import type { PackedPrivateEvent } from "@aztec/pxe/client/bundle"
+import type { Fr } from "@aztec/foundation/curves/bn254"
 import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract"
 
 export * from "./spec"
@@ -86,7 +86,6 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 	private networkService: NetworkService = null!
 	private pxeService: PxeServiceClient = null!
 	private taskService: TaskService = null!
-	private worker?: Promise<void>
 
 	public constructor(logger: ILogger) {
 		super(TRANSACTION_SERVICE_NAME, logger)
@@ -258,7 +257,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 		try {
 			this.logInfo(`Sync: starting for account=${address}`)
 
-			let cursor: TxIndexerCursor = (await this.cursors.get(address)) ?? {
+			const cursor: TxIndexerCursor = (await this.cursors.get(address)) ?? {
 				account: address,
 				chainId,
 				head: 1,
@@ -528,7 +527,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
 		await this.txs.set(tx.hash, tx)
 		this.emit("onTransactionUpdated", tx)
-		if (tx.status != TxStatus.Pending) {
+		if (tx.status !== TxStatus.Pending) {
 			this.pending.delete(tx.hash)
 		}
 		this.logDebug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`)

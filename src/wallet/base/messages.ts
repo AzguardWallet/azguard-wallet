@@ -1,4 +1,4 @@
-import { EventsMap, MethodsMap } from "."
+import type { EventsMap, MethodsMap } from "."
 
 export enum MessageType {
 	Event = 1,

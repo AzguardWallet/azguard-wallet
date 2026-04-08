@@ -1,6 +1,5 @@
 <script setup>
-/** Components */
-import { Dropdown, DropdownItem, DropdownTitle } from "@/components/ui/Dropdown"
+
 
 const route = useRoute()
 const router = useRouter()

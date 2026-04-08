@@ -6,26 +6,26 @@ import {
 	DomainSeparator,
 } from "@aztec/constants"
 import { Fr } from "@aztec/foundation/curves/bn254"
-import { GrumpkinScalar } from "@aztec/foundation/curves/grumpkin"
+import type { GrumpkinScalar } from "@aztec/foundation/curves/grumpkin"
 import { poseidon2HashWithSeparator } from "@aztec/foundation/crypto/poseidon"
 import { Schnorr } from "@aztec/foundation/crypto/schnorr"
-import { ContractArtifact, encodeArguments, FunctionSelector } from "@aztec/stdlib/abi"
+import { type ContractArtifact, encodeArguments, FunctionSelector } from "@aztec/stdlib/abi"
 import { AuthWitness } from "@aztec/stdlib/auth-witness"
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { CompleteAddress, computePartialAddress, ContractInstanceWithAddress } from "@aztec/stdlib/contract"
+import { CompleteAddress, computePartialAddress, type ContractInstanceWithAddress } from "@aztec/stdlib/contract"
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas"
-import { PublicKey } from "@aztec/stdlib/keys"
-import { Capsule, HashedValues, TxContext, TxExecutionRequest } from "@aztec/stdlib/tx"
+import type { PublicKey } from "@aztec/stdlib/keys"
+import { type Capsule, HashedValues, TxContext, TxExecutionRequest } from "@aztec/stdlib/tx"
 import { computeSiloedPrivateInitializationNullifier } from "@aztec/stdlib/hash"
-import { AztecNode } from "@aztec/stdlib/interfaces/client"
-import { ILogger, LogLevel } from "@/wallet/logger"
+import type { AztecNode } from "@aztec/stdlib/interfaces/client"
+import { type ILogger, LogLevel } from "@/wallet/logger"
 import type { IPXE } from "@/wallet/services/pxe/client"
 import {
 	getMulticallEntrypointAddress,
 	getMulticallEntrypointFn,
 	getMulticallEntrypointSelector,
 } from "@/wallet/utils/multicall-entrypoint"
-import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from "."
+import { AzguardFeePaymentMethod, AzguardFunctionCall, type IAccountContract } from "."
 
 const CHUNK_SIZE = 4
 
@@ -98,7 +98,7 @@ export abstract class AzguardV0Base implements IAccountContract {
 		const batchCapsules = capsules?.slice() ?? []
 
 		while (batchCalls.length > CHUNK_SIZE) {
-			let new_calls = []
+			const new_calls = []
 			while ((Math.floor(batchCalls.length / CHUNK_SIZE) % CHUNK_SIZE) + (batchCalls.length % CHUNK_SIZE) > CHUNK_SIZE) {
 				batchCalls.push(AzguardFunctionCall.empty())
 			}

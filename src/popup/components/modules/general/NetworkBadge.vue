@@ -4,7 +4,7 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 /** Utils */
-import { getChainColor, getChainName } from "@/components/ui/utils.js"
+import { getChainName } from "@/components/ui/utils.js"
 
 const props = defineProps({
 	chainId: {

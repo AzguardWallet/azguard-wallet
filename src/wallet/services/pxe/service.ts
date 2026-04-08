@@ -1,7 +1,7 @@
 // SponsoredFPC salt — standard deployment uses salt = 0
 const SPONSORED_FPC_SALT = BigInt(0)
 import { getPXEConfig, type PXEConfig } from "@aztec/pxe/config"
-import { createPXE, PackedPrivateEvent, PXE } from "@aztec/pxe/client/bundle"
+import { createPXE, type PackedPrivateEvent, type PXE } from "@aztec/pxe/client/bundle"
 import { Fr } from "@aztec/foundation/curves/bn254"
 import { AuthRegistryArtifact } from "@aztec/protocol-contracts/auth-registry"
 import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-registry"
@@ -15,7 +15,7 @@ import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/Sponsored
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token"
 import { loadContractArtifact } from "@aztec/stdlib/abi"
 import { type ContractArtifact, ContractArtifactSchema, EventSelector, FunctionCall } from "@aztec/stdlib/abi"
-// @ts-ignore — raw JSON import via vite alias
+// @ts-expect-error — raw JSON import via vite alias
 import WonderlandTokenJson from "@wonderland-token-artifact"
 const WonderlandTokenArtifact = loadContractArtifact(WonderlandTokenJson)
 import { AuthWitness } from "@aztec/stdlib/auth-witness"
@@ -25,36 +25,36 @@ import {
 	ContractInstanceWithAddressSchema,
 	getContractClassFromArtifact,
 	getContractInstanceFromInstantiationParams,
-	CompleteAddress,
-	PartialAddress,
+	type CompleteAddress,
+	type PartialAddress,
 } from "@aztec/stdlib/contract"
 import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client"
 import { makeFetchWithTimeout } from "@/wallet/utils/fetch"
-import { NoteDao } from "@aztec/stdlib/note"
+import type { NoteDao } from "@aztec/stdlib/note"
 import type { NotesFilter } from "./spec"
 import {
 	SimulationOverrides,
 	TxExecutionRequest,
-	TxProvingResult,
-	TxSimulationResult,
-	UtilityExecutionResult,
-	TxProfileResult,
+	type TxProvingResult,
+	type TxSimulationResult,
+	type UtilityExecutionResult,
+	type TxProfileResult,
 } from "@aztec/stdlib/tx"
 import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle"
 import z from "zod"
 import { AcceleratorProver } from "@alejoamiras/aztec-accelerator"
 
 const AccessScopesSchema = z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)])
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/offscreen"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
-import { Network } from "@/wallet/services/network/client"
-import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/client"
+import type { Network } from "@/wallet/services/network/client"
+import { ProfileServiceClient, type ProfileInfo } from "@/wallet/services/profile/client"
 import { ReadWriteGuard } from "@/wallet/utils"
 import { getErrorMessage } from "@/wallet/utils/errors"
-import { Methods, PXE_SERVICE_NAME } from "./spec"
-import { PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet"
+import { type Methods, PXE_SERVICE_NAME } from "./spec"
+import { type PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet"
 import { NotesFilterSchema } from "@/wallet/utils/schemas"
 
 export * from "./spec"

@@ -1,9 +1,5 @@
 <script setup>
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
-import PopupHeader from "@/components/ui/Popup/PopupHeader.vue"
-import FeeSettingsCard from "@/popup/components/modules/send/FeeSettingsCard.vue"
+
 
 /** Utils */
 import { AuthRegistryServiceClient } from "@/wallet/services/auth-registry/client"

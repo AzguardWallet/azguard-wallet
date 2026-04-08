@@ -1,5 +1,5 @@
-import { Fr } from "@aztec/foundation/curves/bn254"
-import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi"
+import type { Fr } from "@aztec/foundation/curves/bn254"
+import { type ContractArtifact, type FunctionAbi, FunctionType, type StructType } from "@aztec/stdlib/abi"
 import { ViewFn } from "@/wallet/utils/fn"
 
 export enum GetNameImpl {

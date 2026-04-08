@@ -1,6 +1,5 @@
 <script setup>
-/** Components */
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
+
 
 const emit = defineEmits(["onFieldSelect", "onFieldClear"])
 const props = defineProps({

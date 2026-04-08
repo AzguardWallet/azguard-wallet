@@ -1,7 +1,5 @@
 <script setup>
-/** Components */
-import Popup from "@/components/ui/Popup/Popup.vue"
-import PopupCard from "@/components/ui/Popup/PopupCard.vue"
+
 
 /** Composables */
 import { useToast } from "@/composables/toast"

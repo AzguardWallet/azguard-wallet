@@ -1,4 +1,4 @@
-import { FnImpl } from "@/wallet/utils/fn"
+import type { FnImpl } from "@/wallet/utils/fn"
 
 export const TOKEN_SERVICE_NAME = "token"
 

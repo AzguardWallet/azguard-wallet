@@ -8,11 +8,7 @@
 </route>
 
 <script setup>
-/** Components */
-import Navigation from "../../../components/Navigation.vue"
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
+
 </script>
 
 <template>

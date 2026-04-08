@@ -1,4 +1,4 @@
-import { ILogger, Log, LogLevel } from "."
+import { type ILogger, type Log, LogLevel } from "."
 
 export class DummyLogger implements ILogger {
 	log() {}

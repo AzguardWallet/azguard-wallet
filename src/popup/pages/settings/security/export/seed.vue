@@ -8,9 +8,7 @@
 </route>
 
 <script setup>
-/** Components */
-import Navigation from "../../../../components/Navigation.vue"
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+
 
 /** Services */
 import { managers } from "@/utils/core"

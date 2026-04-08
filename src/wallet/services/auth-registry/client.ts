@@ -1,9 +1,9 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { ServiceClient } from "@/wallet/base/background"
-import { FeeSettings } from "@/wallet/services/execution/models"
+import type { FeeSettings } from "@/wallet/services/execution/models"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { AUTH_REGISTRY_SERVICE_NAME, Authwit, Events, Methods } from "./spec"
+import { AUTH_REGISTRY_SERVICE_NAME, type Authwit, type Events, type Methods } from "./spec"
 
 export * from "./spec"
 

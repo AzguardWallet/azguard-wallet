@@ -75,8 +75,8 @@ export class EncryptionKey {
 	 * @returns New instance of EncryptionKey
 	 */
 	public static async fromPassword(password: string): Promise<EncryptionKey> {
-		const passhash = await this.getPasshash(password)
-		return this.fromPasshash(passhash)
+		const passhash = await EncryptionKey.getPasshash(password)
+		return EncryptionKey.fromPasshash(passhash)
 	}
 
 	/**

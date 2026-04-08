@@ -1,4 +1,4 @@
-import { Token, TokenInfo, TokenInterface } from "./spec"
+import type { Token, TokenInfo, TokenInterface } from "./spec"
 
 export const getTokenInfo = (token: Token): TokenInfo => ({
 	id: token.id,

@@ -1,6 +1,6 @@
-import { PrivateEventFilter } from "@aztec/aztec.js/wallet"
+import type { PrivateEventFilter } from "@aztec/aztec.js/wallet"
 import type { Fr } from "@aztec/foundation/curves/bn254"
-import { PackedPrivateEvent, type NotesFilter } from "@aztec/pxe/client/bundle"
+import type { PackedPrivateEvent, NotesFilter } from "@aztec/pxe/client/bundle"
 export type { NotesFilter }
 import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle"
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi"
@@ -29,5 +29,5 @@ export type Methods = {
 	profileTx(network: Network, txRequest: TxExecutionRequest, opts: ProfileTxOpts): TxProfileResult
 	simulateTx(network: Network, txRequest: TxExecutionRequest, opts: SimulateTxOpts, stubAccountAddresses?: string[]): TxSimulationResult
 	executeUtility(network: Network, call: FunctionCall, opts: ExecuteUtilityOpts): UtilityExecutionResult
-	getPrivateEvents<T>(network: Network, eventSelector: EventSelector, filter: PrivateEventFilter): PackedPrivateEvent[]
+	getPrivateEvents<_T>(network: Network, eventSelector: EventSelector, filter: PrivateEventFilter): PackedPrivateEvent[]
 }

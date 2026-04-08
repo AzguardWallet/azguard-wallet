@@ -1,17 +1,17 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { ServiceClient } from "@/wallet/base/background"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
 import { EventHandler } from "@/wallet/utils/event-handler"
 import {
-	AccessLevel,
+	type AccessLevel,
 	DAPP_SESSION_SERVICE_NAME,
-	DappMetadata,
-	DappPermissions,
-	DappSession,
-	GrantedCapabilityRecord,
-	RejectedCapabilityRecord,
-	Events,
-	Methods,
+	type DappMetadata,
+	type DappPermissions,
+	type DappSession,
+	type GrantedCapabilityRecord,
+	type RejectedCapabilityRecord,
+	type Events,
+	type Methods,
 } from "./spec"
 
 export * from "./spec"

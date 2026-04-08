@@ -1,4 +1,4 @@
-import { AuthwitContent } from "."
+import type { AuthwitContent } from "."
 
 export type ActionKind = Action["kind"]
 

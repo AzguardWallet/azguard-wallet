@@ -1,10 +1,7 @@
 <script setup>
 /** Vendor */
 import BN from "bignumber.js"
-import { DateTime } from "luxon"
 
-/** Components */
-import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"

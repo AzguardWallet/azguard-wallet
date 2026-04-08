@@ -1,15 +1,11 @@
 <script setup>
-/** Components */
-import TokenCard from "./TokenCard.vue"
-import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown"
+
 
 /** Services */
 import { ContentKind } from "@/wallet/services/task/spec"
 import { TaskServiceClient } from "@/wallet/services/task/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 
-/** Utils */
-import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import { stringCompare } from "@/utils/string"
 
 /** Store */

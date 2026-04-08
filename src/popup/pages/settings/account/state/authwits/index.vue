@@ -8,10 +8,7 @@
 </route>
 
 <script setup>
-/** Components */
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
-import Navigation from "../../../../../components/Navigation.vue"
+
 
 /** Utils */
 import { AuthRegistryServiceClient } from "@/wallet/services/auth-registry/client"

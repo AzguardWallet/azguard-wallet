@@ -8,14 +8,11 @@
 </route>
 
 <script setup>
-/** Components */
-import Navigation from "../../../../../components/Navigation.vue"
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
+
 
 /** Utils */
 import { NoteServiceClient } from "@/wallet/services/note/client"
-import { stringCompare, trimAddress } from "@/utils/string"
-import { getColorFromAddress } from "@/components/ui/utils.js"
+import { stringCompare, } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -38,7 +35,7 @@ const filteredNotes = computed(() => {
 		(n) =>
 			n.contract.toLowerCase().includes(term) ||
 			(n.type ? n.type : "custom note").toLowerCase().includes(term) ||
-			(n.location && n.location.toLowerCase().includes(term)),
+			(n.location?.toLowerCase().includes(term)),
 	)
 })
 const noteService = new NoteServiceClient()

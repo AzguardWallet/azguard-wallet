@@ -11,10 +11,6 @@
 /** Services */
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
 
-/** Components */
-import Navigation from "../../../../components/Navigation.vue"
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
-import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

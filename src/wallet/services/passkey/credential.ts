@@ -1,5 +1,5 @@
 import { Fr } from "@aztec/foundation/curves/bn254"
-import { PasskeyCredentialData } from "./spec"
+import type { PasskeyCredentialData } from "./spec"
 
 const te = new TextEncoder()
 

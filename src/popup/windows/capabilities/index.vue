@@ -2,18 +2,14 @@
 /** Vendor */
 import { onMounted, onUnmounted } from "vue"
 
-/** Components */
-// @ts-ignore
-import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
-import CapabilityDetailPanel from "@/popup/components/modules/capabilities/CapabilityDetailPanel.vue"
 
 /** Utils */
 import { getErrorData } from "@/wallet/utils/errors"
 
 /** Services */
-import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
-import { DappMetadata } from "@/wallet/services/dapp-session/client"
-import { CapabilityPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
+import { type ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
+import type { DappMetadata } from "@/wallet/services/dapp-session/client"
+import { type CapabilityPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 
 type UIDappMetadata = DappMetadata & {
 	loadingLogo?: boolean
@@ -27,7 +23,7 @@ type UIAccount = {
 }
 
 type UICapability = {
-	capability: any
+	capability: Record<string, unknown>
 	label: string
 	description: string
 	isNew: boolean
@@ -47,7 +43,7 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 /** Composables */
-// @ts-ignore
+// @ts-expect-error
 const { loadExternalImage } = useExternalImage()
 
 const router = useRouter()
@@ -124,7 +120,7 @@ const init = async () => {
 		}
 
 		// Check if accounts type is in delta — show account selection instead of card
-		const hasAccountsInDelta = payload.value.params.delta.some((cap: any) => cap.type === "accounts")
+		const hasAccountsInDelta = payload.value.params.delta.some((cap: Record<string, unknown>) => cap.type === "accounts")
 		if (hasAccountsInDelta) {
 			if (payload.value.params.availableAccounts?.length) {
 				needsAccountSelection.value = true
@@ -221,7 +217,7 @@ const approve = async () => {
 		// Re-add the accounts capability to granted if accounts were selected
 		const granted = [...approvedNew, ...existing]
 		if (needsAccountSelection.value && selectedAccounts.value.length > 0) {
-			const accountsCap = payload.value!.params.delta.find((cap: any) => cap.type === "accounts")
+			const accountsCap = payload.value!.params.delta.find((cap: Record<string, unknown>) => cap.type === "accounts")
 			if (accountsCap) {
 				granted.push(accountsCap)
 			}

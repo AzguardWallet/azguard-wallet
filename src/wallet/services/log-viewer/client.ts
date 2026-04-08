@@ -1,8 +1,8 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { ServiceClient } from "@/wallet/base/background"
-import { DummyLogger, Log } from "@/wallet/logger"
+import { DummyLogger, type Log } from "@/wallet/logger"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { LOG_VIEWER_SERVICE_NAME, Methods, Events } from "./spec"
+import { LOG_VIEWER_SERVICE_NAME, type Methods, type Events } from "./spec"
 
 export * from "./spec"
 

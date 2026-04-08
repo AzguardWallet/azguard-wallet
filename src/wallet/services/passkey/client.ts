@@ -1,7 +1,7 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { ServiceClient } from "@/wallet/base/background"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
-import { PASSKEY_SERVICE_NAME, Methods, PasskeyRequest, PasskeyCredentialData } from "./spec"
+import { PASSKEY_SERVICE_NAME, type Methods, type PasskeyRequest, type PasskeyCredentialData } from "./spec"
 
 export * from "./spec"
 

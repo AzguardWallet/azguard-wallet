@@ -1,4 +1,4 @@
-import { TokenInfo } from "@/wallet/services/token/spec"
+import type { TokenInfo } from "@/wallet/services/token/spec"
 
 export const TOKEN_BALANCE_SERVICE_NAME = "token-balance"
 

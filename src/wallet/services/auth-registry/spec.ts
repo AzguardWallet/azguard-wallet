@@ -1,4 +1,4 @@
-import { FeeSettings, AuthwitContent } from "@/wallet/services/execution/spec"
+import type { FeeSettings, AuthwitContent } from "@/wallet/services/execution/spec"
 
 export const AUTH_REGISTRY_SERVICE_NAME = "auth-registry"
 

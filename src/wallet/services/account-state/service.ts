@@ -1,15 +1,21 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note"
-import { ILogger } from "@/wallet/logger"
-import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { ILogger } from "@/wallet/logger"
+import type { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
 import { PxeServiceClient } from "@/wallet/services/pxe/client"
 import { NetworkService } from "@/wallet/services/network/service"
-import { type Network } from "@/wallet/services/network/spec"
+import type { Network } from "@/wallet/services/network/spec"
 import { NodeStatus } from "@/wallet/services/network/spec"
 import { EventHandler } from "@/wallet/utils/event-handler"
 import { getErrorMessage } from "@/wallet/utils/errors"
-import { ACCOUNT_STATE_SERVICE_NAME, BackupAccountState, BackupContract, BackupSender, Events, Methods } from "./spec"
+import {
+	ACCOUNT_STATE_SERVICE_NAME,
+	type BackupAccountState,
+	type BackupContract,
+	type BackupSender,
+	type Events,
+	type Methods,
+} from "./spec"
 
 export * from "./spec"
 

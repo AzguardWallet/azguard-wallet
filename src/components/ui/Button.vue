@@ -3,7 +3,6 @@
  * Vendor
  */
 import { useCssModule } from "vue"
-import { RouterLink } from "vue-router"
 
 const emit = defineEmits(["onKeybind"])
 const props = defineProps({

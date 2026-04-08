@@ -1,23 +1,23 @@
 import { FunctionType } from "@aztec/stdlib/abi"
-import { ILogger } from "@/wallet/logger"
-import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
+import type { ILogger } from "@/wallet/logger"
+import type { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
 import { getTokenInfo } from "@/wallet/services/token/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, sleep } from "@/wallet/utils"
 import { Queue } from "@/wallet/utils/queue"
-import { AccountService, Account } from "@/wallet/services/account/service"
+import { AccountService, type Account } from "@/wallet/services/account/service"
 import { NetworkService } from "@/wallet/services/network/service"
-import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service"
-import { TokenService, Token, TokenInfo } from "@/wallet/services/token/service"
+import { ProfileService, type ProfileInfo } from "@/wallet/services/profile/service"
+import { TokenService, type Token, type TokenInfo } from "@/wallet/services/token/service"
 import { BalanceOfPrivateFn, BalanceOfPublicFn } from "@/wallet/services/token/functions"
-import { ExecutionService, CallAction, EncodedCallAction } from "@/wallet/services/execution/service"
+import { ExecutionService, type CallAction, type EncodedCallAction } from "@/wallet/services/execution/service"
 import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/service"
-import { isLocalTx, OriginType, TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service"
+import { isLocalTx, OriginType, TransactionService, type Tx, TxStatus } from "@/wallet/services/transaction/service"
 import type { ViewFn } from "@/wallet/utils/fn"
 import { getErrorMessage } from "@/wallet/utils/errors"
-import { TOKEN_BALANCE_SERVICE_NAME, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec"
+import { TOKEN_BALANCE_SERVICE_NAME, type TokenBalanceRaw, type TokenBalanceInfo, type Methods, type Events } from "./spec"
 
 export * from "./spec"
 
@@ -42,7 +42,6 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
 	private taskService: TaskService = null!
 
 	private profile?: ProfileInfo = undefined
-	private worker?: Promise<void>
 
 	public constructor(logger: ILogger) {
 		super(TOKEN_BALANCE_SERVICE_NAME, logger)

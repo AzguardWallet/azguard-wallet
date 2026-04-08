@@ -1,19 +1,19 @@
-import { ServiceSpec } from "@/wallet/base"
+import type { ServiceSpec } from "@/wallet/base"
 import { ServiceClient } from "@/wallet/base/background"
 import { LoggerServiceClient } from "@/wallet/services/logger/client"
 import { EventHandler } from "@/wallet/utils/event-handler"
 import type { Operation } from "@/wallet/services/execution/spec"
 import type { LocalTxOrigin } from "@/wallet/services/transaction/spec"
 import {
-	CapabilityPayload,
-	CapabilityResult,
-	DiscoveryPayload,
-	DiscoveryResult,
+	type CapabilityPayload,
+	type CapabilityResult,
+	type DiscoveryPayload,
+	type DiscoveryResult,
 	DAPP_INTERACTION_SERVICE_NAME,
-	Events,
-	ExecutionPayload,
-	ExecutionResult,
-	Methods,
+	type Events,
+	type ExecutionPayload,
+	type ExecutionResult,
+	type Methods,
 } from "./spec"
 
 export * from "./spec"

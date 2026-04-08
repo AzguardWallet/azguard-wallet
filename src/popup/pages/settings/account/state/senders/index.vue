@@ -8,12 +8,8 @@
 </route>
 
 <script setup>
-/** Components */
-import Navigation from "../../../../../components/Navigation.vue"
-import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 
-/** Utils */
-import { trimAddress } from "@/utils/string"
+
 
 /** Services */
 import { AccountStateServiceClient } from "@/wallet/services/account-state/client"

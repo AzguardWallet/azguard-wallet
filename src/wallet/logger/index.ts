@@ -1,4 +1,4 @@
-import { EventHandler } from "@/wallet/utils/event-handler"
+import type { EventHandler } from "@/wallet/utils/event-handler"
 
 export * from "./store"
 export * from "./utils"

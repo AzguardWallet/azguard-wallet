@@ -1,9 +1,9 @@
-import { Restored, ServiceSpec } from "@/wallet/base"
+import type { Restored, ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/background"
-import { IConfigStore } from "@/wallet/config"
-import { ILogger } from "@/wallet/logger"
+import type { IConfigStore } from "@/wallet/config"
+import type { ILogger } from "@/wallet/logger"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { CONFIG_SERVICE_NAME, Config, ConfigKey, ConfigProp, Events, Methods } from "./spec"
+import { CONFIG_SERVICE_NAME, type Config, type ConfigKey, type ConfigProp, type Events, type Methods } from "./spec"
 
 export * from "./spec"
 

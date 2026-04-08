@@ -2,11 +2,7 @@
 /** Vendor */
 import BigNumber from "bignumber.js"
 
-/** Components */
-import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 
-/** Utils */
-import { trimAddress } from "@/utils/string"
 import { getRandomHex } from "@/wallet/utils"
 import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 import { UI_STORAGE_KEYS } from "@/popup/constants/storage-keys"
@@ -70,7 +66,6 @@ const methods = computed(() => {
 
 	for (const fpc of registeredFpcs.value) {
 		if (fpc.type === FpcType.PrivateFpc) {
-			continue // already added as static "Private Fee Juice" entry above
 		} else if (fpc.type === FpcType.DefaultSponsoredFpc) {
 			base.push({
 				type: "fpc",
