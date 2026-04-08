@@ -30,7 +30,7 @@ const token = computed(() => transfer.value?.token)
 const transferAmount = computed(() => {
 	if (transfer.value) {
 		const decimals = new BN(10).pow(token.value?.decimals || 0)
-		return balanceFormatted(new BN((transfer.value.amount || 0)).dividedBy(decimals), 8).value
+		return balanceFormatted(new BN(transfer.value.amount || 0).dividedBy(decimals), 8).value
 	}
 
 	return 0
@@ -98,11 +98,7 @@ const isSubtitleHash = computed(() => type.value !== "transfer" && !getOriginLab
 const explorerUrl = computed(() => {
 	if (!appStore.network?.chainId) return null
 
-	return getTransactionExplorerUrl(
-		appStore.network.chainId,
-		appStore.defaultExplorer,
-		props.tx.hash
-	)
+	return getTransactionExplorerUrl(appStore.network.chainId, appStore.defaultExplorer, props.tx.hash)
 })
 </script>
 

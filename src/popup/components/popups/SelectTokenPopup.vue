@@ -38,13 +38,13 @@ function onTokenAdded(token) {
 	tokens.value.push(token)
 }
 function onTokenDeleted(token) {
-	const idx = tokens.value.findIndex(t => t.id === token.id)
+	const idx = tokens.value.findIndex((t) => t.id === token.id)
 	if (idx === -1) return
 
 	tokens.value.splice(idx, 1)
 }
 
-const handleSelectToken = id => {
+const handleSelectToken = (id) => {
 	cacheStore.activeTokenIdx = id
 	emit("onClose")
 }

@@ -13,10 +13,10 @@ declare global {
   const $ref: typeof import("vue/macros")["$ref"]
   const $shallowRef: typeof import("vue/macros")["$shallowRef"]
   const $toRef: typeof import("vue/macros")["$toRef"]
-  const AZTEC_EVENTS: typeof import('../utils/general.js')['AZTEC_EVENTS']
-  const AZTEC_METHODS: typeof import('../utils/general.js')['AZTEC_METHODS']
+  const AZTEC_EVENTS: typeof import("../utils/general.js")["AZTEC_EVENTS"]
+  const AZTEC_METHODS: typeof import("../utils/general.js")["AZTEC_METHODS"]
   const AccessLevel: typeof import('../utils/confirmation-policies').AccessLevel
-  const CAIP: typeof import('../utils/general.js')['CAIP']
+  const CAIP: typeof import("../utils/general.js")["CAIP"]
   const EffectScope: typeof import('vue').EffectScope
   const FEE_JUICE_PRICING: typeof import('../utils/fee-estimation').FEE_JUICE_PRICING
   const FEE_JUICE_USD_RATE: typeof import('../utils/fee-estimation').FEE_JUICE_USD_RATE
@@ -24,12 +24,12 @@ declare global {
   const asyncComputed: typeof import("@vueuse/core")["asyncComputed"]
   const autoResetRef: typeof import("@vueuse/core")["autoResetRef"]
   const balanceFormatted: typeof import('../utils/amount.js').balanceFormatted
-  const blobToUint8Array: typeof import('../utils/files').blobToUint8Array
-  const bn: typeof import('../utils/bn.js')['default']
+  const blobToUint8Array: typeof import("../utils/files").blobToUint8Array
+  const bn: typeof import("../utils/bn.js")["default"]
   const browser: typeof import('webextension-polyfill')
   const buildFeeEstimate: typeof import('../utils/fee-estimation').buildFeeEstimate
   const capitalize: typeof import('../utils/string').capitalize
-  const capitilize: typeof import('../utils/string.js')['capitilize']
+  const capitilize: typeof import("../utils/string.js")["capitilize"]
   const checkNotificationsForShow: typeof import('../composables/notification.js').checkNotificationsForShow
   const checkSentinel: typeof import('../utils/core.js').checkSentinel
   const comma: typeof import('../utils/amount.js').comma
@@ -47,7 +47,7 @@ declare global {
   const createEventHook: typeof import("@vueuse/core")["createEventHook"]
   const createGlobalState: typeof import("@vueuse/core")["createGlobalState"]
   const createInjectionState: typeof import("@vueuse/core")["createInjectionState"]
-  const createNotification: typeof import('../utils/notifications.js')['createNotification']
+  const createNotification: typeof import("../utils/notifications.js")["createNotification"]
   const createReactiveFn: typeof import("@vueuse/core")["createReactiveFn"]
   const createReusableTemplate: typeof import("@vueuse/core")["createReusableTemplate"]
   const createSharedComposable: typeof import("@vueuse/core")["createSharedComposable"]
@@ -72,7 +72,7 @@ declare global {
   const formatCallSummary: typeof import('../utils/tx-enrichment').formatCallSummary
   const formatFeeJuice: typeof import('../utils/fee-estimation').formatFeeJuice
   const formatGas: typeof import('../utils/fee-estimation').formatGas
-  const formatNumberWithSpaces: typeof import('../utils/amount.js')['formatNumberWithSpaces']
+  const formatNumberWithSpaces: typeof import("../utils/amount.js")["formatNumberWithSpaces"]
   const formatTransferType: typeof import('../utils/tx-enrichment').formatTransferType
   const getCallCountLabel: typeof import('../utils/tx-enrichment').getCallCountLabel
   const getCurrentInstance: typeof import('vue').getCurrentInstance
@@ -89,8 +89,8 @@ declare global {
   const humanizeMethodName: typeof import('../utils/tx-enrichment').humanizeMethodName
   const ignorableWatch: typeof import("@vueuse/core")["ignorableWatch"]
   const initConfigClient: typeof import('../composables/configClient').initConfigClient
-  const initProfileService: typeof import('../utils/core.js')['initProfileService']
-  const initTokenService: typeof import('../utils/core.js').initTokenService
+  const initProfileService: typeof import("../utils/core.js")["initProfileService"]
+  const initTokenService: typeof import("../utils/core.js").initTokenService
   const initTransactionService: typeof import('../utils/core.js').initTransactionService
   const inject: typeof import('vue').inject
   const injectLocal: typeof import("@vueuse/core")["injectLocal"]
@@ -210,7 +210,7 @@ declare global {
   const useClipboardItems: typeof import("@vueuse/core")["useClipboardItems"]
   const useCloned: typeof import("@vueuse/core")["useCloned"]
   const useColorMode: typeof import("@vueuse/core")["useColorMode"]
-  const useConfigStore: typeof import('../stores/config.store').useConfigStore
+  const useConfigStore: typeof import("../stores/config.store").useConfigStore
   const useConfirmDialog: typeof import("@vueuse/core")["useConfirmDialog"]
   const useCounter: typeof import("@vueuse/core")["useCounter"]
   const useCssModule: typeof import('vue').useCssModule
@@ -265,7 +265,7 @@ declare global {
   const useLink: typeof import('vue-router').useLink
   const useLocalStorage: typeof import("@vueuse/core")["useLocalStorage"]
   const useMagicKeys: typeof import("@vueuse/core")["useMagicKeys"]
-  const useManagers: typeof import('../composables/managers.js')['useManagers']
+  const useManagers: typeof import("../composables/managers.js")["useManagers"]
   const useManualRefHistory: typeof import("@vueuse/core")["useManualRefHistory"]
   const useMediaControls: typeof import("@vueuse/core")["useMediaControls"]
   const useMediaQuery: typeof import("@vueuse/core")["useMediaQuery"]
@@ -311,7 +311,7 @@ declare global {
   const useScroll: typeof import("@vueuse/core")["useScroll"]
   const useScrollLock: typeof import("@vueuse/core")["useScrollLock"]
   const useSessionStorage: typeof import("@vueuse/core")["useSessionStorage"]
-  const useSettings: typeof import('../composables/settings.js')['useSettings']
+  const useSettings: typeof import("../composables/settings.js")["useSettings"]
   const useShare: typeof import("@vueuse/core")["useShare"]
   const useSlots: typeof import('vue').useSlots
   const useSorted: typeof import("@vueuse/core")["useSorted"]
@@ -329,7 +329,7 @@ declare global {
   const useTextDirection: typeof import("@vueuse/core")["useTextDirection"]
   const useTextSelection: typeof import("@vueuse/core")["useTextSelection"]
   const useTextareaAutosize: typeof import("@vueuse/core")["useTextareaAutosize"]
-  const useTheme: typeof import('../composables/theme.js')['useTheme']
+  const useTheme: typeof import("../composables/theme.js")["useTheme"]
   const useThrottle: typeof import("@vueuse/core")["useThrottle"]
   const useThrottleFn: typeof import("@vueuse/core")["useThrottleFn"]
   const useThrottledRefHistory: typeof import("@vueuse/core")["useThrottledRefHistory"]

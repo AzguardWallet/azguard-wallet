@@ -20,7 +20,7 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 
 /** Utils */
 import { getChainColor } from "@/components/ui/utils.js"
-import { stringCompare} from "@/utils/string"
+import { stringCompare } from "@/utils/string"
 import { UI_STORAGE_KEYS } from "@/popup/constants/storage-keys"
 
 /** Composables */
@@ -42,16 +42,14 @@ const fpcs = computed(() => {
 	const getOrder = (type) => (type === FpcType.DefaultSponsoredFpc ? 0 : 1)
 
 	return allFpcs.value
-		?.map(f => prepareFpc(f))
+		?.map((f) => prepareFpc(f))
 		.sort((a, b) => {
 			const typeOrder = getOrder(a.type) - getOrder(b.type)
-			return typeOrder
-				? typeOrder
-				: stringCompare(a.name, b.name)
+			return typeOrder ? typeOrder : stringCompare(a.name, b.name)
 		})
 })
 const balances = ref([])
-const tokens = computed(() => new Map(balances.value?.map(b => [b.token.contract, b.token])))
+const tokens = computed(() => new Map(balances.value?.map((b) => [b.token.contract, b.token])))
 const tokenContracts = computed(() => new Set(tokens.value?.keys()))
 const isLoading = ref(false)
 const error = ref()
@@ -63,7 +61,7 @@ const showAllFpcs = ref(true)
 const filteredFpcs = computed(() => {
 	const lowTerm = searchTerm.value?.toLowerCase() || ""
 
-	return fpcs.value.filter(fpc => {
+	return fpcs.value.filter((fpc) => {
 		if (
 			!showAllFpcs.value &&
 			!(
@@ -129,7 +127,7 @@ const prepareFpc = (fpc) => {
 }
 const fetchFpcs = async () => {
 	isLoading.value = true
-	
+
 	try {
 		allFpcs.value = await fpcService.getFpcs(appStore.network.chainId)
 		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
@@ -157,8 +155,7 @@ const handleDelete = (fpc) => {
 	cacheStore.confirm.confirm_text = "Yes, delete FPC"
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.title = "Delete this FPC?"
-	cacheStore.confirm.description =
-		"By confirming this action, the selected FPC will be permanently deleted from your wallet"
+	cacheStore.confirm.description = "By confirming this action, the selected FPC will be permanently deleted from your wallet"
 	cacheStore.confirm.callback = async () => {
 		await fpcService.deleteFpc(fpc.id)
 
@@ -183,18 +180,18 @@ const onFpcAdded = (fpc) => {
 	allFpcs.value.push(prepareFpc(fpc))
 }
 const onFpcUpdated = (fpc) => {
-	const idx = allFpcs.value.findIndex(f => f.id === fpc.id)
+	const idx = allFpcs.value.findIndex((f) => f.id === fpc.id)
 
 	if (idx === -1) return
 	allFpcs.value[idx] = prepareFpc(fpc)
 }
 const onFpcDeleted = (fpc) => {
-	allFpcs.value = allFpcs.value.filter(f => f.id !== fpc.id)
+	allFpcs.value = allFpcs.value.filter((f) => f.id !== fpc.id)
 }
 const onBalanceAdded = (balance) => {
 	balances.value.push(balance)
 
-	allFpcs.value = allFpcs.value.map(f => {
+	allFpcs.value = allFpcs.value.map((f) => {
 		if (f.asset === balance.token.contract) {
 			return {
 				...f,
@@ -205,13 +202,13 @@ const onBalanceAdded = (balance) => {
 	})
 }
 const onBalanceUpdated = (balance) => {
-	const balanceIdx = balances.value.findIndex(b => b.token.contract === balance.token.contract)
+	const balanceIdx = balances.value.findIndex((b) => b.token.contract === balance.token.contract)
 	if (balanceIdx === -1) return
 	balances.value[balanceIdx] = balance
 }
 const onBalanceDeleted = (balance) => {
-	balances.value = balances.value.filter(b => b.token.contract !== balance.token.contract)
-	allFpcs.value = allFpcs.value.map(f => {
+	balances.value = balances.value.filter((b) => b.token.contract !== balance.token.contract)
+	allFpcs.value = allFpcs.value.map((f) => {
 		if (f.asset === balance.token.contract) {
 			return {
 				...f,

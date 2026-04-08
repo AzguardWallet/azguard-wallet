@@ -8,10 +8,7 @@ import { getErrorData } from "@/wallet/utils/errors"
 /** Services */
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
 import { DappMetadata } from "@/wallet/services/dapp-session/client"
-import {
-	DiscoveryPayload,
-	DappInteractionServiceClient,
-} from "@/wallet/services/dapp-interaction/client"
+import { DiscoveryPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 
 type UIDappMetadata = DappMetadata & {
 	loadingLogo?: boolean
@@ -105,7 +102,7 @@ const closeWindow = (interactionCompleted?: boolean) => {
 	if (interactionCompleted) {
 		window.removeEventListener("beforeunload", reject)
 	}
-	chrome.windows.getCurrent(undefined, window => {
+	chrome.windows.getCurrent(undefined, (window) => {
 		if (window.id) {
 			chrome.windows.remove(window.id)
 		}
@@ -124,9 +121,16 @@ onMounted(async () => {
 
 	if (!appStore.isSessionChecked) {
 		await new Promise<void>((resolve) => {
-			const stop = watch(() => appStore.isSessionChecked, (checked) => {
-				if (checked) { stop(); resolve() }
-			}, { immediate: true })
+			const stop = watch(
+				() => appStore.isSessionChecked,
+				(checked) => {
+					if (checked) {
+						stop()
+						resolve()
+					}
+				},
+				{ immediate: true },
+			)
 		})
 	}
 

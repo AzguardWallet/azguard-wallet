@@ -14,14 +14,14 @@ const props = defineProps({
 	side: {
 		type: String,
 		default: "bottom",
-		validator: value => {
+		validator: (value) => {
 			return ["top", "bottom", "left", "right"].includes(value)
 		},
 	},
 	position: {
 		type: String,
 		default: "start",
-		validator: value => {
+		validator: (value) => {
 			return ["start", "end"].includes(value)
 		},
 	},
@@ -69,12 +69,12 @@ watch(
 	},
 )
 
-const toggleDropdown = event => {
+const toggleDropdown = (event) => {
 	if (event) event.stopPropagation()
 	if (props.disabled) return
 	isOpen.value = !isOpen.value
 }
-const close = event => {
+const close = (event) => {
 	if (event) event.stopPropagation()
 
 	isOpen.value = false
@@ -83,9 +83,9 @@ const close = event => {
 const dropdownStyles = ref({})
 
 let removeOutside
-const handleOutside = e => {
+const handleOutside = (e) => {
 	const path = e.path ? e.path : e.composedPath()
-	if (path.find(el => el.id === "trigger")) {
+	if (path.find((el) => el.id === "trigger")) {
 		return
 	}
 
@@ -109,7 +109,7 @@ watch(isOpen, async () => {
 		}
 
 		emit("onClose")
-		
+
 		document.removeEventListener("keydown", onKeydown)
 	} else {
 		document.addEventListener("keydown", onKeydown)
@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
 	document.removeEventListener("keydown", onKeydown)
 })
 
-const onKeydown = event => {
+const onKeydown = (event) => {
 	if (event.key === "Escape") close()
 	if (event.key === "Enter") {
 		document.activeElement.click()
@@ -195,7 +195,7 @@ const onKeydown = event => {
 
 	if (event.key === "ArrowDown") {
 		const itemsToNavigate = dropdown.value.wrapper.querySelectorAll('[tabindex = "1"]')
-		const activeItemIdx = [...itemsToNavigate].findIndex(item => item.isEqualNode(document.activeElement))
+		const activeItemIdx = [...itemsToNavigate].findIndex((item) => item.isEqualNode(document.activeElement))
 
 		if (activeItemIdx === -1 || activeItemIdx === itemsToNavigate.length - 1) {
 			itemsToNavigate[0].focus()
@@ -206,7 +206,7 @@ const onKeydown = event => {
 
 	if (event.key === "ArrowUp") {
 		const itemsToNavigate = dropdown.value.wrapper.querySelectorAll('[tabindex = "1"]')
-		const activeItemIdx = [...itemsToNavigate].findIndex(item => item.isEqualNode(document.activeElement))
+		const activeItemIdx = [...itemsToNavigate].findIndex((item) => item.isEqualNode(document.activeElement))
 
 		if (activeItemIdx === -1 || activeItemIdx === 0) {
 			itemsToNavigate[itemsToNavigate.length - 1].focus()

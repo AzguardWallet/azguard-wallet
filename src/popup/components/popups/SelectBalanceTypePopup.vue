@@ -55,17 +55,17 @@ tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
 tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
 function onBalanceAdded(tb) {
 	if (tb.account !== appStore.account.address) return
-	
+
 	tokenBalances.value.push(tb)
 }
 function onBalanceUpdated(tb) {
-	const idx = tokenBalances.value.findIndex(_tb => _tb.id === tb.id)
+	const idx = tokenBalances.value.findIndex((_tb) => _tb.id === tb.id)
 	if (idx !== -1) {
 		tokenBalances.value[idx] = tb
 	}
 }
 function onBalanceDeleted(tb) {
-	const idx = tokenBalances.value.findIndex(_tb => _tb.id === tb.id)
+	const idx = tokenBalances.value.findIndex((_tb) => _tb.id === tb.id)
 	if (idx !== -1) {
 		tokenBalances.value.splice(idx, 1)
 	}
@@ -78,7 +78,7 @@ const handleSelectOption = (option) => {
 }
 
 const amountToPreview = ref("$0.00")
-const onHover = str => {
+const onHover = (str) => {
 	amountToPreview.value = str
 }
 
@@ -96,15 +96,12 @@ watch(
 					icon: "banknote",
 					token: {
 						...tb.token,
-						balance:
-							(Number.parseFloat(tb.privateBalance) +
-								Number.parseFloat(tb.publicBalance)) /
-							10 ** tb.token.decimals,
+						balance: (Number.parseFloat(tb.privateBalance) + Number.parseFloat(tb.publicBalance)) / 10 ** tb.token.decimals,
 					},
 				})
 			}
 
-			if (!displayOptions.value.map(opt => opt.ref).includes(appStore.displayOption?.ref)) {
+			if (!displayOptions.value.map((opt) => opt.ref).includes(appStore.displayOption?.ref)) {
 				amountToPreview.value = "$0.00"
 			}
 		} else {

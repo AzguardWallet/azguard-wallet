@@ -84,7 +84,7 @@ const settings = {
 // Get display name for selected explorer
 const selectedExplorerName = computed(() => {
 	if (!defaultExplorer.value) return "None"
-	const explorer = BLOCK_EXPLORERS.find(e => e.id === defaultExplorer.value)
+	const explorer = BLOCK_EXPLORERS.find((e) => e.id === defaultExplorer.value)
 	return explorer?.name || "None"
 })
 
@@ -171,21 +171,21 @@ watch(
 		switch (sessionTtlMinutes.value) {
 			case 0:
 				fillNotification("'0' means the wallet will never be locked automatically")
-				break;
+				break
 			case MAX_SESSION_TTL:
 				fillNotification("This is the maximum session time. Use 0 to disable auto-lock.")
-				break;
-			
+				break
+
 			default:
 				fillNotification("")
-				break;
+				break
 		}
-	}, 300)
+	}, 300),
 )
 
 onBeforeMount(async () => {
 	const _settings = await configService.getProps()
-	_settings.forEach(s => {
+	_settings.forEach((s) => {
 		if (settings[s.key]) {
 			settings[s.key].model.value = s.value
 		}

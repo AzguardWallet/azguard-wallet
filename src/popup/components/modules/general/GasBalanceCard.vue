@@ -39,13 +39,9 @@ const toUsd = (raw) => {
 }
 
 const publicFormatted = computed(() => formatBalance(publicFeeJuice.value))
-const privateFormatted = computed(() =>
-	privateFeeJuice.value !== null ? formatBalance(privateFeeJuice.value) : null,
-)
+const privateFormatted = computed(() => (privateFeeJuice.value !== null ? formatBalance(privateFeeJuice.value) : null))
 const publicUsd = computed(() => toUsd(publicFeeJuice.value))
-const privateUsd = computed(() =>
-	privateFeeJuice.value !== null ? toUsd(privateFeeJuice.value) : null,
-)
+const privateUsd = computed(() => (privateFeeJuice.value !== null ? toUsd(privateFeeJuice.value) : null))
 
 /** Service clients */
 const executionService = new ExecutionServiceClient()
@@ -56,10 +52,7 @@ function onTransactionAdded(tx) {
 	if (tx.account !== appStore.account?.address) return
 	if (!tx.estimatedFee) return
 
-	if (
-		tx.feePaymentMethod === AzguardFeePaymentMethod.FeeJuice ||
-		tx.feePaymentMethod === AzguardFeePaymentMethod.FeeJuiceWithClaim
-	) {
+	if (tx.feePaymentMethod === AzguardFeePaymentMethod.FeeJuice || tx.feePaymentMethod === AzguardFeePaymentMethod.FeeJuiceWithClaim) {
 		const current = new BN(publicFeeJuice.value)
 		const deduction = new BN(tx.estimatedFee)
 		publicFeeJuice.value = BN.max(current.minus(deduction), new BN(0)).toFixed(0)
@@ -83,11 +76,7 @@ async function loadBalances(forceRefresh = false) {
 		if (!hasLoaded.value) isLoading.value = true
 		if (!appStore.account?.address || !appStore.network?.id) return
 
-		const balances = await executionService.getGasBalances(
-			appStore.network.id,
-			appStore.account.address,
-			forceRefresh,
-		)
+		const balances = await executionService.getGasBalances(appStore.network.id, appStore.account.address, forceRefresh)
 		publicFeeJuice.value = balances.publicFeeJuice
 		privateFeeJuice.value = balances.privateFeeJuice
 		hasLoaded.value = true

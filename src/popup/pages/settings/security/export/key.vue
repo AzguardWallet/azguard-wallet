@@ -61,7 +61,7 @@ watch(
 		}
 	},
 )
-const handleSelectKey = key => {
+const handleSelectKey = (key) => {
 	selectedKey.value = key
 }
 
@@ -88,7 +88,7 @@ const handleUnlock = async () => {
 }
 
 const isCopied = ref(false)
-const handleCopy = key => {
+const handleCopy = (key) => {
 	isCopied.value = true
 	window.navigator.clipboard.writeText(key === "private" ? privateKey.value : publicKey.value)
 	openToast({ label: "Key is copied", icon: "copy" })
@@ -110,7 +110,7 @@ const handleDisableAutoClose = () => {
 	isAutoCloseDisabled.value = true
 }
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleUnlock()
 }
 

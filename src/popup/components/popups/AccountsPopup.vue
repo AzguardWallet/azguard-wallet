@@ -30,17 +30,17 @@ const account = computed(() => appStore.account)
 
 const showAllOtherAccounts = ref(false)
 const accounts = computed(() => {
-	return appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index)
+	return appStore.accounts.filter((a) => a.visible).sort((a, b) => a.index - b.index)
 })
 
-const handleSelectAccount = acc => {
+const handleSelectAccount = (acc) => {
 	appStore.selectAccount(acc)
 
 	emit("onClose")
 }
 
 const isCopied = ref(false)
-const handleCopyAddress = target => {
+const handleCopyAddress = (target) => {
 	isCopied.value = true
 
 	window.navigator.clipboard.writeText(target)

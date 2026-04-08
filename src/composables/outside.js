@@ -12,26 +12,16 @@ export function useOutside(el, onOutsidePressCallback) {
 		/** resolve collisions */
 		if (
 			element.parentNode?.closest("div[data-outside]") &&
-			element.parentNode?.closest("div[data-outside]").id !==
-				e.target.parentNode.id
+			element.parentNode?.closest("div[data-outside]").id !== e.target.parentNode.id
 		)
 			return
 
-		return (
-			component &&
-			!component.contains(e.target) &&
-			onOutsidePressCallback(e)
-		)
+		return component && !component.contains(e.target) && onOutsidePressCallback(e)
 	}
 
 	const ua = navigator.userAgent
 
-	return useEvent(
-		document,
-		ua.match(/iPad/i) || ua.match(/iPhone/) ? "touchstart" : "mousedown",
-		handler,
-		{ passive: true }
-	)
+	return useEvent(document, ua.match(/iPad/i) || ua.match(/iPhone/) ? "touchstart" : "mousedown", handler, { passive: true })
 }
 
 export function useEvent(el, name, listener, options) {
@@ -53,7 +43,7 @@ export function useEvent(el, name, listener, options) {
 					cleanUp(() => removeEventListener(n))
 				}
 			},
-			{ immediate: true }
+			{ immediate: true },
 		)
 
 		remove = () => {

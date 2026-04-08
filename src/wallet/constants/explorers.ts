@@ -45,7 +45,7 @@ const EXPLORER_BASE_URLS: Record<BlockExplorerType, Record<number, string>> = {
 export function getTransactionExplorerUrl(
 	chainId: number,
 	explorerId: BlockExplorerType | null | undefined,
-	txHash: string
+	txHash: string,
 ): string | null {
 	if (!explorerId) return null
 

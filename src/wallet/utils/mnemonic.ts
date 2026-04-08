@@ -2154,7 +2154,7 @@ export const getEntropy = async (mnemonic: string[]): Promise<Uint8Array<ArrayBu
 		if (concatBits[entropyBitsCnt + i] != hashBits[i]) {
 			throw new Error("Invalid checksum")
 		}
-    }
+	}
 
 	return entropy
 }

@@ -3,13 +3,7 @@
 import { onMounted, ref } from "vue"
 import { EditorView } from "codemirror"
 import { EditorState } from "@codemirror/state"
-import {
-	keymap,
-	lineNumbers,
-	highlightActiveLine,
-	highlightActiveLineGutter,
-	highlightSpecialChars,
-} from "@codemirror/view"
+import { keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars } from "@codemirror/view"
 import { bracketMatching, foldGutter } from "@codemirror/language"
 import { defaultKeymap } from "@codemirror/commands"
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search"

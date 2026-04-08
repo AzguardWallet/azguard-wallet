@@ -46,7 +46,7 @@ const tokenService = new TokenServiceClient()
 const configService = new ConfigServiceClient()
 const isDebugMode = ref(false)
 
-const tx = computed(() => appStore.transactions.find(t => t.hash === cacheStore.activeTxHash))
+const tx = computed(() => appStore.transactions.find((t) => t.hash === cacheStore.activeTxHash))
 const call = computed(() => getPrimaryCall(tx.value.calls))
 const type = computed(() => getTxCategory(tx.value.calls))
 
@@ -55,12 +55,12 @@ const originLabel = computed(() => getOriginLabel(tx.value?.origin))
 
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
 const tokens = ref([])
-const token = computed(() => tokens.value.find(t => call.value?.contract === t.contract))
+const token = computed(() => tokens.value.find((t) => call.value?.contract === t.contract))
 
 const transferAmount = computed(() => {
 	if (transfer.value) {
 		const decimals = new BN(10).pow(token.value?.decimals || 0)
-		return balanceFormatted(new BN((transfer.value.amount || 0)).dividedBy(decimals), 8).value
+		return balanceFormatted(new BN(transfer.value.amount || 0).dividedBy(decimals), 8).value
 	}
 
 	return 0
@@ -109,10 +109,14 @@ const formatTimestamp = (timestamp) => {
 
 const getFeePaymentMethodName = (method) => {
 	switch (method) {
-		case AzguardFeePaymentMethod.External: return "External (FPC)"
-		case AzguardFeePaymentMethod.FeeJuice: return "FeeJuice"
-		case AzguardFeePaymentMethod.FeeJuiceWithClaim: return "FeeJuice + Claim"
-		default: return `Unknown (${method})`
+		case AzguardFeePaymentMethod.External:
+			return "External (FPC)"
+		case AzguardFeePaymentMethod.FeeJuice:
+			return "FeeJuice"
+		case AzguardFeePaymentMethod.FeeJuiceWithClaim:
+			return "FeeJuice + Claim"
+		default:
+			return `Unknown (${method})`
 	}
 }
 
@@ -167,7 +171,7 @@ const feeSavings = computed(() => {
 	const actual = BigInt(tx.value.fee)
 	const estimated = BigInt(tx.value.estimatedFee)
 	if (estimated === 0n || actual >= estimated) return null
-	const pct = Number((estimated - actual) * 100n / estimated)
+	const pct = Number(((estimated - actual) * 100n) / estimated)
 	return `${pct}% less than estimate`
 })
 

@@ -27,10 +27,10 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const networkToEdit = computed(() => appStore.networks.find(n => n.id === cacheStore.networkToEditIdx))
+const networkToEdit = computed(() => appStore.networks.find((n) => n.id === cacheStore.networkToEditIdx))
 
-const notAllowedNetworkNames = computed(() => appStore.networks.filter(n => n.id !== networkToEdit.value.id).map(n => n.name))
-const notAllowedNetworkUrls = computed(() => appStore.networks.filter(n => n.id !== networkToEdit.value.id).map(n => n.rpcUrl))
+const notAllowedNetworkNames = computed(() => appStore.networks.filter((n) => n.id !== networkToEdit.value.id).map((n) => n.name))
+const notAllowedNetworkUrls = computed(() => appStore.networks.filter((n) => n.id !== networkToEdit.value.id).map((n) => n.rpcUrl))
 
 const isStartedEditingName = ref(false)
 const isStartedEditingUrl = ref(false)
@@ -86,7 +86,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleUpdateNetwork()
 }
 </script>

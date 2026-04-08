@@ -39,40 +39,40 @@ function addError(source) {
 }
 
 function removeError(source) {
-	error.value.sources = error.value.sources.filter(f => f !== source)
+	error.value.sources = error.value.sources.filter((f) => f !== source)
 }
 
 const validateClaimAmount = debounce(() => {
-	removeError('claimAmount');
+	removeError("claimAmount")
 	if (!claimAmount.value) return
 
 	if (isValidAmount(claimAmount.value) || isValidHex(claimAmount.value)) return
 
-	addError('claimAmount');
-}, 500);
+	addError("claimAmount")
+}, 500)
 
 const validateClaimSecret = debounce(() => {
-	removeError('claimSecret');
+	removeError("claimSecret")
 	if (!claimSecret.value) return
 
 	if (!isValidHex(claimSecret.value)) {
-		addError('claimSecret');
+		addError("claimSecret")
 	}
-}, 500);
+}, 500)
 
 const validateMessageLeafIndex = debounce(() => {
-	removeError('messageLeafIndex');
+	removeError("messageLeafIndex")
 	if (!messageLeafIndex.value) return
 
 	if (isValidAmount(messageLeafIndex.value) || isValidHex(messageLeafIndex.value)) return
 
-	addError('messageLeafIndex');
-}, 500);
+	addError("messageLeafIndex")
+}, 500)
 
 const handleUpdateParameters = async () => {
 	if (error.value.sources.length) return
 
-	const methodIx = cacheStore.feePaymentMethods.findIndex(m => m.id === props.payload?.id)
+	const methodIx = cacheStore.feePaymentMethods.findIndex((m) => m.id === props.payload?.id)
 	if (methodIx === -1) {
 		cacheStore.feePaymentMethods.push({
 			id: props.payload?.id,
@@ -99,17 +99,17 @@ const handleCancel = () => {
 
 watch(
 	() => claimAmount.value,
-	() => validateClaimAmount()
+	() => validateClaimAmount(),
 )
 watch(
 	() => claimSecret.value,
 	() => {
 		validateClaimSecret()
-	}
+	},
 )
 watch(
 	() => messageLeafIndex.value,
-	() => validateMessageLeafIndex()
+	() => validateMessageLeafIndex(),
 )
 watch(
 	() => props.show,
@@ -119,7 +119,7 @@ watch(
 
 			document.removeEventListener("keydown", onKeydown)
 		} else {
-			claimParameters.value = cacheStore.feePaymentMethods.find(m => m.id === props.payload?.id)?.claimParameters
+			claimParameters.value = cacheStore.feePaymentMethods.find((m) => m.id === props.payload?.id)?.claimParameters
 			claimAmount.value = claimParameters.value?.claimAmount
 			claimSecret.value = claimParameters.value?.claimSecret
 			messageLeafIndex.value = claimParameters.value?.messageLeafIndex
@@ -129,7 +129,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleUpdateParameters()
 }
 </script>

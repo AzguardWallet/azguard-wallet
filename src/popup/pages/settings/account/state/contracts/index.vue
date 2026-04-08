@@ -28,14 +28,12 @@ const accountStateService = new AccountStateServiceClient()
 const contracts = ref([])
 const searchTerm = ref()
 const filteredContracts = computed(() =>
-	searchTerm.value
-		? contracts.value.filter(contract => contract.includes(searchTerm.value?.toLowerCase()))
-		: contracts.value,
+	searchTerm.value ? contracts.value.filter((contract) => contract.includes(searchTerm.value?.toLowerCase())) : contracts.value,
 )
 const isFetchingContracts = ref(false)
 const error = ref()
 const isErrorOccurred = computed(() => !!error.value)
-const fetchContracts = async isRefetching => {
+const fetchContracts = async (isRefetching) => {
 	if (isRefetching) openToast({ label: "Fetching contracts again", icon: "zap" })
 	isFetchingContracts.value = true
 

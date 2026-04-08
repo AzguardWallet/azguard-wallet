@@ -15,7 +15,7 @@ const props = defineProps({
 const handleSelectCandidate = (target, candidate) => {
 	emit("onFieldSelect", target, candidate)
 }
-const handleClearCandidate = target => {
+const handleClearCandidate = (target) => {
 	emit("onFieldClear", target)
 }
 </script>

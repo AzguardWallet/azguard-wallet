@@ -25,27 +25,25 @@ const props = defineProps({
 	},
 })
 
-const subtasks = computed(() => props.task.subtasks.length ? props.task.subtasks : [props.task])
-const completedSubtasks = computed(() => subtasks.value.filter(st => st.finishedAt))
+const subtasks = computed(() => (props.task.subtasks.length ? props.task.subtasks : [props.task]))
+const completedSubtasks = computed(() => subtasks.value.filter((st) => st.finishedAt))
 
 const now = useTicker(1_000)
 const relativeTime = computed(() => {
-	return DateTime
-		.fromMillis(props.task.createdAt)
-		.toRelative({
-			base: DateTime.fromMillis(now.value),
-			style: "short",
-			locale: "en",
-		})
+	return DateTime.fromMillis(props.task.createdAt).toRelative({
+		base: DateTime.fromMillis(now.value),
+		style: "short",
+		locale: "en",
+	})
 })
-const iconSize = computed(() => props.isSubtask ? '12' : '16')
+const iconSize = computed(() => (props.isSubtask ? "12" : "16"))
 
 const circumference = computed(() => 2 * Math.PI * 10)
 const arcLength = computed(() => circumference.value / subtasks.value?.length)
 const arcLengthWithGap = computed(() => arcLength.value - 4)
 
 function offsetFor(i) {
-	return - (i * arcLength.value)
+	return -(i * arcLength.value)
 }
 
 const content = computed(() => props.task.humanizedContent)
@@ -55,7 +53,7 @@ const error = computed(() => {
 	const err = { description: props.task.error }
 
 	function findSource(t) {
-		const errTask = t.subtasks?.find(x => x.error)
+		const errTask = t.subtasks?.find((x) => x.error)
 		return errTask ? [errTask.content.label, ...findSource(errTask)] : []
 	}
 

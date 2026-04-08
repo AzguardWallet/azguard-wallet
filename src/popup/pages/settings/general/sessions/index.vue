@@ -35,9 +35,7 @@ const GRANT_SHORT_LABELS = {
 }
 
 const formatGrantSummary = (grants) => {
-	return grants
-		.map(g => GRANT_SHORT_LABELS[g.capability.type] ?? g.capability.type)
-		.join(" \u00B7 ")
+	return grants.map((g) => GRANT_SHORT_LABELS[g.capability.type] ?? g.capability.type).join(" \u00B7 ")
 }
 
 const dappSessions = ref([])
@@ -51,7 +49,7 @@ function onDappSessionAdded(session) {
 	dappSessions.value.push(session)
 }
 function onDappSessionUpdated(session) {
-	const idx = dappSessions.value.findIndex(ds => ds.id === session.id)
+	const idx = dappSessions.value.findIndex((ds) => ds.id === session.id)
 	if (idx !== -1) {
 		dappSessions.value[idx] = session
 	} else {
@@ -59,10 +57,10 @@ function onDappSessionUpdated(session) {
 	}
 }
 function onDappSessionDeleted(session) {
-	dappSessions.value = dappSessions.value.filter(ds => ds.id !== session.id)
+	dappSessions.value = dappSessions.value.filter((ds) => ds.id !== session.id)
 }
 
-const handleDropSession = session => {
+const handleDropSession = (session) => {
 	dappSessionService.deleteDappSession(session.id)
 }
 

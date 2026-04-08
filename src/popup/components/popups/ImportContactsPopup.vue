@@ -36,7 +36,7 @@ function onContactAdded(contact) {
 	contacts.value.push(contact)
 }
 function onContactUpdated(contact) {
-	const idx = contacts.value.findIndex(c => c.id === contact.id)
+	const idx = contacts.value.findIndex((c) => c.id === contact.id)
 	if (idx !== -1) {
 		contacts.value[idx] = contact
 	} else {
@@ -44,7 +44,7 @@ function onContactUpdated(contact) {
 	}
 }
 function onContactDeleted(contact) {
-	contacts.value = contacts.value.filter(c => c.id !== contact.id)
+	contacts.value = contacts.value.filter((c) => c.id !== contact.id)
 }
 
 const contacts = ref([])
@@ -67,7 +67,7 @@ function handleEditContact(contact) {
 	popupStore.open("edit_contact")
 }
 function handleResolve() {
-	cacheStore.importPromise?.resolve(importContacts.value.filter(c => c.selected))
+	cacheStore.importPromise?.resolve(importContacts.value.filter((c) => c.selected))
 	emit("onClose")
 }
 function handleReject() {
@@ -87,7 +87,7 @@ watch(
 				selected: true,
 			}
 		}
-	}
+	},
 )
 watch(
 	() => props.show,
@@ -108,7 +108,7 @@ watch(
 				const _c = importContacts.value[idx]
 				const _cbn = contactsByName.value.get(_c.name)
 				const _cba = contactsByAddress.value.get(_c.address)
-				
+
 				importContacts.value[idx] = {
 					..._c,
 					idx,
@@ -129,7 +129,7 @@ watch(
 			contactsByName.value = null
 			contactsByAddress.value = null
 		}
-	}
+	},
 )
 </script>
 

@@ -13,7 +13,7 @@ let profileService
 
 function onActiveProfileChanged(profile) {
 	if (!profile) {
-		chrome.windows.getCurrent(window => {
+		chrome.windows.getCurrent((window) => {
 			chrome.windows.remove(window.id)
 		})
 	}

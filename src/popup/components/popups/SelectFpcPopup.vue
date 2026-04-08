@@ -38,34 +38,33 @@ const fpcs = computed(() => {
 	const getOrder = (type) => (type === "sponsored" ? 0 : 1)
 
 	return allFpcs.value
-		?.filter(f =>
-			f.type === FpcType.DefaultSponsoredFpc ||
-			f.type === FpcType.PrivateFpc ||
-			(f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset))
+		?.filter(
+			(f) =>
+				f.type === FpcType.DefaultSponsoredFpc ||
+				f.type === FpcType.PrivateFpc ||
+				(f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)),
 		)
-		.map(f => prepareFpc(f))
+		.map((f) => prepareFpc(f))
 		.sort((a, b) => {
 			const typeOrder = getOrder(a.type) - getOrder(b.type)
-			return typeOrder
-				? typeOrder
-				: stringCompare(a.name, b.name)
+			return typeOrder ? typeOrder : stringCompare(a.name, b.name)
 		})
 })
 const balances = ref([])
-const tokenContracts = computed(() => new Set(balances.value?.map(b => b.token?.contract)))
+const tokenContracts = computed(() => new Set(balances.value?.map((b) => b.token?.contract)))
 const showSearchInput = ref(false)
 const searchTerm = ref()
 const filteredFpcs = computed(() => {
 	const lowTerm = searchTerm.value?.toLowerCase() || ""
 	if (!lowTerm) return fpcs.value
 
-	return fpcs.value?.filter(fpc => {
+	return fpcs.value?.filter((fpc) => {
 		return (
 			fpc.name?.toLowerCase().includes(lowTerm) ||
 			fpc.typeName?.toLowerCase().includes(lowTerm) ||
 			fpc.balance?.token?.name?.toLowerCase().includes(lowTerm) ||
 			fpc.balance?.token?.symbol?.toLowerCase().includes(lowTerm) ||
-			fpc.address  === searchTerm.value ||
+			fpc.address === searchTerm.value ||
 			fpc.asset === searchTerm.value
 		)
 	})
@@ -87,17 +86,15 @@ const init = async () => {
 		tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
 		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
 		allFpcs.value = await fpcService.getFpcs(appStore.network.chainId)
-	}
-	catch (err) {
+	} catch (err) {
 		error.value = err
-	}
-	finally {
+	} finally {
 		isLoading.value = false
 	}
 }
 
 const handleSelectFpc = (fpc) => {
-	const methodIx = cacheStore.feePaymentMethods.findIndex(m => m.id === props.payload?.id)
+	const methodIx = cacheStore.feePaymentMethods.findIndex((m) => m.id === props.payload?.id)
 	if (methodIx === -1) {
 		cacheStore.feePaymentMethods.push({
 			id: props.payload?.id,
@@ -128,35 +125,35 @@ const prepareFpc = (fpc) => {
 		...fpc,
 		typeName: "fpc",
 		color: "green",
-		balance: balances.value.find(b => b.token.contract === fpc.asset),
+		balance: balances.value.find((b) => b.token.contract === fpc.asset),
 	}
 }
 const onFpcAdded = (fpc) => {
 	allFpcs.value.push(prepareFpc(fpc))
 }
 const onFpcUpdated = (fpc) => {
-	const idx = allFpcs.value?.findIndex(f => f.id === fpc.id)
+	const idx = allFpcs.value?.findIndex((f) => f.id === fpc.id)
 
 	if (idx === -1) return
 	allFpcs.value[idx] = prepareFpc(fpc)
 }
 const onFpcDeleted = (fpc) => {
-	allFpcs.value = allFpcs.value?.filter(f => f.id !== fpc.id)
+	allFpcs.value = allFpcs.value?.filter((f) => f.id !== fpc.id)
 }
 const onBalanceAdded = (balance) => {
 	balances.value?.push(balance)
 }
 const onBalanceDeleted = (balance) => {
-	balances.value = balances.value?.filter(b => b.id !== balance.id)
+	balances.value = balances.value?.filter((b) => b.id !== balance.id)
 }
 watch(
 	() => props.show,
 	async () => {
 		if (props.show) {
-			selectedFpc.value = cacheStore.feePaymentMethods.find(m => m.id === props.payload?.id)?.fpc
+			selectedFpc.value = cacheStore.feePaymentMethods.find((m) => m.id === props.payload?.id)?.fpc
 			await init()
 		}
-	}
+	},
 )
 </script>
 

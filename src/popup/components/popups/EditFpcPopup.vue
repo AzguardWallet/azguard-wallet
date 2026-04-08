@@ -34,7 +34,7 @@ let fpcService = null
 const fpcs = ref([])
 const fpcToEdit = ref(null)
 const nameTerm = ref("")
-const notAllowedFpcNames = computed(() => fpcs.value.map(n => n.name))
+const notAllowedFpcNames = computed(() => fpcs.value.map((n) => n.name))
 
 const isStartedEditing = ref(false)
 const handleFillFieldsWithDefaultValues = () => {
@@ -62,7 +62,6 @@ const handleUpdateFpc = async () => {
 
 		openToast({ label: "FPC is updated" })
 	} catch (err) {
-		
 	} finally {
 		isFpcUpdateInProgress.value = false
 	}
@@ -71,7 +70,7 @@ const onFpcAdded = (fpc) => {
 	fpcs.value.push(fpc)
 }
 const onFpcUpdated = (fpc) => {
-	const idx = fpcs.value.findIndex(f => f.id === fpc.id)
+	const idx = fpcs.value.findIndex((f) => f.id === fpc.id)
 
 	if (idx === -1) return
 	fpcs.value[idx] = fpc
@@ -82,7 +81,7 @@ const onFpcDeleted = (fpc) => {
 		openToast({ label: "FPC was deleted" })
 		return
 	}
-	fpcs.value = fpcs.value.filter(f => f.id !== fpc.id)
+	fpcs.value = fpcs.value.filter((f) => f.id !== fpc.id)
 }
 const handleCopyAddress = () => {
 	window.navigator.clipboard.writeText(fpcToEdit.value.address)
@@ -119,7 +118,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleUpdateFpc()
 }
 </script>

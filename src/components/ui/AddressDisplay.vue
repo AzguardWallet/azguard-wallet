@@ -51,7 +51,7 @@ const handleClick = () => {
 	if (contactName.value) {
 		event.stopPropagation()
 	}
-	
+
 	emit("onAddressClick")
 }
 
@@ -62,7 +62,7 @@ onMounted(async () => {
 			contactName.value = `@${contact.name}`
 			showName.value = true
 		} else {
-			const _acc = appStore.accounts.find(acc => acc.address === props.address)
+			const _acc = appStore.accounts.find((acc) => acc.address === props.address)
 			if (_acc?.name) {
 				contactName.value = _acc.name
 				showName.value = true

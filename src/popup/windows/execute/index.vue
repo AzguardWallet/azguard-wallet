@@ -18,12 +18,7 @@ import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/cli
 import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
 import { Account, AccountServiceClient } from "@/wallet/services/account/client"
 import { ExecutionServiceClient, FeeSettings, Operation } from "@/wallet/services/execution/client"
-import {
-	CaipAccount,
-	CaipChain,
-	DappInteractionServiceClient,
-	ExecutionPayload,
-} from "@/wallet/services/dapp-interaction/client"
+import { CaipAccount, CaipChain, DappInteractionServiceClient, ExecutionPayload } from "@/wallet/services/dapp-interaction/client"
 import { DappMetadata } from "@/wallet/services/dapp-session/client"
 import { OriginType } from "@/wallet/services/transaction/client"
 
@@ -110,7 +105,6 @@ function clearError() {
 	processingError.value = undefined
 }
 
-
 const init = async () => {
 	try {
 		profile.value = await profileService.getActiveProfile()
@@ -144,7 +138,7 @@ const init = async () => {
 			if (networks.length === 0) {
 				throw new Error("Network no longer exists")
 			}
-			return networks.find(x => x.isDefault) ?? networks[0]
+			return networks.find((x) => x.isDefault) ?? networks[0]
 		}
 
 		const getNetworkAndAccount = async (caipAccount: CaipAccount): Promise<[Network, Account]> => {
@@ -153,7 +147,7 @@ const init = async () => {
 			if (networks.length === 0) {
 				throw new Error("Network no longer exists")
 			}
-			const network = networks.find(x => x.isDefault) ?? networks[0]
+			const network = networks.find((x) => x.isDefault) ?? networks[0]
 			const account = await accountService.getAccount(profile.value!.id, network.chainId, address)
 			if (!account) {
 				throw new Error("Account no longer exists")
@@ -199,7 +193,7 @@ const init = async () => {
 						account,
 						accountAddress: account.address,
 					})
-					if (!_accounts.find(x => x.address === account.address)) {
+					if (!_accounts.find((x) => x.address === account.address)) {
 						_accounts.push(account)
 					}
 					break
@@ -213,12 +207,9 @@ const init = async () => {
 						networkId: network.id,
 						account,
 						accountAddress: account.address,
-						feeSettings:
-							isNoFrom || op.exec.feePayer !== undefined
-								? { paymentMethod: { kind: "embedded" } }
-								: undefined!,
+						feeSettings: isNoFrom || op.exec.feePayer !== undefined ? { paymentMethod: { kind: "embedded" } } : undefined!,
 					})
-					if (!_accounts.find(x => x.address === account.address)) {
+					if (!_accounts.find((x) => x.address === account.address)) {
 						_accounts.push(account)
 					}
 					break
@@ -231,12 +222,9 @@ const init = async () => {
 						networkId: network.id,
 						account,
 						accountAddress: account.address,
-						feeSettings:
-							op.fee?.embeddedFeePayment !== undefined
-								? { paymentMethod: { kind: "embedded" } }
-								: undefined!,
+						feeSettings: op.fee?.embeddedFeePayment !== undefined ? { paymentMethod: { kind: "embedded" } } : undefined!,
 					})
-					if (!_accounts.find(x => x.address === account.address)) {
+					if (!_accounts.find((x) => x.address === account.address)) {
 						_accounts.push(account)
 					}
 					break
@@ -270,12 +258,8 @@ const onInteractionCancelled = (_requestId: string) => {
 }
 
 const approve = async () => {
-	if (operations.value.find(x => x.kind === "send_transaction" && !x.feeSettings)) {
-		setError(
-			"Validation error",
-			"You must specify fee payment method for each 'Send transaction' operations",
-			"warning",
-		)
+	if (operations.value.find((x) => x.kind === "send_transaction" && !x.feeSettings)) {
+		setError("Validation error", "You must specify fee payment method for each 'Send transaction' operations", "warning")
 		return
 	}
 	try {
@@ -298,7 +282,7 @@ const closeWindow = (interactionCompleted: boolean) => {
 	if (interactionCompleted) {
 		window.removeEventListener("beforeunload", reject)
 	}
-	chrome.windows.getCurrent(undefined, window => {
+	chrome.windows.getCurrent(undefined, (window) => {
 		if (window.id) {
 			chrome.windows.remove(window.id)
 		}
@@ -340,9 +324,16 @@ onMounted(async () => {
 
 	if (!appStore.isSessionChecked) {
 		await new Promise<void>((resolve) => {
-			const stop = watch(() => appStore.isSessionChecked, (checked) => {
-				if (checked) { stop(); resolve() }
-			}, { immediate: true })
+			const stop = watch(
+				() => appStore.isSessionChecked,
+				(checked) => {
+					if (checked) {
+						stop()
+						resolve()
+					}
+				},
+				{ immediate: true },
+			)
 		})
 	}
 
@@ -360,7 +351,7 @@ onUnmounted(() => {
 	profileService.disconnect()
 	interactionService.disconnect()
 	executionService.disconnect()
-	Object.values(estimateTimers).forEach(t => clearTimeout(t))
+	Object.values(estimateTimers).forEach((t) => clearTimeout(t))
 	window.removeEventListener("beforeunload", reject)
 })
 </script>

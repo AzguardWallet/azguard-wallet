@@ -42,9 +42,11 @@ const balanceEl = useTemplateRef("balanceEl")
 
 const tokenBalances = ref([])
 
-const tokenToDisplay = computed(() => props.tokenBalance?.token || tokenBalances.value.find(tb => tb.token.id === appStore.displayOption)?.token)
+const tokenToDisplay = computed(
+	() => props.tokenBalance?.token || tokenBalances.value.find((tb) => tb.token.id === appStore.displayOption)?.token,
+)
 const tokenBalanceToDisplay = computed(() => {
-	return props.tokenBalance || tokenBalances.value.find(tb => tb.token.id === tokenToDisplay.value?.id)
+	return props.tokenBalance || tokenBalances.value.find((tb) => tb.token.id === tokenToDisplay.value?.id)
 })
 const showFullBalance = ref(false)
 const totalTokenBalance = computed(() => {
@@ -85,8 +87,7 @@ const handleEditToken = () => {
 }
 
 const handleDeleteToken = () => {
-	cacheStore.confirm.description =
-		"Removing a token only affects the display in the UI and it does not affect the token balance"
+	cacheStore.confirm.description = "Removing a token only affects the display in the UI and it does not affect the token balance"
 	cacheStore.confirm.callback = async () => {
 		await tokenService.deleteToken(tokenToDisplay.value.id)
 
@@ -103,7 +104,7 @@ const handleTokenBalanceClick = async () => {
 		await nextTick()
 		balance = totalTokenBalance.value?.value
 	}
-	
+
 	handleCopy(balance, "Balance")
 }
 
@@ -124,10 +125,10 @@ function onTaskCreated(task) {
 
 			isRefreshingBalance.value = true
 
-			break;
-		
+			break
+
 		default:
-			break;
+			break
 	}
 }
 function onTaskUpdated(task) {
@@ -138,10 +139,10 @@ function onTaskUpdated(task) {
 
 			isRefreshingBalance.value = false
 
-			break;
+			break
 
 		default:
-			break;
+			break
 	}
 }
 function onTaskDeleted(task) {
@@ -151,10 +152,10 @@ function onTaskDeleted(task) {
 
 			isRefreshingBalance.value = false
 
-			break;
-		
+			break
+
 		default:
-			break;
+			break
 	}
 }
 
@@ -164,11 +165,11 @@ tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
 tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
 function onBalanceAdded(tb) {
 	if (tb.account !== appStore.account.address) return
-	
+
 	tokenBalances.value.push(tb)
 }
 function onBalanceUpdated(tb) {
-	const idx = tokenBalances.value.findIndex(_tb => _tb.id === tb.id)
+	const idx = tokenBalances.value.findIndex((_tb) => _tb.id === tb.id)
 	if (idx !== -1) {
 		tokenBalances.value[idx] = tb
 	}
@@ -189,11 +190,12 @@ function onTokenDeleted(token) {
 
 async function fetchTokenBalances() {
 	tokenBalances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account?.address)
-	isRefreshingBalance.value = (await taskService.getTasks()).some(t =>
-		!t.finishedAt &&
-		t.content.kind === ContentKind.BalanceUpdate &&
-		t.content.account === appStore.account.address &&
-		t.content.tbId === tokenBalanceToDisplay.value?.id
+	isRefreshingBalance.value = (await taskService.getTasks()).some(
+		(t) =>
+			!t.finishedAt &&
+			t.content.kind === ContentKind.BalanceUpdate &&
+			t.content.account === appStore.account.address &&
+			t.content.tbId === tokenBalanceToDisplay.value?.id,
 	)
 }
 
@@ -209,7 +211,7 @@ async function loadBalanceDisplayOptionMigration(profileId, networkId) {
 		await chrome.storage.local.remove(oldKey)
 		if (option) {
 			await saveBalanceDisplayOption(profileId, networkId, option)
-		}		
+		}
 	} else {
 		const result = await chrome.storage.local.get(newKey)
 		optionsMap = result[newKey] || {}
@@ -246,7 +248,7 @@ async function saveBalanceDisplayOption(profileId, networkId, option) {
 
 	const result = await chrome.storage.local.get(key)
 	const optionsMap = result[key] || {}
-	
+
 	if (optionsMap[networkId] !== option) {
 		optionsMap[networkId] = option
 		await chrome.storage.local.set({ [key]: optionsMap })
@@ -257,7 +259,7 @@ watch(
 	() => appStore.network,
 	async () => {
 		await loadBalanceDisplayOption(appStore.profile.id, appStore.network.id)
-	}
+	},
 )
 watch(
 	() => appStore.account,
@@ -266,13 +268,13 @@ watch(
 		if (!tokenToDisplay.value) {
 			appStore.displayOption = "total_account_value"
 		}
-	}
+	},
 )
 watch(
 	() => appStore.displayOption,
 	async () => {
 		await saveBalanceDisplayOption(appStore.profile.id, appStore.network.id, appStore.displayOption)
-	}
+	},
 )
 watch(
 	() => totalTokenBalance.value.value,

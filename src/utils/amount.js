@@ -1,14 +1,14 @@
 /** Vendor */
-import BN from 'bignumber.js'
+import BN from "bignumber.js"
 
 export const getDecimalSeparator = () => {
-    const s = (1.1).toLocaleString()
-    return s.substring(1, s.length - 1)
+	const s = (1.1).toLocaleString()
+	return s.substring(1, s.length - 1)
 }
 
 export const getThousandSeparator = () => {
-    const s = (1111).toLocaleString()
-    return s.substring(1, s.length - 3)
+	const s = (1111).toLocaleString()
+	return s.substring(1, s.length - 3)
 }
 
 export const comma = (target, symbol = ",", fixed = 2) => {
@@ -41,12 +41,12 @@ export const comma = (target, symbol = ",", fixed = 2) => {
 	return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, symbol)
 }
 
-export const purgeNumber = target => {
+export const purgeNumber = (target) => {
 	if (/^(0|[1-9]\d*)(\.\d+)?$/.test(target)) return target
 	return target.replace(/[^0-9.]/g, "")
 }
 
-export const normalizeAmount = target => {
+export const normalizeAmount = (target) => {
 	if (target === ".") return "0."
 
 	let dotCounter = 0
@@ -64,7 +64,7 @@ export const normalizeAmount = target => {
 
 export const balanceFormatted = (balance, length) => {
 	let slashed = false
-	if (!balance || balance.isZero()) return { value: '0', slashed }
+	if (!balance || balance.isZero()) return { value: "0", slashed }
 
 	let str = balance.toFormat()
 	if (!length) {
@@ -73,7 +73,7 @@ export const balanceFormatted = (balance, length) => {
 
 	if (balance.lt(new BN(10).pow(-(length - 2)))) {
 		return {
-			value: `<0${getDecimalSeparator()}${'0'.repeat(length - 3)}1`,
+			value: `<0${getDecimalSeparator()}${"0".repeat(length - 3)}1`,
 			slashed: true,
 		}
 	}

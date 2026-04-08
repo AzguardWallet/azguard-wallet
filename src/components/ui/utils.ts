@@ -5,10 +5,10 @@ export const colors = ["blue", "green", "mint", "neutral-mint", "orange", "yello
  * Computed as: l1ChainId ^ rollupVersion
  */
 export const CHAIN_IDS = {
-	MAINNET: 2934756904,  // (1 ^ 2934756905) >>> 0 — Alpha mainnet
-	TESTNET: 4138294185,  // (11155111 ^ 4127419662) >>> 0
-	DEVNET: 896946031,    // (11155111 ^ 903641544) >>> 0 — v4-devnet-3
-	SANDBOX: 0,           // localhost:8080
+	MAINNET: 2934756904, // (1 ^ 2934756905) >>> 0 — Alpha mainnet
+	TESTNET: 4138294185, // (11155111 ^ 4127419662) >>> 0
+	DEVNET: 896946031, // (11155111 ^ 903641544) >>> 0 — v4-devnet-3
+	SANDBOX: 0, // localhost:8080
 } as const
 
 export function getColorFromAddress(address: string): string {

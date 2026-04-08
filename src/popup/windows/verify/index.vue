@@ -27,7 +27,7 @@ const handleConfirm = async () => {
 }
 
 const closeWindow = () => {
-	chrome.windows.getCurrent(undefined, window => {
+	chrome.windows.getCurrent(undefined, (window) => {
 		if (window.id) {
 			chrome.windows.remove(window.id)
 		}

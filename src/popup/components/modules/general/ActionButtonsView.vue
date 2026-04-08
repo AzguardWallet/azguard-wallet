@@ -10,7 +10,7 @@ const props = defineProps({
 	},
 })
 
-const handleOpenPopup = target => {
+const handleOpenPopup = (target) => {
 	popupStore.open(target)
 }
 </script>

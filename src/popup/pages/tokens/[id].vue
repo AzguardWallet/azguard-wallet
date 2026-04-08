@@ -41,7 +41,7 @@ const tokenBalanceService = new TokenBalanceServiceClient()
 tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
 function onBalanceUpdated(tb) {
 	if (tb.id !== tokenBalance.value?.id) return
-	
+
 	tokenBalance.value = tb
 }
 
@@ -63,7 +63,7 @@ watch(
 			cacheStore.activeTokenIdx = null
 			router.push("/popup/general")
 		}
-	}
+	},
 )
 
 onMounted(async () => {

@@ -16,8 +16,7 @@ export const confirmationPolicies: ConfirmationPolicy[] = [
 	},
 	{
 		title: "Confirm transactions and private data access",
-		description:
-			"Show confirmation popup only when this dapp sends or simulates transactions, or reads private data",
+		description: "Show confirmation popup only when this dapp sends or simulates transactions, or reads private data",
 		confirmationLevel: AccessLevel.PrivateData,
 	},
 	{

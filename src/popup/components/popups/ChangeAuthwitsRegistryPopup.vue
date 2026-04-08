@@ -59,7 +59,6 @@ async function fetchRegistryStatus() {
 	}
 }
 
-
 const isAllowedToExecute = computed(() => {
 	if (!feeSettings.value) return
 
@@ -72,12 +71,7 @@ async function handleChangeRegistry() {
 	try {
 		isLoading.value = true
 
-		await authwitsService.setRegistryEnabled(
-			appStore.network.id,
-			appStore.account.address,
-			!isRegistryEnabled.value,
-			feeSettings.value
-		)
+		await authwitsService.setRegistryEnabled(appStore.network.id, appStore.account.address, !isRegistryEnabled.value, feeSettings.value)
 
 		openToast({ label: "Account authwit registry is changed" })
 	} catch (err) {
@@ -107,7 +101,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleChangeRegistry()
 }
 </script>

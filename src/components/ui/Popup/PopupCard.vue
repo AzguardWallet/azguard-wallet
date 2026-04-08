@@ -25,7 +25,7 @@ function onSettingUpdate(setting) {
 }
 
 onMounted(async () => {
-	showFullscreen.value = await configService.getValue("showPopupFullscreen");
+	showFullscreen.value = await configService.getValue("showPopupFullscreen")
 	if (window.innerHeight > 600) {
 		showFullscreen.value = true
 	}

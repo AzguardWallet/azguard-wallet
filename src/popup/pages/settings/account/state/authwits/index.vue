@@ -36,7 +36,7 @@ const filteredAuthwits = computed(() => {
 		const contentB = b.content
 
 		const kindPos = stringCompare(contentA.kind, contentB.kind)
-		
+
 		if (kindPos) return kindPos
 
 		switch (contentA.kind) {
@@ -48,23 +48,25 @@ const filteredAuthwits = computed(() => {
 				return stringCompare(contentA.consumer, contentB.consumer)
 			case "message_hash":
 				return 1
-			
+
 			default:
 				return 1
 		}
 	})
 
 	const term = searchTerm.value.trim().toLowerCase()
-  	if (!term) return res
+	if (!term) return res
 
-	return res.filter(aw => {
+	return res.filter((aw) => {
 		const content = aw.content
 
-		return (content.kind).toLowerCase().includes(term) ||
-		(aw.kindName).toLowerCase().includes(term) ||
-		(content.caller ?? content.consumer ?? "").toLowerCase().includes(term) ||
-		(content.contract ?? content.to ?? "").toLowerCase().includes(term) ||
-		(content.method ?? content.selector ?? "").toLowerCase().includes(term)
+		return (
+			content.kind.toLowerCase().includes(term) ||
+			aw.kindName.toLowerCase().includes(term) ||
+			(content.caller ?? content.consumer ?? "").toLowerCase().includes(term) ||
+			(content.contract ?? content.to ?? "").toLowerCase().includes(term) ||
+			(content.method ?? content.selector ?? "").toLowerCase().includes(term)
+		)
 	})
 })
 
@@ -83,7 +85,7 @@ authwitsService.onAuthwitDeleted.add(onAuthwitDeleted)
 authwitsService.onRegistryEnabled.add(onRegistryEnabled)
 authwitsService.onRegistryDisabled.add(onRegistryDisabled)
 function onAuthwitAdded(authwit) {
-	const idx = authwits.value.findIndex(aw => aw.id === authwit.id)
+	const idx = authwits.value.findIndex((aw) => aw.id === authwit.id)
 	if (idx === -1) {
 		authwits.value.push(authwit)
 		return
@@ -92,7 +94,7 @@ function onAuthwitAdded(authwit) {
 	authwits.value[idx] = authwit
 }
 function onAuthwitDeleted(authwit) {
-	authwits.value = authwits.value.filter(aw => aw.id !== authwit.id)
+	authwits.value = authwits.value.filter((aw) => aw.id !== authwit.id)
 }
 function onRegistryEnabled(account) {
 	if (appStore.account?.address === account) {
@@ -106,15 +108,18 @@ function onRegistryDisabled(account) {
 }
 
 async function fetchAuthwits(isRefetching) {
-    if (isRefetching) openToast({ label: "Fetching authwits again", icon: "zap" })
+	if (isRefetching) openToast({ label: "Fetching authwits again", icon: "zap" })
 
 	isFetchingAuthwits.value = true
 
 	try {
-		authwits.value = (await authwitsService.getAuthwits(appStore.account.address))?.map(aw => {
+		authwits.value = (await authwitsService.getAuthwits(appStore.account.address))?.map((aw) => {
 			return {
 				...aw,
-				kindName: aw.content.kind.split("_").map(k => capitalize(k)).join(" ")
+				kindName: aw.content.kind
+					.split("_")
+					.map((k) => capitalize(k))
+					.join(" "),
 			}
 		})
 	} catch (err) {
@@ -157,16 +162,16 @@ const handleOpenAuthwit = (aw) => {
 watch(
 	() => appStore.account,
 	() => {
-        fetchAuthwits()
-        fetchRegistryStatus()
+		fetchAuthwits()
+		fetchRegistryStatus()
 	},
 )
 
 onMounted(async () => {
 	if (appStore.account && appStore.isLogined) {
-        await fetchAuthwits()
-        await fetchRegistryStatus()
-    }
+		await fetchAuthwits()
+		await fetchRegistryStatus()
+	}
 })
 
 onBeforeUnmount(() => {

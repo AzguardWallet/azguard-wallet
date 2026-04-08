@@ -28,12 +28,14 @@ const displaceIdx = computed(() => {
 })
 
 const router = useRouter()
-const networks = computed(() => [...appStore.networks].sort((a, b) => {
-	const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
+const networks = computed(() =>
+	[...appStore.networks].sort((a, b) => {
+		const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
 
-	return chainPos ? chainPos : stringCompare(a.name, b.name)
-}))
-const handleSelectNetwork = target => {
+		return chainPos ? chainPos : stringCompare(a.name, b.name)
+	}),
+)
+const handleSelectNetwork = (target) => {
 	if (appStore.network.id !== target.id) {
 		managers.network.setDefault(target.id)
 		appStore.network = target

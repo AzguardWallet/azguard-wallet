@@ -124,7 +124,7 @@ const handleDropSession = () => {
 	dappSessionService.deleteDappSession(session.value.id)
 }
 
-const handleCopyAddress = target => {
+const handleCopyAddress = (target) => {
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Address is copied", icon: "copy" })
 }
@@ -185,7 +185,6 @@ function onDappSessionDeleted(ds) {
 	openToast({ label: "The session was interrupted" })
 	router.go(-1)
 }
-
 
 onMounted(async () => {
 	await fetchSession()

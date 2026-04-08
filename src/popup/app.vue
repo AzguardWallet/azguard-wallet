@@ -22,7 +22,7 @@ const popupStore = usePopupStore()
 /** Update theme */
 const root = document.querySelector("html")
 const theme = ref(new Config().theme)
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", event => {
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
 	if (theme.value === "system") root.setAttribute("theme", isPrefersDarkScheme() ? "dark" : "light")
 })
 
@@ -50,17 +50,17 @@ const settingHandlers = {
 	},
 	sidePanel(value) {
 		chrome.sidePanel.setPanelBehavior({
-			openPanelOnActionClick: Boolean(value)
+			openPanelOnActionClick: Boolean(value),
 		})
 	},
 	defaultExplorer(value) {
 		appStore.defaultExplorer = value
-	}
+	},
 }
 function applySetting(setting) {
-	const handler = settingHandlers[setting.key];
+	const handler = settingHandlers[setting.key]
 	if (typeof handler === "function") {
-		handler(setting.value);
+		handler(setting.value)
 	}
 }
 
@@ -76,17 +76,17 @@ const initNetworks = async () => {
 	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
 	if ("azguard:ui:activeNetwork" in activeNetworkResult) {
 		const localActiveNetworkId = activeNetworkResult["azguard:ui:activeNetwork"]
-		appStore.network = appStore.networks.find(n => n.id === localActiveNetworkId)
+		appStore.network = appStore.networks.find((n) => n.id === localActiveNetworkId)
 	}
 
 	const key = `azguard:ui:lastActiveNetwork@${appStore.profile?.id}`
 	const lastActiveNetworkId = (await chrome.storage.local.get(key))[key]
 
 	if (lastActiveNetworkId) {
-		appStore.network = appStore.networks.find(n => n.id === lastActiveNetworkId)
+		appStore.network = appStore.networks.find((n) => n.id === lastActiveNetworkId)
 	}
 	if (!appStore.network) {
-		appStore.network = appStore.networks.find(n => n.isDefault)
+		appStore.network = appStore.networks.find((n) => n.isDefault)
 		chrome.storage.local.set({ [key]: appStore.network.id })
 	}
 
@@ -206,7 +206,6 @@ const loadProfile = async () => {
 	appStore.isSessionChecked = true
 }
 
-
 onBeforeMount(async () => {
 	await router.isReady()
 
@@ -268,7 +267,7 @@ watch(
 		if (isBackgroundConnected.value) {
 			loadProfile()
 		}
-	}
+	},
 )
 
 onBeforeUnmount(() => {

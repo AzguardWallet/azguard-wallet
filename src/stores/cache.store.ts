@@ -34,7 +34,7 @@ export const useCacheStore = defineStore("cache", () => {
 
 	const importContact = ref(null)
 	const importContacts = ref([])
-    const importPromise = ref(null)
+	const importPromise = ref(null)
 
 	const failureLog = ref()
 

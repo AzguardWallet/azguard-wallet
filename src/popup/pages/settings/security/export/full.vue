@@ -96,7 +96,7 @@ async function handleBackup() {
 
 		return
 	}
-	
+
 	backupStatus.value = "progress"
 	backup = {
 		"wallet-version": version,
@@ -107,9 +107,9 @@ async function handleBackup() {
 
 	for (const s of backupServices) {
 		const data = await s.backup()
-		s.disconnect();
+		s.disconnect()
 
-		if (data === null || data === undefined) continue;
+		if (data === null || data === undefined) continue
 
 		backup.data[s.name?.replace("-client", "")] = data
 	}
@@ -138,21 +138,19 @@ async function handleEncrypt() {
 		const passhash = await EncryptionKey.getPasshash(password.value)
 		const key = await EncryptionKey.fromPasshash(passhash)
 		backup = Buffer(await key.encrypt(new TextEncoder().encode(JSON.stringify(backup)))).toString("base64")
-		
+
 		backupStatus.value = "encrypted"
 	} catch (error) {
-		console.error('Failed to encrypt the backup', error);
+		console.error("Failed to encrypt the backup", error)
 		openToast({ label: "Failed to encrypt the backup", icon: "warning" }, TOAST_DURATION.LONG)
-		
+
 		backupStatus.value = "finished"
 	}
 }
 async function handleDownloadBackup() {
 	const isEncrypted = backupStatus.value === "encrypted"
 	let filename = `_${appStore.profile.name.replace(" ", "_")}_${Math.floor(Date.now() / 1000)}`
-	filename = isEncrypted
-		? `VibeguardEncryptedBackup${filename}.txt`
-		: `VibeguardBackup${filename}.json`
+	filename = isEncrypted ? `VibeguardEncryptedBackup${filename}.txt` : `VibeguardBackup${filename}.json`
 
 	let fileContent = ""
 	if (isEncrypted) {
@@ -170,26 +168,26 @@ async function handleDownloadBackup() {
 
 		openToast({ label: "Backup downloaded successfully", icon: "download" })
 	} catch (err) {
-		console.error("Download failed:", err.message || err);
+		console.error("Download failed:", err.message || err)
 		openToast({ label: "Failed to download backup", icon: "warning" }, TOAST_DURATION.LONG)
 	}
 }
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (!isAgreed.value) return
 
 	if (e.key === "Enter") {
 		switch (backupStatus.value) {
 			case "finished":
 				handleEncrypt()
-				break;
+				break
 			case "encrypted":
 				handleDownloadBackup()
-				break;
-		
+				break
+
 			default:
 				handleBackup()
-				break;
+				break
 		}
 	}
 }

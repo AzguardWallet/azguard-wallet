@@ -23,16 +23,14 @@ const router = useRouter()
 const tasks = ref([])
 const newTokens = computed(() => {
 	return tasks.value
-		.filter(t =>
-			t.content.kind === ContentKind.TokenMint &&
-			t.content.account === appStore.account.address &&
-			!tokenBalances.value?.some(tb => 
-				tb.token.name === t.content.name &&
-				tb.token.symbol === t.content.symbol
-			) &&
-			!t.finishedAt
+		.filter(
+			(t) =>
+				t.content.kind === ContentKind.TokenMint &&
+				t.content.account === appStore.account.address &&
+				!tokenBalances.value?.some((tb) => tb.token.name === t.content.name && tb.token.symbol === t.content.symbol) &&
+				!t.finishedAt,
 		)
-		.map(t => t.content)
+		.map((t) => t.content)
 		.sort((a, b) => stringCompare(a.name, b.name))
 })
 
@@ -54,26 +52,26 @@ function onTaskCreated(task) {
 	let idx
 	switch (task.content.kind) {
 		case ContentKind.BalanceUpdate:
-			idx = tokenBalances.value.findIndex(tb => tb.id === task.content.tbId)
+			idx = tokenBalances.value.findIndex((tb) => tb.id === task.content.tbId)
 			if (idx !== -1) {
 				tokenBalances.value[idx].isUpdating = true
 			}
-			
-			break;
+
+			break
 		case ContentKind.TokenMint:
 			if (task.content.account !== appStore.account?.address) return
-			
-			idx = tokenBalances.value.findIndex(tb => tb.token.name === task.content.name && tb.token.symbol === task.content.symbol)
+
+			idx = tokenBalances.value.findIndex((tb) => tb.token.name === task.content.name && tb.token.symbol === task.content.symbol)
 			if (idx !== -1) {
 				tokenBalances.value[idx].isMinting = true
 			} else {
 				tasks.value.push(task)
 			}
-			
-			break;
-		
+
+			break
+
 		default:
-			break;
+			break
 	}
 }
 function onTaskUpdated(task) {
@@ -82,49 +80,51 @@ function onTaskUpdated(task) {
 		case ContentKind.BalanceUpdate:
 			if (!task.finishedAt) return
 
-			idx = tokenBalances.value.findIndex(tb => tb.id === task.content.tbId)
+			idx = tokenBalances.value.findIndex((tb) => tb.id === task.content.tbId)
 			if (idx !== -1) {
 				tokenBalances.value[idx].isUpdating = false
 			}
 
-			break;
+			break
 		case ContentKind.TokenMint:
-			idx = tasks.value.findIndex(t => t.id === task.id)
+			idx = tasks.value.findIndex((t) => t.id === task.id)
 			if (idx !== -1 && task.finishedAt) {
 				tasks.value.splice(idx, 1)
 
-				const tbIdx = tokenBalances.value.findIndex(tb => tb.token.name === task.content.name && tb.token.symbol === task.content.symbol && tb.isMinting)
+				const tbIdx = tokenBalances.value.findIndex(
+					(tb) => tb.token.name === task.content.name && tb.token.symbol === task.content.symbol && tb.isMinting,
+				)
 				if (tbIdx !== -1) {
 					tokenBalances.value[tbIdx].isMinting = false
 				}
 			}
 
-			break;
+			break
 		default:
-			break;
+			break
 	}
 }
 function onTaskDeleted(task) {
 	let idx
 	switch (task.content.kind) {
 		case ContentKind.BalanceUpdate:
-			idx = tokenBalances.value.findIndex(tb => tb.id === task.content.tbId)
+			idx = tokenBalances.value.findIndex((tb) => tb.id === task.content.tbId)
 			if (idx !== -1) {
 				tokenBalances.value[idx].isUpdating = false
 			}
 
-			break;
-		
+			break
+
 		case ContentKind.TokenMint:
-			idx = tasks.value.findIndex(t => t.id === task.id)
+			idx = tasks.value.findIndex((t) => t.id === task.id)
 			if (idx !== -1) {
 				tasks.value.splice(idx, 1)
 			}
 
-			break;
-		
+			break
+
 		default:
-			break;
+			break
 	}
 }
 
@@ -134,39 +134,39 @@ tokenBalanceService.onTokenBalanceUpdated.add(onBalanceUpdated)
 tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
 function onBalanceAdded(tb) {
 	if (tb.account !== appStore.account.address) return
-	
+
 	tokenBalances.value.push({
 		...tb,
-		isUpdating: tasks.value.some(t => t.content.tbId === tb.id && !t.finishedAt),
-		isMinting: tasks.value.some(t => t.content.name === tb.token.name && t.content.symbol === tb.token.symbol && !t.finishedAt),
+		isUpdating: tasks.value.some((t) => t.content.tbId === tb.id && !t.finishedAt),
+		isMinting: tasks.value.some((t) => t.content.name === tb.token.name && t.content.symbol === tb.token.symbol && !t.finishedAt),
 	})
 }
 function onBalanceUpdated(tb) {
-	const idx = tokenBalances.value.findIndex(_tb => _tb.id === tb.id)
+	const idx = tokenBalances.value.findIndex((_tb) => _tb.id === tb.id)
 	if (idx !== -1) {
 		tokenBalances.value[idx] = tb
 	}
 }
 function onBalanceDeleted(tb) {
-	const idx = tokenBalances.value.findIndex(_tb => _tb.id === tb.id)
+	const idx = tokenBalances.value.findIndex((_tb) => _tb.id === tb.id)
 	if (idx !== -1) {
 		tokenBalances.value.splice(idx, 1)
 	}
 }
 
-function refreshBalance(tb) {	
+function refreshBalance(tb) {
 	if (tb?.id) {
 		tokenBalanceService.refreshTokenBalance(tb.id)
 	} else {
-		tokenBalances.value.forEach(_tb => tokenBalanceService.refreshTokenBalance(_tb.id))
+		tokenBalances.value.forEach((_tb) => tokenBalanceService.refreshTokenBalance(_tb.id))
 	}
 }
 
 async function fetchTokenBalances() {
-	tokenBalances.value = (await tokenBalanceService.getTokenBalances(undefined, appStore.account?.address)).map(tb => ({
+	tokenBalances.value = (await tokenBalanceService.getTokenBalances(undefined, appStore.account?.address)).map((tb) => ({
 		...tb,
-		isUpdating: tasks.value.some(t => t.content.tbId === tb.id && !t.finishedAt),
-		isMinting: tasks.value.some(t => t.content.name === tb.token.name && t.content.symbol === tb.token.symbol && !t.finishedAt),
+		isUpdating: tasks.value.some((t) => t.content.tbId === tb.id && !t.finishedAt),
+		isMinting: tasks.value.some((t) => t.content.name === tb.token.name && t.content.symbol === tb.token.symbol && !t.finishedAt),
 	}))
 }
 
@@ -174,15 +174,14 @@ watch(
 	() => appStore.account,
 	async () => {
 		await fetchTokenBalances()
-	}
+	},
 )
 onMounted(async () => {
-	tasks.value = (await taskService.getTasks())
-		.filter(t =>
-			(t.content.kind === ContentKind.BalanceUpdate ||
-			 t.content.kind === ContentKind.TokenMint) &&
-			t.content.account === appStore.account.address
-		)
+	tasks.value = (await taskService.getTasks()).filter(
+		(t) =>
+			(t.content.kind === ContentKind.BalanceUpdate || t.content.kind === ContentKind.TokenMint) &&
+			t.content.account === appStore.account.address,
+	)
 
 	await fetchTokenBalances()
 })

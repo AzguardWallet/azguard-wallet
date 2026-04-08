@@ -39,7 +39,7 @@ watch(
 			}
 		}
 	},
-	{ flush: 'post' }
+	{ flush: "post" },
 )
 </script>
 

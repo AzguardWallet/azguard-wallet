@@ -7,7 +7,7 @@ export declare global {
 		_warn: typeof console.warn
 		_error: typeof console.error
 	}
-	
+
 	interface Window {
 		ontrace?: typeof console.trace
 		ondebug?: typeof console.debug

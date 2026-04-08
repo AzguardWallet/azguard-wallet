@@ -41,7 +41,7 @@ function onTokenAdded(token) {
 	tokens.value.push(token)
 }
 function onTokenDeleted(token) {
-	const idx = tokens.value.findIndex(t => t.id === token.id)
+	const idx = tokens.value.findIndex((t) => t.id === token.id)
 	if (idx === -1) return
 
 	tokens.value.splice(idx, 1)
@@ -55,7 +55,7 @@ const isLoadingParseResult = ref(false)
 const isAddingNewToken = ref(false)
 
 const tokens = ref([])
-const isAlreadyExist = computed(() => tokens.value?.findLast(t => t.contract === contractAddressTerm.value))
+const isAlreadyExist = computed(() => tokens.value?.findLast((t) => t.contract === contractAddressTerm.value))
 const isAvailableToCreateToken = computed(() => {
 	if (!isValidHex(contractAddressTerm.value)) return
 	if (isAlreadyExist.value) return
@@ -82,7 +82,7 @@ const handleSelectCandidate = (target, candidate) => {
 	selectedFields.value[target] = candidate
 	rawToken.value[target] = candidate
 }
-const handleClearCandidate = target => {
+const handleClearCandidate = (target) => {
 	delete selectedFields.value[target]
 	rawToken.value[target] = null
 }
@@ -130,7 +130,7 @@ const handleCreateToken = async () => {
 		isAddingNewToken.value = false
 
 		const tokenBalances = await tokenBalanceService.getTokenBalances(newToken?.id)
-		tokenBalances.forEach(tb => {
+		tokenBalances.forEach((tb) => {
 			tokenBalanceService.refreshTokenBalance(tb.id)
 		})
 
@@ -151,9 +151,9 @@ const handleSaveToken = async () => {
 
 	try {
 		const newToken = await tokenService.addToken(appStore.profile.id, appStore.network.id, appStore.account.address, rawToken.value)
-		
+
 		const tokenBalances = await tokenBalanceService.getTokenBalances(newToken?.id)
-		tokenBalances.forEach(tb => {
+		tokenBalances.forEach((tb) => {
 			tokenBalanceService.refreshTokenBalance(tb.id)
 		})
 

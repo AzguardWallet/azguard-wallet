@@ -71,10 +71,8 @@ async function loadSyncState() {
 	if (!appStore.account) return
 
 	const tasks = await taskService.getTasks()
-	isSyncing.value = tasks.some(t =>
-		!t.finishedAt &&
-		t.content.kind === ContentKind.TransactionSync &&
-		t.content.account === appStore.account?.address
+	isSyncing.value = tasks.some(
+		(t) => !t.finishedAt && t.content.kind === ContentKind.TransactionSync && t.content.account === appStore.account?.address,
 	)
 
 	const cursor = await transactionService.getTxSyncCursor(appStore.account.address)

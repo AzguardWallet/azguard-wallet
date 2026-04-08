@@ -2,15 +2,9 @@ import { expect, test } from "vitest"
 import { getEntropy, getMnemonic } from "./mnemonic"
 
 const testcases = [
-	[
-		"00000000000000000000000000000000",
-		"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
-	],
+	["00000000000000000000000000000000", "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"],
 	["7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f", "legal winner thank year wave sausage worth useful legal winner thank yellow"],
-	[
-		"80808080808080808080808080808080",
-		"letter advice cage absurd amount doctor acoustic avoid letter advice cage above",
-	],
+	["80808080808080808080808080808080", "letter advice cage absurd amount doctor acoustic avoid letter advice cage above"],
 	["ffffffffffffffffffffffffffffffff", "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong"],
 	[
 		"000000000000000000000000000000000000000000000000",
@@ -24,10 +18,7 @@ const testcases = [
 		"808080808080808080808080808080808080808080808080",
 		"letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic avoid letter always",
 	],
-	[
-		"ffffffffffffffffffffffffffffffffffffffffffffffff",
-		"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo when",
-	],
+	["ffffffffffffffffffffffffffffffffffffffffffffffff", "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo when"],
 	[
 		"0000000000000000000000000000000000000000000000000000000000000000",
 		"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
@@ -44,10 +35,7 @@ const testcases = [
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote",
 	],
-	[
-		"77c2b00716cec7213839159e404db50d",
-		"jelly better achieve collect unaware mountain thought cargo oxygen act hood bridge",
-	],
+	["77c2b00716cec7213839159e404db50d", "jelly better achieve collect unaware mountain thought cargo oxygen act hood bridge"],
 	[
 		"b63a9c59a6e641f288ebc103017f1da9f8290b3da6bdef7b",
 		"renew stay biology evidence goat welcome casual join adapt armor shuffle fault little machine walk stumble urge swap",

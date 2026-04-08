@@ -32,7 +32,7 @@ export async function refreshBalances(minutes, accounts) {
 	const tokenBalanceService = new TokenBalanceServiceClient()
 	const tokenBalances = []
 	for (const acc of accounts) {
-		tokenBalances.push(...(await tokenBalanceService.getTokenBalances(undefined, acc.address)));
+		tokenBalances.push(...(await tokenBalanceService.getTokenBalances(undefined, acc.address)))
 	}
 
 	function checkAge(updatedAt, minutes) {

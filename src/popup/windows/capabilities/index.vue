@@ -13,10 +13,7 @@ import { getErrorData } from "@/wallet/utils/errors"
 /** Services */
 import { ProfileInfo, ProfileServiceClient } from "@/wallet/services/profile/client"
 import { DappMetadata } from "@/wallet/services/dapp-session/client"
-import {
-	CapabilityPayload,
-	DappInteractionServiceClient,
-} from "@/wallet/services/dapp-interaction/client"
+import { CapabilityPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
 
 type UIDappMetadata = DappMetadata & {
 	loadingLogo?: boolean
@@ -84,7 +81,11 @@ const isExpanded = (index: number) => expandedCards.value.has(index)
 
 const CAPABILITY_LABELS: Record<string, { label: string; description: string; risk: "low" | "medium" | "high" }> = {
 	accounts: { label: "Share your accounts", description: "The dApp can see your account addresses and aliases", risk: "medium" },
-	contracts: { label: "Register and query contracts", description: "Register contract instances and read contract metadata", risk: "low" },
+	contracts: {
+		label: "Register and query contracts",
+		description: "Register contract instances and read contract metadata",
+		risk: "low",
+	},
 	contractClasses: { label: "Query contract classes", description: "Read contract class metadata from the network", risk: "low" },
 	simulation: { label: "Simulate transactions", description: "Run transaction simulations without sending them", risk: "medium" },
 	transaction: { label: "Send transactions", description: "Submit transactions to the network on your behalf", risk: "high" },
@@ -186,7 +187,7 @@ const selectAccount = (account: UIAccount) => {
 	if (processingError.value?.type === "warning") {
 		clearError()
 	}
-	const index = selectedAccounts.value.findIndex(acc => acc.address === account.address)
+	const index = selectedAccounts.value.findIndex((acc) => acc.address === account.address)
 	if (index < 0) {
 		selectedAccounts.value.push(account)
 	} else {
@@ -209,21 +210,13 @@ const onInteractionCancelled = (_requestId: string) => {
 const approve = async () => {
 	// Validate account selection if needed
 	if (needsAccountSelection.value && selectedAccounts.value.length === 0) {
-		setError(
-			"Select at least one account",
-			"You must select at least one account to share with the dApp",
-			"warning",
-		)
+		setError("Select at least one account", "You must select at least one account to share with the dApp", "warning")
 		return
 	}
 	try {
 		isLoading.value = true
-		const approvedNew = capabilities.value
-			.filter(c => c.isNew && c.selected)
-			.map(c => c.capability)
-		const existing = capabilities.value
-			.filter(c => !c.isNew)
-			.map(c => c.capability)
+		const approvedNew = capabilities.value.filter((c) => c.isNew && c.selected).map((c) => c.capability)
+		const existing = capabilities.value.filter((c) => !c.isNew).map((c) => c.capability)
 
 		// Re-add the accounts capability to granted if accounts were selected
 		const granted = [...approvedNew, ...existing]
@@ -238,9 +231,7 @@ const approve = async () => {
 		let resultSelectedAccounts: string[] | undefined
 		let resultAliases: Record<string, string> | undefined
 		if (needsAccountSelection.value && selectedAccounts.value.length > 0) {
-			resultSelectedAccounts = selectedAccounts.value.map(
-				acc => `aztec:${acc.chainId}:${acc.address}`,
-			)
+			resultSelectedAccounts = selectedAccounts.value.map((acc) => `aztec:${acc.chainId}:${acc.address}`)
 			resultAliases = {}
 			for (const acc of selectedAccounts.value) {
 				const caip = `aztec:${acc.chainId}:${acc.address}`
@@ -271,7 +262,7 @@ const closeWindow = (interactionCompleted?: boolean) => {
 	if (interactionCompleted) {
 		window.removeEventListener("beforeunload", reject)
 	}
-	chrome.windows.getCurrent(undefined, window => {
+	chrome.windows.getCurrent(undefined, (window) => {
 		if (window.id) {
 			chrome.windows.remove(window.id)
 		}
@@ -290,9 +281,16 @@ onMounted(async () => {
 
 	if (!appStore.isSessionChecked) {
 		await new Promise<void>((resolve) => {
-			const stop = watch(() => appStore.isSessionChecked, (checked) => {
-				if (checked) { stop(); resolve() }
-			}, { immediate: true })
+			const stop = watch(
+				() => appStore.isSessionChecked,
+				(checked) => {
+					if (checked) {
+						stop()
+						resolve()
+					}
+				},
+				{ immediate: true },
+			)
 		})
 	}
 

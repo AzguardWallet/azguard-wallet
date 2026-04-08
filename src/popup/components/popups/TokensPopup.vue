@@ -34,21 +34,20 @@ const tokens = ref()
 const tokenService = new TokenServiceClient()
 tokenService.onTokenDeleted.add(onTokenDeleted)
 function onTokenDeleted(token) {
-	const idx = tokens.value.findIndex(t => t.id === token.id)
+	const idx = tokens.value.findIndex((t) => t.id === token.id)
 	if (idx === -1) return
 
 	tokens.value.splice(idx, 1)
 }
 
-const handleEditToken = target => {
+const handleEditToken = (target) => {
 	cacheStore.tokenToEditIdx = target.id
 
 	popupStore.open("edit_token")
 }
 
-const handleDeleteToken = target => {
-	cacheStore.confirm.description =
-		"Removing a token only affects the display in the UI and it does not affect the token balance"
+const handleDeleteToken = (target) => {
+	cacheStore.confirm.description = "Removing a token only affects the display in the UI and it does not affect the token balance"
 	cacheStore.confirm.callback = async () => {
 		await tokenService.deleteToken(target.id)
 

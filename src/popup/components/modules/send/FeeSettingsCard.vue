@@ -50,7 +50,7 @@ const settings = defineModel()
 const methodId = getRandomHex(6)
 const registeredFpcs = ref([])
 
-const privateFpc = computed(() => registeredFpcs.value.find(f => f.type === FpcType.PrivateFpc))
+const privateFpc = computed(() => registeredFpcs.value.find((f) => f.type === FpcType.PrivateFpc))
 
 const methods = computed(() => {
 	const base = [
@@ -115,8 +115,8 @@ const balances = ref([])
 const isLoading = ref(false)
 const error = ref("")
 
-const selectedFpc = computed(() => cacheStore.feePaymentMethods.find(m => m.id === methodId)?.fpc)
-const fpcBalance = computed(() => balances.value?.find(b => b.token.contract === selectedFpc.value?.asset))
+const selectedFpc = computed(() => cacheStore.feePaymentMethods.find((m) => m.id === methodId)?.fpc)
+const fpcBalance = computed(() => balances.value?.find((b) => b.token.contract === selectedFpc.value?.asset))
 
 const FEE_JUICE_DECIMALS = 18
 
@@ -136,9 +136,7 @@ const formatGasBalance = (raw) => {
 
 const feeJuiceBalanceFormatted = computed(() => formatGasBalance(gasBalances.value.publicFeeJuice))
 const privateFeeJuiceFormatted = computed(() =>
-	gasBalances.value.privateFeeJuice !== null
-		? formatGasBalance(gasBalances.value.privateFeeJuice)
-		: null,
+	gasBalances.value.privateFeeJuice !== null ? formatGasBalance(gasBalances.value.privateFeeJuice) : null,
 )
 
 const showMethodSelector = computed(() => {
@@ -180,7 +178,7 @@ const onBalanceUpdated = (balance) => {
 		return
 	}
 
-	const idx = balances.value?.findIndex(b => b.id === balance.id)
+	const idx = balances.value?.findIndex((b) => b.id === balance.id)
 	if (idx !== -1) {
 		balances.value[idx] = balance
 	}
@@ -193,7 +191,7 @@ const onBalanceDeleted = (balance) => {
 		return
 	}
 
-	const idx = balances.value?.findIndex(b => b.id === balance.id)
+	const idx = balances.value?.findIndex((b) => b.id === balance.id)
 	if (idx !== -1) {
 		balances.value?.splice(idx, 1)
 	}
@@ -269,7 +267,7 @@ const init = async () => {
 				}
 			} else {
 				// Auto-select the first sponsored FPC if available
-				const sponsoredMethod = methods.value.find(m => m.fpc?.type === FpcType.DefaultSponsoredFpc)
+				const sponsoredMethod = methods.value.find((m) => m.fpc?.type === FpcType.DefaultSponsoredFpc)
 				if (sponsoredMethod) {
 					selectedMethod.value = {
 						...sponsoredMethod,
@@ -294,53 +292,62 @@ watch(
 			case "fj": {
 				if (gasBalances.value.publicFeeJuice === "0") {
 					settings.value = undefined
-					break;
+					break
 				}
 				settings.value = buildSettings({ kind: "fj" }, selectedPriority.value)
 				saveSelectedMethod(selectedMethod.value)
-				break;
+				break
 			}
 			case "private_fpc": {
 				if (!selectedMethod.value.fpc) {
 					// No PrivateFPC registered yet
 					settings.value = undefined
-					break;
+					break
 				}
-				settings.value = buildSettings({
-					kind: "fpc",
-					fpcId: selectedMethod.value.fpc.id,
-				}, selectedPriority.value)
-				saveSelectedMethod(selectedMethod.value);
-				break;
+				settings.value = buildSettings(
+					{
+						kind: "fpc",
+						fpcId: selectedMethod.value.fpc.id,
+					},
+					selectedPriority.value,
+				)
+				saveSelectedMethod(selectedMethod.value)
+				break
 			}
 			case "fpc": {
 				if (!selectedMethod.value.fpc) {
 					settings.value = undefined
-					break;
+					break
 				}
 				const fpcType = selectedMethod.value.fpc.type
 				if (fpcType === FpcType.DefaultFpc) {
 					if (isZeroBalance(selectedMethod.value)) {
 						settings.value = undefined
-						break;
+						break
 					}
-					settings.value = buildSettings({
-						kind: "fpc",
-						fpcId: selectedMethod.value.fpc.id,
-						inPublic: selectedMethod.value.inPublic,
-					}, selectedPriority.value)
+					settings.value = buildSettings(
+						{
+							kind: "fpc",
+							fpcId: selectedMethod.value.fpc.id,
+							inPublic: selectedMethod.value.inPublic,
+						},
+						selectedPriority.value,
+					)
 				} else {
 					// DefaultSponsoredFpc, PrivateFpc
-					settings.value = buildSettings({
-						kind: "fpc",
-						fpcId: selectedMethod.value.fpc.id,
-					}, selectedPriority.value)
+					settings.value = buildSettings(
+						{
+							kind: "fpc",
+							fpcId: selectedMethod.value.fpc.id,
+						},
+						selectedPriority.value,
+					)
 				}
-				saveSelectedMethod(selectedMethod.value);
-				break;
+				saveSelectedMethod(selectedMethod.value)
+				break
 			}
 			default:
-				break;
+				break
 		}
 	},
 	{ deep: true },
@@ -369,7 +376,7 @@ onBeforeUnmount(() => {
 	fpcService.disconnect()
 	executionService.disconnect()
 	tokenBalanceService.disconnect()
-	cacheStore.feePaymentMethods = cacheStore.feePaymentMethods.filter(m => m.id !== methodId)
+	cacheStore.feePaymentMethods = cacheStore.feePaymentMethods.filter((m) => m.id !== methodId)
 })
 </script>
 

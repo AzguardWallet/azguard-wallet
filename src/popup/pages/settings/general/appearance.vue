@@ -59,7 +59,7 @@ const settings = {
 	},
 }
 
-async function updateSetting (key, value) {
+async function updateSetting(key, value) {
 	if (!settings[key]) return
 	if (settings[key].model.value === value) return
 
@@ -82,12 +82,12 @@ async function applySetting(key, value) {
 					windowId: currentWindow.id,
 				})
 			}
-			
+
 			window.close()
-			break;
-	
+			break
+
 		default:
-			break;
+			break
 	}
 }
 
@@ -101,7 +101,7 @@ function onSettingUpdate(setting) {
 
 onMounted(async () => {
 	const _settings = await configService.getProps()
-	_settings.forEach(s => {
+	_settings.forEach((s) => {
 		if (settings[s.key]) {
 			settings[s.key].model.value = s.value
 		}

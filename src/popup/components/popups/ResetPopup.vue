@@ -44,8 +44,7 @@ const handleReset = () => {
 	cacheStore.confirm.confirm_text = "Yes, delete profile"
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.title = "Delete your profile permanently?"
-	cacheStore.confirm.description =
-		`This action cannot be undone. This will permanently delete your profile. 
+	cacheStore.confirm.description = `This action cannot be undone. This will permanently delete your profile. 
 		Type the name of the profile 
 		${appStore.profile.type === "passkey" ? "or use your passkey " : ""}
 		to confirm.`
@@ -57,7 +56,7 @@ const handleReset = () => {
 
 		cacheStore.confirm = {}
 
-		appStore.profiles = appStore.profiles.filter(p => p.id !== appStore.profile.id)
+		appStore.profiles = appStore.profiles.filter((p) => p.id !== appStore.profile.id)
 		appStore.profile = appStore.profiles.length && appStore.profiles[0]
 		appStore.networks = []
 		appStore.network = null

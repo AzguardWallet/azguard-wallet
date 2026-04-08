@@ -31,14 +31,10 @@ const appStore = useAppStore()
 
 const tasks = ref([])
 const activeTasks = computed(() => {
-	return tasks.value
-		.filter(t => !t.finishedAt)
-		.sort((a, b) => b.createdAt - a.createdAt)
+	return tasks.value.filter((t) => !t.finishedAt).sort((a, b) => b.createdAt - a.createdAt)
 })
 const completedTasks = computed(() => {
-	return tasks.value
-		.filter(t => t.finishedAt)
-		.sort((a, b) => b.finishedAt - a.finishedAt)
+	return tasks.value.filter((t) => t.finishedAt).sort((a, b) => b.finishedAt - a.finishedAt)
 })
 
 async function processTask(task) {
@@ -50,7 +46,6 @@ async function processTask(task) {
 			try {
 				balance = await tokenBalanceService.getTokenBalance(task.content.tbId)
 			} catch (e) {
-				
 			} finally {
 				humanizedContent.token = {
 					name: balance?.token.name ?? "Unknown",
@@ -60,20 +55,21 @@ async function processTask(task) {
 			if (appStore.account?.address !== task.content.account) {
 				humanizedContent.account = task.content.account
 			}
-			break;
+			break
 		case ContentKind.TokenMint:
 			humanizedContent.token = {
 				name: task.content.name,
 				symbol: task.content.symbol,
 			}
-			humanizedContent.amount = balanceFormatted(new BN(task.content.amount || 0).dividedBy(new BN(10).pow(task.content.decimals || 0))).value
-			break;
+			humanizedContent.amount = balanceFormatted(
+				new BN(task.content.amount || 0).dividedBy(new BN(10).pow(task.content.decimals || 0)),
+			).value
+			break
 		case ContentKind.Transfer:
 			let token
 			try {
 				token = await tokenService.getToken(task.content.tokenId)
 			} catch (e) {
-				
 			} finally {
 				humanizedContent.token = {
 					name: token?.name ?? "Unknown",
@@ -82,18 +78,20 @@ async function processTask(task) {
 			}
 			humanizedContent.sender = task.content.senderAddress
 			humanizedContent.recipient = task.content.recipientAddress
-			humanizedContent.amount = balanceFormatted(new BN(task.content.amount || 0).dividedBy(new BN(10).pow(token?.decimals || 0))).value
-			break;
+			humanizedContent.amount = balanceFormatted(
+				new BN(task.content.amount || 0).dividedBy(new BN(10).pow(token?.decimals || 0)),
+			).value
+			break
 		case ContentKind.RevokeAuthwits:
 			humanizedContent.authwitCount = task.content.authwitIds.length
-			break;
-		
+			break
+
 		default:
-			break;
+			break
 	}
 
 	task.humanizedContent = humanizedContent
-	
+
 	return task
 }
 function processSubtask(subtask) {
@@ -101,23 +99,23 @@ function processSubtask(subtask) {
 
 	switch (subtask.status) {
 		case TaskStatus.Pending:
-			subtask.statusColor = 'var(--gray)'
-			break;
+			subtask.statusColor = "var(--gray)"
+			break
 		case TaskStatus.Processing:
-			subtask.statusColor = 'var(--blue)'
-			break;
+			subtask.statusColor = "var(--blue)"
+			break
 		case TaskStatus.Completed:
-			subtask.statusColor = 'var(--green)'
-			break;
+			subtask.statusColor = "var(--green)"
+			break
 		case TaskStatus.Cancelled:
-			subtask.statusColor = 'var(--gray)'
-			break;
+			subtask.statusColor = "var(--gray)"
+			break
 		case TaskStatus.Failed:
-			subtask.statusColor = 'var(--red)'
-			break;
-	
+			subtask.statusColor = "var(--red)"
+			break
+
 		default:
-			break;
+			break
 	}
 
 	return subtask
@@ -126,7 +124,7 @@ function processSubtaskRecursively(subtask) {
 	processSubtask(subtask)
 
 	if (subtask.subtasks?.length) {
-		subtask.subtasks = subtask.subtasks.map(st => processSubtaskRecursively(st))
+		subtask.subtasks = subtask.subtasks.map((st) => processSubtaskRecursively(st))
 	}
 
 	return subtask
@@ -166,11 +164,11 @@ function onTaskUpdated(task) {
 }
 function onTaskDeleted(task) {
 	if (!task.parentId) {
-		tasks.value = tasks.value.filter(t => t.id !== task.id)
+		tasks.value = tasks.value.filter((t) => t.id !== task.id)
 	} else {
 		const parent = findParentRecursive(tasks.value, task.id)
 		if (parent) {
-			parent.subtasks = parent.subtasks.filter(st => st.id !== task.id)
+			parent.subtasks = parent.subtasks.filter((st) => st.id !== task.id)
 		}
 	}
 }
@@ -186,7 +184,7 @@ function findTaskRecursive(tasks, id) {
 }
 function findParentRecursive(tasks, childId) {
 	for (const t of tasks) {
-		if ((t.subtasks).some(st => st.id === childId)) return t
+		if (t.subtasks.some((st) => st.id === childId)) return t
 
 		const found = findParentRecursive(t.subtasks, childId)
 		if (found) return found
@@ -206,11 +204,9 @@ function handleClickTask(task) {
 }
 
 onMounted(async () => {
-	const _tasks = await Promise.all(
-		(await taskService.getTasks()).map(task => processTask(task))
-	)
+	const _tasks = await Promise.all((await taskService.getTasks()).map((task) => processTask(task)))
 
-	tasks.value = _tasks.map(t => processSubtaskRecursively(t)).map(t => reactive(t))
+	tasks.value = _tasks.map((t) => processSubtaskRecursively(t)).map((t) => reactive(t))
 })
 onBeforeUnmount(() => {
 	taskService.disconnect()

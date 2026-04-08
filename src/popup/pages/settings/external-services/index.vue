@@ -70,9 +70,7 @@ const settings = {
 
 // Check if all privacy settings are disabled (for auto-enable stealth)
 const isAllDisabled = computed(() => {
-	return !contractRegistry.value &&
-		!uploadExternalImages.value &&
-		externalLinks.value === "disabled"
+	return !contractRegistry.value && !uploadExternalImages.value && externalLinks.value === "disabled"
 })
 
 // Show exit stealth mode dialog
@@ -190,7 +188,7 @@ function onSettingUpdate(setting) {
 
 onBeforeMount(async () => {
 	const _settings = await configService.getProps()
-	_settings.forEach(s => {
+	_settings.forEach((s) => {
 		if (settings[s.key]) {
 			settings[s.key].model.value = s.value
 		}

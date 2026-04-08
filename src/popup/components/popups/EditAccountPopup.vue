@@ -27,9 +27,9 @@ const props = defineProps({
 	show: Boolean,
 })
 
-const accountToEdit = computed(() => appStore.accounts.find(n => n.address === cacheStore.accountToEditIdx))
+const accountToEdit = computed(() => appStore.accounts.find((n) => n.address === cacheStore.accountToEditIdx))
 
-const notAllowedAccountNames = computed(() => appStore.accounts.map(n => n.name))
+const notAllowedAccountNames = computed(() => appStore.accounts.map((n) => n.name))
 
 const isStartedEditing = ref(false)
 const nameTerm = ref("")
@@ -74,7 +74,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleUpdateAccount()
 }
 </script>

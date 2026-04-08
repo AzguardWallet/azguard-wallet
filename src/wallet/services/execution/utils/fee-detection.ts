@@ -5,19 +5,16 @@
  *
  * Returns undefined if no embedded fee payment is detected.
  */
-export function detectEmbeddedFeePayment(
-    feePayer: unknown,
-    from: unknown,
-): "fjwc" | "fpc" | undefined {
-    if (feePayer === undefined || feePayer === null) {
-        return undefined;
-    }
-    return String(feePayer) === String(from) ? "fjwc" : "fpc";
+export function detectEmbeddedFeePayment(feePayer: unknown, from: unknown): "fjwc" | "fpc" | undefined {
+	if (feePayer === undefined || feePayer === null) {
+		return undefined
+	}
+	return String(feePayer) === String(from) ? "fjwc" : "fpc"
 }
 
 /**
  * Detects whether a sendTx opts.from value indicates a NO_FROM (DefaultEntrypoint) transaction.
  */
 export function isNoFromRequest(from: unknown): boolean {
-    return from === "NO_FROM";
+	return from === "NO_FROM"
 }

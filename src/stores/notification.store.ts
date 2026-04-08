@@ -48,6 +48,6 @@ export const useNotificationStore = defineStore("notification", () => {
 	return {
 		active,
 		create,
-		removeActive
+		removeActive,
 	}
 })

@@ -18,7 +18,7 @@ let profileService
 
 function onActiveProfileChanged(profile) {
 	if (!profile) {
-		chrome.windows.getCurrent(window => {
+		chrome.windows.getCurrent((window) => {
 			chrome.windows.remove(window.id)
 		})
 	}
@@ -37,14 +37,13 @@ onMounted(async () => {
 	profileService = new ProfileServiceClient()
 	profileService.onActiveProfileChanged.add(onActiveProfileChanged)
 	await profileService.connect()
-	
+
 	window.addEventListener("beforeunload", onClose)
 })
 
 onUnmounted(() => {
 	window.removeEventListener("beforeunload", onClose)
 })
-
 </script>
 
 <template>

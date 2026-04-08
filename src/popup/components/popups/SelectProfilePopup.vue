@@ -32,7 +32,7 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.select_profile?.order
 })
 
-const handleSelectProfile = profile => {
+const handleSelectProfile = (profile) => {
 	appStore.profile = profile
 	emit("onClose")
 }
@@ -43,7 +43,7 @@ const handleProfileCreated = async () => {
 }
 
 function onProfileAddedOrUpdated(profile) {
-	const idx = profiles.value.findIndex(p => p.id === profile.id)
+	const idx = profiles.value.findIndex((p) => p.id === profile.id)
 	if (idx === -1) {
 		profiles.value.push(profile)
 	} else {
@@ -52,7 +52,7 @@ function onProfileAddedOrUpdated(profile) {
 }
 
 function onProfileDeleted(profile) {
-	const idx = profiles.value.findIndex(p => p.id === profile.id)
+	const idx = profiles.value.findIndex((p) => p.id === profile.id)
 	if (idx !== -1) {
 		profiles.value.splice(idx, 1)
 	}

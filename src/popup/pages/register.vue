@@ -40,7 +40,7 @@ function onSettingUpdate(setting) {
 	}
 }
 
-const handleOpen = target => {
+const handleOpen = (target) => {
 	chrome.windows.create({
 		type: "popup",
 		url: `https://azguardwallet.io/${target}`,
@@ -49,17 +49,17 @@ const handleOpen = target => {
 	})
 }
 
-async function handleSwitchTheme () {
+async function handleSwitchTheme() {
 	try {
 		const newTheme = theme.value === "dark" ? "light" : "dark"
 		await configService.setValue("theme", newTheme)
 		theme.value = newTheme
 	} catch (err) {
-		console.error(`Failed theme updating ${err}`);
+		console.error(`Failed theme updating ${err}`)
 	}
 }
 
-async function handleSwitchAppView () {
+async function handleSwitchAppView() {
 	try {
 		await configService.setValue("sidePanel", !isSidePanelEnabled.value)
 		isSidePanelEnabled.value = !isSidePanelEnabled.value
@@ -68,12 +68,11 @@ async function handleSwitchAppView () {
 			chrome.sidePanel.open({
 				windowId: currentWindow.id,
 			})
-			
 		}
 
 		window.close()
 	} catch (err) {
-		console.error(`Failed side panel updating ${err}`);
+		console.error(`Failed side panel updating ${err}`)
 	}
 }
 
@@ -97,7 +96,7 @@ function handleCreateProfileFromPromo(payload) {
 onMounted(async () => {
 	theme.value = await configService.getValue("theme")
 	isSidePanelEnabled.value = await configService.getValue("sidePanel")
-	hasSeenStealthPromo.value = await configService.getValue("hasSeenStealthPromo") || false
+	hasSeenStealthPromo.value = (await configService.getValue("hasSeenStealthPromo")) || false
 })
 
 onBeforeUnmount(() => {

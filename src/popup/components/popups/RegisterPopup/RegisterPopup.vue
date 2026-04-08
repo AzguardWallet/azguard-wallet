@@ -61,22 +61,27 @@ async function applyPrivacySettings() {
 }
 
 const handleCreateProfile = async () => {
-
 	isCreatingProfile.value = true
 
 	const profiles = await managers.profile.getProfiles()
-	const name = `My Profile${profiles.length ? ` ${profiles.length}` : ''}`
+	const name = `My Profile${profiles.length ? ` ${profiles.length}` : ""}`
 	let profile
 	try {
-		profile = profilType.value === "passkey"
-			? await managers.profile.createPasskeyProfile(name)
-			: await managers.profile.createProfile(name, walletPassword.value)
+		profile =
+			profilType.value === "passkey"
+				? await managers.profile.createPasskeyProfile(name)
+				: await managers.profile.createProfile(name, walletPassword.value)
 	} catch (e) {
-		if (typeof e === "string" && !e?.toLowerCase().includes("user closed") && !e?.toLowerCase().includes("operation either timed out or was not allowed")) {
+		if (
+			typeof e === "string" &&
+			!e?.toLowerCase().includes("user closed") &&
+			!e?.toLowerCase().includes("operation either timed out or was not allowed")
+		) {
 			let description
 			let note
 			if (profilType.value === "passkey") {
-				description = "An error occurred while creating the profile. This authenticator may not be supported or encountered an issue. Try again or use another one."
+				description =
+					"An error occurred while creating the profile. This authenticator may not be supported or encountered an issue. Try again or use another one."
 				note = "Windows Hello may not work correctly with some versions of Windows."
 			} else {
 				description = "An error occurred while creating the profile. Please try again."
@@ -93,7 +98,7 @@ const handleCreateProfile = async () => {
 				},
 			})
 
-			console.error("Failed to create profile:", e);
+			console.error("Failed to create profile:", e)
 		}
 	} finally {
 		isCreatingProfile.value = false

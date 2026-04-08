@@ -54,9 +54,7 @@ watch(
 
 					switch (props.position) {
 						case "center":
-							xPos =
-								triggerRect.left -
-								(tooltipRect.width / 2 - triggerRect.width / 2)
+							xPos = triggerRect.left - (tooltipRect.width / 2 - triggerRect.width / 2)
 							break
 
 						case "start":
@@ -74,9 +72,7 @@ watch(
 
 					switch (props.position) {
 						case "center":
-							xPos =
-								triggerRect.left -
-								(tooltipRect.width / 2 - triggerRect.width / 2)
+							xPos = triggerRect.left - (tooltipRect.width / 2 - triggerRect.width / 2)
 							break
 
 						case "start":
@@ -94,10 +90,7 @@ watch(
 
 					switch (props.position) {
 						case "center":
-							yPos =
-								triggerRect.top -
-								(tooltipRect.height / 2 -
-									triggerRect.height / 2)
+							yPos = triggerRect.top - (tooltipRect.height / 2 - triggerRect.height / 2)
 							break
 
 						case "start":
@@ -115,10 +108,7 @@ watch(
 
 					switch (props.position) {
 						case "center":
-							yPos =
-								triggerRect.top -
-								(tooltipRect.height / 2 -
-									triggerRect.height / 2)
+							yPos = triggerRect.top - (tooltipRect.height / 2 - triggerRect.height / 2)
 							break
 
 						case "start":
@@ -137,7 +127,7 @@ watch(
 
 			styles.transform = `translate3d(${xPos}px, ${yPos}px,0)`
 		})
-	}
+	},
 )
 
 const handleMouseEnter = () => {

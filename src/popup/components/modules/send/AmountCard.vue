@@ -24,7 +24,7 @@ onMounted(() => {
 	if (props.tokenBalanceByType) inputEl.value.focus()
 })
 
-const handleAmountInput = e => {
+const handleAmountInput = (e) => {
 	const purgedAmount = purgeNumber(model.value)
 
 	model.value = purgedAmount

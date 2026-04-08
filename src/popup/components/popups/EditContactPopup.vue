@@ -38,7 +38,7 @@ function onContactAdded(contact) {
 	contacts.value.push(contact)
 }
 function onContactUpdated(contact) {
-	const idx = contacts.value.findIndex(c => c.id === contact.id)
+	const idx = contacts.value.findIndex((c) => c.id === contact.id)
 	if (idx !== -1) {
 		if (cacheStore.contactToEditIdx && contact.id === contactToEdit.id) {
 			nameTerm.value = contact.name
@@ -51,7 +51,7 @@ function onContactUpdated(contact) {
 	}
 }
 function onContactDeleted(contact) {
-	contacts.value = contacts.value.filter(c => c.id !== contact.id)
+	contacts.value = contacts.value.filter((c) => c.id !== contact.id)
 }
 
 const contactToEdit = ref(null)
@@ -61,18 +61,20 @@ const nameTerm = ref("")
 const contactAddressTerm = ref("")
 
 const isStartedEditingName = ref(false)
-const notAllowedContactNames = computed(() => contacts.value.map(c => c.name))
+const notAllowedContactNames = computed(() => contacts.value.map((c) => c.name))
 const isAlreadyExistName = computed(() => notAllowedContactNames.value.includes(nameTerm.value) && isStartedEditingName.value)
 const isStartedEditingAddress = ref(false)
-const notAllowedContactAddresses = computed(() => contacts.value.map(c => c.address))
-const isAlreadyExistAddress = computed(() => notAllowedContactAddresses.value.includes(contactAddressTerm.value) && isStartedEditingAddress.value)
+const notAllowedContactAddresses = computed(() => contacts.value.map((c) => c.address))
+const isAlreadyExistAddress = computed(
+	() => notAllowedContactAddresses.value.includes(contactAddressTerm.value) && isStartedEditingAddress.value,
+)
 const isValidAddress = computed(() => isValidHex(contactAddressTerm.value))
 const isAvailableToUpdateContact = computed(() => {
-	if (!nameTerm.value.replace(/\s/g, '').length) return
+	if (!nameTerm.value.replace(/\s/g, "").length) return
 	if (!isValidAddress.value) return
 	if (isAlreadyExistName.value) return
 	if (isAlreadyExistAddress.value) return
-	
+
 	return true
 })
 
@@ -103,11 +105,7 @@ const handleUpdateContact = async () => {
 				updated: true,
 			}
 		} else {
-			await contactService.updateContact(
-				contactToEdit.value.id,
-				nameTerm.value.trim(),
-				contactAddressTerm.value,
-			)
+			await contactService.updateContact(contactToEdit.value.id, nameTerm.value.trim(), contactAddressTerm.value)
 
 			openToast({ label: "Contact is updated" })
 		}
@@ -145,7 +143,9 @@ watch(
 			document.removeEventListener("keydown", onKeydown)
 		} else {
 			contacts.value = await contactService.getContacts()
-			contactToEdit.value = cacheStore.importContact ? cacheStore.importContact : contacts.value.find(c => c.id === cacheStore.contactToEditIdx)
+			contactToEdit.value = cacheStore.importContact
+				? cacheStore.importContact
+				: contacts.value.find((c) => c.id === cacheStore.contactToEditIdx)
 			nameTerm.value = contactToEdit.value?.name
 			contactAddressTerm.value = contactToEdit.value?.address
 
@@ -173,7 +173,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleUpdateContact()
 }
 </script>

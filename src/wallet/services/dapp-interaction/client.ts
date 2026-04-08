@@ -1,43 +1,43 @@
-import { ServiceSpec } from "@/wallet/base";
-import { ServiceClient } from "@/wallet/base/background";
-import { LoggerServiceClient } from "@/wallet/services/logger/client";
-import { EventHandler } from "@/wallet/utils/event-handler";
-import type { Operation } from "@/wallet/services/execution/spec";
-import type { LocalTxOrigin } from "@/wallet/services/transaction/spec";
+import { ServiceSpec } from "@/wallet/base"
+import { ServiceClient } from "@/wallet/base/background"
+import { LoggerServiceClient } from "@/wallet/services/logger/client"
+import { EventHandler } from "@/wallet/utils/event-handler"
+import type { Operation } from "@/wallet/services/execution/spec"
+import type { LocalTxOrigin } from "@/wallet/services/transaction/spec"
 import {
-    CapabilityPayload,
-    CapabilityResult,
-    DiscoveryPayload,
-    DiscoveryResult,
-    DAPP_INTERACTION_SERVICE_NAME,
-    Events,
-    ExecutionPayload,
-    ExecutionResult,
-    Methods,
-} from "./spec";
+	CapabilityPayload,
+	CapabilityResult,
+	DiscoveryPayload,
+	DiscoveryResult,
+	DAPP_INTERACTION_SERVICE_NAME,
+	Events,
+	ExecutionPayload,
+	ExecutionResult,
+	Methods,
+} from "./spec"
 
-export * from "./spec";
+export * from "./spec"
 
 export class DappInteractionServiceClient extends ServiceClient<Methods, Events> implements ServiceSpec<Methods, Events> {
-    public readonly onInteractionCancelled = new EventHandler<string>();
+	public readonly onInteractionCancelled = new EventHandler<string>()
 
-    public constructor(name?: string) {
-        super(DAPP_INTERACTION_SERVICE_NAME, new LoggerServiceClient(), name);
-    }
+	public constructor(name?: string) {
+		super(DAPP_INTERACTION_SERVICE_NAME, new LoggerServiceClient(), name)
+	}
 
-    public getInteractionPayload(id: string): Promise<ExecutionPayload | CapabilityPayload | DiscoveryPayload> {
-        return this.request("getInteractionPayload", id);
-    }
+	public getInteractionPayload(id: string): Promise<ExecutionPayload | CapabilityPayload | DiscoveryPayload> {
+		return this.request("getInteractionPayload", id)
+	}
 
-    public approveInteraction(id: string, operations: Operation[], origin: LocalTxOrigin): Promise<void> {
-        return this.request("approveInteraction", id, operations, origin);
-    }
+	public approveInteraction(id: string, operations: Operation[], origin: LocalTxOrigin): Promise<void> {
+		return this.request("approveInteraction", id, operations, origin)
+	}
 
-    public resolveInteraction(id: string, result: ExecutionResult | CapabilityResult | DiscoveryResult): Promise<void> {
-        return this.request("resolveInteraction", id, result);
-    }
+	public resolveInteraction(id: string, result: ExecutionResult | CapabilityResult | DiscoveryResult): Promise<void> {
+		return this.request("resolveInteraction", id, result)
+	}
 
-    public rejectInteraction(id: string, reason: string): Promise<void> {
-        return this.request("rejectInteraction", id, reason);
-    }
+	public rejectInteraction(id: string, reason: string): Promise<void> {
+		return this.request("rejectInteraction", id, reason)
+	}
 }

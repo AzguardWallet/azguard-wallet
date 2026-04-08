@@ -63,7 +63,7 @@ export const createTheme = ({ styles }) => {
 			},
 			".cm-foldPlaceholder": {
 				backgroundColor: "transparent",
-				border: 'none',
+				border: "none",
 				color: "var(--txt-tertiary)",
 			},
 			".cm-foldPlaceholder:hover": {

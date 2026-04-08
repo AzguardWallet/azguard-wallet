@@ -13,7 +13,7 @@ const props = defineProps({
 	},
 })
 
-const node = computed(() => appStore.networks.find(n => n.chainId === props.chainId))
+const node = computed(() => appStore.networks.find((n) => n.chainId === props.chainId))
 
 const chain = computed(() => {
 	const chainName = getChainName(props.chainId)

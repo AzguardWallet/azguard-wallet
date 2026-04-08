@@ -6,16 +6,16 @@
  * which handles discovery, MessageChannel creation, key exchange relay,
  * and encrypted message relay. No private keys or secrets touch this script.
  */
-import { ContentScriptConnectionHandler } from "@aztec/wallet-sdk/extension/handlers";
+import { ContentScriptConnectionHandler } from "@aztec/wallet-sdk/extension/handlers"
 
 const handler = new ContentScriptConnectionHandler({
-    sendToBackground: (message) => chrome.runtime.sendMessage(message),
-    addBackgroundListener: (listener) => {
-        chrome.runtime.onMessage.addListener((message: any) => {
-            listener(message);
-            return undefined;
-        });
-    },
-});
+	sendToBackground: (message) => chrome.runtime.sendMessage(message),
+	addBackgroundListener: (listener) => {
+		chrome.runtime.onMessage.addListener((message: any) => {
+			listener(message)
+			return undefined
+		})
+	},
+})
 
-handler.start();
+handler.start()

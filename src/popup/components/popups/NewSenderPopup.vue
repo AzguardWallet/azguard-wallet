@@ -30,12 +30,11 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.new_sender?.order
 })
 
-
 let accountStateClientService = null
 const senders = ref([])
 const senderAddress = ref("")
 const isLoading = ref(false)
-const error = ref({ type: "", title: "", tooltip: ""})
+const error = ref({ type: "", title: "", tooltip: "" })
 const fillError = (type, title, tooltip) => {
 	error.value = { type, title, tooltip }
 }
@@ -80,7 +79,7 @@ const handleAddSender = async () => {
 
 watch(
 	() => senderAddress.value,
-	() => validateSenderAddress()
+	() => validateSenderAddress(),
 )
 watch(
 	() => props.show,
@@ -100,7 +99,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleAddSender()
 }
 </script>

@@ -20,7 +20,7 @@ const props = defineProps({
 	tokenBalance: {
 		type: Object,
 		required: false,
-	}
+	},
 })
 
 const showFullBalance = ref({
@@ -32,7 +32,7 @@ const privateBalance = computed(() => {
 
 	const decimals = new BN(10).pow(props.tokenBalance?.token?.decimals || 0)
 	const balance = new BN(props.tokenBalance.privateBalance || 0).dividedBy(decimals)
-	
+
 	return balanceFormatted(balance, showFullBalance.value.private ? undefined : 30)
 })
 const publicBalance = computed(() => {
@@ -46,8 +46,8 @@ const publicBalance = computed(() => {
 
 const isCopied = ref(false)
 const handleCopyBalance = (target) => {
-	const balance = target === 'private' ? privateBalance.value : publicBalance.value
-	
+	const balance = target === "private" ? privateBalance.value : publicBalance.value
+
 	isCopied.value = true
 	window.navigator.clipboard.writeText(balance.value)
 	openToast({ label: `${capitalize(target)} balance is copied`, icon: "copy" })
@@ -61,7 +61,7 @@ const handleShowFullBalances = async () => {
 	showFullBalance.value.public = !showFullBalance.value.public
 	await nextTick()
 }
-const handleOpenSendPopup = target => {
+const handleOpenSendPopup = (target) => {
 	cacheStore.preselectedBalanceType = target
 	popupStore.open("send")
 }

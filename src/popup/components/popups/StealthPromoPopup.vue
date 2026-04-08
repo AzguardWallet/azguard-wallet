@@ -36,9 +36,7 @@ const externalLinks = ref("enabled")
 
 // Check if all privacy settings are disabled (for auto-enable stealth)
 const isAllDisabled = computed(() => {
-	return !contractRegistry.value &&
-		!uploadExternalImages.value &&
-		externalLinks.value === "disabled"
+	return !contractRegistry.value && !uploadExternalImages.value && externalLinks.value === "disabled"
 })
 
 const settings = {

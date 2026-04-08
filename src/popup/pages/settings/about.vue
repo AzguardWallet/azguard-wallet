@@ -26,7 +26,7 @@ const handleCopy = (target) => {
 	openToast({ label: "Version is copied", icon: "copy" })
 }
 
-const handleOpen = target => {
+const handleOpen = (target) => {
 	chrome.windows.create({
 		type: "popup",
 		url: `https://azguardwallet.io/${target}`,

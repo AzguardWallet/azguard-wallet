@@ -30,10 +30,11 @@ const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const contacts = ref([])
-const sortedContacts = computed(() => [...contacts.value].sort((a, b) => {
+const sortedContacts = computed(() =>
+	[...contacts.value].sort((a, b) => {
 		const abbrPos = stringCompare(a.abbr, b.abbr)
 		return abbrPos ? abbrPos : stringCompare(a.name, b.name)
-	})
+	}),
 )
 
 const contactService = new ContactServiceClient()
@@ -44,7 +45,7 @@ function onContactAdded(contact) {
 	contacts.value.push(contact)
 }
 function onContactUpdated(contact) {
-	const idx = contacts.value.findIndex(c => c.id === contact.id)
+	const idx = contacts.value.findIndex((c) => c.id === contact.id)
 	if (idx !== -1) {
 		contacts.value[idx] = contact
 	} else {
@@ -52,7 +53,7 @@ function onContactUpdated(contact) {
 	}
 }
 function onContactDeleted(contact) {
-	contacts.value = contacts.value.filter(c => c.id !== contact.id)
+	contacts.value = contacts.value.filter((c) => c.id !== contact.id)
 }
 
 function handleClickContact(contact) {
@@ -79,17 +80,17 @@ function handleDeleteContact(contact) {
 	popupStore.open("confirm")
 }
 async function handleExportContacts() {
-	const data = contacts.value.map(contact => ({
+	const data = contacts.value.map((contact) => ({
 		name: contact.name,
 		address: contact.address,
-		color: contact.color
+		color: contact.color,
 	}))
 
 	let filename = "contacts.json"
 
 	const profileService = new ProfileServiceClient()
 	profileService.connect()
-	
+
 	try {
 		const profile = await profileService.getActiveProfile()
 
@@ -105,11 +106,11 @@ async function handleExportContacts() {
 
 			openToast({ label: "Contacts exported successfully", icon: "download" })
 		} catch (err) {
-			console.error("Export failed:", err.message || err);
+			console.error("Export failed:", err.message || err)
 			openToast({ label: "Failed to export contacts", icon: "warning" }, TOAST_DURATION.LONG)
 		}
 	} catch (err) {
-		console.error(err);
+		console.error(err)
 	} finally {
 		profileService.disconnect()
 	}
@@ -122,12 +123,12 @@ async function handleImportContacts() {
 
 		const data = await file.text()
 		const importedContacts = JSON.parse(data)
-			.map(c => ({
+			.map((c) => ({
 				...c,
 				name: sanitizeString(c.name, 20),
 				address: sanitizeString(c.address, 66),
 			}))
-			.filter(c => !!c.name && !!c.address)
+			.filter((c) => !!c.name && !!c.address)
 
 		if (importedContacts?.length) {
 			for (const _c of importedContacts) {
@@ -141,32 +142,24 @@ async function handleImportContacts() {
 			popupStore.open("import_contacts")
 
 			try {
-				const res = await importPromise;
+				const res = await importPromise
 				if (res.length) {
 					const contactsByAddress = new Map()
 					const contactsByName = new Map()
-					contacts.value.forEach(c => {
-						contactsByAddress.set(c.address, c);
-						contactsByName.set(c.name, c);
-					});
+					contacts.value.forEach((c) => {
+						contactsByAddress.set(c.address, c)
+						contactsByName.set(c.name, c)
+					})
 
 					const errors = []
 					for (const _c of res) {
-						const existingByAddress = contactsByAddress.get(_c.address);
-						const existingByName = contactsByName.get(_c.name);
+						const existingByAddress = contactsByAddress.get(_c.address)
+						const existingByName = contactsByName.get(_c.name)
 						try {
 							if (existingByAddress) {
-								await contactService.updateContact(
-									existingByAddress.id,
-									_c.name,
-									_c.address,
-								)
+								await contactService.updateContact(existingByAddress.id, _c.name, _c.address)
 							} else if (existingByName) {
-								await contactService.updateContact(
-									existingByName.id,
-									_c.name,
-									_c.address,
-								)
+								await contactService.updateContact(existingByName.id, _c.name, _c.address)
 							} else {
 								await contactService.addContact(_c.name, _c.address, _c.color)
 							}
@@ -182,7 +175,7 @@ async function handleImportContacts() {
 
 					if (errors.length) {
 						for (const e of errors) {
-							console.error(`Failed to ${e.operation} contact ${e.name} ${e.address}`, e.error);
+							console.error(`Failed to ${e.operation} contact ${e.name} ${e.address}`, e.error)
 						}
 
 						openToast({ label: "Import ended with errors", icon: "warning" }, TOAST_DURATION.LONG)
@@ -199,8 +192,8 @@ async function handleImportContacts() {
 			openToast({ label: "No contacts found in file", icon: "info" })
 		}
 	} catch (err) {
-		console.error("Error occurred during import", err.message || err.stack || err);
-			
+		console.error("Error occurred during import", err.message || err.stack || err)
+
 		openToast({ label: "Error occurred during import", icon: "warning" }, TOAST_DURATION.LONG)
 	} finally {
 		cacheStore.importContacts = []

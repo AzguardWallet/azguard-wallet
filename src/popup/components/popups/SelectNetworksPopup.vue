@@ -33,7 +33,7 @@ watch(
 		if (props.show) {
 			networks.value = cacheStore.proposedNetworks
 		}
-	}
+	},
 )
 </script>
 

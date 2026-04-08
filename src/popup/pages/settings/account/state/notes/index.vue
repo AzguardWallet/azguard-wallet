@@ -32,12 +32,13 @@ const cacheStore = useCacheStore()
 const notes = ref([])
 const filteredNotes = computed(() => {
 	const term = searchTerm.value.trim().toLowerCase()
-  	if (!term) return notes.value
+	if (!term) return notes.value
 
-	return notes.value.filter(n =>
-		n.contract.toLowerCase().includes(term) ||
-		((n.type ? n.type : 'custom note').toLowerCase().includes(term)) ||
-		(n.location && n.location.toLowerCase().includes(term))
+	return notes.value.filter(
+		(n) =>
+			n.contract.toLowerCase().includes(term) ||
+			(n.type ? n.type : "custom note").toLowerCase().includes(term) ||
+			(n.location && n.location.toLowerCase().includes(term)),
 	)
 })
 const noteService = new NoteServiceClient()
@@ -48,18 +49,18 @@ const isErrorOccurred = computed(() => !!error.value)
 
 const searchTerm = ref("")
 
-const fetchNotes = async isRefetching => {
+const fetchNotes = async (isRefetching) => {
 	if (isRefetching) openToast({ label: "Fetching notes again", icon: "zap" })
 	isFetchingNotes.value = true
 
 	try {
 		notes.value = await noteService.getNotes(appStore.network.id, appStore.account.address)
-		notes.value.forEach(n => n.showingContent = parseNoteContent(n))
+		notes.value.forEach((n) => (n.showingContent = parseNoteContent(n)))
 		notes.value.sort((a, b) => {
 			const contractCompare = stringCompare(a.contract, b.contract)
 
 			return contractCompare ? contractCompare : stringCompare(a.location, b.location)
-		})		
+		})
 	} catch (err) {
 		error.value = err
 	} finally {
@@ -72,14 +73,12 @@ function parseNoteContent(note) {
 
 	const allowed = ["value", "amount", "token_id", "expiry_block_number", "remaining_txs", "points"]
 
-	const filtered = Object.fromEntries(
-		Object.entries(note.content).filter(([key]) => allowed.includes(key))
-	)
+	const filtered = Object.fromEntries(Object.entries(note.content).filter(([key]) => allowed.includes(key)))
 
 	return Object.keys(filtered).length > 0 ? filtered : note.content
 }
 
-const handleOpenNote = note => {
+const handleOpenNote = (note) => {
 	cacheStore.viewerData = note
 	popupStore.open("data_viewer")
 }

@@ -14,8 +14,7 @@ export const customViewerTheme = createTheme({
 			tag: t.comment,
 			color: "var(--txt-tertiary)",
 			sd: true,
-			asd: 123
-
+			asd: 123,
 		},
 		{
 			tag: t.bracket,

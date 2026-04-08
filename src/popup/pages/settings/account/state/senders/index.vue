@@ -60,8 +60,7 @@ const handleDelete = (sender) => {
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.confirm_text = "Yes, delete sender"
 	cacheStore.confirm.title = "Delete this sender?"
-	cacheStore.confirm.description =
-		"If you delete a sender, further private transactions from that sender won’t appear in your wallet"
+	cacheStore.confirm.description = "If you delete a sender, further private transactions from that sender won’t appear in your wallet"
 	cacheStore.confirm.callback = async () => {
 		await accountStateClientService.deleteSender(appStore.network.id, sender)
 

@@ -11,69 +11,69 @@
  * It then wraps with the SDK's own `retry` + `makeBackoff` for retries.
  */
 
-import { jsonStringify } from "@aztec/foundation/json-rpc";
-import { NoRetryError, makeBackoff, retry } from "@aztec/foundation/retry";
+import { jsonStringify } from "@aztec/foundation/json-rpc"
+import { NoRetryError, makeBackoff, retry } from "@aztec/foundation/retry"
 
 /** Default timeout per individual HTTP request (ms). */
-const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 60_000
 
 /**
  * JSON-RPC fetch signature expected by `createAztecNodeClient`.
  */
 type JsonRpcFetch = (
-    host: string,
-    body: unknown,
-    extraHeaders?: Record<string, string>,
-    noRetry?: boolean,
-) => Promise<{ response: any; headers: { get: (header: string) => string | null | undefined } }>;
+	host: string,
+	body: unknown,
+	extraHeaders?: Record<string, string>,
+	noRetry?: boolean,
+) => Promise<{ response: any; headers: { get: (header: string) => string | null | undefined } }>
 
 /**
  * Single-attempt fetch with timeout. Mirrors the SDK's `defaultFetch` but
  * adds an AbortController that fires after `timeoutMs`.
  */
 function fetchOnce(timeoutMs: number): JsonRpcFetch {
-    return async (host, body, extraHeaders = {}, noRetry = false) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+	return async (host, body, extraHeaders = {}, noRetry = false) => {
+		const controller = new AbortController()
+		const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
-        try {
-            let resp: Response;
-            try {
-                resp = await fetch(host, {
-                    method: "POST",
-                    body: jsonStringify(body),
-                    headers: { "content-type": "application/json", ...extraHeaders },
-                    signal: controller.signal,
-                });
-            } catch (err: unknown) {
-                if (err instanceof DOMException && err.name === "AbortError") {
-                    throw new Error(`Request to ${host} timed out after ${timeoutMs}ms`);
-                }
-                throw new Error(`Error fetching from host ${host}: ${err}`);
-            }
+		try {
+			let resp: Response
+			try {
+				resp = await fetch(host, {
+					method: "POST",
+					body: jsonStringify(body),
+					headers: { "content-type": "application/json", ...extraHeaders },
+					signal: controller.signal,
+				})
+			} catch (err: unknown) {
+				if (err instanceof DOMException && err.name === "AbortError") {
+					throw new Error(`Request to ${host} timed out after ${timeoutMs}ms`)
+				}
+				throw new Error(`Error fetching from host ${host}: ${err}`)
+			}
 
-            let responseJson;
-            try {
-                responseJson = await resp.json();
-            } catch {
-                if (!resp.ok) throw new Error(resp.statusText);
-                throw new Error(`Failed to parse body as JSON`);
-            }
+			let responseJson
+			try {
+				responseJson = await resp.json()
+			} catch {
+				if (!resp.ok) throw new Error(resp.statusText)
+				throw new Error(`Failed to parse body as JSON`)
+			}
 
-            if (!resp.ok) {
-                const errorMessage = `Error ${resp.status} from server ${host}: ${responseJson.error?.message ?? resp.statusText}`;
-                if (noRetry || (resp.status >= 400 && resp.status < 500)) {
-                    throw new NoRetryError(errorMessage);
-                } else {
-                    throw new Error(errorMessage);
-                }
-            }
+			if (!resp.ok) {
+				const errorMessage = `Error ${resp.status} from server ${host}: ${responseJson.error?.message ?? resp.statusText}`
+				if (noRetry || (resp.status >= 400 && resp.status < 500)) {
+					throw new NoRetryError(errorMessage)
+				} else {
+					throw new Error(errorMessage)
+				}
+			}
 
-            return { response: responseJson, headers: resp.headers };
-        } finally {
-            clearTimeout(timeoutId);
-        }
-    };
+			return { response: responseJson, headers: resp.headers }
+		} finally {
+			clearTimeout(timeoutId)
+		}
+	}
 }
 
 /**
@@ -85,14 +85,14 @@ function fetchOnce(timeoutMs: number): JsonRpcFetch {
  * - Adds per-request timeout via AbortController (the SDK lacks this)
  */
 export function makeFetchWithTimeout(timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS): JsonRpcFetch {
-    const once = fetchOnce(timeoutMs);
-    return async (host, body, extraHeaders = {}, noRetry) => {
-        return await retry(
-            () => once(host, body, extraHeaders, noRetry ?? false),
-            `JsonRpcClient request to ${host}`,
-            makeBackoff([1, 2, 3]),
-            undefined,
-            false,
-        );
-    };
+	const once = fetchOnce(timeoutMs)
+	return async (host, body, extraHeaders = {}, noRetry) => {
+		return await retry(
+			() => once(host, body, extraHeaders, noRetry ?? false),
+			`JsonRpcClient request to ${host}`,
+			makeBackoff([1, 2, 3]),
+			undefined,
+			false,
+		)
+	}
 }

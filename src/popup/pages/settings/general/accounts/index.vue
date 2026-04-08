@@ -28,31 +28,31 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const accounts = computed(() => appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index))
-const hiddenAccounts = computed(() => appStore.accounts.filter(a => !a.visible))
+const accounts = computed(() => appStore.accounts.filter((a) => a.visible).sort((a, b) => a.index - b.index))
+const hiddenAccounts = computed(() => appStore.accounts.filter((a) => !a.visible))
 
-const handleSelectAccount = acc => {
+const handleSelectAccount = (acc) => {
 	appStore.selectAccount(acc)
 }
 
-const handleEditAccount = target => {
+const handleEditAccount = (target) => {
 	cacheStore.accountToEditIdx = target.address
 	popupStore.open("edit_account")
 }
 
-const handleHideAccount = acc => {
+const handleHideAccount = (acc) => {
 	if (accounts.value.length === 1) return
 
 	appStore.changeAccountVisibility(acc, false)
 	openToast({ label: "Account successfully hidden" })
 }
 
-const handleShowAccount = acc => {
+const handleShowAccount = (acc) => {
 	appStore.changeAccountVisibility(acc, true)
 	openToast({ label: "Account visible again" })
 }
 
-const handleCopyAddress = target => {
+const handleCopyAddress = (target) => {
 	window.navigator.clipboard.writeText(target)
 	openToast({ label: "Address is copied", icon: "copy" })
 }

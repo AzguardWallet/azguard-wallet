@@ -80,10 +80,8 @@ const fillWarning = (text) => {
 	if (text) {
 		warning.value = {
 			show: true,
-			text
+			text,
 		}
-
-		
 	} else {
 		warning.value.show = false
 	}
@@ -127,15 +125,12 @@ const handleInput = (event) => {
 	}
 
 	if (props.type === "number") {
-		emit(
-			"update:modelValue",
-			Number.isNaN(Number.parseFloat(text.value)) ? text.value : Number.parseFloat(text.value),
-		)
+		emit("update:modelValue", Number.isNaN(Number.parseFloat(text.value)) ? text.value : Number.parseFloat(text.value))
 	} else if (props.subtype === "int") {
 		const value = event.target.value.replace(/[^\d]/g, "")
 		let res = value ? Number.parseInt(text.value, 10) : 0
 		text.value = value ? value : 0
-		
+
 		if (props.max) {
 			const max = Number(props.max)
 			if (res > max) {
@@ -143,14 +138,14 @@ const handleInput = (event) => {
 				text.value = max
 			}
 		}
-		
+
 		emit("update:modelValue", res)
 	} else {
 		emit("update:modelValue", text.value)
 	}
 }
 
-const handleKeydown = e => {
+const handleKeydown = (e) => {
 	if (props.disabled && e.key !== "Tab") e.preventDefault()
 	if (props.type === "number") {
 		if (e.key === "-") e.preventDefault()
@@ -171,15 +166,15 @@ const handleBlur = () => {
 	emit("blur")
 }
 
-const handlePaste = e => {
+const handlePaste = (e) => {
 	if (props.disablePaste) {
 		e.preventDefault()
 		return
 	}
-	
+
 	if (!!props.maxLength) {
 		e.preventDefault()
-		const paste = (e.clipboardData || window.clipboardData).getData('text') || ''
+		const paste = (e.clipboardData || window.clipboardData).getData("text") || ""
 		const el = inputEl.value
 		const start = el.selectionStart ?? text.value.length
 		const end = el.selectionEnd ?? start

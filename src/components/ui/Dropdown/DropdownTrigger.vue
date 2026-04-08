@@ -39,7 +39,7 @@ const handleBlur = () => {
 	triggerEl.value.wrapper.removeEventListener("keydown", handleEnterKey)
 }
 
-const handleEnterKey = e => {
+const handleEnterKey = (e) => {
 	if (e.key !== "Enter") return
 
 	emit("toggle")

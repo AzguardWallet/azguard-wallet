@@ -32,7 +32,7 @@ const { openToast } = useToast()
 const router = useRouter()
 const version = __VERSION__
 
-const accounts = computed(() => appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index))
+const accounts = computed(() => appStore.accounts.filter((a) => a.visible).sort((a, b) => a.index - b.index))
 const isLoading = ref(false)
 
 const handleCopyVersion = () => {
@@ -40,7 +40,7 @@ const handleCopyVersion = () => {
 	openToast({ label: "Version is copied", icon: "copy" })
 }
 
-const handleOpen = target => {
+const handleOpen = (target) => {
 	chrome.windows.create({
 		type: "popup",
 		url: `https://azguardwallet.io/${target}`,
@@ -58,7 +58,7 @@ const handleHideAccount = async () => {
 	if (accounts.value.length === 1) return
 	isLoading.value = true
 
-	const nextAccount = accounts.value.filter(acc => acc.address !== appStore.account.address)[0]
+	const nextAccount = accounts.value.filter((acc) => acc.address !== appStore.account.address)[0]
 	try {
 		await appStore.changeAccountVisibility(appStore.account, false)
 		await appStore.selectAccount(nextAccount)
@@ -73,7 +73,6 @@ const handleHideAccount = async () => {
 		isLoading.value = false
 	}
 }
-
 </script>
 
 <template>

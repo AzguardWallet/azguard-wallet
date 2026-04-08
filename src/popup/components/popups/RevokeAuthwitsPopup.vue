@@ -72,9 +72,9 @@ function chunkAuthwits() {
 			}
 			return acc
 		}, [])
-		.map(ch => ({
-			ids: ch.map(c => c.id),
-			content: ch.map(c => c.content),
+		.map((ch) => ({
+			ids: ch.map((c) => c.id),
+			content: ch.map((c) => c.content),
 			count: ch.length,
 			feeSetting: null,
 			status: "prepare",
@@ -82,7 +82,7 @@ function chunkAuthwits() {
 }
 
 const isAllowedToExecute = computed(() => {
-	if (chunkedAuthwits.value.filter(ch => !ch.feeSettings).length) return
+	if (chunkedAuthwits.value.filter((ch) => !ch.feeSettings).length) return
 
 	return true
 })
@@ -104,9 +104,12 @@ async function handleRevokeAuthwits() {
 	}
 
 	isLoading.value = false
-	const errors = chunkedAuthwits.value.filter(ch => !!ch.error).map(ch => ch.error)
+	const errors = chunkedAuthwits.value.filter((ch) => !!ch.error).map((ch) => ch.error)
 	if (errors.length) {
-		openToast({ label: `Failed to revoke ${errors.length === chunksCount.value ? '' : 'some '}authwit(s)`, icon: "warning" }, TOAST_DURATION.LONG)
+		openToast(
+			{ label: `Failed to revoke ${errors.length === chunksCount.value ? "" : "some "}authwit(s)`, icon: "warning" },
+			TOAST_DURATION.LONG,
+		)
 		error.value = errors.join(", ")
 	} else {
 		openToast({ label: "Authwit(s) successfully revoked" })
@@ -143,7 +146,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleRevokeAuthwits()
 }
 </script>

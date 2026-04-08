@@ -16,27 +16,13 @@ const props = defineProps({
 	align: {
 		type: String,
 		validator(value) {
-			return [
-				"center",
-				"between",
-				"around",
-				"evenly",
-				"start",
-				"end",
-			].includes(value)
+			return ["center", "between", "around", "evenly", "start", "end"].includes(value)
 		},
 	},
 	justify: {
 		type: String,
 		validator(value) {
-			return [
-				"center",
-				"between",
-				"around",
-				"evenly",
-				"start",
-				"end",
-			].includes(value)
+			return ["center", "between", "around", "evenly", "start", "end"].includes(value)
 		},
 	},
 	wrap: {
@@ -48,9 +34,7 @@ const props = defineProps({
 	direction: {
 		type: String,
 		validator(value) {
-			return ["column", "columnReversed", "row", "rowReversed"].includes(
-				value
-			)
+			return ["column", "columnReversed", "row", "rowReversed"].includes(value)
 		},
 	},
 	gap: {

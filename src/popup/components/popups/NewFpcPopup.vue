@@ -40,22 +40,22 @@ const fpcs = ref([])
 const balances = ref([])
 const selectedFpcType = ref(null)
 const fpcTypes = {
-	"DefaultFpc": { label: "Token FPC", description: "Pays fees using an ERC-20 token" },
-	"DefaultSponsoredFpc": { label: "Sponsored FPC", description: "A third party covers your fees" },
+	DefaultFpc: { label: "Token FPC", description: "Pays fees using an ERC-20 token" },
+	DefaultSponsoredFpc: { label: "Sponsored FPC", description: "A third party covers your fees" },
 }
 const isTypeDropdownOpen = ref(false)
 const nameTerm = ref("")
 const fpcAddressTerm = ref("")
 
-const notAllowedFpcNames = computed(() => fpcs.value.map(n => n.name))
+const notAllowedFpcNames = computed(() => fpcs.value.map((n) => n.name))
 const isAlreadyExist = computed(() => notAllowedFpcNames.value.includes(nameTerm.value))
 const isValidAddress = computed(() => isValidHex(fpcAddressTerm.value))
 const isAvailableToAddFpc = computed(() => {
-	if (!nameTerm.value.replace(/\s/g, '').length) return
+	if (!nameTerm.value.replace(/\s/g, "").length) return
 	if (!isValidAddress.value) return
 	if (selectedFpcType.value === null) return
 	if (isAlreadyExist.value) return
-	
+
 	return true
 })
 
@@ -71,20 +71,16 @@ const handleAddFpc = async () => {
 
 	isLoading.value = true
 	try {
-		const newFpc = await fpcService.addFpc(
-			appStore.network.id,
-			FpcType[selectedFpcType.value],
-			fpcAddressTerm.value,
-			nameTerm.value,
-		)
+		const newFpc = await fpcService.addFpc(appStore.network.id, FpcType[selectedFpcType.value], fpcAddressTerm.value, nameTerm.value)
 
 		if (newFpc.type === FpcType.DefaultFpc) {
-			const balanceIdx = balances.value.findIndex(b => b.token.contract === newFpc.asset)
+			const balanceIdx = balances.value.findIndex((b) => b.token.contract === newFpc.asset)
 			if (balanceIdx === -1) {
 				cacheStore.confirm.confirm_text = "Yes, add token"
 				cacheStore.confirm.confirm_color = "primary"
 				cacheStore.confirm.title = "Want to add token along with FPC?"
-				cacheStore.confirm.description = "Upon confirmation of this action, the token associated with the FPC will be added to your wallet"
+				cacheStore.confirm.description =
+					"Upon confirmation of this action, the token associated with the FPC will be added to your wallet"
 				cacheStore.confirm.callback = async () => {
 					cacheStore.preselectedTokenAddressToAdd = newFpc.asset
 					popupStore.open("new_token")
@@ -112,19 +108,19 @@ const onFpcAdded = (fpc) => {
 	fpcs.value.push(fpc)
 }
 const onFpcUpdated = (fpc) => {
-	const idx = fpcs.value.findIndex(f => f.id === fpc.id)
+	const idx = fpcs.value.findIndex((f) => f.id === fpc.id)
 
 	if (idx === -1) return
 	fpcs.value[idx] = fpc
 }
 const onFpcDeleted = (fpc) => {
-	fpcs.value = fpcs.value.filter(f => f.id !== fpc.id)
+	fpcs.value = fpcs.value.filter((f) => f.id !== fpc.id)
 }
 const onBalanceAdded = (balance) => {
 	balances.value.push(balance)
 }
 const onBalanceDeleted = (balance) => {
-	balances.value = balances.value.filter(b => b.id !== balance.id)
+	balances.value = balances.value.filter((b) => b.id !== balance.id)
 }
 watch(
 	() => props.show,
@@ -163,7 +159,7 @@ watch(
 		processingError.value.show = false
 	},
 )
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleAddFpc()
 }
 </script>

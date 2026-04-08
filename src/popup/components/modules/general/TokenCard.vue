@@ -39,7 +39,7 @@ const description = computed(() => {
 	if (props.tokenBalance?.isUpdating) return "Refreshing balance..."
 	if (props.newToken) return "Minting in progress..."
 
-	return token.value?.name || 'unknown'
+	return token.value?.name || "unknown"
 })
 
 const isHovered = ref(false)

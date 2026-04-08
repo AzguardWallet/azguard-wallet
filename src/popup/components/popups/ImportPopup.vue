@@ -59,14 +59,14 @@ const publicKey = ref()
 const profileName = ref("My Profile")
 const importedProfile = ref()
 
-const password = ref('')
-const repeatedPassword = ref('')
-const decryptionPassword = ref('')
+const password = ref("")
+const repeatedPassword = ref("")
+const decryptionPassword = ref("")
 const isPasswordType = ref(true)
 const hideCredentials = ref(true)
 const maxPasswordLength = 128
 
-const error = ref({ type: "", title: "", tooltip: ""})
+const error = ref({ type: "", title: "", tooltip: "" })
 const fillError = (type, title, tooltip) => {
 	if (!title) {
 		error.value = { type: "", title: "", tooltip: "" }
@@ -109,10 +109,7 @@ const isAllowedToContinue = computed(() => {
 		return false
 	}
 
-	if (
-		selectedImportOption.value !== "public_key" &&
-		(!repeatedPassword.value || password.value !== repeatedPassword.value)
-	) {
+	if (selectedImportOption.value !== "public_key" && (!repeatedPassword.value || password.value !== repeatedPassword.value)) {
 		return false
 	}
 
@@ -132,29 +129,25 @@ const isAllowedToImportByPublicKey = computed(() => {
 })
 
 const completeImport = async (profile) => {
-		appStore.profiles.push(profile)
-		appStore.profile = profile
+	appStore.profiles.push(profile)
+	appStore.profile = profile
 
-		await setSentinel()
+	await setSentinel()
 
-		popupStore.closeAll()
+	popupStore.closeAll()
 
-		router.push("/popup/general")
+	router.push("/popup/general")
 }
 
 const handleImportSeed = async () => {
 	if (!isAllowedToImportBySeedPhrase.value) return
 
 	try {
-		const profile = await managers.profile.importMnemonic(
-			profileName.value.trim(),
-			seedPhrase.value.split(" "),
-			password.value,
-		)
+		const profile = await managers.profile.importMnemonic(profileName.value.trim(), seedPhrase.value.split(" "), password.value)
 
 		await completeImport(profile)
 	} catch (error) {
-		fillError("unknown", error);
+		fillError("unknown", error)
 	}
 }
 
@@ -167,9 +160,9 @@ const handleImportPrivateKey = async () => {
 		await completeImport(profile)
 	} catch (error) {
 		if (error === "Invalid secret length") {
-			fillError("secret", error.replace("secret", "key"));
+			fillError("secret", error.replace("secret", "key"))
 		} else {
-			fillError("unknown", error);
+			fillError("unknown", error)
 		}
 	}
 }
@@ -178,11 +171,7 @@ const handleImportPublicKey = async () => {
 	if (!isAllowedToImportByPublicKey.value) return
 
 	try {
-		const profile = await managers.profile.importEncrypted(
-			profileName.value.trim(),
-			publicKey.value,
-			password.value,
-		)
+		const profile = await managers.profile.importEncrypted(profileName.value.trim(), publicKey.value, password.value)
 
 		await completeImport(profile)
 	} catch (error) {
@@ -197,15 +186,19 @@ const handleImportPublicKey = async () => {
 const handleImportPasskey = async () => {
 	try {
 		const profile = await managers.profile.importPasskey(profileName.value.trim())
-		
+
 		await completeImport(profile)
 	} catch (error) {
-		if (!error?.toLowerCase().includes("user closed") && !error?.toLowerCase().includes("operation either timed out or was not allowed")) {
+		if (
+			!error?.toLowerCase().includes("user closed") &&
+			!error?.toLowerCase().includes("operation either timed out or was not allowed")
+		) {
 			notificationStore.create({
 				type: "warning",
 				payload: {
 					title: "Profile Import Failed",
-					description: "An error occurred while importing the profile. This authenticator may not be supported or encountered an issue. Try again or use another one.",
+					description:
+						"An error occurred while importing the profile. This authenticator may not be supported or encountered an issue. Try again or use another one.",
 					note: "Windows Hello may not work correctly with some versions of Windows.",
 					confirmText: "OK",
 					onConfirm: () => {},
@@ -213,7 +206,7 @@ const handleImportPasskey = async () => {
 			})
 		}
 
-		console.error("Failed to import profile:", error);
+		console.error("Failed to import profile:", error)
 	}
 }
 
@@ -221,16 +214,13 @@ const selectedBackup = ref(null)
 const isAllowedToImportBackup = computed(() => {
 	if (!selectedBackup.value?.profileType || !selectedBackup.value?.backup) return
 	if (selectedBackup.value?.profileType === "password") {
-		if (!password.value ||
-			password.value !== repeatedPassword.value ||
-			password.value?.length < 8
-		) return
+		if (!password.value || password.value !== repeatedPassword.value || password.value?.length < 8) return
 	}
 
 	return true
 })
 async function handlePickBackupFile() {
-	if (restoreStatus.value === 'progress') return
+	if (restoreStatus.value === "progress") return
 
 	try {
 		const file = await pickFile()
@@ -253,10 +243,7 @@ async function handlePickBackupFile() {
 
 		fillError()
 	} catch (err) {
-		fillError(
-			"full_backup",
-			"Failed to read the backup file",
-		)
+		fillError("full_backup", "Failed to read the backup file")
 		console.error("Failed to read backup file:", err.message || err)
 	}
 }
@@ -289,22 +276,22 @@ async function processBackupFile(file) {
 	}
 }
 function detectBackupType(text) {
-    const trimmed = text.trim()
+	const trimmed = text.trim()
 
-    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-        return "plain"
-    }
+	if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+		return "plain"
+	}
 
-    try {
-        const bytes = Uint8Array.from(atob(trimmed), c => c.charCodeAt(0))
-        if (bytes.length >= 13 && bytes[0] === 0) {
-            return "encrypted"
-        }
-    } catch (err) {
-        return "unknown"
-    }
+	try {
+		const bytes = Uint8Array.from(atob(trimmed), (c) => c.charCodeAt(0))
+		if (bytes.length >= 13 && bytes[0] === 0) {
+			return "encrypted"
+		}
+	} catch (err) {
+		return "unknown"
+	}
 
-    return "unknown"
+	return "unknown"
 }
 async function handleDecryptBackup() {
 	if (!decryptionPassword.value) return
@@ -320,7 +307,7 @@ async function handleDecryptBackup() {
 		selectedBackup.value = {
 			...selectedBackup.value,
 			backup: backupObject,
-			profileType: backupObject?.data?.profile?.type
+			profileType: backupObject?.data?.profile?.type,
 		}
 
 		fillError()
@@ -330,7 +317,7 @@ async function handleDecryptBackup() {
 			"Decryption Failed",
 			"The provided password is incorrect or the backup file is corrupted. Please try again with the correct password or select another file.",
 		)
-	}	
+	}
 }
 const getServiceName = (clientName) => {
 	return clientName ? clientName.replace("-client", "") : ""
@@ -340,8 +327,8 @@ const restoreStatus = ref()
 const restoreErrorLog = ref({})
 const isRestoreHasErrors = computed(() => {
 	if (!restoreErrorLog.value) return false
-    for (const _ in restoreErrorLog.value) return true
-    return false
+	for (const _ in restoreErrorLog.value) return true
+	return false
 })
 function handleShowRestoreErrorLog() {
 	if (!isRestoreHasErrors.value) return
@@ -355,9 +342,9 @@ function processRestoredData(serviceName, data) {
 	let restoreErrors = []
 	if (serviceName === "account-state") {
 		for (const item of data) {
-			const failedContracts = item.contracts.filter(c => c.restoreError)
-			const failedSenders = item.senders.filter(s => s.restoreError)
-			
+			const failedContracts = item.contracts.filter((c) => c.restoreError)
+			const failedSenders = item.senders.filter((s) => s.restoreError)
+
 			if (!failedContracts.length && !failedSenders.length) continue
 
 			restoreErrors.push({
@@ -367,9 +354,9 @@ function processRestoredData(serviceName, data) {
 			})
 		}
 	} else {
-		restoreErrors = data.filter(item => item.restoreError)
-	}	
-	
+		restoreErrors = data.filter((item) => item.restoreError)
+	}
+
 	if (!restoreErrors.length) return
 
 	restoreErrorLog.value[serviceName] = restoreErrors
@@ -381,7 +368,7 @@ async function handleRestoreBackup() {
 	restoreStatus.value = "progress"
 	const { checksum, ...backup } = selectedBackup.value.backup
 	const comparisonChecksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
-	
+
 	if (checksum !== comparisonChecksum) {
 		restoreStatus.value = "failed"
 		fillError(
@@ -395,16 +382,16 @@ async function handleRestoreBackup() {
 	try {
 		restoreErrorLog.value = {}
 		const masterKey = backup["master-key"]
-		
+
 		const profileService = new ProfileServiceClient()
 		const profile = backup?.data?.profile
 		const newProfile = await profileService.restore(profile, masterKey, password.value)
 		profileService.disconnect()
-		
+
 		if (newProfile.restoreError) {
 			restoreStatus.value = "failed"
 			fillError("full_backup", "Import failed", newProfile.restoreError)
-			
+
 			return
 		}
 		// Patch backup with new profileId
@@ -413,7 +400,7 @@ async function handleRestoreBackup() {
 				const value = backup.data[key]
 
 				if (Array.isArray(value)) {
-					backup.data[key] = value.map(item => {
+					backup.data[key] = value.map((item) => {
 						if (item && typeof item === "object" && "profileId" in item) {
 							return { ...item, profileId: newProfile.id }
 						}
@@ -426,27 +413,25 @@ async function handleRestoreBackup() {
 		const networkService = new NetworkServiceClient()
 		const newNetworks = await networkService.restore(backup.data.network)
 		networkService.disconnect()
-		const createdNetworks = newNetworks.filter(n => !n.restoreError)
+		const createdNetworks = newNetworks.filter((n) => !n.restoreError)
 		if (!createdNetworks.length) {
 			try {
-				await profileService.deleteProfile(newProfile.id);
+				await profileService.deleteProfile(newProfile.id)
 			} catch (err) {
-				console.error(err);
+				console.error(err)
 			} finally {
 				profileService.disconnect()
 			}
 
 			restoreStatus.value = "failed"
 			fillError("full_backup", "Import failed", "Unable to restore any networks, import aborted")
-			
+
 			return
 		}
 		// Patch backup with new networkId
 		for (const network of newNetworks) {
-			const oldNetwork = backup.data.network.find(n =>
-				n.name === network.name &&
-				n.rpcUrl === network.rpcUrl &&
-				n.chainId=== network.chainId
+			const oldNetwork = backup.data.network.find(
+				(n) => n.name === network.name && n.rpcUrl === network.rpcUrl && n.chainId === network.chainId,
 			)
 
 			if (oldNetwork && oldNetwork.id !== network.id) {
@@ -454,7 +439,7 @@ async function handleRestoreBackup() {
 					const value = backup.data[key]
 
 					if (Array.isArray(value)) {
-						backup.data[key] = value.map(item => {
+						backup.data[key] = value.map((item) => {
 							if (item && typeof item === "object" && "networkId" in item) {
 								return { ...item, networkId: network.id }
 							}
@@ -468,7 +453,7 @@ async function handleRestoreBackup() {
 					// 	backup.data[key] = value.flatMap(item => {
 					// 		if (item && typeof item === "object" && "networkId" in item) {
 					// 			if (network.restoreError) return []
-								
+
 					// 			return [{ ...item, networkId: network.id }]
 					// 		}
 					// 		return [item]
@@ -478,7 +463,7 @@ async function handleRestoreBackup() {
 			}
 		}
 		processRestoredData(getServiceName(networkService.name), newNetworks)
-		
+
 		const accountService = new AccountServiceClient()
 		try {
 			const newAccounts = await accountService.restore(backup.data.account)
@@ -487,9 +472,9 @@ async function handleRestoreBackup() {
 		} catch (err) {
 			if (err === "Duplicate address") {
 				try {
-					await profileService.deleteProfile(newProfile.id);
+					await profileService.deleteProfile(newProfile.id)
 				} catch (err) {
-					console.error(err);
+					console.error(err)
 				} finally {
 					fillError("full_backup", "Import failed", "Profile already exists, import aborted")
 					profileService.disconnect()
@@ -499,16 +484,15 @@ async function handleRestoreBackup() {
 				return
 			}
 		}
-		
 
 		const tokenService = new TokenServiceClient()
 		const newTokens = await tokenService.restore(backup.data.token)
 		tokenService.disconnect()
 		// Patch backup with new token ids
 		if (backup.data["token-balance"]?.length) {
-			const oldIdToContract = new Map(backup.data.token.map(t => [t.id, t.contract]));
-			const contractToNewId = new Map(newTokens.filter(t => !t.restoreError).map(t => [t.contract, t.id]));
-			backup.data["token-balance"] = backup.data["token-balance"].flatMap(tb => {
+			const oldIdToContract = new Map(backup.data.token.map((t) => [t.id, t.contract]))
+			const contractToNewId = new Map(newTokens.filter((t) => !t.restoreError).map((t) => [t.contract, t.id]))
+			backup.data["token-balance"] = backup.data["token-balance"].flatMap((tb) => {
 				const contract = oldIdToContract.get(tb.token)
 				const newId = contractToNewId.get(contract)
 				return newId ? [{ ...tb, token: newId }] : []
@@ -548,8 +532,8 @@ async function handleRestoreBackup() {
 		restoreStatus.value = ""
 
 		fillError("full_backup", "Import failed", err)
-		console.error(err.message || err);
-		
+		console.error(err.message || err)
+
 		return
 	}
 }
@@ -571,14 +555,14 @@ function clearPopup() {
 	selectedBackup.value = null
 	restoreStatus.value = ""
 	restoreErrorLog.value = {}
-	
+
 	fillError()
 }
 const handleBack = () => {
 	clearPopup()
 }
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") {
 		if (selectedBackup.value?.type === "encrypted" && !selectedBackup.value?.profileType) {
 			handleDecryptBackup()
@@ -599,7 +583,7 @@ watch(
 			clearPopup()
 		} else {
 			const profiles = await managers.profile.getProfiles()
-			profileName.value = `My Profile${profiles?.length ? ` ${profiles?.length}` : ''}`
+			profileName.value = `My Profile${profiles?.length ? ` ${profiles?.length}` : ""}`
 
 			document.addEventListener("keydown", onKeydown)
 		}

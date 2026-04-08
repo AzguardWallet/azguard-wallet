@@ -76,16 +76,16 @@ const sources = [
 	"wallet-sdk",
 	"passkey",
 ]
-	.flatMap(x => [x, `${x}-client`])
+	.flatMap((x) => [x, `${x}-client`])
 	.concat(["wallet", "ui"])
-const allowedSources = computed(() => new Set(Object.keys(filters.source).filter(k => filters.source[k])))
+const allowedSources = computed(() => new Set(Object.keys(filters.source).filter((k) => filters.source[k])))
 const levels = ["DEBUG", "INFO", "WARN", "ERROR"]
 const allowedLevels = computed(
 	() =>
 		new Set(
 			Object.keys(filters.level)
-				.filter(k => filters.level[k])
-				.map(l => getLogLevelName(l)),
+				.filter((k) => filters.level[k])
+				.map((l) => getLogLevelName(l)),
 		),
 )
 const allOptionsSelected = computed(() => {
@@ -95,7 +95,7 @@ const allOptionsSelected = computed(() => {
 	}
 })
 
-const filteredLogs = computed(() => logs.value.filter(log => isLogInclude(log)))
+const filteredLogs = computed(() => logs.value.filter((log) => isLogInclude(log)))
 
 const AUTO_SCROLL_TIMEOUT_MS = 30_000
 const SCROLL_DISABLE_THRESHOLD = 20
@@ -116,10 +116,10 @@ const filters = reactive({
 })
 const searchTerm = ref("")
 
-const handleOpenPopover = name => {
+const handleOpenPopover = (name) => {
 	popovers[name] = true
 }
-const onPopoverClose = name => {
+const onPopoverClose = (name) => {
 	popovers[name] = false
 	if (name === "source") {
 		searchTerm.value = ""
@@ -131,7 +131,7 @@ function updateFilter(filter, value) {
 }
 function handleSelectAll(filter) {
 	const value = allOptionsSelected.value[filter]
-	Object.keys(filters[filter]).forEach(f => (filters[filter][f] = !value))
+	Object.keys(filters[filter]).forEach((f) => (filters[filter][f] = !value))
 	updateEditorContent()
 }
 function isLogInclude(log) {
@@ -145,8 +145,9 @@ function getDisplayName(kind, value) {
 		case "source":
 			if (value === "undefined") return `(${value})`
 
-			return value.split("-")
-				.map(v => {
+			return value
+				.split("-")
+				.map((v) => {
 					if (v === "fpc" || v === "pxe" || v === "rpc") return v.toUpperCase()
 
 					return capitalize(v)
@@ -262,7 +263,10 @@ function formatSingleLog(log) {
 	if (!log.data) {
 		data = ""
 	} else if (Array.isArray(log.data) && log.data?.length) {
-		data = log.data.map(formatArg).filter(x => x !== undefined).join(" ")
+		data = log.data
+			.map(formatArg)
+			.filter((x) => x !== undefined)
+			.join(" ")
 	} else {
 		data = formatArg(log.data)
 	}
@@ -270,7 +274,7 @@ function formatSingleLog(log) {
 	return `[${time}] [${log.source}] ${getLogLevelName(log.level)}: ${data}`
 }
 function formatLogs(logs) {
-	return logs.map(log => formatSingleLog(log)).join("\n")
+	return logs.map((log) => formatSingleLog(log)).join("\n")
 }
 function buildLogDecorations(doc) {
 	const builder = new RangeSetBuilder()
@@ -306,7 +310,7 @@ const logDecorationsField = StateField.define({
 		return decorations
 	},
 
-	provide: f => EditorView.decorations.from(f),
+	provide: (f) => EditorView.decorations.from(f),
 })
 
 function updateEditorContent() {
@@ -332,12 +336,12 @@ function updateEditorContent() {
 
 function scrollToTargetLog(targetLogId) {
 	if (!view) return
-	const idx = logs.value.findIndex(l => l.id === targetLogId)
+	const idx = logs.value.findIndex((l) => l.id === targetLogId)
 	if (idx === -1) return
 
 	const textBefore = formatLogs(logs.value.slice(0, idx))
 	const pos = textBefore.length + 1
-	
+
 	view.dispatch({
 		effects: EditorView.scrollIntoView(pos, { y: "center" }),
 		selection: { anchor: pos },
@@ -349,7 +353,7 @@ async function exportLogsToCSV() {
 		const MAX_CELL_LENGTH = 32_760
 		const rows = []
 
-		logs.value.forEach(log => {
+		logs.value.forEach((log) => {
 			const time = new Date(log.timestamp).toISOString()
 			const source = log.source
 			const level = getLogLevelName(log.level)
@@ -358,7 +362,10 @@ async function exportLogsToCSV() {
 			if (!log.data) {
 				data = ""
 			} else if (Array.isArray(log.data) && log.data?.length) {
-				data = log.data.map(formatArg).filter(x => x !== undefined).join(" ")
+				data = log.data
+					.map(formatArg)
+					.filter((x) => x !== undefined)
+					.join(" ")
 			} else {
 				data = formatArg(log.data)
 			}
@@ -389,9 +396,9 @@ async function exportLogsToCSV() {
 		})
 
 		const csvContent = [["time", "source", "level", "data"], ...rows]
-			.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(","))
+			.map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","))
 			.join("\n")
-		
+
 		try {
 			await downloadFile({
 				data: csvContent,
@@ -400,7 +407,7 @@ async function exportLogsToCSV() {
 
 			openToast({ label: "Logs downloaded successfully", icon: "download" })
 		} catch (err) {
-			console.error("Download failed:", err);
+			console.error("Download failed:", err)
 			openToast({ label: "Failed to download logs", icon: "warning" }, TOAST_DURATION.LONG)
 		}
 	} catch (err) {
@@ -470,7 +477,7 @@ onMounted(async () => {
 	await nextTick()
 
 	maxLogsCount.value = (await configService.getValue("debugMode")) ? 10_000 : 1_000
-	
+
 	logs.value = await getLogs()
 
 	view = new EditorView({
@@ -497,7 +504,7 @@ onMounted(async () => {
 		}
 	})
 
-	document.addEventListener("focusin", e => {
+	document.addEventListener("focusin", (e) => {
 		if (e.target?.closest(".cm-panel.cm-search")) {
 			disableAutoScroll()
 		}
@@ -505,7 +512,7 @@ onMounted(async () => {
 
 	const params = new URLSearchParams(window.location.search)
 	const targetLogId = params.get("logId")
-	if (targetLogId) {		
+	if (targetLogId) {
 		scrollToTargetLog(+targetLogId)
 		disableAutoScroll()
 	} else {

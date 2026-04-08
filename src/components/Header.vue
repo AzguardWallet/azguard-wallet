@@ -46,7 +46,7 @@ async function onTaskCreated(task) {
 	tasks.value.push(task)
 }
 function processTask(task) {
-	const idx = tasks.value.findIndex(t => t.id === task.id)
+	const idx = tasks.value.findIndex((t) => t.id === task.id)
 	if (idx !== -1) {
 		tasks.value.splice(idx, 1)
 	}
@@ -106,13 +106,13 @@ function onLogAdded(log) {
 	switch (log.level) {
 		case LogLevel.Warn:
 			handleWalletFailure("warning", log.id)
-			break;
+			break
 		case LogLevel.Error:
 			handleWalletFailure("error", log.id)
-			break;
+			break
 
 		default:
-			break;
+			break
 	}
 }
 
@@ -120,20 +120,20 @@ function onSettingUpdate(setting) {
 	switch (setting.key) {
 		case "indicateFailures":
 			indicateFailures.value = setting.value
-			break;
+			break
 		case "showNode":
 			showNode.value = setting.value
-			break;
+			break
 		case "stealthMode":
 			stealthMode.value = setting.value
-			break;
+			break
 
 		default:
-			break;
+			break
 	}
 }
 
-const handleOpenPopup = target => {
+const handleOpenPopup = (target) => {
 	if (!appStore.isLogined) return
 	popupStore.open(target)
 }
@@ -146,7 +146,7 @@ watch(
 		} else {
 			logViewerService.connect()
 		}
-	}
+	},
 )
 watch(
 	() => tasks.value?.length,
@@ -177,7 +177,7 @@ watch(
 
 		activeTasksCount.value = newValue
 		cacheStore.activeTasksCount = newValue
-	}
+	},
 )
 
 onMounted(async () => {
@@ -185,9 +185,9 @@ onMounted(async () => {
 	showNode.value = await configService.getValue("showNode")
 	stealthMode.value = await configService.getValue("stealthMode")
 
-	tasks.value = (await taskService.getTasks()).filter(t => !t.parentId && !t.finishedAt)
+	tasks.value = (await taskService.getTasks()).filter((t) => !t.parentId && !t.finishedAt)
 	activeTasksCount.value = tasks.value?.length
-	
+
 	if (indicateFailures.value) {
 		logViewerService.connect()
 	}

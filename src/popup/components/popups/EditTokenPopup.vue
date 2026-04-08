@@ -68,7 +68,7 @@ const handleSelectCandidate = (target, candidate) => {
 	selectedFields.value[target] = candidate
 	rawToken.value[target] = candidate
 }
-const handleClearCandidate = target => {
+const handleClearCandidate = (target) => {
 	delete selectedFields.value[target]
 	rawToken.value[target] = null
 }
@@ -91,9 +91,15 @@ const handleSaveToken = async () => {
 	isUpdatingTokenInterface.value = true
 
 	try {
-		await tokenService.updateToken(appStore.profile.id, appStore.network.id, appStore.account.address, cacheStore.tokenToEditIdx, rawToken.value)
+		await tokenService.updateToken(
+			appStore.profile.id,
+			appStore.network.id,
+			appStore.account.address,
+			cacheStore.tokenToEditIdx,
+			rawToken.value,
+		)
 		const tokenBalances = await tokenBalanceService.getTokenBalances(cacheStore.tokenToEditIdx)
-		tokenBalances.forEach(tb => {
+		tokenBalances.forEach((tb) => {
 			tokenBalanceService.refreshTokenBalance(tb.id)
 		})
 

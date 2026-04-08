@@ -3,40 +3,40 @@ import { useNotificationStore } from "@/stores/notification.store"
 const notificationStore = useNotificationStore()
 
 const notification = computed(() => notificationStore.active)
-const confirmBtnType =  computed(() => {
-    switch (notification.value?.type) {
-        case "info":
-            return "primary"
-        case "warning":
-            return "red"
-        default:
-            return "secondary"
-    }
+const confirmBtnType = computed(() => {
+	switch (notification.value?.type) {
+		case "info":
+			return "primary"
+		case "warning":
+			return "red"
+		default:
+			return "secondary"
+	}
 })
 
 const isLoading = ref(false)
 const confirm = async () => {
-    isLoading.value = true
-    try {
-        await notification.value?.payload.onConfirm?.()
-    } catch (err) {
-        console.error(err);
-    } finally {
-        isLoading.value = false
-        notificationStore.removeActive()
-    }
+	isLoading.value = true
+	try {
+		await notification.value?.payload.onConfirm?.()
+	} catch (err) {
+		console.error(err)
+	} finally {
+		isLoading.value = false
+		notificationStore.removeActive()
+	}
 }
 
 const cancel = async () => {
-    isLoading.value = true
-    try {
-        await notification.value?.payload.onCancel?.()
-    } catch (err) {
-        console.error(err);
-    } finally {
-        isLoading.value = false
-        notificationStore.removeActive()
-    }
+	isLoading.value = true
+	try {
+		await notification.value?.payload.onCancel?.()
+	} catch (err) {
+		console.error(err)
+	} finally {
+		isLoading.value = false
+		notificationStore.removeActive()
+	}
 }
 </script>
 

@@ -4,15 +4,15 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 const message = computed(() =>
-    appStore.isLogined
-        ? {
-            title: "Reconnecting to service worker...",
-            description: "Hold on — we're restoring the connection.",
-        }
-        : {
-            title: "Connecting to service worker...",
-            description: "We're setting things up. This should only take a moment.",
-        }
+	appStore.isLogined
+		? {
+				title: "Reconnecting to service worker...",
+				description: "Hold on — we're restoring the connection.",
+			}
+		: {
+				title: "Connecting to service worker...",
+				description: "We're setting things up. This should only take a moment.",
+			},
 )
 </script>
 <template>

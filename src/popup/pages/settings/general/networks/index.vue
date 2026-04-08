@@ -18,7 +18,7 @@ import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 /** Utils */
 import { managers } from "@/utils/core"
 import { getChainPosition } from "@/components/ui/utils"
-import { stringCompare} from "@/utils/string"
+import { stringCompare } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -32,31 +32,32 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
-const networks = computed(() => [...appStore.networks].sort((a, b) => {
-	const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
-	return chainPos ? chainPos : stringCompare(a.name, b.name)
-}))
+const networks = computed(() =>
+	[...appStore.networks].sort((a, b) => {
+		const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
+		return chainPos ? chainPos : stringCompare(a.name, b.name)
+	}),
+)
 
-const handleSelectNetwork = target => {
+const handleSelectNetwork = (target) => {
 	if (appStore.network.id === target.id) return
 	managers.network.setDefault(target.id)
 	appStore.network = target
 	chrome.storage.local.set({ [`azguard:ui:lastActiveNetwork@${appStore.profile.id}`]: target.id })
 }
 
-const handleEdit = target => {
+const handleEdit = (target) => {
 	cacheStore.networkToEditIdx = target.id
 	popupStore.open("edit_network")
 }
 
-const handleDelete = target => {
+const handleDelete = (target) => {
 	if (appStore.networks.length === 1) return
 
 	cacheStore.confirm.confirm_text = "Yes, delete network"
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.title = "Delete this network?"
-	cacheStore.confirm.description =
-		"By confirming this action, the selected network will be permanently deleted from your wallet"
+	cacheStore.confirm.description = "By confirming this action, the selected network will be permanently deleted from your wallet"
 	cacheStore.confirm.callback = async () => {
 		await appStore.removeNetwork(target)
 

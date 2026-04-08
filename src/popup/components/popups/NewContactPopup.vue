@@ -36,7 +36,7 @@ function onContactAdded(contact) {
 	contacts.value.push(contact)
 }
 function onContactUpdated(contact) {
-	const idx = contacts.value.findIndex(c => c.id === contact.id)
+	const idx = contacts.value.findIndex((c) => c.id === contact.id)
 	if (idx !== -1) {
 		contacts.value[idx] = contact
 	} else {
@@ -44,7 +44,7 @@ function onContactUpdated(contact) {
 	}
 }
 function onContactDeleted(contact) {
-	contacts.value = contacts.value.filter(c => c.id !== contact.id)
+	contacts.value = contacts.value.filter((c) => c.id !== contact.id)
 }
 
 const contacts = ref([])
@@ -52,17 +52,17 @@ const contacts = ref([])
 const nameTerm = ref("")
 const contactAddressTerm = ref("")
 
-const notAllowedContactNames = computed(() => contacts.value.map(c => c.name))
+const notAllowedContactNames = computed(() => contacts.value.map((c) => c.name))
 const isAlreadyExistName = computed(() => notAllowedContactNames.value.includes(nameTerm.value))
-const notAllowedContactAddresses = computed(() => contacts.value.map(c => c.address))
+const notAllowedContactAddresses = computed(() => contacts.value.map((c) => c.address))
 const isAlreadyExistAddress = computed(() => notAllowedContactAddresses.value.includes(contactAddressTerm.value))
 const isValidAddress = computed(() => isValidHex(contactAddressTerm.value))
 const isAvailableToAddContact = computed(() => {
-	if (!nameTerm.value.replace(/\s/g, '').length) return
+	if (!nameTerm.value.replace(/\s/g, "").length) return
 	if (!isValidAddress.value) return
 	if (isAlreadyExistName.value) return
 	if (isAlreadyExistAddress.value) return
-	
+
 	return true
 })
 
@@ -78,10 +78,7 @@ const handleAddContact = async () => {
 
 	isLoading.value = true
 	try {
-		await contactService.addContact(
-			nameTerm.value.trim(),
-			contactAddressTerm.value,
-		)
+		await contactService.addContact(nameTerm.value.trim(), contactAddressTerm.value)
 
 		emit("onClose")
 		openToast({ label: "Contact is added" })
@@ -124,7 +121,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleAddContact()
 }
 </script>

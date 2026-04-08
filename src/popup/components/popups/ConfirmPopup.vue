@@ -29,16 +29,9 @@ const confirmationTerm = ref()
 const isPasskeyConfirmed = ref(false)
 const isConfirmed = computed(() => {
 	return (
-		cacheStore.confirm.confirmation_text &&
-		cacheStore.confirm.confirmation_text === confirmationTerm.value
-	) ||
-	(
-		cacheStore.confirm.passkeyConfirmation &&
-		isPasskeyConfirmed.value
-	) ||
-	(
-		!cacheStore.confirm.confirmation_text &&
-		!cacheStore.confirm.passkeyConfirmation
+		(cacheStore.confirm.confirmation_text && cacheStore.confirm.confirmation_text === confirmationTerm.value) ||
+		(cacheStore.confirm.passkeyConfirmation && isPasskeyConfirmed.value) ||
+		(!cacheStore.confirm.confirmation_text && !cacheStore.confirm.passkeyConfirmation)
 	)
 })
 
@@ -49,14 +42,12 @@ async function handlePasskeyConfirmation() {
 	}
 
 	try {
-		const confirmation = await managers.profile.confirmProfileOperation(appStore.profile.id);
+		const confirmation = await managers.profile.confirmProfileOperation(appStore.profile.id)
 		if (confirmation) {
 			isPasskeyConfirmed.value = true
 			confirmationTerm.value = cacheStore.confirm.confirmation_text || ""
 		}
-	} catch (error) {
-		
-	}	
+	} catch (error) {}
 }
 
 const handleConfirm = () => {

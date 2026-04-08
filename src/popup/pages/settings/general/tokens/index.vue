@@ -18,7 +18,7 @@ import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Utils */
-import { stringCompare} from "@/utils/string"
+import { stringCompare } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -41,23 +41,22 @@ function onTokenAdded(token) {
 	tokens.value.push(token)
 }
 function onTokenDeleted(token) {
-	const idx = tokens.value.findIndex(t => t.id === token.id)
+	const idx = tokens.value.findIndex((t) => t.id === token.id)
 	if (idx === -1) return
 
 	tokens.value.splice(idx, 1)
 }
 
-const handleEdit = target => {
+const handleEdit = (target) => {
 	cacheStore.tokenToEditIdx = target.id
 	popupStore.open("edit_token")
 }
 
-const handleDelete = target => {
+const handleDelete = (target) => {
 	cacheStore.confirm.confirm_color = "red"
 	cacheStore.confirm.confirm_text = "Yes, delete token"
 	cacheStore.confirm.title = "Remove this token?"
-	cacheStore.confirm.description =
-		"Removing a token only affects the display in the interface and it does not affect the token balance"
+	cacheStore.confirm.description = "Removing a token only affects the display in the interface and it does not affect the token balance"
 	cacheStore.confirm.callback = async () => {
 		await tokenService.deleteToken(target.id)
 		openToast({ label: "Token successfully deleted" })
@@ -70,7 +69,7 @@ watch(
 	() => tokens.value.length,
 	() => {
 		tokens.value = [...tokens.value].sort((a, b) => stringCompare(a.name, b.name))
-	}
+	},
 )
 
 onMounted(async () => {

@@ -57,7 +57,6 @@ const handleUpdateProfile = async () => {
 
 		openToast({ label: "Profile is updated" })
 	} catch (err) {
-		
 	} finally {
 		isProfileUpdateInProgress.value = false
 	}
@@ -82,7 +81,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleUpdateProfile()
 }
 </script>

@@ -86,7 +86,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleChangeProfilePassword()
 }
 </script>

@@ -29,16 +29,18 @@ const router = useRouter()
 
 const latestTransaction = computed(() => {
 	return props.token
-		? appStore.transactions.filter(t => t.calls[0]?.contract === props.token?.contract || t.calls.at(1)?.contract === props.token?.contract)[0]
+		? appStore.transactions.filter(
+				(t) => t.calls[0]?.contract === props.token?.contract || t.calls.at(1)?.contract === props.token?.contract,
+			)[0]
 		: appStore.transactions[0]
 })
 const isTokenAwaitingTx = computed(() => {
 	return props.token
-		? appStore.awaitingTransactions.findIndex(t => t.account === appStore.account.address && t.contract === props.token.contract) > -1
+		? appStore.awaitingTransactions.findIndex((t) => t.account === appStore.account.address && t.contract === props.token.contract) > -1
 		: false
 })
 const awaitingAccountTxs = computed(() => {
-	return appStore.awaitingTransactions.filter(t => t.account === appStore.account?.address)
+	return appStore.awaitingTransactions.filter((t) => t.account === appStore.account?.address)
 })
 
 const dappExecutionTask = ref(null)
@@ -50,7 +52,7 @@ const dappProgressTitle = computed(() => {
 	return name
 })
 const dappProgressSubtitle = computed(() => {
-	const active = dappSubtasks.value.find(s => s.status === TaskStatus.Processing)
+	const active = dappSubtasks.value.find((s) => s.status === TaskStatus.Processing)
 	return active ? `${active.content.label}...` : "Preparing..."
 })
 
@@ -59,10 +61,12 @@ taskService.onTaskCreated.add(onDappTaskCreated)
 taskService.onTaskUpdated.add(onDappTaskUpdated)
 taskService.onTaskDeleted.add(onDappTaskDeleted)
 function isDappExecTask(task) {
-	return task.content.kind === ContentKind.ExecuteOperation
-		&& task.origin?.type === OriginType.DAPP
-		&& !task.finishedAt
-		&& (task.content.operationKind === "send_transaction" || task.content.operationKind === "aztec_sendTx")
+	return (
+		task.content.kind === ContentKind.ExecuteOperation &&
+		task.origin?.type === OriginType.DAPP &&
+		!task.finishedAt &&
+		(task.content.operationKind === "send_transaction" || task.content.operationKind === "aztec_sendTx")
+	)
 }
 function onDappTaskCreated(task) {
 	if (isDappExecTask(task)) {
@@ -85,7 +89,7 @@ function onDappTaskUpdated(task) {
 		return
 	}
 	if (task.parentId && dappExecutionTask.value && task.parentId === dappExecutionTask.value.id) {
-		const idx = dappSubtasks.value.findIndex(s => s.id === task.id)
+		const idx = dappSubtasks.value.findIndex((s) => s.id === task.id)
 		if (idx !== -1) {
 			dappSubtasks.value[idx] = task
 		} else {
@@ -107,7 +111,7 @@ const handleSelectTx = () => {
 
 onMounted(async () => {
 	const allTasks = await taskService.getTasks()
-	const activeExec = allTasks.find(t => isDappExecTask(t))
+	const activeExec = allTasks.find((t) => isDappExecTask(t))
 	if (activeExec) {
 		dappExecutionTask.value = activeExec
 		dappSubtasks.value = activeExec.subtasks || []

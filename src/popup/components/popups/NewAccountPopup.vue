@@ -28,7 +28,7 @@ const inputEl = useTemplateRef("inputEl")
 const name = ref("")
 const enablePersistentHistory = ref(false)
 
-const isAlreadyExist = computed(() => !!appStore.accounts.find(a => a.name === name.value))
+const isAlreadyExist = computed(() => !!appStore.accounts.find((a) => a.name === name.value))
 
 const isAvailableToCreateAccount = computed(() => {
 	if (!name.value.length) return
@@ -66,7 +66,7 @@ watch(
 
 			// Can't use account.index for naming - indexes are per account type, not global
 			let n = 1
-			while (appStore.accounts.some(a => a.name === `Account ${n}`)) n++
+			while (appStore.accounts.some((a) => a.name === `Account ${n}`)) n++
 			name.value = `Account ${n}`
 
 			await nextTick()
@@ -75,7 +75,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") handleCreateAccount()
 }
 </script>

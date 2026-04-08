@@ -100,7 +100,7 @@ const handleUnlockWallet = async () => {
 	}
 }
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (popupStore.len) return
 
 	if (e.key === "Enter") handleUnlockWallet()
@@ -112,17 +112,17 @@ function onSettingUpdate(setting) {
 	}
 }
 
-async function handleSwitchTheme () {
+async function handleSwitchTheme() {
 	try {
 		const newTheme = theme.value === "dark" ? "light" : "dark"
 		await configService.setValue("theme", newTheme)
 		theme.value = newTheme
 	} catch (err) {
-		console.error(`Failed theme updating ${err}`);
+		console.error(`Failed theme updating ${err}`)
 	}
 }
 
-async function handleSwitchAppView () {
+async function handleSwitchAppView() {
 	try {
 		await configService.setValue("sidePanel", !isSidePanelEnabled.value)
 		isSidePanelEnabled.value = !isSidePanelEnabled.value
@@ -130,12 +130,12 @@ async function handleSwitchAppView () {
 			const currentWindow = await chrome.windows.getCurrent()
 			chrome.sidePanel.open({
 				windowId: currentWindow.id,
-			})			
+			})
 		}
 
 		window.close()
 	} catch (err) {
-		console.error(`Failed side panel updating ${err}`);
+		console.error(`Failed side panel updating ${err}`)
 	}
 }
 
@@ -149,12 +149,12 @@ onMounted(async () => {
 
 	const lastActiveProfileId = (await chrome.storage.local.get(LAST_ACTIVE_PROFILE_KEY))[LAST_ACTIVE_PROFILE_KEY]
 	if (lastActiveProfileId) {
-		const profile = (await managers.profile.getProfiles())?.find(p => p.id === lastActiveProfileId)
+		const profile = (await managers.profile.getProfiles())?.find((p) => p.id === lastActiveProfileId)
 		if (profile) {
 			appStore.profile = profile
 		}
 	}
-	
+
 	document.addEventListener("keydown", onKeydown)
 })
 onBeforeUnmount(() => {

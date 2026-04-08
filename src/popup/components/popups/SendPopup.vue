@@ -56,13 +56,13 @@ function onTokenAdded(token) {
 	tokens.value.push(token)
 }
 function onTokenDeleted(token) {
-	const idx = tokens.value.findIndex(t => t.id === token.id)
+	const idx = tokens.value.findIndex((t) => t.id === token.id)
 	if (idx === -1) return
 
 	tokens.value.splice(idx, 1)
 
 	if (activeToken.value?.id !== token.id) return
-	
+
 	if (tokens.value?.length) {
 		cacheStore.activeTokenIdx = tokens.value[0].id
 		return
@@ -74,12 +74,8 @@ function onTokenDeleted(token) {
 }
 
 const tokens = ref([])
-const activeToken = computed(() =>
-	tokens.value?.find(t => t.id == cacheStore.activeTokenIdx),
-)
-const isBlockedTransfer = computed(
-	() => !activeToken.value?.hasPrivateTransfers && !activeToken.value?.hasPublicTransfers,
-)
+const activeToken = computed(() => tokens.value?.find((t) => t.id == cacheStore.activeTokenIdx))
+const isBlockedTransfer = computed(() => !activeToken.value?.hasPrivateTransfers && !activeToken.value?.hasPublicTransfers)
 
 const tokenBalanceService = new TokenBalanceServiceClient()
 tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
@@ -90,17 +86,15 @@ function onBalanceAdded(balance) {
 	tokenBalance.push(balance)
 }
 function onBalanceUpdated(balance) {
-	const idx = tokenBalances.value.findIndex(tb => tb.id === balance.id)
+	const idx = tokenBalances.value.findIndex((tb) => tb.id === balance.id)
 	if (idx === -1) return
-	
+
 	tokenBalances.value[idx] = balance
 }
 
 const tokenBalances = ref([])
 const tokenBalance = computed(() => {
-	return tokenBalances.value?.find(
-		b => b?.token.id == cacheStore.activeTokenIdx,
-	)
+	return tokenBalances.value?.find((b) => b?.token.id == cacheStore.activeTokenIdx)
 })
 const tokenBalanceByType = computed(() => {
 	if (!tokenBalance.value) return 0
@@ -148,7 +142,7 @@ function onContactAdded(contact) {
 	contacts.value.push(contact)
 }
 function onContactUpdated(contact) {
-	const idx = contacts.value.findIndex(c => c.id === contact.id)
+	const idx = contacts.value.findIndex((c) => c.id === contact.id)
 	if (idx !== -1) {
 		contacts.value[idx] = contact
 	} else {
@@ -156,7 +150,7 @@ function onContactUpdated(contact) {
 	}
 }
 function onContactDeleted(contact) {
-	contacts.value = contacts.value.filter(c => c.id !== contact.id)
+	contacts.value = contacts.value.filter((c) => c.id !== contact.id)
 }
 
 const contacts = ref([])
@@ -168,12 +162,8 @@ const filteredContacts = computed(() => {
 
 	const lowTerm = searchTerm.value?.toLowerCase() || ""
 
-	return [...contacts.value, ...appStore.accounts]?.filter(c => {
-		return (
-			c.name?.toLowerCase().includes(lowTerm) ||
-			c.address === searchTerm.value ||
-			c.abbr?.toLowerCase() === lowTerm
-		)
+	return [...contacts.value, ...appStore.accounts]?.filter((c) => {
+		return c.name?.toLowerCase().includes(lowTerm) || c.address === searchTerm.value || c.abbr?.toLowerCase() === lowTerm
 	})
 })
 const showSuggestions = computed(() => {
@@ -182,7 +172,7 @@ const showSuggestions = computed(() => {
 
 function handleSearchBlur() {
 	if (searchTerm.value !== selectedContact.value?.address) {
-		const contact = [...contacts.value, ...appStore.accounts].find(c => c.address === searchTerm.value)
+		const contact = [...contacts.value, ...appStore.accounts].find((c) => c.address === searchTerm.value)
 		if (contact) {
 			handleSelectContact(contact)
 		}
@@ -213,9 +203,7 @@ const isValidAddress = computed(() => isValidHex(searchTerm.value))
 const isAllowedToSend = computed(() => {
 	if (!amountTerm.value) return
 
-	const amountToSend = new BN(
-		typeof amountTerm.value === "string" ? amountTerm.value?.replace(",", "") : amountTerm.value,
-	)
+	const amountToSend = new BN(typeof amountTerm.value === "string" ? amountTerm.value?.replace(",", "") : amountTerm.value)
 
 	if (!tokenBalanceByType.value) return
 	if (isBlockedTransfer.value) return
@@ -271,7 +259,7 @@ const handleSend = async () => {
 		emit("onClose")
 	} catch (err) {
 		const idx = appStore.awaitingTransactions.findIndex(
-			t => t.destination === searchTerm.value && t.contract === activeToken.value.contract,
+			(t) => t.destination === searchTerm.value && t.contract === activeToken.value.contract,
 		)
 		if (idx !== -1) appStore.awaitingTransactions.splice(idx, 1)
 
@@ -310,7 +298,7 @@ watch(
 		if (selectedContact.value && newVal !== selectedContact.value.address) {
 			selectedContact.value = null
 		}
-	}
+	},
 )
 
 watch(
@@ -420,7 +408,7 @@ watch(
 	},
 )
 
-const onKeydown = e => {
+const onKeydown = (e) => {
 	if (e.key === "Enter") {
 		if (showSuggestions.value) {
 			handleSelectContact(filteredContacts.value[0])

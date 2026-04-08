@@ -1,8 +1,8 @@
 export enum StorageType {
-    Local,
-    Session,
+	Local,
+	Session,
 }
 
-export * from './entity_storage';
-export * from './simple_storage';
-export * from './value-storage';
+export * from "./entity_storage"
+export * from "./simple_storage"
+export * from "./value-storage"

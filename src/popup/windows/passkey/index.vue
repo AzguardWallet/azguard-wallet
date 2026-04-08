@@ -10,12 +10,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue"
 import { PasskeyServiceClient } from "@/wallet/services/passkey/client"
-import {
-	PASSKEY_PRF_LABEL,
-	PasskeyCredentialData,
-	PasskeyRequest,
-	PASSKEY_TIMEOUT,
-} from "@/wallet/services/passkey/spec"
+import { PASSKEY_PRF_LABEL, PasskeyCredentialData, PasskeyRequest, PASSKEY_TIMEOUT } from "@/wallet/services/passkey/spec"
 import { getErrorMessage } from "@/wallet/utils/errors"
 
 const route = useRoute()
@@ -23,11 +18,8 @@ const route = useRoute()
 const passkey = new PasskeyServiceClient()
 
 function encodeBase64(buf: BufferSource): string {
-	const bytes =
-		buf instanceof ArrayBuffer
-		? new Uint8Array(buf)
-		: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-	return Buffer.from(bytes).toString("base64");
+	const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+	return Buffer.from(bytes).toString("base64")
 }
 
 const decodeBase64 = (b64: string) => Uint8Array.from(Buffer.from(b64, "base64"))
@@ -42,7 +34,7 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 		challenge,
 		rp: {
 			name: "Vibeguard",
-			id: "azguardwallet.io"  // Keep RP ID to not break existing passkeys
+			id: "azguardwallet.io", // Keep RP ID to not break existing passkeys
 		},
 		user: {
 			id: userHandle,
@@ -105,15 +97,14 @@ const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
 	if (!ext.prf) throw new Error("Passkey PRF not available")
 	if (!ext.prf.results) throw new Error("Passkey PRF has no results")
 	const prfResult = ext.prf.results.first
-	const rawId = (assertion)?.rawId
+	const rawId = assertion?.rawId
 	if (!rawId || !prfResult) throw new Error("Passkey PRF not available")
-	if (!(assertion.response instanceof AuthenticatorAssertionResponse))
-		throw new Error("Unexpected assertion response type")
+	if (!(assertion.response instanceof AuthenticatorAssertionResponse)) throw new Error("Unexpected assertion response type")
 	const userHandleOption = assertion.response.userHandle
 	let passkeyCredentialData: PasskeyCredentialData = {
 		id: encodeBase64(rawId),
 		prf: encodeBase64(prfResult),
-		userHandle: userHandleOption ? Buffer.from(userHandleOption).toString('hex') : undefined,
+		userHandle: userHandleOption ? Buffer.from(userHandleOption).toString("hex") : undefined,
 	}
 	await passkey.resolvePasskeyRequest(requestId, passkeyCredentialData)
 }
@@ -141,7 +132,9 @@ const run = async () => {
 	}
 }
 
-onMounted(() => { run() })
+onMounted(() => {
+	run()
+})
 </script>
 
 <template>
