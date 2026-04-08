@@ -27,14 +27,14 @@ export abstract class Fn extends FnImpl {
 
 	protected abstract abi(): FunctionAbi
 
-	public abstract buildArgs(...args: any[]): any[]
+	public abstract buildArgs(...args: unknown[]): unknown[]
 
 	public async getSelector(): Promise<FunctionSelector> {
 		const abi = this.abi()
 		return await FunctionSelector.fromNameAndParameters(abi.name, abi.parameters)
 	}
 
-	public encodeArgs(args: any[]): Fr[] {
+	public encodeArgs(args: unknown[]): Fr[] {
 		return encodeArguments(this.abi(), args)
 	}
 
@@ -48,7 +48,7 @@ export abstract class Fn extends FnImpl {
 }
 
 export abstract class ViewFn extends Fn {
-	public abstract unpackResult(values: Fr[]): any
+	public abstract unpackResult(values: Fr[]): unknown
 }
 
 export async function simulate(
@@ -57,8 +57,8 @@ export async function simulate(
 	account: IAccountContract,
 	contract: string,
 	viewFn: ViewFn,
-	args: any[],
-): Promise<any> {
+	args: unknown[],
+): Promise<unknown> {
 	const contractAddress = AztecAddress.fromString(contract)
 	const fnSelector = await viewFn.getSelector()
 	const encodedArgs = viewFn.encodeArgs(args)

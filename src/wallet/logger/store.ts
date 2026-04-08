@@ -24,7 +24,7 @@ export class LoggerStore implements ILoggerStore {
 		this.logs.clear()
 	}
 
-	public log(source: string, level: LogLevel, ...data: any[]): void {
+	public log(source: string, level: LogLevel, ...data: unknown[]): void {
 		if (level < this.logLevel) {
 			return
 		}
@@ -34,7 +34,7 @@ export class LoggerStore implements ILoggerStore {
 			source,
 			level,
 			context: "sw",
-			data: trim(data),
+			data: trim(data) as unknown[],
 		}
 		this.logs.add(log)
 		this.scheduleFlush()
@@ -43,7 +43,7 @@ export class LoggerStore implements ILoggerStore {
 	}
 
 	/** Log with explicit context (used by LoggerService for offscreen/popup forwarding). */
-	public logWithContext(context: string | undefined, source: string, level: LogLevel, ...data: any[]): void {
+	public logWithContext(context: string | undefined, source: string, level: LogLevel, ...data: unknown[]): void {
 		if (level < this.logLevel) {
 			return
 		}
@@ -53,7 +53,7 @@ export class LoggerStore implements ILoggerStore {
 			source,
 			level,
 			context: (context as Log["context"]) ?? "sw",
-			data: trim(data),
+			data: trim(data) as unknown[],
 		}
 		this.logs.add(log)
 		this.scheduleFlush()

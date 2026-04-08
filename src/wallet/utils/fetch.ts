@@ -25,7 +25,7 @@ type JsonRpcFetch = (
 	body: unknown,
 	extraHeaders?: Record<string, string>,
 	noRetry?: boolean,
-) => Promise<{ response: any; headers: { get: (header: string) => string | null | undefined } }>
+) => Promise<{ response: unknown; headers: { get: (header: string) => string | null | undefined } }>
 
 /**
  * Single-attempt fetch with timeout. Mirrors the SDK's `defaultFetch` but

@@ -97,6 +97,7 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
 		{
 			sendToTab: (tabId, message) => chrome.tabs.sendMessage(tabId, message),
 			addContentListener: (listener) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Chrome message listener provides untyped messages
 				chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.MessageSender) => {
 					listener(message, sender)
 					return undefined

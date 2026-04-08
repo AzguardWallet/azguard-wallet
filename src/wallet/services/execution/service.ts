@@ -48,7 +48,7 @@ import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from "
 import { ContactService } from "@/wallet/services/contact/service"
 import { ProfileService } from "@/wallet/services/profile/service"
 import { AuthRegistryService } from "@/wallet/services/auth-registry/service"
-import { TokenService } from "@/wallet/services/token/service"
+import { TokenService, type Token } from "@/wallet/services/token/service"
 import {
 	TransferPrivateFn,
 	TransferPrivateToPublicFn,
@@ -203,7 +203,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		recipientAddress: string,
 		amount: bigint,
 		feeSettings: FeeSettings,
-	): Promise<{ op: SendTransactionOperation; token: any; fn: Fn; args: any[] }> {
+	): Promise<{ op: SendTransactionOperation; token: Token; fn: Fn; args: unknown[] }> {
 		const profile = await this.profileService.getActiveProfile()
 		if (!profile) {
 			throw new Error("Unauthorized")
@@ -211,7 +211,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		const token = await this.tokenService.getTokenRaw(tokenId)
 
 		let fn: Fn
-		let args: any[]
+		let args: unknown[]
 		switch (transferType) {
 			case TransferType.Private: {
 				if (!token.transferPrivateFn) {
@@ -319,7 +319,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					{
 						contract: token.contract,
 						method: fn.name,
-						args: args.map((x) => x.toString()),
+						args: args.map((x) => String(x)),
 						transfers: [
 							{
 								token: { name: token.name, symbol: token.symbol, decimals: token.decimals },
@@ -392,7 +392,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		let actions: Action[]
 		let detectedFee: FeeOptions | undefined
 		if (operation.kind === "aztec_sendTx") {
-			const [processedActions, , fee] = await this.processAztecJsPayload((operation as any).exec, (operation as any).opts ?? {})
+			const [processedActions, , fee] = await this.processAztecJsPayload((operation as AztecSendTxOperation).exec, (operation as AztecSendTxOperation).opts ?? {})
 			actions = [...processedActions]
 			detectedFee = fee
 		} else {
@@ -400,13 +400,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		}
 
 		// Discover auth witnesses via offchain effects (single-pass)
-		const authWitActions = await this.discoverRequiredAuthWitnesses({ ...operation, actions: [...actions] } as any)
+		const authWitActions = await this.discoverRequiredAuthWitnesses({ ...operation, actions: [...actions] } as SendTransactionOperation)
 		if (authWitActions.length) {
 			this.logDebug(`[estimateOperationFee] Discovered ${authWitActions.length} auth witness(es) via offchain effects`)
 			actions.push(...authWitActions)
 		}
 
-		const op = { ...operation, actions: [...actions], ...(detectedFee ? { fee: detectedFee } : {}) } as any
+		const op = { ...operation, actions: [...actions], ...(detectedFee ? { fee: detectedFee } : {}) } as SendTransactionOperation
 		const [txRequest] = await this.buildAndEstimateTxRequest(op, feeSettings)
 
 		const maxFeeRaw = BigInt(getEstimatedFee(txRequest))
@@ -420,12 +420,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
 	private extractPrimaryMethod(operation: Operation): string | undefined {
 		if ("actions" in operation && Array.isArray(operation.actions)) {
-			const call = operation.actions.find((a: any) => a.kind === "call" || a.kind === "encoded_call")
+			const call = operation.actions.find((a) => a.kind === "call" || a.kind === "encoded_call")
 			if (call?.kind === "call") return call.method
 			if (call?.kind === "encoded_call") return call.name ?? call.selector
 		}
-		if ("exec" in operation && (operation as any).exec?.calls?.length) {
-			const first = (operation as any).exec.calls[0]
+		if ("exec" in operation && (operation as AztecSendTxOperation).exec?.calls?.length) {
+			const first = (operation as AztecSendTxOperation).exec.calls[0]
 			return first.name?.toString() ?? first.selector?.toString()
 		}
 		return undefined
@@ -707,7 +707,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			return decodeFromAbi(fn.returnTypes, result)
 		} catch (error) {
 			this.logError("Failed to decode simulation results", fn.returnTypes, result, getErrorMessage(error))
-			return result as any
+			return result as AbiDecoded
 		}
 	}
 
@@ -1307,7 +1307,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		// Kernelless auth witness discovery: stub the user's account so verify_private_authwit
 		// doesn't fail on missing witnesses. The stub accepts any authwit during simulation.
 		// The discovery result is ONLY used to read offchain effects — never for proving or gas estimation.
-		const dappScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes.map((s: any) => s.toString()) : []
+		const dappScopes = Array.isArray(op.opts.additionalScopes) ? op.opts.additionalScopes.map((s) => s.toString()) : []
 		const additionalScopes = [...new Set(dappScopes)]
 		const scopesWithAccount = [...new Set([account.address.toString(), ...dappScopes])]
 		this.logDebug(
@@ -1410,7 +1410,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			this.logDebug(`buildNoFromTxRequest: account registered in PXE`)
 
 			// Register contracts referenced in the payload (same pattern as buildTxRequest)
-			const callAddresses = (op.exec.calls ?? []).map((c: any) => c.to?.toString()).filter(Boolean)
+			const callAddresses = (op.exec.calls ?? []).map((c) => c.to?.toString()).filter(Boolean)
 			const uniqueAddresses = [...new Set(callAddresses)]
 			this.logDebug(
 				`buildNoFromTxRequest: registering contracts, callAddresses=${JSON.stringify(callAddresses)}, unique=${uniqueAddresses.length}`,
@@ -1476,10 +1476,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			)
 
 			// Build txCalls for transaction history
-			const txCalls: TxCall[] = (op.exec.calls ?? []).map((call: any) => ({
+			const txCalls: TxCall[] = (op.exec.calls ?? []).map((call) => ({
 				contract: call.to?.toString(),
 				method: call.name ?? call.selector?.toString(),
-				args: (call.args ?? []).map((a: any) => a.toString()),
+				args: (call.args ?? []).map((a) => a.toString()),
 			}))
 
 			task.complete()

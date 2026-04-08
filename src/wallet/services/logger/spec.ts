@@ -10,5 +10,5 @@ export type Methods = {
 	 * @param level Log level
 	 * @param data Data
 	 */
-	log(context: string | undefined, source: string, level: LogLevel, ...data: any[]): void
+	log(context: string | undefined, source: string, level: LogLevel, ...data: unknown[]): void
 }

@@ -43,7 +43,7 @@ import {
 } from "@/wallet/services/dapp-interaction/spec"
 import { RpcEvent /*, RpcMethod*/ } from "./types"
 
-export function parseDappPermissions(data: any): DappPermissions {
+export function parseDappPermissions(data: unknown): DappPermissions {
 	return {
 		chains: parseOptionalArrayProp(data, "chains", parseChain),
 		methods: parseOptionalArrayProp(data, "methods", parseMethod),
@@ -51,7 +51,7 @@ export function parseDappPermissions(data: any): DappPermissions {
 	}
 }
 
-export function parseMethod(data: OperationKind | ActionKind): string {
+export function parseMethod(data: unknown): string {
 	switch (data) {
 		// rpc methods
 		// case RpcMethod.get_wallet_info:
@@ -93,7 +93,7 @@ export function parseMethod(data: OperationKind | ActionKind): string {
 	}
 }
 
-export function parseEvent(data: any): string {
+export function parseEvent(data: unknown): string {
 	switch (data) {
 		case RpcEvent.session_updated:
 		case RpcEvent.session_closed:
@@ -103,7 +103,7 @@ export function parseEvent(data: any): string {
 	}
 }
 
-export function parseExecutionParams(data: any): ExecutionParams {
+export function parseExecutionParams(data: unknown): ExecutionParams {
 	if (!data) {
 		throw new Error("Invalid execution params")
 	}
@@ -113,8 +113,9 @@ export function parseExecutionParams(data: any): ExecutionParams {
 	}
 }
 
-function parseOperation(op: OperationRequest): OperationRequest {
-	switch (op?.kind) {
+function parseOperation(op: unknown): OperationRequest {
+	const { kind } = op as Record<string, unknown>
+	switch (kind) {
 		case "get_complete_address": {
 			return parseGetCompleteAddressRequest(op)
 		}
@@ -181,24 +182,25 @@ function parseOperation(op: OperationRequest): OperationRequest {
 	}
 }
 
-function parseGetCompleteAddressRequest(data: any): GetCompleteAddressRequest {
+function parseGetCompleteAddressRequest(data: unknown): GetCompleteAddressRequest {
 	return {
 		kind: "get_complete_address",
 		account: parseAccountProp(data, "account"),
 	}
 }
 
-function parseRegisterContractRequest(data: any): RegisterContractRequest {
+function parseRegisterContractRequest(data: unknown): RegisterContractRequest {
+	const obj = data as Record<string, unknown>
 	return {
 		kind: "register_contract",
 		chain: parseChainProp(data, "chain"),
 		address: parseStringProp(data, "address"),
-		instance: data.instance, // TODO: implement validation
-		artifact: data.artifact, // TODO: implement validation
+		instance: obj.instance, // TODO: implement validation
+		artifact: obj.artifact, // TODO: implement validation
 	}
 }
 
-function parseRegisterSenderRequest(data: any): RegisterSenderRequest {
+function parseRegisterSenderRequest(data: unknown): RegisterSenderRequest {
 	return {
 		kind: "register_sender",
 		chain: parseChainProp(data, "chain"),
@@ -206,7 +208,7 @@ function parseRegisterSenderRequest(data: any): RegisterSenderRequest {
 	}
 }
 
-function parseRegisterTokenRequest(data: any): RegisterTokenRequest {
+function parseRegisterTokenRequest(data: unknown): RegisterTokenRequest {
 	return {
 		kind: "register_token",
 		account: parseAccountProp(data, "account"),
@@ -214,7 +216,7 @@ function parseRegisterTokenRequest(data: any): RegisterTokenRequest {
 	}
 }
 
-function parseSendTransactionRequest(data: any): SendTransactionRequest {
+function parseSendTransactionRequest(data: unknown): SendTransactionRequest {
 	return {
 		kind: "send_transaction",
 		account: parseAccountProp(data, "account"),
@@ -223,7 +225,7 @@ function parseSendTransactionRequest(data: any): SendTransactionRequest {
 	}
 }
 
-function parseSimulateTransactionRequest(data: any): SimulateTransactionRequest {
+function parseSimulateTransactionRequest(data: unknown): SimulateTransactionRequest {
 	return {
 		kind: "simulate_transaction",
 		account: parseAccountProp(data, "account"),
@@ -233,7 +235,7 @@ function parseSimulateTransactionRequest(data: any): SimulateTransactionRequest 
 	}
 }
 
-function parseSimulateUtilityRequest(data: any): SimulateUtilityRequest {
+function parseSimulateUtilityRequest(data: unknown): SimulateUtilityRequest {
 	return {
 		kind: "simulate_utility",
 		account: parseAccountProp(data, "account"),
@@ -243,7 +245,7 @@ function parseSimulateUtilityRequest(data: any): SimulateUtilityRequest {
 	}
 }
 
-function parseSimulateViewsRequest(data: any): SimulateViewsRequest {
+function parseSimulateViewsRequest(data: unknown): SimulateViewsRequest {
 	return {
 		kind: "simulate_views",
 		account: parseAccountProp(data, "account"),
@@ -251,7 +253,7 @@ function parseSimulateViewsRequest(data: any): SimulateViewsRequest {
 	}
 }
 
-function parseAztecGetContractClassMetadataRequest(data: any): AztecGetContractClassMetadataRequest {
+function parseAztecGetContractClassMetadataRequest(data: unknown): AztecGetContractClassMetadataRequest {
 	return {
 		kind: "aztec_getContractClassMetadata",
 		chain: parseChainProp(data, "chain"),
@@ -259,7 +261,7 @@ function parseAztecGetContractClassMetadataRequest(data: any): AztecGetContractC
 	}
 }
 
-function parseAztecGetContractMetadataRequest(data: any): AztecGetContractMetadataRequest {
+function parseAztecGetContractMetadataRequest(data: unknown): AztecGetContractMetadataRequest {
 	return {
 		kind: "aztec_getContractMetadata",
 		chain: parseChainProp(data, "chain"),
@@ -267,7 +269,7 @@ function parseAztecGetContractMetadataRequest(data: any): AztecGetContractMetada
 	}
 }
 
-function parseAztecGetPrivateEventsRequest(data: any): AztecGetPrivateEventsRequest {
+function parseAztecGetPrivateEventsRequest(data: unknown): AztecGetPrivateEventsRequest {
 	return {
 		kind: "aztec_getPrivateEvents",
 		chain: parseChainProp(data, "chain"),
@@ -276,14 +278,14 @@ function parseAztecGetPrivateEventsRequest(data: any): AztecGetPrivateEventsRequ
 	}
 }
 
-function parseAztecGetChainInfoRequest(data: any): AztecGetChainInfoRequest {
+function parseAztecGetChainInfoRequest(data: unknown): AztecGetChainInfoRequest {
 	return {
 		kind: "aztec_getChainInfo",
 		chain: parseChainProp(data, "chain"),
 	}
 }
 
-function parseAztecRegisterSenderRequest(data: any): AztecRegisterSenderRequest {
+function parseAztecRegisterSenderRequest(data: unknown): AztecRegisterSenderRequest {
 	return {
 		kind: "aztec_registerSender",
 		chain: parseChainProp(data, "chain"),
@@ -291,14 +293,14 @@ function parseAztecRegisterSenderRequest(data: any): AztecRegisterSenderRequest 
 	}
 }
 
-function parseAztecGetAddressBookRequest(data: any): AztecGetAddressBookRequest {
+function parseAztecGetAddressBookRequest(data: unknown): AztecGetAddressBookRequest {
 	return {
 		kind: "aztec_getAddressBook",
 		chain: parseChainProp(data, "chain"),
 	}
 }
 
-function parseAztecRegisterContractRequest(data: any): AztecRegisterContractRequest {
+function parseAztecRegisterContractRequest(data: unknown): AztecRegisterContractRequest {
 	return {
 		kind: "aztec_registerContract",
 		chain: parseChainProp(data, "chain"),
@@ -308,7 +310,7 @@ function parseAztecRegisterContractRequest(data: any): AztecRegisterContractRequ
 	}
 }
 
-function parseAztecSimulateTxRequest(data: any): AztecSimulateTxRequest {
+function parseAztecSimulateTxRequest(data: unknown): AztecSimulateTxRequest {
 	return {
 		kind: "aztec_simulateTx",
 		account: parseAccountProp(data, "account"),
@@ -317,7 +319,7 @@ function parseAztecSimulateTxRequest(data: any): AztecSimulateTxRequest {
 	}
 }
 
-function parseAztecExecuteUtilityRequest(data: any): AztecExecuteUtilityRequest {
+function parseAztecExecuteUtilityRequest(data: unknown): AztecExecuteUtilityRequest {
 	return {
 		kind: "aztec_executeUtility",
 		account: parseAccountProp(data, "account"),
@@ -326,7 +328,7 @@ function parseAztecExecuteUtilityRequest(data: any): AztecExecuteUtilityRequest 
 	}
 }
 
-function parseAztecProfileTxRequest(data: any): AztecProfileTxRequest {
+function parseAztecProfileTxRequest(data: unknown): AztecProfileTxRequest {
 	return {
 		kind: "aztec_profileTx",
 		account: parseAccountProp(data, "account"),
@@ -335,7 +337,7 @@ function parseAztecProfileTxRequest(data: any): AztecProfileTxRequest {
 	}
 }
 
-function parseAztecSendTxRequest(data: any): AztecSendTxRequest {
+function parseAztecSendTxRequest(data: unknown): AztecSendTxRequest {
 	return {
 		kind: "aztec_sendTx",
 		account: parseAccountProp(data, "account"),
@@ -344,7 +346,7 @@ function parseAztecSendTxRequest(data: any): AztecSendTxRequest {
 	}
 }
 
-function parseAztecCreateAuthWitRequest(data: any): AztecCreateAuthWitRequest {
+function parseAztecCreateAuthWitRequest(data: unknown): AztecCreateAuthWitRequest {
 	return {
 		kind: "aztec_createAuthWit",
 		account: parseAccountProp(data, "account"),
@@ -352,8 +354,9 @@ function parseAztecCreateAuthWitRequest(data: any): AztecCreateAuthWitRequest {
 	}
 }
 
-function parseAction(data: Action): Action {
-	switch (data?.kind) {
+function parseAction(data: unknown): Action {
+	const { kind } = (data ?? {}) as Record<string, unknown>
+	switch (kind) {
 		case "add_capsule": {
 			return parseAddCapsuleAction(data)
 		}
@@ -378,39 +381,42 @@ function parseAction(data: Action): Action {
 	}
 }
 
-function parseAddCapsuleAction(data: any): AddCapsuleAction {
+function parseAddCapsuleAction(data: unknown): AddCapsuleAction {
+	const obj = data as Record<string, unknown>
 	return {
 		kind: "add_capsule",
 		contract: parseStringProp(data, "contract"),
 		storageSlot: parseStringProp(data, "storageSlot"),
 		capsule: parseArrayProp(data, "capsule", parseString),
-		scope: data.scope != null ? parseStringProp(data, "scope") : undefined,
+		scope: obj.scope != null ? parseStringProp(data, "scope") : undefined,
 	}
 }
 
-function parseAddExtraArgsAction(data: any): AddExtraArgsAction {
+function parseAddExtraArgsAction(data: unknown): AddExtraArgsAction {
 	return {
 		kind: "add_extra_args",
 		args: parseArrayProp(data, "args", parseString),
 	}
 }
 
-function parseAddPrivateAuthwitAction(data: any): AddPrivateAuthwitAction {
+function parseAddPrivateAuthwitAction(data: unknown): AddPrivateAuthwitAction {
+	const obj = data as Record<string, unknown>
 	return {
 		kind: "add_private_authwit",
-		content: parseAuthwitContent(data.content),
+		content: parseAuthwitContent(obj.content),
 		authwit: parseOptionalArrayProp(data, "authwit", parseString),
 	}
 }
 
-function parseAddPublicAuthwitAction(data: any): AddPublicAuthwitAction {
+function parseAddPublicAuthwitAction(data: unknown): AddPublicAuthwitAction {
+	const obj = data as Record<string, unknown>
 	return {
 		kind: "add_public_authwit",
-		content: parseAuthwitContent(data.content),
+		content: parseAuthwitContent(obj.content),
 	}
 }
 
-function parseCallAction(data: any): CallAction {
+function parseCallAction(data: unknown): CallAction {
 	return {
 		kind: "call",
 		contract: parseStringProp(data, "contract"),
@@ -420,7 +426,7 @@ function parseCallAction(data: any): CallAction {
 	}
 }
 
-function parseEncodedCallAction(data: any): EncodedCallAction {
+function parseEncodedCallAction(data: unknown): EncodedCallAction {
 	return {
 		kind: "encoded_call",
 		to: parseStringProp(data, "to"),
@@ -434,8 +440,9 @@ function parseEncodedCallAction(data: any): EncodedCallAction {
 	}
 }
 
-function parseAuthwitContent(data: AuthwitContent): AuthwitContent {
-	switch (data?.kind) {
+function parseAuthwitContent(data: unknown): AuthwitContent {
+	const { kind } = (data ?? {}) as Record<string, unknown>
+	switch (kind) {
 		case "call": {
 			return parseCallAuthwitContent(data)
 		}
@@ -454,7 +461,7 @@ function parseAuthwitContent(data: AuthwitContent): AuthwitContent {
 	}
 }
 
-function parseCallAuthwitContent(data: any): CallAuthwitContent {
+function parseCallAuthwitContent(data: unknown): CallAuthwitContent {
 	return {
 		kind: "call",
 		caller: parseStringProp(data, "caller"),
@@ -465,7 +472,7 @@ function parseCallAuthwitContent(data: any): CallAuthwitContent {
 	}
 }
 
-function parseEncodedCallAuthwitContent(data: any): EncodedCallAuthwitContent {
+function parseEncodedCallAuthwitContent(data: unknown): EncodedCallAuthwitContent {
 	return {
 		kind: "encoded_call",
 		caller: parseStringProp(data, "caller"),
@@ -480,7 +487,7 @@ function parseEncodedCallAuthwitContent(data: any): EncodedCallAuthwitContent {
 	}
 }
 
-function parseIntentAuthwitContent(data: any): IntentAuthwitContent {
+function parseIntentAuthwitContent(data: unknown): IntentAuthwitContent {
 	return {
 		kind: "intent",
 		consumer: parseStringProp(data, "consumer"),
@@ -488,15 +495,15 @@ function parseIntentAuthwitContent(data: any): IntentAuthwitContent {
 	}
 }
 
-function parseMessageHashAuthwitContent(data: any): MessageHashAuthwitContent {
+function parseMessageHashAuthwitContent(data: unknown): MessageHashAuthwitContent {
 	return {
 		kind: "message_hash",
 		messageHash: parseStringProp(data, "messageHash"),
 	}
 }
 
-function parseOptionalArrayProp<T>(data: any, prop: string, parseItem?: (item: any) => T): T[] | undefined {
-	const value = data[prop]
+function parseOptionalArrayProp<T>(data: unknown, prop: string, parseItem?: (item: unknown) => T): T[] | undefined {
+	const value = (data as Record<string, unknown>)[prop]
 	if (value === undefined) {
 		return undefined
 	}
@@ -506,16 +513,16 @@ function parseOptionalArrayProp<T>(data: any, prop: string, parseItem?: (item: a
 	return parseItem ? value.map((x) => parseItem(x)) : value
 }
 
-function parseArrayProp<T>(data: any, prop: string, parseItem?: (item: any) => T): T[] {
-	const value = data[prop]
+function parseArrayProp<T>(data: unknown, prop: string, parseItem?: (item: unknown) => T): T[] {
+	const value = (data as Record<string, unknown>)[prop]
 	if (!Array.isArray(value)) {
 		throw new Error(`Invalid ${prop}`)
 	}
 	return parseItem ? value.map((x) => parseItem(x)) : value
 }
 
-function parseAccountProp(data: any, prop: string): CaipAccount {
-	const value = data[prop]
+function parseAccountProp(data: unknown, prop: string): CaipAccount {
+	const value = (data as Record<string, unknown>)[prop]
 	if (typeof value === "string") {
 		const ss = value.split(":")
 		if (ss.length === 3) {
@@ -528,8 +535,8 @@ function parseAccountProp(data: any, prop: string): CaipAccount {
 	throw new Error(`Invalid ${prop}`)
 }
 
-function parseChainProp(data: any, prop: string): CaipChain {
-	const value = data[prop]
+function parseChainProp(data: unknown, prop: string): CaipChain {
+	const value = (data as Record<string, unknown>)[prop]
 	if (typeof value === "string") {
 		const ss = value.split(":")
 		if (ss.length === 2) {
@@ -542,7 +549,7 @@ function parseChainProp(data: any, prop: string): CaipChain {
 	throw new Error(`Invalid ${prop}`)
 }
 
-function parseChain(data: any): CaipChain {
+function parseChain(data: unknown): CaipChain {
 	if (typeof data === "string") {
 		const ss = data.split(":")
 		if (ss.length === 2) {
@@ -555,65 +562,65 @@ function parseChain(data: any): CaipChain {
 	throw new Error("Invalid chain")
 }
 
-function parseOptionalBooleanProp(data: any, prop: string): boolean | undefined {
-	const value = data[prop]
+function parseOptionalBooleanProp(data: unknown, prop: string): boolean | undefined {
+	const value = (data as Record<string, unknown>)[prop]
 	if (value !== undefined && typeof value !== "boolean") {
 		throw new Error(`Invalid ${prop}`)
 	}
-	return value
+	return value as boolean | undefined
 }
 
-function parseBooleanProp(data: any, prop: string): boolean {
-	const value = data[prop]
+function parseBooleanProp(data: unknown, prop: string): boolean {
+	const value = (data as Record<string, unknown>)[prop]
 	if (typeof value !== "boolean") {
 		throw new Error(`Invalid ${prop}`)
 	}
 	return value
 }
 
-function parseOptionalStringProp(data: any, prop: string): string | undefined {
-	const value = data[prop]
+function parseOptionalStringProp(data: unknown, prop: string): string | undefined {
+	const value = (data as Record<string, unknown>)[prop]
 	if (value !== undefined && typeof value !== "string") {
 		throw new Error(`Invalid ${prop}`)
 	}
-	return value
+	return value as string | undefined
 }
 
-function parseStringProp(data: any, prop: string): string {
-	const value = data[prop]
+function parseStringProp(data: unknown, prop: string): string {
+	const value = (data as Record<string, unknown>)[prop]
 	if (typeof value !== "string") {
 		throw new Error(`Invalid ${prop}`)
 	}
 	return value
 }
 
-function parseNumberProp(data: any, prop: string): number {
-	const value = data[prop]
+function parseNumberProp(data: unknown, prop: string): number {
+	const value = (data as Record<string, unknown>)[prop]
 	if (typeof value !== "number") {
 		throw new Error(`Invalid ${prop}`)
 	}
 	return value
 }
 
-export function parseString(data: any, errorMessage?: string): string {
+export function parseString(data: unknown, errorMessage?: string): string {
 	if (typeof data !== "string") {
 		throw new Error(errorMessage ?? "Invalid string value")
 	}
 	return data
 }
 
-function parseRequiredProp<T>(data: any, prop: string): T {
-	const value = data[prop]
+function parseRequiredProp<T>(data: unknown, prop: string): T {
+	const value = (data as Record<string, unknown>)[prop]
 	if (value === undefined) {
 		throw new Error(`Invalid ${prop}`)
 	}
-	return value
+	return value as T
 }
 
-function parseOptionalProp<T>(data: any, prop: string): T | undefined {
-	const value = data[prop]
+function parseOptionalProp<T>(data: unknown, prop: string): T | undefined {
+	const value = (data as Record<string, unknown>)[prop]
 	if (value === undefined) {
 		return undefined
 	}
-	return value
+	return value as T
 }

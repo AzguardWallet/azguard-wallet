@@ -8,7 +8,7 @@ export enum TransferPrivateToPublicImpl {
 }
 
 export abstract class TransferPrivateToPublicFn extends Fn {
-	public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint | string): any[] {
+	public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint | string): unknown[] {
 		return [from, to, amount, Fr.zero()]
 	}
 

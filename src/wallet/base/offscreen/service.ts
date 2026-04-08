@@ -133,19 +133,19 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
 		}
 	}
 
-	protected logDebug(...data: any[]) {
+	protected logDebug(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Debug, ...data)
 	}
 
-	protected logInfo(...data: any[]) {
+	protected logInfo(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Info, ...data)
 	}
 
-	protected logWarn(...data: any[]) {
+	protected logWarn(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Warn, ...data)
 	}
 
-	protected logError(...data: any[]) {
+	protected logError(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Error, ...data)
 	}
 }

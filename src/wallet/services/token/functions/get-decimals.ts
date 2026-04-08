@@ -8,7 +8,7 @@ export enum GetDecimalsImpl {
 }
 
 export abstract class GetDecimalsFn extends ViewFn {
-	public override buildArgs(): any[] {
+	public override buildArgs(): unknown[] {
 		return []
 	}
 

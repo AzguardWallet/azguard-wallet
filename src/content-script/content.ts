@@ -11,6 +11,7 @@ import { ContentScriptConnectionHandler } from "@aztec/wallet-sdk/extension/hand
 const handler = new ContentScriptConnectionHandler({
 	sendToBackground: (message) => chrome.runtime.sendMessage(message),
 	addBackgroundListener: (listener) => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Chrome message listener provides untyped messages
 		chrome.runtime.onMessage.addListener((message: any) => {
 			listener(message)
 			return undefined

@@ -169,15 +169,15 @@ export type CapabilityPayload = {
 
 export type CapabilityParams = {
 	sessionId: string
-	manifest: any
-	delta: any[]
-	existingGrants: any[]
+	manifest: unknown
+	delta: unknown[]
+	existingGrants: unknown[]
 	reRequested?: string[]
 	availableAccounts?: Array<{ address: string; name: string; chainId: number }>
 }
 
 export type CapabilityResult = {
-	granted: any[]
+	granted: unknown[]
 	selectedAccounts?: string[]
 	accountAliases?: Record<string, string>
 }

@@ -42,12 +42,27 @@
 
 import type { NetworkService, Network } from "@/wallet/services/network/service"
 import type { AccountService, Account } from "@/wallet/services/account/service"
-import type { ExecutionService, Operation, OperationResult } from "@/wallet/services/execution/service"
+import type {
+	ExecutionService,
+	Operation,
+	OperationResult,
+	EncodedCallAction,
+	AztecGetContractClassMetadataOperation,
+	AztecGetContractMetadataOperation,
+	AztecGetPrivateEventsOperation,
+	AztecRegisterSenderOperation,
+	AztecRegisterContractOperation,
+	AztecSimulateTxOperation,
+	AztecExecuteUtilityOperation,
+	AztecProfileTxOperation,
+	AztecCreateAuthWitOperation,
+} from "@/wallet/services/execution/service"
 import type { ProfileService } from "@/wallet/services/profile/service"
 import type { DappInteractionService, ExecutionResult } from "@/wallet/services/dapp-interaction/service"
 import type { DappSessionService } from "@/wallet/services/dapp-session/service"
 import { OriginType, type LocalTxOrigin } from "@/wallet/services/transaction/service"
-import type { GrantedCapabilityRecord, RejectedCapabilityRecord } from "@/wallet/services/dapp-session/spec"
+import type { Capability, DappSession, GrantedCapabilityRecord, RejectedCapabilityRecord } from "@/wallet/services/dapp-session/spec"
+import type { AztecSendTxRequest } from "@/wallet/services/dapp-interaction/spec"
 import type { ILogger } from "@/wallet/logger"
 import { LogLevel } from "@/wallet/logger"
 import { isNoFromRequest } from "@/wallet/services/execution/utils/fee-detection"
@@ -55,6 +70,27 @@ import type { SessionContext } from "./types"
 import { getRequiredCapability, isCapabilityExempt } from "./capability-map"
 import { enforceScope } from "./scope-enforcement"
 import packageJson from "../../../../package.json"
+
+/**
+ * A deserialized FunctionCall as received over the wallet-sdk wire protocol.
+ * These mirror `@aztec/stdlib/abi` FunctionCall but arrive as plain objects, not class instances.
+ */
+type WireFunctionCall = {
+	to: unknown
+	selector: unknown
+	args?: unknown[]
+	name?: string
+	type?: string
+	isStatic?: boolean
+	hideMsgSender?: boolean
+	returnTypes?: unknown[]
+}
+
+/** Shape of the capability manifest sent by the dApp via requestCapabilities(). */
+type CapabilityManifest = {
+	capabilities?: unknown[]
+	[key: string]: unknown
+}
 
 /**
  * Maps wallet-sdk method names to internal Operation kinds.
@@ -143,13 +179,13 @@ export class WalletSdkDispatcher {
 
 		// Handle methods that don't go through ExecutionService
 		if (methodName === "requestCapabilities") {
-			return this.handleRequestCapabilities(args[0] as any, ctx)
+			return this.handleRequestCapabilities(args[0] as CapabilityManifest, ctx)
 		}
 		if (methodName === "getAccounts") {
 			return this.handleGetAccounts(ctx)
 		}
 		if (methodName === "batch") {
-			return this.handleBatch(args[0] as any[], ctx)
+			return this.handleBatch(args[0] as Array<{ name: string; args: unknown[] }>, ctx)
 		}
 
 		// sendTx goes through DappInteractionService for the confirmation popup + fee selection
@@ -279,26 +315,27 @@ export class WalletSdkDispatcher {
 			`handleSendTx: session=${dappSession.id}, sessionAccounts=${JSON.stringify(dappSession.accounts)}`,
 		)
 
-		const rawOpts = (args[1] as any) ?? {}
+		const rawOpts = (args[1] as Record<string, unknown>) ?? {}
 		const isNoFrom = isNoFromRequest(rawOpts.from)
 		const opts = isNoFrom ? rawOpts : { ...rawOpts, from: account.address }
+		const execPayload = args[0] as Record<string, unknown> | undefined
 		this.logger.log(
 			"wallet-sdk",
 			LogLevel.Debug,
-			`handleSendTx: isNoFrom=${isNoFrom}, exec.feePayer=${(args[0] as any)?.feePayer}, exec.calls=${(args[0] as any)?.calls?.length}, additionalScopes=${JSON.stringify(rawOpts.additionalScopes)}`,
+			`handleSendTx: isNoFrom=${isNoFrom}, exec.feePayer=${execPayload?.feePayer}, exec.calls=${(execPayload?.calls as unknown[] | undefined)?.length}, additionalScopes=${JSON.stringify(rawOpts.additionalScopes)}`,
 		)
+
+		const sendOp: AztecSendTxRequest = {
+			kind: "aztec_sendTx" as const,
+			account: caipAccount as `aztec:${number}:${string}`,
+			exec: args[0] as AztecSendTxRequest["exec"],
+			opts: opts as AztecSendTxRequest["opts"],
+			...(isNoFrom ? { executionMode: "default_entrypoint" as const } : {}),
+		}
 
 		const results: ExecutionResult = await this.dappInteractionService.execute({
 			sessionId: dappSession.id,
-			operations: [
-				{
-					kind: "aztec_sendTx" as const,
-					account: caipAccount as `aztec:${number}:${string}`,
-					exec: args[0] as any,
-					opts,
-					...(isNoFrom ? { executionMode: "default_entrypoint" as const } : {}),
-				},
-			],
+			operations: [sendOp],
 		})
 
 		return this.unwrapResult(results[0])
@@ -312,13 +349,13 @@ export class WalletSdkDispatcher {
 	 * 3. Show popup for delta → user approves → merge and store
 	 *    - Track rejected types for future re-request detection
 	 */
-	private async handleRequestCapabilities(manifest: any, ctx: SessionContext): Promise<unknown> {
+	private async handleRequestCapabilities(manifest: CapabilityManifest, ctx: SessionContext): Promise<unknown> {
 		const dappSession = await this.dappSessionService.tryGetDappSessionByOrigin(ctx.origin)
 		if (!dappSession) {
 			throw new Error(`No dApp session found for origin ${ctx.origin}`)
 		}
 
-		const requestedCapabilities: any[] = manifest?.capabilities ?? []
+		const requestedCapabilities = (manifest?.capabilities ?? []) as Record<string, unknown>[]
 		if (requestedCapabilities.length === 0) {
 			return {
 				version: "1.0" as const,
@@ -334,9 +371,9 @@ export class WalletSdkDispatcher {
 		const rejectedTypes = new Set(existingRejections.map((r) => r.capabilityType))
 
 		// Delta: capabilities not yet granted OR previously rejected (re-request)
-		const delta = requestedCapabilities.filter((cap) => !grantedTypes.has(cap.type) || rejectedTypes.has(cap.type))
+		const delta = requestedCapabilities.filter((cap) => !grantedTypes.has(cap.type as Capability["type"]) || rejectedTypes.has(cap.type as string))
 		// Track which delta items are re-requests (previously rejected)
-		const reRequested = requestedCapabilities.filter((cap) => rejectedTypes.has(cap.type)).map((cap) => cap.type as string)
+		const reRequested = requestedCapabilities.filter((cap) => rejectedTypes.has(cap.type as string)).map((cap) => cap.type as string)
 
 		// Phase 2: Early return if all types already granted and none re-requested
 		if (delta.length === 0) {
@@ -381,12 +418,13 @@ export class WalletSdkDispatcher {
 		})
 
 		// Safety net: ensure accounts capability is in granted when accounts were selected
+		const grantedResults = result.granted as Record<string, unknown>[]
 		if (result.selectedAccounts && result.selectedAccounts.length > 0) {
-			const hasAccountsInGranted = result.granted.some((cap: any) => cap.type === "accounts")
+			const hasAccountsInGranted = grantedResults.some((cap) => cap.type === "accounts")
 			if (!hasAccountsInGranted) {
 				const accountsCap = delta.find((cap) => cap.type === "accounts")
 				if (accountsCap) {
-					result.granted.push(accountsCap)
+					grantedResults.push(accountsCap)
 				}
 			}
 		}
@@ -411,13 +449,13 @@ export class WalletSdkDispatcher {
 		}
 
 		// Compute which delta types were approved vs rejected
-		const approvedTypes = new Set(result.granted.map((cap: any) => cap.type))
+		const approvedTypes = new Set(grantedResults.map((cap) => cap.type as string))
 		const now = Date.now()
 
 		// New grants: approved delta items that weren't already granted
-		const newGrants = result.granted
-			.filter((cap: any) => !grantedTypes.has(cap.type) || rejectedTypes.has(cap.type))
-			.map((cap: any) => ({ capability: cap, grantedAt: now }))
+		const newGrants: GrantedCapabilityRecord[] = grantedResults
+			.filter((cap) => !grantedTypes.has(cap.type as Capability["type"]) || rejectedTypes.has(cap.type as string))
+			.map((cap) => ({ capability: cap as Capability, grantedAt: now }))
 		// Merge: keep existing grants (excluding re-approved types) + new grants
 		const mergedGrants = [...existingGrants.filter((g) => !rejectedTypes.has(g.capability.type)), ...newGrants]
 
@@ -425,10 +463,10 @@ export class WalletSdkDispatcher {
 
 		// Track rejections: delta items that were NOT approved
 		const newRejections: RejectedCapabilityRecord[] = delta
-			.filter((cap) => !approvedTypes.has(cap.type))
-			.map((cap) => ({ capabilityType: cap.type, rejectedAt: now }))
+			.filter((cap) => !approvedTypes.has(cap.type as string))
+			.map((cap) => ({ capabilityType: cap.type as string, rejectedAt: now }))
 		// Merge: keep old rejections for types not in this delta + new rejections
-		const deltaTypes = new Set(delta.map((cap: any) => cap.type))
+		const deltaTypes = new Set(delta.map((cap) => cap.type as string))
 		const mergedRejections = [...existingRejections.filter((r) => !deltaTypes.has(r.capabilityType)), ...newRejections]
 		await this.dappSessionService.setCapabilityRejections(dappSession.id, mergedRejections)
 
@@ -454,14 +492,14 @@ export class WalletSdkDispatcher {
 	 * For "accounts" type: inject the actual account list with per-app aliases.
 	 */
 	private async enrichGrantedCapabilities(
-		grantedCaps: any[],
-		requestedCaps: any[],
+		grantedCaps: unknown[],
+		requestedCaps: Record<string, unknown>[],
 		ctx: SessionContext,
-		dappSession: any,
-	): Promise<any[]> {
-		const result: any[] = []
+		dappSession: DappSession,
+	): Promise<Record<string, unknown>[]> {
+		const result: Record<string, unknown>[] = []
 		// Use requested caps as the template to preserve the dApp's original fields
-		const grantedTypes = new Set(grantedCaps.map((c: any) => c.type))
+		const grantedTypes = new Set(grantedCaps.map((c) => (c as Record<string, unknown>).type))
 
 		for (const cap of requestedCaps) {
 			if (!grantedTypes.has(cap.type)) continue
@@ -551,17 +589,17 @@ export class WalletSdkDispatcher {
 			case "aztec_getChainInfo":
 				return { kind, networkId }
 			case "aztec_getContractClassMetadata":
-				return { kind, networkId, id: args[0] as any }
+				return { kind, networkId, id: args[0] as AztecGetContractClassMetadataOperation["id"] }
 			case "aztec_getContractMetadata":
-				return { kind, networkId, address: args[0] as any }
+				return { kind, networkId, address: args[0] as AztecGetContractMetadataOperation["address"] }
 			case "aztec_getPrivateEvents":
-				return { kind, networkId, eventMetadata: args[0] as any, eventFilter: args[1] as any }
+				return { kind, networkId, eventMetadata: args[0] as AztecGetPrivateEventsOperation["eventMetadata"], eventFilter: args[1] as AztecGetPrivateEventsOperation["eventFilter"] }
 			case "aztec_registerSender":
-				return { kind, networkId, address: args[0] as any, alias: args[1] as string | undefined }
+				return { kind, networkId, address: args[0] as AztecRegisterSenderOperation["address"], alias: args[1] as string | undefined }
 			case "aztec_getAddressBook":
 				return { kind, networkId }
 			case "aztec_registerContract":
-				return { kind, networkId, instance: args[0] as any, artifact: args[1] as any, secretKey: args[2] as any }
+				return { kind, networkId, instance: args[0] as AztecRegisterContractOperation["instance"], artifact: args[1] as AztecRegisterContractOperation["artifact"], secretKey: args[2] as AztecRegisterContractOperation["secretKey"] }
 			default:
 				throw new Error(`Unknown network operation: ${kind}`)
 		}
@@ -586,32 +624,32 @@ export class WalletSdkDispatcher {
 					kind,
 					networkId,
 					accountAddress,
-					exec: args[0] as any,
-					opts: { ...((args[1] as any) ?? {}), from: accountAddress },
+					exec: args[0] as AztecSimulateTxOperation["exec"],
+					opts: { ...((args[1] as Record<string, unknown>) ?? {}), from: accountAddress } as AztecSimulateTxOperation["opts"],
 				}
 			case "aztec_executeUtility":
 				return {
 					kind,
 					networkId,
 					accountAddress,
-					call: args[0] as any,
-					opts: { ...((args[1] as any) ?? {}), from: accountAddress },
+					call: args[0] as AztecExecuteUtilityOperation["call"],
+					opts: { ...((args[1] as Record<string, unknown>) ?? {}), from: accountAddress } as unknown as AztecExecuteUtilityOperation["opts"],
 				}
 			case "aztec_profileTx":
 				return {
 					kind,
 					networkId,
 					accountAddress,
-					exec: args[0] as any,
-					opts: { ...((args[1] as any) ?? {}), from: accountAddress },
+					exec: args[0] as AztecProfileTxOperation["exec"],
+					opts: { ...((args[1] as Record<string, unknown>) ?? {}), from: accountAddress } as AztecProfileTxOperation["opts"],
 				}
 			case "aztec_createAuthWit":
 				// WalletSchema: createAuthWit(from: AztecAddress, messageHashOrIntent) — args[0] is from, args[1] is the intent
-				return { kind, networkId, accountAddress, messageHashOrIntent: args[1] as any }
+				return { kind, networkId, accountAddress, messageHashOrIntent: args[1] as AztecCreateAuthWitOperation["messageHashOrIntent"] }
 			case "register_token":
 				// schema_patch: registerToken(account: AztecAddress, token: AztecAddress)
 				// The first arg is the account (already resolved), second is the token address
-				return { kind, networkId, accountAddress, address: (args[1] as any).toString() }
+				return { kind, networkId, accountAddress, address: String(args[1]) }
 			case "get_complete_address":
 				// schema_patch: getCompleteAddress(account: AztecAddress)
 				return { kind, networkId, accountAddress }
@@ -623,7 +661,7 @@ export class WalletSdkDispatcher {
 					kind,
 					networkId,
 					accountAddress,
-					calls: this.functionCallsToEncodedActions(args[0] as any[]),
+					calls: this.functionCallsToEncodedActions(args[0] as WireFunctionCall[]),
 				}
 			default:
 				throw new Error(`Unknown account operation: ${kind}`)
@@ -637,12 +675,12 @@ export class WalletSdkDispatcher {
 	 * The ExecutionService's SimulateViewsOperation expects `(CallAction | EncodedCallAction)[]`.
 	 * We convert to EncodedCallAction format which uses string representations.
 	 */
-	private functionCallsToEncodedActions(calls: any[]): any[] {
-		return calls.map((call: any) => ({
+	private functionCallsToEncodedActions(calls: WireFunctionCall[]): EncodedCallAction[] {
+		return calls.map((call) => ({
 			kind: "encoded_call" as const,
-			to: call.to?.toString(),
-			selector: call.selector?.toString(),
-			args: (call.args ?? []).map((a: any) => a.toString()),
+			to: String(call.to),
+			selector: String(call.selector),
+			args: (call.args ?? []).map((a) => String(a)),
 			name: call.name,
 			type: call.type,
 			isStatic: call.isStatic,
@@ -654,7 +692,7 @@ export class WalletSdkDispatcher {
 	/**
 	 * Extract account addresses from a dApp session's CAIP accounts for the given chain.
 	 */
-	private getSessionAccountAddresses(dappSession: any, chainId: number): Set<string> {
+	private getSessionAccountAddresses(dappSession: DappSession, chainId: number): Set<string> {
 		return new Set(
 			dappSession.accounts
 				?.filter((caip: string) => caip.startsWith(`aztec:${chainId}:`))

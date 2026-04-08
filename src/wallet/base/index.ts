@@ -6,7 +6,8 @@ export type EventsSpec<T extends EventsMap> = {
 	[P in keyof T]: EventHandler<T[P]>
 }
 
-export type MethodsMap = Record<string, (...params: any) => unknown>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- params must be `any[]` so concrete method signatures (e.g. `(networkId: string) => ...`) satisfy this constraint
+export type MethodsMap = Record<string, (...params: any[]) => unknown>
 
 export type MethodsSpec<T extends MethodsMap> = {
 	[M in keyof T]: (...params: Parameters<T[M]>) => Promise<ReturnType<T[M]>>
@@ -14,7 +15,7 @@ export type MethodsSpec<T extends MethodsMap> = {
 
 export type ServiceSpec<T1 extends MethodsMap, T2 extends EventsMap = {}> = MethodsSpec<T1> & EventsSpec<T2>
 
-export type Restored<T> = T & { restoreError?: any }
+export type Restored<T> = T & { restoreError?: unknown }
 
 export interface IService {
 	name: string

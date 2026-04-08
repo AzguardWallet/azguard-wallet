@@ -15,7 +15,7 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
 	private readonly service: string
 	private readonly logger: ILogger
 
-	private readonly requests: Map<number, [(result: any) => void, (error: string) => void]> = new Map()
+	private readonly requests: Map<number, [(result: unknown) => void, (error: string) => void]> = new Map()
 	private readonly requestTimers: Map<number, NodeJS.Timeout> = new Map()
 	private nextRequestId = 1
 	private connected = false
@@ -101,14 +101,14 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
 			content: {
 				requestId: this.getRequestId(),
 				method: method,
-				params: jsonSanitize(wrapParams(params)),
+				params: jsonSanitize(wrapParams(params)) as Parameters<TRequests[T]>,
 			},
 			from: this.uid,
 			to: this.service,
 		}
 		const requestId = request.content.requestId
 		const promise = new Promise<ReturnType<TRequests[T]>>((resolve, reject) => {
-			this.requests.set(requestId, [resolve, reject])
+			this.requests.set(requestId, [resolve as (result: unknown) => void, reject])
 			const timer = setTimeout(() => {
 				if (this.requests.delete(requestId)) {
 					this.requestTimers.delete(requestId)
@@ -129,19 +129,19 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
 		return this.nextRequestId++
 	}
 
-	protected logDebug(...data: any[]) {
+	protected logDebug(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Debug, ...data)
 	}
 
-	protected logInfo(...data: any[]) {
+	protected logInfo(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Info, ...data)
 	}
 
-	protected logWarn(...data: any[]) {
+	protected logWarn(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Warn, ...data)
 	}
 
-	protected logError(...data: any[]) {
+	protected logError(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Error, ...data)
 	}
 }

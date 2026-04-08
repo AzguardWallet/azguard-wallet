@@ -9,7 +9,7 @@ export enum TransferPublicToPrivateImpl {
 }
 
 export abstract class TransferPublicToPrivateFn extends Fn {
-	public abstract override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint | string): any[]
+	public abstract override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint | string): unknown[]
 
 	public static new(name: string, impl: TransferPublicToPrivateImpl): TransferPublicToPrivateFn {
 		switch (impl) {
@@ -68,7 +68,7 @@ export class DefaultTransferPublicToPrivateFn extends TransferPublicToPrivateFn 
 		super(name, TransferPublicToPrivateImpl.Default)
 	}
 
-	public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): any[] {
+	public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): unknown[] {
 		return [to, amount]
 	}
 
@@ -131,7 +131,7 @@ export class DefiWonderlandTransferPublicToPrivateFn extends TransferPublicToPri
 		super(name, TransferPublicToPrivateImpl.DefiWonderland)
 	}
 
-	public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): any[] {
+	public override buildArgs(from: string | AztecAddress, to: string | AztecAddress, amount: number | bigint): unknown[] {
 		return [from, to, amount, Fr.zero()]
 	}
 

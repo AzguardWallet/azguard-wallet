@@ -101,7 +101,7 @@ export type SimulateUtilityOperation = {
 	readonly accountAddress: string
 	readonly contract: string
 	readonly method: string
-	readonly args: any[]
+	readonly args: unknown[]
 }
 
 export type SimulateViewsOperation = {

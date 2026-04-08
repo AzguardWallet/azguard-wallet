@@ -184,7 +184,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
 
 		const results: Contact[] = []
 
-		type importedContact = { name: string; address: string; [key: string]: any }
+		type importedContact = { name: string; address: string; [key: string]: unknown }
 		const importedContacts = JSON.parse(data)
 			.map((c: importedContact) => ({
 				...c,

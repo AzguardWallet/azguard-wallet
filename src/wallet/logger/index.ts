@@ -18,11 +18,11 @@ export type Log = {
 	source: string
 	level: LogLevel
 	context?: LogContext
-	data: any[]
+	data: unknown[]
 }
 
 export interface ILogger {
-	log(source: string, level: LogLevel, ...data: any[]): void
+	log(source: string, level: LogLevel, ...data: unknown[]): void
 }
 
 export interface ILoggerStore extends ILogger {

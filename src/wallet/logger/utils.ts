@@ -66,7 +66,7 @@ export class CircularBufferIterable<T extends { id: number }> extends CircularBu
 
 const MAX_LOG_DATA_DEPTH = 6
 
-export const trim = (value: any, depth: number = 0): any => {
+export const trim = (value: unknown, depth: number = 0): unknown => {
 	if (Array.isArray(value)) {
 		if (depth === MAX_LOG_DATA_DEPTH) {
 			return "[Array]"
@@ -77,32 +77,33 @@ export const trim = (value: any, depth: number = 0): any => {
 		if (depth === MAX_LOG_DATA_DEPTH) {
 			return "[Object]"
 		}
+		const obj = value as Record<string, unknown>
 		if ("nonDispatchPublicFunctions" in value) {
 			// ContractArtifact
-			return { name: value.name }
+			return { name: obj.name }
 		}
 		if ("packedBytecode" in value) {
 			// ContractInstanceWithAddress
-			return { id: value.id }
+			return { id: obj.id }
 		}
 		if ("originalContractClassId" in value) {
 			// ContractInstance
 			return {
-				currentContractClassId: value.currentContractClassId,
-				originalContractClassId: value.originalContractClassId,
+				currentContractClassId: obj.currentContractClassId,
+				originalContractClassId: obj.originalContractClassId,
 			}
 		}
-		return Object.entries(value).reduce((acc, [k, v]: [string, any]) => {
+		return Object.entries(value as Record<string, unknown>).reduce<Record<string, unknown>>((acc, [k, v]) => {
 			switch (k) {
 				case "acir":
 				case "authWitnesses":
 				case "partialWitness":
 				case "publicInputs":
 				case "vk":
-					;(acc as any)[k] = `[${k}]`
+					acc[k] = `[${k}]`
 					break
 				default:
-					;(acc as any)[k] = trim(v, depth + 1)
+					acc[k] = trim(v, depth + 1)
 					break
 			}
 			return acc

@@ -38,7 +38,7 @@ export type CallAction = {
 	readonly kind: "call"
 	readonly contract: string
 	readonly method: string
-	readonly args: any[]
+	readonly args: unknown[]
 	readonly hideSender?: boolean
 }
 

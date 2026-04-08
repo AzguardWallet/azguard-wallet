@@ -8,7 +8,7 @@ export enum GetSymbolImpl {
 }
 
 export abstract class GetSymbolFn extends ViewFn {
-	public override buildArgs(): any[] {
+	public override buildArgs(): unknown[] {
 		return []
 	}
 

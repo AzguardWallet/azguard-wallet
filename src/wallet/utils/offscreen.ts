@@ -13,7 +13,7 @@ const READY_TIMEOUT_MS = 10_000
 
 const path = "src/offscreen/index.html"
 const offscreenUrl = chrome.runtime.getURL(path)
-const onOffscreenReady = (message: any) => {
+const onOffscreenReady = (message: unknown) => {
 	if (message === OFFSCREEN_READY_MESSAGE) {
 		chrome.runtime.onMessage.removeListener(onOffscreenReady)
 		clearTimeout(offscreenTimeout)
@@ -42,7 +42,7 @@ async function isOffscreenHealthy(): Promise<boolean> {
 			resolve(false)
 		}, HEALTH_CHECK_TIMEOUT_MS)
 
-		const onPong = (message: any) => {
+		const onPong = (message: unknown) => {
 			if (message === OFFSCREEN_PONG) {
 				chrome.runtime.onMessage.removeListener(onPong)
 				clearTimeout(timer)

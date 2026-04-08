@@ -22,6 +22,12 @@ import type {
 	DataCapability,
 } from "../dapp-session/spec"
 
+/** Shape of a function call as received over the wire (exec.calls entries). */
+type WireCall = { to: unknown; name: string }
+
+/** Shape of an execution payload containing calls. */
+type WireExecPayload = { calls?: unknown }
+
 // ── Helpers ───────────────────────────────────────────────────────────
 
 function matchesPattern(contract: string, fn: string, pattern: ScopePattern): boolean {
@@ -45,7 +51,7 @@ function grantsOfType<T extends { type: string }>(grants: GrantedCapabilityRecor
 // ── Per-method checkers ───────────────────────────────────────────────
 
 function checkRegisterContract(args: unknown[], grants: GrantedCapabilityRecord[]): void {
-	const instance = args[0] as any
+	const instance = args[0] as Record<string, unknown> | undefined
 	const address = String(instance?.address ?? instance)
 
 	const caps = grantsOfType<ContractsCapability>(grants, "contracts")
@@ -82,7 +88,7 @@ function checkGetContractClassMetadata(args: unknown[], grants: GrantedCapabilit
 }
 
 function checkTransactionCalls(methodName: string, args: unknown[], grants: GrantedCapabilityRecord[]): void {
-	const exec = args[0] as any
+	const exec = args[0] as WireExecPayload
 	const calls = exec?.calls
 	if (!Array.isArray(calls)) {
 		throw new Error(`Scope enforcement: ${methodName} expects exec.calls to be an array`)
@@ -92,15 +98,16 @@ function checkTransactionCalls(methodName: string, args: unknown[], grants: Gran
 	const caps = grantsOfType<TransactionCapability>(grants, "transaction")
 	if (!caps.length) return
 
-	const permitted = caps.some((c) => calls.every((call: any) => matchesScope(String(call.to), call.name, c.scope)))
+	const typedCalls = calls as WireCall[]
+	const permitted = caps.some((c) => typedCalls.every((call) => matchesScope(String(call.to), call.name, c.scope)))
 	if (!permitted) {
-		const desc = calls.map((c: any) => `${c.name}@${String(c.to)}`).join(", ")
+		const desc = typedCalls.map((c) => `${c.name}@${String(c.to)}`).join(", ")
 		throw new Error(`Scope violation: ${methodName} calls [${desc}], not permitted by granted transaction scope`)
 	}
 }
 
 function checkSimulationTransactions(methodName: string, args: unknown[], grants: GrantedCapabilityRecord[]): void {
-	const exec = args[0] as any
+	const exec = args[0] as WireExecPayload
 	const calls = exec?.calls
 	if (!Array.isArray(calls)) {
 		throw new Error(`Scope enforcement: ${methodName} expects exec.calls to be an array`)
@@ -110,19 +117,20 @@ function checkSimulationTransactions(methodName: string, args: unknown[], grants
 	const caps = grantsOfType<SimulationCapability>(grants, "simulation")
 	if (!caps.length) return
 
+	const typedCalls = calls as WireCall[]
 	const permitted = caps.some((c) => {
 		const scope = c.transactions?.scope
 		if (!scope) return false
-		return calls.every((call: any) => matchesScope(String(call.to), call.name, scope))
+		return typedCalls.every((call) => matchesScope(String(call.to), call.name, scope))
 	})
 	if (!permitted) {
-		const desc = calls.map((c: any) => `${c.name}@${String(c.to)}`).join(", ")
+		const desc = typedCalls.map((c) => `${c.name}@${String(c.to)}`).join(", ")
 		throw new Error(`Scope violation: ${methodName} calls [${desc}], not permitted by granted simulation.transactions scope`)
 	}
 }
 
 function checkExecuteUtility(args: unknown[], grants: GrantedCapabilityRecord[]): void {
-	const call = args[0] as any
+	const call = args[0] as WireCall | undefined
 	if (!call?.to || !call?.name) {
 		throw new Error("Scope enforcement: executeUtility expects call with to and name fields")
 	}
@@ -143,7 +151,7 @@ function checkExecuteUtility(args: unknown[], grants: GrantedCapabilityRecord[])
 }
 
 function checkSimulateViews(args: unknown[], grants: GrantedCapabilityRecord[]): void {
-	const calls = args[0] as any[]
+	const calls = args[0]
 	if (!Array.isArray(calls)) {
 		throw new Error("Scope enforcement: simulateViews expects calls to be an array")
 	}
@@ -152,19 +160,20 @@ function checkSimulateViews(args: unknown[], grants: GrantedCapabilityRecord[]):
 	const caps = grantsOfType<SimulationCapability>(grants, "simulation")
 	if (!caps.length) return
 
+	const typedCalls = calls as WireCall[]
 	const permitted = caps.some((c) => {
 		const scope = c.transactions?.scope
 		if (!scope) return false
-		return calls.every((call: any) => matchesScope(String(call.to), call.name, scope))
+		return typedCalls.every((call) => matchesScope(String(call.to), call.name, scope))
 	})
 	if (!permitted) {
-		const desc = calls.map((c: any) => `${c.name}@${String(c.to)}`).join(", ")
+		const desc = typedCalls.map((c) => `${c.name}@${String(c.to)}`).join(", ")
 		throw new Error(`Scope violation: simulateViews calls [${desc}], not permitted by granted simulation.transactions scope`)
 	}
 }
 
 function checkGetPrivateEvents(args: unknown[], grants: GrantedCapabilityRecord[]): void {
-	const eventFilter = args[1] as any
+	const eventFilter = args[1] as Record<string, unknown> | undefined
 	const address = String(eventFilter?.contractAddress)
 
 	const caps = grantsOfType<DataCapability>(grants, "data")

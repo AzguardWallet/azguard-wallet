@@ -11,8 +11,8 @@ import { EventHandler } from "@/wallet/utils/event-handler"
 import { Fpc } from "./fpc"
 import { getFpcHandler } from "./handlers"
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec"
-import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract"
-import { loadContractArtifact } from "@aztec/stdlib/abi"
+import { getContractInstanceFromInstantiationParams, type ContractInstanceWithAddress } from "@aztec/stdlib/contract"
+import { loadContractArtifact, type ContractArtifact } from "@aztec/stdlib/abi"
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC"
 // @ts-ignore — raw JSON import via vite alias, bypasses @aztec/aztec.js (which references document/window)
 import PrivateFPCJson from "@private-fpc-artifact"
@@ -74,7 +74,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 					const node = await this.networkService.getNode(network.chainId)
 					const pxe = this.pxeService.getPXE(network)
 
-					const toDiscover: { instance: any; artifact: any }[] = []
+					const toDiscover: { instance: ContractInstanceWithAddress; artifact: ContractArtifact }[] = []
 
 					if (!hasSponsoredFpc) {
 						const instance = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {

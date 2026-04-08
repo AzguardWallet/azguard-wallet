@@ -46,7 +46,7 @@ export type TxCall = {
 	/** Function name. */
 	method: string
 	/** Arguments. */
-	args: any[]
+	args: unknown[]
 	/** Additional information telling whether the call produces token transfers. */
 	transfers?: TxTransfer[]
 }

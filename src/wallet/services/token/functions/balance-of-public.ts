@@ -8,7 +8,7 @@ export enum BalanceOfPublicImpl {
 }
 
 export abstract class BalanceOfPublicFn extends ViewFn {
-	public override buildArgs(address: string | AztecAddress): any[] {
+	public override buildArgs(address: string | AztecAddress): unknown[] {
 		return [address]
 	}
 

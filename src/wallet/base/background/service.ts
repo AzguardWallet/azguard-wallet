@@ -111,7 +111,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
 		this.logDebug("Event sent", message)
 	}
 
-	private send(message: any, client: chrome.runtime.Port) {
+	private send(message: unknown, client: chrome.runtime.Port) {
 		try {
 			client.postMessage(message)
 		} catch (error) {
@@ -135,28 +135,28 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
 		}
 	}
 
-	protected logDebug(...data: any[]) {
+	protected logDebug(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Debug, ...data)
 	}
 
-	protected logInfo(...data: any[]) {
+	protected logInfo(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Info, ...data)
 	}
 
-	protected logWarn(...data: any[]) {
+	protected logWarn(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Warn, ...data)
 	}
 
-	protected logError(...data: any[]) {
+	protected logError(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Error, ...data)
 	}
 
-	public async backup(): Promise<any> {
+	public async backup(): Promise<unknown> {
 		// can be overridden in derived classes if necessary
 		return null
 	}
 
-	public async restore(..._args: any[]): Promise<any> {
+	public async restore(..._args: unknown[]): Promise<unknown> {
 		// can be overridden in derived classes if necessary
 		return null
 	}

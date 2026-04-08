@@ -20,7 +20,7 @@ export const array_max = (arr: Array<number>): number => {
 	return res
 }
 
-function safeStringify(value: any): string {
+function safeStringify(value: unknown): string {
 	if (value === null) return "null"
 	if (value === undefined) return "undefined"
 	if (typeof value === "string") return value
@@ -38,7 +38,7 @@ function safeStringify(value: any): string {
 	return String(value)
 }
 
-export function hasIntersectionByKeys<T extends Record<string, any>>(arr1: T[], arr2: T[], keys: (keyof T)[]): boolean {
+export function hasIntersectionByKeys<T extends Record<string, unknown>>(arr1: T[], arr2: T[], keys: (keyof T)[]): boolean {
 	const keySet = new Set<string>()
 
 	arr1.forEach((item) => {

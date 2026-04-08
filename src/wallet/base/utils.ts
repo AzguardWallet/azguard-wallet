@@ -1,7 +1,7 @@
 import { array_max } from "@/wallet/utils"
 
-export const wrapParams = (params: any[]): Record<number, any> => {
-	return params.reduce((acc, v, i) => {
+export const wrapParams = (params: unknown[]): Record<number, unknown> => {
+	return params.reduce<Record<number, unknown>>((acc, v, i) => {
 		acc[i] = v
 		return acc
 	}, {})

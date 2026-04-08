@@ -15,7 +15,7 @@ export class LoggerService extends Service<Methods> implements ServiceSpec<Metho
 		this._logger = logger
 	}
 
-	public async log(context: string | undefined, source: string, level: LogLevel, ...data: any[]) {
+	public async log(context: string | undefined, source: string, level: LogLevel, ...data: unknown[]) {
 		this._logger.logWithContext(context, source, level, ...data)
 	}
 }

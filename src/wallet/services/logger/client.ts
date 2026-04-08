@@ -13,7 +13,7 @@ export class LoggerServiceClient extends ServiceClient<Methods> implements Servi
 		this.context = context
 	}
 
-	public log(source: string, level: LogLevel, ...data: any[]) {
+	public log(source: string, level: LogLevel, ...data: unknown[]) {
 		return this.request("log", this.context, source, level, ...data)
 	}
 }

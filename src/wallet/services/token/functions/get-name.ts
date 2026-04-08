@@ -8,7 +8,7 @@ export enum GetNameImpl {
 }
 
 export abstract class GetNameFn extends ViewFn {
-	public override buildArgs(): any[] {
+	public override buildArgs(): unknown[] {
 		return []
 	}
 

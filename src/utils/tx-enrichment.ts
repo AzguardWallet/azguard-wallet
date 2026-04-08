@@ -5,7 +5,7 @@ import { trimAddress } from "@/utils/string"
 type TxCall = {
 	contract: string
 	method: string
-	args?: any[]
+	args?: unknown[]
 }
 
 const METHOD_LABELS: Record<string, string> = {

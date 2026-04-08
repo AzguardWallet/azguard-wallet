@@ -101,9 +101,9 @@ export class DappInteractionService extends Service<Methods, Events> implements 
 			const result = await this.executionService.executeOperations(operations, origin)
 			this.logInfo(`executeAndResolve: resolved [${kinds}]`)
 			interaction.resolve(result)
-		} catch (error: any) {
+		} catch (error) {
 			this.logError(`executeAndResolve: failed [${kinds}]`, getErrorMessage(error))
-			interaction.reject(error?.message ?? "Execution failed")
+			interaction.reject(error instanceof Error ? error.message : "Execution failed")
 		}
 	}
 

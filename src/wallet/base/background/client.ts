@@ -16,7 +16,7 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
 	private readonly logger: ILogger
 
 	private state: ClientState = ClientState.Disconnected
-	private readonly requests: Map<number, [(result: any) => void, (error: string) => void]> = new Map()
+	private readonly requests: Map<number, [(result: unknown) => void, (error: string) => void]> = new Map()
 	private nextRequestId = 1
 	private port?: chrome.runtime.Port
 
@@ -111,11 +111,11 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
 			content: {
 				requestId: this.getRequestId(),
 				method: method,
-				params: jsonSanitize(wrapParams(params)),
+				params: jsonSanitize(wrapParams(params)) as Parameters<TRequests[T]>,
 			},
 		}
 		const promise = new Promise<ReturnType<TRequests[T]>>((resolve, reject) => {
-			this.requests.set(request.content.requestId, [resolve, reject])
+			this.requests.set(request.content.requestId, [resolve as (result: unknown) => void, reject])
 		})
 		this.port!.postMessage(request)
 
@@ -137,28 +137,28 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
 		return this.nextRequestId++
 	}
 
-	protected logDebug(...data: any[]) {
+	protected logDebug(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Debug, ...data)
 	}
 
-	protected logInfo(...data: any[]) {
+	protected logInfo(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Info, ...data)
 	}
 
-	protected logWarn(...data: any[]) {
+	protected logWarn(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Warn, ...data)
 	}
 
-	protected logError(...data: any[]) {
+	protected logError(...data: unknown[]) {
 		this.logger.log(this.name, LogLevel.Error, ...data)
 	}
 
-	public async backup(): Promise<any> {
-		return this.request("backup" as keyof TRequests, ...([] as any))
+	public async backup(): Promise<unknown> {
+		return this.request("backup" as keyof TRequests, ...([] as unknown as Parameters<TRequests[keyof TRequests]>))
 	}
 
-	public async restore(..._args: any[]): Promise<any> {
-		return this.request("restore" as keyof TRequests, ...(_args as any))
+	public async restore(..._args: unknown[]): Promise<unknown> {
+		return this.request("restore" as keyof TRequests, ...(_args as unknown as Parameters<TRequests[keyof TRequests]>))
 	}
 }
 
