@@ -1,6 +1,6 @@
 ---
 name: chrome-extension-debug
-description: Debug and test the Azguard Chrome extension using Chrome DevTools MCP. Use when Chrome MCP tools are available and need to test popup UI, debug user flows, monitor network/console, or automate repetitive browser tasks.
+description: Debug and test the Vibeguard Chrome extension using Chrome DevTools MCP. Use when Chrome MCP tools are available and need to test popup UI, debug user flows, monitor network/console, or automate repetitive browser tasks.
 ---
 
 # Chrome Extension Debugging

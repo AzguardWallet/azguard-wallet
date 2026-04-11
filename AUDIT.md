@@ -1,4 +1,4 @@
-# Azguard Wallet — Code Audit
+# Vibeguard Wallet — Code Audit
 
 Audit date: 2026-04-06
 Auditors: Claude Opus 4.6, Claude Sonnet 4.6 (3 independent passes, consolidated)
@@ -61,7 +61,7 @@ All findings verified against source code.
 ### A7. Popup bypasses service layer with direct `chrome.storage` calls
 - **Files:** 12 popup files use `chrome.storage.local.get/set/remove` directly
 - **Affected:** `app.vue`, `auth.vue`, `BalanceView.vue`, `FeeSettingsCard.vue`, `NetworksPopup.vue`, `NewAccountPopup.vue`, `NewNetworkPopup.vue`, `RegisterPopup.vue`, `ResetPopup.vue`, `fpcs/index.vue`, `networks/index.vue`, `advanced/index.vue`
-- **Issue:** Hardcoded string keys like `"azguard:ui:activeNetwork"` bypass `EntityStorage`/`ValueStorage`. A key rename in the service layer silently breaks the popup.
+- **Issue:** Hardcoded string keys like `"vibeguard:ui:activeNetwork"` bypass `EntityStorage`/`ValueStorage`. A key rename in the service layer silently breaks the popup.
 - **Fix:** Consolidate into a `UIStateService` or extend `ConfigService`.
 - [ ] Not started
 

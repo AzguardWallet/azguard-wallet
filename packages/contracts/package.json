@@ -1,0 +1,14 @@
+{
+	"name": "@vibeguard/contracts",
+	"private": true,
+	"version": "0.10.0",
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"scripts": {
+		"compile": "echo 'Requires nargo. Run nargo compile in each contract dir, then copy target/*.json to artifacts/'"
+	},
+	"dependencies": {
+		"@aztec/stdlib": "4.2.0-aztecnr-rc.2"
+	}
+}

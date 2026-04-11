@@ -2,43 +2,77 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Monorepo Structure
+
+Bun workspaces monorepo with 4 packages:
+
+| Package | Path | Purpose |
+|---------|------|---------|
+| `@vibeguard/extension` | `packages/extension/` | Chrome/Firefox extension (Manifest V3) |
+| `@vibeguard/contracts` | `packages/contracts/` | Noir smart contracts + pre-compiled artifacts |
+| `@vibeguard/playground` | `packages/playground/` | Test dApp for e2e testing (scaffold) |
+| `@vibeguard/landing` | `packages/landing/` | Marketing landing page (scaffold) |
+
 ## Build & Development Commands
 
 ```bash
-yarn dev              # Start dev server (Chrome, port 8088)
-yarn build            # Production build (Chrome)
-yarn test             # Run vitest tests
-yarn test:e2e         # Run Puppeteer E2E tests
-yarn lint             # Run biome linter
-yarn lint:fix         # Auto-fix lint issues
-yarn format           # Format all files with biome
-yarn check            # Lint check (biome only)
-yarn typecheck        # TypeScript check (vue-tsc)
+# Root-level (delegates to packages)
+bun run dev              # Start extension dev server (Chrome, port 8088)
+bun run build            # Production build (Chrome)
+bun run test             # Run vitest unit tests
+bun run test:e2e         # Run Puppeteer E2E tests
+bun run lint             # Run biome linter (all packages)
+bun run lint:fix         # Auto-fix lint issues
+bun run format           # Format all files with biome
+bun run typecheck        # TypeScript check (vue-tsc)
+
+# Package-level (from packages/extension/)
+bun run dev:playground   # Start playground dev server (port 5174)
+bun run dev:landing      # Start landing dev server (port 5175)
 ```
 
 ## Quality Tooling
 
-- **Biome** handles both linting and formatting. Config in `biome.json`.
+- **Bun** is the package manager. No yarn/npm/pnpm.
+- **Biome** handles both linting and formatting. Config in root `biome.json`.
 - **Commitlint** enforces Conventional Commits (`feat:`, `fix:`, `chore:`, etc.). Config in `.commitlintrc.json`.
 - **Pre-commit hook** (`.githooks/pre-commit`) runs `biome check --staged` on every commit.
 - **Commit-msg hook** (`.githooks/commit-msg`) validates commit messages via commitlint.
-- Hooks are auto-installed on `yarn install` via the `prepare` script.
+- Hooks are auto-installed on `bun install` via the `prepare` script.
 - `noExplicitAny` is enforced as an error — use `unknown` and cast at usage sites. Suppress with `// biome-ignore lint/suspicious/noExplicitAny: reason` only for genuinely untyped boundaries.
 
-Load the extension in Chrome: `chrome://extensions` → Load unpacked → select `dist/chrome/`
+Load the extension in Chrome: `chrome://extensions` → Load unpacked → select `packages/extension/dist/chrome/`
+
+## Naming Backward-Compatibility Constraints
+
+The product was renamed from "Azguard" to "Vibeguard". The following MUST NOT be renamed:
+
+- **Contract artifacts** (`azguard-v0.json`, `azguard-v0-persistent.json`): On-chain class identity. The names are embedded in compiled bytecode.
+- **Passkey RP ID** (`azguardwallet.io`): WebAuthn credentials are bound to this. Changing it permanently locks users out.
+- **KDF/PRF labels** (`azguard:kdf:v1`, `azguard:master:v1`, `azguard:profile:v1`): Domain separators in HKDF chain. Different labels = different keys = lost funds.
+- **`azguardwallet.io` URLs**: Deferred until new domain is ready (marked with TODO comments).
+
+## Contracts Package
+
+The `@vibeguard/contracts` package contains:
+- **Noir source** (`azguard-account/`, `azguard-account-persistent/`): Built with `nargo compile`. Requires Nargo installed.
+- **Pre-compiled artifacts** (`artifacts/`): Committed JSON files for devs without Nargo.
+- **TS wrapper** (`src/index.ts`): Exports typed artifacts for the extension to import.
+
+The extension imports via: `import { vibeguardV0Artifact } from "@vibeguard/contracts"`
 
 ## Architecture Overview
 
-Azguard Wallet is a Chrome extension (Manifest V3) for the Aztec network with privacy-first design.
+Vibeguard Wallet is a Chrome extension (Manifest V3) for the Aztec network with privacy-first design.
 
 ### Entry Points
 
 | Entry | Path | Purpose |
 |-------|------|---------|
-| Service Worker | `src/wallet/index.ts` | Background services, business logic |
-| Popup UI | `src/popup/index.ts` | Vue 3 extension popup |
-| Content Script | `src/content-script/content.ts` | Web page injection |
-| Offscreen | `src/offscreen/index.ts` | PXE (Private Execution Environment) |
+| Service Worker | `packages/extension/src/wallet/index.ts` | Background services, business logic |
+| Popup UI | `packages/extension/src/popup/index.ts` | Vue 3 extension popup |
+| Content Script | `packages/extension/src/content-script/content.ts` | Web page injection |
+| Offscreen | `packages/extension/src/offscreen/index.ts` | PXE (Private Execution Environment) |
 
 ### Client/Service Communication Pattern
 
@@ -51,16 +85,16 @@ ServiceClient<Methods, Events>  ←→  Service<Methods, Events>
 ```
 
 **Base classes:**
-- `src/wallet/base/background/service.ts` - Server-side base
-- `src/wallet/base/background/client.ts` - Client-side base
-- `src/wallet/base/messages.ts` - Message schema
+- `packages/extension/src/wallet/base/background/service.ts` - Server-side base
+- `packages/extension/src/wallet/base/background/client.ts` - Client-side base
+- `packages/extension/src/wallet/base/messages.ts` - Message schema
 
 **Example:** `AccountServiceClient` (popup) communicates with `AccountService` (background) via typed method calls.
 
 ### Directory Structure
 
 ```
-src/
+packages/extension/src/
 ├── wallet/           # Service worker - all background services
 │   ├── services/     # 20+ services (account, profile, network, transaction, etc.)
 │   ├── storage/      # Chrome storage abstraction (EntityStorage, ValueStorage)
@@ -77,7 +111,7 @@ src/
 
 ### Key Patterns
 
-**Test placement:** Unit tests are colocated — `foo.test.ts` sits next to `foo.ts`. Do not use `__tests__/` directories. E2E tests live in `tests/e2e/`.
+**Test placement:** Unit tests are colocated — `foo.test.ts` sits next to `foo.ts`. Do not use `__tests__/` directories. E2E tests live in `packages/extension/tests/e2e/`.
 
 **Route meta for auth:**
 ```vue
@@ -119,14 +153,14 @@ These are auto-imported, no explicit imports needed:
 
 ### Privacy/Stealth Mode
 
-Default config (`src/wallet/config/config.ts`) is privacy-first:
+Default config (`packages/extension/src/wallet/config/config.ts`) is privacy-first:
 - `stealthMode: true` - Master toggle for external services
 - `contractRegistry: false` - External contract lookups
 - `walletConnectEnabled: false` - WalletConnect connections
 - `uploadExternalImages: false` - External image loading
 - `externalLinks: "disabled"` - External link behavior ("disabled" | "confirm" | "enabled")
 
-Privacy settings page: `src/popup/pages/settings/external-services/index.vue`
+Privacy settings page: `packages/extension/src/popup/pages/settings/external-services/index.vue`
 
 ### Privacy Composables
 

@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"incremental": true,
+		"composite": true,
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"paths": {
+			"@/*": ["./src/*"],
+			"~/*": ["./src/*"],
+			"src/*": ["./src/*"],
+			"@assets/*": ["./src/assets/*"]
+		},
+		"resolveJsonModule": true,
+		"types": ["webextension-polyfill", "chrome-types"],
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true
+	},
+	"include": [
+		"package.json",
+		"vite.config.ts",
+		"vite.firefox.config.mts",
+		"manifest/manifest.config.ts",
+		"manifest/manifest.firefox.config.ts"
+	]
+}

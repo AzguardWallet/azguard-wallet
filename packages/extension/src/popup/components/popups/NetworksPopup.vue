@@ -1,0 +1,96 @@
+<script setup>
+/** Components */
+import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
+
+/** Services */
+import { managers } from "@/utils/core.js"
+import { getChainPosition } from "@/components/ui/utils"
+import { stringCompare } from "@/utils/string"
+
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
+const appStore = useAppStore()
+const popupStore = usePopupStore()
+
+const emit = defineEmits(["onClose"])
+const props = defineProps({
+	show: Boolean,
+})
+
+const displaceIdx = computed(() => {
+	return popupStore.len - popupStore.popups.networks?.order
+})
+
+const router = useRouter()
+const networks = computed(() =>
+	[...appStore.networks].sort((a, b) => {
+		const chainPos = getChainPosition(a.chainId) - getChainPosition(b.chainId)
+
+		return chainPos ? chainPos : stringCompare(a.name, b.name)
+	}),
+)
+const handleSelectNetwork = (target) => {
+	if (appStore.network.id !== target.id) {
+		managers.network.setDefault(target.id)
+		appStore.network = target
+		chrome.storage.local.set({ [`vibeguard:ui:lastActiveNetwork@${appStore.profile.id}`]: target.id })
+	}
+
+	emit("onClose")
+}
+
+const handleManageNetworks = () => {
+	router.push("/popup/settings/general/networks")
+	emit("onClose")
+}
+</script>
+
+<template>
+	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.networks?.order">
+		<PopupCard :displaceIdx>
+			<PopupHeader @onClose="emit('onClose')" closable>
+				<template #title>
+					<Text size="14" weight="600" color="primary">Switch network</Text>
+				</template>
+			</PopupHeader>
+
+			<Flex wide direction="column" gap="24" :class="$style.wrapper">
+				<ItemsContainer>
+					<SettingItem
+						v-for="network in networks"
+						@click="handleSelectNetwork(network)"
+						:title="network.name"
+						:icon="appStore.network.id === network.id ? 'check-circle' : 'circle'"
+						:iconFillColor="appStore.network.id === network.id ? 'blue' : 'tertiary'"
+						iconBgColor="transparent"
+					>
+						<template #right>
+							<NetworkBadge :chainId="network.chainId" />
+						</template>
+					</SettingItem>
+				</ItemsContainer>
+
+				<ItemsContainer>
+					<SettingItem
+						@click="handleManageNetworks"
+						title="Manage networks"
+						size="small"
+						icon="settings"
+						iconFillColor="secondary"
+						iconBgColor="transparent"
+						chevron
+					/>
+				</ItemsContainer>
+			</Flex>
+		</PopupCard>
+	</Popup>
+</template>
+
+<style module>
+.wrapper {
+	flex: 1;
+
+	padding: 0 20px 24px 20px;
+}
+</style>
