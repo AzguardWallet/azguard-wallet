@@ -34,23 +34,20 @@ export async function clickNavTab(page: Page, tab: "activity" | "general" | "set
 	await link!.click()
 }
 
-/** Navigate to a settings sub-page by clicking through the UI. */
+/** Navigate to a settings sub-page by clicking through the UI.
+ *  Waits for hash change after each click to avoid matching popup overlays. */
 export async function navigateToSettings(page: Page, ...path: string[]): Promise<void> {
 	await clickNavTab(page, "settings")
-	await page.waitForFunction(() => window.location.hash.includes("#/popup/settings"), { timeout: 5_000 })
+	await page.waitForFunction(() => window.location.hash === "#/popup/settings", { timeout: 5_000 })
 
+	const pathSegments = ["settings"]
 	for (const item of path) {
+		const expectedHash = `#/popup/${[...pathSegments, item.toLowerCase()].join("/")}`
 		const link = await page.waitForSelector(`text/${item}`, { visible: true, timeout: 5_000 })
 		await link!.click()
-		// Small delay for route transition
-		await page.waitForFunction(
-			(text: string) => {
-				// Wait until the breadcrumb or page header reflects the navigation
-				return document.body.innerText.includes(text)
-			},
-			{ timeout: 5_000 },
-			item,
-		)
+		// Wait for hash to include the new segment (route transition)
+		await page.waitForFunction((hash: string) => window.location.hash.includes(hash), { timeout: 5_000 }, expectedHash)
+		pathSegments.push(item.toLowerCase())
 	}
 }
 

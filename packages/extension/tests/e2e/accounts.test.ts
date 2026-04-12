@@ -85,12 +85,16 @@ test("switch between accounts", async ({ registeredExtension }) => {
 	expect(registeredExtension.pageErrors).toEqual([])
 })
 
-// TODO: data-testid="account-hide" is in compiled JS but not in runtime DOM — investigate chunk loading
+// Skip: The manage accounts page shows "Accounts 3" but the v-for doesn't render items.
+// The `accounts` computed (filters by `visible`) returns empty despite appStore.accounts having 3 entries.
+// This is an async reactivity issue with how accounts load from the service worker on the settings page.
+// Root cause investigation needed during the refactoring — this is exactly what the refactoring should fix.
 test.skip("hide and restore account", async ({ registeredExtension }) => {
 	const page = await openPopup(registeredExtension)
 	await waitForHash(page, "#/popup/general")
 
 	await navigateToSettings(page, "General", "Accounts")
+	await page.waitForSelector('[data-testid="manage-accounts-page"]', { visible: true, timeout: 5_000 })
 
 	// Create second account so we can hide one
 	const newBtn = await page.waitForSelector("text/New account", { visible: true, timeout: 5_000 })

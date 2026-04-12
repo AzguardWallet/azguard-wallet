@@ -54,7 +54,7 @@ const handleCopyAddress = (target) => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
+	<Flex direction="column" gap="20" :class="$style.wrapper" data-testid="manage-accounts-page">
 		<Breadcrumbs />
 
 		<Flex direction="column" gap="40">
