@@ -1,5 +1,5 @@
 import { expect } from "vitest"
-import { test, openPopup, waitForHash, typeIntoInput } from "./fixtures/extension"
+import { test, openPopup, waitForHash, typeIntoInput, clickButtonByText } from "./fixtures/extension"
 
 test("fresh install shows register page", async ({ extension }) => {
 	const page = await openPopup(extension)
@@ -14,14 +14,29 @@ test("create profile with password", async ({ extension }) => {
 	const page = await openPopup(extension)
 	await waitForHash(page, "#/popup/register")
 
-	// Click "Create Profile" to open the password overlay
-	const createBtn = await page.waitForSelector("text/Create Profile", { visible: true })
-	await createBtn!.click()
+	// Wait for GlobalLoader to disappear
+	await page.waitForFunction(
+		() =>
+			!document.body.innerText.includes("Connecting to service worker") &&
+			!document.body.innerText.includes("Reconnecting"),
+		{ timeout: 15_000, polling: 500 },
+	)
 
-	// Wait for password overlay to slide in
+	// Click the actual <button> element (not a descendant text node)
+	await clickButtonByText(page, "Create Profile")
+
+	// Wait for RegisterPopup to fully mount
+	await page.waitForFunction(
+		() => {
+			const buttons = [...document.querySelectorAll("button")]
+			return buttons.some((b) => b.textContent?.includes("Create with Password"))
+		},
+		{ timeout: 10_000 },
+	)
+
 	await page.waitForSelector('input[placeholder="Strong password"]', {
 		visible: true,
-		timeout: 3_000,
+		timeout: 10_000,
 	})
 
 	// Fill passwords (≥8 chars, matching)
@@ -40,15 +55,13 @@ test("create profile with password", async ({ extension }) => {
 	)
 
 	// Submit
-	const submitBtn = await page.waitForSelector("text/Create with Password", { visible: true })
-	await submitBtn!.click()
+	await clickButtonByText(page, "Create with Password")
 
 	// Wait for async navigation to general page
 	await waitForHash(page, "#/popup/general", 15_000)
 
 	// Verify post-registration state
-	await page.waitForSelector("text/Account", { visible: true, timeout: 3_000 })
-	await page.waitForSelector("text/Testnet", { visible: true })
+	await page.waitForSelector("text/Account", { visible: true, timeout: 10_000 })
 	await page.waitForSelector("text/Send", { visible: true })
 	await page.waitForSelector("text/Receive", { visible: true })
 

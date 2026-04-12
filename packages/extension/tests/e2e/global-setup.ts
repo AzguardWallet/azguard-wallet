@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url"
 import path from "node:path"
 import fs from "node:fs"
-import { spawn, type ChildProcess } from "node:child_process"
+import { execSync, spawn, type ChildProcess } from "node:child_process"
 import type { TestProject } from "vitest/node"
 import {
 	type AztecTestConfig,
@@ -22,6 +22,12 @@ let nodeProcess: ChildProcess | null = null
 let weStartedNode = false
 
 export default async function setup(project: TestProject) {
+	// Kill orphan Chrome processes from previous test runs
+	try {
+		execSync('pkill -f "chrome.*--test-type" 2>/dev/null || true', { stdio: "ignore" })
+		execSync('pkill -f "Google Chrome for Testing" 2>/dev/null || true', { stdio: "ignore" })
+	} catch {}
+
 	// Guard: ensure extension is built
 	const manifest = path.join(EXTENSION_PATH, "manifest.json")
 	if (!fs.existsSync(manifest)) {
@@ -116,6 +122,12 @@ export async function teardown() {
 
 	// Only kill the node if we started it
 	killNodeProcess()
+
+	// Clean up orphan Chrome processes
+	try {
+		execSync('pkill -f "chrome.*--test-type" 2>/dev/null || true', { stdio: "ignore" })
+		execSync('pkill -f "Google Chrome for Testing" 2>/dev/null || true', { stdio: "ignore" })
+	} catch {}
 }
 
 function killNodeProcess() {

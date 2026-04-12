@@ -59,8 +59,23 @@ async function registerProfile(ctx: ExtensionContext): Promise<void> {
 
 	await waitForHash(page, "#/popup/register")
 
-	const createBtn = await page.waitForSelector("text/Create Profile", { visible: true })
-	await createBtn!.click()
+	// Wait for GlobalLoader to disappear (SW must connect first)
+	await page.waitForFunction(
+		() => !document.body.innerText.includes("Connecting to service worker") && !document.body.innerText.includes("Reconnecting"),
+		{ timeout: 15_000, polling: 500 },
+	)
+
+	// Click the actual <button> element (not a descendant text node)
+	await clickButtonByText(page, "Create Profile")
+
+	// Wait for RegisterPopup to mount (shows "Create with Password" button)
+	await page.waitForFunction(
+		() => {
+			const buttons = [...document.querySelectorAll("button")]
+			return buttons.some((b) => b.textContent?.includes("Create with Password"))
+		},
+		{ timeout: 10_000 },
+	)
 
 	await page.waitForSelector('input[placeholder="Strong password"]', {
 		visible: true,
@@ -80,8 +95,7 @@ async function registerProfile(ctx: ExtensionContext): Promise<void> {
 		{ timeout: 5_000 },
 	)
 
-	const submitBtn = await page.waitForSelector("text/Create with Password", { visible: true })
-	await submitBtn!.click()
+	await clickButtonByText(page, "Create with Password")
 
 	await waitForHash(page, "#/popup/general", 15_000)
 	await page.waitForSelector("text/Account", { visible: true, timeout: 10_000 })
@@ -225,4 +239,26 @@ export async function typeIntoInput(page: Page, placeholder: string, text: strin
 	})
 	await input!.click({ clickCount: 3 })
 	await input!.type(text)
+}
+
+/** Click a visible enabled button by its text content.
+ *  Uses page.evaluate to find the actual <button> element, avoiding
+ *  stale references from Puppeteer's text/ selector matching descendant nodes. */
+export async function clickButtonByText(page: Page, text: string, timeout = 10_000): Promise<void> {
+	await page.waitForFunction(
+		(label: string) => {
+			const button = [...document.querySelectorAll("button")].find((b) => {
+				const normalized = b.textContent?.replace(/\s+/g, " ").trim()
+				if (normalized !== label) return false
+				const style = window.getComputedStyle(b)
+				const rect = b.getBoundingClientRect()
+				return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0
+			})
+			if (!button) return false
+			button.click()
+			return true
+		},
+		{ timeout },
+		text,
+	)
 }
