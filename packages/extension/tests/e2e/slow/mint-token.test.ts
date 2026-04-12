@@ -1,7 +1,10 @@
 import { expect } from "vitest"
 import { test, openPopup, waitForHash, typeIntoInput } from "../fixtures/extension"
 
-test("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension }) => {
+// Skipped: The faucet/deposit UI was removed from Vibeguard.
+// Token minting is now done programmatically via aztec CLI in the test infrastructure.
+// See network/tokens.test.ts for the replacement tests.
+test.skip("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension }) => {
 	const page = await openPopup(registeredExtension)
 
 	// 1. Verify initial state

@@ -83,6 +83,7 @@ const handleHalf = () => {
 				@blur="handleAmountBlur"
 				:disabled="!tokenBalanceByType"
 				placeholder="0.00"
+				data-testid="send-amount-input"
 				:class="$style.input_field"
 			/>
 

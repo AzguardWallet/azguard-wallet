@@ -22,7 +22,7 @@ const navigationLinks = [
 
 <template>
 	<Flex align="center" justify="center" gap="32" :class="$style.wrapper">
-		<RouterLink v-for="link in navigationLinks" :to="link.path">
+		<RouterLink v-for="link in navigationLinks" :to="link.path" :data-testid="`nav-${link.name}`">
 			<Flex :class="$style.button">
 				<Icon :name="link.icon" size="24" :color="route.path.includes(link.path) ? 'primary' : 'tertiary'" />
 

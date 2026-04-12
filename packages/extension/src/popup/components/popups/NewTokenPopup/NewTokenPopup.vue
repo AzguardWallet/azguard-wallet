@@ -201,6 +201,7 @@ watch(
 					@click="error = null"
 					label="Contract address"
 					placeholder="0x"
+					data-testid="token-address-input"
 					autofocus
 					sanitize
 					:disabled="isLoadingParseResult || !isCompleted || isAddingNewToken"
@@ -237,6 +238,7 @@ watch(
 						wide
 						:type="isLoadingParseResult || isAddingNewToken ? 'secondary' : 'primary'"
 						size="medium"
+						data-testid="import-token-button"
 						:loading="isLoadingParseResult || isAddingNewToken"
 						:disabled="!isAvailableToCreateToken || isLoadingParseResult || isAddingNewToken"
 					>

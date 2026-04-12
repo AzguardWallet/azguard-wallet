@@ -8,7 +8,7 @@ export default defineConfig({
 		},
 	},
 	test: {
-		include: ["tests/e2e/**/*.test.ts"],
+		include: ["tests/e2e/network/**/*.test.ts"],
 		environment: "node",
 		globalSetup: "./tests/e2e/global-setup.ts",
 		testTimeout: 30_000,

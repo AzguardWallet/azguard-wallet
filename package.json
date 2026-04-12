@@ -11,6 +11,8 @@
 		"build:firefox": "bun run --cwd packages/extension build:firefox",
 		"test": "bun run --cwd packages/extension test",
 		"test:e2e": "bun run --cwd packages/extension test:e2e",
+		"test:e2e:network": "bun run --cwd packages/extension vitest run --config vitest.e2e.network.config.ts",
+		"test:e2e:all": "bun run --cwd packages/extension vitest run --config vitest.e2e.all.config.ts",
 		"lint": "biome check",
 		"lint:fix": "biome check --fix",
 		"format": "biome format --write",

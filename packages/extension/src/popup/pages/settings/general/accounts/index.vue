@@ -106,13 +106,14 @@ const handleCopyAddress = (target) => {
 								</Tooltip>
 
 								<Tooltip position="end" delay="350">
-									<Icon
-										@click.stop="handleHideAccount(account)"
-										name="close-circle"
-										size="14"
-										color="tertiary"
-										:class="[$style.icon_btn, accounts.length === 1 && $style.disabled]"
-									/>
+									<div data-testid="account-hide" @click.stop="handleHideAccount(account)">
+										<Icon
+											name="close-circle"
+											size="14"
+											color="tertiary"
+											:class="[$style.icon_btn, accounts.length === 1 && $style.disabled]"
+										/>
+									</div>
 
 									<template #content> Hide account </template>
 								</Tooltip>

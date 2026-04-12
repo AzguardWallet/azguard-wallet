@@ -283,20 +283,12 @@ onBeforeUnmount(() => {
 								color="tertiary"
 								:class="$style.icon_btn"
 							/>
-							<Icon
-								@click.stop="handleEditContact(c)"
-								name="edit"
-								size="14"
-								color="tertiary"
-								:class="$style.icon_btn"
-							/>
-							<Icon
-								@click.stop="handleDeleteContact(c)"
-								name="close-circle"
-								size="16"
-								color="tertiary"
-								:class="$style.delete_icon"
-							/>
+							<div data-testid="contact-edit" @click.stop="handleEditContact(c)">
+								<Icon name="edit" size="14" color="tertiary" :class="$style.icon_btn" />
+							</div>
+							<div data-testid="contact-delete" @click.stop="handleDeleteContact(c)">
+								<Icon name="close-circle" size="16" color="tertiary" :class="$style.delete_icon" />
+							</div>
 						</Flex>
 					</Flex>
 

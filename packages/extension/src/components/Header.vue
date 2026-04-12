@@ -253,6 +253,7 @@ onBeforeUnmount(() => {
 				@click="handleOpenPopup('networks')"
 				align="center"
 				justify="center"
+				data-testid="network-button"
 				:class="[$style.button, !appStore.isLogined && $style.disabled]"
 			>
 				<Icon name="globe" size="18" color="primary" />
