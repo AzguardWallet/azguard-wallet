@@ -14,5 +14,12 @@ export default defineConfig({
 		testTimeout: 30_000,
 		hookTimeout: 120_000,
 		fileParallelism: false,
+		// Node v24 enforces JSON import attributes; @aztec/accounts imports JSON without them.
+		// Use the unstable loader to relax this check in the global setup process.
+		server: {
+			deps: {
+				inline: [/@aztec/],
+			},
+		},
 	},
 })

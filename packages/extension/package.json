@@ -75,6 +75,8 @@
 		"globals": "^16.3.0",
 		"jsdom": "^26.1.0",
 		"postcss": "^8.5.6",
+		"@aztec/accounts": "4.2.0-aztecnr-rc.2",
+		"@aztec/wallets": "4.2.0-aztecnr-rc.2",
 		"puppeteer": "^24.37.5",
 		"sass": "^1.90.0",
 		"typescript": "^5.9.2",
