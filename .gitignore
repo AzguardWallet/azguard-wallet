@@ -33,3 +33,5 @@ packages/extension/tests/e2e/.test-config.json
 *.sw?
 *.tsbuildinfo
 CLAUDE.md
+wallet_data_*/
+
