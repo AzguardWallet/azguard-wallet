@@ -1,12 +1,10 @@
-import { expect, inject } from "vitest"
-import { test, openPopup, waitForHash, clickButtonByText } from "../fixtures/extension"
-import { getAccountAddress, createAccount, clickNavTab } from "../fixtures/helpers"
+import { inject } from "vitest"
+import { test, openPopup, waitForHash } from "../fixtures/extension"
+import { clickNavTab } from "../fixtures/helpers"
 import type { AztecTestConfig } from "../fixtures/aztec"
 
 const aztecConfig = inject("aztecTestConfig") as AztecTestConfig | undefined
 const hasConfig = aztecConfig !== undefined
-
-// All tests share ONE tokenReadyExtension (file-scoped, runs once).
 
 test.skipIf(!hasConfig)(
 	"balance shows minted tokens",
@@ -15,7 +13,6 @@ test.skipIf(!hasConfig)(
 		const page = await openPopup(tokenReadyExtension)
 		await waitForHash(page, "#/popup/general")
 
-		// Token should be imported with 1000 public tokens minted
 		await page.waitForFunction(
 			() => document.body.innerText.includes("1,000") || document.body.innerText.includes("Pub 1,000"),
 			{ timeout: 60_000, polling: 3_000 },
@@ -30,73 +27,69 @@ test.skipIf(!hasConfig)(
 		const page = await openPopup(tokenReadyExtension)
 		await waitForHash(page, "#/popup/general")
 
-		// Wait for token balance to be visible
-		await page.waitForFunction(
-			() => document.body.innerText.includes("TestToken"),
-			{ timeout: 30_000, polling: 2_000 },
-		)
+		// Wait for token to be visible
+		await page.waitForFunction(() => document.body.innerText.includes("TestToken"), { timeout: 30_000 })
 
-		// Open Send popup (it's a Flex div, not a button)
+		// Open SendPopup via testid
 		await page.evaluate(() => {
-			const spans = [...document.querySelectorAll("span")]
-			const sendSpan = spans.find((s) => s.textContent?.trim() === "Send")
-			sendSpan?.parentElement?.click()
+			(document.querySelector('[data-testid="actions-send"]') as HTMLElement)?.click()
 		})
 
-		// Wait for SendPopup to appear
-		await page.waitForSelector('[data-testid="send-destination-input"]', { visible: true, timeout: 10_000 })
+		// Wait for SendTypesCard to render (has from/to type badges)
+		await page.waitForSelector('[data-testid="send-from-type"]', { timeout: 10_000 })
 
-		// Switch from Private → Private to Public → Public
-		// The SendTypesCard renders: "From [badge] to [badge] destination"
-		// Each badge is a Flex with an Icon + span ("private" or "public")
-		// Click each "private" badge to toggle it
-
-		// Toggle FROM to public. The TO stays as whatever the extension allows.
+		// Toggle FROM from private to public (we minted public tokens)
 		await page.evaluate(() => {
-			(document.querySelector('[data-testid="send-from-type"]') as HTMLElement)?.click()
+			const badge = document.querySelector('[data-testid="send-from-type"]') as HTMLElement
+			if (badge?.textContent?.toLowerCase().includes("private")) badge.click()
 		})
 		await new Promise((r) => setTimeout(r, 500))
-		// Toggle TO to public (may be no-op if token doesn't support public receiver)
+
+		// Toggle TO from private to public
 		await page.evaluate(() => {
-			(document.querySelector('[data-testid="send-to-type"]') as HTMLElement)?.click()
+			const badge = document.querySelector('[data-testid="send-to-type"]') as HTMLElement
+			if (badge?.textContent?.toLowerCase().includes("private")) badge.click()
 		})
 		await new Promise((r) => setTimeout(r, 500))
+
+		// Log the final transfer type
+		const types = await page.evaluate(() => ({
+			from: document.querySelector('[data-testid="send-from-type"]')?.textContent?.trim(),
+			to: document.querySelector('[data-testid="send-to-type"]')?.textContent?.trim(),
+		}))
+		console.log("Transfer:", types.from, "→", types.to)
 
 		// Enter amount
-		const amountInput = await page.waitForSelector('[data-testid="send-amount-input"]', { visible: true, timeout: 5_000 })
+		const amountInput = await page.waitForSelector('[data-testid="send-amount-input"]', { visible: true })
 		await amountInput!.click({ clickCount: 3 })
 		await amountInput!.type("10")
 
-		// Enter destination — use own address (self-transfer for simplicity)
-		const selfAddress = await getAccountAddress(page)
-		await page.type('[data-testid="send-destination-input"] input', selfAddress)
+		// Enter destination (self-transfer)
+		const selfAddress = tokenReadyExtension.accountAddress
+		await page.type('[data-testid="send-destination-field"] input', selfAddress)
 
-		// Wait for fee estimation + Send button to become clickable
-		// The button uses pointer-events:none when disabled, not the HTML disabled attr
+		// Wait for send button to become clickable
 		await page.waitForFunction(
 			() => {
-				const btn = document.querySelector('[data-testid="send-button"]') as HTMLElement
-				if (!btn) return false
-				return getComputedStyle(btn).pointerEvents !== "none"
+				const btn = document.querySelector('[data-testid="send-submit"]') as HTMLElement
+				return btn && getComputedStyle(btn).pointerEvents !== "none"
 			},
 			{ timeout: 120_000, polling: 3_000 },
 		)
 
-		// Click Send
+		// Send
 		await page.evaluate(() => {
-			const btn = document.querySelector('[data-testid="send-button"]') as HTMLElement
-			btn?.click()
+			(document.querySelector('[data-testid="send-submit"]') as HTMLElement)?.click()
 		})
 
-		// Wait for "Transaction submitted" toast
+		// Wait for submission toast
 		await page.waitForFunction(
 			() => document.body.innerText.includes("Transaction submitted") || document.body.innerText.includes("submitted"),
 			{ timeout: 60_000, polling: 2_000 },
 		)
-
 		console.log("Transaction submitted!")
 
-		// Navigate to activity tab and verify transaction appears
+		// Navigate to activity
 		await clickNavTab(page, "activity")
 		await page.waitForFunction(() => window.location.hash.includes("#/popup/activity"), { timeout: 5_000 })
 	},
