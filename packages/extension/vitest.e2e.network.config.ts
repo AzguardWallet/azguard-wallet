@@ -12,7 +12,7 @@ export default defineConfig({
 		environment: "node",
 		globalSetup: "./tests/e2e/global-setup.ts",
 		testTimeout: 30_000,
-		hookTimeout: 120_000,
+		hookTimeout: 300_000, // 5min — tokenReadyExtension creates EmbeddedWallet + mints tokens
 		fileParallelism: false,
 		// Node v24 enforces JSON import attributes; @aztec/accounts imports JSON without them.
 		// Use the unstable loader to relax this check in the global setup process.
