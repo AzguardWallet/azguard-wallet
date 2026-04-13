@@ -90,10 +90,11 @@ const handleOpenSendPopup = (target) => {
 				wide
 				align="center"
 				gap="12"
+				data-testid="send-from-private"
 				:class="[$style.item, $style.left, !tokenBalance?.token?.hasPrivateTransfers && $style.disabled]"
 			>
 				<Flex wide direction="column" gap="6">
-					<Text size="13" weight="600" color="primary" :class="$style.balance_text">
+					<Text size="13" weight="600" color="primary" data-testid="private-balance-value" :class="$style.balance_text">
 						{{ privateBalance.value }}
 					</Text>
 					<Text size="11" weight="500" color="tertiary"> Private Balance </Text>
@@ -113,10 +114,11 @@ const handleOpenSendPopup = (target) => {
 				wide
 				align="center"
 				gap="12"
+				data-testid="send-from-public"
 				:class="[$style.item, $style.right, !tokenBalance?.token?.hasPublicTransfers && $style.disabled]"
 			>
 				<Flex wide direction="column" gap="6">
-					<Text size="13" weight="600" color="primary" :class="$style.balance_text">
+					<Text size="13" weight="600" color="primary" data-testid="public-balance-value" :class="$style.balance_text">
 						{{ publicBalance.value }}
 					</Text>
 					<Text size="11" weight="500" color="tertiary"> Public Balance </Text>

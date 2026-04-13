@@ -25,7 +25,7 @@
 		"test:e2e:all": "vitest run --config vitest.e2e.all.config.ts"
 	},
 	"dependencies": {
-		"@alejoamiras/aztec-accelerator": "4.2.0-aztecnr-rc.2.2",
+		"@alejoamiras/aztec-accelerator": "4.2.0-aztecnr-rc.2.4",
 		"@vibeguard/contracts": "workspace:*",
 		"@aztec/aztec.js": "4.2.0-aztecnr-rc.2",
 		"@aztec/bb.js": "4.2.0-aztecnr-rc.2",

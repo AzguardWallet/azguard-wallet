@@ -47,9 +47,7 @@ export default defineConfig({
 				"@defi-wonderland/aztec-standards",
 				"artifacts/target/token_contract-Token.json",
 			),
-			// Fix incorrect exports in @alejoamiras/aztec-accelerator package
-			// (exports says ./dist/index.js but actual file is at ./dist/src/index.js)
-			"@alejoamiras/aztec-accelerator": resolvePackageFile("@alejoamiras/aztec-accelerator", "dist/src/index.js"),
+			"@alejoamiras/aztec-accelerator": resolvePackageFile("@alejoamiras/aztec-accelerator", "dist/index.js"),
 			// Force detect-node to return false so @aztec/foundation's pino logger
 			// uses the browser transport instead of Node.js worker-thread transport.
 			// Without this, the node-polyfills process shim makes detect-node think

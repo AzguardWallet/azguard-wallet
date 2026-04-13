@@ -354,19 +354,18 @@ watch(
 		if (props.show) {
 			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
 			tokenBalances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
-
-			initSendType()
-			initReceiverType()
-
 			contacts.value = await contactService.getContacts()
 
 			if (route.params.id) {
-				cacheStore.activeTokenIdx = route.params.id
+				cacheStore.activeTokenIdx = Number(route.params.id)
 			}
 
 			if (!cacheStore.activeTokenIdx && tokens.value.length) {
 				cacheStore.activeTokenIdx = tokens.value[0].id
 			}
+
+			initSendType()
+			initReceiverType()
 
 			if (cacheStore.preselectedContactToSend) {
 				handleSelectContact(cacheStore.preselectedContactToSend)

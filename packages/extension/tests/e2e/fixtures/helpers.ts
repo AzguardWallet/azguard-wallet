@@ -215,13 +215,13 @@ export async function deleteContact(page: Page, name: string): Promise<void> {
 export async function importToken(page: Page, contractAddress: string): Promise<void> {
 	// Open tokens dropdown menu
 	await page.evaluate(() => {
-		(document.querySelector('[data-testid="tokens-menu-trigger"]') as HTMLElement)?.click()
+		;(document.querySelector('[data-testid="tokens-menu-trigger"]') as HTMLElement)?.click()
 	})
 	await new Promise((r) => setTimeout(r, 500))
 
 	// Click "Import token"
 	await page.evaluate(() => {
-		(document.querySelector('[data-testid="tokens-menu-import"]') as HTMLElement)?.click()
+		;(document.querySelector('[data-testid="tokens-menu-import"]') as HTMLElement)?.click()
 	})
 
 	// Wait for NewTokenPopup
@@ -257,13 +257,13 @@ export async function importToken(page: Page, contractAddress: string): Promise<
 export async function refreshBalances(page: Page): Promise<void> {
 	// Open the tokens dropdown menu
 	await page.evaluate(() => {
-		(document.querySelector('[data-testid="tokens-menu-trigger"]') as HTMLElement)?.click()
+		;(document.querySelector('[data-testid="tokens-menu-trigger"]') as HTMLElement)?.click()
 	})
 	await new Promise((r) => setTimeout(r, 500))
 
 	// Click "Refresh balances"
 	await page.evaluate(() => {
-		(document.querySelector('[data-testid="tokens-menu-refresh"]') as HTMLElement)?.click()
+		;(document.querySelector('[data-testid="tokens-menu-refresh"]') as HTMLElement)?.click()
 	})
 
 	// Wait for refresh to complete
@@ -276,6 +276,35 @@ export async function getDisplayedBalance(page: Page): Promise<string> {
 		const balanceEl = document.querySelector("[class*='balance'], [class*='amount']")
 		return balanceEl?.textContent?.trim() || ""
 	})
+}
+
+// ── Token Detail ──────────────────────────────────────────────────────
+
+/** Navigate to the token detail page by clicking the first token card.
+ *  The token card is an <a data-testid="tokens-card"> rendered by SettingItem → router-link.
+ *  Note: href is null (router-link quirk), but clicking triggers Vue Router navigation. */
+export async function navigateToTokenDetail(page: Page): Promise<void> {
+	// Wait for the token card to render (balance must load from PXE)
+	const card = await page.waitForSelector('[data-testid="tokens-card"]', { visible: true, timeout: 30_000 })
+	// Scroll into view — token list is at the bottom of the general page
+	await card!.scrollIntoView()
+	await new Promise((r) => setTimeout(r, 300))
+	await card!.click()
+	await page.waitForFunction(() => window.location.hash.includes("#/popup/tokens/"), { timeout: 10_000 })
+	// Wait for SplittedBalancesView to render
+	await page.waitForSelector('[data-testid="private-balance-value"]', { visible: true, timeout: 15_000 })
+}
+
+/** Read the private and public balance values from the token detail page's SplittedBalancesView. */
+export async function getTokenDetailBalances(page: Page): Promise<{ privateBalance: string; publicBalance: string }> {
+	await page.waitForSelector('[data-testid="private-balance-value"]', { visible: true, timeout: 10_000 })
+	const privateBalance = await page.evaluate(() => {
+		return document.querySelector('[data-testid="private-balance-value"]')?.textContent?.trim() || ""
+	})
+	const publicBalance = await page.evaluate(() => {
+		return document.querySelector('[data-testid="public-balance-value"]')?.textContent?.trim() || ""
+	})
+	return { privateBalance, publicBalance }
 }
 
 // ── Transfer ───────────────────────────────────────────────────────────
@@ -292,7 +321,7 @@ export interface SendTransferOptions {
 export async function sendTransfer(page: Page, opts: SendTransferOptions): Promise<void> {
 	// Open SendPopup
 	await page.evaluate(() => {
-		(document.querySelector('[data-testid="actions-send"]') as HTMLElement)?.click()
+		;(document.querySelector('[data-testid="actions-send"]') as HTMLElement)?.click()
 	})
 
 	// Wait for SendTypesCard to mount
@@ -301,13 +330,13 @@ export async function sendTransfer(page: Page, opts: SendTransferOptions): Promi
 	// Default is private→private. Toggle as needed.
 	if (opts.fromType === "public") {
 		await page.evaluate(() => {
-			(document.querySelector('[data-testid="send-from-type"]') as HTMLElement)?.click()
+			;(document.querySelector('[data-testid="send-from-type"]') as HTMLElement)?.click()
 		})
 		await new Promise((r) => setTimeout(r, 500))
 	}
 	if (opts.toType === "public") {
 		await page.evaluate(() => {
-			(document.querySelector('[data-testid="send-to-type"]') as HTMLElement)?.click()
+			;(document.querySelector('[data-testid="send-to-type"]') as HTMLElement)?.click()
 		})
 		await new Promise((r) => setTimeout(r, 500))
 	}
@@ -341,18 +370,15 @@ export async function sendTransfer(page: Page, opts: SendTransferOptions): Promi
 		{ timeout: 120_000, polling: 3_000 },
 	)
 
-	// Submit
-	await page.evaluate(() => {
-		(document.querySelector('[data-testid="send-submit"]') as HTMLElement)?.click()
-	})
+	// Submit — use native click which auto-scrolls (button may be below fold in PopupCard)
+	const submitBtn = await page.waitForSelector('[data-testid="send-submit"]', { visible: true })
+	await submitBtn!.scrollIntoView()
+	await submitBtn!.click()
 
 	// Wait for submission toast + popup auto-close
 	await waitForToast(page, "Transaction submitted", 60_000)
 	// Wait for popup to fully close
-	await page.waitForFunction(
-		() => !document.querySelector('[data-testid="send-destination-field"]'),
-		{ timeout: 10_000 },
-	)
+	await page.waitForFunction(() => !document.querySelector('[data-testid="send-destination-field"]'), { timeout: 10_000 })
 }
 
 /** Wait for the most recent transaction to settle on the local network.
