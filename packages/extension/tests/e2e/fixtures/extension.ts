@@ -232,6 +232,8 @@ export const test = base.extend<{
 			await switchToLocalNetwork(page)
 
 			const accountAddress = await getAccountAddress(page)
+			console.log("[tokenReady] Extension account address:", accountAddress)
+			console.log("[tokenReady] Token address:", aztecConfig.tokenAddress)
 
 			// Lazy import to avoid loading WASM for smoke tests (Lesson #4)
 			const { createTestWallet, createSponsoredFeeOptions, mintPublicTokens } = await import("./aztec")
