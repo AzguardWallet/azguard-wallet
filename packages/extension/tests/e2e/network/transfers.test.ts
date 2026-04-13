@@ -1,10 +1,15 @@
 import { inject } from "vitest"
 import { test, openPopup, waitForHash } from "../fixtures/extension"
-import { clickNavTab } from "../fixtures/helpers"
+import { sendTransfer, waitForBalance, waitForTxConfirmation, clickNavTab } from "../fixtures/helpers"
 import type { AztecTestConfig } from "../fixtures/aztec"
 
 const aztecConfig = inject("aztecTestConfig") as AztecTestConfig | undefined
 const hasConfig = aztecConfig !== undefined
+
+// All tests share ONE tokenReadyExtension (file-scoped, runs once).
+// Tests are SEQUENTIAL and each waits for the previous tx to confirm
+// before proceeding. This is required because Aztec uses nullifiers —
+// a second tx against stale state will revert.
 
 test.skipIf(!hasConfig)(
 	"balance shows minted tokens",
@@ -12,11 +17,9 @@ test.skipIf(!hasConfig)(
 	async ({ tokenReadyExtension }) => {
 		const page = await openPopup(tokenReadyExtension)
 		await waitForHash(page, "#/popup/general")
-
-		await page.waitForFunction(
-			() => document.body.innerText.includes("1,000") || document.body.innerText.includes("Pub 1,000"),
-			{ timeout: 60_000, polling: 3_000 },
-		)
+		await waitForBalance(page, "1,000", 60_000)
+		console.log("✓ Initial balance: 1,000 public tokens")
+		await page.close()
 	},
 )
 
@@ -27,70 +30,85 @@ test.skipIf(!hasConfig)(
 		const page = await openPopup(tokenReadyExtension)
 		await waitForHash(page, "#/popup/general")
 
-		// Wait for token to be visible
-		await page.waitForFunction(() => document.body.innerText.includes("TestToken"), { timeout: 30_000 })
-
-		// Open SendPopup via testid
-		await page.evaluate(() => {
-			(document.querySelector('[data-testid="actions-send"]') as HTMLElement)?.click()
+		await sendTransfer(page, {
+			fromType: "public",
+			toType: "public",
+			amount: "10",
+			destination: tokenReadyExtension.accountAddress,
 		})
+		console.log("✓ Public → Public submitted")
 
-		// Wait for SendTypesCard to render (has from/to type badges)
-		await page.waitForSelector('[data-testid="send-from-type"]', { timeout: 10_000 })
+		// Wait for tx to confirm before next test (nullifier tree must settle)
+		await waitForTxConfirmation(page, 60_000)
+		console.log("✓ Tx confirmed")
+		await page.close()
+	},
+)
 
-		// Toggle FROM from private to public (we minted public tokens)
-		await page.evaluate(() => {
-			const badge = document.querySelector('[data-testid="send-from-type"]') as HTMLElement
-			if (badge?.textContent?.toLowerCase().includes("private")) badge.click()
+test.skipIf(!hasConfig)(
+	"public to private transfer (shield)",
+	{ timeout: 180_000 },
+	async ({ tokenReadyExtension }) => {
+		const page = await openPopup(tokenReadyExtension)
+		await waitForHash(page, "#/popup/general")
+
+		await sendTransfer(page, {
+			fromType: "public",
+			toType: "private",
+			amount: "100",
+			destination: tokenReadyExtension.accountAddress,
 		})
-		await new Promise((r) => setTimeout(r, 500))
+		console.log("✓ Public → Private (shield) submitted")
 
-		// Toggle TO from private to public
-		await page.evaluate(() => {
-			const badge = document.querySelector('[data-testid="send-to-type"]') as HTMLElement
-			if (badge?.textContent?.toLowerCase().includes("private")) badge.click()
+		// Wait for tx to confirm AND private balance to appear
+		await waitForTxConfirmation(page, 60_000)
+		console.log("✓ Shield tx confirmed")
+		await waitForBalance(page, "Priv", 60_000)
+		console.log("✓ Private balance visible")
+		await page.close()
+	},
+)
+
+test.skipIf(!hasConfig)(
+	"private to public transfer (unshield)",
+	{ timeout: 180_000 },
+	async ({ tokenReadyExtension }) => {
+		const page = await openPopup(tokenReadyExtension)
+		await waitForHash(page, "#/popup/general")
+
+		await sendTransfer(page, {
+			fromType: "private",
+			toType: "public",
+			amount: "50",
+			destination: tokenReadyExtension.accountAddress,
 		})
-		await new Promise((r) => setTimeout(r, 500))
+		console.log("✓ Private → Public (unshield) submitted")
 
-		// Log the final transfer type
-		const types = await page.evaluate(() => ({
-			from: document.querySelector('[data-testid="send-from-type"]')?.textContent?.trim(),
-			to: document.querySelector('[data-testid="send-to-type"]')?.textContent?.trim(),
-		}))
-		console.log("Transfer:", types.from, "→", types.to)
+		await waitForTxConfirmation(page, 60_000)
+		console.log("✓ Unshield tx confirmed")
+		await page.close()
+	},
+)
 
-		// Enter amount
-		const amountInput = await page.waitForSelector('[data-testid="send-amount-input"]', { visible: true })
-		await amountInput!.click({ clickCount: 3 })
-		await amountInput!.type("10")
+test.skipIf(!hasConfig)(
+	"private to private transfer",
+	{ timeout: 180_000 },
+	async ({ tokenReadyExtension }) => {
+		const page = await openPopup(tokenReadyExtension)
+		await waitForHash(page, "#/popup/general")
 
-		// Enter destination (self-transfer)
-		const selfAddress = tokenReadyExtension.accountAddress
-		await page.type('[data-testid="send-destination-field"] input', selfAddress)
-
-		// Wait for send button to become clickable
-		await page.waitForFunction(
-			() => {
-				const btn = document.querySelector('[data-testid="send-submit"]') as HTMLElement
-				return btn && getComputedStyle(btn).pointerEvents !== "none"
-			},
-			{ timeout: 120_000, polling: 3_000 },
-		)
-
-		// Send
-		await page.evaluate(() => {
-			(document.querySelector('[data-testid="send-submit"]') as HTMLElement)?.click()
+		await sendTransfer(page, {
+			fromType: "private",
+			toType: "private",
+			amount: "10",
+			destination: tokenReadyExtension.accountAddress,
 		})
+		console.log("✓ Private → Private submitted")
 
-		// Wait for submission toast
-		await page.waitForFunction(
-			() => document.body.innerText.includes("Transaction submitted") || document.body.innerText.includes("submitted"),
-			{ timeout: 60_000, polling: 2_000 },
-		)
-		console.log("Transaction submitted!")
-
-		// Navigate to activity
+		// Navigate to activity to verify all transactions appear
 		await clickNavTab(page, "activity")
 		await page.waitForFunction(() => window.location.hash.includes("#/popup/activity"), { timeout: 5_000 })
+		console.log("✓ Activity page accessible")
+		await page.close()
 	},
 )

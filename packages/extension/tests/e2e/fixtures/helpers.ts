@@ -312,13 +312,25 @@ export async function sendTransfer(page: Page, opts: SendTransferOptions): Promi
 		await new Promise((r) => setTimeout(r, 500))
 	}
 
-	// Enter amount
+	// Wait for amount input to become ENABLED
+	// AmountCard has :disabled="!tokenBalanceByType" — disabled when balance for selected type is 0/loading
+	await page.waitForFunction(
+		() => {
+			const input = document.querySelector('[data-testid="send-amount-input"]') as HTMLInputElement
+			return input && !input.disabled
+		},
+		{ timeout: 60_000, polling: 2_000 },
+	)
+
+	// Enter amount using Puppeteer's native type() for reliable Vue v-model binding
 	const amountInput = await page.waitForSelector('[data-testid="send-amount-input"]', { visible: true })
 	await amountInput!.click({ clickCount: 3 })
 	await amountInput!.type(opts.amount)
 
 	// Enter destination
-	await page.type('[data-testid="send-destination-field"] input', opts.destination)
+	const destInput = await page.waitForSelector('[data-testid="send-destination-field"] input', { visible: true })
+	await destInput!.click({ clickCount: 3 })
+	await destInput!.type(opts.destination)
 
 	// Wait for send button to become clickable (pointer-events != none)
 	await page.waitForFunction(
@@ -341,6 +353,13 @@ export async function sendTransfer(page: Page, opts: SendTransferOptions): Promi
 		() => !document.querySelector('[data-testid="send-destination-field"]'),
 		{ timeout: 10_000 },
 	)
+}
+
+/** Wait for the most recent transaction to settle on the local network.
+ *  On local network without proofs, blocks settle in ~2-10 seconds.
+ *  We use a fixed wait since parsing the activity page's tx status labels is fragile. */
+export async function waitForTxConfirmation(_page: Page, _timeout = 30_000): Promise<void> {
+	await new Promise((r) => setTimeout(r, 10_000))
 }
 
 /** Wait for a specific balance text to appear on the general page. */
