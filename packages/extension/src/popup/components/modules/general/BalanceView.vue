@@ -414,6 +414,7 @@ onBeforeUnmount(() => {
 					@click="popupStore.open('select_balance_type')"
 					align="center"
 					gap="4"
+					data-testid="balance-type-selector"
 					:class="$style.balance_type"
 				>
 					<Icon
@@ -444,6 +445,7 @@ onBeforeUnmount(() => {
 								height="100"
 								color="primary"
 								tabular
+								data-testid="balance-amount"
 								:style="{ fontSize: `${dynamicFontSize}rem` }"
 								:class="[$style.amount_wrapper, showFullBalance && $style.amount_wrapper_full, isRefreshingBalance && $style.refreshing]"
 							>

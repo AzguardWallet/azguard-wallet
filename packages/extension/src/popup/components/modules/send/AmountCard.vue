@@ -99,7 +99,7 @@ const handleHalf = () => {
 
 		<Flex justify="between">
 			<Flex align="center" gap="6">
-				<Button @click="handleHalf" type="secondary" size="mini" round> Half </Button>
+				<Button @click="handleHalf" type="secondary" size="mini" round data-testid="send-amount-half"> Half </Button>
 				<Button @click="model = null" type="secondary" size="mini" round> Clear </Button>
 			</Flex>
 
@@ -109,6 +109,7 @@ const handleHalf = () => {
 				type="secondary"
 				size="mini"
 				round
+				data-testid="send-amount-max"
 				:disabled="!tokenBalanceByType"
 				:class="$style.test"
 			>

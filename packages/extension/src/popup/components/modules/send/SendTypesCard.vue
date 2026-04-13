@@ -32,6 +32,7 @@ const handleSwitchReceiverType = () => {
 			@click="handleSwitchSendType"
 			align="center"
 			gap="6"
+			data-testid="send-from-type"
 			:class="[$style.type]"
 		>
 			<Icon
@@ -50,6 +51,7 @@ const handleSwitchReceiverType = () => {
 			@click="handleSwitchReceiverType"
 			align="center"
 			gap="6"
+			data-testid="send-to-type"
 			:class="[$style.type]"
 		>
 			<Icon

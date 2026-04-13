@@ -196,18 +196,18 @@ onBeforeUnmount(() => {
 
 			<Flex align="center" gap="6">
 				<Dropdown>
-					<Button type="secondary" size="micro">
+					<Button type="secondary" size="micro" data-testid="tokens-menu-trigger">
 						<Icon name="dots" size="12" color="secondary" />
 					</Button>
 
 					<template #popup>
-						<DropdownItem @click="popupStore.open('new_token')">
+						<DropdownItem @click="popupStore.open('new_token')" data-testid="tokens-menu-import">
 							<Flex align="center" gap="8">
 								<Icon name="plus-circle" size="14" color="primary" />
 								Import token
 							</Flex>
 						</DropdownItem>
-						<DropdownItem @click="router.push('/popup/settings/general/tokens')">
+						<DropdownItem @click="router.push('/popup/settings/general/tokens')" data-testid="tokens-menu-manage">
 							<Flex align="center" gap="8">
 								<Icon name="settings" size="14" color="primary" />
 								Manage tokens
@@ -221,7 +221,7 @@ onBeforeUnmount(() => {
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
-						<DropdownItem @click="refreshBalance">
+						<DropdownItem @click="refreshBalance" data-testid="tokens-menu-refresh">
 							<Flex align="center" gap="8">
 								<Icon name="refresh" size="14" color="primary" />
 								Refresh balances

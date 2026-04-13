@@ -56,6 +56,7 @@ const handleRefreshBalance = async () => {
 		:title="token.symbol"
 		:description="description"
 		icon="banknote"
+		data-testid="tokens-card"
 		@pointerenter="isHovered = true"
 		@pointerleave="isHovered = false"
 	>

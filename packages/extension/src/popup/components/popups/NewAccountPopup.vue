@@ -91,6 +91,7 @@ const onKeydown = (e) => {
 					placeholder="My Account"
 					sanitize
 					:maxLength="25"
+					data-testid="account-name-input"
 					v-model="name"
 				>
 					<template #right>

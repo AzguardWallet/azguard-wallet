@@ -389,7 +389,7 @@ onBeforeUnmount(() => {
 				<Text size="12" weight="600" color="secondary">
 					The app includes fee payment in the transaction.
 				</Text>
-				<Flex @click="handleUseOwnMethod" align="center" gap="4" :class="$style.link">
+				<Flex @click="handleUseOwnMethod" align="center" gap="4" :class="$style.link" data-testid="send-fee-override">
 					<Text size="12" weight="600" color="blue">Override with my method</Text>
 					<Icon name="arrow-right" size="10" color="blue" />
 				</Flex>
@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
 				<Dropdown @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false">
 					<template #trigger>
 						<Spinner v-if="isLoading" color="--txt-primary" />
-						<Flex v-else align="center" gap="8" class="clickable">
+						<Flex v-else align="center" gap="8" class="clickable" data-testid="send-fee-method-trigger">
 							<template v-if="selectedMethod">
 								<Icon name="discount" size="16" color="purple" />
 								<Text size="13" weight="600" color="primary">
@@ -446,7 +446,7 @@ onBeforeUnmount(() => {
 
 			<!-- Back to embedded link -->
 			<Flex v-if="isCustomMethod && useOwnMethod" align="center" justify="end" :class="$style.detail_row" :style="{ padding: '6px 12px' }">
-				<Flex @click="handleUseEmbedded" align="center" gap="4" :class="$style.link">
+				<Flex @click="handleUseEmbedded" align="center" gap="4" :class="$style.link" data-testid="send-fee-back-embedded">
 					<Icon name="arrow-right" size="10" color="blue" style="transform: rotate(180deg)" />
 					<Text size="12" weight="600" color="blue">Use app's payment</Text>
 				</Flex>
@@ -505,6 +505,7 @@ onBeforeUnmount(() => {
 							@click="selectedMethod.inPublic ? selectedMethod.inPublic = false : selectedMethod.inPublic = true"
 							align="center"
 							gap="6"
+							data-testid="send-fee-visibility-toggle"
 							:class="$style.type"
 						>
 							<Icon
@@ -568,6 +569,7 @@ onBeforeUnmount(() => {
 							:key="level.value"
 							@click="selectedPriority = level.value"
 							align="center"
+							:data-testid="`send-fee-priority-${level.value}`"
 							:class="[$style.priority_pill, selectedPriority === level.value && $style.priority_active]"
 						>
 							<Text

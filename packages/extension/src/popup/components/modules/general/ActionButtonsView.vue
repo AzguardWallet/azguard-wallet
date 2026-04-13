@@ -17,12 +17,12 @@ const handleOpenPopup = (target) => {
 
 <template>
 	<Flex wide align="center" justify="between" gap="12">
-		<Flex @click="handleOpenPopup('send')" wide align="center" justify="center" gap="6" :class="$style.button">
+		<Flex @click="handleOpenPopup('send')" wide align="center" justify="center" gap="6" :class="$style.button" data-testid="actions-send">
 			<Icon name="arrow-top-right-circle" size="20" color="blue" />
 			<Text size="14" weight="600" color="primary">Send</Text>
 		</Flex>
 
-		<Flex @click="handleOpenPopup('receive')" wide align="center" justify="center" gap="6" :class="$style.button">
+		<Flex @click="handleOpenPopup('receive')" wide align="center" justify="center" gap="6" :class="$style.button" data-testid="actions-receive">
 			<Icon name="arrow-bottom-circle" size="20" color="green" />
 			<Text size="14" weight="600" color="primary">Receive</Text>
 		</Flex>

@@ -27,7 +27,7 @@ const handleSelectToken = () => {
 </script>
 
 <template>
-	<Flex @click="handleSelectToken" align="center" justify="between" :class="$style.wrapper">
+	<Flex @click="handleSelectToken" align="center" justify="between" :class="$style.wrapper" data-testid="send-token-trigger">
 		<template v-if="token">
 			<Flex align="center" gap="8">
 				<Tooltip :disabled="!isTokenRestricted || !isTokenBlocked" position="start">

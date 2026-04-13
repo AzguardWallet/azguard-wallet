@@ -46,33 +46,21 @@ test.skipIf(!hasConfig)(
 		// Wait for SendPopup to appear
 		await page.waitForSelector('[data-testid="send-destination-input"]', { visible: true, timeout: 10_000 })
 
-		// Switch from Private to Public: click the "private" text next to "From"
-		// The SendTypesCard shows "From [private] to [private] destination"
-		// Clicking the first "private" toggles it to "public"
+		// Switch from Private → Private to Public → Public
+		// The SendTypesCard renders: "From [badge] to [badge] destination"
+		// Each badge is a Flex with an Icon + span ("private" or "public")
+		// Click each "private" badge to toggle it
+
+		// Toggle FROM to public. The TO stays as whatever the extension allows.
 		await page.evaluate(() => {
-			// Find spans with "private" text that are inside the send type selector
-			const spans = [...document.querySelectorAll("span")]
-			const privateSpans = spans.filter((s) => s.textContent?.trim().toLowerCase() === "private")
-			// Click the FIRST "private" (the "From" type) to switch to public
-			if (privateSpans.length > 0) privateSpans[0].parentElement?.click()
+			(document.querySelector('[data-testid="send-from-type"]') as HTMLElement)?.click()
 		})
 		await new Promise((r) => setTimeout(r, 500))
-
-		// Now click the second "private" (the "to" type) to switch to public
+		// Toggle TO to public (may be no-op if token doesn't support public receiver)
 		await page.evaluate(() => {
-			const spans = [...document.querySelectorAll("span")]
-			const privateSpans = spans.filter((s) => s.textContent?.trim().toLowerCase() === "private")
-			if (privateSpans.length > 0) privateSpans[0].parentElement?.click()
+			(document.querySelector('[data-testid="send-to-type"]') as HTMLElement)?.click()
 		})
 		await new Promise((r) => setTimeout(r, 500))
-
-		// Verify we're now on Public → Public
-		const transferType = await page.evaluate(() => {
-			const text = document.body.innerText
-			const match = text.match(/From\s+(\w+)\s+to\s+(\w+)/i)
-			return match ? `${match[1]} → ${match[2]}` : "unknown"
-		})
-		console.log("Transfer type:", transferType)
 
 		// Enter amount
 		const amountInput = await page.waitForSelector('[data-testid="send-amount-input"]', { visible: true, timeout: 5_000 })

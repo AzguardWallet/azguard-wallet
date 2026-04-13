@@ -465,7 +465,7 @@ const onKeydown = (e) => {
 							@blur="handleSearchBlur()"
 							:label="`${capitalize(selectedReceiverType)} destination`"
 							placeholder="Enter name or address"
-							data-testid="send-destination-input"
+							data-testid="send-destination-field"
 							wide
 							:style="{ position: 'relative' }"
 						>
@@ -535,7 +535,7 @@ const onKeydown = (e) => {
 						type="primary"
 						size="medium"
 						rightIcon="arrow-right-circle"
-						data-testid="send-button"
+						data-testid="send-submit"
 						:disabled="!isAllowedToSend || isSending"
 					>
 						Send
