@@ -278,6 +278,76 @@ export async function getDisplayedBalance(page: Page): Promise<string> {
 	})
 }
 
+// ── Transfer ───────────────────────────────────────────────────────────
+
+export interface SendTransferOptions {
+	fromType: "public" | "private"
+	toType: "public" | "private"
+	amount: string
+	destination: string
+}
+
+/** Execute a transfer via the SendPopup. Uses data-testid selectors throughout.
+ *  Opens the popup, toggles types, enters amount + destination, submits, waits for toast. */
+export async function sendTransfer(page: Page, opts: SendTransferOptions): Promise<void> {
+	// Open SendPopup
+	await page.evaluate(() => {
+		(document.querySelector('[data-testid="actions-send"]') as HTMLElement)?.click()
+	})
+
+	// Wait for SendTypesCard to mount
+	await page.waitForSelector('[data-testid="send-from-type"]', { timeout: 10_000 })
+
+	// Default is private→private. Toggle as needed.
+	if (opts.fromType === "public") {
+		await page.evaluate(() => {
+			(document.querySelector('[data-testid="send-from-type"]') as HTMLElement)?.click()
+		})
+		await new Promise((r) => setTimeout(r, 500))
+	}
+	if (opts.toType === "public") {
+		await page.evaluate(() => {
+			(document.querySelector('[data-testid="send-to-type"]') as HTMLElement)?.click()
+		})
+		await new Promise((r) => setTimeout(r, 500))
+	}
+
+	// Enter amount
+	const amountInput = await page.waitForSelector('[data-testid="send-amount-input"]', { visible: true })
+	await amountInput!.click({ clickCount: 3 })
+	await amountInput!.type(opts.amount)
+
+	// Enter destination
+	await page.type('[data-testid="send-destination-field"] input', opts.destination)
+
+	// Wait for send button to become clickable (pointer-events != none)
+	await page.waitForFunction(
+		() => {
+			const btn = document.querySelector('[data-testid="send-submit"]') as HTMLElement
+			return btn && getComputedStyle(btn).pointerEvents !== "none"
+		},
+		{ timeout: 120_000, polling: 3_000 },
+	)
+
+	// Submit
+	await page.evaluate(() => {
+		(document.querySelector('[data-testid="send-submit"]') as HTMLElement)?.click()
+	})
+
+	// Wait for submission toast + popup auto-close
+	await waitForToast(page, "Transaction submitted", 60_000)
+	// Wait for popup to fully close
+	await page.waitForFunction(
+		() => !document.querySelector('[data-testid="send-destination-field"]'),
+		{ timeout: 10_000 },
+	)
+}
+
+/** Wait for a specific balance text to appear on the general page. */
+export async function waitForBalance(page: Page, text: string, timeout = 60_000): Promise<void> {
+	await page.waitForFunction((t: string) => document.body.innerText.includes(t), { timeout, polling: 3_000 }, text)
+}
+
 // ── Toast ──────────────────────────────────────────────────────────────
 
 /** Wait for a toast notification containing the given text. Toasts auto-dismiss in ~2s. */
