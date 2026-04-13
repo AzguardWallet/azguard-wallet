@@ -1,5 +1,7 @@
 import puppeteer, { type Browser, type Page, type ConsoleMessage } from "puppeteer"
 import { test as base, inject } from "vitest"
+import { switchToLocalNetwork, importToken, getAccountAddress } from "./helpers"
+import type { AztecTestConfig } from "./aztec"
 
 export interface ExtensionContext {
 	browser: Browser
@@ -171,6 +173,10 @@ export const test = base.extend<{
 	registeredExtension: ExtensionContext
 	/** Registered extension + dapp connected via test dapp page. */
 	dappConnectedExtension: ExtensionContext
+	/** Registered + switched to Local Network. */
+	localNetworkExtension: ExtensionContext
+	/** Local network + token imported + public tokens minted to account. */
+	tokenReadyExtension: ExtensionContext & { accountAddress: string }
 }>({
 	extension: [
 		async ({}, use) => {
@@ -195,6 +201,56 @@ export const test = base.extend<{
 		async ({ registeredExtension }, use) => {
 			await connectDapp(registeredExtension)
 			await use(registeredExtension)
+		},
+		{ scope: "file" },
+	],
+
+	localNetworkExtension: [
+		async ({}, use) => {
+			const ctx = await launchExtension()
+			await registerProfile(ctx)
+			const page = await openPopup(ctx)
+			await waitForHash(page, "#/popup/general", 15_000)
+			await switchToLocalNetwork(page)
+			await page.close()
+			await use(ctx)
+			await ctx.browser.close()
+		},
+		{ scope: "file" },
+	],
+
+	tokenReadyExtension: [
+		async ({}, use) => {
+			const aztecConfig = inject("aztecTestConfig") as AztecTestConfig | undefined
+			if (!aztecConfig) throw new Error("aztecTestConfig not provided — is the local Aztec node running?")
+
+			const ctx = await launchExtension()
+			await registerProfile(ctx)
+
+			const page = await openPopup(ctx)
+			await waitForHash(page, "#/popup/general", 15_000)
+			await switchToLocalNetwork(page)
+
+			const accountAddress = await getAccountAddress(page)
+
+			// Lazy import to avoid loading WASM for smoke tests (Lesson #4)
+			const { createTestWallet, createSponsoredFeeOptions, mintPublicTokens } = await import("./aztec")
+			let walletCleanup: (() => Promise<void>) | undefined
+			try {
+				const { wallet, cleanup } = await createTestWallet(aztecConfig.nodeUrl)
+				walletCleanup = cleanup
+				const feeOptions = await createSponsoredFeeOptions(wallet)
+				await mintPublicTokens(wallet, aztecConfig.tokenAddress, accountAddress, 1000n * 10n ** 18n, aztecConfig.minterAddress, feeOptions)
+			} finally {
+				await walletCleanup?.()
+			}
+
+			await importToken(page, aztecConfig.tokenAddress)
+			await new Promise((r) => setTimeout(r, 5_000))
+			await page.close()
+
+			await use(Object.assign(ctx, { accountAddress }))
+			await ctx.browser.close()
 		},
 		{ scope: "file" },
 	],
