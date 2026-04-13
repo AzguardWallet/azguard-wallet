@@ -213,20 +213,16 @@ export async function deleteContact(page: Page, name: string): Promise<void> {
 
 /** Import a token by contract address via the NewTokenPopup. */
 export async function importToken(page: Page, contractAddress: string): Promise<void> {
-	// Click the dots menu in TokensView then "Import token"
-	// First find the three-dots button near "Tokens" text
+	// Open tokens dropdown menu
 	await page.evaluate(() => {
-		const dotsButtons = [...document.querySelectorAll("[class*='dots'], [class*='menu']")]
-		const tokensSection = [...document.querySelectorAll("*")].find((el) => el.textContent?.trim().startsWith("Tokens"))
-		if (tokensSection) {
-			const btn = tokensSection.querySelector("svg, [class*='trigger']")
-			if (btn) (btn as HTMLElement).click()
-		}
+		(document.querySelector('[data-testid="tokens-menu-trigger"]') as HTMLElement)?.click()
 	})
+	await new Promise((r) => setTimeout(r, 500))
 
-	// Click "Import token" from dropdown
-	const importOpt = await page.waitForSelector("text/Import token", { visible: true, timeout: 5_000 })
-	await importOpt!.click()
+	// Click "Import token"
+	await page.evaluate(() => {
+		(document.querySelector('[data-testid="tokens-menu-import"]') as HTMLElement)?.click()
+	})
 
 	// Wait for NewTokenPopup
 	await page.waitForSelector("text/New token", { visible: true, timeout: 5_000 })
@@ -259,20 +255,18 @@ export async function importToken(page: Page, contractAddress: string): Promise<
 
 /** Click "Refresh balances" from the token dropdown menu. */
 export async function refreshBalances(page: Page): Promise<void> {
+	// Open the tokens dropdown menu
 	await page.evaluate(() => {
-		const dotsButtons = [...document.querySelectorAll("[class*='dots'], [class*='trigger']")]
-		for (const btn of dotsButtons) {
-			if (btn.closest("[class*='token']")) {
-				;(btn as HTMLElement).click()
-				return
-			}
-		}
+		(document.querySelector('[data-testid="tokens-menu-trigger"]') as HTMLElement)?.click()
+	})
+	await new Promise((r) => setTimeout(r, 500))
+
+	// Click "Refresh balances"
+	await page.evaluate(() => {
+		(document.querySelector('[data-testid="tokens-menu-refresh"]') as HTMLElement)?.click()
 	})
 
-	const refreshOpt = await page.waitForSelector("text/Refresh balances", { visible: true, timeout: 5_000 })
-	await refreshOpt!.click()
-
-	// Wait for refresh to complete (no spinner text)
+	// Wait for refresh to complete
 	await new Promise((r) => setTimeout(r, 2_000))
 }
 
