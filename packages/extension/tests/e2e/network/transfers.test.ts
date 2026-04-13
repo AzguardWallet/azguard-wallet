@@ -12,7 +12,7 @@ const hasConfig = aztecConfig !== undefined
 
 test.skipIf(!hasConfig)(
 	"balance shows minted amount after refresh",
-	{ timeout: 120_000 },
+	{ timeout: 180_000 },
 	async ({ tokenReadyExtension }) => {
 		const page = await openPopup(tokenReadyExtension)
 		await waitForHash(page, "#/popup/general")
@@ -21,14 +21,14 @@ test.skipIf(!hasConfig)(
 		await page.waitForSelector("text/TestToken", { visible: true, timeout: 30_000 })
 
 		// Wait for balance to update — minted 1000 tokens (with 18 decimals)
-		// Note: balance may already be visible if the extension synced during import.
-		// If not, wait up to 60s with polling.
+		// The extension needs to sync with the local network to discover the balance.
+		// This can take 30-120s depending on PXE sync and node block time.
 		await page.waitForFunction(
 			() => {
 				const text = document.body.innerText
 				return text.includes("1,000") || text.includes("1000")
 			},
-			{ timeout: 60_000, polling: 3_000 },
+			{ timeout: 120_000, polling: 5_000 },
 		)
 	},
 )
@@ -82,13 +82,14 @@ test.skipIf(!hasConfig)(
 		await page.type('[data-testid="send-destination-input"] input', bobAddress)
 
 		// Wait for fee estimation + Send button to become enabled
+		// Fee estimation requires the extension to simulate the tx on the local node.
 		await page.waitForFunction(
 			() => {
 				const btn = document.querySelector('[data-testid="send-button"]') as HTMLButtonElement
 				if (!btn) return false
 				return !btn.disabled && getComputedStyle(btn).pointerEvents !== "none"
 			},
-			{ timeout: 60_000, polling: 2_000 },
+			{ timeout: 120_000, polling: 3_000 },
 		)
 
 		// Click the Send submit button
