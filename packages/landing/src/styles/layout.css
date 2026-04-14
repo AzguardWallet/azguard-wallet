@@ -1,0 +1,108 @@
+/* ================================================================
+   Layout — Nav + Footer (structural chrome)
+   ================================================================ */
+
+/* ── Navigation ── */
+
+.nav {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 50;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: var(--s-6) var(--s-8);
+	background: rgba(10, 9, 8, 0.9);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	transition:
+		padding var(--dur-normal) var(--ease-out),
+		background var(--dur-normal) var(--ease-out);
+
+	&.nav--scrolled {
+		padding: var(--s-4) var(--s-8);
+		background: rgba(10, 9, 8, 0.96);
+	}
+}
+
+.nav__logo {
+	font-family: var(--font-headline);
+	font-size: 1.5rem;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	text-transform: uppercase;
+	color: var(--c-on-surface);
+}
+
+.nav__logo-o {
+	display: inline-block;
+	width: 1.15em;
+	height: 1.15em;
+	border: 1.5px solid currentColor;
+	border-radius: 50%;
+	vertical-align: -0.12em;
+}
+
+.nav__cta {
+	font-family: var(--font-headline);
+	font-size: 0.875rem;
+	letter-spacing: -0.04em;
+	text-transform: uppercase;
+	color: var(--c-secondary);
+	padding: var(--s-2) var(--s-4);
+	transition:
+		color var(--dur-fast),
+		background var(--dur-fast),
+		transform var(--dur-fast);
+
+	&:hover {
+		color: var(--c-bg);
+		background: var(--c-on-surface);
+	}
+
+	&:active {
+		transform: scale(0.95);
+	}
+}
+
+/* ── Footer ── */
+
+.footer {
+	background: var(--c-bg);
+	border-top: 1px solid rgba(120, 113, 108, 0.1);
+	padding: var(--s-12) var(--s-8);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--s-6);
+	font-family: var(--font-body);
+	font-size: 0.625rem;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--c-secondary);
+
+	@media (min-width: 768px) {
+		flex-direction: row;
+		justify-content: space-between;
+	}
+}
+
+.footer__links {
+	display: flex;
+	gap: var(--s-12);
+
+	& a {
+		transition: color var(--dur-fast);
+
+		&:hover {
+			color: var(--c-on-surface);
+		}
+	}
+}
+
+.footer__version {
+	font-size: 0.5rem;
+	opacity: 0.3;
+}

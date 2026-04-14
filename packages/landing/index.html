@@ -1,12 +1,247 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Vibeguard — Privacy-first wallet for Aztec</title>
-</head>
-<body>
-	<div id="app"></div>
-	<script type="module" src="/src/main.ts"></script>
-</body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>NULO | The Frontier Manifesto</title>
+		<meta
+			name="description"
+			content="NULO — Privacy-first self-custody wallet for the Aztec network. Private by default. Native by design."
+		/>
+		<meta name="theme-color" content="#0A0908" />
+
+		<!-- Open Graph -->
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="NULO | The Frontier Manifesto" />
+		<meta
+			property="og:description"
+			content="The internet-native coordination layer. Private by default. Native by design."
+		/>
+		<meta property="og:site_name" content="NULO" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="NULO | The Frontier Manifesto" />
+		<meta
+			name="twitter:description"
+			content="The internet-native coordination layer. Private by default. Native by design."
+		/>
+
+		<!-- Favicon -->
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+		<!-- Font preloads (self-hosted, zero third-party requests) -->
+		<link
+			rel="preload"
+			href="/fonts/SpaceGrotesk-latin.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+		<link
+			rel="preload"
+			href="/fonts/Inter-latin.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+	</head>
+	<body>
+		<!-- Scroll progress indicator -->
+		<div class="scroll-progress" aria-hidden="true"></div>
+
+		<!-- Cursor spotlight (desktop only, injected positioning via JS) -->
+		<div class="spotlight" aria-hidden="true"></div>
+
+		<!-- Skip to content (a11y) -->
+		<a class="skip-link" href="#main">Skip to content</a>
+
+		<!-- Navigation -->
+		<nav class="nav" role="navigation" aria-label="Main navigation">
+			<div class="nav__logo" aria-label="NULO home">
+				NUL<span class="nav__logo-o" aria-hidden="true"></span>
+			</div>
+			<div>
+				<button class="nav__cta" type="button">Add to Chrome</button>
+			</div>
+		</nav>
+
+		<!-- Main Content -->
+		<main id="main">
+			<!-- Hero -->
+			<section class="section hero" aria-label="Hero">
+				<h1 class="hero__title">
+					<span class="hero__line">Nothing to see here.</span>
+					<span class="hero__line">Everything to own.</span>
+				</h1>
+				<div class="hero__subtitle-grid">
+					<div class="hero__subtitle-col">
+						<p class="hero__subtitle">
+							The internet-native coordination layer.
+							<strong>Private by default. Native by design.</strong>
+						</p>
+						<div class="hero__divider" aria-hidden="true"></div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Values: Private, Simple, Yours -->
+			<section
+				class="section values"
+				data-reveal-stagger
+				aria-label="Core values"
+			>
+				<div class="values__grid">
+					<div class="values__item">
+						<h2 class="values__heading">Private.</h2>
+						<p class="values__text">
+							A manifesto of your digital presence, visible only to you.
+							Sovereignty is not a feature, it is the bedrock.
+						</p>
+					</div>
+					<div class="values__item">
+						<h2 class="values__heading">Simple.</h2>
+						<p class="values__text">
+							The complexity of the frontier, distilled into a single click.
+							Coordination without friction.
+						</p>
+					</div>
+					<div class="values__item">
+						<h2 class="values__heading">Yours.</h2>
+						<p class="values__text">
+							One-click connection to the frontier. No intermediaries. No
+							compromise. Just you and your assets.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			<!-- Quote -->
+			<section class="section quote" data-reveal-quote aria-label="Vision statement">
+				<div class="quote__inner">
+					<h2 class="quote__text" data-quote-words>
+						"A coordination layer where everything you do is encrypted by
+						default."
+					</h2>
+					<div class="quote__line" aria-hidden="true"></div>
+				</div>
+			</section>
+
+			<!-- Extension Preview / Wallet Mockup -->
+			<section
+				class="section wallet-section"
+				data-reveal
+				aria-label="Extension preview"
+			>
+				<div class="wallet-section__inner">
+					<div class="wallet-section__mockup">
+						<div
+							class="wallet"
+							role="img"
+							aria-label="NULO wallet preview showing portfolio balance and token holdings"
+						>
+							<!-- Wallet Header -->
+							<div class="wallet__header">
+								<div class="wallet__version">NULO v1.0</div>
+								<svg
+									class="wallet__settings-icon"
+									width="20"
+									height="20"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									aria-hidden="true"
+								>
+									<path
+										d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+									/>
+									<circle cx="12" cy="12" r="3" />
+								</svg>
+							</div>
+
+							<!-- Balance -->
+							<div class="wallet__balance">
+								<p class="wallet__balance-label">Total Liquidity</p>
+								<p class="wallet__balance-value">$42,904.00</p>
+							</div>
+
+							<!-- Assets -->
+							<div class="wallet__assets">
+								<div class="wallet__asset">
+									<div class="wallet__asset-left">
+										<div
+											class="wallet__asset-icon wallet__asset-icon--eth"
+										>
+											Ξ
+										</div>
+										<div>
+											<p class="wallet__asset-name">ETH</p>
+											<p class="wallet__asset-sub">Ethereum Native</p>
+										</div>
+									</div>
+									<div class="wallet__asset-right">
+										<p class="wallet__asset-amount">12.40</p>
+										<p class="wallet__asset-usd">$32,548.12</p>
+									</div>
+								</div>
+								<div class="wallet__asset">
+									<div class="wallet__asset-left">
+										<div
+											class="wallet__asset-icon wallet__asset-icon--aztec"
+										>
+											A
+										</div>
+										<div>
+											<p class="wallet__asset-name">AZTEC</p>
+											<p class="wallet__asset-sub">Private Layer</p>
+										</div>
+									</div>
+									<div class="wallet__asset-right">
+										<p class="wallet__asset-amount">842.10</p>
+										<p class="wallet__asset-usd">$10,355.88</p>
+									</div>
+								</div>
+							</div>
+
+							<!-- Action -->
+							<div class="wallet__action">
+								<button class="wallet__action-btn" type="button">
+									Manage Assets
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<div class="wallet-section__copy">
+						<span class="wallet-section__label">The Instrument</span>
+						<h2 class="wallet-section__title">
+							A tool for the new sovereign.
+						</h2>
+						<p class="wallet-section__desc">
+							Designed with the precision of an analog instrument and the
+							weight of a physical ledger. We don't build apps. We forge
+							coordination layers.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			<!-- Final CTA -->
+			<section class="section cta" data-reveal aria-label="Call to action">
+				<h2 class="cta__title">Own your<br />next click.</h2>
+				<button class="cta__btn" type="button">The Manifesto</button>
+			</section>
+		</main>
+
+		<!-- Footer -->
+		<footer class="footer">
+			<div>&copy; THE FRONTIER MANIFESTO</div>
+			<div class="footer__links">
+				<a href="#">Manifesto</a>
+				<a href="#">Frontier</a>
+			</div>
+			<div class="footer__version">COORDINATION LAYER v.01-ALPHA</div>
+		</footer>
+
+		<script type="module" src="/src/main.ts"></script>
+	</body>
 </html>
