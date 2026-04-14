@@ -281,17 +281,18 @@ export async function getDisplayedBalance(page: Page): Promise<string> {
 // ── Token Detail ──────────────────────────────────────────────────────
 
 /** Navigate to the token detail page by clicking the first token card.
- *  The token card is an <a data-testid="tokens-card"> rendered by SettingItem → router-link.
- *  Note: href is null (router-link quirk), but clicking triggers Vue Router navigation. */
+ *  Uses dispatchEvent instead of Puppeteer's coordinate-based click because
+ *  the router-link <a> has href=null and Puppeteer's click doesn't reliably
+ *  trigger Vue Router's navigation handler on it. */
 export async function navigateToTokenDetail(page: Page): Promise<void> {
 	// Wait for the token card to render (balance must load from PXE)
-	const card = await page.waitForSelector('[data-testid="tokens-card"]', { visible: true, timeout: 30_000 })
-	// Scroll into view — token list is at the bottom of the general page
-	await card!.scrollIntoView()
-	await new Promise((r) => setTimeout(r, 300))
-	await card!.click()
+	await page.waitForSelector('[data-testid="tokens-card"]', { visible: true, timeout: 30_000 })
+	// Dispatch a click event directly on the <a> — triggers Vue Router's handler
+	await page.evaluate(() => {
+		const a = document.querySelector('[data-testid="tokens-card"]') as HTMLElement
+		a?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window, button: 0 }))
+	})
 	await page.waitForFunction(() => window.location.hash.includes("#/popup/tokens/"), { timeout: 10_000 })
-	// Wait for SplittedBalancesView to render
 	await page.waitForSelector('[data-testid="private-balance-value"]', { visible: true, timeout: 15_000 })
 }
 

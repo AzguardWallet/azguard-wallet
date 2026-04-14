@@ -8,7 +8,7 @@ import { type FpcInfo, FpcType } from "../spec"
 import type { IFpcHandler } from "."
 import type { IPXE } from "../../pxe/proxy"
 import type { AztecNode } from "@aztec/stdlib/interfaces/client"
-import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec/constants"
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec/stdlib/gas"
 
 export class DefaultFpcHandler implements IFpcHandler {
 	public async getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined> {
@@ -32,10 +32,11 @@ export class DefaultFpcHandler implements IFpcHandler {
 			[],
 			[],
 		)
+		const accounts = await pxe.getRegisteredAccounts()
 		const simulatedTx = await pxe.simulateTx(txRequest, {
 			simulatePublic: true,
 			skipFeeEnforcement: true,
-			scopes: "ALL_SCOPES",
+			scopes: accounts.map((a) => a.address),
 		})
 		const returnValues = simulatedTx.getPrivateReturnValues()
 		if (!returnValues.values || returnValues.values.length !== 1) {

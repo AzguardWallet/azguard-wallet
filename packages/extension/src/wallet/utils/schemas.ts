@@ -38,5 +38,5 @@ export const NotesFilterSchema = z.object({
 	storageSlot: Fr.schema.optional(),
 	status: z.nativeEnum(NoteStatus).optional(),
 	siloedNullifier: Fr.schema.optional(),
-	scopes: z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)]),
+	scopes: z.array(AztecAddress.schema),
 }) satisfies ZodFor<NotesFilter>

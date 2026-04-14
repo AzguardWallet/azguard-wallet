@@ -1,6 +1,6 @@
 import puppeteer, { type Browser, type Page, type ConsoleMessage } from "puppeteer"
 import { test as base, inject } from "vitest"
-import { switchToLocalNetwork, importToken, getAccountAddress } from "./helpers"
+import { switchToLocalNetwork, importToken, getAccountAddress, refreshBalances } from "./helpers"
 import type { AztecTestConfig } from "./aztec"
 
 export interface ExtensionContext {
@@ -179,7 +179,7 @@ export const test = base.extend<{
 	tokenReadyExtension: ExtensionContext & { accountAddress: string }
 }>({
 	extension: [
-		async ({}, use) => {
+		async (_deps, use) => {
 			const ctx = await launchExtension()
 			await use(ctx)
 			await ctx.browser.close()
@@ -188,7 +188,7 @@ export const test = base.extend<{
 	],
 
 	registeredExtension: [
-		async ({}, use) => {
+		async (_deps, use) => {
 			const ctx = await launchExtension()
 			await registerProfile(ctx)
 			await use(ctx)
@@ -206,7 +206,7 @@ export const test = base.extend<{
 	],
 
 	localNetworkExtension: [
-		async ({}, use) => {
+		async (_deps, use) => {
 			const ctx = await launchExtension()
 			await registerProfile(ctx)
 			const page = await openPopup(ctx)
@@ -220,7 +220,7 @@ export const test = base.extend<{
 	],
 
 	tokenReadyExtension: [
-		async ({}, use) => {
+		async (_deps, use) => {
 			const aztecConfig = inject("aztecTestConfig") as AztecTestConfig | undefined
 			if (!aztecConfig) throw new Error("aztecTestConfig not provided — is the local Aztec node running?")
 
@@ -242,13 +242,40 @@ export const test = base.extend<{
 				const { wallet, cleanup } = await createTestWallet(aztecConfig.nodeUrl)
 				walletCleanup = cleanup
 				const feeOptions = await createSponsoredFeeOptions(wallet)
-				await mintPublicTokens(wallet, aztecConfig.tokenAddress, accountAddress, 1000n * 10n ** 18n, aztecConfig.minterAddress, feeOptions)
+				await mintPublicTokens(
+					wallet,
+					aztecConfig.tokenAddress,
+					accountAddress,
+					1000n * 10n ** 18n,
+					aztecConfig.minterAddress,
+					feeOptions,
+				)
 			} finally {
 				await walletCleanup?.()
 			}
 
 			await importToken(page, aztecConfig.tokenAddress)
-			await new Promise((r) => setTimeout(r, 5_000))
+
+			// Poll: refresh balances until the minted amount is visible in the extension.
+			// The extension's PXE syncs blocks independently and may take 1-2 minutes
+			// on a fresh node. Each refresh triggers a simulateTx which advances the sync.
+			const maxRetries = 30
+			for (let i = 0; i < maxRetries; i++) {
+				await refreshBalances(page)
+				const bodyText = await page.evaluate(() => document.body.innerText)
+				if (bodyText.includes("1,000")) {
+					console.log(`[tokenReady] Balance visible after ${i + 1} refresh(es) (~${(i + 1) * 5}s)`)
+					break
+				}
+				if (i % 5 === 4) {
+					console.log(`[tokenReady] Still waiting for balance... (${i + 1}/${maxRetries} retries)`)
+				}
+				if (i === maxRetries - 1) {
+					console.warn("[tokenReady] Balance not visible after all retries (~150s) — tests may fail")
+				}
+				await new Promise((r) => setTimeout(r, 5_000))
+			}
+
 			await page.close()
 
 			await use(Object.assign(ctx, { accountAddress }))

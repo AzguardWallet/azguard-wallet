@@ -453,7 +453,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			const operationTask = parentTask ? parentTask.startSubtask(content) : this.taskService.startNewTask(content, undefined, origin)
 
 			try {
-				let result
+				let result: unknown
 				switch (operation.kind) {
 					case "get_complete_address": {
 						result = await this.executeGetCompleteAddress(operation)
@@ -829,7 +829,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					if (!artifact) {
 						throw new Error("Contract artifact not found")
 					}
-					let fn
+					let fn: (typeof artifact.functions)[number] | undefined
 					for (const _fn of artifact.functions) {
 						const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters)
 						if (selector.toString() === call.selector) {
@@ -1468,7 +1468,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			const hashedArguments = [await HashedValues.fromArgs(call.args)]
 			const nodeInfo = await node.getNodeInfo()
 			const currentMinFees = await node.getCurrentMinFees()
-			const gasSettings = GasSettings.default({ maxFeesPerGas: currentMinFees })
+			const gasSettings = GasSettings.fallback({ maxFeesPerGas: currentMinFees })
 			const txRequest = new TxExecutionRequest(
 				call.to,
 				call.selector,
@@ -2247,7 +2247,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			if (!artifact) {
 				throw new Error("Contract artifact not found")
 			}
-			let fn
+			let fn: (typeof artifact.functions)[number] | undefined
 			for (const _fn of artifact.functions) {
 				const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters)
 				if (selector.toString() === content.selector) {

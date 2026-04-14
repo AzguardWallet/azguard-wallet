@@ -44,7 +44,7 @@ import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/p
 import z from "zod"
 import { AcceleratorProver } from "@alejoamiras/aztec-accelerator"
 
-const AccessScopesSchema = z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)])
+const AccessScopesSchema = z.array(AztecAddress.schema)
 import type { ServiceSpec } from "@/wallet/base"
 import { Service } from "@/wallet/base/offscreen"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
@@ -234,15 +234,14 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 			let overrides = await SimulationOverrides.schema.optional().parseAsync(opts.overrides)
 
 			// Build stub account overrides for kernelless simulation.
-			// The SimulatedAccountContractArtifact stays on the offscreen side — only address strings cross the RPC bridge.
 			if (stubAccountAddresses?.length) {
-				const { SimulatedAccountContractArtifact } = await import("@aztec/noir-contracts.js/SimulatedAccount")
+				const { SimulatedSchnorrAccountContractArtifact } = await import("@aztec/noir-contracts.js/SimulatedSchnorrAccount")
 				const contracts: Record<string, { instance: ContractInstanceWithAddress; artifact: ContractArtifact }> = {}
 				for (const addr of stubAccountAddresses) {
-					const instance = await getContractInstanceFromInstantiationParams(SimulatedAccountContractArtifact, {
+					const instance = await getContractInstanceFromInstantiationParams(SimulatedSchnorrAccountContractArtifact, {
 						salt: Fr.random(),
 					})
-					contracts[addr] = { instance, artifact: SimulatedAccountContractArtifact }
+					contracts[addr] = { instance, artifact: SimulatedSchnorrAccountContractArtifact }
 				}
 				overrides = new SimulationOverrides({ ...(overrides?.contracts ?? {}), ...contracts })
 			}

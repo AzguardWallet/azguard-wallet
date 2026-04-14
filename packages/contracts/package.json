@@ -9,6 +9,6 @@
 		"compile": "echo 'Requires nargo. Run nargo compile in each contract dir, then copy target/*.json to artifacts/'"
 	},
 	"dependencies": {
-		"@aztec/stdlib": "4.2.0-aztecnr-rc.2"
+		"@aztec/stdlib": "4.2.0-nightly.20260413"
 	}
 }

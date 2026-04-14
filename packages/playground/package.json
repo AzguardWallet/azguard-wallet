@@ -10,7 +10,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@aztec/wallet-sdk": "4.2.0-aztecnr-rc.2"
+		"@aztec/wallet-sdk": "4.2.0-nightly.20260413"
 	},
 	"devDependencies": {
 		"typescript": "^5.9.2",

@@ -17,8 +17,7 @@ import { EmbeddedWallet } from "@aztec/wallets/embedded"
 import { registerInitialLocalNetworkAccountsInWallet } from "@aztec/wallets/testing"
 import { SponsoredFeePaymentMethod } from "@aztec/aztec.js/fee"
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC"
-// Use Wonderland Token (has public minting, constructor_with_minter, transfer_public_to_public, etc.)
-import { TokenContract } from "@defi-wonderland/aztec-standards/dist/src/artifacts/Token.js"
+import { TokenContract } from "@aztec/noir-contracts.js/Token"
 
 export const LOCAL_NODE_URL = "http://localhost:8080"
 const SPONSORED_FPC_SALT = 0n
@@ -87,14 +86,11 @@ export async function deployTestToken(
 	minterAddress: AztecAddress,
 	feeOptions: { paymentMethod: SponsoredFeePaymentMethod },
 ): Promise<string> {
-	// Use the typed Wonderland TokenContract which handles str<31> encoding correctly
-	const { contract } = await TokenContract.deployWithOpts(
-		{ method: "constructor_with_minter", wallet },
-		"TestToken",
-		"TST",
-		18,
-		minterAddress,
-	).send({ fee: feeOptions, from: minterAddress })
+	// Use @aztec/noir-contracts.js Token — admin is automatically a minter
+	const { contract } = await TokenContract.deploy(wallet, minterAddress, "TestToken", "TST", 18).send({
+		fee: feeOptions,
+		from: minterAddress,
+	})
 
 	return contract.address.toString()
 }
@@ -124,7 +120,7 @@ export async function createSponsoredFeeOptions(wallet: InstanceType<typeof Embe
 	return { paymentMethod, address: instance.address.toString() }
 }
 
-/** Mint public tokens to an address. */
+/** Mint public tokens to an address. Waits for the balance to be readable via the test wallet's PXE. */
 export async function mintPublicTokens(
 	wallet: InstanceType<typeof EmbeddedWallet>,
 	tokenAddress: string,
@@ -137,6 +133,15 @@ export async function mintPublicTokens(
 	await token.methods
 		.mint_to_public(AztecAddress.fromString(toAddress), amount)
 		.send({ fee: feeOptions, from: AztecAddress.fromString(minterAddress) })
+
+	// Verify the mint is visible by reading the balance from the test wallet's PXE.
+	// This ensures the state has settled before the extension tries to read it.
+	const to = AztecAddress.fromString(toAddress)
+	const balance = await token.methods.balance_of_public(to).simulate({ from: AztecAddress.fromString(minterAddress) })
+	console.log(`[mintPublicTokens] Verified on-chain public balance: ${balance}`)
+	if (balance === 0n) {
+		throw new Error(`Mint appeared to succeed but balance_of_public returned 0 for ${toAddress}`)
+	}
 }
 
 /** Mint private tokens to an address. */
