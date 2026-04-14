@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>NULO | The Frontier Manifesto</title>
+		<title>NULO | See nothing. Own everything.</title>
 		<meta
 			name="description"
 			content="NULO — Privacy-first self-custody wallet for the Aztec network. Private by default. Native by design."
@@ -12,14 +12,14 @@
 
 		<!-- Open Graph -->
 		<meta property="og:type" content="website" />
-		<meta property="og:title" content="NULO | The Frontier Manifesto" />
+		<meta property="og:title" content="NULO | See nothing. Own everything." />
 		<meta
 			property="og:description"
 			content="The internet-native coordination layer. Private by default. Native by design."
 		/>
 		<meta property="og:site_name" content="NULO" />
 		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="twitter:title" content="NULO | The Frontier Manifesto" />
+		<meta name="twitter:title" content="NULO | See nothing. Own everything." />
 		<meta
 			name="twitter:description"
 			content="The internet-native coordination layer. Private by default. Native by design."
@@ -56,11 +56,11 @@
 
 		<!-- Navigation -->
 		<nav class="nav" role="navigation" aria-label="Main navigation">
-			<div class="nav__logo" aria-label="NULO home">
+			<a class="nav__logo" href="/" aria-label="NULO home">
 				NUL<span class="nav__logo-o" aria-hidden="true"></span>
-			</div>
+			</a>
 			<div>
-				<button class="nav__cta" type="button">Add to Chrome</button>
+				<a class="nav__cta" href="#install">Add to Chrome</a>
 			</div>
 		</nav>
 
@@ -69,7 +69,7 @@
 			<!-- Hero -->
 			<section class="section hero" aria-label="Hero">
 				<h1 class="hero__title">
-					<span class="hero__line">Nothing to see here.</span>
+					<span class="hero__line">Nothing to see.</span>
 					<span class="hero__line">Everything to own.</span>
 				</h1>
 				<div class="hero__subtitle-grid">
@@ -80,6 +80,29 @@
 						</p>
 						<div class="hero__divider" aria-hidden="true"></div>
 					</div>
+				</div>
+			</section>
+
+			<!-- Install -->
+			<section
+				class="section trust"
+				id="install"
+				data-reveal
+				aria-label="Install"
+			>
+				<div class="trust__inner">
+					<p class="trust__line">
+						Self-custody wallet for Aztec. Private by default. Zero external
+						requests.
+					</p>
+					<div class="trust__actions">
+						<a class="trust__cta-primary" href="#">Add to Chrome</a>
+						<a class="trust__cta-secondary" href="#">Read the Manifesto</a>
+					</div>
+					<p class="trust__micro">
+						Self-custody &middot; Encrypted &middot; No telemetry &middot;
+						Chrome extension
+					</p>
 				</div>
 			</section>
 
@@ -228,7 +251,10 @@
 			<!-- Final CTA -->
 			<section class="section cta" data-reveal aria-label="Call to action">
 				<h2 class="cta__title">Own your<br />next click.</h2>
-				<button class="cta__btn" type="button">The Manifesto</button>
+				<div class="cta__actions">
+					<a class="cta__btn" href="#">Add to Chrome</a>
+					<a class="cta__btn-secondary" href="#">The Manifesto</a>
+				</div>
 			</section>
 		</main>
 

@@ -165,11 +165,12 @@
 	top: 0;
 	left: 0;
 	height: 2px;
-	width: 0;
+	width: 100%;
 	background: var(--c-primary-fixed-dim);
 	z-index: 60;
+	transform: scaleX(0);
 	transform-origin: left;
-	will-change: width;
+	will-change: transform;
 }
 
 /* ── Reduced Motion ──

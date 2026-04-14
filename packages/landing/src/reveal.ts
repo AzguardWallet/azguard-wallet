@@ -72,23 +72,33 @@ export function initNavScroll(): void {
 /**
  * Cursor spotlight effect.
  * A faint radial glow follows the mouse position via CSS custom properties.
- * Disabled on touch devices.
+ * Disabled on touch devices. Throttled with rAF.
  */
 export function initSpotlight(): void {
 	const el = document.querySelector<HTMLElement>(".spotlight")
 	if (!el) return
 
-	// Skip on touch-primary devices
 	if (window.matchMedia("(pointer: coarse)").matches) return
 
+	let rafId = 0
+	let lastX = 0
+	let lastY = 0
+
 	const onMove = (e: MouseEvent) => {
-		el.style.setProperty("--mx", `${e.clientX}px`)
-		el.style.setProperty("--my", `${e.clientY}px`)
+		lastX = e.clientX
+		lastY = e.clientY
+
+		if (!rafId) {
+			rafId = requestAnimationFrame(() => {
+				el.style.setProperty("--mx", `${lastX}px`)
+				el.style.setProperty("--my", `${lastY}px`)
+				rafId = 0
+			})
+		}
 	}
 
 	document.addEventListener("mousemove", onMove, { passive: true })
 
-	// Show on first move, hide when mouse leaves window
 	document.addEventListener(
 		"mousemove",
 		() => {
@@ -108,7 +118,7 @@ export function initSpotlight(): void {
 
 /**
  * Scroll progress indicator.
- * A thin line at the top of the page that fills as you scroll.
+ * Uses transform: scaleX() for compositor-only animation (no layout).
  */
 export function initScrollProgress(): void {
 	const bar = document.querySelector<HTMLElement>(".scroll-progress")
@@ -123,8 +133,8 @@ export function initScrollProgress(): void {
 		requestAnimationFrame(() => {
 			const scrollTop = window.scrollY
 			const docHeight = document.documentElement.scrollHeight - window.innerHeight
-			const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
-			bar.style.width = `${progress}%`
+			const progress = docHeight > 0 ? scrollTop / docHeight : 0
+			bar.style.transform = `scaleX(${progress})`
 			ticking = false
 		})
 	}
@@ -135,35 +145,46 @@ export function initScrollProgress(): void {
 
 /**
  * Quote word-by-word reveal.
- * Splits the quote text into individual word <span>s, then reveals
- * them sequentially when the section enters the viewport.
+ * Splits the quote text into individual word <span>s using DOM APIs,
+ * preserving an aria-label with the full text for screen readers.
+ * Words reveal sequentially when the section enters the viewport.
  */
 export function initQuoteReveal(): void {
 	const el = document.querySelector<HTMLElement>("[data-quote-words]")
 	const section = document.querySelector("[data-reveal-quote]")
 	if (!el || !section) return
 
-	// Split text content into word spans
 	const text = el.textContent?.trim() ?? ""
-	el.innerHTML = text
-		.split(/\s+/)
-		.map((word) => `<span class="quote__word">${word}</span>`)
-		.join(" ")
 
-	const words = el.querySelectorAll<HTMLElement>(".quote__word")
+	// Preserve full text as accessible label
+	el.setAttribute("aria-label", text)
+
+	// Build word spans via DOM API (not innerHTML)
+	const words = text.split(/\s+/)
+	el.textContent = ""
+
+	const fragment = document.createDocumentFragment()
+	words.forEach((word, i) => {
+		if (i > 0) fragment.append(" ")
+		const span = document.createElement("span")
+		span.className = "quote__word"
+		span.textContent = word
+		fragment.appendChild(span)
+	})
+	el.appendChild(fragment)
+
+	const wordEls = el.querySelectorAll<HTMLElement>(".quote__word")
 
 	const observer = new IntersectionObserver(
 		(entries) => {
 			for (const entry of entries) {
 				if (entry.isIntersecting) {
-					// Stagger each word with 50ms delay
-					words.forEach((word, i) => {
+					wordEls.forEach((word, i) => {
 						setTimeout(() => {
 							word.classList.add("quote__word--visible")
 						}, i * 50)
 					})
 
-					// Also reveal the section for the vertical line
 					section.classList.add("revealed")
 					observer.unobserve(entry.target)
 				}
