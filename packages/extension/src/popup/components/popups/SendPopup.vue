@@ -182,16 +182,6 @@ function handleSearchBlur() {
 function handleSelectContact(contact) {
 	selectedContact.value = contact
 	searchTerm.value = contact.address
-
-	if (selectedSendType.value === selectedReceiverType.value) {
-		if (activeToken.value?.hasPrivateTransfers && selectedReceiverType.value === "public") {
-			selectedReceiverType.value = "private"
-		}
-
-		if (!activeToken.value?.hasPublicTransfers && selectedReceiverType.value === "private") {
-			selectedReceiverType.value = "public"
-		}
-	}
 }
 
 const amountTerm = ref()

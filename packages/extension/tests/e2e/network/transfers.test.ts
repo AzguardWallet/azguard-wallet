@@ -100,14 +100,12 @@ test.skipIf(!hasConfig)("token detail shows correct balances after transfers", {
 	const { privateBalance, publicBalance } = await getTokenDetailBalances(page)
 	console.log(`Token detail balances — public: "${publicBalance}", private: "${privateBalance}"`)
 
-	// Verify balances are non-zero and reasonable after transfers.
-	// Exact values depend on fee mechanics — just check the transfers moved funds.
-	const pub = Number.parseInt(publicBalance.replace(/,/g, ""), 10)
-	const priv = Number.parseInt(privateBalance.replace(/,/g, ""), 10)
-	expect(pub).toBeGreaterThan(0)
-	expect(pub).toBeLessThan(1000)
-	expect(priv).toBeGreaterThan(0)
-	console.log(`✓ Token detail balances correct (pub=${pub}, priv=${priv}, total=${pub + priv})`)
+	// With SponsoredFPC, token balances aren't affected by gas fees.
+	// pub→pub 10 (net 0), pub→priv 100 (-100/+100), priv→pub 50 (+50/-50), priv→priv 10 (net 0)
+	// Expected: public=950, private=50
+	expect(publicBalance).toContain("950")
+	expect(privateBalance).toContain("50")
+	console.log("✓ Token detail balances correct (pub=950, priv=50)")
 	await page.close()
 })
 
