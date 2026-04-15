@@ -68,6 +68,7 @@ const handleManageAccounts = () => {
 						:icon="account.address === acc.address ? 'check-circle' : 'circle'"
 						:iconFillColor="account.address === acc.address ? 'blue' : 'tertiary'"
 						iconBgColor="transparent"
+						data-testid="account-item"
 					>
 						<template v-if="acc.type === AccountType.Vibeguard_v0_persistent" #titleSuffix>
 							<PersistentAccountBadge />

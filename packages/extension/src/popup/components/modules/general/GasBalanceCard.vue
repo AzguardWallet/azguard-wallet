@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
 					<span :class="$style.skeleton" style="width: 60px" />
 					<span :class="$style.skeleton" style="width: 36px" />
 				</Flex>
-				<Flex v-else align="center" gap="6">
+				<Flex v-else align="center" gap="6" data-testid="gas-balance-public">
 					<Text size="12" weight="600" :color="publicFormatted === '0' ? 'tertiary' : 'primary'">
 						{{ publicFormatted }} FJ
 					</Text>
@@ -147,7 +147,7 @@ onBeforeUnmount(() => {
 					<span :class="$style.skeleton" style="width: 60px" />
 					<span :class="$style.skeleton" style="width: 36px" />
 				</Flex>
-				<Flex v-else align="center" gap="6">
+				<Flex v-else align="center" gap="6" data-testid="gas-balance-private">
 					<Text size="12" weight="600" :color="privateFormatted === '0' ? 'tertiary' : 'primary'">
 						{{ privateFormatted }} FJ
 					</Text>

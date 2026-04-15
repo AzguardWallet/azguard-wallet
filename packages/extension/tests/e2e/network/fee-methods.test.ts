@@ -116,3 +116,22 @@ test.skipIf(!hasConfig)("transfer with public Fee Juice", { timeout: 300_000 }, 
 	console.log("✓ Transfer with Fee Juice (public) submitted")
 	await page.close()
 })
+
+test.skipIf(!hasConfig)("gas balance card shows non-zero FeeJuice", { timeout: 120_000 }, async ({ feeJuiceReadyExtension }) => {
+	const page = await openPopup(feeJuiceReadyExtension)
+	await waitForHash(page, "#/popup/general")
+
+	// Wait for GasBalanceCard to load and show a non-zero public FJ balance
+	// The gas balance refreshes async after the PXE syncs blocks
+	await page.waitForSelector('[data-testid="gas-balance-public"]', { visible: true, timeout: 60_000 })
+
+	const balanceText = await page.evaluate(() => document.querySelector('[data-testid="gas-balance-public"]')?.textContent?.trim() || "")
+	console.log(`[gas-balance] Public FJ balance: "${balanceText}"`)
+
+	// Should contain "FJ" and NOT be "0 FJ"
+	expect(balanceText).toContain("FJ")
+	expect(balanceText).not.toBe("0 FJ")
+
+	console.log("✓ Gas balance card shows non-zero FeeJuice")
+	await page.close()
+})
