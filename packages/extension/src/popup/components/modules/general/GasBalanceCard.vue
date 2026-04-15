@@ -110,71 +110,72 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="8" :class="$style.wrapper">
-		<Flex align="center" gap="6">
-			<Text size="13" weight="600" color="secondary">Fee Balance</Text>
-			<Spinner v-if="isLoading" color="--txt-tertiary" size="12" />
-		</Flex>
+	<div :class="$style.wrapper">
+		<div :class="[$style.grid, !(isLoading || privateFormatted !== null) && $style.single_col]">
+			<div :class="$style.col">
+				<span :class="$style.label">Public Juice</span>
+				<span v-if="isLoading" :class="$style.skeleton" />
+				<span v-else :class="$style.amount" data-testid="gas-balance-public">{{ publicFormatted }} FJ</span>
+			</div>
 
-		<Flex direction="column" gap="4">
-			<Flex wide align="center" justify="between" :class="$style.item">
-				<Flex align="center" gap="6">
-					<Icon name="face" size="14" color="orange" />
-					<Text size="12" weight="600" color="secondary"> Fee Juice </Text>
-					<Text size="10" color="tertiary"> public </Text>
-				</Flex>
-
-				<Flex v-if="isLoading" align="center" gap="6">
-					<span :class="$style.skeleton" style="width: 60px" />
-					<span :class="$style.skeleton" style="width: 36px" />
-				</Flex>
-				<Flex v-else align="center" gap="6" data-testid="gas-balance-public">
-					<Text size="12" weight="600" :color="publicFormatted === '0' ? 'tertiary' : 'primary'">
-						{{ publicFormatted }} FJ
-					</Text>
-					<Text v-if="publicUsd" size="10" color="tertiary">{{ publicUsd }}</Text>
-				</Flex>
-			</Flex>
-
-			<Flex v-if="isLoading || privateFormatted !== null" wide align="center" justify="between" :class="$style.item">
-				<Flex align="center" gap="6">
-					<Icon name="key-square" size="14" color="green" />
-					<Text size="12" weight="600" color="secondary"> Private Fee Juice </Text>
-					<Text size="10" color="tertiary"> private </Text>
-				</Flex>
-
-				<Flex v-if="isLoading" align="center" gap="6">
-					<span :class="$style.skeleton" style="width: 60px" />
-					<span :class="$style.skeleton" style="width: 36px" />
-				</Flex>
-				<Flex v-else align="center" gap="6" data-testid="gas-balance-private">
-					<Text size="12" weight="600" :color="privateFormatted === '0' ? 'tertiary' : 'primary'">
-						{{ privateFormatted }} FJ
-					</Text>
-					<Text v-if="privateUsd" size="10" color="tertiary">{{ privateUsd }}</Text>
-				</Flex>
-			</Flex>
-		</Flex>
-	</Flex>
+			<div v-if="isLoading || privateFormatted !== null" :class="[$style.col, $style.col_right]">
+				<span :class="$style.label">Private Fee Juice</span>
+				<span v-if="isLoading" :class="$style.skeleton" />
+				<span v-else :class="$style.amount" data-testid="gas-balance-private">{{ privateFormatted }} FJ</span>
+			</div>
+		</div>
+	</div>
 </template>
 
 <style module>
 .wrapper {
-	position: relative;
+	width: 100%;
+	max-width: 280px;
+	margin: 0 auto;
+	padding-top: 16px;
+	border-top: 1px solid rgba(74, 70, 63, 0.2);
 }
 
-.item {
-	background: var(--gray-5);
-	border-radius: 8px;
+.grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+}
 
-	padding: 8px 12px;
+.single_col {
+	grid-template-columns: 1fr;
+}
+
+.col {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.col_right {
+	align-items: flex-end;
+}
+
+.label {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--nulo-secondary);
+}
+
+.amount {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--nulo-accent);
 }
 
 .skeleton {
 	display: inline-block;
+	width: 60px;
 	height: 12px;
-	border-radius: 4px;
-	background: linear-gradient(90deg, var(--gray-10) 25%, var(--gray-5) 50%, var(--gray-10) 75%);
+	background: linear-gradient(90deg, var(--nulo-surface-high) 25%, var(--nulo-surface) 50%, var(--nulo-surface-high) 75%);
 	background-size: 200% 100%;
 	animation: shimmer 1.5s infinite;
 }

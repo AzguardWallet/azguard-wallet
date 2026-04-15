@@ -1,6 +1,7 @@
 <script setup>
 /** Components */
 import ActionButtonsView from "./ActionButtonsView.vue"
+import GasBalanceCard from "./GasBalanceCard.vue"
 import { Dropdown } from "@/components/ui/Dropdown"
 
 /** Vendor */
@@ -398,6 +399,9 @@ onBeforeUnmount(() => {
 				</span>
 			</Flex>
 		</section>
+
+		<!-- Gas juice (home page only, not token detail) -->
+		<GasBalanceCard v-if="!tokenBalance" />
 
 		<!-- Action buttons -->
 		<Flex :class="$style.actions">

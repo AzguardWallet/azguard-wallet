@@ -103,19 +103,16 @@ const explorerUrl = computed(() => {
 </script>
 
 <template>
-	<Flex align="start" justify="between" gap="10" data-testid="tx-card" :class="$style.wrapper">
-		<Flex align="start" gap="12" :class="$style.left_content">
+	<Flex align="center" justify="between" gap="10" data-testid="tx-card" :class="$style.wrapper">
+		<Flex align="center" gap="16" :class="$style.left_content">
 			<Flex align="center" justify="center" :class="$style.activity_icon">
-				<Icon :name="icon" size="16" color="primary" />
-
-				<Icon :name="statusIcon" size="14" :color="statusColor" :class="$style.check_icon" />
+				<Icon :name="icon" size="18" color="secondary" />
+				<Icon :name="statusIcon" size="12" :color="statusColor" :class="$style.check_icon" />
 			</Flex>
 
 			<Flex direction="column" gap="4">
 				<Flex align="center" gap="6">
-					<Text size="13" weight="600" color="primary">
-						{{ title }}
-					</Text>
+					<span :class="$style.tx_title">{{ title }}</span>
 					<a
 						v-if="explorerUrl"
 						:href="explorerUrl"
@@ -124,25 +121,21 @@ const explorerUrl = computed(() => {
 						@click.stop="handleExternalLink($event, explorerUrl)"
 						:class="$style.explorer_link"
 					>
-						<Icon name="external-link" size="12" color="tertiary" />
+						<Icon name="external-link" size="10" color="tertiary" />
 					</a>
 				</Flex>
-				<Text size="12" weight="500" :color="isSubtitleHash ? 'tertiary' : 'secondary'" :style="{ lineHeight: '1.4', wordBreak: isSubtitleHash ? 'break-all' : undefined }">{{ subtitle }}</Text>
+				<Flex align="center" gap="6">
+					<span v-if="props.tx.hash" :class="$style.tx_address">{{ props.tx.hash.slice(0, 4) }}...{{ props.tx.hash.slice(-4) }}</span>
+					<span v-if="type === 'transfer' && transfer" :class="$style.tx_type_chip">{{ subtitle }}</span>
+					<span v-else-if="!isSubtitleHash" :class="$style.tx_subtitle">{{ subtitle }}</span>
+				</Flex>
 			</Flex>
 		</Flex>
 
-		<Flex align="center" gap="8" :style="{ flexShrink: 0 }">
-			<Flex v-if="type === 'transfer' && token" align="center" :class="$style.amount_badge">
-				<Text size="12" weight="600" color="primary">
-					{{ transferAmount }}
-					<Text color="tertiary">&nbsp;{{ token?.symbol }}</Text>
-				</Text>
-			</Flex>
-			<Flex v-if="type === 'mint'" align="center" :class="$style.amount_badge">
-				<Text size="12" weight="600" color="primary">
-					{{ mintAmount }}
-				</Text>
-			</Flex>
+		<Flex direction="column" align="end" gap="2" :style="{ flexShrink: 0 }">
+			<span v-if="type === 'transfer' && token" :class="$style.tx_amount">{{ transferAmount }}</span>
+			<span v-if="type === 'mint'" :class="$style.tx_amount">{{ mintAmount }}</span>
+			<span v-if="type === 'transfer' && token" :class="$style.tx_amount_symbol">{{ token?.symbol }}</span>
 		</Flex>
 	</Flex>
 </template>
@@ -150,18 +143,13 @@ const explorerUrl = computed(() => {
 <style module>
 .wrapper {
 	cursor: pointer;
-	border-radius: 8px;
 
-	padding: 8px;
+	padding: 8px 0;
 
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
-	}
-
-	&:active {
-		background: var(--gray-5);
+		background: rgba(29, 27, 26, 0.5);
 	}
 }
 
@@ -173,28 +161,65 @@ const explorerUrl = computed(() => {
 	position: relative;
 	flex-shrink: 0;
 
-	width: 32px;
-	height: 32px;
+	width: 40px;
+	height: 40px;
 
-	border-radius: 50%;
-	background: linear-gradient(var(--gray-8), var(--gray-3));
+	background: var(--nulo-surface-low);
+	border: 1px solid rgba(74, 70, 63, 0.3);
 }
 
 .check_icon {
 	position: absolute;
-	top: -8px;
-	right: -8px;
+	top: -6px;
+	right: -6px;
 
 	box-sizing: content-box;
-	border: 3px solid var(--card-bg);
+	border: 2px solid var(--app-bg);
 	border-radius: 50%;
 }
 
-.amount_badge {
-	background: var(--gray-5);
-	border-radius: 6px;
+.tx_title {
+	font-family: var(--font-headline);
+	font-weight: 700;
+	font-size: 14px;
+	letter-spacing: -0.02em;
+	color: var(--txt-primary);
+}
 
-	padding: 4px 6px;
+.tx_address {
+	font-family: var(--font-mono);
+	font-size: 9px;
+	text-transform: uppercase;
+	color: var(--nulo-outline);
+}
+
+.tx_type_chip {
+	font-family: var(--font-mono);
+	font-size: 8px;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+	background: var(--nulo-surface-low);
+	border: 1px solid rgba(74, 70, 63, 0.2);
+	padding: 1px 4px;
+}
+
+.tx_subtitle {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-secondary);
+}
+
+.tx_amount {
+	font-family: var(--font-mono);
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--txt-primary);
+}
+
+.tx_amount_symbol {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-outline);
 }
 
 .explorer_link {

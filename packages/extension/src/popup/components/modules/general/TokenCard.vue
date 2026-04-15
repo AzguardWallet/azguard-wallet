@@ -64,12 +64,7 @@ const handleRefreshBalance = async () => {
 
 		<Flex direction="column" align="end" gap="2">
 			<span :class="$style.amount">{{ totalBalance || 0 }}</span>
-			<span :class="$style.detail">
-				<template v-if="hasPrivate">{{ privateFormatted }} PRIVATE</template>
-				<template v-if="hasPrivate && hasPublic"> / </template>
-				<template v-if="hasPublic">{{ publicFormatted }} PUBLIC</template>
-				<template v-if="!hasPrivate && !hasPublic">0 PRIVATE / 0 PUBLIC</template>
-			</span>
+			<span :class="$style.detail">{{ privateFormatted }} / {{ publicFormatted }}</span>
 		</Flex>
 	</RouterLink>
 

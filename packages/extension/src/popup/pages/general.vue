@@ -24,7 +24,6 @@ const appStore = useAppStore()
 
 		<Flex direction="column" gap="40" :class="$style.content">
 			<TokensView />
-			<GasBalanceCard />
 			<RecentActivityView />
 		</Flex>
 

@@ -124,17 +124,9 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex v-if="token && (isTokenAwaitingTx || latestTransaction)" direction="column" gap="16">
-		<Flex align="center" justify="between">
-			<Text size="13" weight="600" color="secondary"> Latest transaction </Text>
-			<Text
-				@click="router.push('/popup/activity')"
-				size="12"
-				weight="600"
-				color="tertiary"
-				:class="['clickable', $style.txt_button]"
-			>
-				View all
-			</Text>
+		<Flex align="end" justify="between" :class="$style.section_header">
+			<span :class="$style.header_title">RECENT TRANSACTIONS</span>
+			<span @click="router.push('/popup/activity')" :class="$style.archive_link">View Archives</span>
 		</Flex>
 
 		<div :class="$style.list">
@@ -143,17 +135,9 @@ onBeforeUnmount(() => {
 		</div>
 	</Flex>
 	<Flex v-else-if="!token && (latestTransaction || awaitingAccountTxs.length || dappExecutionTask)" direction="column" gap="16">
-		<Flex align="center" justify="between">
-			<Text size="13" weight="600" color="secondary"> Latest transaction </Text>
-			<Text
-				@click="router.push('/popup/activity')"
-				size="12"
-				weight="600"
-				color="tertiary"
-				:class="['clickable', $style.txt_button]"
-			>
-				View all
-			</Text>
+		<Flex align="end" justify="between" :class="$style.section_header">
+			<span :class="$style.header_title">RECENT TRANSACTIONS</span>
+			<span @click="router.push('/popup/activity')" :class="$style.archive_link">View Archives</span>
 		</Flex>
 
 		<div :class="$style.list">
@@ -165,15 +149,39 @@ onBeforeUnmount(() => {
 </template>
 
 <style module>
-.list {
-	margin: -8px;
+.section_header {
+	padding-bottom: 8px;
+	border-bottom: 1px solid rgba(74, 70, 63, 0.2);
 }
 
-.txt_button {
-	transition: all 0.2s var(--bezier);
+.header_title {
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.archive_link {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-outline);
+	cursor: pointer;
+
+	transition: color 0.2s var(--bezier);
 
 	&:hover {
-		color: var(--txt-secondary);
+		color: var(--nulo-accent);
 	}
+}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 </style>
