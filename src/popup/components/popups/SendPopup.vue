@@ -62,9 +62,9 @@ function onTokenDeleted(token) {
 	tokens.value.splice(idx, 1)
 
 	if (activeToken.value?.id !== token.id) return
-	
-	if (tokens.value?.length) {
-		cacheStore.activeTokenIdx = tokens.value[0].id
+
+	if (transferableTokens.value?.length) {
+		cacheStore.activeTokenIdx = transferableTokens.value[0].id
 		return
 	}
 
@@ -74,6 +74,9 @@ function onTokenDeleted(token) {
 }
 
 const tokens = ref([])
+const transferableTokens = computed(() =>
+	tokens.value?.filter(t => t.hasPrivateTransfers || t.hasPublicTransfers) ?? [],
+)
 const activeToken = computed(() =>
 	tokens.value?.find(t => t.id == cacheStore.activeTokenIdx),
 )
@@ -294,9 +297,9 @@ watch(
 watch(
 	() => tokens.value,
 	() => {
-		if (tokens.value?.length && awaitingNewToken.value) {
+		if (transferableTokens.value?.length && awaitingNewToken.value) {
 			awaitingNewToken.value = false
-			cacheStore.activeTokenIdx = tokens.value[0].id
+			cacheStore.activeTokenIdx = transferableTokens.value[0].id
 		}
 	},
 	{ deep: true },
@@ -327,8 +330,8 @@ watch(
 				cacheStore.activeTokenIdx = route.params.id
 			}
 
-			if (!cacheStore.activeTokenIdx && tokens.value.length) {
-				cacheStore.activeTokenIdx = tokens.value[0].id
+			if (isBlockedTransfer.value && transferableTokens.value.length) {
+				cacheStore.activeTokenIdx = transferableTokens.value[0].id
 			}
 
 			if (cacheStore.preselectedContactToSend) {
