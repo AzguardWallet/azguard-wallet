@@ -94,6 +94,7 @@ onBeforeUnmount(() => {
 					:description="token.name"
 					icon="banknote"
 					raw
+					data-testid="token-row"
 				>
 					<template #right>
 						<Flex align="center" gap="8">
@@ -116,6 +117,7 @@ onBeforeUnmount(() => {
 									name="close-circle"
 									size="14"
 									color="tertiary"
+									data-testid="token-delete"
 									:class="$style.icon_btn"
 								/>
 

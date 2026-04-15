@@ -103,7 +103,7 @@ const explorerUrl = computed(() => {
 </script>
 
 <template>
-	<Flex align="start" justify="between" gap="10" :class="$style.wrapper">
+	<Flex align="start" justify="between" gap="10" data-testid="tx-card" :class="$style.wrapper">
 		<Flex align="start" gap="12" :class="$style.left_content">
 			<Flex align="center" justify="center" :class="$style.activity_icon">
 				<Icon :name="icon" size="16" color="primary" />

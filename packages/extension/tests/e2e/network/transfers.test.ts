@@ -1,6 +1,13 @@
 import { inject, expect } from "vitest"
 import { test, openPopup, waitForHash } from "../fixtures/extension"
-import { sendTransfer, waitForBalance, waitForTxConfirmation, navigateToTokenDetail, getTokenDetailBalances } from "../fixtures/helpers"
+import {
+	sendTransfer,
+	waitForBalance,
+	waitForTxConfirmation,
+	navigateToTokenDetail,
+	getTokenDetailBalances,
+	clickNavTab,
+} from "../fixtures/helpers"
 import type { AztecTestConfig } from "../fixtures/aztec"
 
 const aztecConfig = inject("aztecTestConfig") as AztecTestConfig | undefined
@@ -137,5 +144,26 @@ test.skipIf(!hasConfig)("send from token detail page loads token correctly", { t
 
 	// Close popup via Escape
 	await page.keyboard.press("Escape")
+	await page.close()
+})
+
+test.skipIf(!hasConfig)("transaction history shows completed transfers", { timeout: 120_000 }, async ({ tokenReadyExtension }) => {
+	const page = await openPopup(tokenReadyExtension)
+	await waitForHash(page, "#/popup/general")
+
+	// Navigate to activity tab
+	await clickNavTab(page, "activity")
+	await page.waitForFunction(() => window.location.hash.includes("#/popup/activity"), { timeout: 5_000 })
+
+	// Wait for transaction cards to appear (PXE syncs transaction history)
+	await page.waitForSelector('[data-testid="tx-card"]', { visible: true, timeout: 30_000 })
+
+	// Count transaction cards — should have at least 4 from the transfer chain
+	// (some transfers may not have synced to history yet depending on PXE timing)
+	const txCount = await page.evaluate(() => document.querySelectorAll('[data-testid="tx-card"]').length)
+	console.log(`[activity] Found ${txCount} transaction cards`)
+	expect(txCount).toBeGreaterThanOrEqual(4)
+
+	console.log("✓ Transaction history shows completed transfers")
 	await page.close()
 })
