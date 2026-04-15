@@ -431,28 +431,22 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             : undefined;
 
         const pfpcAddress = await getPrivateFpcAddress();
+        const fallback = {
+            [feeJuiceAddress]: { name: feeJuiceName, symbol: feeJuiceSymbol, decimals: 18 },
+            [pfpcAddress]: { name: privateFpcName, symbol: privateFpcSymbol, decimals: 18 },
+        }[ti.contract];
 
-        return [
+        return await Promise.all([
             getNameFn
-                ? await simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
-                : ti.contract === feeJuiceAddress
-                ? feeJuiceName
-                : ti.contract === pfpcAddress
-                ? privateFpcName
-                : "<name>",
+                ? simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
+                : fallback?.name ?? "<name>",
             getSymbolFn
-                ? await simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
-                : ti.contract === feeJuiceAddress
-                ? feeJuiceSymbol
-                : ti.contract === pfpcAddress
-                ? privateFpcSymbol
-                : "<symbol>",
+                ? simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
+                : fallback?.symbol ?? "<symbol>",
             getDecimalsFn
-                ? await simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())
-                : ti.contract === feeJuiceAddress || ti.contract === pfpcAddress
-                ? 18
-                : 0,
-        ];
+                ? simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())
+                : fallback?.decimals ?? 0,
+        ]);
     }
 
     private async findToken(profileId: string, chainId: number, contract: string): Promise<Token | undefined> {
