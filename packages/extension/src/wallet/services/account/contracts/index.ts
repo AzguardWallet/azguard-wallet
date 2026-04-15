@@ -24,16 +24,16 @@ export interface IAccountContract {
 	buildTxExecutionRequest(
 		node: AztecNode,
 		pxe: IPXE,
-		calls: VibeguardFunctionCall[],
+		calls: NuloFunctionCall[],
 		nonce: Fr,
-		feePaymentMethod: VibeguardFeePaymentMethod,
+		feePaymentMethod: NuloFeePaymentMethod,
 		args: HashedValues[],
 		authwits?: AuthWitness[],
 		capsules?: Capsule[],
 	): Promise<TxExecutionRequest>
 }
 
-export class VibeguardFunctionCall {
+export class NuloFunctionCall {
 	constructor(
 		public readonly address: AztecAddress,
 		public readonly selector: FunctionSelector,
@@ -54,12 +54,12 @@ export class VibeguardFunctionCall {
 		]
 	}
 
-	public static empty(): VibeguardFunctionCall {
-		return new VibeguardFunctionCall(AztecAddress.zero(), FunctionSelector.empty(), Fr.zero(), false, false, false)
+	public static empty(): NuloFunctionCall {
+		return new NuloFunctionCall(AztecAddress.zero(), FunctionSelector.empty(), Fr.zero(), false, false, false)
 	}
 }
 
-export enum VibeguardFeePaymentMethod {
+export enum NuloFeePaymentMethod {
 	External = 0,
 	FeeJuice = 1,
 	FeeJuiceWithClaim = 2,

@@ -1,7 +1,7 @@
 {
-	"name": "@vibeguard/extension",
+	"name": "@nulo/extension",
 	"private": true,
-	"displayName": "Vibeguard",
+	"displayName": "Nulo",
 	"description": "User-friendly self-custody wallet for Aztec network, preserving your privacy and revealing the power of account abstraction.",
 	"version": "0.10.0",
 	"sentinel": "7",
@@ -26,7 +26,7 @@
 	},
 	"dependencies": {
 		"@alejoamiras/aztec-accelerator": "4.2.0-nightly.20260413.1",
-		"@vibeguard/contracts": "workspace:*",
+		"@nulo/contracts": "workspace:*",
 		"@aztec/aztec.js": "4.2.0-nightly.20260413",
 		"@aztec/bb.js": "4.2.0-nightly.20260413",
 		"@aztec/constants": "4.2.0-nightly.20260413",

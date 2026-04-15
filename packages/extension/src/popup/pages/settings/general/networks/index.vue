@@ -40,7 +40,7 @@ const handleSelectNetwork = (target) => {
 	if (appStore.network.id === target.id) return
 	managers.network.setDefault(target.id)
 	appStore.network = target
-	chrome.storage.local.set({ [`vibeguard:ui:lastActiveNetwork@${appStore.profile.id}`]: target.id })
+	chrome.storage.local.set({ [`nulo:ui:lastActiveNetwork@${appStore.profile.id}`]: target.id })
 }
 
 const handleEdit = (target) => {
@@ -60,7 +60,7 @@ const handleDelete = (target) => {
 
 		appStore.network = appStore.networks[0]
 		managers.network.setDefault(appStore.network.id)
-		chrome.storage.local.set({ [`vibeguard:ui:lastActiveNetwork@${appStore.profile.id}`]: appStore.network.id })
+		chrome.storage.local.set({ [`nulo:ui:lastActiveNetwork@${appStore.profile.id}`]: appStore.network.id })
 
 		openToast({ label: "Network is deleted" })
 	}

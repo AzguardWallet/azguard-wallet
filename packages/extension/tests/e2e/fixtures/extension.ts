@@ -42,8 +42,8 @@ async function launchExtension(): Promise<ExtensionContext> {
 	await blankPage.waitForFunction(
 		async () => {
 			try {
-				const result = await chrome.storage.session.get("vibeguard:liveness")
-				return !!result["vibeguard:liveness"]
+				const result = await chrome.storage.session.get("nulo:liveness")
+				return !!result["nulo:liveness"]
 			} catch {
 				return false
 			}
@@ -107,7 +107,7 @@ async function registerProfile(ctx: ExtensionContext): Promise<void> {
 /** Connect a dapp to the wallet via the test dapp page. */
 async function connectDapp(ctx: ExtensionContext): Promise<void> {
 	const dappPage = await ctx.browser.newPage()
-	// TODO: Replace with local @vibeguard/playground once wallet-sdk connection flow is implemented
+	// TODO: Replace with local @nulo/playground once wallet-sdk connection flow is implemented
 	// await dappPage.goto("http://localhost:5174/", {
 	await dappPage.goto("https://adhoc-aztec-wallet-test.pages.dev/", {
 		waitUntil: "domcontentloaded",

@@ -30,7 +30,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 	public readonly onFpcUpdated = new EventHandler<FpcInfo>()
 	public readonly onFpcDeleted = new EventHandler<FpcInfo>()
 
-	private readonly storage = new EntityStorage<FpcInfo>("vibeguard:core:fpcs", StorageType.Local)
+	private readonly storage = new EntityStorage<FpcInfo>("nulo:core:fpcs", StorageType.Local)
 	private readonly lock = new Lock()
 
 	private pxeService: PxeServiceClient = null!

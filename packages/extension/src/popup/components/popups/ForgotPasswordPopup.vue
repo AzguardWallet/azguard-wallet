@@ -56,7 +56,7 @@ const handleImport = () => {
 				<ItemsContainer
 					description="Requests to reset or recover your password will be ignored, use the recovery methods listed above"
 				>
-					<!-- TODO: Update URL when Vibeguard domain is ready -->
+					<!-- TODO: Update URL when Nulo domain is ready -->
 					<SettingItem
 						title="Report issue with authorization"
 						to="https://azguardwallet.io/forms/report-issue"

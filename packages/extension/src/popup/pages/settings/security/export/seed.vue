@@ -19,7 +19,7 @@ import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()
 const { handleExternalLink } = useExternalLink()
 
-// TODO: Update URL when Vibeguard domain is ready
+// TODO: Update URL when Nulo domain is ready
 const backupHelpUrl = "https://azguardwallet.io/help/wallet-setup/backup-methods"
 
 /** Store */

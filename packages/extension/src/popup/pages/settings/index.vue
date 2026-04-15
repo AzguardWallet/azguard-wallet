@@ -70,7 +70,7 @@ const handleCopyAddress = () => {
 			</ItemsContainer>
 
 			<ItemsContainer>
-				<SettingItem to="/popup/settings/about" size="small" title="About Vibeguard" chevron />
+				<SettingItem to="/popup/settings/about" size="small" title="About Nulo" chevron />
 			</ItemsContainer>
 		</Flex>
 

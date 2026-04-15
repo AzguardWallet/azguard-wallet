@@ -34,7 +34,7 @@ import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()
 const { handleExternalLink } = useExternalLink()
 
-// TODO: Update URL when Vibeguard domain is ready
+// TODO: Update URL when Nulo domain is ready
 const backupHelpUrl = "https://azguardwallet.io/help/wallet-setup/backup-methods"
 
 /** Store */
@@ -149,7 +149,7 @@ async function handleEncrypt() {
 async function handleDownloadBackup() {
 	const isEncrypted = backupStatus.value === "encrypted"
 	let filename = `_${appStore.profile.name.replace(" ", "_")}_${Math.floor(Date.now() / 1000)}`
-	filename = isEncrypted ? `VibeguardEncryptedBackup${filename}.txt` : `VibeguardBackup${filename}.json`
+	filename = isEncrypted ? `NuloEncryptedBackup${filename}.txt` : `NuloBackup${filename}.json`
 
 	let fileContent = ""
 	if (isEncrypted) {

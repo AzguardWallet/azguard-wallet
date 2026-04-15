@@ -41,8 +41,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
 	public constructor(config: IConfig, logger: ILogger) {
 		super(PROFILE_SERVICE_NAME, logger)
-		this.profiles = new EntityStorage("vibeguard:core:profiles", StorageType.Local)
-		this.session = new ValueStorage("vibeguard:core:session", StorageType.Session)
+		this.profiles = new EntityStorage("nulo:core:profiles", StorageType.Local)
+		this.session = new ValueStorage("nulo:core:session", StorageType.Session)
 		this.sessionTtl = config.get("sessionTtl")
 		config.onUpdate.add(this.onConfigUpdated)
 	}

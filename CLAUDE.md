@@ -8,10 +8,10 @@ Bun workspaces monorepo with 4 packages:
 
 | Package | Path | Purpose |
 |---------|------|---------|
-| `@vibeguard/extension` | `packages/extension/` | Chrome/Firefox extension (Manifest V3) |
-| `@vibeguard/contracts` | `packages/contracts/` | Noir smart contracts + pre-compiled artifacts |
-| `@vibeguard/playground` | `packages/playground/` | Test dApp for e2e testing (scaffold) |
-| `@vibeguard/landing` | `packages/landing/` | Marketing landing page (scaffold) |
+| `@nulo/extension` | `packages/extension/` | Chrome/Firefox extension (Manifest V3) |
+| `@nulo/contracts` | `packages/contracts/` | Noir smart contracts + pre-compiled artifacts |
+| `@nulo/playground` | `packages/playground/` | Test dApp for e2e testing (scaffold) |
+| `@nulo/landing` | `packages/landing/` | Marketing landing page (scaffold) |
 
 ## Build & Development Commands
 
@@ -45,7 +45,7 @@ Load the extension in Chrome: `chrome://extensions` → Load unpacked → select
 
 ## Naming Backward-Compatibility Constraints
 
-The product was renamed from "Azguard" to "Vibeguard". The following MUST NOT be renamed:
+The product was renamed from "Azguard" to "Vibeguard" to "Nulo". The following MUST NOT be renamed:
 
 - **Contract artifacts** (`azguard-v0.json`, `azguard-v0-persistent.json`): On-chain class identity. The names are embedded in compiled bytecode.
 - **Passkey RP ID** (`azguardwallet.io`): WebAuthn credentials are bound to this. Changing it permanently locks users out.
@@ -54,16 +54,16 @@ The product was renamed from "Azguard" to "Vibeguard". The following MUST NOT be
 
 ## Contracts Package
 
-The `@vibeguard/contracts` package contains:
+The `@nulo/contracts` package contains:
 - **Noir source** (`azguard-account/`, `azguard-account-persistent/`): Built with `nargo compile`. Requires Nargo installed.
 - **Pre-compiled artifacts** (`artifacts/`): Committed JSON files for devs without Nargo.
 - **TS wrapper** (`src/index.ts`): Exports typed artifacts for the extension to import.
 
-The extension imports via: `import { vibeguardV0Artifact } from "@vibeguard/contracts"`
+The extension imports via: `import { nuloV0Artifact } from "@nulo/contracts"`
 
 ## Architecture Overview
 
-Vibeguard Wallet is a Chrome extension (Manifest V3) for the Aztec network with privacy-first design.
+Nulo Wallet is a Chrome extension (Manifest V3) for the Aztec network with privacy-first design.
 
 ### Entry Points
 

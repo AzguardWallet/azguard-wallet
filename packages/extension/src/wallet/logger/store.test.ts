@@ -210,7 +210,7 @@ describe("LoggerStore", () => {
 			;(globalThis as any).chrome = {
 				storage: {
 					session: {
-						get: vi.fn().mockResolvedValue({ "vibeguard:logs": savedLogs }),
+						get: vi.fn().mockResolvedValue({ "nulo:logs": savedLogs }),
 						set: vi.fn(),
 					},
 				},

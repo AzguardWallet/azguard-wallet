@@ -70,13 +70,13 @@ const initNetworks = async () => {
 
 	appStore.networks = await managers.network.getOrInitNetworks()
 
-	const activeNetworkResult = await chrome.storage.local.get("vibeguard:ui:activeNetwork")
-	if ("vibeguard:ui:activeNetwork" in activeNetworkResult) {
-		const localActiveNetworkId = activeNetworkResult["vibeguard:ui:activeNetwork"]
+	const activeNetworkResult = await chrome.storage.local.get("nulo:ui:activeNetwork")
+	if ("nulo:ui:activeNetwork" in activeNetworkResult) {
+		const localActiveNetworkId = activeNetworkResult["nulo:ui:activeNetwork"]
 		appStore.network = appStore.networks.find((n) => n.id === localActiveNetworkId)
 	}
 
-	const key = `vibeguard:ui:lastActiveNetwork@${appStore.profile?.id}`
+	const key = `nulo:ui:lastActiveNetwork@${appStore.profile?.id}`
 	const lastActiveNetworkId = (await chrome.storage.local.get(key))[key]
 
 	if (lastActiveNetworkId) {
@@ -98,7 +98,7 @@ const initAccount = async () => {
 
 	/** temp */
 	if (!appStore.accounts.length) {
-		await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Vibeguard_v0, "Account")
+		await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Nulo_v0, "Account")
 		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 	}
 
@@ -130,7 +130,7 @@ watch(
 		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 		if (!appStore.accounts.length) {
-			await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Vibeguard_v0, "Account")
+			await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Nulo_v0, "Account")
 			appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 			await appStore.setupActiveAccount()
 
@@ -237,7 +237,7 @@ onMounted(async () => {
 		"%cIf someone asks you to do something in this interface (DevTools), 100% they are trying to scam you. If you don't know what you are doing, close this window (cross in the upper right corner).",
 		styleText,
 	)
-	// TODO: Update URL when Vibeguard domain is ready
+	// TODO: Update URL when Nulo domain is ready
 	console._log("%cYou can report a scam through the form: https://azguardwallet.io/forms/report-scam", styleText)
 	/****************** */
 

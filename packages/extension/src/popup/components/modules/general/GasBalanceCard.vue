@@ -5,7 +5,7 @@ import BN from "bignumber.js"
 /** Services */
 import { ExecutionServiceClient } from "@/wallet/services/execution/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
-import { VibeguardFeePaymentMethod } from "@/wallet/services/account/contracts"
+import { NuloFeePaymentMethod } from "@/wallet/services/account/contracts"
 import { TxStatus } from "@/wallet/services/transaction/spec"
 
 /** Utils */
@@ -52,7 +52,7 @@ function onTransactionAdded(tx) {
 	if (tx.account !== appStore.account?.address) return
 	if (!tx.estimatedFee) return
 
-	if (tx.feePaymentMethod === VibeguardFeePaymentMethod.FeeJuice || tx.feePaymentMethod === VibeguardFeePaymentMethod.FeeJuiceWithClaim) {
+	if (tx.feePaymentMethod === NuloFeePaymentMethod.FeeJuice || tx.feePaymentMethod === NuloFeePaymentMethod.FeeJuiceWithClaim) {
 		const current = new BN(publicFeeJuice.value)
 		const deduction = new BN(tx.estimatedFee)
 		publicFeeJuice.value = BN.max(current.minus(deduction), new BN(0)).toFixed(0)

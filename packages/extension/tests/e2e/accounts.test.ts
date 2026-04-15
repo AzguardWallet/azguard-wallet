@@ -75,8 +75,8 @@ test("switch between accounts", async ({ registeredExtension }) => {
 
 	// Verify the account address changed in chrome storage
 	const address = await page.evaluate(async () => {
-		const result = await chrome.storage.local.get("vibeguard:ui:activeAccount")
-		return result["vibeguard:ui:activeAccount"]
+		const result = await chrome.storage.local.get("nulo:ui:activeAccount")
+		return result["nulo:ui:activeAccount"]
 	})
 	expect(address).toBeTruthy()
 	expect(typeof address).toBe("string")
@@ -140,9 +140,7 @@ test.skip("hide and restore account", async ({ registeredExtension }) => {
 
 	// Wait for toast "Account successfully hidden" OR "Hidden accounts" section
 	await page.waitForFunction(
-		() =>
-			document.body.innerText.includes("Hidden accounts") ||
-			document.body.innerText.includes("Account successfully hidden"),
+		() => document.body.innerText.includes("Hidden accounts") || document.body.innerText.includes("Account successfully hidden"),
 		{ timeout: 10_000 },
 	)
 

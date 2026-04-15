@@ -11,7 +11,7 @@ import type { Action, CallAction, EncodedCallAction, FeeSettings } from "."
 export type OperationKind = Operation["kind"]
 
 export type Operation =
-	// Vibeguard interface:
+	// Nulo interface:
 	| GetCompleteAddressOperation
 	| RegisterContractOperation
 	| RegisterSenderOperation
@@ -34,7 +34,7 @@ export type Operation =
 	| AztecSendTxOperation
 	| AztecCreateAuthWitOperation
 
-// Vibeguard interface:
+// Nulo interface:
 
 export type GetCompleteAddressOperation = {
 	readonly kind: "get_complete_address"

@@ -64,7 +64,7 @@ export async function createTestWallet(url = LOCAL_NODE_URL) {
 	const node = createAztecNodeClient(url)
 	await waitForNode(node)
 
-	const dataDirectory = join(tmpdir(), `vibeguard-e2e-${randomBytes(8).toString("hex")}`)
+	const dataDirectory = join(tmpdir(), `nulo-e2e-${randomBytes(8).toString("hex")}`)
 	const wallet = await EmbeddedWallet.create(node, {
 		pxeConfig: { dataDirectory, proverEnabled: false },
 	})

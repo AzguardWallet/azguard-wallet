@@ -1,4 +1,4 @@
-// Vibeguard Playground — test dApp for e2e testing
+// Nulo Playground — test dApp for e2e testing
 //
 // This page will replace the external adhoc-aztec-wallet-test.pages.dev
 // once the wallet-sdk connection flow is implemented.
@@ -12,7 +12,7 @@
 const app = document.querySelector<HTMLDivElement>("#app")!
 
 app.innerHTML = `
-	<h1>Vibeguard Playground</h1>
+	<h1>Nulo Playground</h1>
 	<p id="status">Ready. Click Connect to start.</p>
 	<button id="connect">Connect</button>
 	<div id="result"></div>

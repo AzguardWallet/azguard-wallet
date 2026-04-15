@@ -99,8 +99,8 @@ export async function switchToLocalNetwork(page: Page): Promise<void> {
 /** Read the active account address from chrome.storage. */
 export async function getAccountAddress(page: Page): Promise<string> {
 	return await page.evaluate(async () => {
-		const result = await chrome.storage.local.get("vibeguard:ui:activeAccount")
-		return result["vibeguard:ui:activeAccount"] as string
+		const result = await chrome.storage.local.get("nulo:ui:activeAccount")
+		return result["nulo:ui:activeAccount"] as string
 	})
 }
 

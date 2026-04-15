@@ -1,5 +1,5 @@
 {
-	"name": "vibeguard",
+	"name": "nulo",
 	"private": true,
 	"workspaces": ["packages/*"],
 	"scripts": {

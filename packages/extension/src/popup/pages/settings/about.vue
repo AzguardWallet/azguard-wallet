@@ -1,7 +1,7 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Vibeguard",
+		"title": "Nulo",
 		"isAuthRequired": true
 	}
 }
@@ -23,7 +23,7 @@ const handleCopy = (target) => {
 	openToast({ label: "Version is copied", icon: "copy" })
 }
 
-// TODO: Update URLs when Vibeguard domain is ready
+// TODO: Update URLs when Nulo domain is ready
 const handleOpen = (target) => {
 	chrome.windows.create({
 		type: "popup",
@@ -40,7 +40,7 @@ const handleOpen = (target) => {
 			<Breadcrumbs />
 
 			<Flex wide align="start" direction="column" gap="8">
-				<Text size="13" weight="600" color="primary"> Vibeguard </Text>
+				<Text size="13" weight="600" color="primary"> Nulo </Text>
 				<Flex align="start" direction="column" gap="4" wide>
 					<Text @click="handleCopy(version)" size="12" weight="500" color="support" class="copyable">
 						Wallet version - {{ version }} - Alpha Testing
@@ -54,7 +54,7 @@ const handleOpen = (target) => {
 			<ItemsContainer wide>
 				<SettingItem
 					to="https://azguardwallet.io"
-					title="Vibeguard Website"
+					title="Nulo Website"
 					icon="globe"
 					iconBgColor="blue"
 					external

@@ -28,7 +28,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
 	public readonly onTokenBalanceUpdated = new EventHandler<TokenBalanceInfo>()
 	public readonly onTokenBalanceDeleted = new EventHandler<TokenBalanceInfo>()
 
-	private readonly balances = new EntityStorage<TokenBalanceRaw>("vibeguard:core:token-balances", StorageType.Local)
+	private readonly balances = new EntityStorage<TokenBalanceRaw>("nulo:core:token-balances", StorageType.Local)
 	private readonly queue = new Queue<number, TokenBalanceRaw>((x) => x.id)
 	private readonly pendingTasks = new Map<number, string>()
 	private readonly tokens = new Map<number, Token>()

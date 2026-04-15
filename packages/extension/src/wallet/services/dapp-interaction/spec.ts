@@ -46,7 +46,7 @@ export type ExecutionParams = {
 }
 
 export type OperationRequest =
-	// Vibeguard interface:
+	// Nulo interface:
 	| GetCompleteAddressRequest
 	| RegisterContractRequest
 	| RegisterSenderRequest
@@ -76,7 +76,7 @@ type NetworkParams = "networkId"
 type AccountParams = NetworkParams | "accountAddress"
 type SendParams = AccountParams | "feeSettings"
 
-// Vibeguard interface:
+// Nulo interface:
 
 export type GetCompleteAddressRequest = Omit<GetCompleteAddressOperation, AccountParams> & {
 	account: CaipAccount

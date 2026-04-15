@@ -7,7 +7,7 @@ import { DateTime } from "luxon"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { OriginType } from "@/wallet/services/transaction/client"
-import { VibeguardFeePaymentMethod } from "@/wallet/services/account/contracts"
+import { NuloFeePaymentMethod } from "@/wallet/services/account/contracts"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
@@ -104,11 +104,11 @@ const formatTimestamp = (timestamp) => {
 
 const getFeePaymentMethodName = (method) => {
 	switch (method) {
-		case VibeguardFeePaymentMethod.External:
+		case NuloFeePaymentMethod.External:
 			return "External (FPC)"
-		case VibeguardFeePaymentMethod.FeeJuice:
+		case NuloFeePaymentMethod.FeeJuice:
 			return "FeeJuice"
-		case VibeguardFeePaymentMethod.FeeJuiceWithClaim:
+		case NuloFeePaymentMethod.FeeJuiceWithClaim:
 			return "FeeJuice + Claim"
 		default:
 			return `Unknown (${method})`

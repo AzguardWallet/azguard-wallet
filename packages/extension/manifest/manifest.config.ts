@@ -11,7 +11,7 @@ export default {
 	version: `${major}.${minor}.${patch}.${label}`,
 	version_name: version,
 	manifest_version: 3,
-	// TODO: Update host_permissions when new Vibeguard domain is ready
+	// TODO: Update host_permissions when new Nulo domain is ready
 	host_permissions: ["https://azguardwallet.io/"],
 	action: {
 		default_popup: "src/popup/index.html#/popup/general",

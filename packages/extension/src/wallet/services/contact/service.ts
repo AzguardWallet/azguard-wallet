@@ -18,7 +18,7 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
 	public readonly onContactUpdated = new EventHandler<Contact>()
 	public readonly onContactDeleted = new EventHandler<Contact>()
 
-	private readonly storage = new EntityStorage<Contact>("vibeguard:core:contacts", StorageType.Local)
+	private readonly storage = new EntityStorage<Contact>("nulo:core:contacts", StorageType.Local)
 	private readonly lock = new Lock()
 
 	private profileService: ProfileService = null!

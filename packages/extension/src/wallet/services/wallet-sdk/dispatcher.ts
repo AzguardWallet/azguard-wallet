@@ -19,7 +19,7 @@
  *
  * The dispatcher does NOT directly call PXE, account derivation, or transaction
  * building. It delegates everything to `ExecutionService`, which already handles
- * all operation kinds for both the Vibeguard custom interface and the Aztec.js
+ * all operation kinds for both the Nulo custom interface and the Aztec.js
  * Wallet interface. This keeps business logic in one place.
  *
  * The session-to-network resolution mirrors `DappInteractionService.silentInteraction()`,
@@ -35,7 +35,7 @@
  * await bgHandler.sendResponse(session.sessionId, {
  *     messageId: message.messageId,
  *     result,
- *     walletId: 'vibeguard',
+ *     walletId: 'nulo',
  * });
  * ```
  */
@@ -113,7 +113,7 @@ const METHOD_TO_KIND: Record<string, Operation["kind"]> = {
 	profileTx: "aztec_profileTx",
 	// sendTx is handled directly in dispatch() via DappInteractionService
 	createAuthWit: "aztec_createAuthWit",
-	// --- Vibeguard custom methods (added via schema_patch.ts) ---
+	// --- Nulo custom methods (added via schema_patch.ts) ---
 	registerToken: "register_token",
 	getCompleteAddress: "get_complete_address",
 	simulateViews: "simulate_views",
@@ -360,7 +360,7 @@ export class WalletSdkDispatcher {
 			return {
 				version: "1.0" as const,
 				granted: [],
-				wallet: { name: "Vibeguard", version: packageJson.version },
+				wallet: { name: "Nulo", version: packageJson.version },
 			}
 		}
 
@@ -388,7 +388,7 @@ export class WalletSdkDispatcher {
 			return {
 				version: "1.0" as const,
 				granted,
-				wallet: { name: "Vibeguard", version: packageJson.version },
+				wallet: { name: "Nulo", version: packageJson.version },
 			}
 		}
 
@@ -485,7 +485,7 @@ export class WalletSdkDispatcher {
 		return {
 			version: "1.0" as const,
 			granted,
-			wallet: { name: "Vibeguard", version: packageJson.version },
+			wallet: { name: "Nulo", version: packageJson.version },
 		}
 	}
 
@@ -557,7 +557,7 @@ export class WalletSdkDispatcher {
 	 *
 	 * The wallet-sdk sends args as positional arrays matching the WalletSchema
 	 * function signatures. For Aztec.js Wallet methods, the args map directly
-	 * to the operation fields. For Vibeguard custom methods, we unpack them
+	 * to the operation fields. For Nulo custom methods, we unpack them
 	 * according to the schema_patch.ts definitions.
 	 */
 	private async buildOperation(kind: Operation["kind"], args: unknown[], ctx: SessionContext): Promise<Operation> {

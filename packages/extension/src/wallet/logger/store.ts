@@ -64,8 +64,8 @@ export class LoggerStore implements ILoggerStore {
 	/** Rehydrate logs from chrome.storage.session (call on startup before wiring services). */
 	public async rehydrate(): Promise<void> {
 		try {
-			const result = await chrome.storage.session.get("vibeguard:logs")
-			const saved = result["vibeguard:logs"] as Log[] | undefined
+			const result = await chrome.storage.session.get("nulo:logs")
+			const saved = result["nulo:logs"] as Log[] | undefined
 			if (saved?.length) {
 				for (const log of saved) {
 					this.logs.add(log)
@@ -84,7 +84,7 @@ export class LoggerStore implements ILoggerStore {
 			this.flushTimer = undefined
 			try {
 				const items = this.logs.items().slice(-2000)
-				chrome.storage.session.set({ "vibeguard:logs": items })
+				chrome.storage.session.set({ "nulo:logs": items })
 			} catch {
 				// Session storage may not be available
 			}

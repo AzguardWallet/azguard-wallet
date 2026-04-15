@@ -33,7 +33,7 @@ import {
 	OriginType,
 	isSyncedTx,
 } from "./spec"
-import type { VibeguardFeePaymentMethod } from "../account/contracts"
+import type { NuloFeePaymentMethod } from "../account/contracts"
 import { FUNCTION_CALL_LOG_EVENT_SELECTOR } from "../account/contracts/azguard-v0-persistent"
 import type { PackedPrivateEvent } from "@aztec/pxe/client/bundle"
 import type { Fr } from "@aztec/foundation/curves/bn254"
@@ -66,7 +66,7 @@ export type FunctionCallLogEvent = {
 	isPublic: boolean
 	isStatic: boolean
 	hideSender: boolean
-	feePaymentMethod: VibeguardFeePaymentMethod
+	feePaymentMethod: NuloFeePaymentMethod
 }
 
 export class TransactionService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
@@ -76,8 +76,8 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 	public readonly onTransactionUpdated = new EventHandler<Tx>()
 	public readonly onTransactionDeleted = new EventHandler<Tx>()
 
-	private readonly txs = new EntityStorage<Tx>("vibeguard:core:txs", StorageType.Local)
-	private readonly cursors = new EntityStorage<TxIndexerCursor>("vibeguard:core:tx-cursors", StorageType.Local)
+	private readonly txs = new EntityStorage<Tx>("nulo:core:txs", StorageType.Local)
+	private readonly cursors = new EntityStorage<TxIndexerCursor>("nulo:core:tx-cursors", StorageType.Local)
 	private readonly pending = new Map<string, Tx>()
 	private readonly syncingAccounts = new Map<string, string>() // account address -> task id
 
@@ -131,7 +131,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 		account: string,
 		calls: TxCall[],
 		nonce: string,
-		feePaymentMethod: VibeguardFeePaymentMethod,
+		feePaymentMethod: NuloFeePaymentMethod,
 		hash: string,
 		estimatedFee?: string,
 		gasDetails?: TxGasDetails,
@@ -180,7 +180,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 	}
 
 	private readonly onAccountAdded = async (account: Account) => {
-		if (account.type === AccountType.Vibeguard_v0_persistent) {
+		if (account.type === AccountType.Nulo_v0_persistent) {
 			await this.syncTransactionHistory(account.chainId, account.address)
 		}
 	}
@@ -246,7 +246,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 			this.logError(`Sync: account not found for address=${address}`)
 			return
 		}
-		if (account.type !== AccountType.Vibeguard_v0_persistent) {
+		if (account.type !== AccountType.Nulo_v0_persistent) {
 			this.logDebug(`Sync: account ${address} is not persistent, skipping`)
 			return
 		}

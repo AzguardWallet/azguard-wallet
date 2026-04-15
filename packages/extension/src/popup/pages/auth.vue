@@ -29,7 +29,7 @@ if (appStore.isLogined) {
 	router.go(-1)
 }
 
-const LAST_ACTIVE_PROFILE_KEY = "vibeguard:ui:lastActiveProfile"
+const LAST_ACTIVE_PROFILE_KEY = "nulo:ui:lastActiveProfile"
 
 const defaultConfig = new Config()
 const theme = ref(defaultConfig.theme)

@@ -1,4 +1,4 @@
-import type { VibeguardFeePaymentMethod } from "../account/contracts"
+import type { NuloFeePaymentMethod } from "../account/contracts"
 
 export const TRANSACTION_SERVICE_NAME = "transaction"
 
@@ -141,7 +141,7 @@ type TxBase = {
 	/** Nonce. */
 	nonce: string
 	/** Fee payment method. */
-	feePaymentMethod: VibeguardFeePaymentMethod
+	feePaymentMethod: NuloFeePaymentMethod
 	/** Transaction hash. */
 	hash: string
 	/** Creation time. */

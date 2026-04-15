@@ -20,7 +20,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
 	public readonly onNetworkDeleted = new EventHandler<Network>()
 	public readonly onDefaultNetworkChanged = new EventHandler<Network>()
 
-	private readonly storage = new EntityStorage<Network>("vibeguard:core:networks", StorageType.Local)
+	private readonly storage = new EntityStorage<Network>("nulo:core:networks", StorageType.Local)
 	private readonly nodes = new Map<number, AztecNode>()
 	private readonly lock: Lock
 

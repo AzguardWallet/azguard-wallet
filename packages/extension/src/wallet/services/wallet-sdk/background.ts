@@ -89,8 +89,8 @@ export function initWalletSdkHandler(services: ServiceCollection, logger: ILogge
 
 	const handler = new BackgroundConnectionHandler(
 		{
-			walletId: "vibeguard",
-			walletName: "Vibeguard",
+			walletId: "nulo",
+			walletName: "Nulo",
 			walletVersion: packageJson.version,
 			walletIcon: chrome.runtime.getURL("/src/assets/logo.png"),
 		},
@@ -372,7 +372,7 @@ async function handleWalletMessage(
 ): Promise<void> {
 	const response: WalletResponse = {
 		messageId: message.messageId,
-		walletId: "vibeguard",
+		walletId: "nulo",
 	}
 
 	try {

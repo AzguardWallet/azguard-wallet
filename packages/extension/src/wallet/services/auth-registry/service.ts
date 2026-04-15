@@ -25,8 +25,8 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
 	public readonly onRegistryEnabled = new EventHandler<string>()
 	public readonly onRegistryDisabled = new EventHandler<string>()
 
-	private readonly authwits = new EntityStorage<Authwit>("vibeguard:core:auth-registry", StorageType.Local)
-	private readonly statuses = new EntityStorage<boolean>("vibeguard:core:auth-registry-enabled", StorageType.Local)
+	private readonly authwits = new EntityStorage<Authwit>("nulo:core:auth-registry", StorageType.Local)
+	private readonly statuses = new EntityStorage<boolean>("nulo:core:auth-registry-enabled", StorageType.Local)
 	private readonly lock = new Lock()
 
 	private profileService: ProfileService = null!

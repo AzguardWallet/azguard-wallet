@@ -58,7 +58,7 @@ test("about page shows version info", async ({ registeredExtension }) => {
 	await clickNavTab(page, "settings")
 	await waitForHash(page, "#/popup/settings")
 
-	// Click "About Vibeguard" or "About" link
+	// Click "About Nulo" or "About" link
 	const aboutLink = await page.waitForSelector("text/About", { visible: true, timeout: 5_000 })
 	await aboutLink!.click()
 

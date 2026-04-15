@@ -25,7 +25,7 @@ const notAllowedNetworkNames = computed(() => appStore.networks.map((n) => n.nam
 const notAllowedNetworkUrls = computed(() => appStore.networks.map((n) => n.rpcUrl))
 
 const nameTerm = ref("")
-// TODO: Update URL when Vibeguard domain is ready
+// TODO: Update URL when Nulo domain is ready
 const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
 
 const isUrlHasError = ref(false)
@@ -56,7 +56,7 @@ const handleCreateNetwork = async () => {
 		/** todo: ref */
 		appStore.network = network
 		managers.network.setDefault(network.id)
-		chrome.storage.local.set({ [`vibeguard:ui:lastActiveNetwork@${appStore.profile.id}`]: network.id })
+		chrome.storage.local.set({ [`nulo:ui:lastActiveNetwork@${appStore.profile.id}`]: network.id })
 
 		appStore.networks = await managers.network.getNetworks()
 

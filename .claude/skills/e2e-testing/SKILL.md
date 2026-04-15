@@ -1,6 +1,6 @@
 ---
 name: e2e-testing
-description: Write and run E2E tests for the Vibeguard browser extension using Vitest + Puppeteer. Use when user says "write e2e test", "add e2e", "browser test", "test extension", "puppeteer test", or wants to test extension UI flows.
+description: Write and run E2E tests for the Nulo browser extension using Vitest + Puppeteer. Use when user says "write e2e test", "add e2e", "browser test", "test extension", "puppeteer test", or wants to test extension UI flows.
 ---
 
 # E2E Testing — Vitest + Puppeteer (Chrome Extension)

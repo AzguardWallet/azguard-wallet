@@ -58,7 +58,7 @@ export const initTransactionService = (onTransactionAdded, onTransactionUpdated)
 	managers.transaction.connect()
 }
 
-const sentinelPath = "vibeguard:ui:sentinel"
+const sentinelPath = "nulo:ui:sentinel"
 
 export const setSentinel = async () => {
 	await chrome.storage.local.set({ [sentinelPath]: __SENTINEL__ })

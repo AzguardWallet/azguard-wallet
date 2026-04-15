@@ -7,7 +7,7 @@ import { ProfileService, type ProfileInfo } from "@/wallet/services/profile/serv
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, hasIntersectionByKeys } from "@/wallet/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { VibeguardV0, VibeguardV0Persistent, type IAccountContract } from "./contracts"
+import { NuloV0, NuloV0Persistent, type IAccountContract } from "./contracts"
 import { ACCOUNT_SERVICE_NAME, AccountType, type Account, type Events, type Methods } from "./spec"
 
 export * from "./spec"
@@ -19,7 +19,7 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
 	public readonly onAccountUpdated = new EventHandler<Account>()
 	public readonly onAccountDeleted = new EventHandler<Account>()
 
-	private readonly storage = new EntityStorage<Account>("vibeguard:core:accounts", StorageType.Local)
+	private readonly storage = new EntityStorage<Account>("nulo:core:accounts", StorageType.Local)
 
 	private profileService: ProfileService = null!
 
@@ -50,11 +50,11 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
 		const secret = await this.deriveAccountSecret(profileId, chainId, type, index)
 		let address: string
 		switch (type) {
-			case AccountType.Vibeguard_v0:
-				address = (await VibeguardV0.new(secret, this.logger)).address.toString()
+			case AccountType.Nulo_v0:
+				address = (await NuloV0.new(secret, this.logger)).address.toString()
 				break
-			case AccountType.Vibeguard_v0_persistent:
-				address = (await VibeguardV0Persistent.new(secret, this.logger)).address.toString()
+			case AccountType.Nulo_v0_persistent:
+				address = (await NuloV0Persistent.new(secret, this.logger)).address.toString()
 				break
 			default:
 				throw new Error("unsupported account type")
@@ -112,14 +112,14 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
 		}
 		let accountContract: IAccountContract
 		switch (account.type) {
-			case AccountType.Vibeguard_v0: {
+			case AccountType.Nulo_v0: {
 				const secret = await this.deriveAccountSecret(profileId, chainId, account.type, account.index)
-				accountContract = await VibeguardV0.new(secret, this.logger)
+				accountContract = await NuloV0.new(secret, this.logger)
 				break
 			}
-			case AccountType.Vibeguard_v0_persistent: {
+			case AccountType.Nulo_v0_persistent: {
 				const secret = await this.deriveAccountSecret(profileId, chainId, account.type, account.index)
-				accountContract = await VibeguardV0Persistent.new(secret, this.logger)
+				accountContract = await NuloV0Persistent.new(secret, this.logger)
 				break
 			}
 			default:

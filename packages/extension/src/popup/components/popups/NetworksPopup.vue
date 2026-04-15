@@ -34,7 +34,7 @@ const handleSelectNetwork = (target) => {
 	if (appStore.network.id !== target.id) {
 		managers.network.setDefault(target.id)
 		appStore.network = target
-		chrome.storage.local.set({ [`vibeguard:ui:lastActiveNetwork@${appStore.profile.id}`]: target.id })
+		chrome.storage.local.set({ [`nulo:ui:lastActiveNetwork@${appStore.profile.id}`]: target.id })
 	}
 
 	emit("onClose")

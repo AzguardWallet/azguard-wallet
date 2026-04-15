@@ -398,7 +398,7 @@ async function exportLogsToCSV() {
 		try {
 			await downloadFile({
 				data: csvContent,
-				filename: `VibeguardWalletLogs_${Math.floor(Date.now() / 1000)}.csv`,
+				filename: `NuloWalletLogs_${Math.floor(Date.now() / 1000)}.csv`,
 			})
 
 			openToast({ label: "Logs downloaded successfully", icon: "download" })

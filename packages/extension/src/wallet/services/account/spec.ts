@@ -1,10 +1,11 @@
 export const ACCOUNT_SERVICE_NAME = "account"
 
 export enum AccountType {
+	// SECURITY: Numeric values are used in poseidon2Hash for key derivation. NEVER change them.
 	/** Default implementation v0. */
-	Vibeguard_v0 = 0,
+	Nulo_v0 = 0,
 	/** Persistent implementation of v0 (with transaction history). */
-	Vibeguard_v0_persistent = 1,
+	Nulo_v0_persistent = 1,
 }
 
 export type Account = {

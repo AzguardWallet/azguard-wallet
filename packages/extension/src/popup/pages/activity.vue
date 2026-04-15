@@ -26,7 +26,7 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 /** Reactive state */
-const isPersistentAccount = computed(() => appStore.account?.type === AccountType.Vibeguard_v0_persistent)
+const isPersistentAccount = computed(() => appStore.account?.type === AccountType.Nulo_v0_persistent)
 const isSyncing = ref(false)
 const syncUpdatedAt = ref(null)
 

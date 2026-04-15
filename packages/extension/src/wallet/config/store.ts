@@ -7,7 +7,7 @@ export class ConfigStore implements IConfigStore {
 	public readonly onUpdate = new EventHandler<ConfigProp>()
 
 	private readonly lock = new Lock()
-	private readonly storage = new ValueStorage<Config>("vibeguard:config", StorageType.Local)
+	private readonly storage = new ValueStorage<Config>("nulo:config", StorageType.Local)
 	private config = new Config()
 
 	public get props(): ConfigProp[] {

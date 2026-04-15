@@ -28,7 +28,7 @@ const handleCopyVersion = () => {
 	openToast({ label: "Version is copied", icon: "copy" })
 }
 
-// TODO: Update URL when Vibeguard domain is ready
+// TODO: Update URL when Nulo domain is ready
 const handleOpen = (target) => {
 	chrome.windows.create({
 		type: "popup",

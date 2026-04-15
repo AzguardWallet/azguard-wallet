@@ -1,5 +1,5 @@
 {
-	"name": "@vibeguard/contracts",
+	"name": "@nulo/contracts",
 	"private": true,
 	"version": "0.10.0",
 	"type": "module",

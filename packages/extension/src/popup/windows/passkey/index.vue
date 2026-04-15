@@ -33,7 +33,7 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 	const publicKey: PublicKeyCredentialCreationOptions = {
 		challenge,
 		rp: {
-			name: "Vibeguard",
+			name: "Nulo",
 			// SECURITY: WebAuthn RP ID is bound to credentials. Changing it locks users out permanently.
 			// Must remain "azguardwallet.io" regardless of branding changes.
 			id: "azguardwallet.io",
@@ -41,7 +41,7 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 		user: {
 			id: userHandle,
 			name: `profile-${request.userHandle}`,
-			displayName: "Vibeguard Profile",
+			displayName: "Nulo Profile",
 		},
 		pubKeyCredParams: [{ type: "public-key", alg: -7 }],
 		authenticatorSelection: {

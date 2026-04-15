@@ -200,8 +200,8 @@ async function fetchTokenBalances() {
 }
 
 async function loadBalanceDisplayOptionMigration(profileId, networkId) {
-	const oldKey = "vibeguard:ui:balanceDisplayOption"
-	const newKey = `vibeguard:ui:balanceDisplayOption@${profileId}`
+	const oldKey = "nulo:ui:balanceDisplayOption"
+	const newKey = `nulo:ui:balanceDisplayOption@${profileId}`
 	let option
 	let optionsMap
 
@@ -228,7 +228,7 @@ async function loadBalanceDisplayOptionMigration(profileId, networkId) {
 	appStore.displayOption = option
 }
 async function loadBalanceDisplayOption(profileId, networkId) {
-	const key = `vibeguard:ui:balanceDisplayOption@${profileId}`
+	const key = `nulo:ui:balanceDisplayOption@${profileId}`
 
 	const result = await chrome.storage.local.get(key)
 	const optionsMap = result[key] || {}
@@ -244,7 +244,7 @@ async function loadBalanceDisplayOption(profileId, networkId) {
 	appStore.displayOption = option
 }
 async function saveBalanceDisplayOption(profileId, networkId, option) {
-	const key = `vibeguard:ui:balanceDisplayOption@${profileId}`
+	const key = `nulo:ui:balanceDisplayOption@${profileId}`
 
 	const result = await chrome.storage.local.get(key)
 	const optionsMap = result[key] || {}

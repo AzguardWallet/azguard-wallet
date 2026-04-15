@@ -74,7 +74,7 @@ const handleCopyAddress = (target) => {
 						:iconFillColor="account?.address === appStore.account?.address ? 'blue' : 'tertiary'"
 						iconBgColor="transparent"
 					>
-						<template v-if="account.type === AccountType.Vibeguard_v0_persistent" #titleSuffix>
+						<template v-if="account.type === AccountType.Nulo_v0_persistent" #titleSuffix>
 							<PersistentAccountBadge />
 						</template>
 
@@ -151,7 +151,7 @@ const handleCopyAddress = (target) => {
 						:description="account.address"
 						icon="vault"
 					>
-						<template v-if="account.type === AccountType.Vibeguard_v0_persistent" #titleSuffix>
+						<template v-if="account.type === AccountType.Nulo_v0_persistent" #titleSuffix>
 							<PersistentAccountBadge />
 						</template>
 

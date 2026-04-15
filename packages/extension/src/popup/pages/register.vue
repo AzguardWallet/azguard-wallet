@@ -40,7 +40,7 @@ function onSettingUpdate(setting) {
 	}
 }
 
-// TODO: Update URL when Vibeguard domain is ready
+// TODO: Update URL when Nulo domain is ready
 const handleOpen = (target) => {
 	chrome.windows.create({
 		type: "popup",
@@ -132,7 +132,7 @@ onBeforeUnmount(() => {
 
 			<Button type="secondary" size="mini" disabled>
 				<Icon name="warning" size="16" color="orange" />
-				Vibeguard Alpha Testing
+				Nulo Alpha Testing
 			</Button>
 
 			<!-- Stealth Mode Promo (only shown before first profile) -->

@@ -1,7 +1,7 @@
 import { expect } from "vitest"
 import { test, openPopup, waitForHash, typeIntoInput } from "../fixtures/extension"
 
-// Skipped: The faucet/deposit UI was removed from Vibeguard.
+// Skipped: The faucet/deposit UI was removed from Nulo.
 // Token minting is now done programmatically via aztec CLI in the test infrastructure.
 // See network/tokens.test.ts for the replacement tests.
 test.skip("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension }) => {

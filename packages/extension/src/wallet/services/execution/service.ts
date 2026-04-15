@@ -42,7 +42,7 @@ import z from "zod"
 import { NetworkService, type Network } from "@/wallet/services/network/service"
 import { type IPXE, PxeServiceClient } from "@/wallet/services/pxe/client"
 import { AccountService } from "@/wallet/services/account/service"
-import { VibeguardFeePaymentMethod, VibeguardFunctionCall, type IAccountContract } from "@/wallet/services/account/contracts"
+import { NuloFeePaymentMethod, NuloFunctionCall, type IAccountContract } from "@/wallet/services/account/contracts"
 import { ContactService } from "@/wallet/services/contact/service"
 import { ProfileService } from "@/wallet/services/profile/service"
 import { AuthRegistryService } from "@/wallet/services/auth-registry/service"
@@ -552,7 +552,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		return results
 	}
 
-	// Vibeguard base:
+	// Nulo base:
 
 	private async executeGetCompleteAddress(op: GetCompleteAddressOperation): Promise<CompleteAddress> {
 		const profile = await this.profileService.getActiveProfile()
@@ -652,7 +652,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 	}
 
 	private async executeSimulateTransaction(op: SimulateTransactionOperation): Promise<unknown> {
-		const [txRequest, _, pxe, account] = await this.buildTxRequest(op, VibeguardFeePaymentMethod.FeeJuice)
+		const [txRequest, _, pxe, account] = await this.buildTxRequest(op, NuloFeePaymentMethod.FeeJuice)
 		const simulatedTx = await pxe.simulateTx(txRequest, {
 			simulatePublic: op.simulatePublic ?? false,
 			skipFeeEnforcement: true,
@@ -752,7 +752,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		}
 
 		const args: HashedValues[] = []
-		const calls: [VibeguardFunctionCall, number, number, AbiType[]][] = []
+		const calls: [NuloFunctionCall, number, number, AbiType[]][] = []
 		const utility: [Promise<UtilityExecutionResult>, number, AbiType[]][] = []
 		let privateCalls = 0
 		let publicCalls = 0
@@ -804,7 +804,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 								: await HashedValues.fromArgs(encodedArgs)
 						args.push(packedArgs)
 						calls.push([
-							new VibeguardFunctionCall(
+							new NuloFunctionCall(
 								AztecAddress.fromString(call.contract),
 								fnSelector,
 								packedArgs.hash,
@@ -877,7 +877,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 								: await HashedValues.fromArgs(call.args.map((x) => Fr.fromString(x)))
 						args.push(packedArgs)
 						calls.push([
-							new VibeguardFunctionCall(
+							new NuloFunctionCall(
 								AztecAddress.fromString(call.to),
 								FunctionSelector.fromString(call.selector),
 								packedArgs.hash,
@@ -902,7 +902,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 				pxe,
 				calls.map((x) => x[0]),
 				Fr.random(),
-				VibeguardFeePaymentMethod.FeeJuice,
+				NuloFeePaymentMethod.FeeJuice,
 				args,
 			)
 			const simulatedTx = await pxe.simulateTx(txRequest, {
@@ -1374,7 +1374,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			account.address.toString(),
 			txCalls,
 			Fr.ZERO.toString(),
-			VibeguardFeePaymentMethod.External,
+			NuloFeePaymentMethod.External,
 			txHash.toString(),
 			getEstimatedFee(txRequest),
 			getGasDetails(txRequest),
@@ -1504,7 +1504,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		accountAddress: string
 		actions: Action[]
 	}): Promise<AddPrivateAuthwitAction[]> {
-		const [txRequest, node, pxe, account] = await this.buildTxRequest(op, VibeguardFeePaymentMethod.FeeJuice)
+		const [txRequest, node, pxe, account] = await this.buildTxRequest(op, NuloFeePaymentMethod.FeeJuice)
 
 		const simulationResult = await pxe.simulateTx(txRequest, {
 			simulatePublic: true,
@@ -1595,7 +1595,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 	private async processAztecJsPayload(
 		exec: ExecutionPayload,
 		opts: SimulateOptions | ProfileOptions | SendOptions<InteractionWaitOptions>,
-	): Promise<[Action[], VibeguardFeePaymentMethod, FeeOptions]> {
+	): Promise<[Action[], NuloFeePaymentMethod, FeeOptions]> {
 		const actions: Action[] = []
 
 		for (const _capsule of (exec.capsules ?? []).concat(opts.capsules ?? [])) {
@@ -1654,10 +1654,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
 		const feePaymentMethod =
 			feeOptions.embeddedFeePayment === "fjwc"
-				? VibeguardFeePaymentMethod.FeeJuiceWithClaim
+				? NuloFeePaymentMethod.FeeJuiceWithClaim
 				: feeOptions.embeddedFeePayment === "fpc"
-					? VibeguardFeePaymentMethod.External
-					: VibeguardFeePaymentMethod.FeeJuice
+					? NuloFeePaymentMethod.External
+					: NuloFeePaymentMethod.FeeJuice
 
 		return [actions, feePaymentMethod, feeOptions]
 	}
@@ -1731,7 +1731,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		},
 		feeSettings: FeeSettings,
 		parentTask?: WrappedTask,
-	): Promise<[TxExecutionRequest, AztecNode, IPXE, IAccountContract, Network, Fr, TxCall[], VibeguardFeePaymentMethod]> {
+	): Promise<[TxExecutionRequest, AztecNode, IPXE, IAccountContract, Network, Fr, TxCall[], NuloFeePaymentMethod]> {
 		const step = new StepContent("Estimating fee")
 		const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step)
 		const feePaymentMethod = feeSettings.paymentMethod
@@ -1743,7 +1743,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 				case "fj": {
 					const [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
 						op,
-						VibeguardFeePaymentMethod.FeeJuice,
+						NuloFeePaymentMethod.FeeJuice,
 						task,
 					)
 					this.suggestGasLimits(txRequest, op.fee)
@@ -1755,14 +1755,14 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					)
 					await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, undefined, op.fee, feeMultiplier)
 					task.complete()
-					return [txRequest, node, pxe, account, network, nonce, txCalls, VibeguardFeePaymentMethod.FeeJuice]
+					return [txRequest, node, pxe, account, network, nonce, txCalls, NuloFeePaymentMethod.FeeJuice]
 				}
 				case "fjwc": {
 					const { claimAmount, claimSecret, messageLeafIndex } = feePaymentMethod
 					op.actions.unshift(...getFeeJuiceClaimPayload(op.accountAddress, claimAmount, claimSecret, messageLeafIndex))
 					const [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
 						op,
-						VibeguardFeePaymentMethod.FeeJuiceWithClaim,
+						NuloFeePaymentMethod.FeeJuiceWithClaim,
 						task,
 					)
 					this.suggestGasLimits(txRequest, op.fee)
@@ -1774,7 +1774,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					)
 					await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, undefined, op.fee, feeMultiplier)
 					task.complete()
-					return [txRequest, node, pxe, account, network, nonce, txCalls, VibeguardFeePaymentMethod.FeeJuiceWithClaim]
+					return [txRequest, node, pxe, account, network, nonce, txCalls, NuloFeePaymentMethod.FeeJuiceWithClaim]
 				}
 				case "fpc": {
 					const { fpcId, inPublic } = feePaymentMethod
@@ -1784,7 +1784,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					// first approach
 					let [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
 						op,
-						VibeguardFeePaymentMethod.FeeJuice,
+						NuloFeePaymentMethod.FeeJuice,
 						task,
 					)
 					this.suggestGasLimits(txRequest, op.fee)
@@ -1801,7 +1801,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					// precise estimation
 					;[txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
 						op,
-						VibeguardFeePaymentMethod.External,
+						NuloFeePaymentMethod.External,
 						task,
 					)
 					txRequest.txContext.gasSettings = new GasSettings(
@@ -1820,16 +1820,14 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					op.actions.splice(0, op.actions.length, ...fpc.getFeePayload(op.accountAddress, maxFee, inPublic), ...originalActions)
 					await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, baseFees)
 					task.complete()
-					return [txRequest, node, pxe, account, network, nonce, txCalls, VibeguardFeePaymentMethod.External]
+					return [txRequest, node, pxe, account, network, nonce, txCalls, NuloFeePaymentMethod.External]
 				}
 				case "embedded": {
 					if (!op.fee?.embeddedFeePayment) {
 						throw new Error("Embedded fee payment not specified")
 					}
 					const embeddedMethod =
-						op.fee.embeddedFeePayment === "fjwc"
-							? VibeguardFeePaymentMethod.FeeJuiceWithClaim
-							: VibeguardFeePaymentMethod.External
+						op.fee.embeddedFeePayment === "fjwc" ? NuloFeePaymentMethod.FeeJuiceWithClaim : NuloFeePaymentMethod.External
 					const [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(op, embeddedMethod, task)
 					// Embedded payments: the dApp's FPC has a budgeted `amount` that must cover
 					// max_gas_cost (gasLimits * maxFeesPerGas). The default initial gas settings
@@ -1874,7 +1872,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			accountAddress: string
 			actions: Action[]
 		},
-		feePaymentMethod: VibeguardFeePaymentMethod,
+		feePaymentMethod: NuloFeePaymentMethod,
 		parentTask?: WrappedTask,
 	): Promise<[TxExecutionRequest, AztecNode, IPXE, IAccountContract, Network, Fr, TxCall[]]> {
 		const step = new StepContent("Processing transaction")
@@ -1909,7 +1907,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			const capsules: Capsule[] = []
 			const authwits: AuthWitness[] = []
 			const args: HashedValues[] = []
-			const calls: VibeguardFunctionCall[] = []
+			const calls: NuloFunctionCall[] = []
 			const nonce = Fr.random()
 			const txCalls: TxCall[] = []
 
@@ -2027,7 +2025,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 								: await HashedValues.fromArgs(encodeArguments(fn, [messageHash, true]))
 						args.push(packedArgs)
 						calls.push(
-							new VibeguardFunctionCall(
+							new NuloFunctionCall(
 								getAuthRegistryAddress(),
 								await getSetAuthorizedSelector(),
 								packedArgs.hash,
@@ -2067,7 +2065,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 								: await HashedValues.fromArgs(encodeArguments(fn, action.args))
 						args.push(packedArgs)
 						calls.push(
-							new VibeguardFunctionCall(
+							new NuloFunctionCall(
 								AztecAddress.fromString(action.contract),
 								fnSelector,
 								packedArgs.hash,
@@ -2122,7 +2120,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 								: await HashedValues.fromArgs(action.args.map((x) => Fr.fromString(x)))
 						args.push(packedArgs)
 						calls.push(
-							new VibeguardFunctionCall(
+							new NuloFunctionCall(
 								AztecAddress.fromString(action.to),
 								FunctionSelector.fromString(action.selector),
 								packedArgs.hash,

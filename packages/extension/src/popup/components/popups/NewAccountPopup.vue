@@ -35,14 +35,14 @@ const isAvailableToCreateAccount = computed(() => {
 const handleCreateAccount = async () => {
 	if (!isAvailableToCreateAccount.value) return
 
-	const accountType = enablePersistentHistory.value ? AccountType.Vibeguard_v0_persistent : AccountType.Vibeguard_v0
+	const accountType = enablePersistentHistory.value ? AccountType.Nulo_v0_persistent : AccountType.Nulo_v0
 	const account = await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, accountType, name.value.trim())
 
 	appStore.account = account
 	appStore.accounts.push(account)
 
 	await chrome.storage.local.set({
-		"vibeguard:ui:activeAccount": account.address,
+		"nulo:ui:activeAccount": account.address,
 	})
 
 	emit("onClose")

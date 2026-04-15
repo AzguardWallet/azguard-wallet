@@ -1,7 +1,7 @@
 <script setup>
 const { handleExternalLink } = useExternalLink()
 
-// TODO: Update URL when Vibeguard domain is ready
+// TODO: Update URL when Nulo domain is ready
 const reportIssueUrl = "https://azguardwallet.io/forms/report-issue"
 </script>
 
@@ -9,7 +9,7 @@ const reportIssueUrl = "https://azguardwallet.io/forms/report-issue"
 	<Flex gap="8" :class="$style.wrapper">
 		<Icon name="warning" size="16" color="orange" />
 		<Flex direction="column" gap="6">
-			<Text size="13" weight="600" color="primary"> Vibeguard is in alpha testing </Text>
+			<Text size="13" weight="600" color="primary"> Nulo is in alpha testing </Text>
 			<Text size="12" weight="600" color="tertiary">
 				If you're facing a bug -
 				<a

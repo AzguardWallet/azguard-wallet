@@ -58,7 +58,7 @@ const handleReset = () => {
 		appStore.account = null
 		appStore.transactions = []
 		appStore.awaitingTransactions = []
-		chrome.storage.local.remove("vibeguard:ui:feePaymentMethods")
+		chrome.storage.local.remove("nulo:ui:feePaymentMethods")
 
 		appStore.isLogined = false
 		appStore.isSessionChecked = false

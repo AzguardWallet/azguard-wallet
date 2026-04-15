@@ -1,4 +1,4 @@
-const STORAGE_PREFIX = "vibeguard:ui:"
+const STORAGE_PREFIX = "nulo:ui:"
 
 export function useSyncedRef(key, defaultValue) {
 	const storageKey = STORAGE_PREFIX + key

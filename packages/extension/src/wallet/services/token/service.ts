@@ -36,7 +36,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 	public readonly onTokenUpdated = new EventHandler<TokenInfo>()
 	public readonly onTokenDeleted = new EventHandler<TokenInfo>()
 
-	private readonly tokens = new EntityStorage<Token>("vibeguard:core:tokens", StorageType.Local)
+	private readonly tokens = new EntityStorage<Token>("nulo:core:tokens", StorageType.Local)
 	private readonly lock = new Lock()
 
 	private pxeService: PxeServiceClient = null!

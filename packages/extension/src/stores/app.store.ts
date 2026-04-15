@@ -58,9 +58,9 @@ export const useAppStore = defineStore("app", () => {
 	const pageAwaitingAuth = ref<string>("")
 
 	const setupActiveAccount = async () => {
-		const activeAccountResult = await chrome.storage.local.get("vibeguard:ui:activeAccount")
-		if ("vibeguard:ui:activeAccount" in activeAccountResult) {
-			const activeAccountAddress = activeAccountResult["vibeguard:ui:activeAccount"]
+		const activeAccountResult = await chrome.storage.local.get("nulo:ui:activeAccount")
+		if ("nulo:ui:activeAccount" in activeAccountResult) {
+			const activeAccountAddress = activeAccountResult["nulo:ui:activeAccount"]
 			const activeAccount = accounts.value.find((a) => a.address === activeAccountAddress)
 			if (activeAccount) {
 				account.value = activeAccount
@@ -70,13 +70,13 @@ export const useAppStore = defineStore("app", () => {
 
 		account.value = accounts.value[0]
 		await chrome.storage.local.set({
-			"vibeguard:ui:activeAccount": account.value?.address,
+			"nulo:ui:activeAccount": account.value?.address,
 		})
 	}
 	const selectAccount = async (acc: Account) => {
 		account.value = acc
 		await chrome.storage.local.set({
-			"vibeguard:ui:activeAccount": acc.address,
+			"nulo:ui:activeAccount": acc.address,
 		})
 	}
 	const changeAccountVisibility = async (acc: Account, value: boolean) => {
@@ -89,7 +89,7 @@ export const useAppStore = defineStore("app", () => {
 			if (accounts.value.length) {
 				account.value = accounts.value.filter((a) => a.visible).sort((a, b) => a.index - b.index)[0]
 				await chrome.storage.local.set({
-					"vibeguard:ui:activeAccount": account.value?.address,
+					"nulo:ui:activeAccount": account.value?.address,
 				})
 			}
 		}

@@ -26,7 +26,7 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
 	public readonly onDappSessionUpdated = new EventHandler<DappSession>()
 	public readonly onDappSessionDeleted = new EventHandler<DappSession>()
 
-	private readonly storage = new EntityStorage<DappSession>("vibeguard:core:dappSessions", StorageType.Local)
+	private readonly storage = new EntityStorage<DappSession>("nulo:core:dappSessions", StorageType.Local)
 	private readonly lock = new Lock()
 
 	private profileService: ProfileService = null!

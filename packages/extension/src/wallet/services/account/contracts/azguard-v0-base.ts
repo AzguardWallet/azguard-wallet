@@ -1,5 +1,5 @@
 // Contract artifact name is "AzguardAccount" (on-chain identity).
-// TypeScript wrapper uses "Vibeguard" branding. Do not rename the JSON artifact.
+// TypeScript wrapper uses Nulo branding. Do not rename the JSON artifact.
 import { DomainSeparator } from "@aztec/constants"
 import {
 	GAS_ESTIMATION_DA_GAS_LIMIT,
@@ -27,7 +27,7 @@ import {
 	getMulticallEntrypointFn,
 	getMulticallEntrypointSelector,
 } from "@/wallet/utils/multicall-entrypoint"
-import { VibeguardFeePaymentMethod, VibeguardFunctionCall, type IAccountContract } from "."
+import { NuloFeePaymentMethod, NuloFunctionCall, type IAccountContract } from "."
 
 const CHUNK_SIZE = 4
 
@@ -36,10 +36,10 @@ const MAX_FEE_PER_DA_GAS = BigInt(10 ** 18)
 const MAX_FEE_PER_L2_GAS = BigInt(10 ** 18)
 
 /**
- * Abstract base class for Vibeguard account contracts.
+ * Abstract base class for Nulo account contracts.
  * Provides shared implementation for both standard and persistent variants.
  */
-export abstract class VibeguardV0Base implements IAccountContract {
+export abstract class NuloV0Base implements IAccountContract {
 	public abstract readonly name: string
 	protected abstract readonly artifact: ContractArtifact
 
@@ -84,9 +84,9 @@ export abstract class VibeguardV0Base implements IAccountContract {
 	public async buildTxExecutionRequest(
 		node: AztecNode,
 		pxe: IPXE,
-		calls: VibeguardFunctionCall[],
+		calls: NuloFunctionCall[],
 		nonce: Fr,
-		feePaymentMethod: VibeguardFeePaymentMethod,
+		feePaymentMethod: NuloFeePaymentMethod,
 		args: HashedValues[],
 		authwits?: AuthWitness[],
 		capsules?: Capsule[],
@@ -102,12 +102,12 @@ export abstract class VibeguardV0Base implements IAccountContract {
 		while (batchCalls.length > CHUNK_SIZE) {
 			const new_calls = []
 			while ((Math.floor(batchCalls.length / CHUNK_SIZE) % CHUNK_SIZE) + (batchCalls.length % CHUNK_SIZE) > CHUNK_SIZE) {
-				batchCalls.push(VibeguardFunctionCall.empty())
+				batchCalls.push(NuloFunctionCall.empty())
 			}
 			while (batchCalls.length >= CHUNK_SIZE) {
 				const chunkCalls = batchCalls.splice(0, CHUNK_SIZE)
 				const chunkNonce = Fr.random()
-				const chunkFeePaymentMethod = VibeguardFeePaymentMethod.External
+				const chunkFeePaymentMethod = NuloFeePaymentMethod.External
 				const chunkArgs = await HashedValues.fromArgs(encodeArguments(fn, [chunkCalls, chunkNonce, chunkFeePaymentMethod]))
 				batchArgs.push(chunkArgs)
 
@@ -119,12 +119,12 @@ export abstract class VibeguardV0Base implements IAccountContract {
 				const chunkAuthwit = await this.buildAuthWitness(chunkPayloadHash)
 				batchAuthwits.push(chunkAuthwit)
 
-				new_calls.push(new VibeguardFunctionCall(this.address, fnSelector, chunkArgs.hash, false, false, false))
+				new_calls.push(new NuloFunctionCall(this.address, fnSelector, chunkArgs.hash, false, false, false))
 			}
 			batchCalls = [...new_calls, ...batchCalls]
 		}
 		while (batchCalls.length < CHUNK_SIZE) {
-			batchCalls.push(VibeguardFunctionCall.empty())
+			batchCalls.push(NuloFunctionCall.empty())
 		}
 
 		const fnArgs = await HashedValues.fromArgs(encodeArguments(fn, [batchCalls, nonce, feePaymentMethod]))

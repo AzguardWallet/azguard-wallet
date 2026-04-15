@@ -70,7 +70,7 @@ const handleManageAccounts = () => {
 						iconBgColor="transparent"
 						data-testid="account-item"
 					>
-						<template v-if="acc.type === AccountType.Vibeguard_v0_persistent" #titleSuffix>
+						<template v-if="acc.type === AccountType.Nulo_v0_persistent" #titleSuffix>
 							<PersistentAccountBadge />
 						</template>
 

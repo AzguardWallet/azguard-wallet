@@ -116,7 +116,7 @@ const handleCreateProfile = async () => {
 	initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
 
 	await chrome.storage.local.set({
-		"vibeguard:ui:activeAccount": appStore.account?.address,
+		"nulo:ui:activeAccount": appStore.account?.address,
 	})
 
 	await setSentinel()

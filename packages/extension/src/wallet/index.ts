@@ -56,7 +56,7 @@ const initRuntime = () => {
 	//         });
 	//     }
 	// });
-	// TODO: Update URL when new Vibeguard domain is ready
+	// TODO: Update URL when new Nulo domain is ready
 	chrome.runtime.setUninstallURL("https://azguardwallet.io/forms/uninstall")
 	logger.log("wallet", LogLevel.Info, "Runtime configured")
 }
@@ -104,7 +104,7 @@ const runServices = async () => {
 const runHeartbeat = async () => {
 	while (true) {
 		try {
-			await chrome.storage.session.set({ "vibeguard:liveness": Date.now() })
+			await chrome.storage.session.set({ "nulo:liveness": Date.now() })
 		} catch (error) {
 			logger.log("wallet", LogLevel.Error, "Heartbeat failed", getErrorMessage(error))
 		}
