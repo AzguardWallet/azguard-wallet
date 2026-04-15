@@ -17,7 +17,7 @@ import { EmbeddedWallet } from "@aztec/wallets/embedded"
 import { registerInitialLocalNetworkAccountsInWallet } from "@aztec/wallets/testing"
 import { SponsoredFeePaymentMethod } from "@aztec/aztec.js/fee"
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC"
-import { TokenContract } from "@aztec/noir-contracts.js/Token"
+import { TokenContract } from "@defi-wonderland/aztec-standards/dist/src/artifacts/Token.js"
 
 export const LOCAL_NODE_URL = "http://localhost:8080"
 const SPONSORED_FPC_SALT = 0n
@@ -86,11 +86,13 @@ export async function deployTestToken(
 	minterAddress: AztecAddress,
 	feeOptions: { paymentMethod: SponsoredFeePaymentMethod },
 ): Promise<string> {
-	// Use @aztec/noir-contracts.js Token — admin is automatically a minter
-	const { contract } = await TokenContract.deploy(wallet, minterAddress, "TestToken", "TST", 18).send({
-		fee: feeOptions,
-		from: minterAddress,
-	})
+	const { contract } = await TokenContract.deployWithOpts(
+		{ method: "constructor_with_minter", wallet },
+		"TestToken",
+		"TST",
+		18,
+		minterAddress,
+	).send({ fee: feeOptions, from: minterAddress })
 
 	return contract.address.toString()
 }

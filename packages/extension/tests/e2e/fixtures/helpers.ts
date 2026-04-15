@@ -363,6 +363,7 @@ export async function sendTransfer(page: Page, opts: SendTransferOptions): Promi
 	await destInput!.type(opts.destination)
 
 	// Wait for send button to become clickable (pointer-events != none)
+	// This means fee estimation (which triggers simulateTx → PXE sync) completed.
 	await page.waitForFunction(
 		() => {
 			const btn = document.querySelector('[data-testid="send-submit"]') as HTMLElement
@@ -370,6 +371,10 @@ export async function sendTransfer(page: Page, opts: SendTransferOptions): Promi
 		},
 		{ timeout: 120_000, polling: 3_000 },
 	)
+
+	// Give PXE a moment to fully sync after fee estimation before proving.
+	// Without this, proveTx may use a stale anchor block on slow networks.
+	await new Promise((r) => setTimeout(r, 5_000))
 
 	// Submit — use native click which auto-scrolls (button may be below fold in PopupCard)
 	const submitBtn = await page.waitForSelector('[data-testid="send-submit"]', { visible: true })

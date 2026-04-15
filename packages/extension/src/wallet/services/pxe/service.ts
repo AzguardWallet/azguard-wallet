@@ -219,9 +219,18 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 	}
 
 	public async proveTx(network: Network, txRequest: TxExecutionRequest, scopes: AztecAddress[]): Promise<TxProvingResult> {
-		return this.withPxeWrite("proveTx", network, async (pxe) =>
-			pxe.proveTx(await TxExecutionRequest.schema.parseAsync(txRequest), await z.array(AztecAddress.schema).parseAsync(scopes)),
-		)
+		return this.withPxeWrite("proveTx", network, async (pxe, node) => {
+			// DEBUG: log PXE sync state before proving
+			try {
+				const header = await pxe.getSyncedBlockHeader()
+				const nodeTip = await node.getBlockNumber()
+				this.logDebug(`[SYNC-DEBUG] proveTx: PXE anchor block=${header.getBlockNumber()}, node tip=${nodeTip}`)
+			} catch (e) {
+				this.logDebug(`[SYNC-DEBUG] proveTx: failed to read sync state: ${e}`)
+			}
+
+			return pxe.proveTx(await TxExecutionRequest.schema.parseAsync(txRequest), await z.array(AztecAddress.schema).parseAsync(scopes))
+		})
 	}
 
 	public async simulateTx(
@@ -230,7 +239,16 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 		opts: SimulateTxOpts,
 		stubAccountAddresses?: string[],
 	): Promise<TxSimulationResult> {
-		return this.withPxeWrite("simulateTx", network, async (pxe) => {
+		return this.withPxeWrite("simulateTx", network, async (pxe, node) => {
+			// DEBUG: log PXE sync state before simulation
+			try {
+				const header = await pxe.getSyncedBlockHeader()
+				const nodeTip = await node.getBlockNumber()
+				this.logDebug(`[SYNC-DEBUG] simulateTx: PXE anchor block=${header.getBlockNumber()}, node tip=${nodeTip}`)
+			} catch (e) {
+				this.logDebug(`[SYNC-DEBUG] simulateTx: failed to read sync state: ${e}`)
+			}
+
 			let overrides = await SimulationOverrides.schema.optional().parseAsync(opts.overrides)
 
 			// Build stub account overrides for kernelless simulation.

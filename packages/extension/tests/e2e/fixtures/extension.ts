@@ -179,7 +179,8 @@ export const test = base.extend<{
 	tokenReadyExtension: ExtensionContext & { accountAddress: string }
 }>({
 	extension: [
-		async (_deps, use) => {
+		// biome-ignore lint/correctness/noEmptyPattern: vitest fixture API requires {} destructuring
+		async ({}, use) => {
 			const ctx = await launchExtension()
 			await use(ctx)
 			await ctx.browser.close()
@@ -188,7 +189,8 @@ export const test = base.extend<{
 	],
 
 	registeredExtension: [
-		async (_deps, use) => {
+		// biome-ignore lint/correctness/noEmptyPattern: vitest fixture API requires {} destructuring
+		async ({}, use) => {
 			const ctx = await launchExtension()
 			await registerProfile(ctx)
 			await use(ctx)
@@ -206,7 +208,8 @@ export const test = base.extend<{
 	],
 
 	localNetworkExtension: [
-		async (_deps, use) => {
+		// biome-ignore lint/correctness/noEmptyPattern: vitest fixture API requires {} destructuring
+		async ({}, use) => {
 			const ctx = await launchExtension()
 			await registerProfile(ctx)
 			const page = await openPopup(ctx)
@@ -220,7 +223,8 @@ export const test = base.extend<{
 	],
 
 	tokenReadyExtension: [
-		async (_deps, use) => {
+		// biome-ignore lint/correctness/noEmptyPattern: vitest fixture API requires {} destructuring
+		async ({}, use) => {
 			const aztecConfig = inject("aztecTestConfig") as AztecTestConfig | undefined
 			if (!aztecConfig) throw new Error("aztecTestConfig not provided — is the local Aztec node running?")
 
