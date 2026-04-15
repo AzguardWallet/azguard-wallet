@@ -146,6 +146,7 @@ onBeforeUnmount(() => {
 					size="medium"
 					leftIcon="lock"
 					leftIconColor="secondary"
+					data-testid="menu-lock-wallet"
 				>
 					Lock Wallet
 				</Button>

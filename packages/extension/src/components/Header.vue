@@ -205,6 +205,7 @@ onBeforeUnmount(() => {
 			@click="handleOpenPopup('menu')"
 			align="center"
 			justify="center"
+			data-testid="menu-button"
 			:class="[
 				$style.button,
 				$style.logs_indicator,
@@ -225,6 +226,7 @@ onBeforeUnmount(() => {
 				@click="handleOpenPopup('accounts')"
 				align="center"
 				gap="6"
+				data-testid="account-selector"
 				:class="$style.account"
 			>
 				<Icon name="vault" size="18" color="primary" />

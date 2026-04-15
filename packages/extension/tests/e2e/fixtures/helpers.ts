@@ -4,6 +4,23 @@ const TEST_PASSWORD = "TestPassword123!"
 
 // ── Auth ───────────────────────────────────────────────────────────────
 
+/** Lock the wallet via the MenuPopup. Navigates to auth page. */
+export async function lockWallet(page: Page): Promise<void> {
+	// Open MenuPopup via header logo button
+	await page.evaluate(() => {
+		;(document.querySelector('[data-testid="menu-button"]') as HTMLElement)?.click()
+	})
+	await new Promise((r) => setTimeout(r, 500))
+
+	// Click "Lock Wallet"
+	await page.evaluate(() => {
+		;(document.querySelector('[data-testid="menu-lock-wallet"]') as HTMLElement)?.click()
+	})
+
+	// Wait for auth page
+	await page.waitForFunction(() => window.location.hash.includes("/popup/auth"), { timeout: 10_000 })
+}
+
 /** If the wallet is locked (auth page), re-enter the password. */
 export async function ensureUnlocked(page: Page): Promise<void> {
 	const hash = await page.evaluate(() => window.location.hash)

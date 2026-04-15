@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
 
 		<template v-if="!isLoading">
 			<!-- Stealth Mode Master Toggle -->
-			<Flex align="center" justify="between">
+			<Flex align="center" justify="between" data-testid="setting-stealth-mode">
 				<Flex direction="column" justify="center" gap="6">
 					<Text size="13" weight="600" color="primary">{{ settings.stealthMode.title }}</Text>
 					<Text size="12" weight="500" color="tertiary">{{ settings.stealthMode.description }}</Text>
