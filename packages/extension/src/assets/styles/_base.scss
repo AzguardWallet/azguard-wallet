@@ -22,25 +22,39 @@ $grayscale: (
 	--base-width: 360px;
 	--base-height: 600px;
 
+	/** fonts */
+	--font-headline: "Space Grotesk", system-ui, sans-serif;
+	--font-body: "InterVariable", system-ui, sans-serif;
+	--font-mono: "JetBrains Mono", monospace;
+
 	/** general */
-	--app-bg: #121212;
-	--card-bg: #1d1d1d;
-	--tooltip-bg: #000;
-	--dropdown-bg: #252525;
-	--border: var(--gray-7);
-	--border-hovered: var(--gray-10);
+	--app-bg: #0a0908;
+	--card-bg: #141312;
+	--tooltip-bg: #0f0e0d;
+	--dropdown-bg: #1d1b1a;
+	--border: rgba(74, 70, 63, 0.5);
+	--border-hovered: rgba(74, 70, 63, 0.8);
+
+	/** nulo surfaces */
+	--nulo-surface: #141312;
+	--nulo-surface-low: #1d1b1a;
+	--nulo-surface-high: #2b2a28;
+	--nulo-surface-highest: #363433;
+	--nulo-accent: #f8f1e7;
+	--nulo-outline: #4a463f;
+	--nulo-secondary: #999187;
 
 	/** text */
-	--txt-primary: rgba(255, 255, 255, 90%);
-	--txt-secondary: rgba(255, 255, 255, 60%);
-	--txt-body: rgba(255, 255, 255, 45%);
-	--txt-tertiary: rgba(255, 255, 255, 30%);
-	--txt-support: rgba(255, 255, 255, 25%);
+	--txt-primary: #f5f0e6;
+	--txt-secondary: #999187;
+	--txt-body: rgba(245, 240, 230, 45%);
+	--txt-tertiary: rgba(245, 240, 230, 30%);
+	--txt-support: rgba(245, 240, 230, 25%);
 	--txt-white: rgba(255, 255, 255, 95%);
 	--txt-inverse: rgba(0, 0, 0, 90%);
 
 	/** buttons */
-	--btn-primary-bg: #0c8bfe;
+	--btn-primary-bg: #f8f1e7;
 	--btn-red-bg: #c33636;
 
 	/** colors */
@@ -147,24 +161,24 @@ $grayscale: (
 	/** general */
 	--white: #fff;
 	--black: #000;
-	--app-bg: #121212;
-	--card-bg: #1d1d1d;
-	--tooltip-bg: #000;
-	--dropdown-bg: #252525;
-	--border: var(--gray-7);
-	--border-hovered: var(--gray-10);
+	--app-bg: #0a0908;
+	--card-bg: #141312;
+	--tooltip-bg: #0f0e0d;
+	--dropdown-bg: #1d1b1a;
+	--border: rgba(74, 70, 63, 0.5);
+	--border-hovered: rgba(74, 70, 63, 0.8);
 
 	/** text */
-	--txt-primary: rgba(255, 255, 255, 90%);
-	--txt-secondary: rgba(255, 255, 255, 60%);
-	--txt-body: rgba(255, 255, 255, 45%);
-	--txt-tertiary: rgba(255, 255, 255, 30%);
-	--txt-support: rgba(255, 255, 255, 25%);
+	--txt-primary: #f5f0e6;
+	--txt-secondary: #999187;
+	--txt-body: rgba(245, 240, 230, 45%);
+	--txt-tertiary: rgba(245, 240, 230, 30%);
+	--txt-support: rgba(245, 240, 230, 25%);
 	--txt-white: rgba(255, 255, 255, 95%);
 	--txt-inverse: rgba(0, 0, 0, 90%);
 
 	/** buttons */
-	--btn-primary-bg: #0c8bfe;
+	--btn-primary-bg: #f8f1e7;
 	--btn-red-bg: #c33636;
 
 	/** colors */
@@ -220,6 +234,48 @@ $grayscale: (
 	font-weight: 100 900;
 	font-display: swap;
 	src: url("@/assets/fonts/InterVariable.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Space Grotesk";
+	font-style: normal;
+	font-weight: 300 700;
+	font-display: swap;
+	src:
+		url("@/assets/fonts/SpaceGrotesk-latin.woff2") format("woff2"),
+		url("@/assets/fonts/SpaceGrotesk-latin-ext.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "JetBrains Mono";
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url("@/assets/fonts/JetBrainsMono-latin.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Material Symbols Outlined";
+	font-style: normal;
+	font-weight: 100 700;
+	font-display: block;
+	src: url("@/assets/fonts/MaterialSymbolsOutlined.woff2") format("woff2");
+}
+
+.material-symbols-outlined {
+	font-family: "Material Symbols Outlined";
+	font-weight: normal;
+	font-style: normal;
+	font-size: 24px;
+	line-height: 1;
+	letter-spacing: normal;
+	text-transform: none;
+	display: inline-block;
+	white-space: nowrap;
+	word-wrap: normal;
+	direction: ltr;
+	-webkit-font-smoothing: antialiased;
+	font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
 }
 
 *,

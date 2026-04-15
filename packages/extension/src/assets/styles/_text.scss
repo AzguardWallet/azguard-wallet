@@ -86,7 +86,27 @@ $textColors: (
 }
 
 .mono {
-	font-family: monospace;
+	font-family: var(--font-mono);
+}
+
+.font-headline {
+	font-family: var(--font-headline);
+}
+
+.font-mono {
+	font-family: var(--font-mono);
+}
+
+.uppercase {
+	text-transform: uppercase;
+}
+
+.tracking-wide {
+	letter-spacing: 0.05em;
+}
+
+.tracking-widest {
+	letter-spacing: 0.1em;
 }
 
 .tabular {
