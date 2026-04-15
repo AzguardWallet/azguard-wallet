@@ -29,39 +29,19 @@ const handleSelectToken = () => {
 <template>
 	<Flex @click="handleSelectToken" align="center" justify="between" :class="$style.wrapper" data-testid="send-token-trigger">
 		<template v-if="token">
-			<Flex align="center" gap="8">
-				<Tooltip :disabled="!isTokenRestricted || !isTokenBlocked" position="start">
-					<Flex align="center" justify="center" :class="$style.token_icon">
-						<Icon name="banknote" size="16" color="primary" />
-						<Icon v-if="isTokenBlocked" name="warning" size="10" color="red" :class="$style.type_icon" />
-						<Icon
-							v-else-if="isTokenRestricted"
-							:name="!token.hasPrivateTransfers ? 'face' : 'key-square'"
-							size="10"
-							:color="!token.hasPrivateTransfers ? 'orange' : 'green'"
-							:class="$style.type_icon"
-						/>
-					</Flex>
+			<Flex align="center" gap="16">
+				<Flex align="center" justify="center" :class="$style.token_icon_box">
+					<span :class="$style.token_initial">{{ token.symbol?.charAt(0) }}</span>
+					<Icon v-if="isTokenBlocked" name="warning" size="10" color="red" :class="$style.type_icon" />
+				</Flex>
 
-					<template #content>
-						<template v-if="isTokenBlocked"> Private and public transfers disabled </template>
-						<template v-else>
-							Restricted token, only
-							{{ token.hasPrivateTransfers ? "private" : "public" }}
-							transfers
-						</template>
-					</template>
-				</Tooltip>
-
-				<Text size="13" weight="600" color="primary">
-					{{ token.symbol }}
-				</Text>
-				<Text size="13" weight="600" color="body">
-					{{ token.name }}
-				</Text>
+				<Flex direction="column" gap="2">
+					<span :class="$style.token_symbol">{{ token.symbol }}</span>
+					<span :class="$style.token_name">{{ token.name }}</span>
+				</Flex>
 			</Flex>
 
-			<Icon name="chevron" size="16" color="primary" style="transform: rotate(-90deg)" />
+			<MaterialIcon name="chevron_right" :size="20" color="primary" />
 		</template>
 
 		<Flex v-else wide align="center" justify="between">
@@ -70,7 +50,7 @@ const handleSelectToken = () => {
 				<Text size="13" weight="600" color="secondary"> No available tokens </Text>
 			</Flex>
 
-			<Text size="13" weight="600" color="blue"> Import token </Text>
+			<span :class="$style.import_link">Import token</span>
 		</Flex>
 	</Flex>
 </template>
@@ -79,33 +59,63 @@ const handleSelectToken = () => {
 .wrapper {
 	width: 100%;
 
-	background: var(--card-bg);
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--shadow-5);
-	border-radius: 12px;
 	cursor: pointer;
 
-	padding: 12px;
+	padding: 12px 0;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-5);
+		background: rgba(29, 27, 26, 0.5);
 	}
 }
 
-.token_icon {
+.token_icon_box {
 	position: relative;
+	width: 40px;
+	height: 40px;
+	flex-shrink: 0;
+
+	background: var(--nulo-accent);
+}
+
+.token_initial {
+	font-family: var(--font-headline);
+	font-weight: 700;
+	font-size: 18px;
+	color: #0a0908;
 }
 
 .type_icon {
 	position: absolute;
-	top: -5px;
-	right: -5px;
+	top: -4px;
+	right: -4px;
 
 	box-sizing: content-box;
-	background: var(--card-bg);
-	border-radius: 3px;
-
+	background: var(--app-bg);
 	padding: 1px;
+}
+
+.token_symbol {
+	font-family: var(--font-headline);
+	font-weight: 700;
+	font-size: 18px;
+	color: var(--txt-primary);
+}
+
+.token_name {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.import_link {
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--nulo-accent);
 }
 </style>

@@ -73,56 +73,46 @@ const handleHalf = () => {
 </script>
 
 <template>
-	<Flex @click="handleFocus" gap="16" direction="column" :class="[$style.wrapper, isFocused && $style.focused]">
-		<Flex direction="column" gap="8">
-			<input
-				ref="inputEl"
-				v-model="model"
-				@input="handleAmountInput"
-				@focus="handleAmountFocus"
-				@blur="handleAmountBlur"
-				:disabled="!tokenBalanceByType"
-				placeholder="0.00"
-				data-testid="send-amount-input"
-				:class="$style.input_field"
-			/>
-
-			<Tooltip position="start">
-				<Flex align="center" gap="4" style="opacity: 0.5">
-					<Text size="14" weight="500" color="tertiary"> $0.00 </Text>
-					<Icon name="warning" size="12" color="tertiary" />
-				</Flex>
-
-				<template #content> No quotes available at the moment</template>
-			</Tooltip>
-		</Flex>
-
-		<Flex justify="between">
-			<Flex align="center" gap="6">
-				<Button @click="handleHalf" type="secondary" size="mini" round data-testid="send-amount-half"> Half </Button>
-				<Button @click="model = null" type="secondary" size="mini" round> Clear </Button>
+	<Flex @click="handleFocus" gap="8" direction="column" :class="$style.wrapper">
+		<Flex direction="column" gap="4">
+			<Flex align="baseline" gap="4">
+				<input
+					ref="inputEl"
+					v-model="model"
+					@input="handleAmountInput"
+					@focus="handleAmountFocus"
+					@blur="handleAmountBlur"
+					:disabled="!tokenBalanceByType"
+					placeholder="0.00"
+					data-testid="send-amount-input"
+					:class="$style.input_field"
+				/>
 			</Flex>
 
-			<Button
-				v-if="token"
-				@click="handleMax"
-				type="secondary"
-				size="mini"
-				round
-				data-testid="send-amount-max"
-				:disabled="!tokenBalanceByType"
-				:class="$style.test"
-			>
-				<Icon
-					:name="selectedSendType === 'private' ? 'key-square' : 'face'"
-					size="16"
-					:color="selectedSendType === 'private' ? 'green' : 'orange'"
-				/>
-				<Text :class="$style.testtest">
-					{{ comma(tokenBalanceByType, ",", 8) }}
-				</Text>
-				<Text color="tertiary">{{ token.symbol }}</Text>
-			</Button>
+			<Flex align="center" justify="between">
+				<Tooltip position="start">
+					<Flex align="center" gap="4" style="opacity: 0.5">
+						<span :class="$style.conversion">~ $0.00</span>
+						<Icon name="warning" size="10" color="tertiary" />
+					</Flex>
+
+					<template #content> No quotes available at the moment</template>
+				</Tooltip>
+
+				<Flex align="center" gap="8">
+					<span @click="handleHalf" data-testid="send-amount-half" :class="$style.action_link">Half</span>
+					<span @click="handleMax" data-testid="send-amount-max" :class="$style.action_link">Use Maximum</span>
+				</Flex>
+			</Flex>
+		</Flex>
+
+		<Flex v-if="token && tokenBalanceByType" align="center" gap="4" :class="$style.balance_row">
+			<Icon
+				:name="selectedSendType === 'private' ? 'key-square' : 'face'"
+				size="12"
+				:color="selectedSendType === 'private' ? 'green' : 'orange'"
+			/>
+			<span :class="$style.balance_text">{{ comma(tokenBalanceByType, ",", 8) }} {{ token.symbol }}</span>
 		</Flex>
 	</Flex>
 </template>
@@ -132,24 +122,16 @@ const handleHalf = () => {
 	width: 100%;
 
 	cursor: text;
-	background: var(--card-bg);
-	border-radius: 12px;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--shadow-5);
-
-	padding: 16px;
-
-	transition: all 0.2s var(--bezier);
-
-	&.focused {
-		box-shadow: inset 0 0 0 2px var(--blue);
-	}
+	padding: 8px 0;
 }
 
 .input_field {
 	width: 100%;
 
-	font-size: 28px;
-	font-weight: 600;
+	font-family: var(--font-headline);
+	font-size: 40px;
+	font-weight: 700;
+	letter-spacing: -0.04em;
 	color: var(--txt-primary);
 
 	&::placeholder {
@@ -157,12 +139,35 @@ const handleHalf = () => {
 	}
 }
 
-.test {
-	max-width: 180px;
+.conversion {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-secondary);
 }
 
-.testtest {
-	text-overflow: ellipsis;
-	overflow: hidden;
+.action_link {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--nulo-accent);
+	cursor: pointer;
+
+	transition: opacity 0.2s var(--bezier);
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+.balance_row {
+	padding: 4px 0;
+}
+
+.balance_text {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
 }
 </style>

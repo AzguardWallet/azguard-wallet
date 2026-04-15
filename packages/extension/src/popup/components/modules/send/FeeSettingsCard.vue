@@ -597,34 +597,33 @@ onBeforeUnmount(() => {
 
 <style module>
 .wrapper {
-	border-radius: 12px;
+	border: 1px solid var(--nulo-outline);
 	overflow: hidden;
-	box-shadow: 0 1px 2px var(--shadow-5), inset 0 0 0 1px var(--border);
-
-	opacity: 0.65;
 }
 
 .card {
-	border-radius: 12px 12px 0 0;
-
 	padding: 12px;
 }
 
 .detail_row {
-	background: var(--gray-5);
+	background: transparent;
 	overflow: hidden;
+	border-top: 1px solid rgba(74, 70, 63, 0.2);
 
-	padding: 12px;
+	padding: 10px 12px;
 }
 
 .type {
 	cursor: pointer;
-	background: var(--gray-5);
-	box-shadow: inset 0 0 0 1px var(--border);
+	background: var(--nulo-surface-high);
 
-	border-radius: 6px;
+	padding: 4px 8px;
 
-	padding: 4px;
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--nulo-surface-highest);
+	}
 }
 
 .link {
@@ -648,29 +647,28 @@ onBeforeUnmount(() => {
 
 .priority_pill {
 	cursor: pointer;
-	border-radius: 6px;
 	padding: 3px 8px;
 
 	background: transparent;
-	box-shadow: inset 0 0 0 1px var(--border);
+	border: 1px solid var(--nulo-outline);
 
 	transition: all 0.15s ease;
 
 	&:hover {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 }
 
 .priority_active {
-	background: var(--gray-10);
-	box-shadow: inset 0 0 0 1px var(--txt-tertiary);
+	background: var(--nulo-surface-high);
+	border-color: var(--nulo-accent);
 }
 
 .skeleton {
 	display: inline-block;
+	width: 60px;
 	height: 12px;
-	border-radius: 4px;
-	background: linear-gradient(90deg, var(--gray-10) 25%, var(--gray-5) 50%, var(--gray-10) 75%);
+	background: linear-gradient(90deg, var(--nulo-surface-high) 25%, var(--nulo-surface) 50%, var(--nulo-surface-high) 75%);
 	background-size: 200% 100%;
 	animation: shimmer 1.5s infinite;
 }

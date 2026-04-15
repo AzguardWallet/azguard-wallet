@@ -26,67 +26,70 @@ const handleSwitchReceiverType = () => {
 
 <template>
 	<Flex align="center" gap="8" :class="$style.wrapper">
-		<Text size="13" weight="600" color="secondary">From</Text>
-
 		<Flex
 			@click="handleSwitchSendType"
 			align="center"
 			gap="6"
 			data-testid="send-from-type"
-			:class="[$style.type]"
+			:class="[$style.pill, selectedSendType === 'private' ? $style.pill_private : $style.pill_public]"
 		>
 			<Icon
 				:name="selectedSendType === 'private' ? 'key-square' : 'face'"
-				size="16"
+				size="14"
 				:color="selectedSendType === 'private' ? 'green' : 'orange'"
 			/>
-			<Text size="13" weight="600" color="primary" class="capitalize">
-				{{ selectedSendType }}
-			</Text>
+			<span :class="$style.pill_label">{{ selectedSendType }}</span>
 		</Flex>
 
-		<Text size="13" weight="600" color="secondary">to</Text>
+		<MaterialIcon name="arrow_forward" :size="14" color="tertiary" />
 
 		<Flex
 			@click="handleSwitchReceiverType"
 			align="center"
 			gap="6"
 			data-testid="send-to-type"
-			:class="[$style.type]"
+			:class="[$style.pill, selectedReceiverType === 'private' ? $style.pill_private : $style.pill_public]"
 		>
 			<Icon
-				:name="
-					selectedReceiverType === 'private' ? 'key-square' : 'face'
-				"
-				size="16"
+				:name="selectedReceiverType === 'private' ? 'key-square' : 'face'"
+				size="14"
 				:color="selectedReceiverType === 'private' ? 'green' : 'orange'"
 			/>
-			<Text size="13" weight="600" color="primary" class="capitalize">
-				{{ selectedReceiverType }}
-			</Text>
+			<span :class="$style.pill_label">{{ selectedReceiverType }}</span>
 		</Flex>
-
-		<Text size="13" weight="600" color="secondary">destination</Text>
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
-	height: 40px;
-
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
-	border-radius: 12px;
-
-	padding: 0 12px;
+	padding: 8px 0;
 }
 
-.type {
+.pill {
 	cursor: pointer;
-	background: var(--gray-5);
-	box-shadow: inset 0 0 0 1px var(--border);
+	padding: 4px 10px;
 
-	border-radius: 6px;
+	transition: all 0.2s var(--bezier);
 
-	padding: 4px;
+	&:hover {
+		opacity: 0.8;
+	}
+}
+
+.pill_private {
+	background: rgba(20, 174, 92, 0.15);
+}
+
+.pill_public {
+	background: rgba(255, 85, 0, 0.15);
+}
+
+.pill_label {
+	font-family: var(--font-headline);
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--txt-primary);
 }
 </style>

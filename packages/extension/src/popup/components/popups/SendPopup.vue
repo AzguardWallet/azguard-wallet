@@ -408,52 +408,34 @@ const onKeydown = (e) => {
 	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.send?.order">
 		<PopupCard large :displaceIdx>
 			<Flex wide direction="column" justify="between" :class="$style.wrapper">
-				<Flex align="center" direction="column" gap="16" :class="$style.top">
-					<Flex align="center" gap="6">
-						<Flex align="center" justify="center" :class="$style.send_icon">
-							<Icon name="arrow-top-right-circle" size="16" color="primary" />
-
-							<Icon
-								name="globe"
-								size="12"
-								:color="getChainColor(appStore.network?.chainId)"
-								:class="$style.warning_icon"
-							/>
-						</Flex>
-						<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
-							Send
-						</Text>
-
-						<Text size="16" weight="600" color="tertiary">
-							in {{ getChainName(appStore.network.chainId) }}
-						</Text>
-					</Flex>
-
-					<Flex wide direction="column" gap="16">
-						<Flex direction="column" gap="8">
-							<SelectTokenCard :token="activeToken" />
-
-							<SendTypesCard
-								v-if="!isBlockedTransfer"
-								v-model:sendType="selectedSendType"
-								v-model:receiverType="selectedReceiverType"
-								:token="activeToken"
-							/>
-
-							<AmountCard
-								v-model="amountTerm"
-								:selectedSendType
-								:token="activeToken"
-								:tokenBalanceByType
-							/>
+				<Flex direction="column" :class="$style.top">
+					<!-- Section: Origin Account -->
+					<div :class="$style.section">
+						<span :class="$style.section_label">Origin Account</span>
+						<Flex @click="popupStore.open('accounts')" align="center" justify="between" :class="$style.origin_row">
+							<Flex direction="column" gap="2">
+								<span :class="$style.origin_name">{{ appStore.account?.name }}</span>
+								<span :class="$style.origin_address">{{ appStore.account?.address ? `${appStore.account.address.slice(0, 6)}...${appStore.account.address.slice(-4)}` : "" }}</span>
+							</Flex>
+							<MaterialIcon name="expand_more" :size="20" color="secondary" />
 						</Flex>
 
+						<SendTypesCard
+							v-if="!isBlockedTransfer"
+							v-model:sendType="selectedSendType"
+							v-model:receiverType="selectedReceiverType"
+							:token="activeToken"
+						/>
+					</div>
+
+					<!-- Section: Recipient Address -->
+					<div :class="$style.section">
+						<span :class="$style.section_label">Recipient Address</span>
 						<Input
 							v-model="searchTerm"
 							@focus="isSearchInputFocused = true"
 							@blur="handleSearchBlur()"
-							:label="`${capitalize(selectedReceiverType)} destination`"
-							placeholder="Enter name or address"
+							placeholder="0x... or contact name"
 							data-testid="send-destination-field"
 							wide
 							:style="{ position: 'relative' }"
@@ -473,7 +455,7 @@ const onKeydown = (e) => {
 									<Icon name="check-circle" size="14" color="green" />
 								</Flex>
 							</template>
-							
+
 							<template #bottom>
 								<Transition name="fade">
 									<Flex v-if="showSuggestions" align="center" direction="column" wide :class="$style.contacts_wrapper">
@@ -505,7 +487,30 @@ const onKeydown = (e) => {
 								</Transition>
 							</template>
 						</Input>
+					</div>
 
+					<!-- Section: Select Asset -->
+					<div :class="$style.section">
+						<Flex align="center" justify="between">
+							<span :class="$style.section_label">Select Asset</span>
+							<span :class="$style.section_meta">Network: {{ getChainName(appStore.network?.chainId) }}</span>
+						</Flex>
+						<SelectTokenCard :token="activeToken" />
+					</div>
+
+					<!-- Section: Transaction Amount -->
+					<div :class="$style.section">
+						<span :class="$style.section_label">Transaction Amount</span>
+						<AmountCard
+							v-model="amountTerm"
+							:selectedSendType
+							:token="activeToken"
+							:tokenBalanceByType
+						/>
+					</div>
+
+					<!-- Section: Fee Summary -->
+					<div :class="$style.section_last">
 						<FeeSettingsCard
 							:profile="appStore.profile"
 							:network="appStore.network"
@@ -514,21 +519,18 @@ const onKeydown = (e) => {
 							:isEstimating="isEstimating"
 							v-model="feeSettings"
 						/>
-					</Flex>
+					</div>
 				</Flex>
 
-				<Flex direction="column" gap="12" :class="$style.bottom">
-					<Button
+				<Flex direction="column" :class="$style.bottom">
+					<button
 						@click="handleSend"
-						wide
-						type="primary"
-						size="medium"
-						rightIcon="arrow-right-circle"
 						data-testid="send-submit"
 						:disabled="!isAllowedToSend || isSending"
+						:class="$style.confirm_btn"
 					>
-						Send
-					</Button>
+						{{ isSending ? "Confirming..." : "Confirm Transaction" }}
+					</button>
 				</Flex>
 			</Flex>
 		</PopupCard>
@@ -541,14 +543,60 @@ const onKeydown = (e) => {
 }
 
 .top {
-	padding: 0 20px;
+	padding: 0 24px;
+	overflow-y: auto;
 }
 
-.selector {
-	border-radius: 10px;
-	background: var(--gray-10);
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 
-	padding: 2px;
+	padding: 20px 0;
+	border-bottom: 1px solid rgba(35, 31, 28, 1);
+}
+
+.section_last {
+	padding: 20px 0;
+}
+
+.section_label {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--nulo-secondary);
+}
+
+.section_meta {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-secondary);
+}
+
+.origin_row {
+	cursor: pointer;
+	padding: 12px 0;
+
+	transition: opacity 0.2s var(--bezier);
+
+	&:hover {
+		opacity: 0.8;
+	}
+}
+
+.origin_name {
+	font-family: var(--font-headline);
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--txt-primary);
+}
+
+.origin_address {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--nulo-secondary);
 }
 
 .input_right {
@@ -570,9 +618,8 @@ const onKeydown = (e) => {
 	right: 0;
 	z-index: 999;
 
-	border-radius: 10px;
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 3px var(--shadow-5);
-	background: var(--card-bg);
+	border: 1px solid var(--nulo-outline);
+	background: var(--nulo-surface-low);
 
 	max-height: 150px;
 
@@ -585,11 +632,11 @@ const onKeydown = (e) => {
 		transition: all 0.2s var(--bezier);
 
 		&:hover {
-			background: var(--gray-3);
+			background: var(--nulo-surface-high);
 		}
 
 		&:active {
-			background: var(--gray-5);
+			background: var(--nulo-surface-highest);
 		}
 
 		.contact_avatar {
@@ -620,24 +667,41 @@ const onKeydown = (e) => {
 			overflow: hidden;
 			white-space: nowrap;
 		}
-
 	}
 }
 
 .bottom {
-	padding: 20px;
+	padding: 20px 24px;
 }
 
-.send_icon {
-	position: relative;
-}
+.confirm_btn {
+	width: 100%;
 
-.warning_icon {
-	position: absolute;
-	top: -6px;
-	right: -6px;
+	background: var(--nulo-accent);
+	color: #0a0908;
 
-	border-radius: 4px;
-	background: var(--card-bg);
+	font-family: var(--font-headline);
+	font-weight: 700;
+	font-size: 14px;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+
+	padding: 20px 0;
+	cursor: pointer;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		background: #fff;
+	}
+
+	&:active {
+		transform: scale(0.98);
+	}
+
+	&:disabled {
+		opacity: 0.3;
+		pointer-events: none;
+	}
 }
 </style>
