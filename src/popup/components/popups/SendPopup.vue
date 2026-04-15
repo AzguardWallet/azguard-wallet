@@ -103,7 +103,7 @@ const tokenBalance = computed(() => {
 	)
 })
 const tokenBalanceByType = computed(() => {
-	if (!tokenBalance.value) return 0
+	if (!tokenBalance.value || isBlockedTransfer.value) return 0
 	return selectedSendType.value === "private"
 		? tokenBalance.value.privateBalance / 10 ** activeToken.value.decimals
 		: tokenBalance.value.publicBalance / 10 ** activeToken.value.decimals

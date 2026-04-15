@@ -266,6 +266,7 @@ watch(
 						}
 						saveSelectedMethod(selectedMethod.value);
 						break;
+					case FpcType.PrivateFpc:
 					case FpcType.DefaultFpc:
 						if (isZeroBalance(selectedMethod.value)) {
 							settings.value = undefined
@@ -470,6 +471,15 @@ onBeforeUnmount(() => {
 					<Text size="12" weight="600" color="secondary"> Available </Text>
 					<Text size="12" weight="600" :color="isZeroBalance(selectedMethod) ? 'red' : 'primary'">
 						{{ formatBalance(selectedMethod.balance, selectedMethod.inPublic) }}
+						{{ selectedMethod.balance.token.symbol }}
+					</Text>
+				</Flex>
+			</template>
+			<template v-else-if="selectedMethod.fpc?.type === FpcType.PrivateFpc && selectedMethod.balance">
+				<Flex align="center" justify="between" :class="$style.fjc_price">
+					<Text size="12" weight="600" color="secondary"> Available </Text>
+					<Text size="12" weight="600" :color="isZeroBalance(selectedMethod) ? 'red' : 'primary'">
+						{{ formatBalance(selectedMethod.balance, false) }}
 						{{ selectedMethod.balance.token.symbol }}
 					</Text>
 				</Flex>

@@ -11,6 +11,7 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
+import { getPrivateFpcAddress, privateFpcName, privateFpcSymbol } from "@/wallet/utils/private-fpc";
 import { simulate } from "@/wallet/utils/fn";
 import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, Methods, Events } from "./spec";
 import {
@@ -427,16 +428,22 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             ? GetDecimalsFn.new(ti.getDecimalsFn.name, ti.getDecimalsFn.impl)
             : undefined;
 
+        const pfpcAddress = await getPrivateFpcAddress();
+
         return [
             getNameFn
                 ? await simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
                 : ti.contract === feeJuiceAddress
                 ? feeJuiceName
+                : ti.contract === pfpcAddress
+                ? privateFpcName
                 : "<name>",
             getSymbolFn
                 ? await simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
                 : ti.contract === feeJuiceAddress
                 ? feeJuiceSymbol
+                : ti.contract === pfpcAddress
+                ? privateFpcSymbol
                 : "<symbol>",
             getDecimalsFn
                 ? await simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())
