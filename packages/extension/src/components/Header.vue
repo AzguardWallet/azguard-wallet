@@ -199,188 +199,102 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex v-if="!appStore._isHomeScreenOpened" align="center" justify="between" :class="$style.wrapper">
+	<header v-if="!appStore._isHomeScreenOpened" :class="$style.wrapper">
 		<Flex
 			v-if="appStore.isLogined"
-			@click="handleOpenPopup('menu')"
-			align="center"
-			justify="center"
-			data-testid="menu-button"
-			:class="[
-				$style.button,
-				$style.logs_indicator,
-				highlightColor && $style['logs_indicator--visible'],
-				!appStore.isLogined && $style.disabled
-			]"
-			:style="highlightColor ? { '--highlight-color': highlightColor } : {}"
+			@click="handleOpenPopup('accounts')"
+			direction="column"
+			data-testid="account-selector"
+			:class="$style.account_info"
 		>
-			<Icon name="logo" size="14" color="primary" />
-			<div v-if="stealthMode" :class="$style.stealth_badge">
-				<Icon name="eye-off" size="10" color="primary" />
-			</div>
+			<span :class="$style.account_label">
+				{{ appStore.account?.name?.toUpperCase() || "PRIMARY ACCOUNT" }}
+			</span>
+			<span :class="$style.account_address" data-testid="menu-button">
+				{{ appStore.account?.address ? `${appStore.account.address.slice(0, 6)}...${appStore.account.address.slice(-4)}` : "" }}
+			</span>
 		</Flex>
 
-		<Flex align="center" gap="8">
-			<Flex
-				v-if="appStore.isLogined"
-				@click="handleOpenPopup('accounts')"
-				align="center"
-				gap="6"
-				data-testid="account-selector"
-				:class="$style.account"
-			>
-				<Icon name="vault" size="18" color="primary" />
-
-				<Text size="13" weight="600" color="primary" :class="$style.account_name">
-					{{ appStore.account?.name }}
-				</Text>
-
-				<Text
-					v-if="showNode"
-					size="13"
-					weight="600"
-					color="tertiary"
-					:class="$style.network_type"
-				>
-					• &nbsp;{{ getChainName(appStore.network?.chainId) }}
-				</Text>
-
-				<Icon name="chevron" size="12" color="secondary" />
-			</Flex>
-		</Flex>
-
-		<Tooltip side="left">
+		<Flex align="center" gap="16">
 			<Flex
 				v-if="appStore.isLogined"
 				@click="handleOpenPopup('networks')"
 				align="center"
 				justify="center"
 				data-testid="network-button"
-				:class="[$style.button, !appStore.isLogined && $style.disabled]"
+				:class="$style.icon_button"
 			>
-				<Icon name="globe" size="18" color="primary" />
-				<div :class="[$style.dot, $style[String(appStore.networkStatus).toLowerCase()]]" />
+				<div :class="[$style.status_dot, $style[String(appStore.networkStatus).toLowerCase()]]" />
 			</Flex>
 
-			<template #content>
-				<Flex align="center" gap="2">
-					<Text size="12" color="secondary">Node status:</Text>
-					<Text size="12" :class="$style[String(appStore.networkStatus).toLowerCase()]">
-						{{ appStore.networkStatus }}
-					</Text>
-				</Flex>
-			</template>
-		</Tooltip>
-	</Flex>
+			<Flex
+				v-if="appStore.isLogined"
+				@click="handleOpenPopup('menu')"
+				align="center"
+				justify="center"
+				:class="$style.icon_button"
+			>
+				<MaterialIcon name="settings" :size="20" color="primary" />
+			</Flex>
+		</Flex>
+	</header>
 </template>
 
 <style module>
 .wrapper {
-	height: 48px;
-	min-height: 48px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 
-	padding: 0 20px;
+	height: 64px;
+	min-height: 64px;
+
+	padding: 0 24px;
+	background: var(--app-bg);
 }
 
-.button {
-	position: relative;
+.account_info {
+	cursor: pointer;
+	gap: 2px;
+}
 
-	min-width: 28px;
-	min-height: 28px;
+.account_label {
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.account_address {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	color: var(--txt-primary);
+}
+
+.icon_button {
+	width: 36px;
+	height: 36px;
 
 	cursor: pointer;
-	border-radius: 50%;
-	background: var(--card-bg);
-	box-shadow: inset 0 0 0 1px var(--border);
 
-	padding: 4px;
-
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-15);
-		box-shadow: inset 0 0 0 1px var(--border-hovered);
+		background: var(--nulo-surface-high);
 	}
 
 	&:active {
-		background: var(--gray-20);
-	}
-
-	&.disabled {
-		opacity: 0.5;
-		pointer-events: none;
-	}
-}
-
-.logs_indicator::before {
-	content: "";
-	position: absolute;
-	top: -2px;
-	left: -2px;
-	right: -2px;
-	bottom: -2px;
-	z-index: -1;
-
-	border-radius: 50%;
-	background: radial-gradient(
-		circle,
-		transparent 40%,
-		var(--highlight-color) 80%,
-		transparent 100%
-	);
-
-	opacity: 0;
-	transition: opacity 1s ease;
-	animation: pulse 2.5s infinite ease-in-out;
-}
-
-.logs_indicator--visible::before {
-	opacity: 1;
-}
-
-@keyframes pulse {
-	0%, 100% {
-		filter: brightness(0.7);
-	}
-
-	50% {
-		filter: brightness(1.1);
-	}
-}
-
-@keyframes loading {
-	0% {
-		opacity: 1;
-	}
-
-	25% {
 		opacity: 0.8;
 	}
-
-	50% {
-		opacity: 0.4;
-	}
-
-	70% {
-		opacity: 0.8;
-	}
-
-	100% {
-		opacity: 1;
-	}
 }
 
-.dot {
-	position: absolute;
-	top: 5px;
-	right: 5px;
-
-	width: 5px;
-	height: 5px;
-	box-sizing: content-box;
-
-	box-shadow: 0 0 0 2px var(--card-bg);
-
+.status_dot {
+	width: 8px;
+	height: 8px;
 	border-radius: 50%;
 	background: var(--gray);
 
@@ -399,66 +313,9 @@ onBeforeUnmount(() => {
 	}
 }
 
-.stealth_badge {
-	position: absolute;
-	bottom: -4px;
-	right: -4px;
-
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-	width: 16px;
-	height: 16px;
-
-	border-radius: 50%;
-	background: var(--purple);
-}
-
-.active {
-	color: var(--green);
-}
-.inactive {
-	color: var(--red);
-}
-.invalidchain {
-	color: var(--red);
-}
-.sync {
-	color: var(--gray);
-	animation: loading 1.5s infinite linear;
-}
-
-.account {
-	height: 28px;
-
-	border-radius: 50px;
-	background: var(--card-bg);
-	box-shadow: inset 0 0 0 1px var(--border);
-	cursor: pointer;
-
-	padding: 0 10px 0 6px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		box-shadow: inset 0 0 0 1px var(--border-hovered);
-	}
-}
-
-.account_name {
-	max-width: 90px;
-
-	text-wrap: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.network_type {
-	max-width: 90px;
-
-	text-wrap: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+@keyframes loading {
+	0% { opacity: 1; }
+	50% { opacity: 0.4; }
+	100% { opacity: 1; }
 }
 </style>

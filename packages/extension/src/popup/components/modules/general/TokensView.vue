@@ -190,9 +190,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="12">
-		<Flex align="end" justify="between">
-			<Text size="13" weight="600" color="secondary"> Tokens </Text>
+	<Flex direction="column" gap="24" :class="$style.wrapper">
+		<Flex align="end" justify="between" :class="$style.section_header">
+			<span :class="$style.header_title">PERMANENT RECORD</span>
 
 			<Flex align="center" gap="6">
 				<Dropdown>
@@ -214,13 +214,6 @@ onBeforeUnmount(() => {
 							</Flex>
 						</DropdownItem>
 						<DropdownDivider />
-						<DropdownItem disabled>
-							<Flex align="center" gap="8">
-								<Icon name="display" size="14" color="primary" />
-								Display settings
-							</Flex>
-						</DropdownItem>
-						<DropdownDivider />
 						<DropdownItem @click="refreshBalance" data-testid="tokens-menu-refresh">
 							<Flex align="center" gap="8">
 								<Icon name="refresh" size="14" color="primary" />
@@ -232,24 +225,46 @@ onBeforeUnmount(() => {
 			</Flex>
 		</Flex>
 
-		<template v-if="newTokens.length">
-			<ItemsContainer>
+		<Flex direction="column" :class="$style.token_list">
+			<template v-if="newTokens.length">
 				<TokenCard v-for="t in newTokens" :newToken="t" />
-			</ItemsContainer>
-		</template>
-		<template v-if="sortedTokenBalances.length">
-			<ItemsContainer>
+			</template>
+			<template v-if="sortedTokenBalances.length">
 				<TokenCard
 					v-for="tb in sortedTokenBalances"
 					@onRefreshBalance="refreshBalance(tb)"
 					:tokenBalance="tb"
 				/>
-			</ItemsContainer>
-		</template>
-		<template v-if="!newTokens.length && !sortedTokenBalances.length">
-			<Button @click="popupStore.open('new_token')" type="secondary" size="small" leftIcon="plus-circle">
-				New token
-			</Button>
-		</template>
+			</template>
+			<template v-if="!newTokens.length && !sortedTokenBalances.length">
+				<Button @click="popupStore.open('new_token')" type="secondary" size="small" leftIcon="plus-circle">
+					New token
+				</Button>
+			</template>
+		</Flex>
 	</Flex>
 </template>
+
+<style module>
+.wrapper {
+	/* no extra styling needed */
+}
+
+.section_header {
+	padding-bottom: 8px;
+	border-bottom: 1px solid rgba(74, 70, 63, 0.2);
+}
+
+.header_title {
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.token_list {
+	gap: 1px;
+}
+</style>

@@ -16,45 +16,61 @@ const handleOpenPopup = (target) => {
 </script>
 
 <template>
-	<Flex wide align="center" justify="between" gap="12">
-		<Flex @click="handleOpenPopup('send')" wide align="center" justify="center" gap="6" :class="$style.button" data-testid="actions-send">
-			<Icon name="arrow-top-right-circle" size="20" color="blue" />
-			<Text size="14" weight="600" color="primary">Send</Text>
+	<Flex wide align="center" gap="16">
+		<Flex @click="handleOpenPopup('send')" wide align="center" justify="center" :class="[$style.button, $style.primary]" data-testid="actions-send">
+			<span :class="$style.label">SEND</span>
 		</Flex>
 
-		<Flex @click="handleOpenPopup('receive')" wide align="center" justify="center" gap="6" :class="$style.button" data-testid="actions-receive">
-			<Icon name="arrow-bottom-circle" size="20" color="green" />
-			<Text size="14" weight="600" color="primary">Receive</Text>
+		<Flex @click="handleOpenPopup('receive')" wide align="center" justify="center" :class="[$style.button, $style.secondary]" data-testid="actions-receive">
+			<span :class="$style.label">RECEIVE</span>
 		</Flex>
-
-		<!-- Deposit button removed — faucet was testnet-only, bridge/onramp TBD -->
-		<!-- <Flex @click="handleOpenPopup('deposit')" align="center" justify="center" gap="6" :class="[$style.button]">
-			<Icon name="plus-circle" size="20" color="secondary" />
-			<Text size="14" weight="600" color="primary">Deposit</Text>
-		</Flex> -->
 	</Flex>
 </template>
 
 <style module>
 .button {
-	height: 36px;
+	height: 52px;
 
 	cursor: pointer;
-	background: linear-gradient(var(--gray-10), var(--gray-3));
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 3px var(--shadow-5);
-	border-radius: 500px;
-
-	padding: 0 12px;
+	border-radius: 0;
 
 	transition: all 0.2s var(--bezier);
 
-	&.disabled {
-		opacity: 0.5;
-		pointer-events: none;
+	&:active {
+		transform: scale(0.97);
 	}
+}
+
+.primary {
+	background: var(--nulo-accent);
 
 	&:hover {
-		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 3px var(--shadow-10);
+		opacity: 0.9;
 	}
+}
+
+.secondary {
+	background: transparent;
+	box-shadow: inset 0 0 0 1px var(--nulo-outline);
+
+	&:hover {
+		background: var(--nulo-surface-low);
+	}
+}
+
+.label {
+	font-family: var(--font-headline);
+	font-weight: 700;
+	font-size: 14px;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+}
+
+.primary .label {
+	color: #0a0908;
+}
+
+.secondary .label {
+	color: var(--nulo-accent);
 }
 </style>

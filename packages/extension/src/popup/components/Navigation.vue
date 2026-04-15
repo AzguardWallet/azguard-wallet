@@ -3,39 +3,38 @@ const route = useRoute()
 
 const navigationLinks = [
 	{
-		name: "activity",
-		path: "/popup/activity",
-		icon: "zap-circle",
-	},
-	{
 		name: "general",
 		path: "/popup/general",
-		icon: "wallet",
+		materialIcon: "account_balance_wallet",
+		label: "ASSETS",
+	},
+	{
+		name: "activity",
+		path: "/popup/activity",
+		materialIcon: "history",
+		label: "HISTORY",
 	},
 	{
 		name: "settings",
 		path: "/popup/settings",
-		icon: "settings",
+		materialIcon: "settings",
+		label: "SETTINGS",
 	},
 ]
 </script>
 
 <template>
-	<Flex align="center" justify="center" gap="32" :class="$style.wrapper">
-		<RouterLink v-for="link in navigationLinks" :to="link.path" :data-testid="`nav-${link.name}`">
-			<Flex :class="$style.button">
-				<Icon :name="link.icon" size="24" :color="route.path.includes(link.path) ? 'primary' : 'tertiary'" />
-
-				<Icon
-					v-if="route.name === 'popup-tokens-id' && link.name === 'general'"
-					name="banknote"
-					size="14"
-					color="primary"
-					:class="$style.banknote_icon"
-				/>
-			</Flex>
+	<nav :class="$style.wrapper">
+		<RouterLink
+			v-for="link in navigationLinks"
+			:to="link.path"
+			:data-testid="`nav-${link.name}`"
+			:class="[$style.tab, route.path.includes(link.path) && $style.active]"
+		>
+			<MaterialIcon :name="link.materialIcon" :size="22" :color="route.path.includes(link.path) ? 'primary' : 'tertiary'" />
+			<span :class="$style.label">{{ link.label }}</span>
 		</RouterLink>
-	</Flex>
+	</nav>
 </template>
 
 <style module>
@@ -46,33 +45,49 @@ const navigationLinks = [
 	right: 0;
 	z-index: 1;
 
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-5);
+	display: flex;
+	justify-content: space-around;
+	align-items: center;
 
-	padding: 8px 0;
+	background: var(--app-bg);
+	border-top: 1px solid rgba(74, 70, 63, 0.2);
+
+	padding: 0 16px;
+	height: 64px;
 }
 
-.button {
-	position: relative;
+.tab {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
 
-	border-radius: 12px;
+	padding-top: 8px;
+	border-top: 2px solid transparent;
+	text-decoration: none;
 
-	padding: 8px 16px;
+	transition: all 0.3s ease;
 
 	&:hover {
-		background: linear-gradient(var(--gray-3), var(--gray-5));
+		color: var(--txt-primary);
 	}
 }
 
-.banknote_icon {
-	position: absolute;
-	top: 2px;
-	right: 8px;
+.active {
+	border-top-color: var(--nulo-accent);
+}
 
-	background: var(--card-bg);
-	box-sizing: content-box;
-	border-radius: 6px;
+.label {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: inherit;
+}
 
-	padding: 1px;
+.active .label {
+	color: var(--txt-primary);
 }
 </style>

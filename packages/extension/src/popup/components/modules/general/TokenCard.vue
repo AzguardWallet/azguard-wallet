@@ -49,118 +49,86 @@ const handleRefreshBalance = async () => {
 </script>
 
 <template>
-	<SettingItem
+	<RouterLink
 		v-if="tokenBalance"
 		:to="`/popup/tokens/${token?.id}`"
-		size="large"
-		:title="token.symbol"
-		:description="description"
-		icon="banknote"
 		data-testid="tokens-card"
+		:class="$style.row"
 		@pointerenter="isHovered = true"
 		@pointerleave="isHovered = false"
 	>
-		<template #icon>
-			<Tooltip position="start" :disabled="!tokenBalance?.updatedAt">
-				<Icon
-					v-if="!(tokenBalance?.isUpdating || tokenBalance?.isMinting)"
-					@click.stop="handleRefreshBalance"
-					:name="!isHovered ? 'banknote' : 'refresh'"
-					size="16"
-					color="white"
-					:class="$style.icon"
-				/>
-				<div v-else :class="$style.icon">
-					<Spinner size="16" color="--txt-primary" />
-				</div>
+		<Flex direction="column" gap="2">
+			<span :class="$style.symbol">{{ token.symbol }}</span>
+			<span :class="$style.type_label">PRIVATE / PUBLIC</span>
+		</Flex>
 
-				<template #content>
-					<Text color="secondary">Latest balance refresh - </Text>
-					<Text>
-						{{ DateTime.fromSeconds(tokenBalance?.updatedAt / 1_000).toRelative({ locale: "en" }) }}
-					</Text>
-				</template>
-			</Tooltip>
-		</template>
+		<Flex direction="column" align="end" gap="2">
+			<span :class="$style.amount">{{ totalBalance || 0 }}</span>
+			<span :class="$style.detail">
+				<template v-if="hasPrivate">{{ privateFormatted }} PRIVATE</template>
+				<template v-if="hasPrivate && hasPublic"> / </template>
+				<template v-if="hasPublic">{{ publicFormatted }} PUBLIC</template>
+				<template v-if="!hasPrivate && !hasPublic">0 PRIVATE / 0 PUBLIC</template>
+			</span>
+		</Flex>
+	</RouterLink>
 
-		<template #right>
-			<Flex direction="column" align="end" gap="4">
-				<Text size="13" weight="600" color="tertiary" noWrap :class="$style.balance_text">
-					<Text color="primary">{{ totalBalance || 0 }}</Text>
-					<Text :class="$style.symbol_wrapper">&nbsp;{{ token.symbol }}</Text>
-				</Text>
-
-				<Text v-if="hasPrivate || hasPublic" size="11" color="secondary" noWrap>
-					<template v-if="hasPrivate">Priv {{ privateFormatted }}</template>
-					<template v-if="hasPrivate && hasPublic"> · </template>
-					<template v-if="hasPublic">Pub {{ publicFormatted }}</template>
-				</Text>
-			</Flex>
-		</template>
-	</SettingItem>
-
-	<SettingItem
-		v-if="newToken"
-		size="large"
-		:title="newToken.symbol"
-		:description="description"
-		disabled
-		icon="banknote"
-		@pointerenter="isHovered = true"
-		@pointerleave="isHovered = false"
-	>
-		<template #icon>
-			<div :class="$style.icon">
-				<Spinner size="16" color="--txt-primary" />
-			</div>
-		</template>
-	</SettingItem>
+	<Flex v-if="newToken" align="center" justify="between" :class="[$style.row, $style.minting]">
+		<Flex direction="column" gap="2">
+			<span :class="$style.symbol">{{ newToken.symbol }}</span>
+			<span :class="$style.type_label">MINTING...</span>
+		</Flex>
+		<Spinner size="14" color="--txt-tertiary" />
+	</Flex>
 </template>
 
 <style module>
-.wrapper {
-	border: 1px solid var(--border);
-	box-shadow: 0 1px 2px transparent;
-	border-radius: 12px;
-	cursor: pointer;
-
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		border-color: var(--border-hovered);
-		box-shadow: 0 1px 2px var(--shadow-5);
-		background: var(--gray-3);
-	}
-}
-
-.balance_text {
+.row {
 	display: flex;
+	align-items: center;
+	justify-content: space-between;
 
-	text-align: end;
-}
+	padding: 16px 0;
+	cursor: pointer;
+	text-decoration: none;
 
-.icon {
-	box-sizing: content-box;
-	border-radius: 8px;
-	background: var(--gray-15);
-
-	padding: 5px;
-
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-20);
+		background: rgba(29, 27, 26, 0.5);
 	}
 }
 
-.symbol_wrapper {
-	display: block;
+.minting {
+	opacity: 0.5;
+	pointer-events: none;
+}
 
-	max-width: 80px;
+.symbol {
+	font-family: var(--font-headline);
+	font-weight: 700;
+	font-size: 14px;
+	letter-spacing: -0.02em;
+	color: var(--txt-primary);
+}
 
-	overflow: hidden;
-	text-overflow: ellipsis;
+.type_label {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.amount {
+	font-family: var(--font-mono);
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--txt-primary);
+}
+
+.detail {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-outline);
 }
 </style>

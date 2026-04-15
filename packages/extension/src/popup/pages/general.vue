@@ -12,7 +12,6 @@ import BalanceView from "../components/modules/general/BalanceView.vue"
 import Navigation from "../components/Navigation.vue"
 import RecentActivityView from "../components/modules/general/RecentActivityView.vue"
 import TokensView from "../components/modules/general/TokensView.vue"
-import WarningView from "../components/modules/general/WarningView.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -23,11 +22,10 @@ const appStore = useAppStore()
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
 		<BalanceView />
 
-		<Flex direction="column" gap="32" :class="$style.content">
-			<WarningView />
+		<Flex direction="column" gap="40" :class="$style.content">
+			<TokensView />
 			<GasBalanceCard />
 			<RecentActivityView />
-			<TokensView />
 		</Flex>
 
 		<Navigation />
@@ -40,18 +38,10 @@ const appStore = useAppStore()
 
 	overflow: auto;
 
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-8);
-	box-shadow: inset 0 10px 8px -2px var(--gray-3);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
+	background: var(--app-bg);
 }
 
 .content {
-	border-top: 1px solid var(--gray-10);
-	background: linear-gradient(rgba(0, 0, 0, 3%), rgba(0, 0, 0, 0%));
-
-	padding: 20px 20px 80px 20px;
+	padding: 0 24px 96px 24px;
 }
 </style>
