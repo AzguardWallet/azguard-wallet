@@ -16,6 +16,7 @@ import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 import { trimAddress } from "@/utils/string"
+import { humanizeMethodName, getPrimaryCall, getTxTitle } from "@/utils/tx-enrichment"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -64,6 +65,21 @@ const txTime = computed(() => {
 	if (!tx.value?.updatedAt) return null
 	return DateTime.fromMillis(tx.value.updatedAt).toFormat("MMM dd, yyyy 'at' HH:mm")
 })
+
+const explorerUrl = computed(() => {
+	if (!tx.value?.hash) return null
+	const chainId = appStore.network?.chainId
+	switch (chainId) {
+		case 1721521349: // testnet
+			return `https://testnet.aztecscan.xyz/tx/${tx.value.hash}`
+		case 604129785: // devnet
+			return `https://devnet.aztecscan.xyz/tx/${tx.value.hash}`
+		default:
+			return null
+	}
+})
+
+const txTitle = computed(() => tx.value?.calls ? getTxTitle(tx.value.calls) : "Transaction")
 
 const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
 const type = computed(() => {
@@ -149,7 +165,7 @@ watch(
 						<Flex align="center" gap="6">
 							<Icon :name="statusIcon" size="16" :color="statusColor" />
 							<Text size="16" weight="600" color="primary" style="transform: translate3d(0, 0, 0, 0)">
-								Transaction
+								{{ txTitle }}
 							</Text>
 						</Flex>
 
@@ -177,6 +193,11 @@ watch(
 						<Text v-if="txTime" size="12" weight="500" color="tertiary">
 							{{ txTime }}
 						</Text>
+						<Flex v-if="explorerUrl" @click="handleCopy(explorerUrl)" align="center" gap="4" class="copyable" style="margin-top: 4px">
+							<Icon name="globe" size="12" color="purple" />
+							<Text size="11" weight="500" color="purple">View on explorer</Text>
+							<Icon name="copy" size="10" color="tertiary" />
+						</Flex>
 					</Flex>
 				</Flex>
 
