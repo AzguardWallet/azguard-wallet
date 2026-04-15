@@ -53,7 +53,7 @@ export default async function setup(project: TestProject) {
 		nodeProcess = spawn(AZTEC_BIN, ["start", "--local-network"], {
 			stdio: "pipe",
 			detached: true, // Process group for cleanup
-			env: { ...process.env },
+			env: { ...process.env, SEQ_MIN_TX_PER_BLOCK: "0" },
 		})
 		weStartedNode = true
 
