@@ -399,6 +399,34 @@ export async function waitForBalance(page: Page, text: string, timeout = 60_000)
 	await page.waitForFunction((t: string) => document.body.innerText.includes(t), { timeout, polling: 3_000 }, text)
 }
 
+// ── Fee Method ────────────────────────────────────────────────────────
+
+/** Select a fee payment method in the SendPopup's FeeSettingsCard dropdown.
+ *  Uses data-testid on dropdown items: send-fee-method-{subtitle}
+ *  @param methodSubtitle - "public" | "private" | "sponsored" | "token" */
+export async function selectFeeMethod(page: Page, methodSubtitle: string): Promise<void> {
+	// Open the fee method dropdown (items teleport to #dropdown)
+	await page.evaluate(() => {
+		;(document.querySelector('[data-testid="send-fee-method-trigger"]') as HTMLElement)?.click()
+	})
+	await new Promise((r) => setTimeout(r, 500))
+
+	// Click the method by data-testid on the teleported DropdownItem
+	const testid = `send-fee-method-${methodSubtitle}`
+	await page.evaluate((id: string) => {
+		;(document.querySelector(`[data-testid="${id}"]`) as HTMLElement)?.click()
+	}, testid)
+	await new Promise((r) => setTimeout(r, 500))
+}
+
+/** Read the currently selected fee method from the trigger's data attribute. */
+export async function getSelectedFeeMethod(page: Page): Promise<string | null> {
+	return page.evaluate(() => {
+		const trigger = document.querySelector('[data-testid="send-fee-method-trigger"]')
+		return trigger?.getAttribute("data-fee-method") ?? null
+	})
+}
+
 // ── Toast ──────────────────────────────────────────────────────────────
 
 /** Wait for a toast notification containing the given text. Toasts auto-dismiss in ~2s. */

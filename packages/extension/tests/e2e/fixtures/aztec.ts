@@ -16,6 +16,9 @@ import { getContractInstanceFromInstantiationParams } from "@aztec/aztec.js/cont
 import { EmbeddedWallet } from "@aztec/wallets/embedded"
 import { registerInitialLocalNetworkAccountsInWallet } from "@aztec/wallets/testing"
 import { SponsoredFeePaymentMethod } from "@aztec/aztec.js/fee"
+import { L1FeeJuicePortalManager } from "@aztec/aztec.js/ethereum"
+import { ProtocolContractAddress } from "@aztec/aztec.js/protocol"
+import { createExtendedL1Client } from "@aztec/ethereum/client"
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC"
 import { TokenContract } from "@defi-wonderland/aztec-standards/dist/src/artifacts/Token.js"
 
@@ -159,4 +162,70 @@ export async function mintPrivateTokens(
 	await token.methods
 		.mint_to_private(AztecAddress.fromString(toAddress), amount)
 		.send({ fee: feeOptions, from: AztecAddress.fromString(minterAddress) })
+}
+
+// ── Fee Juice L1→L2 Bridge ────────────────────────────────────────────
+
+const ANVIL_URL = "http://localhost:8545"
+const ANVIL_MNEMONIC = "test test test test test test test test test test test junk"
+
+/** Bridge FeeJuice from L1 (Anvil) to an L2 address. Mints test FJ on L1, deposits to portal.
+ *  Note: the L1 FeeAssetHandler has a fixed mint amount of 1000 FJ per call. */
+export async function bridgeFeeJuice(node: ReturnType<typeof createAztecNodeClient>, toAddress: string, amount = 1000n * 10n ** 18n) {
+	const nodeInfo = await node.getNodeInfo()
+	const l1Client = createExtendedL1Client([ANVIL_URL], ANVIL_MNEMONIC, { id: nodeInfo.l1ChainId, name: "anvil" })
+	const logger = {
+		info: console.log,
+		debug: console.log,
+		warn: console.warn,
+		error: console.error,
+		verbose: console.log,
+		trace: () => {},
+	}
+	const portalManager = await L1FeeJuicePortalManager.new(node, l1Client, logger)
+	const claim = await portalManager.bridgeTokensPublic(AztecAddress.fromString(toAddress), amount, true)
+	console.log(`[bridgeFeeJuice] Bridged ${amount} FJ to ${toAddress}, messageHash: ${claim.messageHash}`)
+	return claim
+}
+
+/** Wait for an L1→L2 message to be synced on the Aztec node, then wait 2 more blocks. */
+export async function waitForL1ToL2Message(
+	node: ReturnType<typeof createAztecNodeClient>,
+	messageHash: string,
+	timeoutMs = 90_000,
+): Promise<void> {
+	const start = Date.now()
+	while (Date.now() - start < timeoutMs) {
+		const synced = await node.isL1ToL2MessageSynced(Fr.fromString(messageHash))
+		if (synced) {
+			console.log(`[waitForL1ToL2Message] Message synced after ${Date.now() - start}ms`)
+			break
+		}
+		await new Promise((r) => setTimeout(r, 2_000))
+	}
+	// Wait 2 more L2 blocks for the message tree to update
+	const currentBlock = await node.getBlockNumber()
+	const target = currentBlock + 2
+	while ((await node.getBlockNumber()) < target) {
+		await new Promise((r) => setTimeout(r, 2_000))
+	}
+	console.log("[waitForL1ToL2Message] +2 L2 blocks confirmed")
+}
+
+/** Claim bridged FeeJuice on L2. Uses SponsoredFPC to pay for the claim tx itself.
+ *  Uses ContractFunctionInteraction directly since FeeJuiceContract.at() may not bind to EmbeddedWallet correctly. */
+export async function claimFeeJuice(
+	wallet: InstanceType<typeof EmbeddedWallet>,
+	toAddress: string,
+	fromAddress: AztecAddress,
+	claim: { claimAmount: bigint; claimSecret: Fr; messageLeafIndex: bigint },
+	feeOptions: { paymentMethod: SponsoredFeePaymentMethod },
+): Promise<void> {
+	const { Contract } = await import("@aztec/aztec.js/contracts")
+	const { FeeJuiceArtifact } = await import("@aztec/protocol-contracts/fee-juice")
+	const feeJuice = await Contract.at(ProtocolContractAddress.FeeJuice, FeeJuiceArtifact, wallet)
+	await feeJuice.methods
+		.claim(AztecAddress.fromString(toAddress), claim.claimAmount, claim.claimSecret, claim.messageLeafIndex)
+		.send({ fee: feeOptions, from: fromAddress })
+	console.log(`[claimFeeJuice] Claimed ${claim.claimAmount} FJ for ${toAddress}`)
 }

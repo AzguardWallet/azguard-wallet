@@ -177,6 +177,8 @@ export const test = base.extend<{
 	localNetworkExtension: ExtensionContext
 	/** Local network + token imported + public tokens minted to account. */
 	tokenReadyExtension: ExtensionContext & { accountAddress: string }
+	/** Token ready + FeeJuice bridged and claimed to account. */
+	feeJuiceReadyExtension: ExtensionContext & { accountAddress: string }
 }>({
 	extension: [
 		// biome-ignore lint/correctness/noEmptyPattern: vitest fixture API requires {} destructuring
@@ -282,6 +284,81 @@ export const test = base.extend<{
 
 			await page.close()
 
+			await use(Object.assign(ctx, { accountAddress }))
+			await ctx.browser.close()
+		},
+		{ scope: "file" },
+	],
+
+	feeJuiceReadyExtension: [
+		// biome-ignore lint/correctness/noEmptyPattern: vitest fixture API requires {} destructuring
+		async ({}, use) => {
+			const aztecConfig = inject("aztecTestConfig") as AztecTestConfig | undefined
+			if (!aztecConfig) throw new Error("aztecTestConfig not provided — is the local Aztec node running?")
+
+			const ctx = await launchExtension()
+			await registerProfile(ctx)
+
+			const page = await openPopup(ctx)
+			await waitForHash(page, "#/popup/general", 15_000)
+			await switchToLocalNetwork(page)
+
+			const accountAddress = await getAccountAddress(page)
+			console.log("[feeJuiceReady] Extension account address:", accountAddress)
+
+			const { createTestWallet, createSponsoredFeeOptions, mintPublicTokens, bridgeFeeJuice, waitForL1ToL2Message, claimFeeJuice } =
+				await import("./aztec")
+			let walletCleanup: (() => Promise<void>) | undefined
+			try {
+				const { wallet, accounts, node, cleanup } = await createTestWallet(aztecConfig.nodeUrl)
+				walletCleanup = cleanup
+				const minterAddress = accounts[0]
+				const feeOptions = await createSponsoredFeeOptions(wallet)
+
+				// Mint tokens (same as tokenReadyExtension)
+				await mintPublicTokens(
+					wallet,
+					aztecConfig.tokenAddress,
+					accountAddress,
+					1000n * 10n ** 18n,
+					aztecConfig.minterAddress,
+					feeOptions,
+				)
+
+				// Bridge FeeJuice from L1 → L2
+				console.log("[feeJuiceReady] Bridging FeeJuice from L1...")
+				const claim = await bridgeFeeJuice(node, accountAddress)
+
+				// Wait for L1→L2 message to arrive on L2
+				console.log("[feeJuiceReady] Waiting for L1→L2 message...")
+				await waitForL1ToL2Message(node, claim.messageHash.toString(), 90_000)
+
+				// Claim FeeJuice on L2 (use SponsoredFPC to pay for the claim tx)
+				console.log("[feeJuiceReady] Claiming FeeJuice on L2...")
+				await claimFeeJuice(wallet, accountAddress, minterAddress, claim, feeOptions)
+				console.log("[feeJuiceReady] FeeJuice claimed successfully")
+			} finally {
+				await walletCleanup?.()
+			}
+
+			await importToken(page, aztecConfig.tokenAddress)
+
+			// Poll for token balance
+			const maxRetries = 30
+			for (let i = 0; i < maxRetries; i++) {
+				await refreshBalances(page)
+				const bodyText = await page.evaluate(() => document.body.innerText)
+				if (bodyText.includes("1,000")) {
+					console.log(`[feeJuiceReady] Balance visible after ${i + 1} refresh(es)`)
+					break
+				}
+				if (i === maxRetries - 1) {
+					console.warn("[feeJuiceReady] Balance not visible after all retries")
+				}
+				await new Promise((r) => setTimeout(r, 5_000))
+			}
+
+			await page.close()
 			await use(Object.assign(ctx, { accountAddress }))
 			await ctx.browser.close()
 		},

@@ -404,7 +404,14 @@ onBeforeUnmount(() => {
 				<Dropdown @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false">
 					<template #trigger>
 						<Spinner v-if="isLoading" color="--txt-primary" />
-						<Flex v-else align="center" gap="8" class="clickable" data-testid="send-fee-method-trigger">
+						<Flex
+							v-else
+							align="center"
+							gap="8"
+							class="clickable"
+							data-testid="send-fee-method-trigger"
+							:data-fee-method="selectedMethod?.subtitle"
+						>
 							<template v-if="selectedMethod">
 								<Icon name="discount" size="16" color="purple" />
 								<Text size="13" weight="600" color="primary">
@@ -429,6 +436,7 @@ onBeforeUnmount(() => {
 							v-for="method in methods"
 							:key="method.fpc?.id ?? method.type"
 							:disabled="method.disabled"
+							:data-testid="`send-fee-method-${method.subtitle}`"
 							@click="!method.disabled && (selectedMethod = method)"
 						>
 							<Flex align="center" justify="between" gap="8" wide>
