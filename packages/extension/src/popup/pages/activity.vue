@@ -1,6 +1,7 @@
 <route lang="json">
 {
 	"meta": {
+		"title": "History",
 		"isAuthRequired": true
 	}
 }
@@ -90,85 +91,56 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Flex align="center" justify="between">
-			<Text size="13" weight="600" color="primary"> Transactions </Text>
-
-			<Tooltip v-if="isPersistentAccount" position="end" :disabled="isSyncing || !syncUpdatedAt">
-				<Button
-					type="tertiary"
-					size="mini"
-					:disabled="isSyncing"
-					@click="handleSync"
-				>
-					<Spinner v-if="isSyncing" size="12" color="--txt-secondary" />
-					<Icon v-else name="refresh" size="12" color="secondary" />
-				</Button>
-
-				<template #content>
-					<Text color="secondary">Last sync - </Text>
-					<Text>{{ DateTime.fromMillis(syncUpdatedAt).toRelative({ locale: "en" }) }}</Text>
-				</template>
-			</Tooltip>
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<Flex direction="column" align="center" gap="16" :class="$style.hero">
+			<h1 :class="$style.hero_title">HISTORY</h1>
+			<div :class="$style.hero_bar" />
 		</Flex>
 
-		<Flex direction="column" gap="8" :class="$style.list">
-			<template v-if="!appStore.transactions.length">
-				<Flex align="center" gap="12" :class="$style.dummy">
-					<Flex align="center" justify="center" :class="$style.dummy_circle">
-						<div />
-					</Flex>
+		<Flex direction="column" gap="24" :class="$style.content">
+			<!-- Sync indicator (persistent accounts only) -->
+			<Flex v-if="isPersistentAccount" justify="end">
+				<Tooltip position="end" :disabled="isSyncing || !syncUpdatedAt">
+					<button :class="$style.sync_btn" :disabled="isSyncing" @click="handleSync" type="button">
+						<Spinner v-if="isSyncing" size="12" color="--nulo-secondary" />
+						<MaterialIcon v-else name="sync" :size="14" color="secondary" />
+						<span :class="$style.sync_label">{{ isSyncing ? 'Syncing' : 'Sync' }}</span>
+					</button>
 
-					<Flex direction="column" gap="8">
-						<div :class="$style.dummy_title" />
-						<div :class="$style.dummy_subtitle" />
-					</Flex>
-				</Flex>
+					<template #content>
+						<Text color="secondary">Last sync - </Text>
+						<Text>{{ DateTime.fromMillis(syncUpdatedAt).toRelative({ locale: "en" }) }}</Text>
+					</template>
+				</Tooltip>
+			</Flex>
 
-				<Flex align="center" gap="12" :class="$style.dummy">
-					<Flex align="center" justify="center" :class="$style.dummy_circle">
-						<div />
-					</Flex>
+			<!-- Transactions list -->
+			<TransactionsList v-if="appStore.transactions.length" :transactions="appStore.transactions" />
 
-					<Flex direction="column" gap="8">
-						<div :class="$style.dummy_title" />
-						<div :class="$style.dummy_subtitle" />
-					</Flex>
-				</Flex>
-			</template>
-
-			<TransactionsList :transactions="appStore.transactions" />
-		</Flex>
-
-		<Flex
-			v-if="!appStore.transactions.length"
-			direction="column"
-			ap
-			align="center"
-			gap="12"
-			:class="$style.empty_banner"
-		>
-			<template v-if="isPersistentAccount && isSyncing">
-				<Spinner size="20" color="--txt-tertiary" />
-
-				<Flex direction="column" align="center" gap="6">
-					<Text size="13" weight="600" color="secondary" align="center"> Syncing transactions </Text>
-					<Text size="12" weight="500" height="140" color="tertiary" align="center">
+			<!-- Empty state -->
+			<Flex
+				v-else
+				direction="column"
+				align="center"
+				gap="12"
+				:class="$style.empty_banner"
+			>
+				<template v-if="isPersistentAccount && isSyncing">
+					<Spinner size="20" color="--nulo-secondary" />
+					<span :class="$style.empty_title">Syncing transactions</span>
+					<span :class="$style.empty_description">
 						Fetching your transaction history from the network
-					</Text>
-				</Flex>
-			</template>
+					</span>
+				</template>
 
-			<template v-else>
-				<Icon name="zap-circle" size="20" color="tertiary" />
-
-				<Flex direction="column" align="center" gap="6">
-					<Text size="13" weight="600" color="secondary" align="center"> So far, it's empty </Text>
-					<Text size="12" weight="500" height="140" color="tertiary" align="center">
-						Once you start working with your assets, all activities will be displayed here
-					</Text>
-				</Flex>
-			</template>
+				<template v-else>
+					<MaterialIcon name="history" :size="32" color="secondary" />
+					<span :class="$style.empty_title">No transactions yet</span>
+					<span :class="$style.empty_description">
+						Once you start working with your assets, all activity will appear here
+					</span>
+				</template>
+			</Flex>
 		</Flex>
 
 		<Navigation />
@@ -178,107 +150,89 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	flex: 1;
-
 	overflow: auto;
+	background: var(--app-bg);
 
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-8);
-	box-shadow: inset 0 10px 8px -2px var(--gray-3);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 20px 24px 80px 24px;
+	padding-bottom: 96px;
 }
 
-.list {
-	margin: -8px;
+.hero {
+	padding: 40px 24px 32px 24px;
 }
 
-.item {
+.hero_title {
+	font-family: var(--font-headline);
+	font-size: 48px;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+	line-height: 1;
+	margin: 0;
+}
+
+.hero_bar {
+	width: 24px;
+	height: 1px;
+	background: var(--nulo-accent);
+}
+
+.content {
+	padding: 0 24px;
+}
+
+.sync_btn {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+
+	background: transparent;
+	border: 1px solid var(--nulo-border);
 	cursor: pointer;
-	border-radius: 8px;
 
-	padding: 8px;
+	padding: 6px 10px;
+
+	font-family: var(--font-mono);
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--nulo-secondary);
 
 	transition: all 0.2s var(--bezier);
 
-	&:hover {
-		background: var(--gray-3);
+	&:hover:not(:disabled) {
+		border-color: var(--nulo-outline);
+		color: var(--txt-primary);
 	}
 
-	&:active {
-		background: var(--gray-5);
-	}
-}
-
-.activity_icon {
-	position: relative;
-
-	width: 32px;
-	height: 32px;
-
-	border-radius: 50%;
-	background: linear-gradient(var(--gray-8), var(--gray-3));
-}
-
-.check_icon {
-	position: absolute;
-	top: -8px;
-	right: -8px;
-
-	box-sizing: content-box;
-	border: 3px solid var(--card-bg);
-	border-radius: 50%;
-}
-
-.dummy {
-	padding: 8px;
-
-	&:nth-child(2) {
-		opacity: 0.7;
-	}
-
-	&:nth-child(3) {
-		opacity: 0.5;
+	&:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 }
 
-.dummy_circle {
-	width: 32px;
-	height: 32px;
-
-	border-radius: 50%;
-	background: var(--gray-5);
-
-	& div {
-		width: 12px;
-		height: 12px;
-
-		border-radius: 50%;
-		background: var(--gray-15);
-	}
-}
-
-.dummy_title {
-	width: 120px;
-	height: 6px;
-
-	border-radius: 50px;
-	background: var(--gray-10);
-}
-
-.dummy_subtitle {
-	width: 60px;
-	height: 6px;
-
-	border-radius: 50px;
-	background: var(--gray-5);
+.sync_label {
+	color: inherit;
 }
 
 .empty_banner {
-	max-width: 250px;
+	max-width: 280px;
+	margin: 48px auto 0 auto;
+	text-align: center;
+}
 
-	margin: 40px auto 0 auto;
+.empty_title {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: var(--txt-primary);
+}
+
+.empty_description {
+	font-family: var(--font-body);
+	font-size: 12px;
+	line-height: 1.5;
+	color: var(--nulo-secondary);
 }
 </style>

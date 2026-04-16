@@ -27,7 +27,7 @@ const groupedTransactions = computed(() => {
 	const groups = new Map()
 
 	for (const tx of props.transactions) {
-		const dateKey = DateTime.fromMillis(tx.updatedAt).toFormat("LLL d")
+		const dateKey = DateTime.fromMillis(tx.updatedAt).toFormat("MMM d, yyyy").toUpperCase()
 		if (!groups.has(dateKey)) {
 			groups.set(dateKey, [])
 		}
@@ -44,11 +44,11 @@ const handleSelectTx = (target) => {
 </script>
 
 <template>
-	<Flex direction="column" gap="16">
-		<Flex v-for="group in groupedTransactions" :key="group.date" direction="column" gap="8">
+	<Flex direction="column" gap="24">
+		<Flex v-for="group in groupedTransactions" :key="group.date" direction="column" gap="4">
 			<!-- Date separator -->
-			<Flex align="center" gap="8" :class="$style.date_separator">
-				<Text size="12" weight="600" color="tertiary">{{ group.date }}</Text>
+			<Flex align="center" gap="12" :class="$style.date_separator">
+				<span :class="$style.date_label">{{ group.date }}</span>
 				<div :class="$style.separator_line" />
 			</Flex>
 
@@ -65,12 +65,22 @@ const handleSelectTx = (target) => {
 
 <style module>
 .date_separator {
-	padding: 0 8px;
+	padding-bottom: 8px;
+}
+
+.date_label {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+	flex-shrink: 0;
 }
 
 .separator_line {
 	flex: 1;
 	height: 1px;
-	background: var(--gray-5);
+	background: var(--nulo-border);
 }
 </style>
