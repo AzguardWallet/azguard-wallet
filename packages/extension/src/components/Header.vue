@@ -210,7 +210,7 @@ onBeforeUnmount(() => {
 			<span :class="$style.account_label">
 				{{ appStore.account?.name?.toUpperCase() || "PRIMARY ACCOUNT" }}
 			</span>
-			<span :class="$style.account_address" data-testid="menu-button">
+			<span :class="$style.account_address">
 				{{ appStore.account?.address ? `${appStore.account.address.slice(0, 6)}...${appStore.account.address.slice(-4)}` : "" }}
 			</span>
 		</Flex>
@@ -232,9 +232,10 @@ onBeforeUnmount(() => {
 				@click="handleOpenPopup('menu')"
 				align="center"
 				justify="center"
+				data-testid="menu-button"
 				:class="$style.icon_button"
 			>
-				<MaterialIcon name="settings" :size="20" color="primary" />
+				<MaterialIcon name="menu" :size="20" color="primary" />
 			</Flex>
 		</Flex>
 	</header>

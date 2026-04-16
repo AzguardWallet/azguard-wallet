@@ -78,7 +78,7 @@ onBeforeUnmount(() => {
 		<PopupCard :displaceIdx>
 			<PopupHeader @onClose="emit('onClose')" closable>
 				<template #title>
-					<Text size="14" weight="600" color="primary">Wallet</Text>
+					<span :class="$style.menu_title">WALLET</span>
 				</template>
 			</PopupHeader>
 
@@ -86,46 +86,24 @@ onBeforeUnmount(() => {
 				<ItemsContainer title="Profile">
 					<SettingItem
 						@click="handleNavigation('/popup/settings/profile')"
-						:title="appStore.profile.name"
-						icon="user"
-						iconBgColor="blue"
+						:title="appStore.profile?.name"
+						materialIcon="person"
 						chevron
 					/>
-					<!-- <SettingItem
-						@click="popupStore.open('select_profile')"
-						size="small"
-						title="Switch profile"
-						icon="switch"
-						iconBgColor="transparent"
-						:disabled="appStore.profiles.length === 1"
-					/> -->
 					<SettingItem
 						@click="handleNavigation('/popup/settings/general/contacts')"
 						title="Contacts"
-						icon="contacts"
-						iconBgColor="blue"
+						materialIcon="group"
 						chevron
 					/>
 				</ItemsContainer>
 
 				<ItemsContainer title="Other">
 					<SettingItem
-						@click="handleNavigation('/popup/settings/general/tasks')"
-						title="Task tracker"
-						icon="task-tracker"
-						iconBgColor="gray"
-						disabled
-					>
-						<!-- <template v-if="cacheStore.activeTasksCount" #dot>
-							<div :class="$style.dot_indicator" :style="{ background: 'var(--green)' }" />
-						</template> -->
-					</SettingItem>
-					<SettingItem
 						v-if="isDeveloperModeEnabled"
 						@click="handleOpenLogs"
 						title="Logs"
-						icon="logs"
-						iconBgColor="var(--gray)"
+						materialIcon="description"
 						chevron
 					>
 						<template v-if="cacheStore.failureLog?.color" #dot>
@@ -135,7 +113,7 @@ onBeforeUnmount(() => {
 					<SettingItem
 						@click="handleNavigation('/popup/settings')"
 						title="Settings"
-						icon="settings"
+						materialIcon="settings"
 						chevron
 					/>
 				</ItemsContainer>
@@ -158,6 +136,15 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	padding: 0 20px 24px 20px;
+}
+
+.menu_title {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
 }
 
 .dot_indicator {
