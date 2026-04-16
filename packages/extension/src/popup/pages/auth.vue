@@ -38,7 +38,7 @@ const isSidePanelEnabled = ref(defaultConfig.sidePanel)
 const configService = new ConfigServiceClient()
 configService.onUpdate.add(onSettingUpdate)
 
-const inputElement = useTemplateRef("inputElement")
+const passwordInput = ref(null)
 const password = ref("")
 const isWrongPassword = ref(false)
 const isPasswordType = ref(true)
@@ -51,8 +51,8 @@ const handlePasswordInput = () => {
 
 const isAllowedToContinue = computed(() => {
 	if (isPasskeyProfile.value) return true
-	if (!password.value.length) return
-	if (isWrongPassword.value) return
+	if (!password.value.length) return false
+	if (isWrongPassword.value) return false
 
 	return true
 })
@@ -100,12 +100,6 @@ const handleUnlockWallet = async () => {
 	}
 }
 
-const onKeydown = (e) => {
-	if (popupStore.len) return
-
-	if (e.key === "Enter") handleUnlockWallet()
-}
-
 function onSettingUpdate(setting) {
 	if (setting.key === "theme") {
 		theme.value = setting.value
@@ -139,9 +133,17 @@ async function handleSwitchAppView() {
 	}
 }
 
+const handleSelectProfile = () => {
+	popupStore.open("select_profile")
+}
+
+const focusPasswordInput = () => {
+	passwordInput.value?.focus()
+}
+
 onMounted(async () => {
 	if (!isPasskeyProfile.value) {
-		inputElement.value.inputEl.focus()
+		passwordInput.value?.focus()
 	}
 
 	theme.value = await configService.getValue("theme")
@@ -154,12 +156,9 @@ onMounted(async () => {
 			appStore.profile = profile
 		}
 	}
-
-	document.addEventListener("keydown", onKeydown)
 })
 onBeforeUnmount(() => {
 	configService.disconnect()
-	document.removeEventListener("keydown", onKeydown)
 })
 
 watch(
@@ -170,113 +169,118 @@ watch(
 		}
 	},
 )
-
-const handleSelectProfile = () => {
-	popupStore.open("select_profile")
-}
 </script>
 
 <template>
-	<Flex direction="column" justify="between" :class="$style.wrapper">
-		<Flex align="center" justify="end" gap="4" wide :class="$style.settings">
-			<Icon
-				@click="handleSwitchTheme"
-				:name="theme === 'dark' ? 'sun' : 'moon'"
-				size="16"
-				color="tertiary"
-				:class="$style.icon"
-			/>
-			<Icon
-				@click="handleSwitchAppView"
-				name="dock-right"
-				size="16"
-				color="tertiary"
-				:class="$style.icon"
-			/>
+	<Flex direction="column" :class="$style.wrapper">
+		<!-- Top row: NULO wordmark + settings toggles -->
+		<Flex align="center" justify="between" :class="$style.top_row">
+			<div :class="$style.spacer" />
+			<span :class="$style.wordmark">NULO</span>
+			<Flex align="center" gap="4">
+				<button @click="handleSwitchTheme" :class="$style.icon_btn" type="button" aria-label="Toggle theme">
+					<MaterialIcon :name="theme === 'dark' ? 'light_mode' : 'dark_mode'" :size="18" color="secondary" />
+				</button>
+				<button @click="handleSwitchAppView" :class="$style.icon_btn" type="button" aria-label="Toggle side panel">
+					<MaterialIcon name="dock_to_right" :size="18" color="secondary" />
+				</button>
+			</Flex>
 		</Flex>
 
-		<Flex direction="column" align="center" gap="40" style="flex: 1">
-			<Flex align="center" justify="center" :class="$style.lock_badge">
-				<Icon name="logo" size="40" :class="$style.logo_icon" />
-				<Icon
-					name="lock"
-					size="20"
-					:color="isWrongPassword ? 'red' : 'blue'"
-					:class="[$style.lock_icon, isWrongPassword && $style.shake]"
-				/>
-			</Flex>
+		<!-- Main content -->
+		<Flex direction="column" align="center" gap="32" :class="$style.main">
+			<MaterialIcon name="lock" :size="48" color="primary" :class="$style.lock_icon" />
 
-			<Flex align="center" direction="column" gap="16">
-				<Flex @click="handleSelectProfile" align="center" gap="6" :class="$style.profile_badge">
-					<Icon name="user" size="14" color="tertiary" />
-					<Text size="13" weight="600" color="primary">{{ appStore.profile.name }}</Text>
-					<Icon
-						name="chevron"
-						size="12"
-						color="tertiary"
-						:class="$style.chevron_icon"
-					/>
+			<!-- Compact profile pill -->
+			<button
+				@click="handleSelectProfile"
+				type="button"
+				data-testid="auth-profile"
+				:class="$style.profile_pill"
+			>
+				<Flex align="center" gap="12">
+					<div :class="$style.profile_icon_box">
+						<MaterialIcon name="person" :size="16" color="secondary" />
+					</div>
+					<Flex direction="column" align="start" gap="2">
+						<span :class="$style.profile_label">Current Profile</span>
+						<span :class="$style.profile_name">{{ appStore.profile?.name ?? '' }}</span>
+					</Flex>
 				</Flex>
+				<MaterialIcon name="chevron_right" :size="18" color="secondary" />
+			</button>
 
-				<Text size="24" weight="600" color="primary" style="line-height: 16px">
+			<!-- Heading + subheading -->
+			<Flex direction="column" align="center" gap="8">
+				<h1 :class="$style.heading">
 					{{ isPasskeyProfile ? 'Passkey required' : 'Password required' }}
-				</Text>
-				<Text size="14" weight="500" color="tertiary" align="center" height="140">
+				</h1>
+				<p :class="$style.subheading">
 					{{ isPasskeyProfile ? 'Use your passkey to continue' : 'Enter your profile password to continue' }}
-				</Text>
+				</p>
 			</Flex>
 
-			<Flex wide direction="column" gap="24">
-				<Input
-					v-if="!isPasskeyProfile"
-					ref="inputElement"
-					v-model="password"
-					@input="handlePasswordInput"
-					:type="isPasswordType ? 'password' : 'text'"
-					placeholder="Enter password"
-					label="Password"
-					wide
-				>
-					<template #right>
-						<Transition name="fade">
-							<Flex v-if="isWrongPassword" align="center" gap="4">
-								<Icon name="warning" size="12" color="red" />
-								<Text size="12" weight="600" color="primary"> Wrong password </Text>
-							</Flex>
-						</Transition>
-					</template>
-
-					<template #suffix>
-						<Icon
-							@click.stop="isPasswordType = !isPasswordType"
-							:name="isPasswordType ? 'password' : 'text'"
-							size="16"
-							color="secondary"
-							style="cursor: pointer"
+			<!-- Form -->
+			<form @submit.prevent="handleUnlockWallet" :class="$style.form">
+				<template v-if="!isPasskeyProfile">
+					<div
+						@click="focusPasswordInput"
+						:class="[$style.input_wrapper, isWrongPassword && $style.input_error, isWrongPassword && $style.shake]"
+					>
+						<input
+							ref="passwordInput"
+							v-model="password"
+							@input="handlePasswordInput"
+							:type="isPasswordType ? 'password' : 'text'"
+							placeholder="Enter password"
+							data-testid="auth-password-input"
+							autocomplete="current-password"
+							spellcheck="false"
+							autocapitalize="none"
+							autocorrect="off"
+							:aria-invalid="isWrongPassword"
+							:class="$style.password_input"
 						/>
-					</template>
-				</Input>
+						<button
+							type="button"
+							@click="isPasswordType = !isPasswordType"
+							:class="$style.visibility_btn"
+							:aria-label="isPasswordType ? 'Show password' : 'Hide password'"
+						>
+							<MaterialIcon
+								:name="isPasswordType ? 'visibility' : 'visibility_off'"
+								:size="18"
+								color="secondary"
+							/>
+						</button>
+					</div>
+					<Transition name="fade">
+						<span v-if="isWrongPassword" :class="$style.error_text" role="alert">Wrong password</span>
+					</Transition>
+				</template>
 
-				<Button
-					@click="handleUnlockWallet"
-					wide
-					type="secondary"
-					size="medium"
-					rightIcon="arrow-right-circle"
-					rightIconColor="primary"
-					:disabled="!isAllowedToContinue"
-					:loading="isAwaitingResponse"
+				<button
+					type="submit"
+					data-testid="auth-submit"
+					:disabled="!isAllowedToContinue || isAwaitingResponse"
+					:class="$style.continue_btn"
 				>
-					Continue
-				</Button>
-			</Flex>
+					<Spinner v-if="isAwaitingResponse" size="14" color="#0a0908" />
+					<template v-else>Continue</template>
+				</button>
+			</form>
 		</Flex>
 
-		<Flex wide justify="center">
-			<Button @click="popupStore.open('forgot_password')" type="secondary" size="mini">
-				<Icon name="info" size="16" color="tertiary" />
-				<Text color="secondary">Reset Profile</Text>
-			</Button>
+		<!-- Footer -->
+		<Flex justify="center" :class="$style.footer">
+			<button
+				@click="popupStore.open('forgot_password')"
+				type="button"
+				data-testid="auth-reset"
+				:class="$style.reset_link"
+			>
+				Reset Profile
+			</button>
 		</Flex>
 	</Flex>
 </template>
@@ -284,127 +288,279 @@ const handleSelectProfile = () => {
 <style module>
 .wrapper {
 	flex: 1;
+	overflow: auto;
 
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-8);
-	box-shadow: inset 0 10px 8px -2px var(--gray-3);
+	background: var(--app-bg);
 
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 80px 24px 24px 24px;
+	padding: 24px;
 }
 
-.settings {
-	position: absolute;
-	top: 64px;
-	right: 16px;
-
-	.icon {
-		box-sizing: content-box;
-		border-radius: 50%;
-		cursor: pointer;
-
-		padding: 4px;
-
-		&:hover {
-			background: var(--gray-10);
-			fill: var(--txt-primary);
-		}
-	}
+.top_row {
+	margin-bottom: 24px;
 }
 
-.password_input {
-	font-size: 16px;
-	font-weight: 600;
-	line-height: 40px;
+.spacer {
+	width: 60px;
+}
+
+.wordmark {
+	font-family: var(--font-headline);
+	font-size: 20px;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	text-transform: uppercase;
 	color: var(--txt-primary);
-
-	border-bottom: 2px solid var(--gray-5);
-
-	transition: border-color 0.35s var(--bezier);
-
-	padding: 0;
-
-	&::placeholder {
-		color: var(--txt-support);
-	}
-
-	&:focus {
-		border-color: var(--blue);
-	}
 }
 
-.profile_badge {
-	border-radius: 50px;
-	background: var(--gray-5);
+.icon_btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 28px;
+	height: 28px;
+
+	background: transparent;
+	border: none;
 	cursor: pointer;
 
-	padding: 6px;
+	transition: background 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--nulo-surface-high);
+	}
+}
+
+.main {
+	flex: 1;
+	justify-content: center;
+
+	padding: 0 8px;
+}
+
+.lock_icon {
+	color: var(--txt-primary);
+}
+
+.profile_pill {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+
+	width: 100%;
+	max-width: 280px;
+
+	background: var(--nulo-surface-low);
+	border: 1px solid var(--nulo-border);
+	cursor: pointer;
+
+	padding: 10px 14px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-8);
-	}
-
-	&:active {
-		background: var(--gray-10);
+		background: var(--nulo-surface-high);
+		border-color: var(--nulo-outline);
 	}
 }
 
-.chevron_icon {
-	transform: rotate(-90deg);
+.profile_icon_box {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 32px;
+	height: 32px;
+
+	background: var(--nulo-surface-highest);
+	border: 1px solid var(--nulo-border);
+
+	flex-shrink: 0;
 }
 
-.lock_badge {
+.profile_label {
+	font-family: var(--font-mono);
+	font-size: 9px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--nulo-secondary);
+}
+
+.profile_name {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	color: var(--txt-primary);
+	max-width: 180px;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.heading {
+	font-family: var(--font-headline);
+	font-size: 24px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: var(--txt-primary);
+	margin: 0;
+	line-height: 1.2;
+}
+
+.subheading {
+	font-family: var(--font-body);
+	font-size: 13px;
+	color: var(--nulo-secondary);
+	text-align: center;
+	margin: 0;
+	line-height: 1.4;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+
+	width: 100%;
+	max-width: 320px;
+}
+
+.input_wrapper {
 	position: relative;
+	display: flex;
+	align-items: center;
 
-	background: var(--txt-primary);
-	border-radius: 50%;
+	border-bottom: 1px solid var(--nulo-border);
+	padding: 12px 0;
+	cursor: text;
 
-	padding: 4px;
+	transition: border-color 0.2s var(--bezier);
+
+	&:focus-within {
+		border-bottom-color: var(--nulo-accent);
+	}
 }
 
-.lock_icon {
-	position: absolute;
-	top: -12px;
-	right: -12px;
-
-	background: var(--card-bg);
-	box-sizing: content-box;
-	border-radius: 12px;
-
-	padding: 4px;
+.input_error {
+	border-bottom-color: var(--red);
 }
 
-.logo_icon {
-	fill: var(--card-bg);
+.password_input {
+	flex: 1;
+
+	background: transparent;
+	border: none;
+	outline: none;
+	padding: 0;
+
+	font-family: var(--font-body);
+	font-size: 15px;
+	font-weight: 500;
+	color: var(--txt-primary);
+
+	&::placeholder {
+		color: var(--nulo-outline);
+	}
+}
+
+.visibility_btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	background: transparent;
+	border: none;
+	cursor: pointer;
+
+	padding: 4px 0 4px 8px;
+}
+
+.error_text {
+	font-family: var(--font-body);
+	font-size: 12px;
+	color: var(--red);
+
+	margin-top: -8px;
+}
+
+.continue_btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 100%;
+	padding: 16px 0;
+
+	background: var(--nulo-accent);
+	color: #0a0908;
+
+	font-family: var(--font-headline);
+	font-weight: 700;
+	font-size: 14px;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+
+	border: none;
+	cursor: pointer;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover:not(:disabled) {
+		background: #fff;
+	}
+
+	&:active:not(:disabled) {
+		transform: scale(0.98);
+	}
+
+	&:disabled {
+		opacity: 0.3;
+		pointer-events: none;
+	}
+}
+
+.footer {
+	margin-top: 24px;
+	padding: 8px;
+}
+
+.reset_link {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+
+	background: transparent;
+	border: none;
+	cursor: pointer;
+
+	padding: 4px 0;
+	border-bottom: 1px solid transparent;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		color: var(--nulo-accent);
+		border-bottom-color: var(--nulo-accent);
+	}
+}
+
+@keyframes shakeInput {
+	0% { transform: translateX(0); }
+	20% { transform: translateX(-4px); }
+	40% { transform: translateX(4px); }
+	60% { transform: translateX(-3px); }
+	80% { transform: translateX(2px); }
+	100% { transform: translateX(0); }
 }
 
 .shake {
-	animation: shake 0.3s ease;
-}
-
-@keyframes shake {
-	0% {
-		transform: translateX(-1px);
-	}
-
-	25% {
-		transform: translateX(2px);
-	}
-
-	50% {
-		transform: translateX(-2px);
-	}
-
-	75% {
-		transform: translateX(1px);
-	}
-
-	100% {
-		transform: translateX(0);
-	}
+	animation: shakeInput 0.3s ease;
 }
 </style>
