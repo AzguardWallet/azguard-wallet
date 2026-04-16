@@ -7,13 +7,14 @@ const props = defineProps({
 	title: String,
 	description: String,
 	icon: String,
+	materialIcon: String,
 	iconBgColor: {
 		type: String,
 		default: "gray-20",
 	},
 	iconFillColor: {
 		type: String,
-		default: "white",
+		default: "secondary",
 	},
 	to: String,
 	chevron: {
@@ -47,25 +48,32 @@ const slots = defineSlots()
 		:to="!disabled && to && !external ? to : ''"
 		:href="external ? to : null"
 		:target="external ? '_blank' : null"
-		:class="[$style.wrapper, $style[size], raw && $style.raw, icon && $style.withIcon, disabled && $style.disabled]"
+		:class="[$style.wrapper, $style[size], raw && $style.raw, disabled && $style.disabled]"
 		:tabindex="disabled ? -1 : 0"
 	>
 		<Flex wide align="center" justify="between" gap="16">
-			<Flex align="center" gap="12" wide>
+			<Flex align="center" gap="14" wide>
 				<div :class="$style.icon_wrapper">
 					<!-- Dot -->
-      				<slot name="dot" />
+					<slot name="dot" />
 
 					<!-- Icon by prop or slot -->
 					<template v-if="!slots.icon">
-						<Icon
-							v-if="icon && !loading"
-							:name="icon"
-							size="16"
-							:color="iconFillColor"
-							:class="[$style.icon, $style[iconBgColor]]"
+						<MaterialIcon
+							v-if="materialIcon && !loading"
+							:name="materialIcon"
+							:size="20"
+							color="secondary"
+							:class="$style.material_icon"
 						/>
-						<div v-else-if="icon && loading" :class="$style.icon">
+						<Icon
+							v-else-if="icon && !loading"
+							:name="icon"
+							size="18"
+							:color="iconFillColor"
+							:class="$style.icon"
+						/>
+						<div v-else-if="(icon || materialIcon) && loading" :class="$style.icon_loading">
 							<Spinner size="16" color="--txt-primary" />
 						</div>
 					</template>
@@ -77,7 +85,7 @@ const slots = defineSlots()
 				<!-- Labels: Title & Description -->
 				<Flex direction="column" gap="4" wide>
 					<Flex align="center" gap="6">
-						<Text size="14" weight="600" color="primary" :class="[$style.title, slots.titleSuffix && $style.titleWithSuffix]"> {{ title }} </Text>
+						<Text size="14" weight="500" color="primary" :class="[$style.title, slots.titleSuffix && $style.titleWithSuffix]"> {{ title }} </Text>
 						<slot name="titleSuffix" />
 					</Flex>
 					<Text v-if="description" size="12" weight="500" color="tertiary" :class="$style.description">
@@ -89,11 +97,11 @@ const slots = defineSlots()
 			<Flex align="center" gap="12">
 				<slot name="right" />
 
-				<Icon
+				<MaterialIcon
 					v-if="(to && !slots.right) || (chevron && !slots.right)"
-					:name="!external ? 'chevron' : 'arrow-narrow-up-right'"
-					size="16"
-					:style="{ transform: `rotate(${!external ? '-90deg' : '0deg'})` }"
+					:name="!external ? 'chevron_right' : 'arrow_outward'"
+					:size="18"
+					color="secondary"
 					:class="$style.chevron_icon"
 				/>
 			</Flex>
@@ -109,27 +117,24 @@ const slots = defineSlots()
 	align-items: center;
 
 	cursor: pointer;
-	background: var(--gray-5);
+	background: transparent;
+	text-decoration: none;
 
-	padding: 0 12px;
+	padding: 16px 20px;
 
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-8);
+		background: var(--nulo-surface-high);
 	}
 
 	&:active {
-		background: var(--gray-10);
+		background: var(--nulo-surface-highest);
 	}
 
 	&:focus-visible {
-		background: var(--gray-8);
+		background: var(--nulo-surface-high);
 		outline: none;
-	}
-
-	&:last-child {
-		border-bottom: none;
 	}
 
 	&.disabled {
@@ -140,12 +145,12 @@ const slots = defineSlots()
 	&::after {
 		position: absolute;
 		bottom: 0;
-		left: 12px;
+		left: 20px;
+		right: 20px;
 		display: block;
-		width: 100%;
 		height: 1px;
 
-		background: var(--gray-5);
+		background: rgba(74, 70, 63, 0.3);
 
 		content: " ";
 	}
@@ -154,25 +159,21 @@ const slots = defineSlots()
 		display: none;
 	}
 
-	&.withIcon::after {
-		left: 50px;
-	}
-
 	&.large {
-		height: 54px;
+		padding: 20px;
 	}
 
 	&.medium {
-		height: 50px;
+		padding: 16px 20px;
 	}
 
 	&.small {
-		height: 40px;
+		padding: 12px 20px;
 	}
 
 	&.raw {
 		cursor: default;
-		background: var(--gray-3);
+		background: var(--nulo-surface-low);
 	}
 }
 
@@ -181,45 +182,41 @@ const slots = defineSlots()
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
 }
 
-.icon {
-	box-sizing: content-box;
-	border-radius: 8px;
-	background: var(--gray-20);
+.material_icon {
+	color: var(--nulo-secondary);
+	transition: color 0.2s var(--bezier);
+}
 
-	padding: 5px;
+.wrapper:hover .material_icon {
+	color: var(--nulo-accent);
+}
 
-	&.blue {
-		background: var(--blue);
-	}
-
-	&.red {
-		background: var(--red);
-	}
-
-	&.sand {
-		background: var(--sand);
-	}
-
-	&.green {
-		background: var(--green);
-	}
-
-	&.transparent {
-		background: transparent;
-	}
+.icon_loading {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .chevron_icon {
-	fill: var(--gray-15);
+	color: var(--nulo-secondary);
+	transition: color 0.2s var(--bezier);
+}
+
+.wrapper:hover .chevron_icon {
+	color: var(--nulo-accent);
 }
 
 .title {
 	min-width: 100%;
 	width: 0;
 
-	line-height: 16px !important;
+	line-height: 20px !important;
+	letter-spacing: 0.01em;
 
 	text-overflow: ellipsis;
 	overflow: hidden;
@@ -235,7 +232,7 @@ const slots = defineSlots()
 	min-width: 100%;
 	width: 0;
 
-	line-height: 14px !important;
+	line-height: 16px !important;
 
 	text-overflow: ellipsis;
 	overflow: hidden;

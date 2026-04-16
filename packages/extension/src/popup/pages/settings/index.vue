@@ -11,67 +11,58 @@
 /** Components */
 import Navigation from "../../components/Navigation.vue"
 
-/** Composables */
-import { useToast } from "@/composables/toast"
-const { openToast } = useToast()
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-import { useCacheStore } from "@/stores/cache.store"
-import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
-const cacheStore = useCacheStore()
-const popupStore = usePopupStore()
-
-const handleCopyAddress = () => {
-	window.navigator.clipboard.writeText(appStore.account.address)
-	openToast({ label: "Address is copied", icon: "copy" })
-}
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs hide-navigation />
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<Flex direction="column" align="center" gap="16" :class="$style.hero">
+			<h1 :class="$style.hero_title">SETTINGS</h1>
+			<div :class="$style.hero_bar" />
+		</Flex>
 
-		<Flex direction="column" gap="24">
+		<Flex direction="column" gap="32" :class="$style.content">
 			<ItemsContainer title="Wallet">
 				<SettingItem
 					to="/popup/settings/profile"
 					:title="appStore.profile.name"
-					icon="user"
-					iconBgColor="blue"
+					materialIcon="person"
 					chevron
 				/>
 				<SettingItem
 					to="/popup/settings/account"
 					:title="appStore.account.name"
-					icon="vault"
-					iconBgColor="blue"
+					materialIcon="account_balance_wallet"
 					chevron
 				/>
 			</ItemsContainer>
 
-			<ItemsContainer>
-				<SettingItem to="/popup/settings/general" title="General" icon="settings" iconBgColor="green" chevron />
+			<ItemsContainer title="System">
+				<SettingItem
+					to="/popup/settings/general"
+					title="General"
+					materialIcon="tune"
+					chevron
+				/>
 				<SettingItem
 					to="/popup/settings/security"
 					title="Security"
-					icon="key-circle"
-					iconBgColor="red"
+					materialIcon="lock"
 					chevron
 				/>
 				<SettingItem
 					to="/popup/settings/advanced"
 					title="Advanced"
-					icon="zap"
-					iconBgColor="sand"
+					materialIcon="bolt"
 					chevron
 				/>
 			</ItemsContainer>
 
-			<ItemsContainer>
-				<SettingItem to="/popup/settings/about" size="small" title="About Nulo" chevron />
-			</ItemsContainer>
+			<RouterLink to="/popup/settings/about" :class="$style.footer_link">
+				About Nulo
+			</RouterLink>
 		</Flex>
 
 		<Navigation />
@@ -83,14 +74,55 @@ const handleCopyAddress = () => {
 	flex: 1;
 
 	overflow: auto;
+	background: var(--app-bg);
 
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-8);
-	box-shadow: inset 0 10px 8px -2px var(--gray-3);
+	padding-bottom: 96px;
+}
 
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
+.hero {
+	padding: 40px 24px 32px 24px;
+}
 
-	padding: 20px 24px 80px 24px;
+.hero_title {
+	font-family: var(--font-headline);
+	font-size: 48px;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+	line-height: 1;
+	margin: 0;
+}
+
+.hero_bar {
+	width: 24px;
+	height: 1px;
+	background: var(--nulo-accent);
+}
+
+.content {
+	padding: 0 24px;
+}
+
+.footer_link {
+	align-self: center;
+
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+	text-decoration: underline;
+	text-decoration-color: var(--nulo-outline);
+	text-underline-offset: 6px;
+
+	margin-top: 16px;
+
+	transition: color 0.2s var(--bezier);
+
+	&:hover {
+		color: var(--nulo-accent);
+	}
 }
 </style>

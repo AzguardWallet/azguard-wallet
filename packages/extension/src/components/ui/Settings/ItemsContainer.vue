@@ -12,30 +12,37 @@ const props = defineProps({
 </script>
 
 <template>
-	<Flex direction="column" gap="8">
-		<Text v-if="title" size="12" weight="500" color="support" :class="$style.title">{{ title }}</Text>
+	<Flex direction="column" gap="12">
+		<span v-if="title" :class="$style.title">{{ title }}</span>
 
 		<Flex direction="column" :class="$style.wrapper">
 			<slot />
 		</Flex>
 
-		<Text v-if="description" size="12" weight="500" height="150" color="support" :class="$style.description">
-			{{ description }}
-		</Text>
+		<span v-if="description" :class="$style.description">{{ description }}</span>
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
-	border-radius: 12px;
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 	overflow: hidden;
 }
 
 .title {
-	padding: 0 12px;
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
 }
 
 .description {
-	padding: 0 12px;
+	font-family: var(--font-body);
+	font-size: 12px;
+	line-height: 1.5;
+	color: var(--nulo-secondary);
 }
 </style>
