@@ -25,71 +25,73 @@ const handleSwitchReceiverType = () => {
 </script>
 
 <template>
-	<Flex align="center" gap="8" :class="$style.wrapper">
-		<Flex
-			@click="handleSwitchSendType"
-			align="center"
-			gap="6"
-			data-testid="send-from-type"
-			:class="[$style.pill, selectedSendType === 'private' ? $style.pill_private : $style.pill_public]"
-		>
-			<Icon
-				:name="selectedSendType === 'private' ? 'key-square' : 'face'"
-				size="14"
-				:color="selectedSendType === 'private' ? 'green' : 'orange'"
-			/>
-			<span :class="$style.pill_label">{{ selectedSendType }}</span>
-		</Flex>
+	<div :class="$style.grid">
+		<div :class="$style.col">
+			<span :class="$style.sub_label">From Origin</span>
+			<div @click="handleSwitchSendType" data-testid="send-from-type" :class="$style.toggle_pair">
+				<span :class="[$style.toggle_btn, selectedSendType === 'private' && $style.toggle_active]">PRIVATE</span>
+				<span :class="[$style.toggle_btn, selectedSendType === 'public' && $style.toggle_active]">PUBLIC</span>
+			</div>
+		</div>
 
-		<MaterialIcon name="arrow_forward" :size="14" color="tertiary" />
-
-		<Flex
-			@click="handleSwitchReceiverType"
-			align="center"
-			gap="6"
-			data-testid="send-to-type"
-			:class="[$style.pill, selectedReceiverType === 'private' ? $style.pill_private : $style.pill_public]"
-		>
-			<Icon
-				:name="selectedReceiverType === 'private' ? 'key-square' : 'face'"
-				size="14"
-				:color="selectedReceiverType === 'private' ? 'green' : 'orange'"
-			/>
-			<span :class="$style.pill_label">{{ selectedReceiverType }}</span>
-		</Flex>
-	</Flex>
+		<div :class="$style.col">
+			<span :class="$style.sub_label">To Destination</span>
+			<div @click="handleSwitchReceiverType" data-testid="send-to-type" :class="$style.toggle_pair">
+				<span :class="[$style.toggle_btn, selectedReceiverType === 'private' && $style.toggle_active]">PRIVATE</span>
+				<span :class="[$style.toggle_btn, selectedReceiverType === 'public' && $style.toggle_active]">PUBLIC</span>
+			</div>
+		</div>
+	</div>
 </template>
 
 <style module>
-.wrapper {
-	padding: 8px 0;
+.grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	padding: 4px 0;
 }
 
-.pill {
+.col {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.sub_label {
+	font-family: var(--font-mono);
+	font-size: 9px;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.toggle_pair {
+	display: flex;
 	cursor: pointer;
-	padding: 4px 10px;
+	border: 1px solid #231f1c;
+}
 
-	transition: all 0.2s var(--bezier);
+.toggle_btn {
+	flex: 1;
+	padding: 8px 0;
 
-	&:hover {
-		opacity: 0.8;
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 500;
+	text-transform: uppercase;
+	text-align: center;
+	color: var(--nulo-secondary);
+
+	transition: all 0.15s ease;
+
+	&:first-child {
+		border-right: 1px solid #231f1c;
 	}
 }
 
-.pill_private {
-	background: rgba(20, 174, 92, 0.15);
-}
-
-.pill_public {
-	background: rgba(255, 85, 0, 0.15);
-}
-
-.pill_label {
-	font-family: var(--font-headline);
-	font-size: 11px;
+.toggle_active {
+	background: var(--nulo-accent);
+	color: #0a0908;
 	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	color: var(--txt-primary);
 }
 </style>

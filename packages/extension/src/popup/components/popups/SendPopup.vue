@@ -409,38 +409,25 @@ const onKeydown = (e) => {
 		<PopupCard large :displaceIdx>
 			<Flex wide direction="column" justify="between" :class="$style.wrapper">
 				<Flex direction="column" :class="$style.top">
-					<!-- Section: Origin Account -->
+					<!-- Section: Transfer Path + Recipient -->
 					<div :class="$style.section">
-						<span :class="$style.section_label">Origin Account</span>
-						<Flex @click="popupStore.open('accounts')" align="center" justify="between" :class="$style.origin_row">
-							<Flex direction="column" gap="2">
-								<span :class="$style.origin_name">{{ appStore.account?.name }}</span>
-								<span :class="$style.origin_address">{{ appStore.account?.address ? `${appStore.account.address.slice(0, 6)}...${appStore.account.address.slice(-4)}` : "" }}</span>
-							</Flex>
-							<MaterialIcon name="expand_more" :size="20" color="secondary" />
-						</Flex>
-
 						<SendTypesCard
 							v-if="!isBlockedTransfer"
 							v-model:sendType="selectedSendType"
 							v-model:receiverType="selectedReceiverType"
 							:token="activeToken"
 						/>
-					</div>
 
-					<!-- Section: Recipient Address -->
-					<div :class="$style.section">
-						<span :class="$style.section_label">Recipient Address</span>
-						<Input
-							v-model="searchTerm"
-							@focus="isSearchInputFocused = true"
-							@blur="handleSearchBlur()"
-							placeholder="0x... or contact name"
-							data-testid="send-destination-field"
-							wide
-							:style="{ position: 'relative' }"
-						>
-							<template #right>
+						<div :class="$style.recipient_section">
+							<span :class="$style.section_label">Recipient Address</span>
+							<div :class="$style.recipient_input_wrapper" data-testid="send-destination-field" :style="{ position: 'relative' }">
+								<input
+									v-model="searchTerm"
+									@focus="isSearchInputFocused = true"
+									@blur="handleSearchBlur()"
+									placeholder="0x... or contact name"
+									:class="$style.recipient_input"
+								/>
 								<Flex v-if="selectedContact" align="center" gap="6" :class="$style.input_right">
 									<Icon name="vault" size="12" color="blue" />
 									<Text size="13" weight="600" color="primary" noWrap>
@@ -449,14 +436,11 @@ const onKeydown = (e) => {
 								</Flex>
 								<Flex v-else-if="!isSearchInputFocused && !isValidAddress && searchTerm.length > 0" align="center" gap="6" :class="$style.input_right">
 									<Icon name="warning" size="12" color="red" />
-									<Text size="12" weight="600" color="primary"> Invalid address </Text>
 								</Flex>
 								<Flex v-else-if="!isSearchInputFocused && isValidAddress" align="center" :class="$style.input_right">
 									<Icon name="check-circle" size="14" color="green" />
 								</Flex>
-							</template>
 
-							<template #bottom>
 								<Transition name="fade">
 									<Flex v-if="showSuggestions" align="center" direction="column" wide :class="$style.contacts_wrapper">
 										<Flex
@@ -485,8 +469,8 @@ const onKeydown = (e) => {
 										</Flex>
 									</Flex>
 								</Transition>
-							</template>
-						</Input>
+							</div>
+						</div>
 					</div>
 
 					<!-- Section: Select Asset -->
@@ -575,28 +559,40 @@ const onKeydown = (e) => {
 	color: var(--nulo-secondary);
 }
 
-.origin_row {
-	cursor: pointer;
+.recipient_section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-top: 8px;
+}
+
+.recipient_input_wrapper {
+	display: flex;
+	align-items: center;
+	border-bottom: 1px solid #231f1c;
 	padding: 12px 0;
 
-	transition: opacity 0.2s var(--bezier);
+	transition: border-color 0.2s var(--bezier);
 
-	&:hover {
-		opacity: 0.8;
+	&:focus-within {
+		border-color: var(--nulo-accent);
 	}
 }
 
-.origin_name {
-	font-family: var(--font-headline);
-	font-weight: 600;
+.recipient_input {
+	flex: 1;
+	background: transparent;
+	border: none;
+	outline: none;
+	padding: 0;
+
+	font-family: var(--font-mono);
 	font-size: 14px;
 	color: var(--txt-primary);
-}
 
-.origin_address {
-	font-family: var(--font-mono);
-	font-size: 12px;
-	color: var(--nulo-secondary);
+	&::placeholder {
+		color: #363433;
+	}
 }
 
 .input_right {

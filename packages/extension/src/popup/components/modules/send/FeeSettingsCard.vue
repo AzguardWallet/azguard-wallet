@@ -398,36 +398,22 @@ onBeforeUnmount(() => {
 
 		<!-- Method selector -->
 		<template v-if="showMethodSelector">
-			<Flex align="center" justify="between" :class="$style.card">
-				<Text size="13" weight="600" color="primary">Pay fee with</Text>
-
+			<Flex direction="column" gap="4" :class="$style.card">
+				<span :class="$style.fee_label">Fee Source</span>
 				<Dropdown @onOpen="isMethodsDropdownOpen = true" @onClose="isMethodsDropdownOpen = false">
 					<template #trigger>
 						<Spinner v-if="isLoading" color="--txt-primary" />
 						<Flex
 							v-else
 							align="center"
-							gap="8"
+							justify="between"
 							class="clickable"
 							data-testid="send-fee-method-trigger"
 							:data-fee-method="selectedMethod?.subtitle"
 						>
-							<template v-if="selectedMethod">
-								<Icon name="discount" size="16" color="purple" />
-								<Text size="13" weight="600" color="primary">
-									{{ selectedMethod.title }}
-								</Text>
-							</template>
-							<Text v-else size="13" weight="600" color="red" style="padding: 2px 0"> Select method </Text>
-							<Icon
-								name="chevron"
-								size="12"
-								color="secondary"
-								:style="{
-									transform: `rotate(${isMethodsDropdownOpen ? '180' : '0'}deg)`,
-									transition: 'all 0.2s ease'
-								}"
-							/>
+							<span v-if="selectedMethod" :class="$style.fee_value">{{ selectedMethod.title }}</span>
+							<span v-else :class="[$style.fee_value, $style.fee_error]">Select method</span>
+							<MaterialIcon name="expand_more" :size="16" color="secondary" />
 						</Flex>
 					</template>
 
@@ -536,59 +522,41 @@ onBeforeUnmount(() => {
 				</template>
 			</template>
 
-			<!-- Fee Estimate: Estimating (shimmer) -->
+			<!-- Fee Estimate -->
 			<template v-if="selectedMethod && isEstimating && !estimatedFeeDisplay">
 				<Flex align="center" justify="between" :class="$style.detail_row">
-					<Text size="12" weight="600" color="secondary">Estimated cost</Text>
-					<Flex align="center" gap="6">
-						<span :class="$style.skeleton" style="width: 60px" />
-						<span :class="$style.skeleton" style="width: 36px" />
-					</Flex>
+					<span :class="$style.fee_label">Estimated Network Fee</span>
+					<span :class="$style.skeleton" />
 				</Flex>
 			</template>
-
-			<!-- Fee Estimate: Ready -->
 			<template v-else-if="selectedMethod && estimatedFeeDisplay">
 				<Flex align="center" justify="between" :class="$style.detail_row">
-					<Text size="12" weight="600" color="secondary">Estimated cost</Text>
-					<Flex align="center" gap="6">
-						<Text size="12" weight="600" color="primary">~{{ estimatedFeeDisplay.amount }} FJ</Text>
-						<Text size="11" color="tertiary">{{ estimatedFeeDisplay.usd }}</Text>
-					</Flex>
+					<span :class="$style.fee_label">Estimated Network Fee</span>
+					<span :class="$style.fee_value">~{{ estimatedFeeDisplay.amount }} FJ</span>
 				</Flex>
 			</template>
-
-			<!-- Fee Estimate: Unavailable -->
 			<template v-else-if="selectedMethod">
-				<Flex align="center" gap="4" :class="$style.detail_row" :style="{ padding: '8px 12px' }">
+				<Flex align="center" gap="4" :class="$style.detail_row">
 					<Icon name="info" size="12" color="tertiary" />
 					<Text size="11" weight="500" color="tertiary">Fee estimated after simulation</Text>
 				</Flex>
 			</template>
 
-			<!-- Priority fee selector -->
+			<!-- Priority selector -->
 			<template v-if="selectedMethod">
-				<Flex align="center" justify="between" :class="$style.detail_row">
-					<Text size="12" weight="600" color="secondary"> Priority fee </Text>
-
-					<Flex align="center" gap="4">
-						<Flex
+				<Flex direction="column" gap="8" :class="$style.detail_row">
+					<span :class="$style.fee_label">Priority</span>
+					<div :class="$style.priority_grid">
+						<button
 							v-for="level in priorityLevels"
 							:key="level.value"
 							@click="selectedPriority = level.value"
-							align="center"
 							:data-testid="`send-fee-priority-${level.value}`"
-							:class="[$style.priority_pill, selectedPriority === level.value && $style.priority_active]"
+							:class="[$style.priority_btn, selectedPriority === level.value && $style.priority_active]"
 						>
-							<Text
-								size="11"
-								weight="600"
-								:color="selectedPriority === level.value ? 'primary' : 'tertiary'"
-							>
-								{{ level.label }}
-							</Text>
-						</Flex>
-					</Flex>
+							{{ level.label }}
+						</button>
+					</div>
 				</Flex>
 			</template>
 		</template>
@@ -645,23 +613,55 @@ onBeforeUnmount(() => {
 	}
 }
 
-.priority_pill {
+.fee_label {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--nulo-secondary);
+}
+
+.fee_value {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--txt-primary);
+}
+
+.fee_error {
+	color: var(--red);
+}
+
+.priority_grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 8px;
+}
+
+.priority_btn {
+	padding: 6px 0;
 	cursor: pointer;
-	padding: 3px 8px;
+
+	font-family: var(--font-mono);
+	font-size: 9px;
+	font-weight: 500;
+	text-transform: uppercase;
+	text-align: center;
+	color: var(--nulo-secondary);
 
 	background: transparent;
-	border: 1px solid var(--nulo-outline);
+	border: 1px solid #231f1c;
 
 	transition: all 0.15s ease;
 
 	&:hover {
-		background: var(--nulo-surface-high);
+		border-color: var(--nulo-accent);
 	}
 }
 
 .priority_active {
-	background: var(--nulo-surface-high);
 	border-color: var(--nulo-accent);
+	color: var(--txt-primary);
 }
 
 .skeleton {
