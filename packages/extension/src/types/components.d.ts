@@ -33,6 +33,7 @@ declare module 'vue' {
     JsonViewer: typeof import('./../components/ui/JsonViewer/JsonViewer.vue')['default']
     LogoStar: typeof import('./../components/LogoStar.vue')['default']
     LogsViewer: typeof import('./../components/ui/JsonViewer/LogsViewer.vue')['default']
+    MaterialIcon: typeof import('./../components/core/MaterialIcon.vue')['default']
     NotificationManager: typeof import('./../components/ui/NotificationManager.vue')['default']
     PageHeader: typeof import('./../components/ui/Settings/PageHeader.vue')['default']
     PersistentAccountBadge: typeof import('./../components/ui/PersistentAccountBadge.vue')['default']
