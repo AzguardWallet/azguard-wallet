@@ -1,100 +1,80 @@
 <script setup>
 const props = defineProps({
-	icon: {
-		type: String,
-		required: true,
-	},
-	iconColor: {
-		type: String,
-		required: false,
-	},
+	icon: String,
+	materialIcon: String,
+	iconColor: String, // legacy — ignored, API compat only
 	title: {
 		type: String,
 		required: true,
 	},
-	description: {
-		type: String,
-		required: false,
-	},
+	description: String,
 })
 </script>
 
 <template>
-	<Flex direction="column" align="center" gap="12">
-		<div style="position: relative;">
-			<Flex :class="[$style.icon, $style[iconColor]]">
-				<Icon :name="icon" size="24" color="white" />
-				<div />
-			</Flex>
+	<Flex direction="column" align="center" gap="12" :class="$style.wrapper">
+		<div :class="$style.icon_container">
+			<div :class="$style.icon_box">
+				<MaterialIcon v-if="materialIcon" :name="materialIcon" :size="24" color="secondary" />
+				<Icon v-else-if="icon" :name="icon" size="20" color="secondary" />
+			</div>
 
 			<slot name="rightdownicon" />
 		</div>
 
-		<Flex align="center" direction="column" gap="8">
-			<Text size="14" weight="600" color="primary" align="center" :class="$style.title"> {{ title }} </Text>
+		<Flex align="center" direction="column" gap="6">
+			<h2 :class="$style.title">{{ title }}</h2>
 
-			<Text v-if="description" size="13" weight="500" height="150" color="tertiary" align="center" style="padding: 0 24px">
-				{{ description }}
-			</Text>
+			<p v-if="description" :class="$style.description">{{ description }}</p>
 		</Flex>
 	</Flex>
 </template>
 
 <style module>
-.icon {
-	position: relative;
-
-	& div {
-		position: absolute;
-
-		background: linear-gradient(var(--gray-15), var(--gray-5));
-		inset: -1px;
-		border-radius: 13px;
-
-		z-index: 0;
-	}
-
-	&.red {
-		& svg {
-			background: var(--red);
-		}
-	}
-
-	&.green {
-		& svg {
-			background: var(--green);
-		}
-	}
-
-	&.sand {
-		& svg {
-			background: var(--sand);
-		}
-	}
-
-	& svg {
-		z-index: 1;
-
-		border-radius: 12px;
-		background: var(--blue);
-		box-shadow: 0 2px 4px var(--op-10);
-		box-sizing: content-box;
-
-		padding: 8px;
-	}
+.wrapper {
+	padding: 8px 0 8px 0;
 }
 
-.right_down_icon {
-	position: absolute;
-	top: 0;
-	right: 0;
+.icon_container {
+	position: relative;
+}
+
+.icon_box {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 48px;
+	height: 48px;
+
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 }
 
 .title {
-	max-width: 250px;
+	font-family: var(--font-headline);
+	font-size: 18px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: var(--txt-primary);
+	text-align: center;
+	margin: 0;
 
-	text-overflow: ellipsis;
+	max-width: 280px;
 	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.description {
+	font-family: var(--font-body);
+	font-size: 12px;
+	line-height: 1.4;
+	color: var(--nulo-secondary);
+	text-align: center;
+	margin: 0;
+
+	max-width: 280px;
+	word-break: break-all;
 }
 </style>
