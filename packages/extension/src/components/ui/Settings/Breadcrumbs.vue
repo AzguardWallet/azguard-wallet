@@ -15,30 +15,77 @@ const props = defineProps({
 </script>
 
 <template>
-	<Flex wide align="center" justify="between" :class="$style.wrapper">
-		<Button v-if="!hideNavigation" @click="router.go(-1)" type="secondary" size="micro">
-			<Icon name="arrow-right" size="12" color="secondary" style="transform: rotate(180deg)" />
-		</Button>
+	<Flex wide align="center" gap="12" :class="$style.wrapper">
+		<button v-if="!hideNavigation" @click="router.go(-1)" :class="$style.back_btn" aria-label="Back" type="button">
+			<MaterialIcon name="arrow_back" :size="20" color="secondary" />
+		</button>
+		<span v-else :class="$style.back_spacer" />
 
-		<Text v-if="!hideTitle" size="13" weight="600" color="secondary" :class="$style.title">
-			{{ route.meta.title }}
-		</Text>
+		<span v-if="!hideTitle" :class="$style.title">{{ route.meta.title }}</span>
+		<span v-else :class="$style.title_spacer" />
 
-		<slot name="right" />
+		<div :class="$style.right_slot">
+			<slot name="right" />
+		</div>
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
-	position: relative;
+	padding: 8px 0;
+	min-height: 32px;
+}
 
-	min-height: 18px;
+.back_btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 32px;
+	height: 32px;
+
+	background: transparent;
+	border: none;
+	cursor: pointer;
+
+	flex-shrink: 0;
+
+	transition: background 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--nulo-surface-high);
+	}
+}
+
+.back_spacer {
+	width: 32px;
+	flex-shrink: 0;
 }
 
 .title {
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	transform: translateX(-50%) translateY(-50%);
+	flex: 1;
+
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.title_spacer {
+	flex: 1;
+}
+
+.right_slot {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	min-width: 32px;
+	flex-shrink: 0;
 }
 </style>
