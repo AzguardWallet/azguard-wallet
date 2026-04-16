@@ -309,17 +309,10 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	flex: 1;
-
 	overflow: auto;
+	background: var(--app-bg);
 
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-8);
-	box-shadow: inset 0 10px 8px -2px var(--gray-3);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 20px 24px 80px 24px;
+	padding: 16px 24px 96px 24px;
 }
 
 .tooltip {
