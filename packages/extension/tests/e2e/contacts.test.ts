@@ -92,7 +92,10 @@ test("delete contact", async ({ registeredExtension }) => {
 		let container = target.parentElement
 		for (let i = 0; i < 10 && container; i++) {
 			const del = container.querySelector('[data-testid="contact-delete"]') as HTMLElement
-			if (del) { del.click(); return }
+			if (del) {
+				del.click()
+				return
+			}
 			container = container.parentElement
 		}
 	})

@@ -16,9 +16,7 @@ test("create profile with password", async ({ extension }) => {
 
 	// Wait for GlobalLoader to disappear
 	await page.waitForFunction(
-		() =>
-			!document.body.innerText.includes("Connecting to service worker") &&
-			!document.body.innerText.includes("Reconnecting"),
+		() => !document.body.innerText.includes("Connecting to service worker") && !document.body.innerText.includes("Reconnecting"),
 		{ timeout: 15_000, polling: 500 },
 	)
 
@@ -61,7 +59,7 @@ test("create profile with password", async ({ extension }) => {
 	await waitForHash(page, "#/popup/general", 15_000)
 
 	// Verify post-registration state
-	await page.waitForSelector("text/Account", { visible: true, timeout: 10_000 })
+	await page.waitForSelector('[data-testid="account-selector"]', { visible: true, timeout: 10_000 })
 	await page.waitForSelector("text/Send", { visible: true })
 	await page.waitForSelector("text/Receive", { visible: true })
 

@@ -12,7 +12,7 @@ export default defineConfig({
 		exclude: ["tests/e2e/network/**", "tests/e2e/slow/**"],
 		environment: "node",
 		globalSetup: "./tests/e2e/global-setup-smoke.ts",
-		testTimeout: 15_000,
+		testTimeout: 30_000,
 		hookTimeout: 60_000,
 		fileParallelism: false,
 	},

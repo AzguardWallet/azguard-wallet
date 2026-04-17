@@ -100,7 +100,7 @@ async function registerProfile(ctx: ExtensionContext): Promise<void> {
 	await clickButtonByText(page, "Create with Password")
 
 	await waitForHash(page, "#/popup/general", 15_000)
-	await page.waitForSelector("text/Account", { visible: true, timeout: 10_000 })
+	await page.waitForSelector('[data-testid="account-selector"]', { visible: true, timeout: 10_000 })
 	await page.close()
 }
 

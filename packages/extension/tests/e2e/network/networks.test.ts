@@ -52,26 +52,23 @@ test.skipIf(!hasLocalNetwork)("networks page lists all 4 defaults", async ({ reg
 	expect(registeredExtension.pageErrors).toEqual([])
 })
 
-test.skipIf(!hasLocalNetwork)(
-	"network status shows connected after switching to Local Network",
-	async ({ registeredExtension }) => {
-		const page = await openPopup(registeredExtension)
-		await waitForHash(page, "#/popup/general")
+test.skipIf(!hasLocalNetwork)("network status shows connected after switching to Local Network", async ({ registeredExtension }) => {
+	const page = await openPopup(registeredExtension)
+	await waitForHash(page, "#/popup/general")
 
-		await switchToLocalNetwork(page)
+	await switchToLocalNetwork(page)
 
-		// Wait for network status to show "Active" (tooltip on globe icon)
-		// The status dot changes color based on network status
-		await page.waitForFunction(
-			() => {
-				// The network badge or status should indicate the node is reachable
-				const body = document.body.innerText
-				return !body.includes("Testnet") // At minimum, we switched away from Testnet
-			},
-			{ timeout: 10_000 },
-		)
+	// Wait for network status to show "Active" (tooltip on globe icon)
+	// The status dot changes color based on network status
+	await page.waitForFunction(
+		() => {
+			// The network badge or status should indicate the node is reachable
+			const body = document.body.innerText
+			return !body.includes("Testnet") // At minimum, we switched away from Testnet
+		},
+		{ timeout: 10_000 },
+	)
 
-		expect(registeredExtension.consoleErrors).toEqual([])
-		expect(registeredExtension.pageErrors).toEqual([])
-	},
-)
+	expect(registeredExtension.consoleErrors).toEqual([])
+	expect(registeredExtension.pageErrors).toEqual([])
+})

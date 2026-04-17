@@ -64,6 +64,8 @@ export async function navigateToSettings(page: Page, ...path: string[]): Promise
 		await link!.click()
 		// Wait for hash to include the new segment (route transition)
 		await page.waitForFunction((hash: string) => window.location.hash.includes(hash), { timeout: 5_000 }, expectedHash)
+		// Let Vue finish mounting the new route component before proceeding
+		await new Promise((r) => setTimeout(r, 200))
 		pathSegments.push(item.toLowerCase())
 	}
 }

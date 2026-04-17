@@ -1,6 +1,6 @@
 import { expect } from "vitest"
 import { test, openPopup, waitForHash } from "./fixtures/extension"
-import { clickNavTab, ensureUnlocked } from "./fixtures/helpers"
+import { clickNavTab } from "./fixtures/helpers"
 
 test("settings page shows all sections", async ({ registeredExtension }) => {
 	const page = await openPopup(registeredExtension)
@@ -24,8 +24,8 @@ test("activity page shows empty state", async ({ registeredExtension }) => {
 	await clickNavTab(page, "activity")
 	await waitForHash(page, "#/popup/activity")
 
-	// The activity page should show the transactions header
-	await page.waitForSelector("text/Transactions", { visible: true, timeout: 5_000 })
+	// The activity page should show its hero title
+	await page.waitForSelector("text/HISTORY", { visible: true, timeout: 5_000 })
 
 	expect(registeredExtension.consoleErrors).toEqual([])
 	expect(registeredExtension.pageErrors).toEqual([])
@@ -58,9 +58,11 @@ test("about page shows version info", async ({ registeredExtension }) => {
 	await clickNavTab(page, "settings")
 	await waitForHash(page, "#/popup/settings")
 
-	// Click "About Nulo" or "About" link
-	const aboutLink = await page.waitForSelector("text/About", { visible: true, timeout: 5_000 })
-	await aboutLink!.click()
+	// Click "About Nulo" footer link — use evaluate since it's below the fold
+	await page.evaluate(() => {
+		const link = [...document.querySelectorAll("a")].find((a) => a.textContent?.includes("About Nulo"))
+		link?.click()
+	})
 
 	await waitForHash(page, "#/popup/settings/about")
 
