@@ -34,9 +34,10 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 		challenge,
 		rp: {
 			name: "Nulo",
-			// SECURITY: WebAuthn RP ID is bound to credentials. Changing it locks users out permanently.
-			// Must remain "azguardwallet.io" regardless of branding changes.
-			id: "azguardwallet.io",
+			// SECURITY: WebAuthn RP ID is cryptographically bound to credentials.
+			// Changing it invalidates every passkey ever issued under the old ID.
+			// Must match a host in the extension's host_permissions (see manifest.config.ts).
+			id: "nulo.sh",
 		},
 		user: {
 			id: userHandle,
@@ -84,7 +85,7 @@ const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
 	const publicKey: PublicKeyCredentialRequestOptions = {
 		challenge,
 		// SECURITY: Must match the RP ID used during credential creation.
-		rpId: "azguardwallet.io",
+		rpId: "nulo.sh",
 		userVerification: "required",
 		timeout: PASSKEY_TIMEOUT,
 		extensions: { prf: { eval: { first: new Uint8Array(prfInput) } } },

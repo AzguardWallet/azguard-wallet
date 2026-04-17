@@ -45,12 +45,12 @@ Load the extension in Chrome: `chrome://extensions` → Load unpacked → select
 
 ## Naming Backward-Compatibility Constraints
 
-The product was renamed from "Azguard" to "Vibeguard" to "Nulo". The following MUST NOT be renamed:
+The product was renamed from "Azguard" to "Vibeguard" to "Nulo". The following are still bytecode-embedded and MUST NOT be renamed:
 
-- **Contract artifacts** (`azguard-v0.json`, `azguard-v0-persistent.json`): On-chain class identity. The names are embedded in compiled bytecode.
-- **Passkey RP ID** (`azguardwallet.io`): WebAuthn credentials are bound to this. Changing it permanently locks users out.
-- **KDF/PRF labels** (`azguard:kdf:v1`, `azguard:master:v1`, `azguard:profile:v1`): Domain separators in HKDF chain. Different labels = different keys = lost funds.
-- **`azguardwallet.io` URLs**: Deferred until new domain is ready (marked with TODO comments).
+- **Contract artifacts** (`azguard-v0.json`, `azguard-v0-persistent.json`): On-chain class identity. The names are embedded in compiled bytecode. Renaming requires recompile + redeploy + orphans every already-deployed account.
+- **Noir contract source directories** (`azguard-account/`, `azguard-account-persistent/`): Same constraint — rename would change bytecode and class ID.
+
+All other identifiers (passkey RP ID, HKDF labels, URLs, display names) have been migrated to `nulo.sh` / `nulo:*`. Any prior wallets created under the old identifiers are intentionally unrecoverable — the alpha-era cost for getting a clean namespace.
 
 ## Contracts Package
 

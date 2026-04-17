@@ -3,11 +3,10 @@ import type { PasskeyCredentialData } from "./spec"
 
 const te = new TextEncoder()
 
-// SECURITY: These labels are domain separators in the key derivation chain.
-// Changing them produces different keys, making existing wallets inaccessible.
-// They must remain "azguard:*" regardless of branding changes.
-const PASSKEY_KDF_LABEL = te.encode("azguard:kdf:v1")
-const PASSKEY_MASTER_LABEL = te.encode("azguard:master:v1")
+// SECURITY: Domain separators in the key derivation chain. Changing these labels
+// produces different keys and invalidates every existing passkey wallet.
+const PASSKEY_KDF_LABEL = te.encode("nulo:kdf:v1")
+const PASSKEY_MASTER_LABEL = te.encode("nulo:master:v1")
 
 export class PasskeyCredential {
 	public readonly id: string

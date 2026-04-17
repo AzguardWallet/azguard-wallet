@@ -1,8 +1,7 @@
 export const PASSKEY_SERVICE_NAME = "passkey"
-// SECURITY: These labels are domain separators in the key derivation chain.
-// Changing them produces different keys, making existing wallets inaccessible.
-// They must remain "azguard:*" regardless of branding changes.
-export const PASSKEY_PRF_LABEL = "azguard:profile:v1"
+// SECURITY: Domain separator in the key derivation chain. Changing this label
+// produces different keys and invalidates every existing passkey wallet.
+export const PASSKEY_PRF_LABEL = "nulo:profile:v1"
 export const PASSKEY_TIMEOUT = 60_000 * 3 // 3 minutes
 
 export type PasskeyCredentialData = {
