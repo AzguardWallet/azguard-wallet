@@ -73,10 +73,6 @@ $grayscale: (
 	--sand: #b88555;
 
 	@each $gray, $value in $grayscale {
-		--op-#{$gray}: rgba(0, 0, 0, #{$value});
-	}
-
-	@each $gray, $value in $grayscale {
 		--gray-#{$gray}: rgba(255, 255, 255, #{$value});
 	}
 
@@ -135,10 +131,6 @@ $grayscale: (
 	--log-error-color: #e53935;
 	--log-error-background: #ffebee;
 	--log-inactive-filter: 1.03;
-
-	@each $gray, $value in $grayscale {
-		--op-#{$gray}: rgba(255, 255, 255, #{$value});
-	}
 
 	@each $gray, $value in $grayscale {
 		--gray-#{$gray}: rgba(0, 0, 0, #{$value});
@@ -200,10 +192,6 @@ $grayscale: (
 	--log-error-background: #3a1f1e;
 	--log-inactive-filter: 0.8;
 
-
-	@each $gray, $value in $grayscale {
-		--op-#{$gray}: rgba(0, 0, 0, #{$value});
-	}
 
 	@each $gray, $value in $grayscale {
 		--gray-#{$gray}: rgba(255, 255, 255, #{$value});
