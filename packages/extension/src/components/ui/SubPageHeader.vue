@@ -56,8 +56,8 @@ function handleBack() {
 
 <style module>
 .wrapper {
-	padding: 10px 16px;
-	min-height: 48px;
+	padding: 0 24px;
+	min-height: 56px;
 }
 
 .back_btn {
