@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Utils */
@@ -132,7 +131,6 @@ const handleDelete = (target) => {
 			</Button>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -142,7 +140,7 @@ const handleDelete = (target) => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .icon_btn {

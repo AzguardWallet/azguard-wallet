@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../../components/Navigation.vue"
 
 /** Utils */
 import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
@@ -109,7 +108,6 @@ onBeforeUnmount(() => {
 			<Banner v-else> So far, it's empty </Banner>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -119,7 +117,7 @@ onBeforeUnmount(() => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .card {

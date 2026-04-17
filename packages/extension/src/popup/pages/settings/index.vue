@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../components/Navigation.vue"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -65,7 +64,6 @@ const appStore = useAppStore()
 			</RouterLink>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -76,7 +74,7 @@ const appStore = useAppStore()
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding-bottom: 96px;
+	padding-bottom: var(--nav-clearance);
 }
 
 .hero {

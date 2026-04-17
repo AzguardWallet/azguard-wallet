@@ -10,7 +10,6 @@
 <script setup>
 /** Components */
 import TransactionsList from "../components/modules/activity/TransactionsList.vue"
-import Navigation from "../components/Navigation.vue"
 
 /** Vendor */
 import { DateTime } from "luxon"
@@ -143,7 +142,6 @@ onBeforeUnmount(() => {
 			</Flex>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -153,7 +151,7 @@ onBeforeUnmount(() => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding-bottom: 96px;
+	padding-bottom: var(--nav-clearance);
 }
 
 .hero {

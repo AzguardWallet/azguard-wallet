@@ -9,7 +9,6 @@
 <script setup>
 /** Components */
 import BalanceView from "../../components/modules/general/BalanceView.vue"
-import Navigation from "../../components/Navigation.vue"
 import RecentActivityView from "../../components/modules/general/RecentActivityView.vue"
 import SplittedBalancesView from "../../components/modules/general/SplittedBalancesView.vue"
 import SubPageHeader from "@/components/ui/SubPageHeader.vue"
@@ -192,7 +191,6 @@ onBeforeUnmount(() => {
 			</Flex>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -205,7 +203,7 @@ onBeforeUnmount(() => {
 
 .content {
 	flex: 1;
-	padding: 24px 24px 96px 24px;
+	padding: 24px 24px var(--nav-clearance) 24px;
 }
 
 .icon_btn {

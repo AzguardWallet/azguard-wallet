@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
 
 /** Services */
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
@@ -168,7 +167,6 @@ onBeforeMount(async () => {
 			</Flex>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -178,7 +176,7 @@ onBeforeMount(async () => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .disconnect_all {

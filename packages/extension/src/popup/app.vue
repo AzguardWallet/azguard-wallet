@@ -1,6 +1,7 @@
 <script setup>
 /** Components */
 import PopupManager from "./components/popups/PopupManager.vue"
+import Navigation from "./components/Navigation.vue"
 
 /** Utils */
 import { managers, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
@@ -27,6 +28,15 @@ import LogoIcon from "@/assets/logo.svg?raw"
 
 const route = useRoute()
 const router = useRouter()
+
+/** Set data-has-nav on <html> so pages can use var(--nav-clearance) for bottom padding */
+watch(
+	() => route.meta.showBottomNav,
+	(showBottomNav) => {
+		root.setAttribute("data-has-nav", showBottomNav ? "true" : "false")
+	},
+	{ immediate: true },
+)
 
 const configService = new ConfigServiceClient()
 configService.onUpdate.add(applySetting)
@@ -296,6 +306,8 @@ onBeforeUnmount(() => {
 		<RouterView v-slot="{ Component }">
 			<component :is="Component"></component>
 		</RouterView>
+
+		<Navigation v-if="$route.meta.showBottomNav" />
 	</Flex>
 </template>
 

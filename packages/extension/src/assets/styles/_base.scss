@@ -4,9 +4,16 @@
 // required for vue-devtools
 @import "/node_modules/vite-plugin-vue-devtools/src//overlay/devtools-overlay.css";
 
+:root[data-has-nav="true"] {
+	--nav-clearance: 96px;
+}
+
 :root {
 	--base-width: 360px;
 	--base-height: 600px;
+
+	/** nav clearance: 24px default (no nav), 96px when bottom nav is present */
+	--nav-clearance: 24px;
 
 	/** fonts */
 	--font-headline: "Space Grotesk", system-ui, sans-serif;

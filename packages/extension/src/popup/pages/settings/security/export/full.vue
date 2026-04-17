@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
 
 /** Services */
 import { managers } from "@/utils/core"
@@ -360,7 +359,6 @@ onBeforeUnmount(() => {
 			</Flex>
 		</template>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -370,7 +368,7 @@ onBeforeUnmount(() => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .right_down_icon {

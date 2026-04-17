@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../components/Navigation.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -31,7 +30,6 @@ const popupStore = usePopupStore()
 			/>
 		</ItemsContainer>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -41,7 +39,7 @@ const popupStore = usePopupStore()
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .item {

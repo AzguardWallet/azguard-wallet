@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
 
 /** Services */
 import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
@@ -409,7 +408,6 @@ onBeforeUnmount(() => {
 			<Text size="13">New FPC</Text>
 		</Button>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -419,7 +417,7 @@ onBeforeUnmount(() => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .search_icon {

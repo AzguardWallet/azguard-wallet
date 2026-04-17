@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
 
 /** Services */
 import { TokenServiceClient } from "@/wallet/services/token/client"
@@ -140,7 +139,6 @@ onBeforeUnmount(() => {
 			</Button>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -150,7 +148,7 @@ onBeforeUnmount(() => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .icon_btn {

@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
 </script>
 
 <template>
@@ -46,7 +45,6 @@ import Navigation from "../../../../components/Navigation.vue"
 			/>
 		</ItemsContainer>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -56,7 +54,7 @@ import Navigation from "../../../../components/Navigation.vue"
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .item {

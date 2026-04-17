@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -163,7 +162,6 @@ const handleCopyAddress = (target) => {
 			</Flex>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -173,7 +171,7 @@ const handleCopyAddress = (target) => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .icon_btn {

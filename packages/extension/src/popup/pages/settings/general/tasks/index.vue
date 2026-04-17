@@ -9,7 +9,6 @@
 
 <script setup>
 /** Components */
-import Navigation from "../../../../components/Navigation.vue"
 import TaskCard from "./TaskCard.vue"
 
 /** Vendor */
@@ -328,7 +327,6 @@ onBeforeUnmount(() => {
 			</div>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -338,7 +336,7 @@ onBeforeUnmount(() => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .subtask {

@@ -11,7 +11,6 @@
 /** Components */
 import CapabilityDetailPanel from "@/popup/components/modules/capabilities/CapabilityDetailPanel.vue"
 import EmojiGrid from "@/popup/components/modules/general/EmojiGrid.vue"
-import Navigation from "../../../../../components/Navigation.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Vendor */
@@ -360,7 +359,6 @@ onMounted(async () => {
 			</Flex>
 		</Flex>
 
-		<Navigation />
 	</Flex>
 </template>
 
@@ -370,7 +368,7 @@ onMounted(async () => {
 	overflow: auto;
 	background: var(--app-bg);
 
-	padding: 16px 24px 96px 24px;
+	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
 .session {
