@@ -6,8 +6,7 @@ export const NuloWalletInfo: WalletInfo = {
 	description:
 		"User-friendly self-custody wallet for Aztec network, preserving your privacy and revealing the power of account abstraction.",
 	logo: chrome.runtime.getURL("/src/assets/logo.png"),
-	// TODO: Update URL when Nulo domain is ready
-	url: "https://azguardwallet.io",
+	url: "https://nulo.sh",
 	version,
 	capabilities: ["batch_execution"],
 }

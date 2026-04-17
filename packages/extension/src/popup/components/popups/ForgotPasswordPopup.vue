@@ -59,7 +59,7 @@ const handleImport = () => {
 					<!-- TODO: Update URL when Nulo domain is ready -->
 					<SettingItem
 						title="Report issue with authorization"
-						to="https://azguardwallet.io/forms/report-issue"
+						to="https://nulo.sh/forms/report-issue"
 						icon="help"
 						external
 					/>

@@ -237,8 +237,7 @@ onMounted(async () => {
 		"%cIf someone asks you to do something in this interface (DevTools), 100% they are trying to scam you. If you don't know what you are doing, close this window (cross in the upper right corner).",
 		styleText,
 	)
-	// TODO: Update URL when Nulo domain is ready
-	console._log("%cYou can report a scam through the form: https://azguardwallet.io/forms/report-scam", styleText)
+	console._log("%cYou can report a scam through the form: https://nulo.sh/forms/report-scam", styleText)
 	/****************** */
 
 	intervalId.value = window.setInterval(() => {

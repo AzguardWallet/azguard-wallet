@@ -25,8 +25,7 @@ const notAllowedNetworkNames = computed(() => appStore.networks.map((n) => n.nam
 const notAllowedNetworkUrls = computed(() => appStore.networks.map((n) => n.rpcUrl))
 
 const nameTerm = ref("")
-// TODO: Update URL when Nulo domain is ready
-const urlTerm = ref("https://rpc.sandbox.azguardwallet.io/")
+const urlTerm = ref("https://rpc.sandbox.nulo.sh/")
 
 const isUrlHasError = ref(false)
 
@@ -81,7 +80,7 @@ watch(
 			document.removeEventListener("keydown", onKeydown)
 
 			nameTerm.value = ""
-			urlTerm.value = "https://rpc.sandbox.azguardwallet.io/"
+			urlTerm.value = "https://rpc.sandbox.nulo.sh/"
 		} else {
 			document.addEventListener("keydown", onKeydown)
 		}

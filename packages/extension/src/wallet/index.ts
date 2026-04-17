@@ -56,8 +56,7 @@ const initRuntime = () => {
 	//         });
 	//     }
 	// });
-	// TODO: Update URL when new Nulo domain is ready
-	chrome.runtime.setUninstallURL("https://azguardwallet.io/forms/uninstall")
+	chrome.runtime.setUninstallURL("https://nulo.sh/forms/uninstall")
 	logger.log("wallet", LogLevel.Info, "Runtime configured")
 }
 

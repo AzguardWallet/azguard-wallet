@@ -23,11 +23,10 @@ const handleCopy = (target) => {
 	openToast({ label: "Version is copied", icon: "copy" })
 }
 
-// TODO: Update URLs when Nulo domain is ready
 const handleOpen = (target) => {
 	chrome.windows.create({
 		type: "popup",
-		url: `https://azguardwallet.io/${target}`,
+		url: `https://nulo.sh/${target}`,
 		width: 360,
 		height: 600,
 	})
@@ -53,7 +52,7 @@ const handleOpen = (target) => {
 
 			<ItemsContainer wide>
 				<SettingItem
-					to="https://azguardwallet.io"
+					to="https://nulo.sh"
 					title="Nulo Website"
 					icon="globe"
 					iconBgColor="blue"
@@ -63,7 +62,7 @@ const handleOpen = (target) => {
 
 			<ItemsContainer title="Contact us" wide>
 				<SettingItem
-					to="https://azguardwallet.io/forms/feedback"
+					to="https://nulo.sh/forms/feedback"
 					size="large"
 					title="Feedback"
 					description="Suggest an idea"
@@ -71,7 +70,7 @@ const handleOpen = (target) => {
 					external
 				/>
 				<SettingItem
-					to="https://azguardwallet.io/forms/report-issue"
+					to="https://nulo.sh/forms/report-issue"
 					size="large"
 					title="Report Issue"
 					description="If you're facing a bug"
@@ -79,7 +78,7 @@ const handleOpen = (target) => {
 					external
 				/>
 				<SettingItem
-					to="https://azguardwallet.io/forms/report-scam"
+					to="https://nulo.sh/forms/report-scam"
 					size="large"
 					title="Report Scam"
 					description="Tell us about the scammers"

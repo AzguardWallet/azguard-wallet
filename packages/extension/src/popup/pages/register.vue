@@ -40,11 +40,10 @@ function onSettingUpdate(setting) {
 	}
 }
 
-// TODO: Update URL when Nulo domain is ready
 const handleOpen = (target) => {
 	chrome.windows.create({
 		type: "popup",
-		url: `https://azguardwallet.io/${target}`,
+		url: `https://nulo.sh/${target}`,
 		width: 360,
 		height: 600,
 	})

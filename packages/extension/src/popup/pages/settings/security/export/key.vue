@@ -19,8 +19,7 @@ import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()
 const { handleExternalLink } = useExternalLink()
 
-// TODO: Update URL when Nulo domain is ready
-const backupHelpUrl = "https://azguardwallet.io/help/wallet-setup/backup-methods"
+const backupHelpUrl = "https://nulo.sh/help/wallet-setup/backup-methods"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"

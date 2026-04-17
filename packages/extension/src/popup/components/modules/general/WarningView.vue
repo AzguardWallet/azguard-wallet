@@ -1,8 +1,7 @@
 <script setup>
 const { handleExternalLink } = useExternalLink()
 
-// TODO: Update URL when Nulo domain is ready
-const reportIssueUrl = "https://azguardwallet.io/forms/report-issue"
+const reportIssueUrl = "https://nulo.sh/forms/report-issue"
 </script>
 
 <template>
