@@ -57,13 +57,10 @@ onBeforeUnmount(() => {
 
 <style module>
 .wrapper {
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
 	overflow: auto;
 
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--border), 0 -6px 16px var(--shadow-5);
+	background: var(--nulo-surface);
+	border-top: 1px solid var(--nulo-border);
 
 	padding-top: 10px;
 
@@ -84,20 +81,19 @@ onBeforeUnmount(() => {
 
 .bar {
 	width: 32px;
-	height: 4px;
+	height: 2px;
 
 	cursor: pointer;
-	border-radius: 50px;
-	background: var(--gray-20);
+	background: var(--nulo-outline);
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--txt-tertiary);
+		background: var(--nulo-secondary);
 	}
 
 	&:active {
-		background: var(--txt-primary);
+		background: var(--nulo-accent);
 	}
 }
 </style>

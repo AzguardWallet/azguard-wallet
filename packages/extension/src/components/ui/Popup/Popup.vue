@@ -93,6 +93,6 @@ watch(
 	right: 0;
 	bottom: 0;
 
-	background: var(--op-50);
+	background: rgba(10, 9, 8, 0.8);
 }
 </style>

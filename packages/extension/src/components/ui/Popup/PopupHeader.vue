@@ -16,14 +16,15 @@ const props = defineProps({
 			<Flex align="center" gap="16">
 				<slot name="right" />
 
-				<Icon
+				<button
 					v-if="closable"
 					@click="emit('onClose')"
-					name="close-circle-duotone"
-					size="20"
-					color="support"
+					type="button"
+					aria-label="Close"
 					:class="$style.close_btn"
-				/>
+				>
+					<MaterialIcon name="close" :size="20" color="secondary" />
+				</button>
 			</Flex>
 		</Flex>
 
@@ -37,16 +38,21 @@ const props = defineProps({
 }
 
 .close_btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 28px;
+	height: 28px;
+
+	background: transparent;
+	border: none;
 	cursor: pointer;
 
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
-		fill: var(--txt-secondary);
-	}
-
-	&:active {
-		fill: var(--txt-primary);
+		background: var(--nulo-surface-high);
 	}
 }
 </style>

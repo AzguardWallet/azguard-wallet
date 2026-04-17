@@ -277,43 +277,41 @@ const handleClear = () => {
 	align-items: center;
 	justify-content: space-between;
 
-	border-radius: 10px;
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 3px var(--shadow-5);
-	background: var(--card-bg);
+	border-radius: 0;
+	border: 1px solid var(--nulo-border);
+	background: var(--nulo-surface-low);
 	padding: 0 12px;
 	cursor: text;
 
-	transition: all 0.2s ease;
+	transition: border-color 0.2s ease;
 }
 
 .base.medium {
-	height: 38px;
+	height: 40px;
 }
 
 .base.small {
-	height: 28px;
+	height: 30px;
 }
 
 .base.mini {
-	height: 22px;
-	border-radius: 6px;
+	height: 24px;
 	input {
 		font-size: 12px;
 	}
-	
 }
 
 .base:hover {
-	box-shadow: inset 0 0 0 1px var(--border-hovered);
+	border-color: var(--nulo-outline);
 }
 
 .base.focused {
-	box-shadow: inset 0 0 0 1px var(--blue), 0 0 0 1px var(--blue);
+	border-color: var(--nulo-accent);
 }
 
 .base.disabled {
-	opacity: 0.8;
-	background: var(--gray-10);
+	opacity: 0.5;
+	background: var(--nulo-surface);
 	pointer-events: none;
 }
 
@@ -323,16 +321,18 @@ const handleClear = () => {
 	width: 100%;
 	height: 100%;
 	padding: 0;
+	background: transparent;
 
+	font-family: var(--font-body);
 	font-size: 14px;
-	font-weight: 600;
+	font-weight: 500;
 	color: var(--txt-primary);
 
 	text-overflow: ellipsis;
 }
 
 .base input::placeholder {
-	color: var(--txt-tertiary);
+	color: var(--nulo-outline);
 }
 
 .base input::-webkit-outer-spin-button,

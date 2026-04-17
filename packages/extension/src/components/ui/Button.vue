@@ -130,121 +130,117 @@ const getStyles = () => {
 /** SIZES */
 .wrapper.dynamic {
 	height: initial;
-
-	border-radius: 12px;
-
+	border-radius: 0;
 	padding: 10px 0;
 }
 
 .wrapper.large {
-	height: 44px;
+	height: 48px;
 	font-size: 14px;
 	line-height: 1;
-
-	border-radius: 12px;
+	border-radius: 0;
+	letter-spacing: 0.05em;
 }
 
 .wrapper.medium {
-	min-height: 36px;
+	min-height: 40px;
 	gap: 8px;
-
 	font-size: 13px;
-
-	border-radius: 10px;
-
-	padding: 0 12px;
+	border-radius: 0;
+	padding: 0 14px;
+	letter-spacing: 0.03em;
 }
 
 .wrapper.small {
 	height: 32px;
 	gap: 6px;
-
-	border-radius: 10px;
-
+	border-radius: 0;
 	padding: 0 12px;
 }
 
 .wrapper.mini {
 	height: 26px;
-
 	gap: 6px;
-
-	border-radius: 10px;
-
+	border-radius: 0;
 	font-size: 12px;
-
-	padding: 0 8px;
+	padding: 0 10px;
 }
 
 .wrapper.micro {
-	height: 18px;
-
+	height: 20px;
 	gap: 6px;
-
-	border-radius: 6px;
-
-	font-size: 12px;
-
-	padding: 0 6px;
+	border-radius: 0;
+	font-size: 11px;
+	padding: 0 8px;
 }
 
 /** TYPES */
-.wrapper.success {
-	background: var(--btn-success-bg);
-	fill: var(--txt-black);
-	color: var(--txt-black);
-}
-.wrapper.success:hover {
-	background: var(--btn-success-bg-hover);
-	box-shadow: 0 0 0 0 transparent;
-}
-
-.wrapper.red {
-	background: var(--btn-red-bg);
-}
-
 .wrapper.primary {
-	background: var(--btn-primary-bg);
-	fill: var(--txt-white);
-	color: var(--txt-white);
+	background: var(--nulo-accent);
+	color: #0a0908;
+	fill: #0a0908;
+	font-family: var(--font-headline);
+	font-weight: 700;
+	text-transform: uppercase;
+}
+.wrapper.primary:hover:not(.disabled):not(.loading) {
+	background: #fff;
+}
+.wrapper.primary:active:not(.disabled):not(.loading) {
+	transform: scale(0.98);
 }
 
 .wrapper.secondary {
-	background: var(--gray-8);
+	background: var(--nulo-surface-high);
+	color: var(--txt-primary);
 }
-.wrapper.secondary:hover {
-	background: var(--gray-15);
+.wrapper.secondary:hover:not(.disabled):not(.loading) {
+	background: var(--nulo-surface-highest);
 }
-.wrapper.secondary:active {
-	background: var(--gray-10);
+.wrapper.secondary:active:not(.disabled):not(.loading) {
+	background: var(--nulo-surface-low);
 }
 
 .wrapper.tertiary {
 	background: transparent;
+	color: var(--txt-primary);
 }
-.wrapper.tertiary:hover {
-	background: var(--gray-5);
+.wrapper.tertiary:hover:not(.disabled):not(.loading) {
+	background: var(--nulo-surface-low);
 }
-.wrapper.tertiary:active {
-	background: var(--gray-10);
+.wrapper.tertiary:active:not(.disabled):not(.loading) {
+	background: var(--nulo-surface-high);
+}
+
+.wrapper.red {
+	background: var(--red);
+	color: #fff;
+	fill: #fff;
+}
+.wrapper.red:hover:not(.disabled):not(.loading) {
+	opacity: 0.9;
+}
+
+.wrapper.success {
+	background: var(--green);
+	color: #0a0908;
+	fill: #0a0908;
+}
+.wrapper.success:hover:not(.disabled):not(.loading) {
+	opacity: 0.9;
 }
 
 .wrapper.text {
 	height: initial;
-
-	color: var(--txt-blue);
-
+	color: var(--nulo-accent);
 	background: transparent;
-
 	padding: 0;
 
 	transition: color 0.2s ease;
 }
-
 .wrapper.text:hover {
-	color: var(--blue);
+	color: #fff;
 }
-
 .wrapper.text.small {
 	font-size: 12px;
 	line-height: 1;
@@ -253,11 +249,11 @@ const getStyles = () => {
 /** OTHER */
 .wrapper.disabled {
 	pointer-events: none;
-	opacity: 0.4;
+	opacity: 0.3;
 }
 
 .wrapper.border {
-	border: 1px solid var(--border);
+	border: 1px solid var(--nulo-outline);
 }
 
 .left_icon {
