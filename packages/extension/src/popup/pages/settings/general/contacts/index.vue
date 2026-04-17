@@ -207,125 +207,82 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Contacts" leadingIcon="people" :backTo="'/popup/settings/general'" />
+		<SubPageHeader title="Contacts" leadingIcon="people" :backTo="'/popup/settings/general'">
+			<template #trailing>
+				<Dropdown>
+					<button type="button" :class="$style.icon_btn" aria-label="Contact actions">
+						<MaterialIcon name="more_vert" :size="18" color="secondary" />
+					</button>
 
-		<Flex direction="column" :class="$style.section_wrapper">
-			<Flex direction="column" gap="16" :class="$style.section_wrapper">
-				<Flex align="center" justify="end" gap="6" wide>
-					<Tooltip position="end">
-						<Icon
-							@click="popupStore.open('new_contact')"
-							name="plus-circle"
-							size="16"
-							color="tertiary"
-							:class="$style.add_contact"
-						/>
-
-						<template #content>
-							<Text size="12" color="secondary">Add new contact</Text>
-						</template>
-					</Tooltip>
-
-					<Dropdown>
-						<Button type="secondary" size="micro">
-							<Icon name="dots" size="16" color="secondary" :class="$style.add_contact"/>
-						</Button>
-
-						<template #popup>
-							<DropdownItem @click="handleExportContacts" :disabled="!contacts.length">
-								<Flex align="center" gap="8">
-									<Icon name="download-outline" size="14" color="secondary" />
-									Export contacts
-								</Flex>
-							</DropdownItem>
-							<DropdownItem @click="handleImportContacts">
-								<Flex align="center" gap="8">
-									<Icon name="upload-outline" size="14" color="secondary" />
-									Import contacts
-								</Flex>
-							</DropdownItem>
-						</template>
-					</Dropdown>
-				</Flex>
-				
-				<Flex v-if="sortedContacts.length" direction="column" gap="6" :class="$style.contacts_section">
-					<Flex
-						v-for="c in sortedContacts"
-						@click="handleClickContact(c)"
-						align="center"
-						justify="between"
-						:class="$style.contact"
-						wide
-					>
-						<Flex align="center" gap="10" wide>
-							<Flex align="center" justify="center" :class="$style.contact_avatar" :style="{ backgroundColor: `var(--${c.color})`}">
-								<Text size="12" weight="600" color="primary">
-									{{ c.abbr }}
-								</Text>
+					<template #popup>
+						<DropdownItem @click="handleImportContacts">
+							<Flex align="center" gap="8">
+								<Icon name="upload-outline" size="14" color="secondary" />
+								Import contacts
 							</Flex>
-							<Flex direction="column" gap="4" wide>
-								<Text size="14" weight="600" color="primary" :class="$style.title"> {{ c.name }} </Text>
-								<Text size="12" weight="500" color="tertiary" :class="$style.description">
-									{{ trimAddress(c.address) }}
-								</Text>
+						</DropdownItem>
+						<DropdownItem @click="handleExportContacts" :disabled="!contacts.length">
+							<Flex align="center" gap="8">
+								<Icon name="download-outline" size="14" color="secondary" />
+								Export contacts
 							</Flex>
+						</DropdownItem>
+					</template>
+				</Dropdown>
+			</template>
+		</SubPageHeader>
+
+		<Flex direction="column" gap="16" :class="$style.content">
+			<Text size="13" weight="600" color="primary">
+				Contacts&nbsp;<Text color="tertiary">{{ sortedContacts.length }}</Text>
+			</Text>
+
+			<ItemsContainer v-if="sortedContacts.length">
+				<SettingItem
+					v-for="c in sortedContacts"
+					:key="c.id"
+					@click="handleClickContact(c)"
+					:title="c.name"
+					:description="trimAddress(c.address)"
+				>
+					<template #icon>
+						<Flex align="center" justify="center" :class="$style.avatar" :style="{ backgroundColor: `var(--${c.color})` }">
+							<Text size="10" weight="700" color="inverse">{{ c.abbr }}</Text>
 						</Flex>
+					</template>
 
-						<Flex align="center" gap="8" :class="$style.icons">
+					<template #right>
+						<Flex align="center" gap="8">
 							<Icon
 								@click.stop="handleCopyContactAddress(c)"
 								name="copy"
 								size="14"
 								color="tertiary"
-								:class="$style.icon_btn"
+								:class="$style.action_icon"
 							/>
-							<div data-testid="contact-edit" @click.stop="handleEditContact(c)">
-								<Icon name="edit" size="14" color="tertiary" :class="$style.icon_btn" />
+							<div data-testid="contact-edit" @click.stop="handleEditContact(c)" :class="$style.action_wrapper">
+								<Icon name="edit" size="14" color="tertiary" :class="$style.action_icon" />
 							</div>
-							<div data-testid="contact-delete" @click.stop="handleDeleteContact(c)">
-								<Icon name="close-circle" size="16" color="tertiary" :class="$style.delete_icon" />
+							<div data-testid="contact-delete" @click.stop="handleDeleteContact(c)" :class="$style.action_wrapper">
+								<Icon name="close-circle" size="14" color="tertiary" :class="$style.delete_icon" />
 							</div>
 						</Flex>
-					</Flex>
+					</template>
+				</SettingItem>
+			</ItemsContainer>
 
-					<Button
-						@click="popupStore.open('new_contact')"
-						type="secondary"
-						size="medium"
-						leftIcon="plus-circle"
-						wide
-						:style="{marginTop: '8px'}"
-					>
-						New contact
-					</Button>
-				</Flex>
+			<Banner v-else>No contacts yet</Banner>
 
-				<Flex v-else direction="column" align="center" justify="between" :class="$style.empty_section">
-					<Flex direction="column" align="center" gap="12" :class="$style.empty_banner">
-						<Icon name="contacts" size="20" color="tertiary" />
-
-						<Flex direction="column" align="center" gap="6">
-							<Text size="13" weight="600" color="secondary" align="center">
-								There are no contacts
-							</Text>
-							<Text size="12" weight="500" height="140" color="tertiary" align="center">
-								You can add the first one by simply clicking the button below
-							</Text>
-						</Flex>
-					</Flex>
-
-					<Button
-						@click="popupStore.open('new_contact')"
-						type="secondary"
-						size="medium"
-						leftIcon="plus-circle"
-						wide
-						:style="{marginTop: '8px'}"
-					>
-						New contact
-					</Button>
-				</Flex>
-			</Flex>
+			<Button
+				@click="popupStore.open('new_contact')"
+				wide
+				type="secondary"
+				size="medium"
+				leftIcon="plus-circle"
+				leftIconColor="primary"
+			>
+				<Text size="13">New contact</Text>
+			</Button>
 		</Flex>
 
 	</Flex>
@@ -334,118 +291,60 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	flex: 1;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	background: var(--app-bg);
-
-	padding-bottom: var(--nav-clearance);
-}
-
-.section_wrapper {
-	flex: 1;
-	min-height: 0;
-
-	padding: 16px 24px 0 24px;
-}
-
-.add_contact {
-	cursor: pointer;
-
-	&:hover {
-		fill: var(--txt-secondary);
-	}
-}
-
-.contacts_section {
-	flex: 1;
-
-	padding-bottom: 24px;
 	overflow: auto;
+	scrollbar-gutter: stable;
+	background: var(--app-bg);
 }
 
-.contact_avatar {
-	width: 28px;
-	height: 28px;
-	border-radius: 50%;
+.content {
+	padding: 16px 24px var(--nav-clearance) 24px;
+}
+
+.avatar {
+	width: 20px;
+	height: 20px;
 	flex-shrink: 0;
 }
 
-.new_contact_section {
-	margin-bottom: 48px;
-}
+.icon_btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 
-.contact {
-	border-radius: 0;
+	width: 32px;
+	height: 32px;
+
+	background: transparent;
+	border: none;
 	cursor: pointer;
-	border: 1px solid var(--nulo-border);
 
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--nulo-surface-low);
-
-		& .icons {
-			opacity: 1;
-		}
-	}
-
-	&:active {
-		background: var(--nulo-surface-high);
+		background: rgba(248, 241, 231, 0.08);
 	}
 }
 
-.title {
-	min-width: 100%;
-	width: 0;
-
-	line-height: 16px !important;
-
-	text-overflow: ellipsis;
-	overflow: hidden;
-	white-space: nowrap;
+.action_wrapper {
+	display: inline-flex;
+	cursor: pointer;
 }
 
-.description {
-	min-width: 100%;
-	width: 0;
-
-	line-height: 14px !important;
-
-	text-overflow: ellipsis;
-	overflow: hidden;
-	white-space: nowrap;
-}
-
-.icons {
-	opacity: 0;
-
+.action_icon {
+	cursor: pointer;
 	transition: all 0.2s var(--bezier);
-}
 
-.icon_btn {
 	&:hover {
 		fill: var(--txt-primary);
 	}
 }
 
 .delete_icon {
+	cursor: pointer;
+	transition: all 0.2s var(--bezier);
+
 	&:hover {
 		fill: var(--red);
 	}
-}
-
-.empty_section {
-    flex: 1;
-
-    margin-bottom: 50px;
-}
-
-.empty_banner {
-	max-width: 250px;
-
-	margin: 40px auto 0 auto;
 }
 </style>
