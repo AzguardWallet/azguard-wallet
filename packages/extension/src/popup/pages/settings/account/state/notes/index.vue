@@ -53,7 +53,7 @@ const fetchNotes = async (isRefetching) => {
 
 	try {
 		notes.value = await noteService.getNotes(appStore.network.id, appStore.account.address)
-		notes.value.forEach((n) => (n.showingContent = parseNoteContent(n)))
+		for (const n of notes.value) n.showingContent = parseNoteContent(n)
 		notes.value.sort((a, b) => {
 			const contractCompare = stringCompare(a.contract, b.contract)
 

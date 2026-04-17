@@ -156,7 +156,7 @@ function refreshBalance(tb) {
 	if (tb?.id) {
 		tokenBalanceService.refreshTokenBalance(tb.id)
 	} else {
-		tokenBalances.value.forEach((_tb) => tokenBalanceService.refreshTokenBalance(_tb.id))
+		for (const _tb of tokenBalances.value) tokenBalanceService.refreshTokenBalance(_tb.id)
 	}
 }
 

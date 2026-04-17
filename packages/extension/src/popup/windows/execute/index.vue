@@ -351,7 +351,7 @@ onUnmounted(() => {
 	profileService.disconnect()
 	interactionService.disconnect()
 	executionService.disconnect()
-	Object.values(estimateTimers).forEach((t) => clearTimeout(t))
+	for (const t of Object.values(estimateTimers)) clearTimeout(t)
 	window.removeEventListener("beforeunload", reject)
 })
 </script>

@@ -65,7 +65,8 @@ const handleCreateProfile = async () => {
 
 	const profiles = await managers.profile.getProfiles()
 	const name = `My Profile${profiles.length ? ` ${profiles.length}` : ""}`
-	let profile
+	// biome-ignore lint/suspicious/noExplicitAny: managers.profile return type not declared in TS
+	let profile: any
 	try {
 		profile =
 			profilType.value === "passkey"
@@ -77,8 +78,8 @@ const handleCreateProfile = async () => {
 			!e?.toLowerCase().includes("user closed") &&
 			!e?.toLowerCase().includes("operation either timed out or was not allowed")
 		) {
-			let description
-			let note
+			let description: string
+			let note: string | undefined
 			if (profilType.value === "passkey") {
 				description =
 					"An error occurred while creating the profile. This authenticator may not be supported or encountered an issue. Try again or use another one."

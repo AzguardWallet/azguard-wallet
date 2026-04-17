@@ -107,8 +107,8 @@ const popovers = reactive({
 	level: false,
 })
 const filters = reactive({
-	source: sources.reduce((acc, b) => ({ ...acc, [b]: true }), {}),
-	level: levels.reduce((acc, b) => ({ ...acc, [b]: true }), {}),
+	source: Object.fromEntries(sources.map((b) => [b, true])),
+	level: Object.fromEntries(levels.map((b) => [b, true])),
 })
 const searchTerm = ref("")
 
@@ -127,7 +127,9 @@ function updateFilter(filter, value) {
 }
 function handleSelectAll(filter) {
 	const value = allOptionsSelected.value[filter]
-	Object.keys(filters[filter]).forEach((f) => (filters[filter][f] = !value))
+	for (const f of Object.keys(filters[filter])) {
+		filters[filter][f] = !value
+	}
 	updateEditorContent()
 }
 function isLogInclude(log) {
