@@ -38,8 +38,6 @@ const props = defineProps({
 		default: false,
 	},
 })
-
-const slots = defineSlots()
 </script>
 
 <template>
@@ -57,8 +55,8 @@ const slots = defineSlots()
 					<!-- Dot -->
 					<slot name="dot" />
 
-					<!-- Icon by prop or slot -->
-					<template v-if="!slots.icon">
+					<!-- Icon: custom slot wins, otherwise prop-driven fallback -->
+					<slot name="icon">
 						<MaterialIcon
 							v-if="materialIcon && !loading"
 							:name="materialIcon"
@@ -76,16 +74,13 @@ const slots = defineSlots()
 						<div v-else-if="(icon || materialIcon) && loading" :class="$style.icon_loading">
 							<Spinner size="16" color="--txt-primary" />
 						</div>
-					</template>
-					<template v-else>
-						<slot name="icon" />
-					</template>
+					</slot>
 				</div>
 
 				<!-- Labels: Title & Description -->
 				<Flex direction="column" gap="4" wide>
 					<Flex align="center" gap="6">
-						<Text size="14" weight="500" color="primary" :class="[$style.title, slots.titleSuffix && $style.titleWithSuffix]"> {{ title }} </Text>
+						<Text size="14" weight="500" color="primary" :class="[$style.title, $slots.titleSuffix && $style.titleWithSuffix]"> {{ title }} </Text>
 						<slot name="titleSuffix" />
 					</Flex>
 					<Text v-if="description" size="12" weight="500" color="tertiary" :class="$style.description">
@@ -95,15 +90,15 @@ const slots = defineSlots()
 			</Flex>
 
 			<Flex align="center" gap="12">
-				<slot name="right" />
-
-				<MaterialIcon
-					v-if="(to && !slots.right) || (chevron && !slots.right)"
-					:name="!external ? 'chevron_right' : 'arrow_outward'"
-					:size="18"
-					color="secondary"
-					:class="$style.chevron_icon"
-				/>
+				<slot name="right">
+					<MaterialIcon
+						v-if="to || chevron"
+						:name="!external ? 'chevron_right' : 'arrow_outward'"
+						:size="18"
+						color="secondary"
+						:class="$style.chevron_icon"
+					/>
+				</slot>
 			</Flex>
 		</Flex>
 	</component>
