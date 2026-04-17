@@ -34,23 +34,15 @@ const sortedContacts = computed(() =>
 )
 
 const contactService = new ContactServiceClient()
-contactService.onContactAdded.add(onContactAdded)
-contactService.onContactUpdated.add(onContactUpdated)
-contactService.onContactDeleted.add(onContactDeleted)
-function onContactAdded(contact) {
-	contacts.value.push(contact)
+
+// Re-sync from storage on any contact event — guarantees the UI can't drift
+// from what's actually stored, regardless of event-push timing edge cases.
+async function syncContacts() {
+	contacts.value = await contactService.getContacts()
 }
-function onContactUpdated(contact) {
-	const idx = contacts.value.findIndex((c) => c.id === contact.id)
-	if (idx !== -1) {
-		contacts.value[idx] = contact
-	} else {
-		contacts.value.push(contact)
-	}
-}
-function onContactDeleted(contact) {
-	contacts.value = contacts.value.filter((c) => c.id !== contact.id)
-}
+contactService.onContactAdded.add(syncContacts)
+contactService.onContactUpdated.add(syncContacts)
+contactService.onContactDeleted.add(syncContacts)
 
 function handleClickContact(contact) {
 	cacheStore.preselectedContactToSend = contact
@@ -198,8 +190,17 @@ async function handleImportContacts() {
 }
 
 onMounted(async () => {
-	contacts.value = await contactService.getContacts()
+	await syncContacts()
 })
+
+// Whenever the New Contact popup closes, re-sync — belt + suspenders on top of
+// the event-based sync, since the popup also disconnects its own client mid-flow.
+watch(
+	() => !!popupStore.popups.new_contact,
+	(isOpen, wasOpen) => {
+		if (wasOpen && !isOpen) syncContacts()
+	},
+)
 onBeforeUnmount(() => {
 	contactService.disconnect()
 })
