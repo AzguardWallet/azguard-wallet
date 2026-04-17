@@ -58,7 +58,7 @@ body {
 
 .wrapper {
 	width: 100%;
-	background: var(--card-bg);
+	background: var(--app-bg);
 }
 
 .json_viewer {
@@ -66,7 +66,7 @@ body {
 	height: 100%;
 	max-height: 100%;
 
-	box-shadow: 0 0 0 1px var(--gray-5);
+	border: 1px solid var(--nulo-border);
 	border-radius: 8px;
 }
 </style>

@@ -607,14 +607,9 @@ onUnmounted(() => {
 .wrapper {
 	overflow: auto;
 	flex: 1;
+	background: var(--app-bg);
 
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 10px 24px 12px 24px;
+	padding: 16px 24px;
 }
 
 .avatar {
@@ -623,14 +618,13 @@ onUnmounted(() => {
 	width: 80px;
 	height: 80px;
 
-	border-radius: 12px;
-	background: var(--card-bg);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	text-align: center;
 	white-space: nowrap;
 
 	& img {
-		border-radius: 50%;
 		transition: all 0.2s ease;
 	}
 }
@@ -692,29 +686,29 @@ onUnmounted(() => {
 
 .account {
 	width: 100%;
-	border-radius: 12px;
 	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-high);
+		border-color: var(--nulo-outline);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-highest);
 	}
 }
 
 .alias_input {
 	width: 100%;
-	padding: 6px 10px;
-	border-radius: 8px;
-	border: 1px solid var(--gray-10);
-	background: var(--gray-3);
+	padding: 8px 12px;
+	border: 1px solid var(--nulo-border);
+	background: var(--nulo-surface-low);
 	color: var(--txt-primary);
 	font-size: 13px;
 	font-family: inherit;
@@ -722,18 +716,18 @@ onUnmounted(() => {
 	transition: border-color 0.2s ease;
 
 	&:focus {
-		border-color: var(--blue);
+		border-color: var(--nulo-accent);
 	}
 
 	&::placeholder {
-		color: var(--txt-tertiary);
+		color: var(--nulo-outline);
 	}
 }
 
 .capability_card_wrapper {
 	width: 100%;
-	border-radius: 12px;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 	overflow: hidden;
 
 	transition: all 0.2s var(--bezier);
@@ -744,11 +738,11 @@ onUnmounted(() => {
 	padding: 12px;
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-high);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-highest);
 	}
 }
 
@@ -776,8 +770,7 @@ onUnmounted(() => {
 
 .denied_badge {
 	padding: 1px 6px;
-	border-radius: 4px;
-	background: rgba(255, 170, 0, 0.12);
+	background: rgba(255, 170, 0, 0.15);
 	white-space: nowrap;
 }
 
@@ -792,18 +785,17 @@ onUnmounted(() => {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background-color: rgba(0, 0, 0, 0.4);
+	background: rgba(10, 9, 8, 0.8);
 	z-index: 1000;
 }
 
 .notification_content {
 	width: 90%;
-	background-color: var(--card-bg);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 	padding: 12px;
-	border-radius: 8px;
 	text-align: center;
 	line-height: 1.2;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 	z-index: 1001;
 }
 </style>

@@ -466,13 +466,7 @@ onUnmounted(() => {
 							align="center"
 							gap="8"
 							wide
-							style="
-								padding: 12px 16px;
-								background: var(--card-bg);
-								border-radius: 0 0 12px 12px;
-								border: 1px solid var(--border);
-								border-top: none;
-							"
+							style="padding: 12px 16px; background: var(--nulo-surface); border: 1px solid var(--nulo-border); border-top: none;"
 						>
 							<Icon name="check-circle" size="14" color="green" />
 							<Text size="13" weight="500" color="secondary">
@@ -542,13 +536,7 @@ onUnmounted(() => {
 							align="center"
 							gap="8"
 							wide
-							style="
-								padding: 12px 16px;
-								background: var(--card-bg);
-								border-radius: 0 0 12px 12px;
-								border: 1px solid var(--border);
-								border-top: none;
-							"
+							style="padding: 12px 16px; background: var(--nulo-surface); border: 1px solid var(--nulo-border); border-top: none;"
 						>
 							<Icon name="check-circle" size="14" color="green" />
 							<Text size="13" weight="500" color="secondary">
@@ -792,18 +780,12 @@ onUnmounted(() => {
 .wrapper {
 	overflow: auto;
 	flex: 1;
+	background: var(--app-bg);
 
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 12px;
+	padding: 16px;
 }
 
 & img {
-	border-radius: 50%;
 	transition: all 0.2s ease;
 }
 
@@ -813,14 +795,13 @@ onUnmounted(() => {
 	width: 80px;
 	height: 80px;
 
-	border-radius: 12px;
-	background: var(--card-bg);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	text-align: center;
 	white-space: nowrap;
 
 	& img {
-		border-radius: 50%;
 		transition: all 0.2s ease;
 	}
 
@@ -830,8 +811,7 @@ onUnmounted(() => {
 		right: -12px;
 		box-sizing: content-box;
 
-		background: #101010;
-		border-radius: 50%;
+		background: var(--app-bg);
 
 		padding: 3px;
 	}
@@ -891,8 +871,8 @@ onUnmounted(() => {
 
 .operation {
 	width: 100%;
-	border-radius: 12px;
-	border: 1px solid var(--gray-10);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
 }
@@ -910,14 +890,14 @@ onUnmounted(() => {
 .fullscreen_icon {
 	cursor: pointer;
 	&:hover {
-		background: var(--op-10);
+		background: var(--nulo-surface-high);
 	}
 }
 
 .account {
 	width: 100%;
-	border-radius: 12px;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
 
@@ -932,20 +912,21 @@ onUnmounted(() => {
 
 .network {
 	width: 100%;
-	border-radius: 12px;
 	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-high);
+		border-color: var(--nulo-outline);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-highest);
 	}
 }
 
@@ -954,8 +935,7 @@ onUnmounted(() => {
 	height: 180px;
 	max-height: 180px;
 
-	box-shadow: 0 0 0 1px var(--gray-5);
-	border-radius: 8px;
+	border: 1px solid var(--nulo-border);
 }
 
 .disabled {
@@ -969,18 +949,17 @@ onUnmounted(() => {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background-color: rgba(0, 0, 0, 0.4);
+	background: rgba(10, 9, 8, 0.8);
 	z-index: 1000;
 }
 
 .notification_content {
 	width: 90%;
-	background-color: var(--card-bg);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 	padding: 12px;
-	border-radius: 8px;
 	text-align: center;
 	line-height: 1.2;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 	z-index: 1001;
 }
 </style>
