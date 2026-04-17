@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Manage FPCs",
 		"isAuthRequired": true
 	}
 }
@@ -240,10 +239,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Manage FPCs" :backTo="'/popup/settings/general'" />
 
-		<Banner v-if="isLoading" isLoading> Fetching FPCs </Banner>
+		<Flex direction="column" gap="20" :class="$style.content">
+			<Banner v-if="isLoading" isLoading> Fetching FPCs </Banner>
 
 		<Tooltip v-else-if="error" wide>
 			<Banner :action="{ name: 'Try again', callback: () => fetchFpcs() }" variant="error" wide>
@@ -407,6 +407,7 @@ onBeforeUnmount(() => {
 		>
 			<Text size="13">New FPC</Text>
 		</Button>
+		</Flex>
 
 	</Flex>
 </template>
@@ -416,7 +417,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

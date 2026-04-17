@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Account Settings",
 		"isAuthRequired": true
 	}
 }
@@ -70,9 +69,9 @@ const handleHideAccount = async () => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<Flex direction="column" gap="24" align="center">
-			<Breadcrumbs />
+		<SubPageHeader title="Account Settings" :backTo="'/popup/settings'" />
 
+		<Flex direction="column" gap="24" align="center" :class="$style.content">
 			<PageHeader
 				:title="appStore.account?.name || ''"
 				description="Edit your account name or explore it on block explorer"
@@ -134,7 +133,9 @@ const handleHideAccount = async () => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 </style>

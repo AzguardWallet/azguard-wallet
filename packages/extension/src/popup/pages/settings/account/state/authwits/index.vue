@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Authwits",
 		"isAuthRequired": true
 	}
 }
@@ -178,11 +177,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs>
-			<template #right>
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Authwits" :backTo="'/popup/settings/account/state'">
+			<template #trailing>
 				<Dropdown>
-					<Icon name="settings" color="secondary" size="14" :class="$style.btn" />
+					<button type="button" :class="$style.icon_btn" aria-label="Authwit actions">
+						<MaterialIcon name="settings" :size="18" color="secondary" />
+					</button>
 
 					<template #popup>
 						<DropdownItem @click="changeAuthwitsRegistry">
@@ -200,9 +201,9 @@ onBeforeUnmount(() => {
 					</template>
 				</Dropdown>
 			</template>
-		</Breadcrumbs>
+		</SubPageHeader>
 
-		<Flex direction="column" gap="16" wide>
+		<Flex direction="column" gap="16" wide :class="$style.content">
 			<Flex v-if="!isRegistryEnabled" align="center" justify="center" gap="6" wide :class="$style.warning">
 				<Icon name="warning" color="orange" size="14" />
 				<Text size="13" color="secondary">Account authwits registry
@@ -313,8 +314,29 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
+}
+
+.icon_btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 32px;
+	height: 32px;
+
+	background: transparent;
+	border: none;
+	cursor: pointer;
+
+	transition: background 0.2s var(--bezier);
+
+	&:hover {
+		background: rgba(248, 241, 231, 0.08);
+	}
 }
 
 .btn {

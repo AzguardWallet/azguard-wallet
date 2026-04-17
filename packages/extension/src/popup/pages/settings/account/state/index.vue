@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Account State",
 		"isAuthRequired": true
 	}
 }
@@ -12,38 +11,40 @@
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Account State" :backTo="'/popup/settings/account'" />
 
-		<ItemsContainer>
-			<SettingItem
-				to="/popup/settings/account/state/notes"
-				title="Notes"
-				description="View all notes"
-				chevron
-			/>
-			<SettingItem
-				size="large"
-				to="/popup/settings/account/state/authwits"
-				title="Authwits"
-				description="View all authwits"
-				chevron
-			/>
-			<SettingItem
-				size="large"
-				to="/popup/settings/account/state/contracts"
-				title="Contracts"
-				description="View all contracts"
-				chevron
-			/>
-			<SettingItem
-				size="large"
-				to="/popup/settings/account/state/senders"
-				title="Senders"
-				description="View all senders"
-				chevron
-			/>
-		</ItemsContainer>
+		<Flex direction="column" gap="20" :class="$style.content">
+			<ItemsContainer>
+				<SettingItem
+					to="/popup/settings/account/state/notes"
+					title="Notes"
+					description="View all notes"
+					chevron
+				/>
+				<SettingItem
+					size="large"
+					to="/popup/settings/account/state/authwits"
+					title="Authwits"
+					description="View all authwits"
+					chevron
+				/>
+				<SettingItem
+					size="large"
+					to="/popup/settings/account/state/contracts"
+					title="Contracts"
+					description="View all contracts"
+					chevron
+				/>
+				<SettingItem
+					size="large"
+					to="/popup/settings/account/state/senders"
+					title="Senders"
+					description="View all senders"
+					chevron
+				/>
+			</ItemsContainer>
+		</Flex>
 
 	</Flex>
 </template>
@@ -53,7 +54,9 @@
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

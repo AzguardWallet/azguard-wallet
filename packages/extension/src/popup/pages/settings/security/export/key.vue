@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Secret Key",
 		"isAuthRequired": true
 	}
 }
@@ -126,11 +125,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="24" :class="$style.wrapper">
-		<Breadcrumbs hide-title />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader :backTo="'/popup/settings/security/export'" />
 
-		<PageHeader
-			icon="key"
+		<Flex direction="column" gap="24" :class="$style.content">
+			<PageHeader
+				icon="key"
 			:iconColor="
 				(!selectedKey && 'primary') ||
 				(selectedKey === 'private' && 'red') ||
@@ -314,6 +314,7 @@ onBeforeUnmount(() => {
 
 			<Button @click="handleClose" type="secondary" size="medium" wide> Close </Button>
 		</template>
+		</Flex>
 
 	</Flex>
 </template>
@@ -323,7 +324,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

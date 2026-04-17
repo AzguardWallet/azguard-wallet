@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "General",
 		"isAuthRequired": true
 	}
 }
@@ -40,36 +39,38 @@ const handleOpenLogs = async () => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="General" :backTo="'/popup/settings'" />
 
-		<ItemsContainer title="Profile">
-			<SettingItem to="/popup/settings/general/accounts" title="Accounts" icon="vault" iconBgColor="green" />
-			<SettingItem to="/popup/settings/general/tokens" title="Tokens" icon="banknote" iconBgColor="blue" />
-			<SettingItem to="/popup/settings/general/fpcs" title="FPCs" icon="fpcs" iconBgColor="blue" />
-			<SettingItem to="/popup/settings/general/contacts" title="Contacts" icon="contacts" iconBgColor="blue" />
-			<SettingItem to="/popup/settings/general/networks" title="Networks" icon="globe" iconBgColor="blue" />
-			<SettingItem to="/popup/settings/general/sessions" title="Sessions" icon="plug-circle" iconBgColor="sand" />
-		</ItemsContainer>
+		<Flex direction="column" gap="20" :class="$style.content">
+			<ItemsContainer title="Profile">
+				<SettingItem to="/popup/settings/general/accounts" title="Accounts" icon="vault" iconBgColor="green" />
+				<SettingItem to="/popup/settings/general/tokens" title="Tokens" icon="banknote" iconBgColor="blue" />
+				<SettingItem to="/popup/settings/general/fpcs" title="FPCs" icon="fpcs" iconBgColor="blue" />
+				<SettingItem to="/popup/settings/general/contacts" title="Contacts" icon="contacts" iconBgColor="blue" />
+				<SettingItem to="/popup/settings/general/networks" title="Networks" icon="globe" iconBgColor="blue" />
+				<SettingItem to="/popup/settings/general/sessions" title="Sessions" icon="plug-circle" iconBgColor="sand" />
+			</ItemsContainer>
 
-		<ItemsContainer title="Activity">
-			<SettingItem to="/popup/settings/general/tasks" title="Task tracker" icon="task-tracker" iconBgColor="gray" disabled />
-			<SettingItem
-				@click="handleOpenLogs"
-				title="Logs"
-				icon="logs"
-				iconBgColor="gray"
-				chevron
-			>
-				<template v-if="cacheStore.failureLog?.color" #dot>
-					<div :class="$style.dot_indicator" :style="{ background: cacheStore.failureLog.color }" />
-				</template>
-			</SettingItem>
-		</ItemsContainer>
+			<ItemsContainer title="Activity">
+				<SettingItem to="/popup/settings/general/tasks" title="Task tracker" icon="task-tracker" iconBgColor="gray" disabled />
+				<SettingItem
+					@click="handleOpenLogs"
+					title="Logs"
+					icon="logs"
+					iconBgColor="gray"
+					chevron
+				>
+					<template v-if="cacheStore.failureLog?.color" #dot>
+						<div :class="$style.dot_indicator" :style="{ background: cacheStore.failureLog.color }" />
+					</template>
+				</SettingItem>
+			</ItemsContainer>
 
-		<ItemsContainer title="Interface">
-			<SettingItem to="/popup/settings/general/appearance" title="Appearance" icon="sun" iconBgColor="purple" />
-		</ItemsContainer>
+			<ItemsContainer title="Interface">
+				<SettingItem to="/popup/settings/general/appearance" title="Appearance" icon="sun" iconBgColor="purple" />
+			</ItemsContainer>
+		</Flex>
 
 	</Flex>
 </template>
@@ -79,7 +80,9 @@ const handleOpenLogs = async () => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

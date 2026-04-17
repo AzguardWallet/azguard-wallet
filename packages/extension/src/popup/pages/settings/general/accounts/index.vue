@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Manage accounts",
 		"isAuthRequired": true
 	}
 }
@@ -53,10 +52,10 @@ const handleCopyAddress = (target) => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper" data-testid="manage-accounts-page">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper" data-testid="manage-accounts-page">
+		<SubPageHeader title="Manage Accounts" :backTo="'/popup/settings/general'" />
 
-		<Flex direction="column" gap="40">
+		<Flex direction="column" gap="40" :class="$style.content">
 			<Flex direction="column" gap="16">
 				<Text size="13" weight="600" color="primary">
 					Accounts &nbsp;<Text color="tertiary">{{ appStore.accounts.length }} </Text>
@@ -170,7 +169,9 @@ const handleCopyAddress = (target) => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

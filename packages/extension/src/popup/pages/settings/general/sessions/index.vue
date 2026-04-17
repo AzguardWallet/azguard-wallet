@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Sessions",
 		"isAuthRequired": true
 	}
 }
@@ -90,9 +89,9 @@ onBeforeMount(async () => {
 
 <template>
 	<Flex direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="8" :class="$style.section_wrapper">
-			<Breadcrumbs hide-title />
+		<SubPageHeader :backTo="'/popup/settings/general'" />
 
+		<Flex direction="column" gap="8" :class="$style.section_wrapper">
 			<PageHeader title="Sessions" icon="plug-circle" iconColor="sand" />
 
 			<Flex direction="column" gap="16" :class="$style.section_wrapper">
@@ -173,10 +172,12 @@ onBeforeMount(async () => {
 <style module>
 .wrapper {
 	flex: 1;
-	overflow: auto;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 	background: var(--app-bg);
 
-	padding: 16px 24px var(--nav-clearance) 24px;
+	padding-bottom: var(--nav-clearance);
 }
 
 .disconnect_all {
@@ -190,14 +191,15 @@ onBeforeMount(async () => {
 
 .section_wrapper {
 	flex: 1;
-
 	min-height: 0;
+
+	padding: 16px 24px 0 24px;
 }
 
 .sessions_section {
 	flex: 1;
 
-	padding-bottom: 100px;
+	padding-bottom: 24px;
 	overflow: auto;
 }
 

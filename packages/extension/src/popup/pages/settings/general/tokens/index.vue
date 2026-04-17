@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Manage tokens",
 		"isAuthRequired": true
 	}
 }
@@ -77,10 +76,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Manage Tokens" :backTo="'/popup/settings/general'" />
 
-		<Flex direction="column" gap="16">
+		<Flex direction="column" gap="16" :class="$style.content">
 			<Text size="13" weight="600" color="primary">
 				Tokens &nbsp;<Text color="tertiary">{{ tokens.length }} </Text>
 			</Text>
@@ -147,7 +146,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

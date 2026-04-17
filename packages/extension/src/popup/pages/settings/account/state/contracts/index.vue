@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Contracts",
 		"isAuthRequired": true
 	}
 }
@@ -60,10 +59,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Contracts" :backTo="'/popup/settings/account/state'" />
 
-		<Flex direction="column" gap="16">
+		<Flex direction="column" gap="16" :class="$style.content">
 			<Banner v-if="isFetchingContracts" isLoading> Fetching contracts </Banner>
 
 			<Tooltip v-else-if="isErrorOccurred" wide>
@@ -116,7 +115,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

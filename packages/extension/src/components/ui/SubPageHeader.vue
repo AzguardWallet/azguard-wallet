@@ -2,7 +2,8 @@
 const props = defineProps({
 	title: {
 		type: String,
-		required: true,
+		required: false,
+		default: "",
 	},
 	backTo: {
 		type: String,
@@ -25,10 +26,10 @@ const props = defineProps({
 const router = useRouter()
 
 function handleBack() {
-	if (window.history.length > 1) {
-		router.back()
-	} else if (props.backTo) {
+	if (props.backTo) {
 		router.push(props.backTo)
+	} else if (window.history.length > 1) {
+		router.back()
 	} else {
 		router.push("/popup/general")
 	}
@@ -43,8 +44,8 @@ function handleBack() {
 		<div v-else :class="$style.back_spacer" />
 
 		<Flex align="center" justify="center" gap="8" :class="$style.title_wrapper">
-			<MaterialIcon v-if="leadingIcon" :name="leadingIcon" :size="18" :color="leadingIconColor" />
-			<span :class="$style.title">{{ title }}</span>
+			<MaterialIcon v-if="leadingIcon && title" :name="leadingIcon" :size="18" :color="leadingIconColor" />
+			<span v-if="title" :class="$style.title">{{ title }}</span>
 		</Flex>
 
 		<div :class="$style.trailing">

@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Manage networks",
 		"isAuthRequired": true
 	}
 }
@@ -69,10 +68,10 @@ const handleDelete = (target) => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Manage Networks" :backTo="'/popup/settings/general'" />
 
-		<Flex direction="column" gap="16">
+		<Flex direction="column" gap="16" :class="$style.content">
 			<Text size="13" weight="600" color="primary">
 				Nodes &nbsp;<Text color="tertiary">{{ networks.length }} </Text>
 			</Text>
@@ -139,7 +138,9 @@ const handleDelete = (target) => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

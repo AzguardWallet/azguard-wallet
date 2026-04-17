@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Appearance",
 		"isAuthRequired": true
 	}
 }
@@ -114,10 +113,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex v-if="!isLoading" direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Appearance" :backTo="'/popup/settings/general'" />
 
-		<Flex direction="column" gap="24">
+		<Flex v-if="!isLoading" direction="column" gap="24" :class="$style.content">
 			<Flex justify="between">
 				<Flex direction="column" gap="6">
 					<Text size="13" weight="600" color="primary"> Dark Theme </Text>
@@ -186,7 +185,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Wallet",
 		"isAuthRequired": true
 	}
 }
@@ -16,19 +15,21 @@ const popupStore = usePopupStore()
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Wallet" :backTo="'/popup/settings/security'" />
 
-		<ItemsContainer description="Your wallet can't be restored if you didn't save a seed phrase or secret key ">
-			<SettingItem
-				@click="popupStore.open('reset')"
-				title="Delete entire wallet"
-				icon="trash"
-				iconBgColor="red"
-				chevron
-				disabled
-			/>
-		</ItemsContainer>
+		<Flex direction="column" gap="20" :class="$style.content">
+			<ItemsContainer description="Your wallet can't be restored if you didn't save a seed phrase or secret key ">
+				<SettingItem
+					@click="popupStore.open('reset')"
+					title="Delete entire wallet"
+					icon="trash"
+					iconBgColor="red"
+					chevron
+					disabled
+				/>
+			</ItemsContainer>
+		</Flex>
 
 	</Flex>
 </template>
@@ -38,7 +39,9 @@ const popupStore = usePopupStore()
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

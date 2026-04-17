@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Session",
 		"isAuthRequired": true
 	}
 }
@@ -188,10 +187,10 @@ onMounted(async () => {
 </script>
 
 <template>
-	<Flex v-if="session" direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="20">
-			<Breadcrumbs />
+	<Flex v-if="session" direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Session" :backTo="'/popup/settings/general/sessions'" />
 
+		<Flex direction="column" gap="20" :class="$style.content">
 			<Flex direction="column" justify="between" :class="$style.session">
 				<Flex justify="between">
 					<Flex align="start" justify="start">
@@ -367,7 +366,9 @@ onMounted(async () => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

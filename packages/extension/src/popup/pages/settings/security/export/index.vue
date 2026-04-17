@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Backup",
 		"isAuthRequired": true
 	}
 }
@@ -16,10 +15,11 @@ const appStore = useAppStore()
 </script>
 
 <template>
-	<Flex direction="column" gap="24" :class="$style.wrapper">
-		<Breadcrumbs hide-title />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader :backTo="'/popup/settings/security'" />
 
-		<Flex v-if="appStore.profile.type === 'passkey'" direction="column" gap="24">
+		<Flex direction="column" gap="24" :class="$style.content">
+			<Flex v-if="appStore.profile.type === 'passkey'" direction="column" gap="24">
 			<Flex direction="column" align="center" gap="16" :class="$style.page_header">
 				<Flex :class="$style.page_icon">
 					<Icon name="download" size="24" color="primary" />
@@ -87,6 +87,7 @@ const appStore = useAppStore()
 				disabled
 			/>
 		</ItemsContainer>
+		</Flex>
 
 	</Flex>
 </template>
@@ -96,7 +97,9 @@ const appStore = useAppStore()
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

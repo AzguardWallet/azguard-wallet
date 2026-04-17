@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Profile Settings",
 		"isAuthRequired": true
 	}
 }
@@ -39,9 +38,9 @@ const handleOpen = (target) => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<Flex direction="column" gap="24" align="center">
-			<Breadcrumbs />
+		<SubPageHeader title="Profile Settings" :backTo="'/popup/settings'" />
 
+		<Flex direction="column" gap="24" align="center" :class="$style.content">
 			<PageHeader v-if="appStore.profile" :title="appStore.profile?.name" :description="appStore.profile?.id" icon="user" />
 
 			<ItemsContainer wide>
@@ -69,7 +68,9 @@ const handleOpen = (target) => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 </style>

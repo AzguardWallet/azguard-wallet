@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Privacy Settings",
 		"isAuthRequired": true
 	}
 }
@@ -201,10 +200,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="32" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Privacy Settings" :backTo="'/popup/settings'" />
 
-		<Banner v-if="isLoading" isLoading> Fetching settings </Banner>
+		<Flex direction="column" gap="32" :class="$style.content">
+			<Banner v-if="isLoading" isLoading> Fetching settings </Banner>
 
 		<template v-if="!isLoading">
 			<!-- Stealth Mode Master Toggle -->
@@ -281,6 +281,7 @@ onBeforeUnmount(() => {
 				</Dropdown>
 			</Flex>
 		</template>
+		</Flex>
 
 	</Flex>
 </template>
@@ -290,7 +291,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

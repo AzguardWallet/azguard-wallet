@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Notes",
 		"isAuthRequired": true
 	}
 }
@@ -97,10 +96,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Notes" :backTo="'/popup/settings/account/state'" />
 
-		<Flex direction="column" gap="16">
+		<Flex direction="column" gap="16" :class="$style.content">
 			<Input
 				v-if="filteredNotes.length"
 				v-model="searchTerm"
@@ -168,7 +167,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

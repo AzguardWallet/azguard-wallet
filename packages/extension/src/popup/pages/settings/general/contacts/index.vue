@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Contacts",
 		"isAuthRequired": true
 	}
 }
@@ -208,9 +207,9 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="8" :class="$style.section_wrapper">
-			<Breadcrumbs hide-title />
+		<SubPageHeader :backTo="'/popup/settings/general'" />
 
+		<Flex direction="column" gap="8" :class="$style.section_wrapper">
 			<PageHeader title="Contacts" icon="contacts" iconColor="blue" />
 			
 			<Flex direction="column" gap="16" :class="$style.section_wrapper">
@@ -337,10 +336,19 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	flex: 1;
-	overflow: auto;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 	background: var(--app-bg);
 
-	padding: 16px 24px var(--nav-clearance) 24px;
+	padding-bottom: var(--nav-clearance);
+}
+
+.section_wrapper {
+	flex: 1;
+	min-height: 0;
+
+	padding: 16px 24px 0 24px;
 }
 
 .add_contact {
@@ -351,16 +359,10 @@ onBeforeUnmount(() => {
 	}
 }
 
-.section_wrapper {
-	flex: 1;
-
-	min-height: 0;
-}
-
 .contacts_section {
 	flex: 1;
 
-	padding-bottom: 100px;
+	padding-bottom: 24px;
 	overflow: auto;
 }
 

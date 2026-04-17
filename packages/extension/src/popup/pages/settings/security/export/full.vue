@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Full Backup",
 		"isAuthRequired": true
 	}
 }
@@ -198,11 +197,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="24" :class="$style.wrapper">
-		<Breadcrumbs hide-title />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader :backTo="'/popup/settings/security/export'" />
 
-		<PageHeader
-			icon="package"
+		<Flex direction="column" gap="24" :class="$style.content">
+			<PageHeader
+				icon="package"
 			iconColor="primary"
 			title="Full Backup"
 			description="Full backup includes your master key and all profile data so you can restore current state of your wallet anytime."
@@ -358,6 +358,7 @@ onBeforeUnmount(() => {
 				</Flex>
 			</Flex>
 		</template>
+		</Flex>
 
 	</Flex>
 </template>
@@ -367,7 +368,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

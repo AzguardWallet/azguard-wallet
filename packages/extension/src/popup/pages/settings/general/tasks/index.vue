@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Wallet Tasks",
 		"isAuthRequired": true
 	}
 }
@@ -216,10 +215,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Wallet Tasks" :backTo="'/popup/settings/general'" />
 
-		<Flex direction="column" gap="8" wide v-if="activeTasks.length">
+		<Flex direction="column" gap="20" :class="$style.content">
+			<Flex direction="column" gap="8" wide v-if="activeTasks.length">
 			<Flex align="center" justify="start" gap="6" wide style="padding-bottom: 4px;">
 				<Text size="13" weight="600" color="primary">Active Tasks</Text>
 				<Text size="13" weight="600" color="tertiary"> {{ activeTasks.length }} </Text>
@@ -326,6 +326,7 @@ onBeforeUnmount(() => {
 				</Flex>
 			</div>
 		</Flex>
+		</Flex>
 
 	</Flex>
 </template>
@@ -335,7 +336,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

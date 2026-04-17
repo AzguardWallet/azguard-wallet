@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Security",
 		"isAuthRequired": true
 	}
 }
@@ -12,25 +11,27 @@
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Security" :backTo="'/popup/settings'" />
 
-		<ItemsContainer>
-			<SettingItem
-				size="large"
-				title="Backup profile"
-				description="Get the seed phrase or secret key"
-				icon="download"
-				to="/popup/settings/security/export"
-			/>
-			<SettingItem
-				size="large"
-				title="Privacy Settings"
-				description="Control external service connections"
-				icon="eye-off"
-				to="/popup/settings/external-services"
-			/>
-		</ItemsContainer>
+		<Flex direction="column" gap="20" :class="$style.content">
+			<ItemsContainer>
+				<SettingItem
+					size="large"
+					title="Backup profile"
+					description="Get the seed phrase or secret key"
+					icon="download"
+					to="/popup/settings/security/export"
+				/>
+				<SettingItem
+					size="large"
+					title="Privacy Settings"
+					description="Control external service connections"
+					icon="eye-off"
+					to="/popup/settings/external-services"
+				/>
+			</ItemsContainer>
+		</Flex>
 
 	</Flex>
 </template>
@@ -40,7 +41,9 @@
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

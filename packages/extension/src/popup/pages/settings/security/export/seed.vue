@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Seed Phrase",
 		"isAuthRequired": true
 	}
 }
@@ -103,10 +102,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="24" :class="$style.wrapper">
-		<Breadcrumbs hide-title />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader :backTo="'/popup/settings/security/export'" />
 
-		<Flex direction="column" align="center" gap="16" :class="$style.page_header">
+		<Flex direction="column" gap="24" :class="$style.content">
+			<Flex direction="column" align="center" gap="16" :class="$style.page_header">
 			<Flex :class="$style.page_icon">
 				<Icon name="text" size="24" color="primary" />
 				<div />
@@ -257,6 +257,7 @@ onBeforeUnmount(() => {
 				</Flex>
 			</Flex>
 		</template>
+		</Flex>
 
 	</Flex>
 </template>
@@ -266,7 +267,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 

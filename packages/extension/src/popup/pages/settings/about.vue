@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Nulo",
 		"isAuthRequired": true
 	}
 }
@@ -34,9 +33,8 @@ const handleOpen = (target) => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<Flex direction="column" gap="24" align="center">
-			<Breadcrumbs />
-
+		<SubPageHeader title="About Nulo" :backTo="'/popup/settings'" />
+		<Flex direction="column" gap="24" align="center" :class="$style.content">
 			<Flex wide align="start" direction="column" gap="8">
 				<Text size="13" weight="600" color="primary"> Nulo </Text>
 				<Flex align="start" direction="column" gap="4" wide>
@@ -100,7 +98,9 @@ const handleOpen = (target) => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 </style>

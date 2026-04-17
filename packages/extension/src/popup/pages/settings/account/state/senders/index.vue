@@ -1,7 +1,6 @@
 <route lang="json">
 {
 	"meta": {
-		"title": "Senders",
 		"isAuthRequired": true
 	}
 }
@@ -91,10 +90,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Senders" :backTo="'/popup/settings/account/state'" />
 
-		<Flex direction="column" gap="16">
+		<Flex direction="column" gap="16" :class="$style.content">
 			<Banner v-if="isLoading" isLoading> Fetching senders </Banner>
 
 			<Tooltip v-else-if="error" wide>
@@ -173,7 +172,9 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+}
 
+.content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
