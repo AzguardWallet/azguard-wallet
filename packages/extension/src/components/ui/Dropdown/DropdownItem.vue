@@ -16,8 +16,7 @@ defineProps({
 	align-items: center;
 
 	min-width: 120px;
-	padding: 7px 8px;
-	margin: 0 4px;
+	padding: 8px 12px;
 
 	transform-style: preserve-3d;
 	-webkit-transform-style: preserve-3d;
@@ -25,18 +24,16 @@ defineProps({
 	-webkit-backface-visibility: hidden;
 	transform: translateZ(0);
 
-	border-radius: 6px;
-
 	font-size: 13px;
 	font-weight: 500;
-	line-height: 14px;
+	line-height: 16px;
 	color: var(--txt-primary);
 	white-space: nowrap;
 	overflow: hidden;
 
 	cursor: pointer;
 
-	transition: all 0.1s var(--bezier);
+	transition: background 0.1s var(--bezier);
 }
 
 .wrapper.disabled {
@@ -46,11 +43,11 @@ defineProps({
 }
 
 .wrapper:hover {
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 }
 
 .wrapper:focus {
 	outline: none;
-	background: rgba(255, 255, 255, 0.05);
+	background: var(--nulo-surface-high);
 }
 </style>

@@ -368,39 +368,31 @@ onMounted(async () => {
 .wrapper {
 	flex: 1;
 	overflow: auto;
+	background: var(--app-bg);
 
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 20px 24px 68px 24px;
+	padding: 16px 24px 96px 24px;
 }
 
 .session {
 	min-height: 120px;
 
-	background: linear-gradient(transparent, var(--gray-3));
-	border-radius: 12px;
-	box-shadow: inset 0 0 0 1px var(--gray-10);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	padding: 16px;
 }
 
 img {
-	border-radius: 50%;
 	transition: all 0.2s ease;
 }
 
 .trust_toggle {
 	cursor: pointer;
-	padding: 6px 4px;
-	border-radius: 8px;
+	padding: 8px 4px;
 	transition: background 0.15s ease;
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-low);
 	}
 }
 
@@ -408,14 +400,14 @@ img {
 	width: 16px;
 	height: 16px;
 	min-width: 16px;
-	border-radius: 4px;
-	border: 1.5px solid var(--gray-20);
+	background: var(--nulo-surface-high);
+	border: 1px solid var(--nulo-border);
 	transition: all 0.15s ease;
 }
 
 .checked {
-	background: var(--blue);
-	border-color: var(--blue);
+	background: var(--nulo-accent);
+	border-color: var(--nulo-accent);
 }
 
 .accounts_section {
@@ -430,8 +422,8 @@ img {
 
 .account {
 	width: 100%;
-	border-radius: 12px;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
 
@@ -440,19 +432,18 @@ img {
 
 .grant_card {
 	width: 100%;
-	border-radius: 8px;
 	overflow: hidden;
-	box-shadow: inset 0 0 0 1px var(--gray-10);
+	border: 1px solid var(--nulo-border);
 }
 
 .grant_header {
-	padding: 8px 10px;
+	padding: 10px 12px;
 	cursor: pointer;
 
 	transition: background 0.15s ease;
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-high);
 	}
 }
 </style>

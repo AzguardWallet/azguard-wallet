@@ -7,6 +7,6 @@
 	width: 100%;
 	height: 1px;
 
-	background: var(--gray-10);
+	background: var(--nulo-border);
 }
 </style>

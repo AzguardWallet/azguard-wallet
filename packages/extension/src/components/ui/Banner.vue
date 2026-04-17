@@ -71,16 +71,16 @@ const props = defineProps({
 
 <style module>
 .wrapper {
-	border-radius: 8px;
+	border: 1px solid var(--nulo-border);
 
 	padding: 8px 16px 8px 8px;
 
 	&.info {
-		background: var(--gray-5);
+		background: var(--nulo-surface-low);
 	}
 
 	&.done {
-		background: var(--gray-5);
+		background: var(--nulo-surface-low);
 
 		& .icon {
 			& svg {
@@ -90,7 +90,7 @@ const props = defineProps({
 	}
 
 	&.warning {
-		background: var(--gray-5);
+		background: var(--nulo-surface-low);
 
 		& .icon {
 			& svg {
@@ -100,7 +100,7 @@ const props = defineProps({
 	}
 
 	&.error {
-		background: var(--gray-5);
+		background: var(--nulo-surface-low);
 
 		& .icon {
 			& svg {

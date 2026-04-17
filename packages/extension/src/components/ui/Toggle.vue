@@ -38,8 +38,8 @@ const toggle = () => {
 	min-width: 32px;
 	height: 20px;
 
-	background: var(--gray-10);
-	border-radius: 50px;
+	background: var(--nulo-surface-high);
+	border: 1px solid var(--nulo-border);
 	cursor: pointer;
 
 	transition: all 0.2s ease;
@@ -51,14 +51,13 @@ const toggle = () => {
 
 .slider {
 	position: absolute;
-	top: 4px;
-	left: 4px;
+	top: 3px;
+	left: 3px;
 
 	width: 12px;
 	height: 12px;
 
-	background: rgba(255, 255, 255, 0.9);
-	border-radius: 50px;
+	background: var(--nulo-secondary);
 
 	transition: all 0.1s ease;
 }
@@ -78,11 +77,13 @@ const toggle = () => {
 }
 
 .wrapper.active {
-	background: var(--blue);
+	background: var(--nulo-accent);
+	border-color: var(--nulo-accent);
 }
 
 .wrapper.active .slider {
-	left: 16px;
+	left: 15px;
+	background: #0a0908;
 }
 
 .wrapper:active .slider {

@@ -222,12 +222,8 @@ onUnmounted(() => {
 .card {
 	height: 100%;
 
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-8);
-	box-shadow: inset 0 10px 8px -2px var(--gray-3);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
+	background: var(--nulo-surface);
+	border-top: 1px solid var(--nulo-border);
 
 	padding: 32px;
 }
@@ -255,22 +251,21 @@ onUnmounted(() => {
 
 	overflow: hidden;
 
-	background: linear-gradient(var(--txt-primary), var(--txt-secondary));
-	border: 2px solid var(--gray-20);
-	border-radius: 500px;
+	background: var(--nulo-accent);
+	border: 1px solid var(--nulo-accent);
 
 	padding: 0 16px 0 12px;
 
 	&.dummy {
-		background: var(--gray-5);
-		border: 2px solid var(--gray-5);
+		background: var(--nulo-surface-low);
+		border: 1px solid var(--nulo-border);
 
 		& .rect {
-			background: var(--txt-support);
+			background: var(--nulo-outline);
 		}
 
 		& svg {
-			fill: var(--txt-support);
+			fill: var(--nulo-outline);
 		}
 	}
 
@@ -285,7 +280,6 @@ onUnmounted(() => {
 	width: 80px;
 	height: 4px;
 
-	border-radius: 50px;
-	background: var(--card-bg);
+	background: #0a0908;
 }
 </style>

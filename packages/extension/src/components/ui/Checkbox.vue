@@ -13,7 +13,7 @@ const emit = defineEmits(["update:modelValue"])
 		tabindex="0"
 	>
 		<Flex align="center" justify="center" :class="[$style.checkbox, (modelValue || checked) && $style.active]">
-			<Icon v-if="modelValue || checked" name="check" size="14" color="white" />
+			<Icon v-if="modelValue || checked" name="check" size="14" color="inverse" />
 		</Flex>
 
 		<slot />
@@ -26,7 +26,7 @@ const emit = defineEmits(["update:modelValue"])
 
 	&:hover {
 		.checkbox {
-			border-color: var(--gray-10);
+			border-color: var(--nulo-outline);
 		}
 	}
 
@@ -35,7 +35,6 @@ const emit = defineEmits(["update:modelValue"])
 
 		& .checkbox {
 			opacity: 0.5;
-			background: var(--gray-30);
 		}
 	}
 }
@@ -44,11 +43,7 @@ const emit = defineEmits(["update:modelValue"])
 	outline: none;
 
 	.checkbox {
-		box-shadow: 0 0 0 2px var(--blue);
-	}
-
-	.checkbox.active {
-		background: var(--gray-15);
+		border-color: var(--nulo-accent);
 	}
 }
 
@@ -58,13 +53,14 @@ const emit = defineEmits(["update:modelValue"])
 	max-width: 18px;
 	max-height: 18px;
 
-	border-radius: 6px;
-	background: var(--gray-10);
+	background: var(--nulo-surface-high);
+	border: 1px solid var(--nulo-border);
 
 	transition: all 0.1s ease;
 
 	&.active {
-		background: var(--blue);
+		background: var(--nulo-accent);
+		border-color: var(--nulo-accent);
 	}
 }
 </style>

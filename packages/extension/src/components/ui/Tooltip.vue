@@ -206,11 +206,11 @@ const handleMouseLeave = () => {
 	width: max-content;
 
 	box-sizing: border-box;
-	background-color: var(--tooltip-bg);
-	box-shadow: 0 4px 8px var(--shadow-10);
-	border-radius: 12px;
+	background: var(--nulo-surface-highest);
+	border: 1px solid var(--nulo-border);
+	box-shadow: 0 4px 12px rgba(10, 9, 8, 0.6);
 
-	padding: 6px 8px;
+	padding: 6px 10px;
 }
 
 .text {

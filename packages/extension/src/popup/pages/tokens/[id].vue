@@ -103,23 +103,13 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	flex: 1;
-
 	overflow: auto;
-
-	background: var(--card-bg);
-	border-top: 2px solid var(--gray-8);
-	box-shadow: inset 0 10px 8px -2px var(--gray-3);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
+	background: var(--app-bg);
 }
 
 .content {
 	flex: 1;
 
-	border-top: 1px solid var(--gray-10);
-	background: linear-gradient(rgba(0, 0, 0, 3%), rgba(0, 0, 0, 0%));
-
-	padding: 20px 20px 80px 20px;
+	padding: 24px 24px 96px 24px;
 }
 </style>

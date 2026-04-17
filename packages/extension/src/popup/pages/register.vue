@@ -200,13 +200,12 @@ onBeforeUnmount(() => {
 
 	.icon {
 		box-sizing: content-box;
-		border-radius: 50%;
 		cursor: pointer;
 
-		padding: 4px;
+		padding: 6px;
 
 		&:hover {
-			background: var(--gray-10);
+			background: var(--nulo-surface-high);
 			fill: var(--txt-primary);
 		}
 	}
@@ -246,13 +245,14 @@ onBeforeUnmount(() => {
 .promo {
 	margin-top: 8px;
 	padding: 10px 16px;
-	background: var(--gray-5);
-	border-radius: 12px;
+	background: var(--nulo-surface-low);
+	border: 1px solid var(--nulo-border);
 	cursor: pointer;
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-8);
+		background: var(--nulo-surface-high);
+		border-color: var(--nulo-outline);
 	}
 }
 </style>

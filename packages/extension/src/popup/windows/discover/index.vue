@@ -245,14 +245,9 @@ onUnmounted(() => {
 .wrapper {
 	overflow: auto;
 	flex: 1;
+	background: var(--app-bg);
 
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 10px 24px 12px 24px;
+	padding: 16px 24px;
 }
 
 .avatar {
@@ -261,14 +256,13 @@ onUnmounted(() => {
 	width: 80px;
 	height: 80px;
 
-	border-radius: 12px;
-	background: var(--card-bg);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 
 	text-align: center;
 	white-space: nowrap;
 
 	& img {
-		border-radius: 50%;
 		transition: all 0.2s ease;
 	}
 }
@@ -320,18 +314,17 @@ onUnmounted(() => {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background-color: rgba(0, 0, 0, 0.4);
+	background: rgba(10, 9, 8, 0.8);
 	z-index: 1000;
 }
 
 .notification_content {
 	width: 90%;
-	background-color: var(--card-bg);
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 	padding: 12px;
-	border-radius: 8px;
 	text-align: center;
 	line-height: 1.2;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 	z-index: 1001;
 }
 </style>

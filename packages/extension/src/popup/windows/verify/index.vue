@@ -115,24 +115,18 @@ onUnmounted(() => {
 .wrapper {
 	flex: 1;
 	overflow: auto;
+	background: var(--app-bg);
 
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--gray-5);
-
-	border-top-left-radius: 24px;
-	border-top-right-radius: 24px;
-
-	padding: 10px 24px 12px 24px;
+	padding: 16px 24px;
 }
 
 .trust_toggle {
 	cursor: pointer;
 	padding: 8px 4px;
-	border-radius: 8px;
 	transition: background 0.15s ease;
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-low);
 	}
 }
 
@@ -140,13 +134,13 @@ onUnmounted(() => {
 	width: 16px;
 	height: 16px;
 	min-width: 16px;
-	border-radius: 4px;
-	border: 1.5px solid var(--gray-20);
+	background: var(--nulo-surface-high);
+	border: 1px solid var(--nulo-border);
 	transition: all 0.15s ease;
 }
 
 .checked {
-	background: var(--blue);
-	border-color: var(--blue);
+	background: var(--nulo-accent);
+	border-color: var(--nulo-accent);
 }
 </style>

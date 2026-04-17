@@ -39,22 +39,18 @@ const slots = defineSlots()
 	position: relative;
 
 	cursor: pointer;
-	background: var(--gray-5);
+	background: transparent;
 
-	padding: 12px;
+	padding: 14px 16px;
 
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-8);
+		background: var(--nulo-surface-high);
 	}
 
 	&:active {
-		background: var(--gray-10);
-	}
-
-	&:last-child {
-		border-bottom: none;
+		background: var(--nulo-surface-highest);
 	}
 
 	&.disabled {
@@ -65,18 +61,14 @@ const slots = defineSlots()
 	&::after {
 		position: absolute;
 		bottom: 0;
-		left: 12px;
+		left: 16px;
+		right: 16px;
 		display: block;
-		width: 100%;
 		height: 1px;
 
-		background: var(--gray-5);
+		background: rgba(74, 70, 63, 0.3);
 
 		content: " ";
-	}
-
-	&.withIcon::after {
-		left: 50px;
 	}
 
 	&:last-of-type::after {

@@ -93,15 +93,14 @@ onBeforeUnmount(() => {
 
 <style module>
 .wrapper {
-	height: 38px;
+	height: 40px;
 
-	box-shadow: inset 0 0 0 1px var(--border);
-	border-radius: 10px;
+	border: 1px solid var(--nulo-border);
 	cursor: pointer;
 
 	padding: 0 12px;
 
-	transition: all 0.2s ease;
+	transition: border-color 0.2s ease;
 
 	&.disabled {
 		pointer-events: none;
@@ -109,8 +108,8 @@ onBeforeUnmount(() => {
 }
 
 .wrapper:hover {
-	box-shadow: inset 0 0 0 1px var(--border-hovered);
-	background: rgba(255, 255, 255, 0.05);
+	border-color: var(--nulo-outline);
+	background: var(--nulo-surface-low);
 }
 
 .slot {

@@ -70,10 +70,9 @@ const types = [
 
 <style module>
 .item {
-	height: 30px;
+	height: 32px;
 
-	border-radius: 8px;
-	box-shadow: inset 0 0 0 2px var(--gray-5);
+	border: 1px solid var(--nulo-border);
 	cursor: pointer;
 
 	padding: 0 16px;
@@ -81,15 +80,17 @@ const types = [
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		box-shadow: inset 0 0 0 2px var(--gray-10);
+		border-color: var(--nulo-outline);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-low);
 	}
 
 	&.selected {
-		background: var(--green);
+		background: var(--nulo-accent);
+		border-color: var(--nulo-accent);
+		color: #0a0908;
 	}
 
 	&.disabled {

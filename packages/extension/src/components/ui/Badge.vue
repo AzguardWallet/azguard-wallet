@@ -15,11 +15,10 @@ const props = defineProps({
 
 <style module>
 .wrapper {
-	border-radius: 6px;
-	padding: 2px 4px;
+	padding: 2px 6px;
 
 	&.info {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 		color: var(--txt-primary);
 	}
 

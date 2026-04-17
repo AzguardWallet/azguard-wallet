@@ -268,10 +268,9 @@ const onKeydown = (event) => {
 	position: fixed;
 	z-index: 2001;
 
-	border-radius: 10px;
-	background: var(--dropdown-bg);
-	box-shadow: rgba(12, 12, 12, 0.1) 0px 0px 0px 1px, rgba(12, 12, 12, 0.2) 0px 3px 6px,
-		rgba(12, 12, 12, 0.4) 0px 10px 32px;
+	background: var(--nulo-surface-low);
+	border: 1px solid var(--nulo-border);
+	box-shadow: 0 8px 24px rgba(10, 9, 8, 0.6);
 
 	padding: 4px 0;
 }
