@@ -40,14 +40,15 @@ onBeforeUnmount(() => {
 	<Flex
 		align="center"
 		direction="column"
-		gap="12"
 		:class="[$style.wrapper, large && $style.large, displaceIdx > 1 && $style.displace]"
 		:style="{
 			'--displace': displaceIdx - 1,
 			flex: showFullscreen ? '10' : null,
 		}"
 	>
-		<div @click="showFullscreen = !showFullscreen" :class="$style.bar" />
+		<div @click="showFullscreen = !showFullscreen" :class="$style.handle_zone">
+			<div :class="$style.bar" />
+		</div>
 
 		<Flex direction="column" gap="16" wide :style="{ minHeight: 0 }">
 			<slot />
@@ -60,9 +61,7 @@ onBeforeUnmount(() => {
 	overflow: auto;
 
 	background: var(--nulo-surface);
-	border-top: 1px solid var(--nulo-border);
-
-	padding-top: 10px;
+	border-top: 2px solid var(--nulo-accent);
 
 	transition: all 0.2s var(--bezier);
 
@@ -79,21 +78,31 @@ onBeforeUnmount(() => {
 	}
 }
 
-.bar {
-	width: 32px;
-	height: 2px;
+.handle_zone {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 100%;
+	padding: 10px 0 14px 0;
 
 	cursor: pointer;
+}
+
+.bar {
+	width: 40px;
+	height: 3px;
+
 	background: var(--nulo-outline);
 
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
+}
 
-	&:hover {
-		background: var(--nulo-secondary);
-	}
+.handle_zone:hover .bar {
+	background: var(--nulo-secondary);
+}
 
-	&:active {
-		background: var(--nulo-accent);
-	}
+.handle_zone:active .bar {
+	background: var(--nulo-accent);
 }
 </style>
