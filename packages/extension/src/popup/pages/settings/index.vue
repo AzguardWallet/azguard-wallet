@@ -2,7 +2,8 @@
 {
 	"meta": {
 		"title": "Settings",
-		"isAuthRequired": true
+		"isAuthRequired": true,
+		"showBottomNav": true
 	}
 }
 </route>

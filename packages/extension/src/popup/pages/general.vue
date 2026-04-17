@@ -1,7 +1,8 @@
 <route lang="json">
 {
 	"meta": {
-		"isAuthRequired": true
+		"isAuthRequired": true,
+		"showBottomNav": true
 	}
 }
 </route>

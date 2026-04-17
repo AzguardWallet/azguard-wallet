@@ -2,7 +2,8 @@
 {
 	"meta": {
 		"title": "History",
-		"isAuthRequired": true
+		"isAuthRequired": true,
+		"showBottomNav": true
 	}
 }
 </route>
