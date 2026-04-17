@@ -9,6 +9,9 @@
 <script setup>
 /** Components */
 
+/** Services */
+import { AccountType } from "@/wallet/services/account/client"
+
 /** Composables */
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()

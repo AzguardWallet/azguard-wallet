@@ -1,4 +1,7 @@
 <script setup>
+/** Services */
+import { AccountType } from "@/wallet/services/account/client"
+
 /** Composables */
 import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()
