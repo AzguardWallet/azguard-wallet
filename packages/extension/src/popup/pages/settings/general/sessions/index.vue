@@ -88,12 +88,10 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-	<Flex direction="column" justify="between" :class="$style.wrapper">
-		<SubPageHeader :backTo="'/popup/settings/general'" />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Sessions" leadingIcon="extension" :backTo="'/popup/settings/general'" />
 
-		<Flex direction="column" gap="8" :class="$style.section_wrapper">
-			<PageHeader title="Sessions" icon="plug-circle" iconColor="sand" />
-
+		<Flex direction="column" :class="$style.section_wrapper">
 			<Flex direction="column" gap="16" :class="$style.section_wrapper">
 				<template v-if="!isLoading">
 					<Flex v-if="dappSessions.length" align="center" justify="end" gap="10" wide>

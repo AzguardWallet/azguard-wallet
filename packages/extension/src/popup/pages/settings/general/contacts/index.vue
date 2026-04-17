@@ -206,12 +206,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" justify="between" :class="$style.wrapper">
-		<SubPageHeader :backTo="'/popup/settings/general'" />
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Contacts" leadingIcon="people" :backTo="'/popup/settings/general'" />
 
-		<Flex direction="column" gap="8" :class="$style.section_wrapper">
-			<PageHeader title="Contacts" icon="contacts" iconColor="blue" />
-			
+		<Flex direction="column" :class="$style.section_wrapper">
 			<Flex direction="column" gap="16" :class="$style.section_wrapper">
 				<Flex align="center" justify="end" gap="6" wide>
 					<Tooltip position="end">
