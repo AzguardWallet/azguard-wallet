@@ -39,8 +39,6 @@ const props = defineProps({
 	},
 })
 
-const balanceEl = useTemplateRef("balanceEl")
-
 const tokenBalances = ref([])
 
 const tokenToDisplay = computed(
@@ -120,12 +118,6 @@ const handleTokenBalanceClick = async () => {
 	}
 
 	handleCopy(balance, "Balance")
-}
-
-const dynamicFontSize = ref(2)
-const calcDynamicFontSize = async () => {
-	const aWidth = balanceEl.value.wrapper.getBoundingClientRect().width
-	dynamicFontSize.value = Math.min(2, Math.max(0.75, (300 / aWidth) * 2))
 }
 
 const taskService = new TaskServiceClient()
@@ -290,25 +282,10 @@ watch(
 		await saveBalanceDisplayOption(appStore.profile.id, appStore.network.id, appStore.displayOption)
 	},
 )
-watch(
-	() => totalTokenBalance.value.value,
-	async () => {
-		if (showFullBalance.value) return
-
-		dynamicFontSize.value = 2
-		await nextTick()
-		calcDynamicFontSize()
-	},
-)
-
 onMounted(async () => {
 	await fetchTokenBalances()
 
 	await loadBalanceDisplayOptionMigration(appStore.profile.id, appStore.network.id) // Replace me with "loadBalanceDisplayOption" at some point
-
-	if (!totalTokenBalance.value) return
-
-	calcDynamicFontSize()
 })
 onBeforeUnmount(() => {
 	taskService.disconnect()
