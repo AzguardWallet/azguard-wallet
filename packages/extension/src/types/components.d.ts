@@ -14,7 +14,6 @@ declare module 'vue' {
     AddressDisplay: typeof import('./../components/ui/AddressDisplay.vue')['default']
     Badge: typeof import('./../components/ui/Badge.vue')['default']
     Banner: typeof import('./../components/ui/Banner.vue')['default']
-    Breadcrumbs: typeof import('./../components/ui/Settings/Breadcrumbs.vue')['default']
     Button: typeof import('./../components/ui/Button.vue')['default']
     Checkbox: typeof import('./../components/ui/Checkbox.vue')['default']
     Divider: typeof import('./../components/Divider.vue')['default']
