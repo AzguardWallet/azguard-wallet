@@ -8,15 +8,16 @@
 
 <script setup>
 /** Components */
+import { Dropdown } from "@/components/ui/Dropdown"
 import CapabilityDetailPanel from "@/popup/components/modules/capabilities/CapabilityDetailPanel.vue"
 import EmojiGrid from "@/popup/components/modules/general/EmojiGrid.vue"
 import NetworkBadge from "@/popup/components/modules/general/NetworkBadge.vue"
 
 /** Vendor */
 import { DateTime } from "luxon"
-import { onMounted } from "vue"
 import { hashToEmoji } from "@aztec/wallet-sdk/crypto"
 
+/** Services */
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { NetworkServiceClient } from "@/wallet/services/network/client"
 import { DappSessionServiceClient } from "@/wallet/services/dapp-session/client"
@@ -28,7 +29,11 @@ const { loadExternalImage } = useExternalImage()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const cacheStore = useCacheStore()
+const popupStore = usePopupStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -48,7 +53,7 @@ const verificationEmojis = computed(() => {
 
 const expiryFormatted = computed(() => {
 	if (!session.value?.expiry) return ""
-	return DateTime.fromSeconds(session.value.expiry / 1_000).toFormat("LLL dd 'at' HH:mm")
+	return DateTime.fromMillis(session.value.expiry).toFormat("LLL dd 'at' HH:mm")
 })
 
 const hasSessionAllowances = computed(() => {
@@ -56,7 +61,13 @@ const hasSessionAllowances = computed(() => {
 })
 
 const fetchSession = async () => {
-	session.value = await dappSessionService.getDappSession(route.params.id)
+	try {
+		session.value = await dappSessionService.getDappSession(route.params.id)
+	} catch {
+		// Session missing / expired — the service throws instead of returning null
+		router.push("/popup/settings/general/sessions")
+		return
+	}
 
 	if (!session.value) {
 		router.push("/popup/settings/general/sessions")
@@ -114,7 +125,14 @@ async function fetchSessionParams() {
 }
 
 const handleDropSession = () => {
-	dappSessionService.deleteDappSession(session.value.id)
+	if (!session.value) return
+	cacheStore.confirm.confirm_color = "red"
+	cacheStore.confirm.confirm_text = "Yes, disconnect"
+	cacheStore.confirm.description = `Disconnect "${session.value.dappMetadata?.name ?? "this dApp"}"?`
+	cacheStore.confirm.callback = async () => {
+		await dappSessionService.deleteDappSession(session.value.id)
+	}
+	popupStore.open("confirm")
 }
 
 const handleCopyAddress = (target) => {
@@ -168,12 +186,17 @@ const dappSessionService = new DappSessionServiceClient()
 dappSessionService.onDappSessionUpdated.add(onDappSessionUpdated)
 dappSessionService.onDappSessionDeleted.add(onDappSessionDeleted)
 function onDappSessionUpdated(ds) {
-	if (ds.id !== session.value.id) return
+	if (ds.id !== session.value?.id) return
 
+	// Preserve already-loaded logoBlobUrl across updates
+	const prevBlob = session.value.dappMetadata?.logoBlobUrl
 	session.value = ds
+	if (prevBlob && session.value.dappMetadata) {
+		session.value.dappMetadata.logoBlobUrl = prevBlob
+	}
 }
 function onDappSessionDeleted(ds) {
-	if (ds.id !== session.value.id) return
+	if (ds.id !== session.value?.id) return
 
 	openToast({ label: "The session was interrupted" })
 	router.go(-1)
@@ -181,95 +204,100 @@ function onDappSessionDeleted(ds) {
 
 onMounted(async () => {
 	await fetchSession()
+	if (!session.value) return
 	await fetchAccounts()
 	await fetchSessionParams()
+})
+
+onBeforeUnmount(() => {
+	dappSessionService.disconnect()
 })
 </script>
 
 <template>
 	<Flex v-if="session" direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Session" :backTo="'/popup/settings/general/sessions'" />
+		<SubPageHeader title="Session" leadingIcon="extension" :backTo="'/popup/settings/general/sessions'">
+			<template #trailing>
+				<Dropdown>
+					<button type="button" :class="$style.icon_btn" aria-label="Session actions">
+						<MaterialIcon name="more_vert" :size="18" color="secondary" />
+					</button>
 
-		<Flex direction="column" gap="20" :class="$style.content">
-			<Flex direction="column" justify="between" :class="$style.session">
-				<Flex justify="between">
-					<Flex align="start" justify="start">
-						<Icon v-if="session.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
-						<img
-							v-else-if="session.dappMetadata.logoBlobUrl"
-							:src="session.dappMetadata.logoBlobUrl"
-							width="48"
-							height="48"
-						/>
-						<Icon v-else name="dapp" size="48" color="blue" />
-					</Flex>
-
-					<Button @click="handleDropSession" type="secondary" size="mini">Disconnect</Button>
-				</Flex>
-
-				<Flex justify="between" align="end">
-					<Flex direction="column" gap="6">
-						<Text size="13" weight="600" color="primary">
-							{{ session.dappMetadata.name ?? "Unknown dapp" }}
-						</Text>
-						<Text size="12" weight="600" color="tertiary" selectable>
-							{{ session.dappMetadata.url }}
-						</Text>
-					</Flex>
-				</Flex>
-
-				<Text v-if="expiryFormatted" size="11" color="tertiary" :style="{ marginTop: '8px' }">
-					Expires {{ expiryFormatted }}
-				</Text>
-			</Flex>
-
-			<Flex direction="column" align="start" justify="start" gap="8" :class="$style.accounts_section">
-				<Text size="15" weight="600" color="primary">Shared accounts:</Text>
-
-				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-					<Flex v-for="acc in accounts" gap="10" :class="$style.account">
-						<Flex direction="column" gap="4" wide>
-							<Flex align="center" justify="between" gap="12">
-								<Flex direction="column" gap="4">
-									<Text size="14" weight="600" color="primary">
-										{{ getAccountAlias(acc) }}
-									</Text>
-									<Text
-										v-if="getAccountAlias(acc) !== acc.name"
-										size="12"
-										color="tertiary"
-									>
-										Internal: {{ acc.name }}
-									</Text>
-								</Flex>
-
-								<Tooltip>
-									<NetworkBadge :chainId="acc.chainId" />
-
-									<template #content>
-										<Text size="13" color="secondary">
-											{{ `aztec:${acc.chainId}` }}
-										</Text>
-									</template>
-								</Tooltip>
+					<template #popup>
+						<DropdownItem @click="handleDropSession">
+							<Flex align="center" gap="8">
+								<Icon name="log-out" size="14" color="secondary" />
+								Disconnect session
 							</Flex>
+						</DropdownItem>
+					</template>
+				</Dropdown>
+			</template>
+		</SubPageHeader>
 
-							<Text
-								@click="handleCopyAddress(acc.address)"
-								size="13"
-								weight="600"
-								color="tertiary"
-								class="copyable"
-							>
-								{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
-							</Text>
-						</Flex>
-					</Flex>
+		<Flex direction="column" gap="24" :class="$style.content">
+			<!-- Identity block -->
+			<Flex align="center" gap="12" wide>
+				<Icon v-if="session.loadingLogo" :loading="true" name="dapp" size="40" color="tertiary" />
+				<img
+					v-else-if="session.dappMetadata.logoBlobUrl"
+					:src="session.dappMetadata.logoBlobUrl"
+					:class="$style.logo"
+					alt=""
+				/>
+				<Icon v-else name="dapp" size="40" color="tertiary" />
+
+				<Flex direction="column" gap="4" wide>
+					<Text size="14" weight="600" color="primary">
+						{{ session.dappMetadata.name ?? "Unknown dapp" }}
+					</Text>
+					<Text size="12" weight="500" color="tertiary" selectable>
+						{{ session.dappMetadata.url }}
+					</Text>
+					<Text v-if="expiryFormatted" size="11" color="tertiary">
+						Expires {{ expiryFormatted }}
+					</Text>
 				</Flex>
 			</Flex>
 
-			<Flex v-if="hasSessionAllowances" direction="column" align="start" justify="start" gap="8">
-				<Text size="15" weight="600" color="primary">Session allowances:</Text>
+			<!-- Shared accounts -->
+			<Flex direction="column" gap="8" wide>
+				<Text size="13" weight="600" color="primary">
+					Shared accounts&nbsp;<Text color="tertiary">{{ accounts.length }}</Text>
+				</Text>
+
+				<ItemsContainer v-if="accounts.length">
+					<SettingItem
+						v-for="acc in accounts"
+						:key="`${acc.chainId}:${acc.address}`"
+						materialIcon="account_balance_wallet"
+						:title="getAccountAlias(acc)"
+						:description="`${acc.address.slice(0, 6)}...${acc.address.slice(-4)}`"
+						raw
+					>
+						<template #right>
+							<Flex align="center" gap="8">
+								<Tooltip position="end" delay="350">
+									<Icon
+										@click.stop="handleCopyAddress(acc.address)"
+										name="copy"
+										size="14"
+										color="tertiary"
+										:class="$style.action_icon"
+									/>
+
+									<template #content> Copy address </template>
+								</Tooltip>
+								<NetworkBadge :chainId="acc.chainId" />
+							</Flex>
+						</template>
+					</SettingItem>
+				</ItemsContainer>
+			</Flex>
+
+			<!-- Session allowances -->
+			<Flex v-if="hasSessionAllowances" direction="column" gap="8" wide>
+				<Text size="13" weight="600" color="primary">Session allowances</Text>
 
 				<Flex align="start" gap="4">
 					<Text size="13" weight="600" color="secondary">Networks:</Text>
@@ -292,9 +320,10 @@ onMounted(async () => {
 				</Flex>
 			</Flex>
 
-			<Flex direction="column" align="start" justify="start" gap="8">
-				<Text size="15" weight="600" color="primary">Confirmation policy:</Text>
-				<Text size="13" color="secondary" :style="{ lineHeight: '1.2' }">
+			<!-- Confirmation policy -->
+			<Flex direction="column" gap="8" wide>
+				<Text size="13" weight="600" color="primary">Confirmation policy</Text>
+				<Text size="13" color="secondary" :style="{ lineHeight: '1.4' }">
 					{{
 						confirmationPolicies.find(x => x.confirmationLevel === session?.confirmationLevel)
 							?.description ?? "Unknown"
@@ -302,8 +331,11 @@ onMounted(async () => {
 				</Text>
 			</Flex>
 
-			<Flex v-if="grantedCapabilities.length" direction="column" align="start" justify="start" gap="8" wide>
-				<Text size="15" weight="600" color="primary">Granted capabilities:</Text>
+			<!-- Granted capabilities -->
+			<Flex v-if="grantedCapabilities.length" direction="column" gap="8" wide>
+				<Text size="13" weight="600" color="primary">
+					Granted capabilities&nbsp;<Text color="tertiary">{{ grantedCapabilities.length }}</Text>
+				</Text>
 				<Flex direction="column" gap="6" wide>
 					<Flex
 						v-for="(grant, gi) in grantedCapabilities"
@@ -337,23 +369,21 @@ onMounted(async () => {
 				</Flex>
 			</Flex>
 
-			<Flex v-if="verificationEmojis" direction="column" align="start" justify="start" gap="8">
-				<Text size="15" weight="600" color="primary">Connection verification:</Text>
+			<!-- Connection verification -->
+			<Flex v-if="verificationEmojis" direction="column" gap="8" wide>
+				<Text size="13" weight="600" color="primary">Connection verification</Text>
 				<Flex direction="column" align="center" wide>
 					<EmojiGrid :emojis="verificationEmojis" />
 				</Flex>
-				<Text size="12" color="tertiary" :style="{ lineHeight: '1.2' }">
+				<Text size="12" color="tertiary" :style="{ lineHeight: '1.4' }">
 					These emojis should match what the connected app displays
 				</Text>
-				<Flex align="center" gap="8" :class="$style.trust_toggle" @click="toggleTrust">
-					<Flex
-						align="center"
-						justify="center"
-						:class="[$style.checkbox, isTrusted && $style.checked]"
-					>
-						<Icon v-if="isTrusted" name="check" size="10" color="inverse" />
+				<Flex align="center" justify="between" gap="12" wide>
+					<Flex direction="column" gap="6">
+						<Text size="13" weight="600" color="primary">Always trust</Text>
+						<Text size="12" weight="500" color="tertiary">Skip verification on reconnect</Text>
 					</Flex>
-					<Text size="12" color="secondary">Always trust (skip verification on reconnect)</Text>
+					<Toggle :modelValue="isTrusted" @update:modelValue="toggleTrust" />
 				</Flex>
 			</Flex>
 		</Flex>
@@ -365,69 +395,47 @@ onMounted(async () => {
 .wrapper {
 	flex: 1;
 	overflow: auto;
-	background: var(--app-bg);
 	scrollbar-gutter: stable;
+	background: var(--app-bg);
 }
 
 .content {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
-.session {
-	min-height: 120px;
-
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
-
-	padding: 16px;
+.logo {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	flex-shrink: 0;
 }
 
-img {
-	transition: all 0.2s ease;
-}
+.icon_btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 
-.trust_toggle {
+	width: 32px;
+	height: 32px;
+
+	background: transparent;
+	border: none;
 	cursor: pointer;
-	padding: 8px 4px;
-	transition: background 0.15s ease;
+
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--nulo-surface-low);
+		background: rgba(248, 241, 231, 0.08);
 	}
 }
 
-.checkbox {
-	width: 16px;
-	height: 16px;
-	min-width: 16px;
-	background: var(--nulo-surface-high);
-	border: 1px solid var(--nulo-border);
-	transition: all 0.15s ease;
-}
-
-.checked {
-	background: var(--nulo-accent);
-	border-color: var(--nulo-accent);
-}
-
-.accounts_section {
-	width: 100%;
-}
-
-.accounts {
-	width: 100%;
-	max-height: 160px;
-	overflow: auto;
-}
-
-.account {
-	width: 100%;
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
-
-	padding: 12px;
-
+.action_icon {
+	cursor: pointer;
 	transition: all 0.2s var(--bezier);
+
+	&:hover {
+		fill: var(--txt-primary);
+	}
 }
 
 .grant_card {

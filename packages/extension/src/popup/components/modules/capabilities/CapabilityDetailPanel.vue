@@ -274,7 +274,6 @@ const formatScope = (scope: unknown): { isWildcard: boolean; patterns: unknown[]
 <style module>
 .panel {
 	background: var(--nulo-surface-low);
-	border-radius: 0 0 8px 8px;
 	padding: 10px 12px;
 	line-height: 1.5;
 }
