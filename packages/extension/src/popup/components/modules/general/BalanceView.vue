@@ -319,62 +319,6 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<!-- Token detail header (back button + token name + actions) -->
-		<Flex v-if="tokenBalance" align="center" justify="between" wide :class="$style.token_header">
-			<Button @click="router.go(-1)" type="secondary" size="micro">
-				<Icon name="arrow-right" size="12" color="secondary" style="transform: rotate(180deg)" />
-			</Button>
-
-			<Text size="12" weight="600" color="secondary" :class="$style.middle">{{ tokenToDisplay?.name }}</Text>
-
-			<Flex align="center" gap="4">
-				<Tooltip position="end" :disabled="isRefreshingBalance || !tokenBalance?.updatedAt">
-					<Button @click="handleRefreshBalance" type="secondary" size="micro" :disabled="isRefreshingBalance">
-						<Icon name="refresh" size="12" color="secondary" />
-					</Button>
-
-					<template #content>
-						<Text color="secondary">Latest balance refresh - </Text>
-						<Text>{{ DateTime.fromSeconds(tokenBalance?.updatedAt / 1_000).toRelative({ locale: "en" }) }}</Text>
-					</template>
-				</Tooltip>
-
-				<Dropdown>
-					<Button type="secondary" size="micro">
-						<Icon name="dots" size="12" color="primary" />
-					</Button>
-
-					<template #popup>
-						<DropdownItem @click="handleCopy(tokenToDisplay?.contract, 'Token address')">
-							<Flex align="center" gap="8">
-								<Icon name="copy" size="14" color="primary" />
-								Copy address
-							</Flex>
-						</DropdownItem>
-						<DropdownItem @click="popupStore.open('token_metadata')">
-							<Flex align="center" gap="8">
-								<Icon name="code-circle" size="14" color="primary" />
-								Show metadata
-							</Flex>
-						</DropdownItem>
-						<DropdownDivider />
-						<DropdownItem @click="handleEditToken">
-							<Flex align="center" gap="8">
-								<Icon name="edit" size="14" color="primary" />
-								Edit token
-							</Flex>
-						</DropdownItem>
-						<DropdownItem @click="handleDeleteToken" :class="$style.hover_red">
-							<Flex align="center" gap="8">
-								<Icon name="trash" size="14" color="primary" />
-								<Text>Remove token</Text>
-							</Flex>
-						</DropdownItem>
-					</template>
-				</Dropdown>
-			</Flex>
-		</Flex>
-
 		<!-- Balance section -->
 		<section :class="$style.balance_section">
 			<div
@@ -407,32 +351,12 @@ onBeforeUnmount(() => {
 		<Flex :class="$style.actions">
 			<ActionButtonsView :token="tokenBalance?.token" />
 		</Flex>
-
-		<!-- Split balances (token detail view only) -->
-		<SplittedBalancesView v-if="tokenBalance" :tokenBalance="tokenBalanceToDisplay" />
 	</Flex>
 </template>
 
 <style module>
 .wrapper {
 	padding: 0 24px 24px 24px;
-}
-
-.token_header {
-	position: relative;
-	min-height: 20px;
-	margin-bottom: 16px;
-}
-
-.middle {
-	max-width: 180px;
-	position: absolute;
-	left: 50%;
-	transform: translateX(-50%);
-
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 
 .balance_section {
