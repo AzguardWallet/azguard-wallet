@@ -80,10 +80,6 @@ $grayscale: (
 		--gray-#{$gray}: rgba(255, 255, 255, #{$value});
 	}
 
-	@each $gray, $value in $grayscale {
-		--shadow-#{$gray}: rgba(0, 0, 0, #{$value});
-	}
-
 	--bezier: cubic-bezier(0.19, 1, 0.22, 1);
 }
 
@@ -146,10 +142,6 @@ $grayscale: (
 
 	@each $gray, $value in $grayscale {
 		--gray-#{$gray}: rgba(0, 0, 0, #{$value});
-	}
-
-	@each $gray, $value in $grayscale {
-		--shadow-#{$gray}: rgba(0, 0, 0, #{$value});
 	}
 
 	--bezier: cubic-bezier(0.19, 1, 0.22, 1);
@@ -215,10 +207,6 @@ $grayscale: (
 
 	@each $gray, $value in $grayscale {
 		--gray-#{$gray}: rgba(255, 255, 255, #{$value});
-	}
-
-	@each $gray, $value in $grayscale {
-		--shadow-#{$gray}: rgba(0, 0, 0, #{$value});
 	}
 
 	--bezier: cubic-bezier(0.19, 1, 0.22, 1);
