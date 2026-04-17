@@ -4,20 +4,6 @@
 // required for vue-devtools
 @import "/node_modules/vite-plugin-vue-devtools/src//overlay/devtools-overlay.css";
 
-$grayscale: (
-	03: 0.03,
-	05: 0.05,
-	07: 0.07,
-	08: 0.08,
-	10: 0.1,
-	15: 0.15,
-	20: 0.2,
-	30: 0.3,
-	40: 0.4,
-	50: 0.5,
-	60: 0.6,
-);
-
 :root {
 	--base-width: 360px;
 	--base-height: 600px;
@@ -71,10 +57,6 @@ $grayscale: (
 	--purple: #5856de;
 	--gray: #8e8e93;
 	--sand: #b88555;
-
-	@each $gray, $value in $grayscale {
-		--gray-#{$gray}: rgba(255, 255, 255, #{$value});
-	}
 
 	--bezier: cubic-bezier(0.19, 1, 0.22, 1);
 }
@@ -132,10 +114,6 @@ $grayscale: (
 	--log-error-background: #ffebee;
 	--log-inactive-filter: 1.03;
 
-	@each $gray, $value in $grayscale {
-		--gray-#{$gray}: rgba(0, 0, 0, #{$value});
-	}
-
 	--bezier: cubic-bezier(0.19, 1, 0.22, 1);
 }
 
@@ -192,10 +170,6 @@ $grayscale: (
 	--log-error-background: #3a1f1e;
 	--log-inactive-filter: 0.8;
 
-
-	@each $gray, $value in $grayscale {
-		--gray-#{$gray}: rgba(255, 255, 255, #{$value});
-	}
 
 	--bezier: cubic-bezier(0.19, 1, 0.22, 1);
 }
