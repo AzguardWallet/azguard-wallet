@@ -23,7 +23,7 @@ const calcStyles = computed(() => {
 <style module>
 .wrapper {
 	border-radius: 100px;
-	/* border: 2px var(--gray-10) solid; */
+	/* border: 2px var(--nulo-surface-highest) solid; */
 	border: 2px solid;
 	border-top: 2px solid;
 	animation: material-spinner 4s infinite;

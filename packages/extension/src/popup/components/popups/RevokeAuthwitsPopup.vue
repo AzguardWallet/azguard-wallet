@@ -279,9 +279,9 @@ const onKeydown = (e) => {
 .chunk_card {
 	position: relative;
 
-	border-radius: 12px;
+	border-radius: 0;
 	overflow: hidden;
-	box-shadow: 0 1px 2px var(--shadow-5), inset 0 0 0 1px var(--border);
+	border: 1px solid var(--nulo-border);
 
 	.header {
 		padding: 12px;

@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
 
 .divider {
 	height: 1px;
-	background: var(--gray-8);
+	background: var(--nulo-surface-high);
 	margin: 0 -20px;
 	padding: 0 20px;
 }
@@ -282,7 +282,7 @@ onBeforeUnmount(() => {
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: var(--op-50);
+	background: rgba(10, 9, 8, 0.8);
 	z-index: 399;
 }
 </style>

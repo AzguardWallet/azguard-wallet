@@ -30,11 +30,11 @@ defineProps({
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-low);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 }
 
@@ -45,7 +45,7 @@ defineProps({
 	height: 32px;
 
 	border-radius: 50%;
-	background: linear-gradient(var(--gray-8), var(--gray-3));
+	background: linear-gradient(var(--nulo-surface-high), var(--nulo-surface-low));
 }
 
 .zap_icon {
@@ -54,7 +54,7 @@ defineProps({
 	right: -8px;
 
 	box-sizing: content-box;
-	border: 3px solid var(--card-bg);
+	border: 3px solid var(--nulo-surface);
 	border-radius: 50%;
 }
 </style>

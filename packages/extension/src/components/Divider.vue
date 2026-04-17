@@ -17,7 +17,7 @@ const slots = defineSlots()
 	width: 100%;
 	height: 1px;
 
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 }
 
 .txt {

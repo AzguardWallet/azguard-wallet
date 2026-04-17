@@ -460,7 +460,7 @@ const handleClearCandidate = (target) => {
 .section {
 	position: relative;
 	padding: 16px 12px 12px 12px;
-	/* border: 2px dashed var(--gray-10); */
+	/* border: 2px dashed var(--nulo-outline); */
 	border-radius: 8px;
 }
 
@@ -470,7 +470,7 @@ const handleClearCandidate = (target) => {
 	inset: 0;
 	border-radius: inherit;
 	pointer-events: none;
-	border: 2px solid var(--gray-10);
+	border: 2px solid var(--nulo-outline);
 
 	--dash: 6px;
 	--gap: 6px;
@@ -498,7 +498,7 @@ const handleClearCandidate = (target) => {
 	position: absolute;
 	top: -6px;
 	left: 12px;
-	background: var(--card-bg);
+	background: var(--nulo-surface);
 	padding: 0 6px;
 	font-size: 14px;
 }

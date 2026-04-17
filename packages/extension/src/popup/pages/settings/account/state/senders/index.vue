@@ -180,16 +180,16 @@ onBeforeUnmount(() => {
 }
 
 .card {
-	border-radius: 12px;
+	border-radius: 0;
 	/* cursor: pointer; */
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-10);
+		box-shadow: inset 0 0 0 1px var(--nulo-outline), 0 1px 2px rgba(10, 9, 8, 0.5);
 		span {
 			color: var(--txt-primary);
 			cursor: copy;

@@ -147,7 +147,7 @@ onMounted(() => {
 	transition: all 0.5s ease;
 
 	&:hover {
-		background: var(--op-10);
+		background: rgba(255, 255, 255, 0.1);
 	}
 }
 
@@ -167,11 +167,11 @@ onMounted(() => {
 	transition: all 0.5s ease;
 
 	&:hover {
-		background: var(--op-10);
+		background: rgba(255, 255, 255, 0.1);
 	}
 }
 
 ::selection {
-	background-color: var(--gray-10);
+	background-color: var(--nulo-surface-highest);
 }
 </style>

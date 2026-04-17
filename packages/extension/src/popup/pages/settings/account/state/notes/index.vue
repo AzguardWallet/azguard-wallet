@@ -175,17 +175,17 @@ onBeforeUnmount(() => {
 }
 
 .card {
-	border-radius: 12px;
+	border-radius: 0;
 	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
-		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-10);
+		background: var(--nulo-surface-low);
+		box-shadow: inset 0 0 0 1px var(--nulo-outline), 0 1px 2px rgba(10, 9, 8, 0.5);
 
 		& .icons {
 			opacity: 1;
@@ -193,7 +193,7 @@ onBeforeUnmount(() => {
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 }
 
@@ -212,8 +212,8 @@ onBeforeUnmount(() => {
 	background: linear-gradient(
 		to right,
 		transparent 0%,
-		var(--gray-20) 20%,
-		var(--gray-20) 80%,
+		var(--nulo-outline) 20%,
+		var(--nulo-outline) 80%,
 		transparent 100%
 	);
 }

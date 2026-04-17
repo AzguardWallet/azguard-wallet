@@ -37,8 +37,8 @@ const rows = computed(() => {
 	width: 48px;
 	height: 48px;
 
-	border-radius: 12px;
-	background: var(--gray-3);
-	box-shadow: inset 0 0 0 1px var(--gray-10);
+	border-radius: 0;
+	background: var(--nulo-surface-low);
+	border: 1px solid var(--nulo-border);
 }
 </style>

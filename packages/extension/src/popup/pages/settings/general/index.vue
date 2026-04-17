@@ -86,8 +86,8 @@ const handleOpenLogs = async () => {
 }
 
 .item {
-	border-radius: 12px;
-	box-shadow: inset 0 0 0 1px var(--gray-10);
+	border-radius: 0;
+	border: 1px solid var(--nulo-border);
 	cursor: pointer;
 
 	padding: 12px;
@@ -95,7 +95,7 @@ const handleOpenLogs = async () => {
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-low);
 
 		& .item_icon {
 			transform: rotate(-90deg) translateY(3px);
@@ -103,7 +103,7 @@ const handleOpenLogs = async () => {
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 }
 

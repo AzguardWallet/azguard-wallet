@@ -13,8 +13,8 @@ export const createTheme = ({ styles }) => {
 
 				height: "100%",
 
-				"--indent-marker-bg-color": "var(--gray-8)",
-				"--indent-marker-active-bg-color": "var(--gray-8)",
+				"--indent-marker-bg-color": "var(--nulo-surface-high)",
+				"--indent-marker-active-bg-color": "var(--nulo-surface-high)",
 			},
 			".cm-content": {
 				caretColor: "var(--txt-tertiary)",
@@ -27,13 +27,13 @@ export const createTheme = ({ styles }) => {
 				outline: "1px solid transparent",
 			},
 			"&.cm-focused .cm-matchingBracket": {
-				backgroundColor: "var(--op-15)",
+				backgroundColor: "rgba(255, 255, 255, 0.15)",
 			},
 			"&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
-				background: "var(--op-10)",
+				background: "rgba(255, 255, 255, 0.1)",
 			},
 			".cm-activeLine": {
-				// backgroundColor: "var(--op-5)",
+				// backgroundColor: "rgba(255, 255, 255, 0.05)",
 				// borderRadius: "0 5px 5px 0",
 				backgroundColor: "transparent",
 			},
@@ -59,7 +59,7 @@ export const createTheme = ({ styles }) => {
 			// 	color: "var(--txt-secondary)",
 			// },
 			".cm-activeLineGutter": {
-				backgroundColor: "var(--op-5)",
+				backgroundColor: "rgba(255, 255, 255, 0.05)",
 			},
 			".cm-foldPlaceholder": {
 				backgroundColor: "transparent",
@@ -97,18 +97,18 @@ export const createTheme = ({ styles }) => {
 			},
 			".cm-panel.cm-search": {
 				background: "var(--app-background)",
-				border: "2px solid var(--op-5)",
+				border: "2px solid rgba(255, 255, 255, 0.05)",
 				borderRadius: "6px",
 			},
 			".cm-textfield": {
 				fontSize: "80%",
 				borderRadius: "3px",
-				border: "1px solid var(--op-10)",
+				border: "1px solid rgba(255, 255, 255, 0.1)",
 			},
 			".cm-button": {
 				borderRadius: "3px",
-				background: "var(--op-5)",
-				border: "1px solid var(--op-15)",
+				background: "rgba(255, 255, 255, 0.05)",
+				border: "1px solid rgba(255, 255, 255, 0.15)",
 				textTransform: "capitalize",
 			},
 			".cm-search label": {
@@ -119,7 +119,7 @@ export const createTheme = ({ styles }) => {
 			},
 			".cm-tooltip.cm-tooltip-autocomplete": {
 				background: "#18181A",
-				border: "1px solid var(--op-5)",
+				border: "1px solid rgba(255, 255, 255, 0.05)",
 				borderRadius: "6px",
 				padding: "6px",
 			},
@@ -178,7 +178,7 @@ export const createTheme = ({ styles }) => {
 			".cm-tooltip.cm-completionInfo": {
 				background: "#18181A",
 				borderRadius: "5px",
-				border: "1px solid var(--op-5)",
+				border: "1px solid rgba(255, 255, 255, 0.05)",
 				padding: "6px",
 				left: "102%",
 			},
@@ -196,7 +196,7 @@ export const createTheme = ({ styles }) => {
 				gap: "8px",
 				background: "#18181A",
 				borderRadius: "6px",
-				border: "2px solid var(--op-5)",
+				border: "2px solid rgba(255, 255, 255, 0.05)",
 				padding: "6px",
 			},
 			".cm-diagnosticText": {
@@ -208,7 +208,7 @@ export const createTheme = ({ styles }) => {
 				borderLeft: "3px solid #EB5757",
 			},
 			".cm-diagnosticAction": {
-				background: "var(--op-10)",
+				background: "rgba(255, 255, 255, 0.1)",
 				borderRadius: "4px",
 				padding: "2px 4px",
 				fontSize: "12px",
@@ -217,7 +217,7 @@ export const createTheme = ({ styles }) => {
 				transition: "all .2s var(--bezier)",
 			},
 			".cm-diagnosticAction:hover": {
-				background: "var(--op-20)",
+				background: "rgba(255, 255, 255, 0.2)",
 				color: "var(--txt-primary)",
 			},
 		},

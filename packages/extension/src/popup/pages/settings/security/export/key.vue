@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
 	& div {
 		position: absolute;
 
-		background: linear-gradient(var(--gray-15), var(--gray-5));
+		background: linear-gradient(var(--nulo-surface-highest), var(--nulo-surface-high));
 		inset: -1px;
 		border-radius: 13px;
 
@@ -346,9 +346,9 @@ onBeforeUnmount(() => {
 	& svg {
 		z-index: 1;
 
-		border-radius: 12px;
+		border-radius: 0;
 		background: var(--blue);
-		box-shadow: 0 2px 4px var(--op-10);
+		box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
 		box-sizing: content-box;
 
 		padding: 8px;
@@ -372,7 +372,7 @@ onBeforeUnmount(() => {
 
 	width: 100%;
 
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 
 	animation: shrink 300s linear;
 	will-change: transform;

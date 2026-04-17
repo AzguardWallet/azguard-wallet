@@ -381,7 +381,7 @@ onBeforeUnmount(() => {
 	right: -2px;
 
 	padding: 3px;
-	background-color: var(--card-bg);
+	background-color: var(--nulo-surface);
 	border-radius: 50%;
 }
 </style>

@@ -142,16 +142,16 @@ const onKeydown = (e) => {
 }
 
 .network {
-	border-radius: 12px;
+	border-radius: 0;
 	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--gray-10), 0 1px 2px var(--gray-5);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-low);
 
 		& .icons {
 			opacity: 1;
@@ -159,7 +159,7 @@ const onKeydown = (e) => {
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 }
 
@@ -173,7 +173,7 @@ const onKeydown = (e) => {
 	height: 30px;
 
 	border-radius: 8px;
-	box-shadow: inset 0 0 0 2px var(--gray-5);
+	border: 2px solid var(--nulo-border);
 	cursor: pointer;
 
 	padding: 0 16px;
@@ -181,11 +181,11 @@ const onKeydown = (e) => {
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		box-shadow: inset 0 0 0 2px var(--gray-10);
+		border: 2px solid var(--nulo-outline);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 
 	&.selected {

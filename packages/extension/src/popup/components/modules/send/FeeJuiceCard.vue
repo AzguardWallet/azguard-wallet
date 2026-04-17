@@ -43,9 +43,9 @@ import { Dropdown } from "@/components/ui/Dropdown"
 
 <style module>
 .wrapper {
-	border-radius: 12px;
+	border-radius: 0;
 	overflow: hidden;
-	box-shadow: 0 1px 2px var(--shadow-5), inset 0 0 0 1px var(--border);
+	box-shadow: 0 1px 2px rgba(10, 9, 8, 0.3), inset 0 0 0 1px var(--nulo-border);
 
 	opacity: 0.5;
 	pointer-events: none;
@@ -58,7 +58,7 @@ import { Dropdown } from "@/components/ui/Dropdown"
 }
 
 .fjc_price {
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 	overflow: hidden;
 
 	padding: 12px;

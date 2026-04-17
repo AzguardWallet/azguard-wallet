@@ -170,28 +170,28 @@ watch(
 }
 
 .preview_card {
-	border-radius: 12px;
-	background: var(--gray-3);
+	border-radius: 0;
+	background: var(--nulo-surface-low);
 
 	padding: 12px 0;
 }
 
 .card {
-	border-radius: 12px;
+	border-radius: 0;
 	cursor: pointer;
-	box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px var(--shadow-5);
+	border: 1px solid var(--nulo-border);
 
 	padding: 12px 16px 12px 12px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
-		box-shadow: inset 0 0 0 1px var(--border-hovered), 0 1px 2px var(--shadow-5);
+		background: var(--nulo-surface-low);
+		border: 1px solid var(--nulo-outline);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 }
 
@@ -213,7 +213,7 @@ watch(
 }
 
 .amount_badge {
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 	border-radius: 6px;
 
 	padding: 4px 6px;

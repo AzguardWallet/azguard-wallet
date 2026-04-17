@@ -93,8 +93,8 @@ watch(
 
 	user-select: none;
 	-webkit-user-drag: none;
-	box-shadow: inset 0 0 0 1px var(--op-10);
-	border-radius: 12px;
+	border: 1px solid var(--nulo-border);
+	border-radius: 0;
 }
 
 [theme="dark"] {

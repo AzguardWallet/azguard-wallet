@@ -665,7 +665,7 @@ onBeforeUnmount(() => {
 .filter_button {
 	padding: 6px 8px;
 	background-color: var(--dropdown-bg);
-	border: 1px solid var(--border);
+	border: 1px solid var(--nulo-border);
 	border-radius: 6px;
 
 	color: var(--txt-secondary);
@@ -702,7 +702,7 @@ onBeforeUnmount(() => {
 }
 
 .filter_content_title {
-	border-bottom: 1.5px solid var(--border);
+	border-bottom: 1.5px solid var(--nulo-border);
 	padding-bottom: 8px;
 }
 
@@ -730,7 +730,7 @@ onBeforeUnmount(() => {
 	transition: all 0.1s ease;
 
 	&:hover {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 		* {
 			color: var(--txt-primary);
 			fill: var(--txt-primary);
@@ -749,10 +749,10 @@ onBeforeUnmount(() => {
 
 .action_btn {
 	padding: 4px 2px 2px 4px;
-	background-color: var(--card-bg);
-	border: 1px solid var(--border);
+	background-color: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 	border-radius: 4px;
-	box-shadow: 0 1px 2px var(--shadow-5);
+	box-shadow: 0 1px 2px rgba(10, 9, 8, 0.3);
 
 	transition: all 0.2s ease;
 
@@ -787,16 +787,16 @@ onBeforeUnmount(() => {
 	z-index: 1;
 
 	padding: 4px 4px;
-	background-color: var(--card-bg);
-	border: 1px solid var(--border);
+	background-color: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
 	border-radius: 50%;
-	box-shadow: 0 1px 2px var(--shadow-5);
+	box-shadow: 0 1px 2px rgba(10, 9, 8, 0.3);
 
 	cursor: pointer;
 
 	&:hover {
 		background: var(--dropdown-bg);
-		border-color: var(--border-hovered);
+		border-color: var(--nulo-outline);
 		* {
 			fill: var(--txt-secondary);
 		}

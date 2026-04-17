@@ -143,18 +143,18 @@ const handleOpenSendPopup = (target) => {
 
 .item {
 	cursor: pointer;
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 
 	padding: 10px 16px 10px 10px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
-		background: var(--gray-3);
+		background: var(--nulo-surface-low);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 
 	&.left {

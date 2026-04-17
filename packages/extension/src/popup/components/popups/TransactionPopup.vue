@@ -468,14 +468,14 @@ const explorerUrl = computed(() => {
 }
 
 .hash_row {
-	background: var(--gray-3);
+	background: var(--nulo-surface-low);
 	border-radius: 8px;
 	padding: 8px 10px;
 	width: 100%;
 }
 
 .item {
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 
 	padding: 8px;
 
@@ -491,7 +491,7 @@ const explorerUrl = computed(() => {
 }
 
 .info_section {
-	background: var(--gray-3);
+	background: var(--nulo-surface-low);
 	border-radius: 8px;
 	padding: 12px;
 }
@@ -508,7 +508,7 @@ const explorerUrl = computed(() => {
 }
 
 .fee_breakdown {
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 	border-radius: 6px;
 	padding: 8px 10px;
 }
@@ -525,7 +525,7 @@ const explorerUrl = computed(() => {
 }
 
 .fee_breakdown_divider {
-	border-top: 1px solid var(--gray-10);
+	border-top: 1px solid var(--nulo-border);
 	padding-top: 6px;
 	margin-top: 2px;
 }
@@ -537,12 +537,12 @@ const explorerUrl = computed(() => {
 
 .call_summary_item {
 	padding: 4px 6px;
-	background: var(--gray-5);
+	background: var(--nulo-surface-high);
 	border-radius: 4px;
 }
 
 .debug_section {
-	background: var(--gray-3);
+	background: var(--nulo-surface-low);
 	border-radius: 8px;
 	padding: 12px;
 	max-height: 400px;
@@ -556,7 +556,7 @@ const explorerUrl = computed(() => {
 
 .call_item {
 	padding: 4px 6px;
-	background: var(--gray-3);
+	background: var(--nulo-surface-low);
 	border-radius: 4px;
 }
 

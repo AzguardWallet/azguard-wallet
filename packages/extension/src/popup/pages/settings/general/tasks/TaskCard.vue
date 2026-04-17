@@ -211,19 +211,19 @@ function handleCopyError(_task) {
 }
 
 .task_wrapper {
-	border-radius: 12px;
+	border-radius: 0;
 
 	padding: 10px 8px;
 
 	transition: all 0.2s var(--bezier);
-	background: var(--gray-3);
+	background: var(--nulo-surface-low);
 
 	&:hover {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 
 	&:active {
-		background: var(--gray-5);
+		background: var(--nulo-surface-high);
 	}
 }
 
@@ -233,7 +233,7 @@ function handleCopyError(_task) {
 	min-width: 32px;
 	min-height: 32px;
 
-	border-radius: 12px;
+	border-radius: 0;
 
 	.bg {
 		position: absolute;
@@ -278,8 +278,8 @@ function handleCopyError(_task) {
 	background: linear-gradient(
 		to right,
 		transparent 0%,
-		var(--gray-10) 20%,
-		var(--gray-10) 80%,
+		var(--nulo-surface-highest) 20%,
+		var(--nulo-surface-highest) 80%,
 		transparent 100%
 	);
 }

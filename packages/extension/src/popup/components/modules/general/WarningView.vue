@@ -27,16 +27,16 @@ const reportIssueUrl = "https://azguardwallet.io/forms/report-issue"
 
 <style module>
 .wrapper {
-	border-radius: 12px;
+	border-radius: 0;
 
 	background: repeating-linear-gradient(
 		-45deg,
-		var(--gray-3),
-		var(--gray-3) 5px,
-		var(--gray-8) 5px,
-		var(--gray-8) 10px
+		var(--nulo-surface-low),
+		var(--nulo-surface-low) 5px,
+		var(--nulo-surface-high) 5px,
+		var(--nulo-surface-high) 10px
 	);
-	box-shadow: 0 0 0 3px var(--gray-3);
+	box-shadow: 0 0 0 3px var(--nulo-surface-low);
 
 	padding: 12px;
 }

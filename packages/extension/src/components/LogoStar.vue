@@ -47,7 +47,7 @@ const isShifted = computed(() => {
 		transform: translateY(-154px) translateX(-50%);
 
 		& .logo_icon {
-			fill: var(--gray-30);
+			fill: rgba(255, 255, 255, 0.3);
 		}
 	}
 }
@@ -65,7 +65,7 @@ const isShifted = computed(() => {
 	transform: rotate(0);
 	transform-origin: center;
 
-	fill: var(--gray-3);
+	fill: var(--nulo-surface-low);
 	animation: rotation 100s linear infinite;
 
 	transition: all 1s var(--bezier);
@@ -86,7 +86,7 @@ const isShifted = computed(() => {
 }
 
 .logo_icon {
-	fill: var(--gray-50);
+	fill: rgba(255, 255, 255, 0.5);
 
 	z-index: 2;
 

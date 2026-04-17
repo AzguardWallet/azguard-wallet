@@ -36,8 +36,8 @@ const { toast, closeToast } = useToast()
 .card {
 	height: 28px;
 
-	background: var(--card-bg);
-	box-shadow: inset 0 0 0 1px var(--border), 0 4px 8px var(--shadow-10);
+	background: var(--nulo-surface);
+	box-shadow: inset 0 0 0 1px var(--nulo-border), 0 4px 8px rgba(10, 9, 8, 0.5);
 	border-radius: 50px;
 	cursor: pointer;
 

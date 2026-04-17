@@ -106,8 +106,8 @@ const cancel = async () => {
 }
 
 .card {
-	background: var(--card-bg);
-	box-shadow: 0 0 0 1px var(--border), 0 -6px 16px var(--shadow-5);
+	background: var(--nulo-surface);
+	box-shadow: 0 0 0 1px var(--nulo-border), 0 -6px 16px rgba(10, 9, 8, 0.3);
 
 	width: 90%;
 	padding: 24px;
