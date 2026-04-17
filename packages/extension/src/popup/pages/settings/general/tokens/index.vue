@@ -146,6 +146,7 @@ onBeforeUnmount(() => {
 	flex: 1;
 	overflow: auto;
 	background: var(--app-bg);
+	scrollbar-gutter: stable;
 }
 
 .content {

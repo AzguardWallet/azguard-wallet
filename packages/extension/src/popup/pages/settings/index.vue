@@ -73,6 +73,7 @@ const appStore = useAppStore()
 	flex: 1;
 
 	overflow: auto;
+	scrollbar-gutter: stable;
 	background: var(--app-bg);
 
 	padding-bottom: var(--nav-clearance);
