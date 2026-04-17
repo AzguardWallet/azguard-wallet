@@ -66,6 +66,8 @@ const navigationLinks = [
 	padding-top: 8px;
 	border-top: 2px solid transparent;
 	text-decoration: none;
+	color: var(--nulo-secondary);
+	-webkit-tap-highlight-color: transparent;
 
 	transition: all 0.3s ease;
 
