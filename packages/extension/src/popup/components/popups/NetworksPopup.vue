@@ -62,7 +62,7 @@ const handleManageNetworks = () => {
 						@click="handleSelectNetwork(network)"
 						:title="network.name"
 						:icon="appStore.network.id === network.id ? 'check-circle' : 'circle'"
-						:iconFillColor="appStore.network.id === network.id ? 'blue' : 'tertiary'"
+						:iconFillColor="appStore.network.id === network.id ? 'primary' : 'tertiary'"
 						iconBgColor="transparent"
 					>
 						<template #right>

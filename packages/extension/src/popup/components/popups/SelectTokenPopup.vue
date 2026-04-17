@@ -75,7 +75,7 @@ watch(
 						@click="handleSelectToken(token.id)"
 						:title="token.symbol"
 						:icon="token.id === cacheStore.activeTokenIdx ? 'check-circle' : 'circle'"
-						:iconFillColor="token.id === cacheStore.activeTokenIdx ? 'blue' : 'tertiary'"
+						:iconFillColor="token.id === cacheStore.activeTokenIdx ? 'primary' : 'tertiary'"
 						iconBgColor="transparent"
 					/>
 				</ItemsContainer>

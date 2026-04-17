@@ -321,7 +321,6 @@ onBeforeUnmount(() => {
 			<ItemsContainer v-if="fpcs.length">
 				<SettingItem
 					v-for="fpc in filteredFpcs"
-					size="large"
 					:title="fpc.name || fpc.address"
 					:description="fpc.typeDescription"
 					icon="fpc"

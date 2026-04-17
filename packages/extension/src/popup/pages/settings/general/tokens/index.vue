@@ -87,7 +87,6 @@ onBeforeUnmount(() => {
 			<ItemsContainer>
 				<SettingItem
 					v-for="token in tokens"
-					size="large"
 					:title="token.symbol"
 					:description="token.name"
 					icon="banknote"

@@ -65,12 +65,10 @@ const handleManageAccounts = () => {
 					<SettingItem
 						v-for="acc in accounts"
 						@click="handleSelectAccount(acc)"
-						size="large"
 						:title="acc.name"
 						:description="`${acc.address.slice(0, 6)}...${acc.address.slice(-4)}`"
 						:icon="account.address === acc.address ? 'check-circle' : 'circle'"
-						:iconFillColor="account.address === acc.address ? 'blue' : 'tertiary'"
-						iconBgColor="transparent"
+						:iconFillColor="account.address === acc.address ? 'primary' : 'tertiary'"
 						data-testid="account-item"
 					>
 						<template v-if="acc.type === AccountType.Nulo_v0_persistent" #titleSuffix>
