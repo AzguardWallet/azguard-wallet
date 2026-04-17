@@ -91,7 +91,7 @@ const handleOpenSendPopup = (target) => {
 				align="center"
 				gap="12"
 				data-testid="send-from-private"
-				:class="[$style.item, $style.left, !tokenBalance?.token?.hasPrivateTransfers && $style.disabled]"
+				:class="[$style.item, !tokenBalance?.token?.hasPrivateTransfers && $style.disabled]"
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary" data-testid="private-balance-value" :class="$style.balance_text">
@@ -115,7 +115,7 @@ const handleOpenSendPopup = (target) => {
 				align="center"
 				gap="12"
 				data-testid="send-from-public"
-				:class="[$style.item, $style.right, !tokenBalance?.token?.hasPublicTransfers && $style.disabled]"
+				:class="[$style.item, !tokenBalance?.token?.hasPublicTransfers && $style.disabled]"
 			>
 				<Flex wide direction="column" gap="6">
 					<Text size="13" weight="600" color="primary" data-testid="public-balance-value" :class="$style.balance_text">
@@ -155,14 +155,6 @@ const handleOpenSendPopup = (target) => {
 
 	&:active {
 		background: var(--nulo-surface-high);
-	}
-
-	&.left {
-		border-radius: 8px 8px 4px 4px;
-	}
-
-	&.right {
-		border-radius: 4px 4px 8px 8px;
 	}
 
 	&.disabled {
