@@ -190,9 +190,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="24" :class="$style.wrapper">
+	<Flex direction="column" gap="12" :class="$style.wrapper">
 		<Flex align="end" justify="between" :class="$style.section_header">
-			<span :class="$style.header_title">PERMANENT RECORD</span>
+			<span :class="$style.header_title">TOKEN BALANCES</span>
 
 			<Flex align="center" gap="6">
 				<Dropdown>
@@ -251,8 +251,7 @@ onBeforeUnmount(() => {
 }
 
 .section_header {
-	padding-bottom: 8px;
-	border-bottom: 1px solid rgba(74, 70, 63, 0.2);
+	padding-bottom: 0;
 }
 
 .header_title {
