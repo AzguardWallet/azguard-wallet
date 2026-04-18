@@ -327,6 +327,7 @@ watch(
 				feeEstimate.value = result
 			} catch (err) {
 				if (counter !== estimateCounter) return
+				console.error("[SendPopup] estimateTransferFee failed:", err)
 				feeEstimate.value = null
 			} finally {
 				if (counter === estimateCounter) {
