@@ -103,6 +103,30 @@ function clearError() {
 	processingError.value = undefined
 }
 
+/** Anti-phishing: show the normalized hostname (not raw URL) and flag
+ *  IDN / non-ASCII so homograph attacks are visible. */
+const dappHostname = computed(() => {
+	if (!dapp.value?.url) return ""
+	try {
+		return new URL(dapp.value.url).hostname
+	} catch {
+		return dapp.value.url
+	}
+})
+const hostnameHasNonAscii = computed(() => {
+	for (const ch of dappHostname.value) {
+		if (ch.charCodeAt(0) > 127) return true
+	}
+	return false
+})
+
+/** Status dot semantic for the identity strip. */
+const stripStatus = computed<"ready" | "loading" | "cancelled">(() => {
+	if (isInteractionCancelled.value) return "cancelled"
+	if (isLoading.value) return "loading"
+	return "ready"
+})
+
 const init = async () => {
 	try {
 		profile.value = await profileService.getActiveProfile()
@@ -194,6 +218,10 @@ const selectAccount = (account: UIAccount) => {
 	}
 }
 
+const isAccountSelected = (account: UIAccount) => {
+	return selectedAccounts.value.some((acc) => acc.address === account.address)
+}
+
 const onActiveProfileChanged = (_profile?: ProfileInfo) => {
 	if (!_profile || _profile.id !== profile.value?.id) {
 		reject()
@@ -253,6 +281,10 @@ const approve = async () => {
 }
 
 const reject = async () => {
+	// Guard against double-reject on the cancellation overlay path where
+	// closeWindow() can trigger beforeunload -> reject() on an already
+	// cancelled interaction.
+	if (isInteractionCancelled.value) return
 	interactionService.rejectInteraction(requestId.value!, "User rejected")
 	closeWindow(true)
 }
@@ -311,101 +343,92 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="16">
-			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
-				<Text size="16" weight="600" color="primary">Capability request</Text>
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<!-- Identity strip: anti-phishing trust anchor. Rendered by extension chrome; can't be spoofed by dApp iframe. -->
+		<Flex align="center" justify="between" gap="12" :class="$style.identity_strip">
+			<Flex align="center" gap="8">
+				<span :class="[$style.status_dot, $style[`status_${stripStatus}`]]" />
+				<span :class="$style.identity_account">{{ appStore.account?.name ?? "No account" }}</span>
+				<span :class="$style.identity_sep">·</span>
+				<span :class="$style.identity_network">{{ appStore.network?.name ?? "" }}</span>
 			</Flex>
+			<span :class="$style.identity_brand">NULO</span>
+		</Flex>
 
-			<Flex align="center" justify="center" gap="20">
-				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
-					<img v-else-if="dapp?.logoBlobUrl" width="48" height="48" :src="dapp?.logoBlobUrl" />
-					<Icon v-else name="dapp" size="48" color="blue" />
+		<!-- dApp identity block: hostname dominant, normalized, IDN flagged -->
+		<Flex align="center" gap="12" :class="$style.dapp_block">
+			<div :class="$style.dapp_logo_wrapper">
+				<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="24" color="tertiary" />
+				<img v-else-if="dapp?.logoBlobUrl" :src="dapp?.logoBlobUrl" :class="$style.dapp_logo" alt="" />
+				<Icon v-else name="dapp" size="24" color="tertiary" />
+			</div>
 
-					<Text size="13" weight="600" color="primary"> {{ dapp?.name ?? "Unknown DApp" }} </Text>
+			<Flex direction="column" gap="4" wide :class="$style.dapp_info">
+				<Flex align="center" gap="6">
+					<span :class="$style.dapp_hostname">{{ dappHostname }}</span>
+					<Tooltip v-if="hostnameHasNonAscii" position="start">
+						<Icon name="warning" size="12" color="orange" />
+						<template #content>
+							<Text size="12" color="secondary" :style="{ lineHeight: '1.3' }">
+								This hostname contains non-ASCII characters. Verify carefully — some characters can imitate Latin letters.
+							</Text>
+						</template>
+					</Tooltip>
 				</Flex>
-
-				<Flex
-					align="center"
-					gap="12"
-					:class="isLoading && $style.status_icon"
-					:style="{ paddingBottom: '13px' }"
-				>
-					<Icon name="left-connect" size="24" color="tertiary" />
-					<Icon name="right-connect" size="24" color="tertiary" />
-				</Flex>
-
-				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<img width="48" height="48" src="@/assets/logo_lg.png" />
-
-					<Text size="13" weight="600" color="primary">Nulo</Text>
-				</Flex>
+				<span v-if="dapp?.name" :class="$style.dapp_name">{{ dapp.name }}</span>
+				<span :class="$style.dapp_action">is requesting access to Nulo</span>
 			</Flex>
+		</Flex>
 
-			<Flex direction="column" align="center" justify="center" gap="8" :style="{ marginTop: '-4px' }">
-				<Flex direction="column" align="center" justify="center" gap="4">
-					<Text size="13" weight="600" color="primary"> {{ dapp?.url }} </Text>
-					<Text size="13" color="primary">The dApp is requesting access</Text>
-				</Flex>
-				<Flex direction="column" align="center" justify="center" gap="4">
-					<Text size="12" color="secondary">Review what this dApp can do with your wallet</Text>
-				</Flex>
-			</Flex>
-
+		<!-- Sections -->
+		<Flex direction="column" gap="20" :class="$style.sections">
 			<!-- Account selection section -->
-			<Flex
-				v-if="needsAccountSelection"
-				direction="column"
-				align="start"
-				justify="start"
-				gap="8"
-				:class="$style.accounts_section"
-			>
-				<Flex direction="column" align="start" justify="start" gap="4">
-					<Text size="15" weight="600" color="primary">Select accounts to share</Text>
-					<Text size="12" color="secondary">Choose which accounts this dApp can see</Text>
-				</Flex>
-				<Flex direction="column" align="start" justify="start" gap="6" :class="$style.accounts">
-					<Flex
+			<Flex v-if="needsAccountSelection" direction="column" gap="10" wide>
+				<div :class="$style.section_label">
+					<span>Select accounts to share</span>
+					<span :class="$style.section_count">{{ availableAccounts.length }}</span>
+				</div>
+
+				<ItemsContainer>
+					<div
 						v-for="acc in availableAccounts"
 						:key="acc.address"
-						direction="column"
-						gap="8"
-						:class="[$style.account, (isLoading || processingError?.type === 'error') && $style.disabled]"
+						role="button"
+						tabindex="0"
+						@click="selectAccount(acc)"
+						@keydown.enter="selectAccount(acc)"
+						:class="[$style.row, (isLoading || processingError?.type === 'error') && $style.row_disabled]"
 					>
-						<Flex @click="selectAccount(acc)" gap="10" style="cursor: pointer">
-							<Flex align="center">
-								<Icon
-									v-if="selectedAccounts.find(a => a.address === acc.address)"
-									name="check-circle"
-									size="16"
-									color="green"
-								/>
-								<Icon v-else name="circle" size="16" color="secondary" />
-							</Flex>
+						<Flex align="center" gap="12" wide>
+							<Icon
+								v-if="isAccountSelected(acc)"
+								name="check-circle"
+								size="16"
+								color="primary"
+								:class="$style.row_check"
+							/>
+							<Icon v-else name="circle" size="16" color="secondary" :class="$style.row_check" />
 
-							<Flex direction="column" gap="4" wide>
-								<Flex align="center" justify="between" gap="12">
-									<Text size="14" weight="600" color="primary">
-										{{ acc.name }}
-									</Text>
-
+							<Flex direction="column" gap="2" wide :class="$style.row_text">
+								<Flex align="center" justify="between" gap="8" wide>
+									<span :class="$style.row_name">{{ acc.name }}</span>
 									<NetworkBadge :chainId="acc.chainId" />
 								</Flex>
-								<Text size="13" weight="600" color="tertiary">
-									{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}
-								</Text>
+								<span :class="$style.row_address">{{ `${acc.address.slice(0, 6)}...${acc.address.slice(-4)}` }}</span>
 							</Flex>
 						</Flex>
+
 						<Flex
-							v-if="selectedAccounts.find(a => a.address === acc.address)"
+							v-if="isAccountSelected(acc)"
 							direction="column"
 							gap="4"
 							wide
+							:class="$style.alias_block"
+							@click.stop
+							@keydown.stop
 						>
 							<Flex align="center" gap="4">
-								<Text size="12" weight="600" color="secondary">Alias</Text>
+								<span :class="$style.alias_label">Alias</span>
 								<Tooltip position="start">
 									<Icon name="info" size="11" color="tertiary" />
 									<template #content>
@@ -422,40 +445,28 @@ onUnmounted(() => {
 								:placeholder="acc.name"
 							/>
 						</Flex>
-					</Flex>
-				</Flex>
+					</div>
+				</ItemsContainer>
 			</Flex>
 
-			<!-- New capabilities (delta) — accounts type excluded, shown as section above -->
-			<Flex
-				v-if="capabilities.filter(c => c.isNew).length"
-				direction="column"
-				align="start"
-				justify="start"
-				gap="8"
-				:class="$style.section"
-			>
-				<Text size="15" weight="600" color="primary">New capabilities requested:</Text>
+			<!-- New capabilities (delta) — accounts type excluded -->
+			<Flex v-if="capabilities.filter(c => c.isNew).length" direction="column" gap="10" wide>
+				<div :class="$style.section_label">
+					<span>New capabilities requested</span>
+					<span :class="$style.section_count">{{ capabilities.filter(c => c.isNew).length }}</span>
+				</div>
+
 				<Flex direction="column" gap="6" wide>
 					<Flex
 						v-for="(cap, i) in capabilities"
 						v-show="cap.isNew"
 						:key="`new-${i}`"
 						direction="column"
-						:class="[$style.capability_card_wrapper, (isLoading || processingError?.type === 'error') && $style.disabled]"
+						:class="[$style.cap_card, (isLoading || processingError?.type === 'error') && $style.cap_disabled]"
 					>
-						<Flex
-							@click="toggleExpand(i)"
-							gap="10"
-							:class="$style.capability_card"
-						>
+						<Flex @click="toggleExpand(i)" gap="10" :class="$style.cap_head">
 							<Flex align="center" @click.stop="toggleCapability(i)" :class="$style.checkbox_hit">
-								<Icon
-									v-if="cap.selected"
-									name="check-circle"
-									size="16"
-									color="green"
-								/>
+								<Icon v-if="cap.selected" name="check-circle" size="16" color="green" />
 								<Icon v-else name="circle" size="16" color="secondary" />
 							</Flex>
 
@@ -463,15 +474,7 @@ onUnmounted(() => {
 								<Flex align="center" justify="between" gap="8">
 									<Flex align="center" gap="6">
 										<Text size="14" weight="600" color="primary">{{ cap.label }}</Text>
-										<Text
-											v-if="cap.reRequested"
-											size="10"
-											weight="600"
-											color="yellow"
-											:class="$style.denied_badge"
-										>
-											previously denied
-										</Text>
+										<span v-if="cap.reRequested" :class="$style.denied_badge">previously denied</span>
 									</Flex>
 									<Flex align="center" gap="6">
 										<Text
@@ -489,43 +492,33 @@ onUnmounted(() => {
 										/>
 									</Flex>
 								</Flex>
-								<Text size="12" color="secondary" :style="{ lineHeight: '1.2' }">
+								<Text size="12" color="secondary" :style="{ lineHeight: '1.4' }">
 									{{ cap.description }}
 								</Text>
 							</Flex>
 						</Flex>
 
-						<CapabilityDetailPanel
-							v-if="isExpanded(i)"
-							:capability="cap.capability"
-							:granted="false"
-						/>
+						<CapabilityDetailPanel v-if="isExpanded(i)" :capability="cap.capability" :granted="false" />
 					</Flex>
 				</Flex>
 			</Flex>
 
-			<!-- Already granted capabilities -->
-			<Flex
-				v-if="capabilities.filter(c => !c.isNew).length"
-				direction="column"
-				align="start"
-				justify="start"
-				gap="8"
-				:class="$style.section"
-			>
-				<Text size="15" weight="600" color="primary">Already granted:</Text>
+			<!-- Already granted -->
+			<Flex v-if="capabilities.filter(c => !c.isNew).length" direction="column" gap="10" wide>
+				<div :class="$style.section_label">
+					<span>Already granted</span>
+					<span :class="$style.section_count">{{ capabilities.filter(c => !c.isNew).length }}</span>
+				</div>
+
 				<Flex direction="column" gap="6" wide>
 					<Flex
 						v-for="(cap, i) in capabilities"
 						v-show="!cap.isNew"
 						:key="`existing-${i}`"
 						direction="column"
-						:class="[$style.capability_card_wrapper, $style.granted]"
+						:class="[$style.cap_card, $style.cap_granted]"
 					>
-						<Flex
-							gap="10"
-							:class="$style.capability_card"
-						>
+						<Flex gap="10" :class="$style.cap_head_readonly">
 							<Flex align="center">
 								<Icon name="check-circle" size="16" color="tertiary" />
 							</Flex>
@@ -541,35 +534,28 @@ onUnmounted(() => {
 										:style="{ transform: isExpanded(i) ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease', cursor: 'pointer' }"
 									/>
 								</Flex>
-								<Text size="12" color="tertiary" :style="{ lineHeight: '1.2' }">
+								<Text size="12" color="tertiary" :style="{ lineHeight: '1.4' }">
 									{{ cap.description }}
 								</Text>
 							</Flex>
 						</Flex>
 
-						<CapabilityDetailPanel
-							v-if="isExpanded(i)"
-							:capability="cap.capability"
-							:granted="true"
-						/>
+						<CapabilityDetailPanel v-if="isExpanded(i)" :capability="cap.capability" :granted="true" />
 					</Flex>
 				</Flex>
 			</Flex>
 		</Flex>
 
-		<Flex direction="column" gap="10" style="margin-top: 16px">
+		<!-- Footer: error + actions -->
+		<Flex direction="column" gap="10" :class="$style.footer">
 			<Tooltip v-if="processingError" side="top" position="start" wide :disabled="!processingError.tooltip">
-				<Flex align="center" wide>
+				<Flex align="center" wide gap="6">
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
-					<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
-						{{ processingError.title }}
-					</Text>
+					<Text size="12" weight="600" color="secondary">{{ processingError.title }}</Text>
 				</Flex>
 
 				<template #content>
-					<Text size="12" color="secondary">
-						{{ processingError.tooltip }}
-					</Text>
+					<Text size="12" color="secondary">{{ processingError.tooltip }}</Text>
 				</template>
 			</Tooltip>
 
@@ -607,112 +593,270 @@ onUnmounted(() => {
 .wrapper {
 	overflow: auto;
 	flex: 1;
-	background: var(--app-bg);
 
-	padding: 16px 24px;
+	display: flex;
+	flex-direction: column;
+
+	background: var(--app-bg);
+	border-top: 2px solid var(--nulo-accent);
 }
 
-.avatar {
+/* ── Identity strip ────────────────────────────────────────────── */
+
+.identity_strip {
+	flex-shrink: 0;
+
+	padding: 10px 16px;
+	background: var(--nulo-surface);
+	border-bottom: 1px solid var(--nulo-border);
+}
+
+.status_dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	flex-shrink: 0;
+}
+
+.status_ready {
+	background: var(--green);
+}
+
+.status_loading {
+	background: var(--orange);
+}
+
+.status_cancelled {
+	background: var(--red);
+}
+
+.identity_account {
+	font-family: var(--font-headline);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 120px;
+}
+
+.identity_sep {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-outline);
+}
+
+.identity_network {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-secondary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 80px;
+}
+
+.identity_brand {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+	color: var(--nulo-outline);
+}
+
+/* ── dApp identity block ───────────────────────────────────────── */
+
+.dapp_block {
+	flex-shrink: 0;
+
+	padding: 16px;
+	border-bottom: 1px solid var(--nulo-border);
+}
+
+.dapp_logo_wrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+
+	width: 40px;
+	height: 40px;
+
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
+}
+
+.dapp_logo {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+}
+
+.dapp_info {
+	min-width: 0;
+}
+
+.dapp_hostname {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dapp_name {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dapp_action {
+	font-family: var(--font-body);
+	font-size: 12px;
+	color: var(--nulo-secondary);
+}
+
+/* ── Sections ──────────────────────────────────────────────────── */
+
+.sections {
+	padding: 16px;
+}
+
+.section_label {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.section_count {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-outline);
+}
+
+/* ── Account rows ──────────────────────────────────────────────── */
+
+.row {
 	position: relative;
 
-	width: 80px;
-	height: 80px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
-
-	text-align: center;
-	white-space: nowrap;
-
-	& img {
-		transition: all 0.2s ease;
-	}
-}
-
-@keyframes loading {
-	0% {
-		opacity: 1;
-	}
-
-	25% {
-		opacity: 0.8;
-	}
-
-	50% {
-		opacity: 0.4;
-	}
-
-	70% {
-		opacity: 0.8;
-	}
-
-	100% {
-		opacity: 1;
-	}
-}
-
-.status_icon {
-	& svg {
-		transition: all 1s ease;
-		animation: loading 2s infinite linear;
-	}
-
-	& svg:first-child {
-		fill: var(--green);
-		transform: translateX(16px);
-		filter: drop-shadow(0 0px 8px var(--green));
-	}
-
-	& svg:last-child {
-		fill: var(--green);
-		transform: translateX(-16px);
-		filter: drop-shadow(0 0px 8px var(--green));
-	}
-}
-
-.section {
-	width: 100%;
-}
-
-.accounts_section {
-	width: 100%;
-}
-
-.accounts {
-	width: 100%;
-	max-height: 172px;
-	overflow: auto;
-}
-
-.account {
-	width: 100%;
+	padding: 12px 14px;
 	cursor: pointer;
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
+	outline: none;
+	background: transparent;
 
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
 		background: var(--nulo-surface-high);
-		border-color: var(--nulo-outline);
 	}
 
-	&:active {
-		background: var(--nulo-surface-highest);
+	&:focus-visible {
+		background: var(--nulo-surface-high);
 	}
+
+	&::after {
+		position: absolute;
+		bottom: 0;
+		left: 14px;
+		right: 14px;
+		display: block;
+		height: 1px;
+
+		background: rgba(74, 70, 63, 0.3);
+
+		content: " ";
+	}
+
+	&:last-child::after {
+		display: none;
+	}
+}
+
+.row_disabled {
+	cursor: default;
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+.row_check {
+	flex-shrink: 0;
+}
+
+.row_text {
+	min-width: 0;
+}
+
+.row_name {
+	font-family: var(--font-body);
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--txt-primary);
+	line-height: 20px;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.row_address {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
+	line-height: 16px;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.alias_block {
+	padding: 0 0 0 28px;
+}
+
+.alias_label {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
 }
 
 .alias_input {
 	width: 100%;
-	padding: 8px 12px;
+
+	padding: 8px 10px;
 	border: 1px solid var(--nulo-border);
 	background: var(--nulo-surface-low);
 	color: var(--txt-primary);
 	font-size: 13px;
 	font-family: inherit;
 	outline: none;
+
 	transition: border-color 0.2s ease;
 
 	&:focus {
@@ -724,18 +868,23 @@ onUnmounted(() => {
 	}
 }
 
-.capability_card_wrapper {
+/* ── Capability cards ──────────────────────────────────────────── */
+
+.cap_card {
 	width: 100%;
-	background: var(--nulo-surface);
+
 	border: 1px solid var(--nulo-border);
+	background: transparent;
 	overflow: hidden;
 
-	transition: all 0.2s var(--bezier);
+	transition: border-color 0.2s var(--bezier);
 }
 
-.capability_card {
+.cap_head {
 	cursor: pointer;
 	padding: 12px;
+
+	transition: background 0.2s var(--bezier);
 
 	&:hover {
 		background: var(--nulo-surface-high);
@@ -746,20 +895,17 @@ onUnmounted(() => {
 	}
 }
 
-.granted {
+.cap_head_readonly {
+	padding: 12px;
+}
+
+.cap_granted {
 	opacity: 0.6;
+}
 
-	& .capability_card {
-		cursor: default;
-
-		&:hover {
-			background: transparent;
-		}
-
-		&:active {
-			background: transparent;
-		}
-	}
+.cap_disabled {
+	cursor: default;
+	pointer-events: none;
 }
 
 .checkbox_hit {
@@ -770,14 +916,29 @@ onUnmounted(() => {
 
 .denied_badge {
 	padding: 1px 6px;
-	background: rgba(255, 170, 0, 0.15);
+
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--orange);
+	background: rgba(255, 170, 0, 0.12);
 	white-space: nowrap;
 }
 
-.disabled {
-	cursor: default;
-	pointer-events: none;
+/* ── Footer ────────────────────────────────────────────────────── */
+
+.footer {
+	flex-shrink: 0;
+
+	margin-top: auto;
+	padding: 16px;
+	border-top: 1px solid var(--nulo-border);
+	background: var(--nulo-surface);
 }
+
+/* ── Cancellation overlay ──────────────────────────────────────── */
 
 .notification_overlay {
 	position: fixed;
@@ -791,9 +952,11 @@ onUnmounted(() => {
 
 .notification_content {
 	width: 90%;
+
+	padding: 16px;
 	background: var(--nulo-surface);
 	border: 1px solid var(--nulo-border);
-	padding: 12px;
+
 	text-align: center;
 	line-height: 1.2;
 	z-index: 1001;

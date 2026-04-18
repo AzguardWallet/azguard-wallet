@@ -80,9 +80,10 @@ onBeforeUnmount(() => {
 		<SubPageHeader title="Manage Tokens" :backTo="'/popup/settings/general'" />
 
 		<Flex direction="column" gap="16" :class="$style.content">
-			<Text size="13" weight="600" color="primary">
-				Tokens &nbsp;<Text color="tertiary">{{ tokens.length }} </Text>
-			</Text>
+			<div :class="$style.section_label">
+				<span>Tokens</span>
+				<span :class="$style.section_count">{{ tokens.length }}</span>
+			</div>
 
 			<ItemsContainer>
 				<SettingItem
@@ -150,6 +151,25 @@ onBeforeUnmount(() => {
 
 .content {
 	padding: 16px 24px var(--nav-clearance) 24px;
+}
+
+.section_label {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.section_count {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-outline);
 }
 
 .icon_btn {
