@@ -10,7 +10,7 @@ import { NuloFeePaymentMethod } from "@/wallet/services/account/contracts"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
-import { getTxCategory, getTxTitle, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
+import { getTxCategory, getTxTitle, getOriginLabel, getPrimaryCall, formatTransferType } from "@/utils/tx-enrichment"
 import { formatFeeJuice, feeToUsd, formatGas } from "@/utils/fee-estimation"
 import { getTransactionExplorerUrl, BLOCK_EXPLORERS } from "@/wallet/constants/explorers"
 
@@ -41,13 +41,17 @@ const tokenService = new TokenServiceClient()
 const FEE_METHODS = new Set(["sponsor_unconditionally", "fee_entrypoint_private", "fee_entrypoint_public", "set_authorized"])
 
 const tx = computed(() => appStore.transactions.find((t) => t.hash === cacheStore.activeTxHash))
-const call = computed(() => getPrimaryCall(tx.value.calls))
-const type = computed(() => getTxCategory(tx.value.calls))
+const call = computed(() => (tx.value?.calls ? getPrimaryCall(tx.value.calls) : undefined))
+const type = computed(() => (tx.value?.calls ? getTxCategory(tx.value.calls) : "tx"))
 
-const popupTitle = computed(() => getTxTitle(tx.value.calls))
+const popupTitle = computed(() => (tx.value?.calls ? getTxTitle(tx.value.calls) : "Transaction"))
 const originLabel = computed(() => getOriginLabel(tx.value?.origin))
 
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
+const transferTypeLabel = computed(() => {
+	if (!transfer.value || transfer.value.type === undefined || transfer.value.type === null) return null
+	return formatTransferType(transfer.value.type)
+})
 const tokens = ref([])
 const token = computed(() => tokens.value.find((t) => call.value?.contract === t.contract))
 
@@ -61,7 +65,7 @@ const transferAmount = computed(() => {
 })
 
 const mintAmount = computed(() => {
-	if (type.value !== "mint") return 0
+	if (type.value !== "mint" || !tx.value?.calls) return 0
 
 	const decimals = new BN(10).pow(tx.value?.origin?.type === OriginType.UI ? 8 : 0)
 	let amount = new BN(0)
@@ -104,18 +108,22 @@ const formatTimestamp = (timestamp) => {
 	return DateTime.fromMillis(timestamp).toFormat("yyyy-MM-dd HH:mm:ss")
 }
 
-const getFeePaymentMethodName = (method) => {
-	switch (method) {
-		case NuloFeePaymentMethod.External:
-			return "External (FPC)"
-		case NuloFeePaymentMethod.FeeJuice:
-			return "FeeJuice"
-		case NuloFeePaymentMethod.FeeJuiceWithClaim:
-			return "FeeJuice + Claim"
-		default:
-			return `Unknown (${method})`
+/** Fee method label enriched from the fee-path call when the enum alone is ambiguous. */
+const feePaymentLabel = computed(() => {
+	const t = tx.value
+	if (!t) return null
+	const method = t.feePaymentMethod
+	if (method === NuloFeePaymentMethod.FeeJuice) return "FeeJuice"
+	if (method === NuloFeePaymentMethod.FeeJuiceWithClaim) return "FeeJuice (with claim)"
+	if (method === NuloFeePaymentMethod.External) {
+		const fpcMethod = t.calls?.find((c) => FEE_METHODS.has(c.method))?.method
+		if (fpcMethod === "sponsor_unconditionally") return "Sponsored"
+		if (fpcMethod === "fee_entrypoint_private") return "Private Fee Juice"
+		if (t.origin?.type === OriginType.DAPP) return `Fee method set by ${t.origin.name ?? "the app"}`
+		return "External FPC"
 	}
-}
+	return `Unknown (${method})`
+})
 
 /** Fee display (actual fee from receipt) */
 const formattedFee = computed(() => {
@@ -170,7 +178,7 @@ const feeSavings = computed(() => {
 	return `${pct}% less than estimate`
 })
 
-/** Explorer link: dynamic name + URL; falls back to copy-hash row when null. */
+/** Explorer link: dynamic name + URL; subtle inline anchor under timestamp. */
 const explorerUrl = computed(() => {
 	if (!appStore.network?.chainId || !tx.value?.hash) return null
 	return getTransactionExplorerUrl(appStore.network.chainId, appStore.defaultExplorer, tx.value.hash)
@@ -197,29 +205,28 @@ const userCalls = computed(() => {
 						<span :class="$style.tx_title">{{ popupTitle }}</span>
 					</Flex>
 
-					<span v-if="txTime" :class="$style.tx_time">{{ txTime }}</span>
-
-					<a
-						v-if="explorerUrl"
-						:href="explorerUrl"
-						target="_blank"
-						rel="noopener noreferrer"
-						@click.stop="handleExternalLink($event, explorerUrl)"
-						:class="$style.explorer_link_band"
-					>
-						<span>View on {{ explorerName }}</span>
-						<Icon name="external-link" size="12" color="secondary" />
-					</a>
-
-					<Flex
-						v-else-if="tx.hash"
-						@click="handleCopy(tx.hash)"
-						align="center"
-						gap="8"
-						:class="[$style.copy_hash_band, 'copyable']"
-					>
-						<span :class="$style.hash_mono">{{ tx.hash.slice(0, 10) }}…{{ tx.hash.slice(-8) }}</span>
-						<Icon name="copy" size="12" color="secondary" />
+					<Flex align="center" justify="center" gap="8" :class="$style.hero_meta">
+						<span v-if="txTime" :class="$style.tx_time">{{ txTime }}</span>
+						<span v-if="txTime && (explorerUrl || tx?.hash)" :class="$style.meta_sep">·</span>
+						<a
+							v-if="explorerUrl"
+							:href="explorerUrl"
+							target="_blank"
+							rel="noopener noreferrer"
+							@click.stop="handleExternalLink($event, explorerUrl)"
+							:class="$style.hero_link"
+						>
+							<span>View on {{ explorerName }}</span>
+							<Icon name="external-link" size="10" color="tertiary" />
+						</a>
+						<span
+							v-else-if="tx?.hash"
+							@click="handleCopy(tx.hash)"
+							:class="[$style.hero_link, 'copyable']"
+						>
+							<span>Copy hash</span>
+							<Icon name="copy" size="10" color="tertiary" />
+						</span>
 					</Flex>
 				</Flex>
 
@@ -252,10 +259,14 @@ const userCalls = computed(() => {
 					<template #description> This token not found in your token list </template>
 				</Banner>
 
-				<!-- From / To -->
-				<Flex v-if="transfer" wide gap="8">
-					<Flex wide align="center" gap="12" :class="$style.address_card">
-						<Flex @click="handleCopy(transfer.from)" wide direction="column" gap="4" class="copyable">
+				<!-- Transfer type chip + From/To -->
+				<Flex v-if="transfer" wide direction="column" gap="10">
+					<div v-if="transferTypeLabel" :class="$style.transfer_type_chip">
+						{{ transferTypeLabel }}
+					</div>
+
+					<Flex wide gap="8">
+						<Flex wide direction="column" gap="4" :class="$style.address_card">
 							<AddressDisplay
 								@onAddressClick="handleCopy(transfer.from)"
 								size="13"
@@ -266,15 +277,7 @@ const userCalls = computed(() => {
 							<span :class="$style.address_label">From</span>
 						</Flex>
 
-						<Icon
-							:name="['transfer', 'transfer_to_public'].includes(call?.method) ? 'key-square' : 'face'"
-							size="16"
-							:color="['transfer', 'transfer_to_public'].includes(call?.method) ? 'green' : 'orange'"
-						/>
-					</Flex>
-
-					<Flex wide align="center" gap="12" :class="$style.address_card">
-						<Flex @click="handleCopy(transfer.to)" wide direction="column" gap="4" class="copyable">
+						<Flex wide direction="column" gap="4" :class="$style.address_card">
 							<AddressDisplay
 								@onAddressClick="handleCopy(transfer.to)"
 								size="13"
@@ -282,14 +285,8 @@ const userCalls = computed(() => {
 								:address="transfer.to"
 								:formatter="(addr) => trimAddress(addr, 6, 4)"
 							/>
-							<span :class="$style.address_label">Destination</span>
+							<span :class="$style.address_label">To</span>
 						</Flex>
-
-						<Icon
-							:name="['transfer', 'transfer_to_private'].includes(call?.method) ? 'key-square' : 'face'"
-							size="16"
-							:color="['transfer', 'transfer_to_private'].includes(call?.method) ? 'green' : 'orange'"
-						/>
 					</Flex>
 				</Flex>
 
@@ -303,15 +300,16 @@ const userCalls = computed(() => {
 							<span :class="$style.detail_value">{{ originLabel }}</span>
 						</Flex>
 
-						<Flex v-if="tx.feePaymentMethod != null" wide justify="between" align="center">
+						<Flex v-if="feePaymentLabel" wide justify="between" align="center">
 							<span :class="$style.detail_key">Fee method</span>
-							<span :class="$style.detail_value">{{ getFeePaymentMethodName(tx.feePaymentMethod) }}</span>
+							<span :class="$style.detail_value">{{ feePaymentLabel }}</span>
 						</Flex>
 
 						<Flex v-if="formattedFee" wide direction="column" gap="8">
-							<Flex
-								wide justify="between" align="center"
-								:class="hasGasDetails && $style.fee_row_toggle"
+							<button
+								type="button"
+								:class="[$style.fee_row_toggle, !hasGasDetails && $style.fee_row_static]"
+								:disabled="!hasGasDetails"
 								@click="hasGasDetails && (showFeeBreakdown = !showFeeBreakdown)"
 							>
 								<Flex align="center" gap="4">
@@ -328,7 +326,7 @@ const userCalls = computed(() => {
 									<span :class="$style.detail_value_mono">{{ formattedFee }} FJ</span>
 									<span :class="$style.detail_value_aux">{{ formattedFeeUsd }}</span>
 								</Flex>
-							</Flex>
+							</button>
 
 							<Flex v-if="showFeeBreakdown && gasBreakdown" wide direction="column" gap="6" :class="$style.fee_breakdown">
 								<div :class="$style.fee_grid">
@@ -357,9 +355,10 @@ const userCalls = computed(() => {
 						</Flex>
 
 						<Flex v-else-if="formattedEstFee" wide direction="column" gap="8">
-							<Flex
-								wide justify="between" align="center"
-								:class="hasGasDetails && $style.fee_row_toggle"
+							<button
+								type="button"
+								:class="[$style.fee_row_toggle, !hasGasDetails && $style.fee_row_static]"
+								:disabled="!hasGasDetails"
 								@click="hasGasDetails && (showFeeBreakdown = !showFeeBreakdown)"
 							>
 								<Flex align="center" gap="4">
@@ -376,7 +375,7 @@ const userCalls = computed(() => {
 									<span :class="[$style.detail_value_mono, $style.detail_value_est]">~{{ formattedEstFee }} FJ</span>
 									<span :class="$style.detail_value_aux">{{ formattedEstFeeUsd }}</span>
 								</Flex>
-							</Flex>
+							</button>
 
 							<Flex v-if="showFeeBreakdown && gasBreakdown" wide direction="column" gap="6" :class="$style.fee_breakdown">
 								<div :class="$style.fee_grid">
@@ -397,7 +396,7 @@ const userCalls = computed(() => {
 							</Flex>
 						</Flex>
 
-						<Flex v-if="tx.block" wide justify="between" align="center">
+						<Flex v-if="tx?.block" wide justify="between" align="center">
 							<span :class="$style.detail_key">Block</span>
 							<Flex align="center" gap="6">
 								<span :class="$style.detail_value_mono">#{{ tx.block.number }}</span>
@@ -410,7 +409,7 @@ const userCalls = computed(() => {
 							</Flex>
 						</Flex>
 
-						<Flex v-if="tx.nonce" wide justify="between" align="center">
+						<Flex v-if="tx?.nonce" wide justify="between" align="center">
 							<span :class="$style.detail_key">Nonce</span>
 							<span
 								@click="handleCopy(tx.nonce)"
@@ -422,7 +421,7 @@ const userCalls = computed(() => {
 					</Flex>
 				</Flex>
 
-				<!-- Calls (top-level) -->
+				<!-- Calls (top-level, stacked rows) -->
 				<Flex v-if="userCalls.length" wide direction="column" gap="10">
 					<SectionLabel label="Calls" :count="userCalls.length" />
 
@@ -430,10 +429,12 @@ const userCalls = computed(() => {
 						<Flex
 							v-for="(c, idx) in userCalls"
 							:key="idx"
-							wide align="center" justify="between" gap="10"
+							direction="column"
+							gap="4"
 							:class="[$style.call_row, idx > 0 && $style.call_row_divider]"
+							:data-testid="'tx-call-row'"
 						>
-							<span :class="$style.call_method">{{ humanizeMethodName(c.method) }}</span>
+							<span :class="$style.call_method">{{ humanizeMethodName(c.method) || "Call" }}</span>
 							<span
 								@click="handleCopy(c.contract)"
 								:class="[$style.call_contract, 'copyable']"
@@ -446,10 +447,11 @@ const userCalls = computed(() => {
 
 				<!-- Debug details (collapsed by default) -->
 				<Flex wide direction="column" gap="10">
-					<Flex
+					<button
+						type="button"
 						@click="isDebugExpanded = !isDebugExpanded"
-						wide justify="between" align="center"
-						:class="$style.debug_header"
+						:class="$style.debug_toggle"
+						data-testid="debug-toggle"
 					>
 						<SectionLabel label="Debug details" />
 						<Icon
@@ -458,10 +460,10 @@ const userCalls = computed(() => {
 							color="tertiary"
 							:style="{ transform: `rotate(${isDebugExpanded ? '180' : '0'}deg)`, transition: 'transform 0.2s ease' }"
 						/>
-					</Flex>
+					</button>
 
 					<Flex v-if="isDebugExpanded" wide direction="column" gap="12" :class="$style.details_box">
-						<Flex wide justify="between" align="center">
+						<Flex wide justify="between" align="center" data-testid="debug-tx-hash">
 							<span :class="$style.detail_key">Tx hash</span>
 							<Flex
 								@click="handleCopy(tx.hash)"
@@ -541,52 +543,42 @@ const userCalls = computed(() => {
 	text-transform: uppercase;
 }
 
+.hero_meta {
+	flex-wrap: wrap;
+	row-gap: 4px;
+}
+
 .tx_time {
 	font-family: var(--font-mono);
 	font-size: 11px;
 	color: var(--nulo-secondary);
 }
 
-.explorer_link_band {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-
-	padding: 8px 12px;
-	border: 1px solid var(--nulo-border);
-	background: transparent;
-
-	font-family: var(--font-headline);
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: var(--txt-primary);
-	text-decoration: none;
-
-	transition: background 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--nulo-surface-low);
-	}
-}
-
-.copy_hash_band {
-	padding: 8px 12px;
-	border: 1px solid var(--nulo-border);
-	background: transparent;
-
-	transition: background 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--nulo-surface-low);
-	}
-}
-
-.hash_mono {
+.meta_sep {
 	font-family: var(--font-mono);
 	font-size: 11px;
-	color: var(--nulo-secondary);
+	color: var(--nulo-outline);
+}
+
+.hero_link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-outline);
+	text-decoration: none;
+	cursor: pointer;
+
+	transition: color 0.2s var(--bezier);
+
+	&:hover {
+		color: var(--nulo-accent);
+	}
 }
 
 /* ── Amount ────────────────────────────────────────────────────── */
@@ -611,6 +603,23 @@ const userCalls = computed(() => {
 	color: var(--nulo-secondary);
 }
 
+/* ── Transfer type chip ────────────────────────────────────────── */
+
+.transfer_type_chip {
+	align-self: center;
+
+	padding: 5px 12px;
+	border: 1px solid var(--nulo-border);
+	background: transparent;
+
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
 /* ── Address cards ─────────────────────────────────────────────── */
 
 .address_card {
@@ -619,6 +628,14 @@ const userCalls = computed(() => {
 	padding: 12px;
 	border: 1px solid var(--nulo-border);
 	background: transparent;
+
+	cursor: pointer;
+
+	transition: background 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--nulo-surface-low);
+	}
 }
 
 .address_label {
@@ -652,6 +669,9 @@ const userCalls = computed(() => {
 	font-size: 12px;
 	font-weight: 600;
 	color: var(--txt-primary);
+
+	text-align: right;
+	word-break: break-word;
 }
 
 .detail_value_mono {
@@ -674,11 +694,31 @@ const userCalls = computed(() => {
 /* ── Fee breakdown ─────────────────────────────────────────────── */
 
 .fee_row_toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+
+	padding: 0;
+	background: transparent;
+	border: none;
 	cursor: pointer;
+
+	color: inherit;
+	text-align: inherit;
+
 	transition: opacity 0.2s ease;
 
 	&:hover {
 		opacity: 0.8;
+	}
+}
+
+.fee_row_static {
+	cursor: default;
+
+	&:hover {
+		opacity: 1;
 	}
 }
 
@@ -732,11 +772,15 @@ const userCalls = computed(() => {
 /* ── Calls section ─────────────────────────────────────────────── */
 
 .calls_box {
+	width: 100%;
+
 	border: 1px solid var(--nulo-border);
 	background: transparent;
 }
 
 .call_row {
+	width: 100%;
+
 	padding: 10px 12px;
 }
 
@@ -746,20 +790,15 @@ const userCalls = computed(() => {
 
 .call_method {
 	font-family: var(--font-headline);
-	font-size: 12px;
+	font-size: 13px;
 	font-weight: 700;
-	letter-spacing: 0.02em;
+	letter-spacing: 0.01em;
 	color: var(--txt-primary);
 
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	min-width: 0;
+	word-break: break-word;
 }
 
 .call_contract {
-	flex-shrink: 0;
-
 	font-family: var(--font-mono);
 	font-size: 11px;
 	color: var(--nulo-secondary);
@@ -767,8 +806,20 @@ const userCalls = computed(() => {
 
 /* ── Debug section ─────────────────────────────────────────────── */
 
-.debug_header {
+.debug_toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+
+	padding: 0;
+	background: transparent;
+	border: none;
 	cursor: pointer;
+
+	color: inherit;
+	text-align: inherit;
+
 	transition: opacity 0.2s ease;
 
 	&:hover {
