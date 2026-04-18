@@ -36,12 +36,6 @@ const props = defineProps({
 	show: Boolean,
 })
 
-console.log("[TransactionPopup] SCRIPT EVAL (module loaded) — build:", new Date().toISOString())
-
-onMounted(() => {
-	console.log("[TransactionPopup] COMPONENT MOUNTED · initial show =", props.show)
-})
-
 const tokenService = new TokenServiceClient()
 
 const FEE_METHODS = new Set(["sponsor_unconditionally", "fee_entrypoint_private", "fee_entrypoint_public", "set_authorized"])
@@ -103,14 +97,6 @@ function probe(sel) {
 	}
 }
 
-function asJson(v) {
-	try {
-		return JSON.stringify(v, (_k, val) => (typeof val === "bigint" ? `${val}n` : val))
-	} catch {
-		return String(v)
-	}
-}
-
 watch(
 	() => props.show,
 	async () => {
@@ -119,55 +105,41 @@ watch(
 
 			// ── Data state ──
 			const t = tx.value
+			console.groupCollapsed("[TransactionPopup] Open — data state")
+			console.log("has tx:", !!t)
+			console.log("tx:", t)
+			console.log("tx.hash:", t?.hash)
+			console.log("tx.block:", t?.block, "→ BLOCK row should render:", !!t?.block)
+			console.log("tx.nonce:", t?.nonce, "→ NONCE row should render:", !!t?.nonce)
+			console.log("tx.feePaymentMethod enum:", t?.feePaymentMethod)
+			console.log("feePaymentLabel computed:", feePaymentLabel.value)
 			const fpcCalls = (t?.calls ?? []).filter((c) => FEE_METHODS.has(c.method)).map((c) => c.method)
-			console.log("[TransactionPopup][DATA] has tx:", !!t)
-			console.log("[TransactionPopup][DATA] tx.hash:", t?.hash)
-			console.log("[TransactionPopup][DATA] tx.block:", asJson(t?.block), "→ BLOCK row renders:", !!t?.block)
-			console.log("[TransactionPopup][DATA] tx.nonce:", t?.nonce, "→ NONCE row renders:", !!t?.nonce)
-			console.log("[TransactionPopup][DATA] tx.feePaymentMethod enum:", t?.feePaymentMethod)
-			console.log("[TransactionPopup][DATA] feePaymentLabel:", feePaymentLabel.value)
-			console.log("[TransactionPopup][DATA] fee-entrypoint methods in tx.calls:", asJson(fpcCalls))
-			console.log("[TransactionPopup][DATA] raw tx.calls length:", t?.calls?.length ?? 0)
-			console.log(
-				"[TransactionPopup][DATA] userCalls length:",
-				userCalls.value.length,
-				"→ CALLS section renders:",
-				userCalls.value.length > 0,
-			)
-			console.log("[TransactionPopup][DATA] userCalls methods:", asJson(userCalls.value.map((c) => c.method)))
-			console.log("[TransactionPopup][DATA] userCalls contracts:", asJson(userCalls.value.map((c) => c.contract)))
-			console.log("[TransactionPopup][DATA] full tx:", asJson(t))
+			console.log("fee-entrypoint method names found in tx.calls:", fpcCalls)
+			console.log("raw tx.calls length:", t?.calls?.length ?? 0)
+			console.log("userCalls (filtered) length:", userCalls.value.length)
+			console.log("userCalls:", userCalls.value)
+			console.log("→ CALLS section should render:", userCalls.value.length > 0)
+			console.groupEnd()
 
 			// ── DOM state (after Vue flushes the render) ──
 			await nextTick()
-			console.log("[TransactionPopup][DOM] tx-calls-section:", asJson(probe('[data-testid="tx-calls-section"]')))
-			const rows = document.querySelectorAll('[data-testid="tx-call-row"]')
-			console.log("[TransactionPopup][DOM] tx-call-row count:", rows.length)
-			rows.forEach((el, i) => {
+			console.groupCollapsed("[TransactionPopup] Open — DOM state")
+			console.log(probe('[data-testid="tx-calls-section"]'))
+			console.log("tx-call-row count:", document.querySelectorAll('[data-testid="tx-call-row"]').length)
+			document.querySelectorAll('[data-testid="tx-call-row"]').forEach((el, i) => {
 				const r = el.getBoundingClientRect()
-				console.log(
-					`[TransactionPopup][DOM] tx-call-row[${i}]:`,
-					asJson({
-						width: Math.round(r.width),
-						height: Math.round(r.height),
-						text: el.textContent?.trim().slice(0, 100),
-					}),
-				)
+				console.log(`  row[${i}]:`, {
+					width: Math.round(r.width),
+					height: Math.round(r.height),
+					text: el.textContent?.trim().slice(0, 80),
+				})
 			})
-			console.log("[TransactionPopup][DOM] tx-block-row:", asJson(probe('[data-testid="tx-block-row"]')))
-			console.log("[TransactionPopup][DOM] tx-nonce-row:", asJson(probe('[data-testid="tx-nonce-row"]')))
-			console.log("[TransactionPopup][DOM] tx-fee-method-row:", asJson(probe('[data-testid="tx-fee-method-row"]')))
-			console.log("[TransactionPopup][DOM] debug-toggle:", asJson(probe('[data-testid="debug-toggle"]')))
-			console.log("[TransactionPopup][DOM] debug-body (expect absent until expanded):", asJson(probe('[data-testid="debug-body"]')))
-
-			// Dump raw innerHTML of the details box + calls box so we can see what Vue actually rendered.
-			const allDetailsBoxes = document.querySelectorAll('[class*="details_box"]')
-			allDetailsBoxes.forEach((el, i) => {
-				console.log(`[TransactionPopup][DOM] details_box[${i}] innerHTML:`, el.innerHTML)
-			})
-			const callsBox = document.querySelector('[class*="calls_box"]')
-			console.log("[TransactionPopup][DOM] calls_box innerHTML:", callsBox ? callsBox.innerHTML : "(not in DOM)")
-			console.log("[TransactionPopup][DOM] calls_box children count:", callsBox ? callsBox.children.length : 0)
+			console.log(probe('[data-testid="tx-block-row"]'))
+			console.log(probe('[data-testid="tx-nonce-row"]'))
+			console.log(probe('[data-testid="tx-fee-method-row"]'))
+			console.log(probe('[data-testid="debug-toggle"]'))
+			console.log(probe('[data-testid="debug-body"]'), "(expect present:false until expanded)")
+			console.groupEnd()
 		} else {
 			tokenService.disconnect()
 			showFeeBreakdown.value = false
@@ -178,9 +150,10 @@ watch(
 
 watch(isDebugExpanded, async (val) => {
 	await nextTick()
-	console.log(`[TransactionPopup][DEBUG-TOGGLE] state: ${val ? "expanded" : "collapsed"}`)
-	console.log("[TransactionPopup][DEBUG-TOGGLE] debug-body:", asJson(probe('[data-testid="debug-body"]')))
-	console.log("[TransactionPopup][DEBUG-TOGGLE] debug-tx-hash:", asJson(probe('[data-testid="debug-tx-hash"]')))
+	console.groupCollapsed(`[TransactionPopup] Debug toggle → ${val ? "expanded" : "collapsed"}`)
+	console.log(probe('[data-testid="debug-body"]'))
+	console.log(probe('[data-testid="debug-tx-hash"]'))
+	console.groupEnd()
 })
 
 const txTime = computed(() => {
@@ -494,9 +467,9 @@ const userCalls = computed(() => {
 							</Flex>
 						</Flex>
 
-						<div v-if="tx?.block" :class="$style.kv_row" data-testid="tx-block-row">
+						<Flex v-if="tx?.block" wide justify="between" align="center" data-testid="tx-block-row">
 							<span :class="$style.detail_key">Block</span>
-							<div :class="$style.kv_value_group">
+							<Flex align="center" gap="6">
 								<span :class="$style.detail_value_mono">#{{ tx.block.number }}</span>
 								<span
 									@click="handleCopy(tx.block.hash)"
@@ -504,10 +477,10 @@ const userCalls = computed(() => {
 								>
 									{{ trimAddress(tx.block.hash, 6, 4) }}
 								</span>
-							</div>
-						</div>
+							</Flex>
+						</Flex>
 
-						<div v-if="tx?.nonce" :class="$style.kv_row" data-testid="tx-nonce-row">
+						<Flex v-if="tx?.nonce" wide justify="between" align="center" data-testid="tx-nonce-row">
 							<span :class="$style.detail_key">Nonce</span>
 							<span
 								@click="handleCopy(tx.nonce)"
@@ -515,7 +488,7 @@ const userCalls = computed(() => {
 							>
 								{{ trimAddress(tx.nonce, 6, 4) }}
 							</span>
-						</div>
+						</Flex>
 					</Flex>
 				</Flex>
 
@@ -523,12 +496,14 @@ const userCalls = computed(() => {
 				<Flex v-if="userCalls.length" wide direction="column" gap="10" data-testid="tx-calls-section">
 					<SectionLabel label="Calls" :count="userCalls.length" />
 
-					<div :class="$style.calls_box">
-						<div
+					<Flex wide direction="column" :class="$style.calls_box">
+						<Flex
 							v-for="(c, idx) in userCalls"
 							:key="idx"
+							direction="column"
+							gap="4"
 							:class="[$style.call_row, idx > 0 && $style.call_row_divider]"
-							data-testid="tx-call-row"
+							:data-testid="'tx-call-row'"
 						>
 							<span :class="$style.call_method">{{ humanizeMethodName(c.method) || "Call" }}</span>
 							<span
@@ -537,8 +512,8 @@ const userCalls = computed(() => {
 							>
 								{{ trimAddress(c.contract, 6, 4) }}
 							</span>
-						</div>
-					</div>
+						</Flex>
+					</Flex>
 				</Flex>
 
 				<!-- Debug details (collapsed by default) -->
@@ -873,22 +848,6 @@ const userCalls = computed(() => {
 	color: var(--green);
 }
 
-/* ── Key/value rows (for details rows that need plain-div layout) ─ */
-
-.kv_row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 10px;
-	width: 100%;
-}
-
-.kv_value_group {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-}
-
 /* ── Calls section ─────────────────────────────────────────────── */
 
 .calls_box {
@@ -899,9 +858,6 @@ const userCalls = computed(() => {
 }
 
 .call_row {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
 	width: 100%;
 
 	padding: 10px 12px;
