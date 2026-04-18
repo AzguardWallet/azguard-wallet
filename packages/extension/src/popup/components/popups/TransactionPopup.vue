@@ -10,7 +10,8 @@ import { NuloFeePaymentMethod } from "@/wallet/services/account/contracts"
 
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
-import { getTxCategory, getTxTitle, getOriginLabel, getPrimaryCall, formatTransferType } from "@/utils/tx-enrichment"
+import { trimAddress } from "@/utils/string"
+import { getTxCategory, getTxTitle, getOriginLabel, getPrimaryCall, formatTransferType, humanizeMethodName } from "@/utils/tx-enrichment"
 import { formatFeeJuice, feeToUsd, formatGas } from "@/utils/fee-estimation"
 import { getTransactionExplorerUrl, BLOCK_EXPLORERS } from "@/wallet/constants/explorers"
 
