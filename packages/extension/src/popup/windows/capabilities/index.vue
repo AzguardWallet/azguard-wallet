@@ -384,10 +384,7 @@ onUnmounted(() => {
 		<Flex direction="column" gap="20" :class="$style.sections">
 			<!-- Account selection section -->
 			<Flex v-if="needsAccountSelection" direction="column" gap="10" wide>
-				<div :class="$style.section_label">
-					<span>Select accounts to share</span>
-					<span :class="$style.section_count">{{ availableAccounts.length }}</span>
-				</div>
+				<SectionLabel label="Select accounts to share" :count="availableAccounts.length" />
 
 				<ItemsContainer>
 					<div
@@ -451,10 +448,7 @@ onUnmounted(() => {
 
 			<!-- New capabilities (delta) — accounts type excluded -->
 			<Flex v-if="capabilities.filter(c => c.isNew).length" direction="column" gap="10" wide>
-				<div :class="$style.section_label">
-					<span>New capabilities requested</span>
-					<span :class="$style.section_count">{{ capabilities.filter(c => c.isNew).length }}</span>
-				</div>
+				<SectionLabel label="New capabilities requested" :count="capabilities.filter(c => c.isNew).length" />
 
 				<Flex direction="column" gap="6" wide>
 					<Flex
@@ -505,10 +499,7 @@ onUnmounted(() => {
 
 			<!-- Already granted -->
 			<Flex v-if="capabilities.filter(c => !c.isNew).length" direction="column" gap="10" wide>
-				<div :class="$style.section_label">
-					<span>Already granted</span>
-					<span :class="$style.section_count">{{ capabilities.filter(c => !c.isNew).length }}</span>
-				</div>
+				<SectionLabel label="Already granted" :count="capabilities.filter(c => !c.isNew).length" />
 
 				<Flex direction="column" gap="6" wide>
 					<Flex
@@ -733,25 +724,6 @@ onUnmounted(() => {
 
 .sections {
 	padding: 16px;
-}
-
-.section_label {
-	display: flex;
-	align-items: baseline;
-	gap: 10px;
-
-	font-family: var(--font-headline);
-	font-size: 12px;
-	font-weight: 700;
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	color: var(--nulo-secondary);
-}
-
-.section_count {
-	font-family: var(--font-mono);
-	font-size: 10px;
-	color: var(--nulo-outline);
 }
 
 /* ── Account rows ──────────────────────────────────────────────── */

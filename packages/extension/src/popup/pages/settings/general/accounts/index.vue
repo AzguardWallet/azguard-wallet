@@ -60,10 +60,7 @@ const handleCopyAddress = (target) => {
 
 		<Flex direction="column" gap="40" :class="$style.content">
 			<Flex direction="column" gap="16">
-				<div :class="$style.section_label">
-					<span>Accounts</span>
-					<span :class="$style.section_count">{{ appStore.accounts.length }}</span>
-				</div>
+				<SectionLabel label="Accounts" :count="appStore.accounts.length" />
 
 				<ItemsContainer>
 					<SettingItem
@@ -176,25 +173,6 @@ const handleCopyAddress = (target) => {
 
 .content {
 	padding: 16px 24px var(--nav-clearance) 24px;
-}
-
-.section_label {
-	display: flex;
-	align-items: baseline;
-	gap: 10px;
-
-	font-family: var(--font-headline);
-	font-size: 12px;
-	font-weight: 700;
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	color: var(--nulo-secondary);
-}
-
-.section_count {
-	font-family: var(--font-mono);
-	font-size: 10px;
-	color: var(--nulo-outline);
 }
 
 .icon_btn {

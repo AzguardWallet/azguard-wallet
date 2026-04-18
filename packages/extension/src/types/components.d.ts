@@ -42,6 +42,7 @@ declare module 'vue' {
     PopupHeader: typeof import('./../components/ui/Popup/PopupHeader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SectionLabel: typeof import('./../components/ui/SectionLabel.vue')['default']
     SettingField: typeof import('./../components/ui/Settings/SettingField.vue')['default']
     SettingItem: typeof import('./../components/ui/Settings/SettingItem.vue')['default']
     SettingValue: typeof import('./../components/ui/Settings/SettingValue.vue')['default']
