@@ -36,9 +36,13 @@ const sortedContacts = computed(() =>
 const contactService = new ContactServiceClient()
 
 // Re-sync from storage on any contact event — guarantees the UI can't drift
-// from what's actually stored, regardless of event-push timing edge cases.
+// from what's actually stored, with a seq guard against stale in-flight fetches.
+let syncSeq = 0
 async function syncContacts() {
-	contacts.value = await contactService.getContacts()
+	const mySeq = ++syncSeq
+	const result = await contactService.getContacts()
+	if (mySeq !== syncSeq) return
+	contacts.value = result
 }
 contactService.onContactAdded.add(syncContacts)
 contactService.onContactUpdated.add(syncContacts)
@@ -193,14 +197,6 @@ onMounted(async () => {
 	await syncContacts()
 })
 
-// Whenever the New Contact popup closes, re-sync — belt + suspenders on top of
-// the event-based sync, since the popup also disconnects its own client mid-flow.
-watch(
-	() => !!popupStore.popups.new_contact,
-	(isOpen, wasOpen) => {
-		if (wasOpen && !isOpen) syncContacts()
-	},
-)
 onBeforeUnmount(() => {
 	contactService.disconnect()
 })
@@ -233,46 +229,74 @@ onBeforeUnmount(() => {
 			</template>
 		</SubPageHeader>
 
-		<Flex direction="column" gap="16" :class="$style.content">
-			<Text size="13" weight="600" color="primary">
-				Contacts&nbsp;<Text color="tertiary">{{ sortedContacts.length }}</Text>
-			</Text>
+		<Flex direction="column" gap="12" :class="$style.content">
+			<div :class="$style.section_label">
+				<span>Contacts</span>
+				<span :class="$style.section_count">{{ sortedContacts.length }}</span>
+			</div>
 
 			<ItemsContainer v-if="sortedContacts.length">
-				<SettingItem
+				<div
 					v-for="c in sortedContacts"
 					:key="c.id"
+					role="button"
+					tabindex="0"
 					@click="handleClickContact(c)"
-					:title="c.name"
-					:description="trimAddress(c.address)"
+					@keydown.enter="handleClickContact(c)"
+					:class="$style.row"
 				>
-					<template #icon>
-						<Flex align="center" justify="center" :class="$style.avatar" :style="{ backgroundColor: `var(--${c.color})` }">
-							<Text size="10" weight="700" color="inverse">{{ c.abbr }}</Text>
-						</Flex>
-					</template>
+					<Flex align="center" gap="12" wide>
+						<div :class="$style.avatar" :style="{ backgroundColor: `var(--${c.color})` }">
+							<span :class="$style.avatar_text">{{ c.abbr }}</span>
+						</div>
 
-					<template #right>
-						<Flex align="center" gap="8">
-							<Icon
-								@click.stop="handleCopyContactAddress(c)"
-								name="copy"
-								size="14"
-								color="tertiary"
-								:class="$style.action_icon"
-							/>
-							<div data-testid="contact-edit" @click.stop="handleEditContact(c)" :class="$style.action_wrapper">
-								<Icon name="edit" size="14" color="tertiary" :class="$style.action_icon" />
-							</div>
-							<div data-testid="contact-delete" @click.stop="handleDeleteContact(c)" :class="$style.action_wrapper">
-								<Icon name="close-circle" size="14" color="tertiary" :class="$style.delete_icon" />
-							</div>
+						<Flex direction="column" gap="2" wide :class="$style.row_text">
+							<span :class="$style.row_name">{{ c.name }}</span>
+							<span :class="$style.row_address">{{ trimAddress(c.address) }}</span>
 						</Flex>
-					</template>
-				</SettingItem>
+
+						<Flex align="center" gap="8" :class="$style.actions">
+							<span
+								role="button"
+								tabindex="0"
+								@click.stop="handleCopyContactAddress(c)"
+								@keydown.enter.stop="handleCopyContactAddress(c)"
+								:class="$style.action"
+								aria-label="Copy address"
+							>
+								<Icon name="copy" size="14" color="tertiary" />
+							</span>
+							<span
+								role="button"
+								tabindex="0"
+								data-testid="contact-edit"
+								@click.stop="handleEditContact(c)"
+								@keydown.enter.stop="handleEditContact(c)"
+								:class="$style.action"
+								aria-label="Edit contact"
+							>
+								<Icon name="edit" size="14" color="tertiary" />
+							</span>
+							<span
+								role="button"
+								tabindex="0"
+								data-testid="contact-delete"
+								@click.stop="handleDeleteContact(c)"
+								@keydown.enter.stop="handleDeleteContact(c)"
+								:class="[$style.action, $style.action_danger]"
+								aria-label="Delete contact"
+							>
+								<Icon name="close-circle" size="14" color="tertiary" />
+							</span>
+						</Flex>
+					</Flex>
+				</div>
 			</ItemsContainer>
 
-			<Banner v-else>No contacts yet</Banner>
+			<div v-else :class="$style.empty">
+				<div :class="$style.empty_label">No contacts yet</div>
+				<div :class="$style.empty_hint">Add someone you send to often</div>
+			</div>
 
 			<Button
 				@click="popupStore.open('new_contact')"
@@ -301,10 +325,167 @@ onBeforeUnmount(() => {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
+.section_label {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.section_count {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-outline);
+}
+
+.row {
+	position: relative;
+	padding: 12px 16px;
+	cursor: pointer;
+	background: transparent;
+	outline: none;
+
+	transition: background 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--nulo-surface-high);
+	}
+
+	&:active {
+		background: var(--nulo-surface-highest);
+	}
+
+	&:focus-visible {
+		background: var(--nulo-surface-high);
+	}
+
+	&::after {
+		position: absolute;
+		bottom: 0;
+		left: 16px;
+		right: 16px;
+		display: block;
+		height: 1px;
+
+		background: rgba(74, 70, 63, 0.3);
+
+		content: " ";
+	}
+
+	&:last-child::after {
+		display: none;
+	}
+}
+
 .avatar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+
+	width: 24px;
+	height: 24px;
+}
+
+.avatar_text {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 700;
+	color: var(--txt-inverse);
+	line-height: 1;
+}
+
+.row_text {
+	min-width: 0;
+}
+
+.row_name {
+	font-family: var(--font-body);
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--txt-primary);
+	line-height: 20px;
+	letter-spacing: 0.01em;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.row_address {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
+	line-height: 16px;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.actions {
+	flex-shrink: 0;
+}
+
+.action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
 	width: 20px;
 	height: 20px;
-	flex-shrink: 0;
+
+	cursor: pointer;
+	outline: none;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover svg {
+		fill: var(--txt-primary);
+	}
+
+	&:focus-visible {
+		background: var(--nulo-surface-high);
+	}
+}
+
+.action_danger {
+	&:hover svg {
+		fill: var(--red);
+	}
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+
+	padding: 40px 16px;
+
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
+}
+
+.empty_label {
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.empty_hint {
+	font-family: var(--font-body);
+	font-size: 12px;
+	color: var(--nulo-outline);
 }
 
 .icon_btn {
@@ -323,29 +504,6 @@ onBeforeUnmount(() => {
 
 	&:hover {
 		background: rgba(248, 241, 231, 0.08);
-	}
-}
-
-.action_wrapper {
-	display: inline-flex;
-	cursor: pointer;
-}
-
-.action_icon {
-	cursor: pointer;
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		fill: var(--txt-primary);
-	}
-}
-
-.delete_icon {
-	cursor: pointer;
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		fill: var(--red);
 	}
 }
 </style>

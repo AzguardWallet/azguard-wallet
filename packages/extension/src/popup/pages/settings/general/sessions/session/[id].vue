@@ -261,10 +261,11 @@ onBeforeUnmount(() => {
 			</Flex>
 
 			<!-- Shared accounts -->
-			<Flex direction="column" gap="8" wide>
-				<Text size="13" weight="600" color="primary">
-					Shared accounts&nbsp;<Text color="tertiary">{{ accounts.length }}</Text>
-				</Text>
+			<Flex direction="column" gap="10" wide>
+				<div :class="$style.section_label">
+					<span>Shared accounts</span>
+					<span :class="$style.section_count">{{ accounts.length }}</span>
+				</div>
 
 				<ItemsContainer v-if="accounts.length">
 					<SettingItem
@@ -296,8 +297,10 @@ onBeforeUnmount(() => {
 			</Flex>
 
 			<!-- Session allowances -->
-			<Flex v-if="hasSessionAllowances" direction="column" gap="8" wide>
-				<Text size="13" weight="600" color="primary">Session allowances</Text>
+			<Flex v-if="hasSessionAllowances" direction="column" gap="10" wide>
+				<div :class="$style.section_label">
+					<span>Session allowances</span>
+				</div>
 
 				<Flex align="start" gap="4">
 					<Text size="13" weight="600" color="secondary">Networks:</Text>
@@ -321,8 +324,10 @@ onBeforeUnmount(() => {
 			</Flex>
 
 			<!-- Confirmation policy -->
-			<Flex direction="column" gap="8" wide>
-				<Text size="13" weight="600" color="primary">Confirmation policy</Text>
+			<Flex direction="column" gap="10" wide>
+				<div :class="$style.section_label">
+					<span>Confirmation policy</span>
+				</div>
 				<Text size="13" color="secondary" :style="{ lineHeight: '1.4' }">
 					{{
 						confirmationPolicies.find(x => x.confirmationLevel === session?.confirmationLevel)
@@ -332,10 +337,11 @@ onBeforeUnmount(() => {
 			</Flex>
 
 			<!-- Granted capabilities -->
-			<Flex v-if="grantedCapabilities.length" direction="column" gap="8" wide>
-				<Text size="13" weight="600" color="primary">
-					Granted capabilities&nbsp;<Text color="tertiary">{{ grantedCapabilities.length }}</Text>
-				</Text>
+			<Flex v-if="grantedCapabilities.length" direction="column" gap="10" wide>
+				<div :class="$style.section_label">
+					<span>Granted capabilities</span>
+					<span :class="$style.section_count">{{ grantedCapabilities.length }}</span>
+				</div>
 				<Flex direction="column" gap="6" wide>
 					<Flex
 						v-for="(grant, gi) in grantedCapabilities"
@@ -370,8 +376,10 @@ onBeforeUnmount(() => {
 			</Flex>
 
 			<!-- Connection verification -->
-			<Flex v-if="verificationEmojis" direction="column" gap="8" wide>
-				<Text size="13" weight="600" color="primary">Connection verification</Text>
+			<Flex v-if="verificationEmojis" direction="column" gap="10" wide>
+				<div :class="$style.section_label">
+					<span>Connection verification</span>
+				</div>
 				<Flex direction="column" align="center" wide>
 					<EmojiGrid :emojis="verificationEmojis" />
 				</Flex>
@@ -401,6 +409,25 @@ onBeforeUnmount(() => {
 
 .content {
 	padding: 16px 24px var(--nav-clearance) 24px;
+}
+
+.section_label {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.section_count {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-outline);
 }
 
 .logo {

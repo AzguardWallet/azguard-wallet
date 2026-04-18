@@ -63,7 +63,6 @@ function onDappSessionAdded(session) {
 function onDappSessionUpdated(session) {
 	const idx = dappSessions.value.findIndex((ds) => ds.id === session.id)
 	if (idx !== -1) {
-		// Preserve already-loaded logoBlobUrl across updates
 		const prevBlob = dappSessions.value[idx].dappMetadata?.logoBlobUrl
 		dappSessions.value[idx] = session
 		if (prevBlob && session.dappMetadata) {
@@ -137,43 +136,66 @@ onBeforeUnmount(() => {
 			</template>
 		</SubPageHeader>
 
-		<Flex direction="column" gap="16" :class="$style.content">
-			<Text size="13" weight="600" color="primary">
-				Sessions&nbsp;<Text color="tertiary">{{ sortedSessions.length }}</Text>
-			</Text>
+		<Flex direction="column" gap="12" :class="$style.content">
+			<div :class="$style.section_label">
+				<span>Sessions</span>
+				<span :class="$style.section_count">{{ sortedSessions.length }}</span>
+			</div>
 
 			<ItemsContainer v-if="sortedSessions.length">
-				<SettingItem
+				<div
 					v-for="ds in sortedSessions"
 					:key="ds.id"
+					role="button"
+					tabindex="0"
 					@click="handleOpenSession(ds)"
-					:title="ds.dappMetadata.name"
-					:description="formatGrantSummary(ds.capabilityGrants ?? [])"
+					@keydown.enter="handleOpenSession(ds)"
+					:class="$style.row"
 				>
-					<template #icon>
-						<Icon v-if="ds.loadingLogo" :loading="true" name="dapp" size="18" color="tertiary" />
-						<img
-							v-else-if="ds.dappMetadata.logoBlobUrl"
-							:src="ds.dappMetadata.logoBlobUrl"
-							:class="$style.logo"
-							alt=""
-						/>
-						<Icon v-else name="dapp" size="18" color="tertiary" />
-					</template>
+					<Flex align="center" gap="12" wide>
+						<div :class="$style.logo_wrapper">
+							<Icon v-if="ds.loadingLogo" :loading="true" name="dapp" size="18" color="tertiary" />
+							<img
+								v-else-if="ds.dappMetadata.logoBlobUrl"
+								:src="ds.dappMetadata.logoBlobUrl"
+								:class="$style.logo"
+								alt=""
+							/>
+							<Icon v-else name="dapp" size="18" color="tertiary" />
+						</div>
 
-					<template #right>
-						<Tooltip position="end" delay="350">
-							<div data-testid="session-disconnect" @click.stop="handleDropSession(ds)" :class="$style.action_wrapper">
-								<Icon name="close-circle" size="14" color="tertiary" :class="$style.delete_icon" />
-							</div>
+						<Flex direction="column" gap="2" wide :class="$style.row_text">
+							<span :class="$style.row_name">{{ ds.dappMetadata.name }}</span>
+							<span v-if="ds.capabilityGrants?.length" :class="$style.row_grants">
+								{{ formatGrantSummary(ds.capabilityGrants) }}
+							</span>
+						</Flex>
 
-							<template #content> Disconnect session </template>
-						</Tooltip>
-					</template>
-				</SettingItem>
+						<Flex align="center" gap="8" :class="$style.actions">
+							<Tooltip position="end" delay="350">
+								<span
+									role="button"
+									tabindex="0"
+									data-testid="session-disconnect"
+									@click.stop="handleDropSession(ds)"
+									@keydown.enter.stop="handleDropSession(ds)"
+									:class="[$style.action, $style.action_danger]"
+									aria-label="Disconnect session"
+								>
+									<Icon name="close-circle" size="14" color="tertiary" />
+								</span>
+
+								<template #content> Disconnect session </template>
+							</Tooltip>
+						</Flex>
+					</Flex>
+				</div>
 			</ItemsContainer>
 
-			<Banner v-else>No active sessions</Banner>
+			<div v-else :class="$style.empty">
+				<div :class="$style.empty_label">No active sessions</div>
+				<div :class="$style.empty_hint">Connect a dApp to start a session</div>
+			</div>
 		</Flex>
 
 	</Flex>
@@ -191,11 +213,165 @@ onBeforeUnmount(() => {
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
+.section_label {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.section_count {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-outline);
+}
+
+.row {
+	position: relative;
+	padding: 12px 16px;
+	cursor: pointer;
+	background: transparent;
+	outline: none;
+
+	transition: background 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--nulo-surface-high);
+	}
+
+	&:active {
+		background: var(--nulo-surface-highest);
+	}
+
+	&:focus-visible {
+		background: var(--nulo-surface-high);
+	}
+
+	&::after {
+		position: absolute;
+		bottom: 0;
+		left: 16px;
+		right: 16px;
+		display: block;
+		height: 1px;
+
+		background: rgba(74, 70, 63, 0.3);
+
+		content: " ";
+	}
+
+	&:last-child::after {
+		display: none;
+	}
+}
+
+.logo_wrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+
+	width: 24px;
+	height: 24px;
+}
+
 .logo {
+	width: 24px;
+	height: 24px;
+	object-fit: cover;
+}
+
+.row_text {
+	min-width: 0;
+}
+
+.row_name {
+	font-family: var(--font-body);
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--txt-primary);
+	line-height: 20px;
+	letter-spacing: 0.01em;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.row_grants {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
+	line-height: 16px;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.actions {
+	flex-shrink: 0;
+}
+
+.action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
 	width: 20px;
 	height: 20px;
-	object-fit: cover;
-	flex-shrink: 0;
+
+	cursor: pointer;
+	outline: none;
+
+	transition: all 0.2s var(--bezier);
+
+	&:hover svg {
+		fill: var(--txt-primary);
+	}
+
+	&:focus-visible {
+		background: var(--nulo-surface-high);
+	}
+}
+
+.action_danger {
+	&:hover svg {
+		fill: var(--red);
+	}
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+
+	padding: 40px 16px;
+
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
+}
+
+.empty_label {
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.empty_hint {
+	font-family: var(--font-body);
+	font-size: 12px;
+	color: var(--nulo-outline);
 }
 
 .icon_btn {
@@ -214,20 +390,6 @@ onBeforeUnmount(() => {
 
 	&:hover {
 		background: rgba(248, 241, 231, 0.08);
-	}
-}
-
-.action_wrapper {
-	display: inline-flex;
-	cursor: pointer;
-}
-
-.delete_icon {
-	cursor: pointer;
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		fill: var(--red);
 	}
 }
 </style>
