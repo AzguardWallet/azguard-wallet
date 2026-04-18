@@ -190,8 +190,9 @@ onUnmounted(() => {
 			<span :class="$style.identity_brand">NULO</span>
 		</Flex>
 
-		<!-- dApp identity block -->
-		<Flex align="center" gap="12" :class="$style.dapp_block">
+		<Flex direction="column" :class="$style.scroll_area">
+			<!-- dApp identity block -->
+			<Flex align="center" gap="12" :class="$style.dapp_block">
 			<div :class="$style.dapp_logo_wrapper">
 				<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="24" color="tertiary" />
 				<img v-else-if="dapp?.logoBlobUrl" :src="dapp?.logoBlobUrl" :class="$style.dapp_logo" alt="" />
@@ -215,11 +216,12 @@ onUnmounted(() => {
 			</Flex>
 		</Flex>
 
-		<!-- Body: trust reminder -->
-		<Flex direction="column" gap="8" :class="$style.body">
-			<Text size="12" color="tertiary" :style="{ lineHeight: '1.5' }">
-				Make sure you trust the site you're connecting to. You can revoke this connection any time from Settings → General → Sessions.
-			</Text>
+			<!-- Body: trust reminder -->
+			<Flex direction="column" gap="8" :class="$style.body">
+				<Text size="12" color="tertiary" :style="{ lineHeight: '1.5' }">
+					Make sure you trust the site you're connecting to. You can revoke this connection any time from Settings → General → Sessions.
+				</Text>
+			</Flex>
 		</Flex>
 
 		<!-- Footer: error + actions -->
@@ -267,7 +269,7 @@ onUnmounted(() => {
 
 <style module>
 .wrapper {
-	overflow: auto;
+	overflow: hidden;
 	flex: 1;
 
 	display: flex;
@@ -275,6 +277,13 @@ onUnmounted(() => {
 
 	background: var(--app-bg);
 	border-top: 2px solid var(--nulo-accent);
+}
+
+.scroll_area {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	scrollbar-gutter: stable;
 }
 
 /* ── Identity strip ────────────────────────────────────────────── */
@@ -408,7 +417,6 @@ onUnmounted(() => {
 .footer {
 	flex-shrink: 0;
 
-	margin-top: auto;
 	padding: 16px;
 	border-top: 1px solid var(--nulo-border);
 	background: var(--nulo-surface);
