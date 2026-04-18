@@ -1,7 +1,8 @@
 <route lang="json">
 {
 	"meta": {
-		"isAuthRequired": true
+		"isAuthRequired": true,
+		"showBottomNav": true
 	}
 }
 </route>
@@ -10,7 +11,6 @@
 /** Components */
 import BalanceView from "../../components/modules/general/BalanceView.vue"
 import RecentActivityView from "../../components/modules/general/RecentActivityView.vue"
-import SplittedBalancesView from "../../components/modules/general/SplittedBalancesView.vue"
 import SubPageHeader from "@/components/ui/SubPageHeader.vue"
 import { Dropdown } from "@/components/ui/Dropdown"
 
@@ -184,8 +184,6 @@ onBeforeUnmount(() => {
 				<Banner v-if="!token?.hasPublicTransfers && !token?.hasPrivateTransfers" variant="warning">
 					Private and public transfers disabled
 				</Banner>
-
-				<SplittedBalancesView :tokenBalance />
 
 				<RecentActivityView :token />
 			</Flex>

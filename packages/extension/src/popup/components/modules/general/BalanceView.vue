@@ -312,11 +312,11 @@ onBeforeUnmount(() => {
 
 			<Flex v-if="tokenToDisplay" align="center" justify="center" gap="12" :class="$style.breakdown">
 				<span :class="$style.breakdown_item">
-					<span :class="$style.breakdown_dot" /> PRIVATE: {{ privateBalanceFormatted }}
+					<span :class="$style.breakdown_dot" /> PRIVATE: <span data-testid="private-balance-value">{{ privateBalanceFormatted }}</span>
 				</span>
 				<span :class="$style.breakdown_divider">|</span>
 				<span :class="$style.breakdown_item">
-					<span :class="[$style.breakdown_dot, $style.public_dot]" /> PUBLIC: {{ publicBalanceFormatted }}
+					<span :class="[$style.breakdown_dot, $style.public_dot]" /> PUBLIC: <span data-testid="public-balance-value">{{ publicBalanceFormatted }}</span>
 				</span>
 			</Flex>
 		</section>

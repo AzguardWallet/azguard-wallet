@@ -312,10 +312,10 @@ export async function navigateToTokenDetail(page: Page): Promise<void> {
 		a?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window, button: 0 }))
 	})
 	await page.waitForFunction(() => window.location.hash.includes("#/popup/tokens/"), { timeout: 10_000 })
-	await page.waitForSelector('[data-testid="private-balance-value"]', { visible: true, timeout: 15_000 })
+	await page.waitForSelector('[data-testid="balance-amount"]', { visible: true, timeout: 15_000 })
 }
 
-/** Read the private and public balance values from the token detail page's SplittedBalancesView. */
+/** Read the private and public balance values from the token detail page's BalanceView breakdown. */
 export async function getTokenDetailBalances(page: Page): Promise<{ privateBalance: string; publicBalance: string }> {
 	await page.waitForSelector('[data-testid="private-balance-value"]', { visible: true, timeout: 10_000 })
 	const privateBalance = await page.evaluate(() => {

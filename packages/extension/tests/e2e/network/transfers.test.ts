@@ -123,14 +123,18 @@ test.skipIf(!hasConfig)("send from token detail page loads token correctly", { t
 	// Navigate to token detail page
 	await navigateToTokenDetail(page)
 
-	// Click "Send" from the public balance row in SplittedBalancesView
-	const sendFromPublic = await page.waitForSelector('[data-testid="send-from-public"]', { visible: true, timeout: 10_000 })
-	await sendFromPublic!.scrollIntoView()
-	await sendFromPublic!.click()
+	// Click the Send action button in BalanceView
+	const sendBtn = await page.waitForSelector('[data-testid="actions-send"]', { visible: true, timeout: 10_000 })
+	await sendBtn!.scrollIntoView()
+	await sendBtn!.click()
 
 	// Wait for SendPopup to mount — send-from-type proves the token loaded
 	// (if the bug were present, we'd see "No available tokens" instead)
 	await page.waitForSelector('[data-testid="send-from-type"]', { timeout: 15_000 })
+
+	// Toggle FROM origin to public (default is private)
+	const fromToggle = await page.waitForSelector('[data-testid="send-from-type"]', { visible: true, timeout: 5_000 })
+	await fromToggle!.click()
 
 	// Verify the amount input exists (proves token was selected, not "No available tokens")
 	const hasAmountInput = await page.evaluate(() => !!document.querySelector('[data-testid="send-amount-input"]'))
