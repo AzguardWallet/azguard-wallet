@@ -81,66 +81,11 @@ const mintAmount = computed(() => {
 const showFeeBreakdown = ref(false)
 const isDebugExpanded = ref(false)
 
-/** Describe a DOM node in one line: presence, rect, computed height/display. */
-function probe(sel) {
-	const el = document.querySelector(sel)
-	if (!el) return { selector: sel, present: false }
-	const rect = el.getBoundingClientRect()
-	const cs = getComputedStyle(el)
-	return {
-		selector: sel,
-		present: true,
-		width: Math.round(rect.width),
-		height: Math.round(rect.height),
-		display: cs.display,
-		visibility: cs.visibility,
-		textLen: (el.textContent ?? "").trim().length,
-	}
-}
-
 watch(
 	() => props.show,
 	async () => {
 		if (props.show) {
 			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
-
-			// ── Data state ──
-			const t = tx.value
-			console.groupCollapsed("[TransactionPopup] Open — data state")
-			console.log("has tx:", !!t)
-			console.log("tx:", t)
-			console.log("tx.hash:", t?.hash)
-			console.log("tx.block:", t?.block, "→ BLOCK row should render:", !!t?.block)
-			console.log("tx.nonce:", t?.nonce, "→ NONCE row should render:", !!t?.nonce)
-			console.log("tx.feePaymentMethod enum:", t?.feePaymentMethod)
-			console.log("feePaymentLabel computed:", feePaymentLabel.value)
-			const fpcCalls = (t?.calls ?? []).filter((c) => FEE_METHODS.has(c.method)).map((c) => c.method)
-			console.log("fee-entrypoint method names found in tx.calls:", fpcCalls)
-			console.log("raw tx.calls length:", t?.calls?.length ?? 0)
-			console.log("userCalls (filtered) length:", userCalls.value.length)
-			console.log("userCalls:", userCalls.value)
-			console.log("→ CALLS section should render:", userCalls.value.length > 0)
-			console.groupEnd()
-
-			// ── DOM state (after Vue flushes the render) ──
-			await nextTick()
-			console.groupCollapsed("[TransactionPopup] Open — DOM state")
-			console.log(probe('[data-testid="tx-calls-section"]'))
-			console.log("tx-call-row count:", document.querySelectorAll('[data-testid="tx-call-row"]').length)
-			document.querySelectorAll('[data-testid="tx-call-row"]').forEach((el, i) => {
-				const r = el.getBoundingClientRect()
-				console.log(`  row[${i}]:`, {
-					width: Math.round(r.width),
-					height: Math.round(r.height),
-					text: el.textContent?.trim().slice(0, 80),
-				})
-			})
-			console.log(probe('[data-testid="tx-block-row"]'))
-			console.log(probe('[data-testid="tx-nonce-row"]'))
-			console.log(probe('[data-testid="tx-fee-method-row"]'))
-			console.log(probe('[data-testid="debug-toggle"]'))
-			console.log(probe('[data-testid="debug-body"]'), "(expect present:false until expanded)")
-			console.groupEnd()
 		} else {
 			tokenService.disconnect()
 			showFeeBreakdown.value = false
@@ -148,14 +93,6 @@ watch(
 		}
 	},
 )
-
-watch(isDebugExpanded, async (val) => {
-	await nextTick()
-	console.groupCollapsed(`[TransactionPopup] Debug toggle → ${val ? "expanded" : "collapsed"}`)
-	console.log(probe('[data-testid="debug-body"]'))
-	console.log(probe('[data-testid="debug-tx-hash"]'))
-	console.groupEnd()
-})
 
 const txTime = computed(() => {
 	if (!tx.value?.updatedAt) return null
@@ -372,7 +309,7 @@ const userCalls = computed(() => {
 							<span :class="$style.detail_value">{{ originLabel }}</span>
 						</Flex>
 
-						<Flex v-if="feePaymentLabel" wide justify="between" align="center" data-testid="tx-fee-method-row">
+						<Flex v-if="feePaymentLabel" wide justify="between" align="center">
 							<span :class="$style.detail_key">Fee method</span>
 							<span :class="$style.detail_value">{{ feePaymentLabel }}</span>
 						</Flex>
@@ -468,7 +405,7 @@ const userCalls = computed(() => {
 							</Flex>
 						</Flex>
 
-						<Flex v-if="tx?.block" wide justify="between" align="center" data-testid="tx-block-row">
+						<Flex v-if="tx?.block" wide justify="between" align="center">
 							<span :class="$style.detail_key">Block</span>
 							<Flex align="center" gap="6">
 								<span :class="$style.detail_value_mono">#{{ tx.block.number }}</span>
@@ -481,7 +418,7 @@ const userCalls = computed(() => {
 							</Flex>
 						</Flex>
 
-						<Flex v-if="tx?.nonce" wide justify="between" align="center" data-testid="tx-nonce-row">
+						<Flex v-if="tx?.nonce" wide justify="between" align="center">
 							<span :class="$style.detail_key">Nonce</span>
 							<span
 								@click="handleCopy(tx.nonce)"
@@ -494,7 +431,7 @@ const userCalls = computed(() => {
 				</Flex>
 
 				<!-- Calls (top-level, stacked rows) -->
-				<Flex v-if="userCalls.length" wide direction="column" gap="10" data-testid="tx-calls-section">
+				<Flex v-if="userCalls.length" wide direction="column" gap="10">
 					<SectionLabel label="Calls" :count="userCalls.length" />
 
 					<Flex wide direction="column" :class="$style.calls_box">
@@ -504,7 +441,6 @@ const userCalls = computed(() => {
 							direction="column"
 							gap="4"
 							:class="[$style.call_row, idx > 0 && $style.call_row_divider]"
-							:data-testid="'tx-call-row'"
 						>
 							<span :class="$style.call_method">{{ humanizeMethodName(c.method) || "Call" }}</span>
 							<span
@@ -523,7 +459,6 @@ const userCalls = computed(() => {
 						type="button"
 						@click="isDebugExpanded = !isDebugExpanded"
 						:class="$style.debug_toggle"
-						data-testid="debug-toggle"
 					>
 						<SectionLabel label="Debug details" />
 						<Icon
@@ -534,8 +469,8 @@ const userCalls = computed(() => {
 						/>
 					</button>
 
-					<Flex v-if="isDebugExpanded" wide direction="column" gap="12" :class="$style.details_box" data-testid="debug-body">
-						<Flex wide justify="between" align="center" data-testid="debug-tx-hash">
+					<Flex v-if="isDebugExpanded" wide direction="column" gap="12" :class="$style.details_box">
+						<Flex wide justify="between" align="center">
 							<span :class="$style.detail_key">Tx hash</span>
 							<Flex
 								@click="handleCopy(tx.hash)"
