@@ -113,11 +113,16 @@ const dappHostname = computed(() => {
 		return dapp.value.url
 	}
 })
+/** Flags hostnames that could be homograph attacks:
+ *  - non-ASCII codepoints (raw IDN)
+ *  - punycode labels (xn-- prefix; ASCII-encoded IDN — looks innocuous here
+ *    but indicates the registered domain uses non-ASCII characters) */
 const hostnameHasNonAscii = computed(() => {
-	for (const ch of dappHostname.value) {
+	const h = dappHostname.value
+	for (const ch of h) {
 		if (ch.charCodeAt(0) > 127) return true
 	}
-	return false
+	return h.split(".").some((label) => label.startsWith("xn--"))
 })
 
 /** Status dot semantic for the identity strip. */

@@ -193,7 +193,7 @@ const init = async () => {
 						account,
 						accountAddress: account.address,
 					})
-					if (!_accounts.find((x) => x.address === account.address)) {
+					if (!_accounts.find((x) => x.address === account.address && x.chainId === account.chainId)) {
 						_accounts.push(account)
 					}
 					break
@@ -209,7 +209,7 @@ const init = async () => {
 						accountAddress: account.address,
 						feeSettings: isNoFrom || op.exec.feePayer !== undefined ? { paymentMethod: { kind: "embedded" } } : undefined!,
 					})
-					if (!_accounts.find((x) => x.address === account.address)) {
+					if (!_accounts.find((x) => x.address === account.address && x.chainId === account.chainId)) {
 						_accounts.push(account)
 					}
 					break
@@ -224,7 +224,7 @@ const init = async () => {
 						accountAddress: account.address,
 						feeSettings: op.fee?.embeddedFeePayment !== undefined ? { paymentMethod: { kind: "embedded" } } : undefined!,
 					})
-					if (!_accounts.find((x) => x.address === account.address)) {
+					if (!_accounts.find((x) => x.address === account.address && x.chainId === account.chainId)) {
 						_accounts.push(account)
 					}
 					break
@@ -258,11 +258,13 @@ const onInteractionCancelled = (_requestId: string) => {
 }
 
 const approve = async () => {
+	if (isInteractionCancelled.value || isLoading.value) return
 	if (operations.value.find((x) => x.kind === "send_transaction" && !x.feeSettings)) {
 		setError("Validation error", "You must specify fee payment method for each 'Send transaction' operations", "warning")
 		return
 	}
 	try {
+		isLoading.value = true
 		await interactionService.approveInteraction(requestId.value!, operations.value, {
 			type: OriginType.DAPP,
 			name: dapp.value?.name ?? "Unknown app",
@@ -270,11 +272,18 @@ const approve = async () => {
 		closeWindow(true)
 	} catch (error) {
 		setError("Processing error.", getErrorMessage(error))
+	} finally {
+		isLoading.value = false
 	}
 }
 
 const reject = async () => {
-	interactionService.rejectInteraction(requestId.value!, "User rejected")
+	// Guard against double-fire on the cancellation overlay path where
+	// closeWindow() can trigger beforeunload -> reject() on an already
+	// cancelled interaction. Also guard against init throwing before
+	// requestId resolves.
+	if (isInteractionCancelled.value || !requestId.value) return
+	interactionService.rejectInteraction(requestId.value, "User rejected")
 	closeWindow(true)
 }
 
@@ -288,6 +297,55 @@ const closeWindow = (interactionCompleted: boolean) => {
 		}
 	})
 }
+
+/** Anti-phishing: show the normalized hostname (not raw URL) and flag
+ *  IDN / punycode so homograph attacks are visible. */
+const dappHostname = computed(() => {
+	if (!dapp.value?.url) return ""
+	try {
+		return new URL(dapp.value.url).hostname
+	} catch {
+		return dapp.value.url
+	}
+})
+const hostnameHasNonAscii = computed(() => {
+	const h = dappHostname.value
+	for (const ch of h) {
+		if (ch.charCodeAt(0) > 127) return true
+	}
+	return h.split(".").some((label) => label.startsWith("xn--"))
+})
+
+/** Anti-phishing: identity strip reflects the REAL signer(s), not the
+ *  popup's active account. Multi-op payloads may target multiple
+ *  accounts / chains; strip shows MULTIPLE in those cases. */
+const signerAccounts = computed(() => {
+	const seen = new Set<string>()
+	const out: Account[] = []
+	for (const op of operations.value) {
+		if (!op.account) continue
+		const key = `${op.network.chainId}:${op.account.address}`
+		if (seen.has(key)) continue
+		seen.add(key)
+		out.push(op.account)
+	}
+	return out
+})
+const signerNetworks = computed(() => {
+	const seen = new Set<number>()
+	const out: Network[] = []
+	for (const op of operations.value) {
+		if (seen.has(op.network.chainId)) continue
+		seen.add(op.network.chainId)
+		out.push(op.network)
+	}
+	return out
+})
+const stripStatus = computed<"ready" | "loading" | "cancelled">(() => {
+	if (isInteractionCancelled.value) return "cancelled"
+	if (isLoading.value) return "loading"
+	return "ready"
+})
 
 const humanizeOperationKind = (str: string) => {
 	if (str.startsWith("aztec_")) {
@@ -357,76 +415,64 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="16">
-			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
-				<Text size="16" weight="600" color="primary">Operation request</Text>
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<!-- Identity strip: anti-phishing trust anchor. Shows the REAL signer(s)
+		     derived from payload operations, not the popup's active account. -->
+		<Flex align="center" justify="between" gap="12" :class="$style.identity_strip">
+			<Flex align="center" gap="8">
+				<span :class="[$style.status_dot, $style[`status_${stripStatus}`]]" />
+				<template v-if="signerAccounts.length === 1">
+					<span :class="$style.identity_account">{{ signerAccounts[0].name }}</span>
+					<span :class="$style.identity_sep">·</span>
+					<span :class="$style.identity_network">{{ signerNetworks[0]?.name ?? "" }}</span>
+				</template>
+				<template v-else-if="signerAccounts.length > 1">
+					<span :class="$style.identity_account">{{ signerAccounts.length }} accounts</span>
+					<span :class="$style.identity_sep">·</span>
+					<span :class="[$style.identity_network, $style.identity_warn]">MIXED</span>
+				</template>
+				<template v-else>
+					<span :class="$style.identity_account">No signer</span>
+				</template>
 			</Flex>
+			<span :class="$style.identity_brand">NULO</span>
+		</Flex>
 
-			<Flex align="center" justify="center" gap="20">
-				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
-					<img v-else-if="dapp?.logoBlobUrl" width="48" height="48" :src="dapp?.logoBlobUrl" />
-					<Icon v-else name="dapp" size="48" color="blue" />
+		<!-- dApp identity block: hostname dominant, normalized, IDN flagged -->
+		<Flex align="center" gap="12" :class="$style.dapp_block">
+			<div :class="$style.dapp_logo_wrapper">
+				<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="24" color="tertiary" />
+				<img v-else-if="dapp?.logoBlobUrl" :src="dapp?.logoBlobUrl" :class="$style.dapp_logo" alt="" />
+				<Icon v-else name="dapp" size="24" color="tertiary" />
+			</div>
 
-					<Text size="13" weight="600" color="primary">
-						{{ dapp?.name ?? "Unknown app" }}
-					</Text>
+			<Flex direction="column" gap="4" wide :class="$style.dapp_info">
+				<Flex align="center" gap="6">
+					<span :class="$style.dapp_hostname">{{ dappHostname }}</span>
+					<Tooltip v-if="hostnameHasNonAscii" position="start">
+						<Icon name="warning" size="12" color="orange" />
+						<template #content>
+							<Text size="12" color="secondary" :style="{ lineHeight: '1.3' }">
+								This hostname contains non-ASCII or punycoded characters. Verify carefully — some characters can imitate Latin letters.
+							</Text>
+						</template>
+					</Tooltip>
 				</Flex>
-
-				<Flex
-					align="center"
-					gap="12"
-					:class="[$style.status_icon, isLoading && $style.processing]"
-					:style="{ paddingBottom: '13px' }"
-				>
-					<Icon name="left-connect" size="24" color="tertiary" />
-					<Icon name="right-connect" size="24" color="tertiary" />
-				</Flex>
-
-				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<img width="48" height="48" src="@/assets/logo_lg.png" />
-
-					<Text size="13" weight="600" color="primary">Nulo</Text>
-				</Flex>
+				<span v-if="dapp?.name" :class="$style.dapp_name">{{ dapp.name }}</span>
+				<span :class="$style.dapp_action">wants to execute the following</span>
 			</Flex>
+		</Flex>
 
-			<Flex direction="column" align="center" justify="center" gap="8" :style="{ marginTop: '-4px' }">
-				<Flex direction="column" align="center" justify="center" gap="4">
-					<Text size="13" weight="600" color="primary"> {{ dapp?.url }} </Text>
-					<Text size="13" color="primary">wants to execute the following</Text>
-				</Flex>
-				<Flex direction="column" align="center" justify="center" gap="4">
-					<Text size="12" color="secondary">Make sure you trust the site you interact with</Text>
-				</Flex>
-			</Flex>
-
-			<Flex
-				v-if="operations.length"
-				direction="column"
-				align="start"
-				justify="start"
-				gap="8"
-				style="padding-bottom: 8px"
-			>
-				<Flex wide justify="between">
-					<Text size="14" weight="600" color="primary">Requested operations:</Text>
+		<Flex direction="column" gap="16" :class="$style.sections">
+			<Flex v-if="operations.length" direction="column" gap="10" wide>
+				<Flex wide justify="between" align="center">
+					<SectionLabel label="Requested operations" :count="operations.length" />
 					<Icon @click="showJson" name="expand" size="16" color="tertiary" :class="$style.fullscreen_icon" />
 				</Flex>
 
 				<template v-for="(op, i) in operations" :key="i">
-					<Flex v-if="op.kind === 'send_transaction'" direction="column" wide>
-						<Flex
-							:class="$style.operation"
-							direction="column"
-							wide
-							style="
-								margin-bottom: 0;
-								border-bottom-right-radius: 0;
-								border-bottom-left-radius: 0;
-								border-bottom: none;
-							"
-						>
+					<Flex v-if="op.kind === 'send_transaction'" direction="column" :class="$style.op_card">
+						<Flex :class="$style.op_body" direction="column" wide>
 							<Flex wide justify="between">
 								<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
 								<NetworkBadge :chainId="op.network.chainId" />
@@ -461,12 +507,13 @@ onUnmounted(() => {
 								</Flex>
 							</Flex>
 						</Flex>
+						<div :class="$style.op_divider" />
 						<Flex
 							v-if="op.fee?.embeddedFeePayment !== undefined"
 							align="center"
 							gap="8"
 							wide
-							style="padding: 12px 16px; background: var(--nulo-surface); border: 1px solid var(--nulo-border); border-top: none;"
+							:class="$style.op_fee_set"
 						>
 							<Icon name="check-circle" size="14" color="green" />
 							<Text size="13" weight="500" color="secondary">
@@ -475,6 +522,7 @@ onUnmounted(() => {
 						</Flex>
 						<FeeSettingsCard
 							v-else
+							embedded
 							:profile="profile"
 							:network="op.network"
 							:account="op.account"
@@ -488,21 +536,10 @@ onUnmounted(() => {
 									if ($event) startEstimation(i, op, $event)
 								}
 							"
-							style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"
 						/>
 					</Flex>
-					<Flex v-else-if="op.kind === 'aztec_sendTx'" direction="column" wide>
-						<Flex
-							:class="$style.operation"
-							direction="column"
-							wide
-							style="
-								margin-bottom: 0;
-								border-bottom-right-radius: 0;
-								border-bottom-left-radius: 0;
-								border-bottom: none;
-							"
-						>
+					<Flex v-else-if="op.kind === 'aztec_sendTx'" direction="column" :class="$style.op_card">
+						<Flex :class="$style.op_body" direction="column" wide>
 							<Flex wide justify="between">
 								<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
 								<NetworkBadge :chainId="op.network.chainId" />
@@ -524,19 +561,20 @@ onUnmounted(() => {
 										color="primary"
 									>
 										<Text weight="600">{{ humanizeMethodName(call.name ?? call.selector) }}</Text>
-										
+
 										<Text color="secondary"> on </Text>
 										<AddressDisplay :address="call.to" />
 									</Text>
 								</Flex>
 							</Flex>
 						</Flex>
+						<div :class="$style.op_divider" />
 						<Flex
 							v-if="op.executionMode === 'default_entrypoint' || op.exec?.feePayer !== undefined"
 							align="center"
 							gap="8"
 							wide
-							style="padding: 12px 16px; background: var(--nulo-surface); border: 1px solid var(--nulo-border); border-top: none;"
+							:class="$style.op_fee_set"
 						>
 							<Icon name="check-circle" size="14" color="green" />
 							<Text size="13" weight="500" color="secondary">
@@ -545,6 +583,7 @@ onUnmounted(() => {
 						</Flex>
 						<FeeSettingsCard
 							v-else
+							embedded
 							:profile="profile"
 							:network="op.network"
 							:account="op.account"
@@ -558,10 +597,9 @@ onUnmounted(() => {
 									if ($event) startEstimation(i, op, $event)
 								}
 							"
-							style="border-top-left-radius: 0; border-top-right-radius: 0; opacity: 1"
 						/>
 					</Flex>
-					<Flex v-else :class="$style.operation" direction="column" wide>
+					<Flex v-else :class="[$style.op_card, $style.op_card_simple]" direction="column" wide>
 						<Flex wide justify="between">
 							<Text size="14" color="primary">{{ humanizeOperationKind(op.kind) }}</Text>
 							<NetworkBadge :chainId="op.network.chainId" />
@@ -706,31 +744,57 @@ onUnmounted(() => {
 										color="primary"
 									>
 										<Text weight="600">{{ humanizeMethodName(call.name ?? call.selector) }}</Text>
-										
+
 										<Text color="secondary"> on </Text>
 										<AddressDisplay :address="call.to" />
 									</Text>
 								</Flex>
 							</Flex>
 						</template>
+						<template v-else-if="op.kind === 'aztec_registerContract'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Contract address:</Text>
+								<AddressDisplay :address="op.instance.address.toString()" />
+							</Flex>
+							<Flex v-if="op.artifact" :class="$style.prop">
+								<Text size="12" color="secondary">Artifact:</Text>
+								<Text size="12" color="primary">{{ op.artifact.name ?? "(custom)" }}</Text>
+							</Flex>
+						</template>
+						<template v-else-if="op.kind === 'aztec_createAuthWit'">
+							<Flex :class="$style.prop">
+								<Text size="12" color="secondary">Message type:</Text>
+								<Text size="12" weight="600" color="primary">
+									{{ (op.messageHashOrIntent as { innerHash?: unknown }).innerHash !== undefined ? "Inner hash" : "Call intent" }}
+								</Text>
+							</Flex>
+							<template v-if="(op.messageHashOrIntent as { call?: { to: unknown; name?: string; selector?: unknown } }).call">
+								<Flex :class="$style.prop">
+									<Text size="12" color="secondary">Target contract:</Text>
+									<AddressDisplay :address="(op.messageHashOrIntent as { call: { to: { toString(): string } } }).call.to.toString()" />
+								</Flex>
+								<Flex :class="$style.prop">
+									<Text size="12" color="secondary">Function:</Text>
+									<Text size="12" weight="600" color="primary">
+										{{ humanizeMethodName((op.messageHashOrIntent as { call: { name?: string; selector?: { toString(): string } } }).call.name ?? (op.messageHashOrIntent as { call: { selector?: { toString(): string } } }).call.selector?.toString() ?? "") }}
+									</Text>
+								</Flex>
+							</template>
+						</template>
 					</Flex>
 				</template>
 			</Flex>
 		</Flex>
 
-		<Flex direction="column" gap="10">
+		<Flex direction="column" gap="10" :class="$style.footer">
 			<Tooltip v-if="processingError" side="top" position="start" :disabled="!processingError.tooltip">
-				<Flex align="center" wide>
+				<Flex align="center" wide gap="6">
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
-					<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
-						{{ processingError.title }}
-					</Text>
+					<Text size="12" weight="600" color="secondary">{{ processingError.title }}</Text>
 				</Flex>
 
 				<template #content>
-					<Text size="12" color="secondary">
-						{{ processingError.tooltip }}
-					</Text>
+					<Text size="12" color="secondary">{{ processingError.tooltip }}</Text>
 				</template>
 			</Tooltip>
 
@@ -745,9 +809,9 @@ onUnmounted(() => {
 					type="primary"
 					size="medium"
 					:loading="isLoading"
-					:disabled="processingError"
+					:disabled="processingError?.type === 'error'"
 				>
-					<Text size="13" color="inverse"> {{ `${isLoading ? "Executing" : "Confirm"}` }} </Text>
+					<Text size="13" color="inverse">{{ isLoading ? "Executing" : "Confirm" }}</Text>
 				</Button>
 			</Flex>
 		</Flex>
@@ -780,101 +844,171 @@ onUnmounted(() => {
 .wrapper {
 	overflow: auto;
 	flex: 1;
-	background: var(--app-bg);
 
+	display: flex;
+	flex-direction: column;
+
+	background: var(--app-bg);
+	border-top: 2px solid var(--nulo-accent);
+}
+
+/* ── Identity strip ────────────────────────────────────────────── */
+
+.identity_strip {
+	flex-shrink: 0;
+
+	padding: 10px 16px;
+	background: var(--nulo-surface);
+	border-bottom: 1px solid var(--nulo-border);
+}
+
+.status_dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	flex-shrink: 0;
+}
+
+.status_ready { background: var(--green); }
+.status_loading { background: var(--orange); }
+.status_cancelled { background: var(--red); }
+
+.identity_account {
+	font-family: var(--font-headline);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 140px;
+}
+
+.identity_sep {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-outline);
+}
+
+.identity_network {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-secondary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 80px;
+}
+
+.identity_warn {
+	color: var(--orange);
+	font-weight: 700;
+}
+
+.identity_brand {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+	color: var(--nulo-outline);
+}
+
+/* ── dApp identity block ───────────────────────────────────────── */
+
+.dapp_block {
+	flex-shrink: 0;
+
+	padding: 16px;
+	border-bottom: 1px solid var(--nulo-border);
+}
+
+.dapp_logo_wrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+
+	width: 40px;
+	height: 40px;
+
+	background: var(--nulo-surface);
+	border: 1px solid var(--nulo-border);
+}
+
+.dapp_logo {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+}
+
+.dapp_info {
+	min-width: 0;
+}
+
+.dapp_hostname {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dapp_name {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dapp_action {
+	font-family: var(--font-body);
+	font-size: 12px;
+	color: var(--nulo-secondary);
+}
+
+/* ── Sections ──────────────────────────────────────────────────── */
+
+.sections {
 	padding: 16px;
 }
 
-& img {
-	transition: all 0.2s ease;
-}
+/* ── Operation cards ───────────────────────────────────────────── */
 
-.avatar {
-	position: relative;
-
-	width: 80px;
-	height: 80px;
-
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
-
-	text-align: center;
-	white-space: nowrap;
-
-	& img {
-		transition: all 0.2s ease;
-	}
-
-	& .icon_connectors {
-		position: absolute;
-		top: -12px;
-		right: -12px;
-		box-sizing: content-box;
-
-		background: var(--app-bg);
-
-		padding: 3px;
-	}
-}
-
-@keyframes loading {
-	0% {
-		opacity: 1;
-	}
-
-	25% {
-		opacity: 0.8;
-	}
-
-	50% {
-		opacity: 0.4;
-	}
-
-	70% {
-		opacity: 0.8;
-	}
-
-	100% {
-		opacity: 1;
-	}
-}
-
-.status_icon {
-	& svg {
-		transition: all 0.5s ease;
-	}
-
-	& svg:first-child {
-		fill: var(--green);
-
-		transform: translateX(16px);
-
-		filter: drop-shadow(0 0px 8px var(--green));
-	}
-
-	& svg:last-child {
-		fill: var(--green);
-
-		transform: translateX(-16px);
-
-		filter: drop-shadow(0 0px 8px var(--green));
-	}
-}
-
-.processing {
-	animation: loading 2s infinite linear;
-}
-
-.section {
+.op_card {
 	width: 100%;
+
+	border: 1px solid var(--nulo-border);
+	background: transparent;
+	overflow: hidden;
 }
 
-.operation {
-	width: 100%;
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
-
+.op_card_simple {
 	padding: 12px;
+}
+
+.op_body {
+	padding: 12px;
+}
+
+.op_divider {
+	height: 1px;
+	background: var(--nulo-border);
+}
+
+.op_fee_set {
+	padding: 12px;
+	background: var(--nulo-surface-low);
 }
 
 .prop {
@@ -889,59 +1023,25 @@ onUnmounted(() => {
 
 .fullscreen_icon {
 	cursor: pointer;
-	&:hover {
-		background: var(--nulo-surface-high);
-	}
-}
-
-.account {
-	width: 100%;
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
-
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
-}
-
-.networks {
-	width: 100%;
-	max-height: 170px;
-	overflow: auto;
-}
-
-.network {
-	width: 100%;
-	cursor: pointer;
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
-
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
+	padding: 4px;
 
 	&:hover {
 		background: var(--nulo-surface-high);
-		border-color: var(--nulo-outline);
-	}
-
-	&:active {
-		background: var(--nulo-surface-highest);
 	}
 }
 
-.json_viewer {
-	width: 100%;
-	height: 180px;
-	max-height: 180px;
+/* ── Footer ────────────────────────────────────────────────────── */
 
-	border: 1px solid var(--nulo-border);
+.footer {
+	flex-shrink: 0;
+
+	margin-top: auto;
+	padding: 16px;
+	border-top: 1px solid var(--nulo-border);
+	background: var(--nulo-surface);
 }
 
-.disabled {
-	cursor: default;
-	pointer-events: none;
-}
+/* ── Overlays ──────────────────────────────────────────────────── */
 
 .notification_overlay {
 	position: fixed;
@@ -955,9 +1055,11 @@ onUnmounted(() => {
 
 .notification_content {
 	width: 90%;
+
+	padding: 16px;
 	background: var(--nulo-surface);
 	border: 1px solid var(--nulo-border);
-	padding: 12px;
+
 	text-align: center;
 	line-height: 1.2;
 	z-index: 1001;

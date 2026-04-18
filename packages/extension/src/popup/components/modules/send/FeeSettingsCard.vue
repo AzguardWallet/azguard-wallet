@@ -39,6 +39,14 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	/** When mounted inside another bordered container (e.g. execute window's
+	 *  operation card), the outer wrapper's own border + overflow:hidden
+	 *  clash with the parent's border. Passing embedded=true strips the root
+	 *  border so the parent can own the single border. */
+	embedded: {
+		type: Boolean,
+		default: false,
+	},
 })
 
 const FEE_METHOD_LS_KEY = UI_STORAGE_KEYS.FEE_PAYMENT_METHODS
@@ -378,7 +386,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" :class="$style.wrapper">
+	<Flex direction="column" :class="[$style.wrapper, embedded && $style.embedded]">
 		<!-- Embedded fee override banner -->
 		<template v-if="isCustomMethod && !useOwnMethod">
 			<Flex align="center" justify="between" :class="$style.card">
@@ -567,6 +575,10 @@ onBeforeUnmount(() => {
 .wrapper {
 	border: 1px solid var(--nulo-outline);
 	overflow: hidden;
+}
+
+.embedded {
+	border: none;
 }
 
 .card {
