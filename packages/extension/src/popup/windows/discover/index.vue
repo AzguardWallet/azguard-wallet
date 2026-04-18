@@ -44,6 +44,30 @@ function setError(title: string, tooltip: string = title, type: string = "error"
 	processingError.value = { title, tooltip, type }
 }
 
+/** Anti-phishing: show the normalized hostname (not raw URL) and flag
+ *  IDN / punycode so homograph attacks are visible. */
+const dappHostname = computed(() => {
+	if (!dapp.value?.url) return ""
+	try {
+		return new URL(dapp.value.url).hostname
+	} catch {
+		return dapp.value.url
+	}
+})
+const hostnameHasNonAscii = computed(() => {
+	const h = dappHostname.value
+	for (const ch of h) {
+		if (ch.charCodeAt(0) > 127) return true
+	}
+	return h.split(".").some((label) => label.startsWith("xn--"))
+})
+
+const stripStatus = computed<"ready" | "loading" | "cancelled">(() => {
+	if (isInteractionCancelled.value) return "cancelled"
+	if (isLoading.value) return "loading"
+	return "ready"
+})
+
 const init = async () => {
 	try {
 		profile.value = await profileService.getActiveProfile()
@@ -81,9 +105,10 @@ const onInteractionCancelled = (_requestId: string) => {
 }
 
 const approve = async () => {
+	if (isInteractionCancelled.value || isLoading.value || !requestId.value) return
 	try {
 		isLoading.value = true
-		await interactionService.resolveInteraction(requestId.value!, { approved: true })
+		await interactionService.resolveInteraction(requestId.value, { approved: true })
 		closeWindow(true)
 	} catch (error) {
 		console.error(getErrorData(error))
@@ -94,7 +119,8 @@ const approve = async () => {
 }
 
 const reject = async () => {
-	interactionService.rejectInteraction(requestId.value!, "User rejected")
+	if (isInteractionCancelled.value || !requestId.value) return
+	interactionService.rejectInteraction(requestId.value, "User rejected")
 	closeWindow(true)
 }
 
@@ -152,62 +178,60 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" justify="between" :class="$style.wrapper">
-		<Flex direction="column" gap="16">
-			<Flex align="center" justify="center" gap="8" :style="{ paddingTop: '8px' }">
-				<Text size="16" weight="600" color="primary">Connection request</Text>
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<!-- Identity strip: anti-phishing trust anchor. -->
+		<Flex align="center" justify="between" gap="12" :class="$style.identity_strip">
+			<Flex align="center" gap="8">
+				<span :class="[$style.status_dot, $style[`status_${stripStatus}`]]" />
+				<span :class="$style.identity_account">{{ appStore.account?.name ?? "No account" }}</span>
+				<span :class="$style.identity_sep">·</span>
+				<span :class="$style.identity_network">{{ appStore.network?.name ?? "" }}</span>
 			</Flex>
+			<span :class="$style.identity_brand">NULO</span>
+		</Flex>
 
-			<Flex align="center" justify="center" gap="20">
-				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="48" color="tertiary" />
-					<img v-else-if="dapp?.logoBlobUrl" width="48" height="48" :src="dapp?.logoBlobUrl" />
-					<Icon v-else name="dapp" size="48" color="blue" />
+		<!-- dApp identity block -->
+		<Flex align="center" gap="12" :class="$style.dapp_block">
+			<div :class="$style.dapp_logo_wrapper">
+				<Icon v-if="dapp?.loadingLogo" :loading="true" name="dapp" size="24" color="tertiary" />
+				<img v-else-if="dapp?.logoBlobUrl" :src="dapp?.logoBlobUrl" :class="$style.dapp_logo" alt="" />
+				<Icon v-else name="dapp" size="24" color="tertiary" />
+			</div>
 
-					<Text size="13" weight="600" color="primary"> {{ dapp?.name ?? "Unknown DApp" }} </Text>
+			<Flex direction="column" gap="4" wide :class="$style.dapp_info">
+				<Flex align="center" gap="6">
+					<span :class="$style.dapp_hostname">{{ dappHostname }}</span>
+					<Tooltip v-if="hostnameHasNonAscii" position="start">
+						<Icon name="warning" size="12" color="orange" />
+						<template #content>
+							<Text size="12" color="secondary" :style="{ lineHeight: '1.3' }">
+								This hostname contains non-ASCII or punycoded characters. Verify carefully — some characters can imitate Latin letters.
+							</Text>
+						</template>
+					</Tooltip>
 				</Flex>
-
-				<Flex
-					align="center"
-					gap="12"
-					:class="isLoading && $style.status_icon"
-					:style="{ paddingBottom: '13px' }"
-				>
-					<Icon name="left-connect" size="24" color="tertiary" />
-					<Icon name="right-connect" size="24" color="tertiary" />
-				</Flex>
-
-				<Flex direction="column" align="center" justify="center" gap="6" :class="$style.avatar">
-					<img width="48" height="48" src="@/assets/logo_lg.png" />
-
-					<Text size="13" weight="600" color="primary">Nulo</Text>
-				</Flex>
-			</Flex>
-
-			<Flex direction="column" align="center" justify="center" gap="8" :style="{ marginTop: '-4px' }">
-				<Flex direction="column" align="center" justify="center" gap="4">
-					<Text size="13" weight="600" color="primary"> {{ dapp?.url }} </Text>
-					<Text size="13" color="primary">This application wants to connect to your wallet</Text>
-				</Flex>
-				<Flex direction="column" align="center" justify="center" gap="4">
-					<Text size="12" color="secondary">Make sure you trust the site you interact with</Text>
-				</Flex>
+				<span v-if="dapp?.name" :class="$style.dapp_name">{{ dapp.name }}</span>
+				<span :class="$style.dapp_action">wants to connect to your wallet</span>
 			</Flex>
 		</Flex>
 
-		<Flex direction="column" gap="10" style="margin-top: 16px">
+		<!-- Body: trust reminder -->
+		<Flex direction="column" gap="8" :class="$style.body">
+			<Text size="12" color="tertiary" :style="{ lineHeight: '1.5' }">
+				Make sure you trust the site you're connecting to. You can revoke this connection any time from Settings → General → Sessions.
+			</Text>
+		</Flex>
+
+		<!-- Footer: error + actions -->
+		<Flex direction="column" gap="10" :class="$style.footer">
 			<Tooltip v-if="processingError" side="top" position="start" wide :disabled="!processingError.tooltip">
-				<Flex align="center" wide>
+				<Flex align="center" wide gap="6">
 					<Icon name="info" size="14" :color="processingError.type === 'warning' ? 'orange' : 'red'" />
-					<Text size="12" weight="600" color="secondary" :style="{ paddingLeft: '4px' }">
-						{{ processingError.title }}
-					</Text>
+					<Text size="12" weight="600" color="secondary">{{ processingError.title }}</Text>
 				</Flex>
 
 				<template #content>
-					<Text size="12" color="secondary">
-						{{ processingError.tooltip }}
-					</Text>
+					<Text size="12" color="secondary">{{ processingError.tooltip }}</Text>
 				</template>
 			</Tooltip>
 
@@ -222,7 +246,7 @@ onUnmounted(() => {
 					type="primary"
 					size="medium"
 					:loading="isLoading"
-					:disabled="processingError"
+					:disabled="processingError?.type === 'error'"
 				>
 					<Text size="13" color="inverse">Allow</Text>
 				</Button>
@@ -245,68 +269,152 @@ onUnmounted(() => {
 .wrapper {
 	overflow: auto;
 	flex: 1;
-	background: var(--app-bg);
 
-	padding: 16px 24px;
+	display: flex;
+	flex-direction: column;
+
+	background: var(--app-bg);
+	border-top: 2px solid var(--nulo-accent);
 }
 
-.avatar {
-	position: relative;
+/* ── Identity strip ────────────────────────────────────────────── */
 
-	width: 80px;
-	height: 80px;
+.identity_strip {
+	flex-shrink: 0;
+
+	padding: 10px 16px;
+	background: var(--nulo-surface);
+	border-bottom: 1px solid var(--nulo-border);
+}
+
+.status_dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	flex-shrink: 0;
+}
+
+.status_ready { background: var(--green); }
+.status_loading { background: var(--orange); }
+.status_cancelled { background: var(--red); }
+
+.identity_account {
+	font-family: var(--font-headline);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 140px;
+}
+
+.identity_sep {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-outline);
+}
+
+.identity_network {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--nulo-secondary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 80px;
+}
+
+.identity_brand {
+	font-family: var(--font-headline);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+	color: var(--nulo-outline);
+}
+
+/* ── dApp identity block ───────────────────────────────────────── */
+
+.dapp_block {
+	flex-shrink: 0;
+
+	padding: 16px;
+	border-bottom: 1px solid var(--nulo-border);
+}
+
+.dapp_logo_wrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+
+	width: 40px;
+	height: 40px;
 
 	background: var(--nulo-surface);
 	border: 1px solid var(--nulo-border);
+}
 
-	text-align: center;
+.dapp_logo {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+}
+
+.dapp_info {
+	min-width: 0;
+}
+
+.dapp_hostname {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
-
-	& img {
-		transition: all 0.2s ease;
-	}
 }
 
-@keyframes loading {
-	0% {
-		opacity: 1;
-	}
+.dapp_name {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
 
-	25% {
-		opacity: 0.8;
-	}
-
-	50% {
-		opacity: 0.4;
-	}
-
-	70% {
-		opacity: 0.8;
-	}
-
-	100% {
-		opacity: 1;
-	}
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.status_icon {
-	& svg {
-		transition: all 1s ease;
-		animation: loading 2s infinite linear;
-	}
-
-	& svg:first-child {
-		fill: var(--green);
-		transform: translateX(16px);
-		filter: drop-shadow(0 0px 8px var(--green));
-	}
-
-	& svg:last-child {
-		fill: var(--green);
-		transform: translateX(-16px);
-		filter: drop-shadow(0 0px 8px var(--green));
-	}
+.dapp_action {
+	font-family: var(--font-body);
+	font-size: 12px;
+	color: var(--nulo-secondary);
 }
+
+/* ── Body ──────────────────────────────────────────────────────── */
+
+.body {
+	padding: 16px;
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+
+.footer {
+	flex-shrink: 0;
+
+	margin-top: auto;
+	padding: 16px;
+	border-top: 1px solid var(--nulo-border);
+	background: var(--nulo-surface);
+}
+
+/* ── Cancellation overlay ──────────────────────────────────────── */
 
 .notification_overlay {
 	position: fixed;
@@ -320,9 +428,11 @@ onUnmounted(() => {
 
 .notification_content {
 	width: 90%;
+
+	padding: 16px;
 	background: var(--nulo-surface);
 	border: 1px solid var(--nulo-border);
-	padding: 12px;
+
 	text-align: center;
 	line-height: 1.2;
 	z-index: 1001;
