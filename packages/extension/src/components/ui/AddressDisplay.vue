@@ -38,6 +38,10 @@ const props = defineProps({
 		type: String,
 		default: "primary",
 	},
+	static: {
+		type: Boolean,
+		default: false,
+	},
 })
 
 const contactName = ref("")
@@ -46,6 +50,11 @@ const displayedAddress = ref("")
 const showName = ref(false)
 
 const handleClick = () => {
+	if (props.static) {
+		emit("onAddressClick")
+		return
+	}
+
 	showName.value = !showName.value
 
 	if (contactName.value) {

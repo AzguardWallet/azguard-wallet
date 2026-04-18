@@ -85,6 +85,21 @@ watch(
 	async () => {
 		if (props.show) {
 			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+
+			// Diagnostic logs for the still-not-rendering reports (Calls / Block / Tx hash).
+			// Kept temporarily until we confirm every field renders end-to-end.
+			const t = tx.value
+			console.log("[TransactionPopup] tx:", t)
+			console.log("[TransactionPopup] tx.calls:", t?.calls)
+			console.log("[TransactionPopup] userCalls (filtered):", userCalls.value)
+			console.log("[TransactionPopup] tx.hash:", t?.hash)
+			console.log("[TransactionPopup] tx.block:", t?.block)
+			console.log("[TransactionPopup] tx.nonce:", t?.nonce)
+			console.log("[TransactionPopup] tx.feePaymentMethod:", t?.feePaymentMethod)
+			console.log(
+				"[TransactionPopup] fee-entrypoint call methods:",
+				t?.calls?.filter((c) => FEE_METHODS.has(c.method)).map((c) => c.method),
+			)
 		} else {
 			tokenService.disconnect()
 			showFeeBreakdown.value = false
@@ -113,8 +128,8 @@ const feePaymentLabel = computed(() => {
 	const t = tx.value
 	if (!t) return null
 	const method = t.feePaymentMethod
-	if (method === NuloFeePaymentMethod.FeeJuice) return "FeeJuice"
-	if (method === NuloFeePaymentMethod.FeeJuiceWithClaim) return "FeeJuice (with claim)"
+	if (method === NuloFeePaymentMethod.FeeJuice) return "Public Fee Juice"
+	if (method === NuloFeePaymentMethod.FeeJuiceWithClaim) return "Public Fee Juice (with claim)"
 	if (method === NuloFeePaymentMethod.External) {
 		const fpcMethod = t.calls?.find((c) => FEE_METHODS.has(c.method))?.method
 		if (fpcMethod === "sponsor_unconditionally") return "Sponsored"
@@ -266,9 +281,13 @@ const userCalls = computed(() => {
 					</div>
 
 					<Flex wide gap="8">
-						<Flex wide direction="column" gap="4" :class="$style.address_card">
+						<Flex
+							wide direction="column" gap="4"
+							:class="$style.address_card"
+							@click="handleCopy(transfer.from)"
+						>
 							<AddressDisplay
-								@onAddressClick="handleCopy(transfer.from)"
+								static
 								size="13"
 								weight="600"
 								:address="transfer.from"
@@ -277,9 +296,13 @@ const userCalls = computed(() => {
 							<span :class="$style.address_label">From</span>
 						</Flex>
 
-						<Flex wide direction="column" gap="4" :class="$style.address_card">
+						<Flex
+							wide direction="column" gap="4"
+							:class="$style.address_card"
+							@click="handleCopy(transfer.to)"
+						>
 							<AddressDisplay
-								@onAddressClick="handleCopy(transfer.to)"
+								static
 								size="13"
 								weight="600"
 								:address="transfer.to"
@@ -422,7 +445,7 @@ const userCalls = computed(() => {
 				</Flex>
 
 				<!-- Calls (top-level, stacked rows) -->
-				<Flex v-if="userCalls.length" wide direction="column" gap="10">
+				<Flex v-if="userCalls.length" wide direction="column" gap="10" data-testid="tx-calls-section">
 					<SectionLabel label="Calls" :count="userCalls.length" />
 
 					<Flex wide direction="column" :class="$style.calls_box">
@@ -462,7 +485,7 @@ const userCalls = computed(() => {
 						/>
 					</button>
 
-					<Flex v-if="isDebugExpanded" wide direction="column" gap="12" :class="$style.details_box">
+					<Flex v-if="isDebugExpanded" wide direction="column" gap="12" :class="$style.details_box" data-testid="debug-body">
 						<Flex wide justify="between" align="center" data-testid="debug-tx-hash">
 							<span :class="$style.detail_key">Tx hash</span>
 							<Flex
@@ -576,8 +599,16 @@ const userCalls = computed(() => {
 
 	transition: color 0.2s var(--bezier);
 
+	& svg {
+		transition: fill 0.2s var(--bezier);
+	}
+
 	&:hover {
 		color: var(--nulo-accent);
+
+		& svg {
+			fill: var(--nulo-accent);
+		}
 	}
 }
 
