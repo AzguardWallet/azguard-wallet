@@ -12,7 +12,7 @@ import { NuloFeePaymentMethod } from "@/wallet/services/account/contracts"
 import { balanceFormatted } from "@/utils/amount.js"
 import { getTxCategory, getTxTitle, getOriginLabel, getPrimaryCall } from "@/utils/tx-enrichment"
 import { formatFeeJuice, feeToUsd, formatGas } from "@/utils/fee-estimation"
-import { getTransactionExplorerUrl } from "@/wallet/constants/explorers"
+import { getTransactionExplorerUrl, BLOCK_EXPLORERS } from "@/wallet/constants/explorers"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -37,6 +37,8 @@ const props = defineProps({
 })
 
 const tokenService = new TokenServiceClient()
+
+const FEE_METHODS = new Set(["sponsor_unconditionally", "fee_entrypoint_private", "fee_entrypoint_public", "set_authorized"])
 
 const tx = computed(() => appStore.transactions.find((t) => t.hash === cacheStore.activeTxHash))
 const call = computed(() => getPrimaryCall(tx.value.calls))
@@ -168,9 +170,19 @@ const feeSavings = computed(() => {
 	return `${pct}% less than estimate`
 })
 
+/** Explorer link: dynamic name + URL; falls back to copy-hash row when null. */
 const explorerUrl = computed(() => {
 	if (!appStore.network?.chainId || !tx.value?.hash) return null
 	return getTransactionExplorerUrl(appStore.network.chainId, appStore.defaultExplorer, tx.value.hash)
+})
+const explorerName = computed(() => {
+	return BLOCK_EXPLORERS.find((e) => e.id === appStore.defaultExplorer)?.name ?? "explorer"
+})
+
+/** User-facing calls list — excludes fee/entrypoint infrastructure. */
+const userCalls = computed(() => {
+	if (!tx.value?.calls) return []
+	return tx.value.calls.filter((c) => !FEE_METHODS.has(c.method))
 })
 </script>
 
@@ -187,26 +199,27 @@ const explorerUrl = computed(() => {
 
 					<span v-if="txTime" :class="$style.tx_time">{{ txTime }}</span>
 
-					<Flex align="start" gap="8" wide :class="$style.hash_row">
-						<span
-							@click="handleCopy(tx.hash)"
-							:class="[$style.hash_value, 'copyable']"
-						>
-							{{ tx.hash }}
-						</span>
-						<Flex align="center" gap="6" :style="{ flexShrink: 0, marginTop: '2px' }">
-							<Icon @click="handleCopy(tx.hash)" name="copy" size="12" color="tertiary" class="copyable" />
-							<a
-								v-if="explorerUrl"
-								:href="explorerUrl"
-								target="_blank"
-								rel="noopener noreferrer"
-								@click.stop="handleExternalLink($event, explorerUrl)"
-								:class="$style.explorer_link"
-							>
-								<Icon name="external-link" size="12" color="tertiary" />
-							</a>
-						</Flex>
+					<a
+						v-if="explorerUrl"
+						:href="explorerUrl"
+						target="_blank"
+						rel="noopener noreferrer"
+						@click.stop="handleExternalLink($event, explorerUrl)"
+						:class="$style.explorer_link_band"
+					>
+						<span>View on {{ explorerName }}</span>
+						<Icon name="external-link" size="12" color="secondary" />
+					</a>
+
+					<Flex
+						v-else-if="tx.hash"
+						@click="handleCopy(tx.hash)"
+						align="center"
+						gap="8"
+						:class="[$style.copy_hash_band, 'copyable']"
+					>
+						<span :class="$style.hash_mono">{{ tx.hash.slice(0, 10) }}…{{ tx.hash.slice(-8) }}</span>
+						<Icon name="copy" size="12" color="secondary" />
 					</Flex>
 				</Flex>
 
@@ -384,6 +397,19 @@ const explorerUrl = computed(() => {
 							</Flex>
 						</Flex>
 
+						<Flex v-if="tx.block" wide justify="between" align="center">
+							<span :class="$style.detail_key">Block</span>
+							<Flex align="center" gap="6">
+								<span :class="$style.detail_value_mono">#{{ tx.block.number }}</span>
+								<span
+									@click="handleCopy(tx.block.hash)"
+									:class="[$style.detail_value_aux, 'copyable']"
+								>
+									{{ trimAddress(tx.block.hash, 6, 4) }}
+								</span>
+							</Flex>
+						</Flex>
+
 						<Flex v-if="tx.nonce" wide justify="between" align="center">
 							<span :class="$style.detail_key">Nonce</span>
 							<span
@@ -396,14 +422,36 @@ const explorerUrl = computed(() => {
 					</Flex>
 				</Flex>
 
+				<!-- Calls (top-level) -->
+				<Flex v-if="userCalls.length" wide direction="column" gap="10">
+					<SectionLabel label="Calls" :count="userCalls.length" />
+
+					<Flex wide direction="column" :class="$style.calls_box">
+						<Flex
+							v-for="(c, idx) in userCalls"
+							:key="idx"
+							wide align="center" justify="between" gap="10"
+							:class="[$style.call_row, idx > 0 && $style.call_row_divider]"
+						>
+							<span :class="$style.call_method">{{ humanizeMethodName(c.method) }}</span>
+							<span
+								@click="handleCopy(c.contract)"
+								:class="[$style.call_contract, 'copyable']"
+							>
+								{{ trimAddress(c.contract, 6, 4) }}
+							</span>
+						</Flex>
+					</Flex>
+				</Flex>
+
 				<!-- Debug details (collapsed by default) -->
-				<Flex v-if="tx.calls?.length || tx.block || tx.error" wide direction="column" gap="10">
+				<Flex wide direction="column" gap="10">
 					<Flex
 						@click="isDebugExpanded = !isDebugExpanded"
 						wide justify="between" align="center"
 						:class="$style.debug_header"
 					>
-						<SectionLabel label="Debug details" :count="tx.calls?.length ?? null" />
+						<SectionLabel label="Debug details" />
 						<Icon
 							name="chevron"
 							size="12"
@@ -413,36 +461,15 @@ const explorerUrl = computed(() => {
 					</Flex>
 
 					<Flex v-if="isDebugExpanded" wide direction="column" gap="12" :class="$style.details_box">
-						<Flex v-if="tx.calls?.length" wide direction="column" gap="6">
-							<span :class="$style.detail_key">Calls</span>
-							<Flex wide direction="column" gap="6">
-								<Flex
-									v-for="(c, idx) in tx.calls"
-									:key="idx"
-									wide direction="column" gap="2"
-									:class="$style.call_item"
-								>
-									<Flex wide justify="between" align="center">
-										<Flex align="center" gap="4">
-											<span v-if="c.isBatch" :class="$style.detail_key" title="Re-entry call">↩</span>
-											<span :class="$style.call_method">{{ c.method ?? "Unknown" }}</span>
-										</Flex>
-										<span v-if="'callIndex' in c" :class="$style.detail_value_aux">#{{ c.callIndex }}</span>
-									</Flex>
-									<span
-										@click="handleCopy(c.contract)"
-										:class="[$style.call_line, 'copyable']"
-									>
-										address: {{ trimAddress(c.contract, 6, 4) }}
-									</span>
-									<span
-										v-if="c.chunkNonce"
-										@click="handleCopy(c.chunkNonce)"
-										:class="[$style.call_line, 'copyable']"
-									>
-										nonce: {{ trimAddress(c.chunkNonce, 6, 4) }}
-									</span>
-								</Flex>
+						<Flex wide justify="between" align="center">
+							<span :class="$style.detail_key">Tx hash</span>
+							<Flex
+								@click="handleCopy(tx.hash)"
+								align="center" gap="6"
+								:class="'copyable'"
+							>
+								<span :class="$style.detail_value_mono">{{ trimAddress(tx.hash, 8, 6) }}</span>
+								<Icon name="copy" size="10" color="tertiary" />
 							</Flex>
 						</Flex>
 
@@ -456,16 +483,30 @@ const explorerUrl = computed(() => {
 							<span :class="$style.detail_value_mono">{{ formatTimestamp(tx.updatedAt) }}</span>
 						</Flex>
 
-						<Flex v-if="tx.block" wide justify="between" align="center">
-							<span :class="$style.detail_key">Block</span>
-							<Flex align="center" gap="6">
-								<span :class="$style.detail_value_mono">#{{ tx.block.number }}</span>
-								<span
-									@click="handleCopy(tx.block.hash)"
-									:class="[$style.detail_value_aux, 'copyable']"
+						<Flex v-if="tx.calls?.some((c) => 'callIndex' in c || c.chunkNonce || c.isBatch)" wide direction="column" gap="6">
+							<span :class="$style.detail_key">Raw calls</span>
+							<Flex wide direction="column" gap="4">
+								<Flex
+									v-for="(c, idx) in tx.calls"
+									:key="idx"
+									wide direction="column" gap="2"
+									:class="$style.raw_call_item"
 								>
-									{{ trimAddress(tx.block.hash, 6, 4) }}
-								</span>
+									<Flex wide justify="between" align="center">
+										<Flex align="center" gap="4">
+											<span v-if="c.isBatch" :class="$style.detail_value_aux" title="Re-entry call">↩</span>
+											<span :class="$style.raw_call_method">{{ c.method ?? "Unknown" }}</span>
+										</Flex>
+										<span v-if="'callIndex' in c" :class="$style.detail_value_aux">#{{ c.callIndex }}</span>
+									</Flex>
+									<span
+										v-if="c.chunkNonce"
+										@click="handleCopy(c.chunkNonce)"
+										:class="[$style.raw_call_aux, 'copyable']"
+									>
+										chunk: {{ trimAddress(c.chunkNonce, 6, 4) }}
+									</span>
+								</Flex>
 							</Flex>
 						</Flex>
 
@@ -506,36 +547,46 @@ const explorerUrl = computed(() => {
 	color: var(--nulo-secondary);
 }
 
-.hash_row {
-	padding: 8px 10px;
-	border: 1px solid var(--nulo-border);
-	background: transparent;
-}
-
-.hash_value {
-	flex: 1;
-	min-width: 0;
-
-	font-family: var(--font-mono);
-	font-size: 11px;
-	line-height: 1.4;
-	color: var(--nulo-secondary);
-	word-break: break-all;
-}
-
-.explorer_link {
+.explorer_link_band {
 	display: flex;
 	align-items: center;
+	gap: 8px;
+
+	padding: 8px 12px;
+	border: 1px solid var(--nulo-border);
+	background: transparent;
+
+	font-family: var(--font-headline);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
 	text-decoration: none;
-	cursor: pointer;
 
-	& svg {
-		transition: fill 0.2s var(--bezier);
-	}
+	transition: background 0.2s var(--bezier);
 
-	&:hover svg {
-		fill: var(--txt-primary);
+	&:hover {
+		background: var(--nulo-surface-low);
 	}
+}
+
+.copy_hash_band {
+	padding: 8px 12px;
+	border: 1px solid var(--nulo-border);
+	background: transparent;
+
+	transition: background 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--nulo-surface-low);
+	}
+}
+
+.hash_mono {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
 }
 
 /* ── Amount ────────────────────────────────────────────────────── */
@@ -678,7 +729,43 @@ const explorerUrl = computed(() => {
 	color: var(--green);
 }
 
-/* ── Debug header + body ───────────────────────────────────────── */
+/* ── Calls section ─────────────────────────────────────────────── */
+
+.calls_box {
+	border: 1px solid var(--nulo-border);
+	background: transparent;
+}
+
+.call_row {
+	padding: 10px 12px;
+}
+
+.call_row_divider {
+	border-top: 1px solid var(--nulo-border);
+}
+
+.call_method {
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+
+.call_contract {
+	flex-shrink: 0;
+
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
+}
+
+/* ── Debug section ─────────────────────────────────────────────── */
 
 .debug_header {
 	cursor: pointer;
@@ -689,19 +776,19 @@ const explorerUrl = computed(() => {
 	}
 }
 
-.call_item {
+.raw_call_item {
 	padding: 6px 8px;
 	border-left: 1px solid var(--nulo-border);
 }
 
-.call_method {
+.raw_call_method {
 	font-family: var(--font-mono);
 	font-size: 11px;
 	font-weight: 600;
 	color: var(--txt-primary);
 }
 
-.call_line {
+.raw_call_aux {
 	font-family: var(--font-mono);
 	font-size: 10px;
 	color: var(--nulo-secondary);
