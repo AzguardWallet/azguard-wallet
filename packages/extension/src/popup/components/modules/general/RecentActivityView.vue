@@ -29,9 +29,7 @@ const router = useRouter()
 
 const latestTransaction = computed(() => {
 	return props.token
-		? appStore.transactions.filter(
-				(t) => t.calls[0]?.contract === props.token?.contract || t.calls.at(1)?.contract === props.token?.contract,
-			)[0]
+		? appStore.transactions.filter((t) => t.calls?.some((c) => c.contract === props.token?.contract))[0]
 		: appStore.transactions[0]
 })
 const isTokenAwaitingTx = computed(() => {
@@ -146,6 +144,16 @@ onBeforeUnmount(() => {
 			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
 		</div>
 	</Flex>
+	<Flex v-else-if="token" direction="column" gap="16">
+		<Flex align="end" justify="between" :class="$style.section_header">
+			<span :class="$style.header_title">RECENT TRANSACTIONS</span>
+		</Flex>
+
+		<div :class="$style.empty_state">
+			<span :class="$style.empty_headline">NOTHING HERE YET</span>
+			<span :class="$style.empty_sub">Send or receive {{ token.symbol }} to see activity.</span>
+		</div>
+	</Flex>
 </template>
 
 <style module>
@@ -183,5 +191,33 @@ onBeforeUnmount(() => {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+}
+
+.empty_state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+
+	padding: 32px 16px;
+	border: 1px dashed var(--nulo-border);
+
+	text-align: center;
+}
+
+.empty_headline {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.empty_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
 }
 </style>
