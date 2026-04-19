@@ -18,7 +18,6 @@ export const useCacheStore = defineStore("cache", () => {
 	const fpcToEditIdx = ref()
 
 	const activeTokenIdx = ref()
-	const activeTxHash = ref()
 	const preselectedBalanceType = ref("private")
 	const preselectedContactToSend = ref(null)
 	const preselectedTokenAddressToAdd = ref()
@@ -51,7 +50,6 @@ export const useCacheStore = defineStore("cache", () => {
 		tokenToEditIdx,
 		fpcToEditIdx,
 		activeTokenIdx,
-		activeTxHash,
 		proposedNetworks,
 		selectedNetwork,
 		preselectedBalanceType,

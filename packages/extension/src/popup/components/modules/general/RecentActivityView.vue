@@ -13,11 +13,7 @@ import { humanizeMethodName } from "@/utils/tx-enrichment"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-import { useCacheStore } from "@/stores/cache.store"
-import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
-const cacheStore = useCacheStore()
-const popupStore = usePopupStore()
 
 const props = defineProps({
 	token: {
@@ -103,8 +99,7 @@ function onDappTaskDeleted(task) {
 }
 
 const handleSelectTx = () => {
-	cacheStore.activeTxHash = latestTransaction.value.hash
-	popupStore.open("tx")
+	router.push(`/popup/tx/${latestTransaction.value.hash}`)
 }
 
 onMounted(async () => {

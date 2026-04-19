@@ -34,7 +34,6 @@ import SelectTokenPopup from "./SelectTokenPopup.vue"
 import SendPopup from "./SendPopup.vue"
 import StealthPromoPopup from "./StealthPromoPopup.vue"
 import TokenMetadataPopup from "./TokenMetadataPopup.vue"
-import TransactionPopup from "./TransactionPopup.vue"
 
 /** Store */
 import { usePopupStore } from "@/stores/popup.store"
@@ -70,7 +69,6 @@ const popupStore = usePopupStore()
 	<SelectTokenPopup :show="popupStore.isOpened('select_token')" @onClose="popupStore.close('select_token')" />
 	<SelectBalanceTypePopup :show="popupStore.isOpened('select_balance_type')" @onClose="popupStore.close('select_balance_type')" />
 
-	<TransactionPopup :show="popupStore.isOpened('tx')" @onClose="popupStore.close('tx')" />
 
 	<NewFpcPopup :show="popupStore.isOpened('new_fpc')" @onClose="popupStore.close('new_fpc')" />
 	<EditFpcPopup :show="popupStore.isOpened('edit_fpc')" @onClose="popupStore.close('edit_fpc')" />

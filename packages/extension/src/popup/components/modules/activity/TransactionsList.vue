@@ -5,11 +5,7 @@ import TransactionCard from "./TransactionCard.vue"
 /** Vendor */
 import { DateTime } from "luxon"
 
-/** Store */
-import { useCacheStore } from "@/stores/cache.store"
-import { usePopupStore } from "@/stores/popup.store"
-const cacheStore = useCacheStore()
-const popupStore = usePopupStore()
+const router = useRouter()
 
 const props = defineProps({
 	transactions: {
@@ -38,8 +34,7 @@ const groupedTransactions = computed(() => {
 })
 
 const handleSelectTx = (target) => {
-	cacheStore.activeTxHash = target.hash
-	popupStore.open("tx")
+	router.push(`/popup/tx/${target.hash}`)
 }
 </script>
 
