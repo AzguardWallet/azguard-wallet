@@ -11,10 +11,10 @@ import { useToast } from "@/composables/toast.js"
 const { openToast } = useToast()
 
 /** Store */
-import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
-const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
+
+const router = useRouter()
 
 const props = defineProps({
 	tokenBalance: {
@@ -63,7 +63,8 @@ const handleShowFullBalances = async () => {
 }
 const handleOpenSendPopup = (target) => {
 	cacheStore.preselectedBalanceType = target
-	popupStore.open("send")
+	const tokenId = props.tokenBalance?.token?.id
+	router.push({ path: "/popup/send", query: tokenId ? { tokenId } : {} })
 }
 </script>
 

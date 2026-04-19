@@ -107,12 +107,7 @@ const handleHalf = () => {
 		</Flex>
 
 		<Flex v-if="token && tokenBalanceByType" align="center" gap="4" :class="$style.balance_row">
-			<Icon
-				:name="selectedSendType === 'private' ? 'key-square' : 'face'"
-				size="12"
-				:color="selectedSendType === 'private' ? 'green' : 'orange'"
-			/>
-			<span :class="$style.balance_text">{{ comma(tokenBalanceByType, ",", 8) }} {{ token.symbol }}</span>
+			<span :class="$style.balance_text">{{ comma(tokenBalanceByType, ",", 8) }} {{ token.symbol }} · {{ selectedSendType }}</span>
 		</Flex>
 	</Flex>
 </template>

@@ -478,10 +478,7 @@ onBeforeUnmount(() => {
 			<template v-else-if="selectedMethod?.type === 'private_fpc'">
 				<template v-if="selectedMethod.fpc">
 					<Flex align="center" justify="between" :class="$style.detail_row">
-						<Flex align="center" gap="4">
-							<Icon name="key-square" size="12" color="green" />
-							<Text size="12" weight="600" color="secondary"> Available </Text>
-						</Flex>
+						<Text size="12" weight="600" color="secondary"> Available </Text>
 						<Text size="12" weight="600" :color="privateFeeJuiceFormatted === '0' ? 'red' : 'primary'">
 							{{ privateFeeJuiceFormatted ?? '—' }} FJ
 						</Text>
@@ -510,11 +507,6 @@ onBeforeUnmount(() => {
 							data-testid="send-fee-visibility-toggle"
 							:class="$style.type"
 						>
-							<Icon
-								:name="selectedMethod.inPublic  ? 'face' : 'key-square'"
-								size="16"
-								:color="selectedMethod.inPublic ? 'orange' : 'green'"
-							/>
 							<Text size="13" weight="600" color="primary" class="capitalize">
 								{{ selectedMethod.inPublic ? 'Public' : 'Private' }}
 							</Text>

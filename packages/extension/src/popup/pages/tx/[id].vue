@@ -536,7 +536,7 @@ onBeforeUnmount(() => {
 }
 
 .content {
-	padding: 16px 20px var(--nav-clearance) 20px;
+	padding: 4px 20px var(--nav-clearance) 20px;
 }
 
 /* ── Hero ──────────────────────────────────────────────────────── */

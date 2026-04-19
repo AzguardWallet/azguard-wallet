@@ -1,9 +1,17 @@
+<route lang="json">
+{
+	"meta": {
+		"isAuthRequired": true
+	}
+}
+</route>
+
 <script setup>
 /** Components */
-import AmountCard from "../modules/send/AmountCard.vue"
-import FeeSettingsCard from "../modules/send/FeeSettingsCard.vue"
-import SelectTokenCard from "../modules/send/SelectTokenCard.vue"
-import SendTypesCard from "../modules/send/SendTypesCard.vue"
+import AmountCard from "@/popup/components/modules/send/AmountCard.vue"
+import FeeSettingsCard from "@/popup/components/modules/send/FeeSettingsCard.vue"
+import SelectTokenCard from "@/popup/components/modules/send/SelectTokenCard.vue"
+import SendTypesCard from "@/popup/components/modules/send/SendTypesCard.vue"
 
 /** Services */
 import { ContactServiceClient } from "@/wallet/services/contact/client"
@@ -16,7 +24,7 @@ import { TransferType } from "@/wallet/services/transaction/client"
 import BN from "bignumber.js"
 
 /** Utils */
-import { capitalize, isValidHex } from "@/utils/string"
+import { isValidHex, trimAddress } from "@/utils/string"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -24,25 +32,25 @@ const { openToast } = useToast()
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-import { usePopupStore } from "@/stores/popup.store"
 import { useCacheStore } from "@/stores/cache.store"
 const appStore = useAppStore()
-const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
 const route = useRoute()
+const router = useRouter()
 
-const emit = defineEmits(["onClose"])
-const props = defineProps({
-	show: Boolean,
-	displace: Number,
-})
+/** Post-send / forced-close navigation. Prefers browser history so the user
+ *  returns to whichever surface launched Send (token detail, contacts, home);
+ *  falls back to /popup/general for cold-open / deep-link. */
+function leaveSend() {
+	if (window.history.length > 1) {
+		router.back()
+	} else {
+		router.replace("/popup/general")
+	}
+}
 
 const feeSettings = ref()
-
-const displaceIdx = computed(() => {
-	return popupStore.len - popupStore.popups.send?.order
-})
 
 const awaitingNewToken = ref(false)
 
@@ -67,7 +75,7 @@ function onTokenDeleted(token) {
 
 	openToast({ label: "The last token has just been deleted" })
 
-	emit("onClose")
+	leaveSend()
 }
 
 const tokens = ref([])
@@ -243,7 +251,7 @@ const handleSend = async () => {
 			feeSettings.value,
 		)
 		openToast({ label: "Transaction submitted", icon: "check-circle" })
-		emit("onClose")
+		leaveSend()
 	} catch (err) {
 		const idx = appStore.awaitingTransactions.findIndex(
 			(t) => t.destination === searchTerm.value && t.contract === activeToken.value.contract,
@@ -251,7 +259,7 @@ const handleSend = async () => {
 		if (idx !== -1) appStore.awaitingTransactions.splice(idx, 1)
 
 		openToast({ label: "Simulation failed, transaction not sent", icon: "warning", color: "red" }, TOAST_DURATION.LONG)
-		console.error("[SendPopup] executeTransfer failed:", err)
+		console.error("[send] executeTransfer failed:", err)
 	} finally {
 		isSending.value = false
 		executionService.disconnect()
@@ -329,7 +337,7 @@ watch(
 				feeEstimate.value = result
 			} catch (err) {
 				if (counter !== estimateCounter) return
-				console.error("[SendPopup] estimateTransferFee failed:", err)
+				console.error("[send] estimateTransferFee failed:", err)
 				feeEstimate.value = null
 			} finally {
 				if (counter === estimateCounter) {
@@ -341,62 +349,6 @@ watch(
 	{ deep: true },
 )
 
-watch(
-	() => props.show,
-	async () => {
-		if (props.show) {
-			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
-			tokenBalances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
-			contacts.value = await contactService.getContacts()
-
-			if (route.params.id) {
-				cacheStore.activeTokenIdx = Number(route.params.id)
-			}
-
-			if (!cacheStore.activeTokenIdx && tokens.value.length) {
-				cacheStore.activeTokenIdx = tokens.value[0].id
-			}
-
-			initSendType()
-			initReceiverType()
-
-			if (cacheStore.preselectedContactToSend) {
-				handleSelectContact(cacheStore.preselectedContactToSend)
-			}
-
-			if (!tokens.value.length) {
-				awaitingNewToken.value = true
-			}
-
-			document.addEventListener("keydown", onKeydown)
-		} else {
-			contactService.disconnect()
-			tokenBalanceService.disconnect()
-			tokenService.disconnect()
-
-			if (estimateTimer) clearTimeout(estimateTimer)
-			feeEstimate.value = null
-			isEstimating.value = false
-			estimateCounter++
-
-			amountTerm.value = null
-
-			searchTerm.value = ""
-			isSearchInputFocused.value = false
-
-			contacts.value = []
-			selectedContact.value = null
-
-			awaitingNewToken.value = false
-
-			cacheStore.preselectedBalanceType = "private"
-			cacheStore.preselectedContactToSend = null
-
-			document.removeEventListener("keydown", onKeydown)
-		}
-	},
-)
-
 const onKeydown = (e) => {
 	if (e.key === "Enter") {
 		if (showSuggestions.value) {
@@ -405,127 +357,192 @@ const onKeydown = (e) => {
 		}
 	}
 }
+
+onMounted(async () => {
+	tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+	tokenBalances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
+	contacts.value = await contactService.getContacts()
+
+	// Query-param preselect survives the unmount of tokens/[id] (which clears
+	// cacheStore.activeTokenIdx on its onBeforeUnmount). Falls through to
+	// whatever activeTokenIdx may still be set, then to tokens[0].
+	const queryTokenId = route.query.tokenId ? Number(route.query.tokenId) : null
+	if (queryTokenId && tokens.value.some((t) => t.id === queryTokenId)) {
+		cacheStore.activeTokenIdx = queryTokenId
+	}
+
+	if (!cacheStore.activeTokenIdx && tokens.value.length) {
+		cacheStore.activeTokenIdx = tokens.value[0].id
+	}
+
+	initSendType()
+	initReceiverType()
+
+	if (cacheStore.preselectedContactToSend) {
+		handleSelectContact(cacheStore.preselectedContactToSend)
+	}
+
+	if (!tokens.value.length) {
+		awaitingNewToken.value = true
+	}
+
+	document.addEventListener("keydown", onKeydown)
+})
+
+onBeforeUnmount(() => {
+	contactService.disconnect()
+	tokenBalanceService.disconnect()
+	tokenService.disconnect()
+
+	if (estimateTimer) clearTimeout(estimateTimer)
+	feeEstimate.value = null
+	isEstimating.value = false
+	estimateCounter++
+
+	amountTerm.value = null
+
+	searchTerm.value = ""
+	isSearchInputFocused.value = false
+
+	contacts.value = []
+	selectedContact.value = null
+
+	awaitingNewToken.value = false
+
+	cacheStore.preselectedBalanceType = "private"
+	cacheStore.preselectedContactToSend = null
+
+	document.removeEventListener("keydown", onKeydown)
+})
 </script>
 
 <template>
-	<Popup :show @onClose="emit('onClose')" :displaceIdx="popupStore.popups.send?.order">
-		<PopupCard large :displaceIdx>
-			<Flex wide direction="column" justify="between" :class="$style.wrapper">
-				<Flex direction="column" :class="$style.top">
-					<!-- Section: Transfer Path + Recipient -->
-					<div :class="$style.section">
-						<SendTypesCard
-							v-if="!isBlockedTransfer"
-							v-model:sendType="selectedSendType"
-							v-model:receiverType="selectedReceiverType"
-							:token="activeToken"
-						/>
+	<Flex direction="column" :class="$style.wrapper">
+		<SubPageHeader title="Send" :backTo="'/popup/general'" />
 
-						<div :class="$style.recipient_section">
-							<span :class="$style.section_label">Recipient Address</span>
-							<div :class="$style.recipient_input_wrapper" data-testid="send-destination-field" :style="{ position: 'relative' }">
-								<input
-									v-model="searchTerm"
-									@focus="isSearchInputFocused = true"
-									@blur="handleSearchBlur()"
-									placeholder="0x... or contact name"
-									:class="$style.recipient_input"
-								/>
-								<Flex v-if="selectedContact" align="center" gap="6" :class="$style.input_right">
-									<Icon name="vault" size="12" color="blue" />
-									<Text size="13" weight="600" color="primary" noWrap>
-										{{ selectedContact?.name }}
-									</Text>
-								</Flex>
-								<Flex v-else-if="!isSearchInputFocused && !isValidAddress && searchTerm.length > 0" align="center" gap="6" :class="$style.input_right">
-									<Icon name="warning" size="12" color="red" />
-								</Flex>
-								<Flex v-else-if="!isSearchInputFocused && isValidAddress" align="center" :class="$style.input_right">
-									<Icon name="check-circle" size="14" color="green" />
-								</Flex>
+		<Flex wide direction="column" justify="between" :class="$style.body">
+			<Flex direction="column" :class="$style.top">
+				<!-- Section: Transfer Path + Recipient — flush variant: the input's own bottom border
+				     is the visual terminator, so we suppress the section divider to avoid a double line. -->
+				<div :class="[$style.section, $style.section_flush]">
+					<SendTypesCard
+						v-if="!isBlockedTransfer"
+						v-model:sendType="selectedSendType"
+						v-model:receiverType="selectedReceiverType"
+						:token="activeToken"
+					/>
 
-								<Transition name="fade">
-									<Flex v-if="showSuggestions" align="center" direction="column" wide :class="$style.contacts_wrapper">
-										<Flex
-											v-for="c in filteredContacts"
-											@click="handleSelectContact(c)"
-											align="center"
-											gap="10"
-											:class="$style.contact"
-											wide
-										>
-											<Flex v-if="c.abbr" align="center" justify="center" :class="$style.contact_avatar" :style="{ backgroundColor: `var(--${c.color})`}">
-												<Text size="10" weight="600" color="primary">
-													{{ c.abbr }}
-												</Text>
-											</Flex>
-											<Flex v-else align="center" justify="center">
-												<Icon name="vault" size="28" scale="1.2" color="secondary" />
-											</Flex>
+					<div :class="$style.recipient_section">
+						<span :class="$style.section_label">Recipient Address</span>
+						<div :class="$style.recipient_input_wrapper" data-testid="send-destination-field" :style="{ position: 'relative' }">
+							<input
+								v-model="searchTerm"
+								@focus="isSearchInputFocused = true"
+								@blur="handleSearchBlur()"
+								placeholder="0x... or contact name"
+								:class="$style.recipient_input"
+							/>
+							<Flex v-if="selectedContact" align="center" gap="6" :class="$style.input_right">
+								<Icon name="vault" size="12" color="blue" />
+								<Text size="13" weight="600" color="primary" noWrap>
+									{{ selectedContact?.name }}
+								</Text>
+							</Flex>
+							<Flex v-else-if="!isSearchInputFocused && !isValidAddress && searchTerm.length > 0" align="center" gap="6" :class="$style.input_right">
+								<Icon name="warning" size="12" color="red" />
+							</Flex>
+							<Flex v-else-if="!isSearchInputFocused && isValidAddress" align="center" :class="$style.input_right">
+								<Icon name="check-circle" size="14" color="green" />
+							</Flex>
 
-											<Flex direction="column" gap="4" wide>
-												<Text size="14" weight="600" color="primary" :class="$style.title"> {{ c.name }} </Text>
-												<Text size="12" weight="500" color="tertiary" :class="$style.description">
-													{{ trimAddress(c.address) }}
-												</Text>
-											</Flex>
+							<Transition name="fade">
+								<Flex v-if="showSuggestions" align="center" direction="column" wide :class="$style.contacts_wrapper">
+									<Flex
+										v-for="c in filteredContacts"
+										@click="handleSelectContact(c)"
+										align="center"
+										gap="10"
+										:class="$style.contact"
+										wide
+									>
+										<Flex v-if="c.abbr" align="center" justify="center" :class="$style.contact_avatar" :style="{ backgroundColor: `var(--${c.color})`}">
+											<Text size="10" weight="600" color="primary">
+												{{ c.abbr }}
+											</Text>
+										</Flex>
+										<Flex v-else align="center" justify="center">
+											<Icon name="vault" size="28" scale="1.2" color="secondary" />
+										</Flex>
+
+										<Flex direction="column" gap="4" wide>
+											<Text size="14" weight="600" color="primary" :class="$style.title"> {{ c.name }} </Text>
+											<Text size="12" weight="500" color="tertiary" :class="$style.description">
+												{{ trimAddress(c.address) }}
+											</Text>
 										</Flex>
 									</Flex>
-								</Transition>
-							</div>
+								</Flex>
+							</Transition>
 						</div>
 					</div>
+				</div>
 
-					<!-- Section: Select Asset -->
-					<div :class="$style.section">
-						<Flex align="center" justify="between">
-							<span :class="$style.section_label">Select Asset</span>
-							<span :class="$style.section_meta">Network: {{ getChainName(appStore.network?.chainId) }}</span>
-						</Flex>
-						<SelectTokenCard :token="activeToken" />
-					</div>
+				<!-- Section: Select Asset -->
+				<div :class="$style.section">
+					<Flex align="center" justify="between">
+						<span :class="$style.section_label">Select Asset</span>
+						<span :class="$style.section_meta">Network: {{ getChainName(appStore.network?.chainId) }}</span>
+					</Flex>
+					<SelectTokenCard :token="activeToken" />
+				</div>
 
-					<!-- Section: Transaction Amount -->
-					<div :class="$style.section">
-						<span :class="$style.section_label">Transaction Amount</span>
-						<AmountCard
-							v-model="amountTerm"
-							:selectedSendType
-							:token="activeToken"
-							:tokenBalanceByType
-						/>
-					</div>
+				<!-- Section: Transaction Amount -->
+				<div :class="$style.section">
+					<span :class="$style.section_label">Transaction Amount</span>
+					<AmountCard
+						v-model="amountTerm"
+						:selectedSendType
+						:token="activeToken"
+						:tokenBalanceByType
+					/>
+				</div>
 
-					<!-- Section: Fee Summary -->
-					<div :class="$style.section_last">
-						<FeeSettingsCard
-							:profile="appStore.profile"
-							:network="appStore.network"
-							:account="appStore.account"
-							:feeEstimate="feeEstimate"
-							:isEstimating="isEstimating"
-							v-model="feeSettings"
-						/>
-					</div>
-				</Flex>
-
-				<Flex direction="column" :class="$style.bottom">
-					<button
-						@click="handleSend"
-						data-testid="send-submit"
-						:disabled="!isAllowedToSend || isSending"
-						:class="$style.confirm_btn"
-					>
-						{{ isSending ? "Confirming..." : "Confirm Transaction" }}
-					</button>
-				</Flex>
+				<!-- Section: Fee Summary -->
+				<div :class="$style.section_last">
+					<FeeSettingsCard
+						:profile="appStore.profile"
+						:network="appStore.network"
+						:account="appStore.account"
+						:feeEstimate="feeEstimate"
+						:isEstimating="isEstimating"
+						v-model="feeSettings"
+					/>
+				</div>
 			</Flex>
-		</PopupCard>
-	</Popup>
+
+			<Flex direction="column" :class="$style.bottom">
+				<button
+					@click="handleSend"
+					data-testid="send-submit"
+					:disabled="!isAllowedToSend || isSending"
+					:class="$style.confirm_btn"
+				>
+					{{ isSending ? "Confirming..." : "Confirm Transaction" }}
+				</button>
+			</Flex>
+		</Flex>
+	</Flex>
 </template>
 
 <style module>
 .wrapper {
+	flex: 1;
+	overflow: auto;
+	scrollbar-gutter: stable;
+	background: var(--app-bg);
+}
+
+.body {
 	flex: 1;
 }
 
@@ -541,6 +558,10 @@ const onKeydown = (e) => {
 
 	padding: 20px 0;
 	border-bottom: 1px solid rgba(35, 31, 28, 1);
+}
+
+.section_flush {
+	border-bottom: none;
 }
 
 .section_last {

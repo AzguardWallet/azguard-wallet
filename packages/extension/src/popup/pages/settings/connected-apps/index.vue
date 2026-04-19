@@ -117,7 +117,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Connected Apps" leadingIcon="extension" :backTo="'/popup/settings'">
+		<SubPageHeader title="Connected Apps" :backTo="'/popup/settings'">
 			<template #trailing>
 				<Dropdown>
 					<button type="button" :class="$style.icon_btn" aria-label="Session actions">

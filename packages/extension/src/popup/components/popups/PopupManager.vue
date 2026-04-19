@@ -31,7 +31,6 @@ import SelectFpcPopup from "./SelectFpcPopup.vue"
 import SelectNetworksPopup from "./SelectNetworksPopup.vue"
 import SelectProfilePopup from "./SelectProfilePopup.vue"
 import SelectTokenPopup from "./SelectTokenPopup.vue"
-import SendPopup from "./SendPopup.vue"
 import StealthPromoPopup from "./StealthPromoPopup.vue"
 import TokenMetadataPopup from "./TokenMetadataPopup.vue"
 
@@ -82,7 +81,6 @@ const popupStore = usePopupStore()
 	<EditContactPopup :show="popupStore.isOpened('edit_contact')" @onClose="popupStore.close('edit_contact')" />
 	<ImportContactsPopup :show="popupStore.isOpened('import_contacts')" @onClose="popupStore.close('import_contacts')" />
 
-	<SendPopup :show="popupStore.isOpened('send')" @onClose="popupStore.close('send')" />
 	<ReceivePopup :show="popupStore.isOpened('receive')" @onClose="popupStore.close('receive')" />
 	<EditClaimParametersPopup :show="popupStore.isOpened('edit_claim_parameters')" :payload="popupStore.getPayload('edit_claim_parameters')" @onClose="popupStore.close('edit_claim_parameters')" />
 

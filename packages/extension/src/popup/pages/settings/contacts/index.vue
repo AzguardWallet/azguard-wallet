@@ -25,6 +25,8 @@ import { usePopupStore } from "@/stores/popup.store"
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
+const router = useRouter()
+
 const contacts = ref([])
 const sortedContacts = computed(() =>
 	[...contacts.value].sort((a, b) => {
@@ -50,7 +52,7 @@ contactService.onContactDeleted.add(syncContacts)
 
 function handleClickContact(contact) {
 	cacheStore.preselectedContactToSend = contact
-	popupStore.open("send")
+	router.push("/popup/send")
 }
 const handleCopyContactAddress = (contact) => {
 	window.navigator.clipboard.writeText(contact.address)
@@ -204,7 +206,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Contacts" leadingIcon="people" :backTo="'/popup/settings'">
+		<SubPageHeader title="Contacts" :backTo="'/popup/settings'">
 			<template #trailing>
 				<Dropdown>
 					<button type="button" :class="$style.icon_btn" aria-label="Contact actions">

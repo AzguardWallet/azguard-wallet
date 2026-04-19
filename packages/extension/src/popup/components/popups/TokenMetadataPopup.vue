@@ -117,7 +117,6 @@ watch(
 
 					<Flex align="center" gap="6" style="margin-top: 10px">
 						<Text size="12" weight="600" color="secondary">Private Methods</Text>
-						<Icon name="key-square" size="12" color="tertiary" />
 					</Flex>
 
 					<Flex align="center" justify="between">
@@ -161,7 +160,6 @@ watch(
 
 					<Flex align="center" gap="6" style="margin-top: 10px">
 						<Text size="12" weight="600" color="secondary">Public Methods</Text>
-						<Icon name="face" size="12" color="tertiary" />
 					</Flex>
 
 					<Flex align="center" justify="between">

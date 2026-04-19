@@ -155,7 +155,6 @@ export const useAppStore = defineStore("app", () => {
 
 	const dappSessions = ref([])
 
-	const showSendPopup = ref(false)
 	const showRegisterPopup = ref(false)
 
 	const isPrivacyModeEnabled = ref(false)
@@ -192,7 +191,6 @@ export const useAppStore = defineStore("app", () => {
 		onTxAdded,
 		onTxUpdated,
 		syncTransactions,
-		showSendPopup,
 		showRegisterPopup,
 		isPrivacyModeEnabled,
 		defaultExplorer,

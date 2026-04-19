@@ -3,6 +3,8 @@
 import { usePopupStore } from "@/stores/popup.store"
 const popupStore = usePopupStore()
 
+const router = useRouter()
+
 const props = defineProps({
 	token: {
 		type: Object,
@@ -10,18 +12,25 @@ const props = defineProps({
 	},
 })
 
-const handleOpenPopup = (target) => {
-	popupStore.open(target)
+const handleSend = () => {
+	// Thread the token via query — tokens/[id] clears cacheStore.activeTokenIdx
+	// on unmount, so the cache store alone can't carry the preselection across
+	// navigation. Home has no token context; no query → send page picks tokens[0].
+	router.push({ path: "/popup/send", query: props.token ? { tokenId: props.token.id } : {} })
+}
+
+const handleReceive = () => {
+	popupStore.open("receive")
 }
 </script>
 
 <template>
 	<Flex wide align="center" gap="16">
-		<Flex @click="handleOpenPopup('send')" wide align="center" justify="center" :class="[$style.button, $style.primary]" data-testid="actions-send">
+		<Flex @click="handleSend" wide align="center" justify="center" :class="[$style.button, $style.primary]" data-testid="actions-send">
 			<span :class="$style.label">SEND</span>
 		</Flex>
 
-		<Flex @click="handleOpenPopup('receive')" wide align="center" justify="center" :class="[$style.button, $style.secondary]" data-testid="actions-receive">
+		<Flex @click="handleReceive" wide align="center" justify="center" :class="[$style.button, $style.secondary]" data-testid="actions-receive">
 			<span :class="$style.label">RECEIVE</span>
 		</Flex>
 	</Flex>

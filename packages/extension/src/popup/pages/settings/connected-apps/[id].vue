@@ -216,7 +216,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex v-if="session" direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Connected App" leadingIcon="extension" :backTo="'/popup/settings/connected-apps'">
+		<SubPageHeader title="Connected App" :backTo="'/popup/settings/connected-apps'">
 			<template #trailing>
 				<Dropdown>
 					<button type="button" :class="$style.icon_btn" aria-label="Session actions">
