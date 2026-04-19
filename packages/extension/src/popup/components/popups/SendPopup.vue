@@ -294,7 +294,9 @@ watch(
 		if (estimateTimer) clearTimeout(estimateTimer)
 		feeEstimate.value = null
 
-		if (!amountTerm.value || !isValidAddress.value || !transferType.value || !feeSettings.value || !activeToken.value) {
+		// NB: transferType can be 0 (TransferType.Private enum) which is falsy — check against undefined explicitly
+		// or Private → Private is silently dropped here before estimation.
+		if (!amountTerm.value || !isValidAddress.value || transferType.value === undefined || !feeSettings.value || !activeToken.value) {
 			isEstimating.value = false
 			return
 		}
