@@ -34,7 +34,6 @@ import SelectTokenPopup from "./SelectTokenPopup.vue"
 import SendPopup from "./SendPopup.vue"
 import StealthPromoPopup from "./StealthPromoPopup.vue"
 import TokenMetadataPopup from "./TokenMetadataPopup.vue"
-import TokensPopup from "./TokensPopup.vue"
 import TransactionPopup from "./TransactionPopup.vue"
 
 /** Store */
@@ -65,7 +64,6 @@ const popupStore = usePopupStore()
 	<NewAccountPopup :show="popupStore.isOpened('new_account')" @onClose="popupStore.close('new_account')" />
 	<EditAccountPopup :show="popupStore.isOpened('edit_account')" @onClose="popupStore.close('edit_account')" />
 
-	<TokensPopup :show="popupStore.isOpened('tokens')" @onClose="popupStore.close('tokens')" />
 	<TokenMetadataPopup :show="popupStore.isOpened('token_metadata')" @onClose="popupStore.close('token_metadata')" />
 	<NewTokenPopup :show="popupStore.isOpened('new_token')" @onClose="popupStore.close('new_token')" />
 	<EditTokenPopup :show="popupStore.isOpened('edit_token')" @onClose="popupStore.close('edit_token')" />

@@ -104,18 +104,6 @@ const handleHideAccount = async () => {
 
 			<ItemsContainer wide>
 				<SettingItem
-					to="https://google.com"
-					size="large"
-					title="View on Explorer"
-					description="Currently unavailable"
-					icon="search"
-					external
-					disabled
-				/>
-			</ItemsContainer>
-
-			<ItemsContainer wide>
-				<SettingItem
 					@click="handleHideAccount"
 					title="Hide account"
 					icon="eye-off"
