@@ -209,9 +209,9 @@ onBeforeUnmount(() => {
 		<template v-if="!isLoading">
 			<!-- Stealth Mode Master Toggle -->
 			<Flex align="center" justify="between" data-testid="setting-stealth-mode">
-				<Flex direction="column" justify="center" gap="6">
-					<Text size="13" weight="600" color="primary">{{ settings.stealthMode.title }}</Text>
-					<Text size="12" weight="500" color="tertiary">{{ settings.stealthMode.description }}</Text>
+				<Flex direction="column" justify="center" gap="4">
+					<span :class="$style.setting_key">{{ settings.stealthMode.title }}</span>
+					<span :class="$style.setting_sub">{{ settings.stealthMode.description }}</span>
 				</Flex>
 
 				<Toggle
@@ -229,9 +229,9 @@ onBeforeUnmount(() => {
 					align="center"
 					justify="between"
 				>
-					<Flex direction="column" justify="center" gap="6">
-						<Text size="13" weight="600" color="primary">{{ settings[sk].title }}</Text>
-						<Text size="12" weight="500" color="tertiary">{{ settings[sk].description }}</Text>
+					<Flex direction="column" justify="center" gap="4">
+						<span :class="$style.setting_key">{{ settings[sk].title }}</span>
+						<span :class="$style.setting_sub">{{ settings[sk].description }}</span>
 					</Flex>
 
 					<Toggle
@@ -243,9 +243,9 @@ onBeforeUnmount(() => {
 
 			<!-- External Links (dropdown) -->
 			<Flex justify="between" align="center">
-				<Flex direction="column" gap="6">
-					<Text size="13" weight="600" color="primary">{{ settings.externalLinks.title }}</Text>
-					<Text size="12" weight="500" color="tertiary">{{ settings.externalLinks.description }}</Text>
+				<Flex direction="column" gap="4">
+					<span :class="$style.setting_key">{{ settings.externalLinks.title }}</span>
+					<span :class="$style.setting_sub">{{ settings.externalLinks.description }}</span>
 				</Flex>
 
 				<Dropdown>
@@ -296,6 +296,22 @@ onBeforeUnmount(() => {
 
 .content {
 	padding: 16px 24px var(--nav-clearance) 24px;
+}
+
+.setting_key {
+	font-family: var(--font-headline);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.setting_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
 }
 
 .divider {

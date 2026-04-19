@@ -375,9 +375,9 @@ onBeforeUnmount(() => {
 					These emojis should match what the connected app displays
 				</Text>
 				<Flex align="center" justify="between" gap="12" wide>
-					<Flex direction="column" gap="6">
-						<Text size="13" weight="600" color="primary">Always trust</Text>
-						<Text size="12" weight="500" color="tertiary">Skip verification on reconnect</Text>
+					<Flex direction="column" gap="4">
+						<span :class="$style.setting_key">Always trust</span>
+						<span :class="$style.setting_sub">Skip verification on reconnect</span>
 					</Flex>
 					<Toggle :modelValue="isTrusted" @update:modelValue="toggleTrust" />
 				</Flex>
@@ -397,6 +397,22 @@ onBeforeUnmount(() => {
 
 .content {
 	padding: 16px 24px var(--nav-clearance) 24px;
+}
+
+.setting_key {
+	font-family: var(--font-headline);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.setting_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
 }
 
 .logo {
