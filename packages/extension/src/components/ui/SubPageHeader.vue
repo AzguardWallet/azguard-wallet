@@ -59,8 +59,15 @@ function handleBack() {
 
 <style module>
 .wrapper {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+
 	padding: 0 24px;
 	min-height: 56px;
+
+	background: var(--app-bg);
+	border-bottom: 1px solid var(--nulo-border);
 }
 
 .back_btn {
