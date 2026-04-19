@@ -119,15 +119,8 @@ const handleCopyAddress = (target) => {
 					</SettingItem>
 				</ItemsContainer>
 
-				<Button
-					@click="popupStore.open('new_account')"
-					wide
-					type="secondary"
-					size="medium"
-					leftIcon="plus-circle"
-					leftIconColor="primary"
-				>
-					<Text size="13">New account</Text>
+				<Button @click="popupStore.open('new_account')" wide type="primary" size="large">
+					Add account
 				</Button>
 			</Flex>
 

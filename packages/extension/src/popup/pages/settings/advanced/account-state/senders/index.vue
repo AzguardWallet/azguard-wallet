@@ -152,15 +152,8 @@ onBeforeUnmount(() => {
 
 			<Banner v-else> To receive private transactions, add the sender account to your list </Banner>
 
-			<Button
-				@click="popupStore.open('new_sender')"
-				wide
-				type="secondary"
-				size="medium"
-				leftIcon="plus-circle"
-				leftIconColor="primary"
-			>
-				<Text size="13">New sender</Text>
+			<Button @click="popupStore.open('new_sender')" wide type="primary" size="large">
+				Add sender
 			</Button>
 		</Flex>
 

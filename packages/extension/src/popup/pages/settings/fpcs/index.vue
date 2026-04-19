@@ -394,15 +394,8 @@ onBeforeUnmount(() => {
 			</ItemsContainer>
 		</Flex>
 
-		<Button
-			@click="popupStore.open('new_fpc')"
-			wide
-			type="secondary"
-			size="medium"
-			leftIcon="plus-circle"
-			leftIconColor="primary"
-		>
-			<Text size="13">New FPC</Text>
+		<Button @click="popupStore.open('new_fpc')" wide type="primary" size="large">
+			Add FPC
 		</Button>
 		</Flex>
 

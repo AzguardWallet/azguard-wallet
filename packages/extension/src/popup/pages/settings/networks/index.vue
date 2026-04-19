@@ -116,15 +116,8 @@ const handleDelete = (target) => {
 				</SettingItem>
 			</ItemsContainer>
 
-			<Button
-				@click="popupStore.open('new_network')"
-				wide
-				type="secondary"
-				size="medium"
-				leftIcon="plus-circle"
-				leftIconColor="primary"
-			>
-				<Text size="13">New network</Text>
+			<Button @click="popupStore.open('new_network')" wide type="primary" size="large">
+				Add network
 			</Button>
 		</Flex>
 
