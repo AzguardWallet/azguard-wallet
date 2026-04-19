@@ -22,7 +22,7 @@ const appStore = useAppStore()
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
 		<BalanceView />
 
-		<Flex direction="column" gap="40" :class="$style.content">
+		<Flex direction="column" gap="24" :class="$style.content">
 			<TokensView />
 			<RecentActivityView />
 		</Flex>

@@ -23,10 +23,11 @@ const props = defineProps({
 
 const router = useRouter()
 
-const latestTransaction = computed(() => {
-	return props.token
-		? appStore.transactions.filter((t) => t.calls?.some((c) => c.contract === props.token?.contract))[0]
-		: appStore.transactions[0]
+const recentTransactions = computed(() => {
+	const source = props.token
+		? appStore.transactions.filter((t) => t.calls?.some((c) => c.contract === props.token?.contract))
+		: appStore.transactions
+	return source.slice(0, 3)
 })
 const isTokenAwaitingTx = computed(() => {
 	return props.token
@@ -98,8 +99,8 @@ function onDappTaskDeleted(task) {
 	}
 }
 
-const handleSelectTx = () => {
-	router.push(`/popup/tx/${latestTransaction.value.hash}`)
+const handleSelectTx = (tx) => {
+	router.push(`/popup/tx/${tx.hash}`)
 }
 
 onMounted(async () => {
@@ -116,7 +117,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex v-if="token && (isTokenAwaitingTx || latestTransaction)" direction="column" gap="16">
+	<Flex v-if="token && (isTokenAwaitingTx || recentTransactions.length)" direction="column" gap="16">
 		<Flex align="end" justify="between" :class="$style.section_header">
 			<span :class="$style.header_title">RECENT TRANSACTIONS</span>
 			<span @click="router.push('/popup/activity')" :class="$style.archive_link">View Archives</span>
@@ -124,10 +125,10 @@ onBeforeUnmount(() => {
 
 		<div :class="$style.list">
 			<TransactionAwaitingCard v-if="isTokenAwaitingTx" />
-			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
+			<TransactionCard v-for="tx in recentTransactions" :key="tx.hash" :tx="tx" @click="handleSelectTx(tx)" />
 		</div>
 	</Flex>
-	<Flex v-else-if="!token && (latestTransaction || awaitingAccountTxs.length || dappExecutionTask)" direction="column" gap="16">
+	<Flex v-else-if="!token && (recentTransactions.length || awaitingAccountTxs.length || dappExecutionTask)" direction="column" gap="16">
 		<Flex align="end" justify="between" :class="$style.section_header">
 			<span :class="$style.header_title">RECENT TRANSACTIONS</span>
 			<span @click="router.push('/popup/activity')" :class="$style.archive_link">View Archives</span>
@@ -136,7 +137,7 @@ onBeforeUnmount(() => {
 		<div :class="$style.list">
 			<TransactionAwaitingCard v-if="dappExecutionTask" :title="dappProgressTitle" :subtitle="dappProgressSubtitle" />
 			<TransactionAwaitingCard v-else-if="awaitingAccountTxs.length" />
-			<TransactionCard v-else :tx="latestTransaction" @click="handleSelectTx" />
+			<TransactionCard v-for="tx in recentTransactions" :key="tx.hash" :tx="tx" @click="handleSelectTx(tx)" />
 		</div>
 	</Flex>
 	<Flex v-else-if="token" direction="column" gap="16">
