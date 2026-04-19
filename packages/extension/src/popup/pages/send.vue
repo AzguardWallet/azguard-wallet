@@ -670,25 +670,25 @@ onBeforeUnmount(() => {
 	right: 0;
 	z-index: 999;
 
-	border: 1px solid var(--nulo-outline);
-	background: var(--nulo-surface-low);
+	border: 2px solid var(--nulo-outline);
+	background: var(--app-bg);
 
-	max-height: 150px;
+	max-height: 160px;
 
 	overflow-y: auto;
 
 	.contact {
 		cursor: pointer;
 
-		padding: 8px 12px;
+		padding: 10px 14px;
 		transition: all 0.2s var(--bezier);
 
 		&:hover {
-			background: var(--nulo-surface-high);
+			background: var(--nulo-surface-low);
 		}
 
 		&:active {
-			background: var(--nulo-surface-highest);
+			background: var(--nulo-surface-high);
 		}
 
 		.contact_avatar {

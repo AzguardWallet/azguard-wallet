@@ -16,7 +16,7 @@ defineProps({
 	align-items: center;
 
 	min-width: 120px;
-	padding: 8px 12px;
+	padding: 10px 14px;
 
 	transform-style: preserve-3d;
 	-webkit-transform-style: preserve-3d;
