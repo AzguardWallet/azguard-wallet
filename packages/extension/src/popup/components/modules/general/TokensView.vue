@@ -237,9 +237,10 @@ onBeforeUnmount(() => {
 				/>
 			</template>
 			<template v-if="!newTokens.length && !sortedTokenBalances.length">
-				<Button @click="popupStore.open('new_token')" type="secondary" size="small" leftIcon="plus-circle">
-					New token
-				</Button>
+				<div :class="$style.empty_state">
+					<span :class="$style.empty_headline">NOTHING HERE YET</span>
+					<span :class="$style.empty_sub">Tap ⋯ above to import your first token.</span>
+				</div>
 			</template>
 		</Flex>
 	</Flex>
@@ -265,5 +266,33 @@ onBeforeUnmount(() => {
 
 .token_list {
 	gap: 1px;
+}
+
+.empty_state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+
+	padding: 32px 16px;
+	border: 1px dashed var(--nulo-border);
+
+	text-align: center;
+}
+
+.empty_headline {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.empty_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
 }
 </style>
