@@ -16,6 +16,7 @@ import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-k
 
 /** Utils */
 import { pickFile } from "@/utils"
+import { setLastActiveProfileId } from "@/utils/lastActiveProfile"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -125,6 +126,7 @@ const isAllowedToImportByPublicKey = computed(() => {
 const completeImport = async (profile) => {
 	appStore.profiles.push(profile)
 	appStore.profile = profile
+	await setLastActiveProfileId(profile.id)
 
 	await setSentinel()
 

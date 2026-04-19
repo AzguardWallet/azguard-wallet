@@ -4,6 +4,7 @@ import RegisterPopup from "./RegisterPopup/RegisterPopup.vue"
 
 /** Utils */
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { setLastActiveProfileId } from "@/utils/lastActiveProfile"
 import { stringCompare } from "@/utils/string"
 
 /** Store */
@@ -27,8 +28,9 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.select_profile?.order
 })
 
-const handleSelectProfile = (profile) => {
+const handleSelectProfile = async (profile) => {
 	appStore.profile = profile
+	await setLastActiveProfileId(profile.id)
 	emit("onClose")
 }
 

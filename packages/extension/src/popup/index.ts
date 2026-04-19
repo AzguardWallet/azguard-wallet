@@ -38,6 +38,7 @@ BigNumber.config({
 })
 
 import { managers } from "@/utils/core.js"
+import { getLastActiveProfileId } from "@/utils/lastActiveProfile"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -83,7 +84,9 @@ router.beforeEach(async (to, from, next) => {
 	if (!appStore.profile && to.name !== "popup-register") {
 		const profiles = await managers.profile.getProfiles()
 		if (profiles.length) {
-			appStore.profile = profiles[0]
+			const lastActiveId = await getLastActiveProfileId()
+			const lastActive = lastActiveId ? profiles.find((p) => p.id === lastActiveId) : undefined
+			appStore.profile = lastActive ?? profiles[0]
 		} else {
 			next({ name: "popup-register" })
 			return

@@ -14,6 +14,7 @@ import { checkNotificationsForShow } from "@/composables/notification"
 import { Config } from "@/wallet/config"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
+import { getLastActiveProfileId, setLastActiveProfileId } from "@/utils/lastActiveProfile"
 import { initTransactionService, managers, refreshBalances } from "@/utils/core"
 import { sleep } from "@/wallet/utils"
 
@@ -28,8 +29,6 @@ const router = useRouter()
 if (appStore.isLogined) {
 	router.go(-1)
 }
-
-const LAST_ACTIVE_PROFILE_KEY = "nulo:ui:lastActiveProfile"
 
 const defaultConfig = new Config()
 const theme = ref(defaultConfig.theme)
@@ -84,7 +83,7 @@ const handleUnlockWallet = async () => {
 		password.value = ""
 
 		appStore.profile = activeProfile
-		chrome.storage.local.set({ [LAST_ACTIVE_PROFILE_KEY]: activeProfile?.id })
+		if (activeProfile?.id) await setLastActiveProfileId(activeProfile.id)
 		managers.account = new AccountServiceClient()
 
 		initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
@@ -149,7 +148,7 @@ onMounted(async () => {
 	theme.value = await configService.getValue("theme")
 	isSidePanelEnabled.value = await configService.getValue("sidePanel")
 
-	const lastActiveProfileId = (await chrome.storage.local.get(LAST_ACTIVE_PROFILE_KEY))[LAST_ACTIVE_PROFILE_KEY]
+	const lastActiveProfileId = await getLastActiveProfileId()
 	if (lastActiveProfileId) {
 		const profile = (await managers.profile.getProfiles())?.find((p) => p.id === lastActiveProfileId)
 		if (profile) {

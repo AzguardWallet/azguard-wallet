@@ -6,6 +6,7 @@ import Navigation from "./components/Navigation.vue"
 /** Utils */
 import { managers, initTransactionService, isBackgroundConnected } from "@/utils/core.js"
 import { isPrefersDarkScheme } from "@/utils/general"
+import { getLastActiveProfileId } from "@/utils/lastActiveProfile"
 import { Config } from "@/wallet/config"
 import { AccountServiceClient, AccountType } from "@/wallet/services/account/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
@@ -201,7 +202,9 @@ const loadProfile = async () => {
 		}
 
 		if (appStore.profiles.length) {
-			appStore.profile = appStore.profiles[0]
+			const lastActiveId = await getLastActiveProfileId()
+			const lastActive = lastActiveId ? appStore.profiles.find((p) => p.id === lastActiveId) : undefined
+			appStore.profile = lastActive ?? appStore.profiles[0]
 
 			appStore.isSessionChecked = true
 

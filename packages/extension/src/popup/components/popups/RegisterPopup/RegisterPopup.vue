@@ -4,6 +4,7 @@ import WalletPasswordContent from "./WalletPasswordContent.vue"
 
 /** Utils */
 import { managers, setSentinel } from "@/utils/core"
+import { setLastActiveProfileId } from "@/utils/lastActiveProfile"
 import { capitalize } from "@/utils/string"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
@@ -112,6 +113,7 @@ const handleCreateProfile = async () => {
 	managers.account = new AccountServiceClient()
 
 	appStore.profile = profile
+	await setLastActiveProfileId(profile.id)
 	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 	initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
