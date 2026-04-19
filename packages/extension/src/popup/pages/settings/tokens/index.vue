@@ -77,7 +77,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Manage Tokens" :backTo="'/popup/settings/general'" />
+		<SubPageHeader title="Manage Tokens" :backTo="'/popup/settings'" />
 
 		<Flex direction="column" gap="16" :class="$style.content">
 			<SectionLabel label="Tokens" :count="tokens.length" />

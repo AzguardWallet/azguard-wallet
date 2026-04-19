@@ -240,7 +240,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Manage FPCs" :backTo="'/popup/settings/general'" />
+		<SubPageHeader title="Manage FPCs" :backTo="'/popup/settings'" />
 
 		<Flex direction="column" gap="20" :class="$style.content">
 			<Banner v-if="isLoading" isLoading> Fetching FPCs </Banner>

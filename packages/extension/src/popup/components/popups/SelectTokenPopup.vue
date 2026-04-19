@@ -42,7 +42,7 @@ const handleSelectToken = (id) => {
 }
 
 const handleManageTokens = () => {
-	router.push("/popup/settings/general/tokens")
+	router.push("/popup/settings/tokens")
 	popupStore.closeAll()
 }
 

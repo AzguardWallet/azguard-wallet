@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
 								Import token
 							</Flex>
 						</DropdownItem>
-						<DropdownItem @click="router.push('/popup/settings/general/tokens')" data-testid="tokens-menu-manage">
+						<DropdownItem @click="router.push('/popup/settings/tokens')" data-testid="tokens-menu-manage">
 							<Flex align="center" gap="8">
 								<Icon name="settings" size="14" color="primary" />
 								Manage tokens

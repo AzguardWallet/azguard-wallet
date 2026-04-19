@@ -114,7 +114,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Appearance" :backTo="'/popup/settings/general'" />
+		<SubPageHeader title="Appearance" :backTo="'/popup/settings'" />
 
 		<Flex v-if="!isLoading" direction="column" gap="24" :class="$style.content">
 			<Flex justify="between">

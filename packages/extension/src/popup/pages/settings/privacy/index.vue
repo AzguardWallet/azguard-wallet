@@ -201,7 +201,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Privacy Settings" :backTo="'/popup/settings'" />
+		<SubPageHeader title="Privacy" :backTo="'/popup/settings'" />
 
 		<Flex direction="column" gap="32" :class="$style.content">
 			<Banner v-if="isLoading" isLoading> Fetching settings </Banner>

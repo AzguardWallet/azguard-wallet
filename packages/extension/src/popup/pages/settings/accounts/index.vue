@@ -56,7 +56,7 @@ const handleCopyAddress = (target) => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper" data-testid="manage-accounts-page">
-		<SubPageHeader title="Manage Accounts" :backTo="'/popup/settings/general'" />
+		<SubPageHeader title="Manage Accounts" :backTo="'/popup/settings'" />
 
 		<Flex direction="column" gap="40" :class="$style.content">
 			<Flex direction="column" gap="16">

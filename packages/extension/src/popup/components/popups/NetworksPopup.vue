@@ -41,7 +41,7 @@ const handleSelectNetwork = (target) => {
 }
 
 const handleManageNetworks = () => {
-	router.push("/popup/settings/general/networks")
+	router.push("/popup/settings/networks")
 	emit("onClose")
 }
 </script>

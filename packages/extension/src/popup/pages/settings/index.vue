@@ -9,8 +9,6 @@
 </route>
 
 <script setup>
-/** Components */
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
@@ -24,37 +22,90 @@ const appStore = useAppStore()
 		</Flex>
 
 		<Flex direction="column" gap="32" :class="$style.content">
-			<ItemsContainer title="Wallet">
+			<ItemsContainer title="Identity">
 				<SettingItem
 					to="/popup/settings/profile"
 					:title="appStore.profile.name"
+					description="Profile name, password, backup"
 					materialIcon="person"
 					chevron
 				/>
 				<SettingItem
-					to="/popup/settings/account"
-					:title="appStore.account.name"
+					to="/popup/settings/accounts"
+					title="Accounts"
+					description="Switch, create, manage"
 					materialIcon="account_balance_wallet"
 					chevron
 				/>
 			</ItemsContainer>
 
-			<ItemsContainer title="System">
+			<ItemsContainer title="Connections">
 				<SettingItem
-					to="/popup/settings/general"
-					title="General"
-					materialIcon="tune"
+					to="/popup/settings/networks"
+					title="Networks"
+					description="Aztec networks and RPCs"
+					materialIcon="hub"
 					chevron
 				/>
 				<SettingItem
+					to="/popup/settings/tokens"
+					title="Tokens"
+					description="Tracked tokens and balances"
+					materialIcon="toll"
+					chevron
+				/>
+				<SettingItem
+					to="/popup/settings/contacts"
+					title="Contacts"
+					description="Saved addresses"
+					materialIcon="group"
+					chevron
+				/>
+				<SettingItem
+					to="/popup/settings/connected-apps"
+					title="Connected Apps"
+					description="Apps with granted permissions"
+					materialIcon="extension"
+					chevron
+				/>
+				<SettingItem
+					to="/popup/settings/fpcs"
+					title="Fee Payments"
+					description="FPCs and fee methods"
+					materialIcon="local_gas_station"
+					chevron
+				/>
+			</ItemsContainer>
+
+			<ItemsContainer title="Security & Privacy">
+				<SettingItem
 					to="/popup/settings/security"
-					title="Security"
+					title="Security & Backup"
+					description="Seed phrase, secret key, full backup"
 					materialIcon="lock"
+					chevron
+				/>
+				<SettingItem
+					to="/popup/settings/privacy"
+					title="Privacy"
+					description="Stealth mode and external defaults"
+					materialIcon="shield"
+					chevron
+				/>
+			</ItemsContainer>
+
+			<ItemsContainer title="App">
+				<SettingItem
+					to="/popup/settings/appearance"
+					title="Appearance"
+					description="Theme and display"
+					materialIcon="palette"
 					chevron
 				/>
 				<SettingItem
 					to="/popup/settings/advanced"
 					title="Advanced"
+					description="Auto-lock, developer, account state"
 					materialIcon="bolt"
 					chevron
 				/>
@@ -64,7 +115,6 @@ const appStore = useAppStore()
 				About Nulo
 			</RouterLink>
 		</Flex>
-
 	</Flex>
 </template>
 

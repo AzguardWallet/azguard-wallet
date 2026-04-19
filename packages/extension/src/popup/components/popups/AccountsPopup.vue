@@ -46,7 +46,7 @@ const handleCopyAddress = (target) => {
 }
 
 const handleManageAccounts = () => {
-	router.push("/popup/settings/general/accounts")
+	router.push("/popup/settings/accounts")
 	emit("onClose")
 }
 </script>

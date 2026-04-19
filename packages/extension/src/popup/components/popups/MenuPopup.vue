@@ -83,22 +83,16 @@ onBeforeUnmount(() => {
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
-				<ItemsContainer title="Profile">
+				<ItemsContainer>
 					<SettingItem
 						@click="handleNavigation('/popup/settings/profile')"
 						:title="appStore.profile?.name"
 						materialIcon="person"
 						chevron
 					/>
-					<SettingItem
-						@click="handleNavigation('/popup/settings/general/contacts')"
-						title="Contacts"
-						materialIcon="group"
-						chevron
-					/>
 				</ItemsContainer>
 
-				<ItemsContainer title="Other">
+				<ItemsContainer>
 					<SettingItem
 						v-if="isDeveloperModeEnabled"
 						@click="handleOpenLogs"

@@ -65,12 +65,12 @@ const fetchSession = async () => {
 		session.value = await dappSessionService.getDappSession(route.params.id)
 	} catch {
 		// Session missing / expired — the service throws instead of returning null
-		router.push("/popup/settings/general/sessions")
+		router.push("/popup/settings/connected-apps")
 		return
 	}
 
 	if (!session.value) {
-		router.push("/popup/settings/general/sessions")
+		router.push("/popup/settings/connected-apps")
 		return
 	}
 
@@ -216,7 +216,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex v-if="session" direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Session" leadingIcon="extension" :backTo="'/popup/settings/general/sessions'">
+		<SubPageHeader title="Connected App" leadingIcon="extension" :backTo="'/popup/settings/connected-apps'">
 			<template #trailing>
 				<Dropdown>
 					<button type="button" :class="$style.icon_btn" aria-label="Session actions">

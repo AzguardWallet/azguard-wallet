@@ -78,7 +78,7 @@ function onDappSessionDeleted(session) {
 }
 
 const handleOpenSession = (session) => {
-	router.push(`/popup/settings/general/sessions/session/${session.id}`)
+	router.push(`/popup/settings/connected-apps/${session.id}`)
 }
 
 const handleDropSession = (session) => {
@@ -117,7 +117,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Sessions" leadingIcon="extension" :backTo="'/popup/settings/general'">
+		<SubPageHeader title="Connected Apps" leadingIcon="extension" :backTo="'/popup/settings'">
 			<template #trailing>
 				<Dropdown>
 					<button type="button" :class="$style.icon_btn" aria-label="Session actions">

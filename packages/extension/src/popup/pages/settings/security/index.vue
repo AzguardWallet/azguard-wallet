@@ -28,7 +28,7 @@
 					title="Privacy Settings"
 					description="Control external service connections"
 					icon="eye-off"
-					to="/popup/settings/external-services"
+					to="/popup/settings/privacy"
 				/>
 			</ItemsContainer>
 		</Flex>

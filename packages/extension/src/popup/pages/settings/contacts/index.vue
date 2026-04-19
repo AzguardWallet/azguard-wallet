@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Contacts" leadingIcon="people" :backTo="'/popup/settings/general'">
+		<SubPageHeader title="Contacts" leadingIcon="people" :backTo="'/popup/settings'">
 			<template #trailing>
 				<Dropdown>
 					<button type="button" :class="$style.icon_btn" aria-label="Contact actions">

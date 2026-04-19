@@ -69,7 +69,7 @@ const handleDelete = (target) => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Manage Networks" :backTo="'/popup/settings/general'" />
+		<SubPageHeader title="Manage Networks" :backTo="'/popup/settings'" />
 
 		<Flex direction="column" gap="16" :class="$style.content">
 			<SectionLabel label="Networks" :count="networks.length" />
