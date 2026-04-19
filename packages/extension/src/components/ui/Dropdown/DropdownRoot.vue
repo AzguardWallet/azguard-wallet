@@ -268,8 +268,8 @@ const onKeydown = (event) => {
 	position: fixed;
 	z-index: 2001;
 
-	background: var(--nulo-surface-low);
-	border: 1px solid var(--nulo-outline);
+	background: var(--app-bg);
+	border: 2px solid var(--nulo-outline);
 
 	padding: 4px 0;
 }

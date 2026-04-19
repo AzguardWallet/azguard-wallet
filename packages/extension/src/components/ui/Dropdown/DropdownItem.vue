@@ -43,11 +43,11 @@ defineProps({
 }
 
 .wrapper:hover {
-	background: var(--nulo-surface-high);
+	background: var(--nulo-surface-low);
 }
 
 .wrapper:focus {
 	outline: none;
-	background: var(--nulo-surface-high);
+	background: var(--nulo-surface-low);
 }
 </style>
