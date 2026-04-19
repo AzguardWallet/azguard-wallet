@@ -97,7 +97,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Notes" :backTo="'/popup/settings/account/state'" />
+		<SubPageHeader title="Notes" :backTo="'/popup/settings/advanced/account-state'" />
 
 		<Flex direction="column" gap="16" :class="$style.content">
 			<Input

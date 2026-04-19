@@ -12,33 +12,33 @@
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Account State" :backTo="'/popup/settings/account'" />
+		<SubPageHeader title="Account State" :backTo="'/popup/settings/advanced'" />
 
 		<Flex direction="column" gap="20" :class="$style.content">
 			<ItemsContainer>
 				<SettingItem
-					to="/popup/settings/account/state/notes"
+					to="/popup/settings/advanced/account-state/notes"
 					title="Notes"
 					description="View all notes"
 					chevron
 				/>
 				<SettingItem
 					size="large"
-					to="/popup/settings/account/state/authwits"
+					to="/popup/settings/advanced/account-state/authwits"
 					title="Authwits"
 					description="View all authwits"
 					chevron
 				/>
 				<SettingItem
 					size="large"
-					to="/popup/settings/account/state/contracts"
+					to="/popup/settings/advanced/account-state/contracts"
 					title="Contracts"
 					description="View all contracts"
 					chevron
 				/>
 				<SettingItem
 					size="large"
-					to="/popup/settings/account/state/senders"
+					to="/popup/settings/advanced/account-state/senders"
 					title="Senders"
 					description="View all senders"
 					chevron

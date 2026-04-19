@@ -253,6 +253,17 @@ onBeforeUnmount(() => {
 				</Flex>
 			</template>
 
+			<!-- Account State (Notes, Authwits, Contracts, Senders) -->
+			<RouterLink to="/popup/settings/advanced/account-state" :class="$style.state_link">
+				<Flex justify="between" align="center">
+					<Flex direction="column" gap="6">
+						<Text size="13" weight="600" color="primary">Account State</Text>
+						<Text size="12" weight="500" color="tertiary">Notes, authwits, contracts, senders</Text>
+					</Flex>
+					<Icon name="chevron" size="12" color="tertiary" />
+				</Flex>
+			</RouterLink>
+
 			<!-- Default Block Explorer -->
 			<Flex justify="between" align="center">
 				<Flex direction="column" gap="6">
@@ -335,5 +346,14 @@ onBeforeUnmount(() => {
 	display: flex;
 	align-items: center;
 	gap: 6px;
+}
+
+.state_link {
+	text-decoration: none;
+	transition: opacity 0.2s var(--bezier);
+
+	&:hover {
+		opacity: 0.8;
+	}
 }
 </style>

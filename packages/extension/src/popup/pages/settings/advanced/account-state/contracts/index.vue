@@ -60,7 +60,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Contracts" :backTo="'/popup/settings/account/state'" />
+		<SubPageHeader title="Contracts" :backTo="'/popup/settings/advanced/account-state'" />
 
 		<Flex direction="column" gap="16" :class="$style.content">
 			<Banner v-if="isFetchingContracts" isLoading> Fetching contracts </Banner>

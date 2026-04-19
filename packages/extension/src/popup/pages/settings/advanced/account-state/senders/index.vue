@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<SubPageHeader title="Senders" :backTo="'/popup/settings/account/state'" />
+		<SubPageHeader title="Senders" :backTo="'/popup/settings/advanced/account-state'" />
 
 		<Flex direction="column" gap="16" :class="$style.content">
 			<Banner v-if="isLoading" isLoading> Fetching senders </Banner>
