@@ -25,6 +25,7 @@ import BN from "bignumber.js"
 
 /** Utils */
 import { isValidHex, trimAddress } from "@/utils/string"
+import { sleep } from "@/wallet/utils"
 
 /** Composables */
 import { useToast } from "@/composables/toast.js"
@@ -227,6 +228,11 @@ let estimateCounter = 0
 
 const executionService = new ExecutionServiceClient()
 const isSending = ref(false)
+
+/** Set true if the user navigates away manually during the short
+ *  "Confirming..." window — prevents a second router.back() from firing. */
+let cancelled = false
+
 const handleSend = async () => {
 	if (!isAllowedToSend.value || isSending.value) return
 
@@ -234,36 +240,60 @@ const handleSend = async () => {
 
 	const amountToSend = new BN(amountTerm.value?.trim().replace(",", "")).times(10 ** activeToken.value.decimals)
 
+	// Snapshot reactive values — the component may unmount before the promise
+	// settles, at which point the reactive refs no longer carry meaningful state.
+	const destination = searchTerm.value
+	const contract = activeToken.value.contract
+	const transferArgs = [
+		appStore.network.id,
+		appStore.account.address,
+		activeToken.value.id,
+		transferType.value,
+		destination,
+		amountToSend,
+		feeSettings.value,
+	]
+
 	appStore.awaitingTransactions.push({
 		account: appStore.account.address,
-		destination: searchTerm.value,
-		contract: activeToken.value.contract,
+		destination,
+		contract,
 	})
 
-	try {
-		await executionService.executeTransfer(
-			appStore.network.id,
-			appStore.account.address,
-			activeToken.value.id,
-			transferType.value,
-			searchTerm.value,
-			amountToSend,
-			feeSettings.value,
-		)
-		openToast({ label: "Transaction submitted", icon: "check-circle" })
-		leaveSend()
-	} catch (err) {
-		const idx = appStore.awaitingTransactions.findIndex(
-			(t) => t.destination === searchTerm.value && t.contract === activeToken.value.contract,
-		)
-		if (idx !== -1) appStore.awaitingTransactions.splice(idx, 1)
+	// Fast-reject guard: if executeTransfer throws before we navigate (e.g. a
+	// simulation failure), we want to stay on the form so the user can retry
+	// with their inputs intact — not bounce them to assets and lose the state.
+	let failed = false
 
-		openToast({ label: "Simulation failed, transaction not sent", icon: "warning", color: "red" }, TOAST_DURATION.LONG)
-		console.error("[send] executeTransfer failed:", err)
-	} finally {
+	executionService
+		.executeTransfer(...transferArgs)
+		.then(() => {
+			openToast({ label: "Transaction submitted", icon: "check-circle" })
+		})
+		.catch((err) => {
+			failed = true
+			const idx = appStore.awaitingTransactions.findIndex((t) => t.destination === destination && t.contract === contract)
+			if (idx !== -1) appStore.awaitingTransactions.splice(idx, 1)
+
+			openToast({ label: "Simulation failed, transaction not sent", icon: "warning", color: "red" }, TOAST_DURATION.LONG)
+			console.error("[send] executeTransfer failed:", err)
+		})
+		.finally(() => {
+			executionService.disconnect()
+		})
+
+	// Hold on the "Confirming..." button briefly so the click feels received,
+	// then hand the user off to the assets view while proving continues in the
+	// background. Stay on the form if we already know the tx rejected.
+	await sleep(700)
+
+	if (cancelled) return
+	if (failed) {
 		isSending.value = false
-		executionService.disconnect()
+		return
 	}
+
+	leaveSend()
 }
 
 watch(
@@ -390,6 +420,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+	cancelled = true
+
 	contactService.disconnect()
 	tokenBalanceService.disconnect()
 	tokenService.disconnect()
