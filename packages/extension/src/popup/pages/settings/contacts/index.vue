@@ -293,19 +293,12 @@ onBeforeUnmount(() => {
 			</ItemsContainer>
 
 			<div v-else :class="$style.empty">
-				<div :class="$style.empty_label">No contacts yet</div>
-				<div :class="$style.empty_hint">Add someone you send to often</div>
+				<span :class="$style.empty_headline">NO CONTACTS YET</span>
+				<span :class="$style.empty_sub">Save the people you send to or receive from often.</span>
 			</div>
 
-			<Button
-				@click="popupStore.open('new_contact')"
-				wide
-				type="secondary"
-				size="medium"
-				leftIcon="plus-circle"
-				leftIconColor="primary"
-			>
-				<Text size="13">New contact</Text>
+			<Button @click="popupStore.open('new_contact')" wide type="primary" size="large">
+				Add contact
 			</Button>
 		</Flex>
 
@@ -445,26 +438,27 @@ onBeforeUnmount(() => {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 
-	padding: 40px 16px;
+	padding: 32px 16px;
+	border: 1px dashed var(--nulo-border);
 
-	background: var(--nulo-surface);
-	border: 1px solid var(--nulo-border);
+	text-align: center;
 }
 
-.empty_label {
+.empty_headline {
 	font-family: var(--font-headline);
-	font-size: 12px;
+	font-size: 14px;
 	font-weight: 700;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 	color: var(--nulo-secondary);
 }
 
-.empty_hint {
-	font-family: var(--font-body);
-	font-size: 12px;
+.empty_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
 	color: var(--nulo-outline);
 }
 

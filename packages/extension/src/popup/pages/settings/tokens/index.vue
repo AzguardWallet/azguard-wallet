@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
 		<Flex direction="column" gap="16" :class="$style.content">
 			<SectionLabel label="Tokens" :count="tokens.length" />
 
-			<ItemsContainer>
+			<ItemsContainer v-if="tokens.length">
 				<SettingItem
 					v-for="token in tokens"
 					:title="token.symbol"
@@ -123,15 +123,13 @@ onBeforeUnmount(() => {
 				</SettingItem>
 			</ItemsContainer>
 
-			<Button
-				@click="popupStore.open('new_token')"
-				wide
-				type="secondary"
-				size="medium"
-				leftIcon="plus-circle"
-				leftIconColor="primary"
-			>
-				<Text size="13">New token</Text>
+			<div v-else :class="$style.empty">
+				<span :class="$style.empty_headline">NO TOKENS YET</span>
+				<span :class="$style.empty_sub">Import tokens to track balances and send or receive.</span>
+			</div>
+
+			<Button @click="popupStore.open('new_token')" wide type="primary" size="large">
+				Import token
 			</Button>
 		</Flex>
 
@@ -158,5 +156,33 @@ onBeforeUnmount(() => {
 	&:hover {
 		fill: var(--txt-primary);
 	}
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+
+	padding: 32px 16px;
+	border: 1px dashed var(--nulo-border);
+
+	text-align: center;
+}
+
+.empty_headline {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.empty_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
 }
 </style>
