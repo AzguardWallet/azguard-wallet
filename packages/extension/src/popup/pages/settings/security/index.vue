@@ -48,31 +48,4 @@
 	padding: 16px 24px var(--nav-clearance) 24px;
 }
 
-.item {
-	border-radius: 0;
-	border: 1px solid var(--nulo-border);
-	cursor: pointer;
-
-	padding: 12px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--nulo-surface-low);
-
-		& .item_icon {
-			transform: rotate(-90deg) translateY(3px);
-		}
-	}
-
-	&:active {
-		background: var(--nulo-surface-high);
-	}
-}
-
-.item_icon {
-	transform: rotate(-90deg);
-
-	transition: transform 0.2s var(--bezier);
-}
 </style>
