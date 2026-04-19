@@ -26,10 +26,13 @@ const props = defineProps({
 const router = useRouter()
 
 function handleBack() {
-	if (props.backTo) {
-		router.push(props.backTo)
-	} else if (window.history.length > 1) {
+	// Prefer actual browser-history back — matches what users expect from a
+	// "back" arrow after having navigated forward. `backTo` is the structural
+	// fallback for cold-open / deep-link cases where no history exists.
+	if (window.history.length > 1) {
 		router.back()
+	} else if (props.backTo) {
+		router.push(props.backTo)
 	} else {
 		router.push("/popup/general")
 	}
