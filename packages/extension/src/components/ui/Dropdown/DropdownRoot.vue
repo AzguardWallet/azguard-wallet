@@ -270,6 +270,7 @@ const onKeydown = (event) => {
 
 	background: var(--app-bg);
 	border: 2px solid var(--nulo-outline);
+	border-top: 2px solid var(--nulo-accent);
 
 	padding: 4px 0;
 }
