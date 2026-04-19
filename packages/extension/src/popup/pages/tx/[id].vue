@@ -195,13 +195,9 @@ onBeforeUnmount(() => {
 		<SubPageHeader :title="popupTitle" :backTo="'/popup/activity'" />
 
 		<Flex v-if="tx" wide direction="column" gap="24" :class="$style.content">
-			<!-- Hero -->
+			<!-- Hero — title lives in SubPageHeader above, so this block is
+			     just the timestamp + explorer link. -->
 			<Flex direction="column" align="center" gap="10">
-				<Flex align="center" gap="8">
-					<Icon name="zap-circle" size="16" color="primary" />
-					<span :class="$style.tx_title">{{ popupTitle }}</span>
-				</Flex>
-
 				<Flex align="center" justify="center" gap="8" :class="$style.hero_meta">
 					<span v-if="txTime" :class="$style.tx_time">{{ txTime }}</span>
 					<span v-if="txTime && (explorerUrl || tx?.hash)" :class="$style.meta_sep">·</span>
@@ -544,15 +540,6 @@ onBeforeUnmount(() => {
 }
 
 /* ── Hero ──────────────────────────────────────────────────────── */
-
-.tx_title {
-	font-family: var(--font-headline);
-	font-size: 16px;
-	font-weight: 700;
-	letter-spacing: 0.02em;
-	color: var(--txt-primary);
-	text-transform: uppercase;
-}
 
 .hero_meta {
 	flex-wrap: wrap;
