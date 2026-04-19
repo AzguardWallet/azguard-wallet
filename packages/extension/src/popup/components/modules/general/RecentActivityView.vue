@@ -3,12 +3,17 @@
 import TransactionAwaitingCard from "../activity/TransactionAwaitingCard.vue"
 import TransactionCard from "../activity/TransactionCard.vue"
 
+/** Vendor */
+import BN from "bignumber.js"
+
 /** Services */
 import { TaskServiceClient } from "@/wallet/services/task/client"
 import { ContentKind, TaskStatus } from "@/wallet/services/task/spec"
+import { TokenServiceClient } from "@/wallet/services/token/client"
 import { OriginType } from "@/wallet/services/transaction/spec"
 
 /** Utils */
+import { balanceFormatted } from "@/utils/amount.js"
 import { humanizeMethodName } from "@/utils/tx-enrichment"
 
 /** Store */
@@ -38,64 +43,114 @@ const awaitingAccountTxs = computed(() => {
 	return appStore.awaitingTransactions.filter((t) => t.account === appStore.account?.address)
 })
 
-const dappExecutionTask = ref(null)
-const dappSubtasks = ref([])
-const dappProgressTitle = computed(() => {
-	const name = dappExecutionTask.value?.origin?.name || "Transaction"
-	const method = dappExecutionTask.value?.content?.primaryMethod
+/** Unified in-flight task: covers both dapp-initiated (ExecuteOperation) and
+ *  UI-initiated (Transfer) sends. The backend emits task+subtasks with progress
+ *  labels; we surface them through a single awaiting card with live subtitle. */
+const executingTask = ref(null)
+const executingSubtasks = ref([])
+
+/** Tokens lookup — UI Transfer tasks carry a tokenId; we resolve to symbol +
+ *  decimals so the awaiting card can mirror TransactionCard (icon + amount). */
+const tokens = ref([])
+const tokenService = new TokenServiceClient()
+async function loadTokens() {
+	if (!appStore.profile || !appStore.network) return
+	tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+}
+
+function tokenById(id) {
+	return tokens.value.find((t) => t.id === id)
+}
+
+const isUiTransfer = computed(() => executingTask.value?.content?.kind === ContentKind.Transfer)
+
+const executingProgressTitle = computed(() => {
+	if (!executingTask.value) return ""
+	if (isUiTransfer.value) {
+		const token = tokenById(executingTask.value.content.tokenId)
+		return token?.symbol || "Transfer"
+	}
+	// Dapp path
+	const name = executingTask.value.origin?.name || "Transaction"
+	const method = executingTask.value.content?.primaryMethod
 	if (method) return `${name} · ${humanizeMethodName(method)}`
 	return name
 })
-const dappProgressSubtitle = computed(() => {
-	const active = dappSubtasks.value.find((s) => s.status === TaskStatus.Processing)
+const executingProgressSubtitle = computed(() => {
+	const active = executingSubtasks.value.find((s) => s.status === TaskStatus.Processing)
 	return active ? `${active.content.label}...` : "Preparing..."
+})
+const executingAmount = computed(() => {
+	if (!isUiTransfer.value) return null
+	const token = tokenById(executingTask.value.content.tokenId)
+	if (!token) return null
+	const decimals = new BN(10).pow(token.decimals || 0)
+	return balanceFormatted(new BN(String(executingTask.value.content.amount)).dividedBy(decimals), 8).value
+})
+const executingAmountSymbol = computed(() => {
+	if (!isUiTransfer.value) return null
+	return tokenById(executingTask.value.content.tokenId)?.symbol || null
 })
 
 const taskService = new TaskServiceClient()
-taskService.onTaskCreated.add(onDappTaskCreated)
-taskService.onTaskUpdated.add(onDappTaskUpdated)
-taskService.onTaskDeleted.add(onDappTaskDeleted)
-function isDappExecTask(task) {
-	return (
+taskService.onTaskCreated.add(onExecutingTaskCreated)
+taskService.onTaskUpdated.add(onExecutingTaskUpdated)
+taskService.onTaskDeleted.add(onExecutingTaskDeleted)
+
+function isExecutingTask(task) {
+	if (task.finishedAt) return false
+	// Dapp-initiated send operation
+	if (
 		task.content.kind === ContentKind.ExecuteOperation &&
 		task.origin?.type === OriginType.DAPP &&
-		!task.finishedAt &&
 		(task.content.operationKind === "send_transaction" || task.content.operationKind === "aztec_sendTx")
-	)
+	) {
+		// Token-mode pages skip dapp tasks (TransferContent carries the token id we'd
+		// filter on; ExecuteOperation can't be cheaply scoped to a single token here).
+		if (props.token) return false
+		return true
+	}
+	// UI-initiated transfer — must match active account AND (in token-mode) the page's token.
+	if (task.content.kind === ContentKind.Transfer && task.origin?.type === OriginType.UI) {
+		if (task.content.senderAddress !== appStore.account?.address) return false
+		if (props.token && task.content.tokenId !== props.token.id) return false
+		return true
+	}
+	return false
 }
-function onDappTaskCreated(task) {
-	if (isDappExecTask(task)) {
-		dappExecutionTask.value = task
-		dappSubtasks.value = task.subtasks || []
+function onExecutingTaskCreated(task) {
+	if (isExecutingTask(task)) {
+		executingTask.value = task
+		executingSubtasks.value = task.subtasks || []
 		return
 	}
-	if (task.parentId && dappExecutionTask.value && task.parentId === dappExecutionTask.value.id) {
-		dappSubtasks.value.push(task)
+	if (task.parentId && executingTask.value && task.parentId === executingTask.value.id) {
+		executingSubtasks.value.push(task)
 	}
 }
-function onDappTaskUpdated(task) {
-	if (dappExecutionTask.value && task.id === dappExecutionTask.value.id) {
+function onExecutingTaskUpdated(task) {
+	if (executingTask.value && task.id === executingTask.value.id) {
 		if (task.finishedAt) {
-			dappExecutionTask.value = null
-			dappSubtasks.value = []
+			executingTask.value = null
+			executingSubtasks.value = []
 		} else {
-			dappExecutionTask.value = task
+			executingTask.value = task
 		}
 		return
 	}
-	if (task.parentId && dappExecutionTask.value && task.parentId === dappExecutionTask.value.id) {
-		const idx = dappSubtasks.value.findIndex((s) => s.id === task.id)
+	if (task.parentId && executingTask.value && task.parentId === executingTask.value.id) {
+		const idx = executingSubtasks.value.findIndex((s) => s.id === task.id)
 		if (idx !== -1) {
-			dappSubtasks.value[idx] = task
+			executingSubtasks.value[idx] = task
 		} else {
-			dappSubtasks.value.push(task)
+			executingSubtasks.value.push(task)
 		}
 	}
 }
-function onDappTaskDeleted(task) {
-	if (dappExecutionTask.value && task.id === dappExecutionTask.value.id) {
-		dappExecutionTask.value = null
-		dappSubtasks.value = []
+function onExecutingTaskDeleted(task) {
+	if (executingTask.value && task.id === executingTask.value.id) {
+		executingTask.value = null
+		executingSubtasks.value = []
 	}
 }
 
@@ -104,38 +159,58 @@ const handleSelectTx = (tx) => {
 }
 
 onMounted(async () => {
+	await loadTokens()
+
+	// Newest-first replay — otherwise concurrent tasks could surface the older one.
 	const allTasks = await taskService.getTasks()
-	const activeExec = allTasks.find((t) => isDappExecTask(t))
+	const matching = allTasks.filter((t) => isExecutingTask(t)).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+	const activeExec = matching[0]
 	if (activeExec) {
-		dappExecutionTask.value = activeExec
-		dappSubtasks.value = activeExec.subtasks || []
+		executingTask.value = activeExec
+		executingSubtasks.value = activeExec.subtasks || []
 	}
 })
 onBeforeUnmount(() => {
 	taskService.disconnect()
+	tokenService.disconnect()
 })
 </script>
 
 <template>
-	<Flex v-if="token && (isTokenAwaitingTx || recentTransactions.length)" direction="column" gap="16">
+	<Flex v-if="token && (executingTask || isTokenAwaitingTx || recentTransactions.length)" direction="column" gap="16">
 		<Flex align="end" justify="between" :class="$style.section_header">
 			<span :class="$style.header_title">RECENT TRANSACTIONS</span>
 			<span @click="router.push('/popup/activity')" :class="$style.archive_link">View Archives</span>
 		</Flex>
 
 		<div :class="$style.list">
-			<TransactionAwaitingCard v-if="isTokenAwaitingTx" />
+			<TransactionAwaitingCard
+				v-if="executingTask"
+				:title="executingProgressTitle"
+				:subtitle="executingProgressSubtitle"
+				:icon="isUiTransfer ? 'arrow-narrow-up-right' : null"
+				:amount="executingAmount"
+				:amountSymbol="executingAmountSymbol"
+			/>
+			<TransactionAwaitingCard v-else-if="isTokenAwaitingTx" />
 			<TransactionCard v-for="tx in recentTransactions" :key="tx.hash" :tx="tx" @click="handleSelectTx(tx)" />
 		</div>
 	</Flex>
-	<Flex v-else-if="!token && (recentTransactions.length || awaitingAccountTxs.length || dappExecutionTask)" direction="column" gap="16">
+	<Flex v-else-if="!token && (executingTask || recentTransactions.length || awaitingAccountTxs.length)" direction="column" gap="16">
 		<Flex align="end" justify="between" :class="$style.section_header">
 			<span :class="$style.header_title">RECENT TRANSACTIONS</span>
 			<span @click="router.push('/popup/activity')" :class="$style.archive_link">View Archives</span>
 		</Flex>
 
 		<div :class="$style.list">
-			<TransactionAwaitingCard v-if="dappExecutionTask" :title="dappProgressTitle" :subtitle="dappProgressSubtitle" />
+			<TransactionAwaitingCard
+				v-if="executingTask"
+				:title="executingProgressTitle"
+				:subtitle="executingProgressSubtitle"
+				:icon="isUiTransfer ? 'arrow-narrow-up-right' : null"
+				:amount="executingAmount"
+				:amountSymbol="executingAmountSymbol"
+			/>
 			<TransactionAwaitingCard v-else-if="awaitingAccountTxs.length" />
 			<TransactionCard v-for="tx in recentTransactions" :key="tx.hash" :tx="tx" @click="handleSelectTx(tx)" />
 		</div>
