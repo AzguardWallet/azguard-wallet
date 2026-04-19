@@ -74,7 +74,7 @@ const appStore = useAppStore()
 				<SettingItem
 					to="/popup/settings/security"
 					title="Security & Backup"
-					description="Seed phrase, secret key, full backup"
+					description="Auto-lock, seed phrase, secret key"
 					materialIcon="lock"
 					chevron
 				/>
@@ -105,7 +105,7 @@ const appStore = useAppStore()
 				<SettingItem
 					to="/popup/settings/advanced"
 					title="Advanced"
-					description="Auto-lock, developer, account state"
+					description="Developer, account state, explorer"
 					materialIcon="bolt"
 					chevron
 				/>
