@@ -360,6 +360,18 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		await this.ensureInitialized()
 		amount = BigInt(amount)
 
+		// TODO(strip-diagnostics): logs while hunting the Private FPC + Private→Private failure.
+		console.debug("[fee-estimate][service] estimateTransferFee", {
+			accountAddress,
+			recipientAddress,
+			selfSend: accountAddress === recipientAddress,
+			transferType,
+			tokenId,
+			paymentMethodKind: feeSettings.paymentMethod?.kind,
+			paymentMethodInPublic: (feeSettings.paymentMethod as { inPublic?: boolean })?.inPublic,
+			amount: amount.toString(),
+		})
+
 		const { op } = await this.buildTransferOperation(
 			networkId,
 			accountAddress,
@@ -1781,6 +1793,17 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					const fpc = await this.fpcService.getFpcImpl(fpcId)
 					const originalActions = [...op.actions]
 					const multiplier = feeMultiplier ?? DEFAULT_FEE_MULTIPLIER
+
+					// TODO(strip-diagnostics): verbose logs while hunting the Private FPC
+					// + Private→Private estimation failure. Strip once root cause is nailed.
+					console.debug("[fee-estimate][fpc] start", {
+						fpcId,
+						inPublic,
+						accountAddress: op.accountAddress,
+						actionCount: op.actions.length,
+						firstActionKind: op.actions[0]?.kind,
+					})
+
 					// first approach
 					let [txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
 						op,
@@ -1788,16 +1811,33 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 						task,
 					)
 					this.suggestGasLimits(txRequest, op.fee)
-					let simulatedTx = await this.simulateTxTask(
-						pxe,
-						txRequest,
-						{ simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
-						task,
-					)
+
+					let simulatedTx
+					try {
+						simulatedTx = await this.simulateTxTask(
+							pxe,
+							txRequest,
+							{ simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+							task,
+						)
+					} catch (err) {
+						console.error("[fee-estimate][fpc] pass-1 sim failed (baseline)", err)
+						throw err
+					}
 					// Fetch actual fees for FPC fee payload (with priority multiplier)
 					const baseFees = (await node.getCurrentMinFees()).mul(multiplier)
 					let maxFee = simulatedTx.gasUsed.totalGas.add(fpc.getTotalGas(inPublic)).computeFee(baseFees)
+					console.debug("[fee-estimate][fpc] pass-1 done", {
+						pass1TotalGas: simulatedTx.gasUsed.totalGas.toString(),
+						pass1TeardownGas: simulatedTx.gasUsed.teardownGas.toString(),
+						fpcTotalGas: fpc.getTotalGas(inPublic).toString(),
+						baseFees: baseFees.toString(),
+						computedMaxFee: maxFee.toString(),
+					})
 					op.actions.unshift(...fpc.getFeePayload(op.accountAddress, maxFee, inPublic))
+					console.debug("[fee-estimate][fpc] fee payload prepended", {
+						newActionCount: op.actions.length,
+					})
 					// precise estimation
 					;[txRequest, node, pxe, account, network, nonce, txCalls] = await this.buildTxRequest(
 						op,
@@ -1810,13 +1850,22 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 						baseFees,
 						txRequest.txContext.gasSettings.maxPriorityFeesPerGas,
 					)
-					simulatedTx = await this.simulateTxTask(
-						pxe,
-						txRequest,
-						{ simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
-						task,
-					)
+					try {
+						simulatedTx = await this.simulateTxTask(
+							pxe,
+							txRequest,
+							{ simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+							task,
+						)
+					} catch (err) {
+						console.error("[fee-estimate][fpc] pass-2 sim failed (with fee payload)", err)
+						throw err
+					}
 					maxFee = simulatedTx.gasUsed.totalGas.mul(gasPadding).computeFee(baseFees)
+					console.debug("[fee-estimate][fpc] pass-2 done", {
+						pass2TotalGas: simulatedTx.gasUsed.totalGas.toString(),
+						finalMaxFee: maxFee.toString(),
+					})
 					op.actions.splice(0, op.actions.length, ...fpc.getFeePayload(op.accountAddress, maxFee, inPublic), ...originalActions)
 					await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, baseFees)
 					task.complete()

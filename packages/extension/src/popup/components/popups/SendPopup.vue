@@ -313,6 +313,20 @@ watch(
 					return
 				}
 
+				// TODO(strip-diagnostics): remove these logs once the Private FPC
+				// + Private→Private estimation failure root cause is nailed.
+				console.debug("[fee-estimate][SendPopup] estimateTransferFee call", {
+					from: appStore.account.address,
+					to: searchTerm.value,
+					selfSend: appStore.account.address === searchTerm.value,
+					transferType: transferType.value,
+					sendType: selectedSendType.value,
+					receiverType: selectedReceiverType.value,
+					paymentMethodKind: feeSettings.value?.paymentMethod?.kind,
+					paymentMethodInPublic: feeSettings.value?.paymentMethod?.inPublic,
+					amount: amountToEstimate.toString(),
+				})
+
 				const result = await executionService.estimateTransferFee(
 					appStore.network.id,
 					appStore.account.address,
@@ -324,10 +338,14 @@ watch(
 				)
 
 				if (counter !== estimateCounter) return
+				console.debug("[fee-estimate][SendPopup] estimateTransferFee success", {
+					maxFee: result?.maxFee,
+					maxFeeFormatted: result?.maxFeeFormatted,
+				})
 				feeEstimate.value = result
 			} catch (err) {
 				if (counter !== estimateCounter) return
-				console.error("[SendPopup] estimateTransferFee failed:", err)
+				console.error("[fee-estimate][SendPopup] estimateTransferFee failed:", err)
 				feeEstimate.value = null
 			} finally {
 				if (counter === estimateCounter) {
