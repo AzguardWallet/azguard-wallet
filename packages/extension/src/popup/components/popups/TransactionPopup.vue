@@ -120,7 +120,7 @@ const feePaymentLabel = computed(() => {
 		const fpcMethod = t.calls?.find((c) => FEE_METHODS.has(c.method))?.method
 		if (fpcMethod === "sponsor_unconditionally") return "Sponsored"
 		if (fpcMethod === "fee_entrypoint_private") return "Private Fee Juice"
-		if (t.origin?.type === OriginType.DAPP) return `Fee method set by ${t.origin.name ?? "the app"}`
+		if (t.origin?.type === OriginType.DAPP) return `Set by ${t.origin.name ?? "the app"}`
 		return "External FPC"
 	}
 	return `Unknown (${method})`
