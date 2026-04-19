@@ -200,12 +200,13 @@ onBeforeUnmount(() => {
 
 <template>
 	<header v-if="!appStore._isHomeScreenOpened" :class="$style.wrapper">
-		<Flex
+		<button
 			v-if="appStore.isLogined"
+			type="button"
 			@click="handleOpenPopup('accounts')"
-			direction="column"
 			data-testid="account-selector"
-			:class="$style.account_info"
+			aria-label="Switch account"
+			:class="$style.account_chip"
 		>
 			<span :class="$style.account_label">
 				{{ appStore.account?.name?.toUpperCase() || "PRIMARY ACCOUNT" }}
@@ -213,30 +214,31 @@ onBeforeUnmount(() => {
 			<span :class="$style.account_address">
 				{{ appStore.account?.address ? `${appStore.account.address.slice(0, 6)}...${appStore.account.address.slice(-4)}` : "" }}
 			</span>
-		</Flex>
+		</button>
 
-		<Flex align="center" gap="16">
-			<Flex
-				v-if="appStore.isLogined"
+		<Flex align="center" gap="8">
+			<button
+				v-if="appStore.isLogined && appStore.network?.name"
+				type="button"
 				@click="handleOpenPopup('networks')"
-				align="center"
-				justify="center"
 				data-testid="network-button"
-				:class="$style.icon_button"
+				:aria-label="`Switch network (currently ${appStore.network.name})`"
+				:class="$style.network_chip"
 			>
+				<span :class="$style.network_label">{{ appStore.network.name }}</span>
 				<div :class="[$style.status_dot, $style[String(appStore.networkStatus).toLowerCase()]]" />
-			</Flex>
+			</button>
 
-			<Flex
+			<button
 				v-if="appStore.isLogined"
+				type="button"
 				@click="handleOpenPopup('menu')"
-				align="center"
-				justify="center"
 				data-testid="menu-button"
+				aria-label="Open menu"
 				:class="$style.icon_button"
 			>
 				<MaterialIcon name="menu" :size="20" color="primary" />
-			</Flex>
+			</button>
 		</Flex>
 	</header>
 </template>
@@ -246,20 +248,42 @@ onBeforeUnmount(() => {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: 12px;
 
 	height: 64px;
 	min-height: 64px;
 
-	padding: 0 24px;
+	padding: 0 16px 0 24px;
 	background: var(--app-bg);
 }
 
-.account_info {
-	cursor: pointer;
+.account_chip {
+	display: flex;
+	flex-direction: column;
 	gap: 2px;
+
+	min-width: 0;
+	flex-shrink: 1;
+
+	padding: 0;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+
+	text-align: left;
+
+	transition: opacity 0.2s var(--bezier);
+
+	&:hover {
+		opacity: 0.7;
+	}
 }
 
 .account_label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+
 	font-family: var(--font-headline);
 	font-size: 12px;
 	font-weight: 700;
@@ -276,10 +300,50 @@ onBeforeUnmount(() => {
 	color: var(--txt-primary);
 }
 
+.network_chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+
+	max-width: 120px;
+	flex-shrink: 1;
+	min-width: 0;
+
+	padding: 6px 10px;
+	background: transparent;
+	border: 1px solid var(--nulo-border);
+	cursor: pointer;
+
+	transition: background 0.2s var(--bezier);
+
+	&:hover {
+		background: var(--nulo-surface-low);
+	}
+}
+
+.network_label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
 .icon_button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
 	width: 36px;
 	height: 36px;
 
+	background: transparent;
+	border: none;
 	cursor: pointer;
 
 	transition: background 0.2s var(--bezier);
@@ -294,9 +358,9 @@ onBeforeUnmount(() => {
 }
 
 .status_dot {
-	width: 8px;
-	height: 8px;
-	border-radius: 50%;
+	width: 6px;
+	height: 6px;
+	flex-shrink: 0;
 	background: var(--gray);
 
 	&.active {
