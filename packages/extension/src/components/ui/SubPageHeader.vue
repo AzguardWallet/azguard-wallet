@@ -67,7 +67,6 @@ function handleBack() {
 	min-height: 56px;
 
 	background: var(--app-bg);
-	border-bottom: 1px solid var(--nulo-border);
 }
 
 .back_btn {

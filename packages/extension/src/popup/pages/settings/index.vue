@@ -41,10 +41,12 @@ onBeforeUnmount(() => {
 			<span :class="$style.page_title_label">SETTINGS</span>
 		</div>
 
-		<Flex ref="heroRef" direction="column" align="center" gap="16" :class="$style.hero">
-			<h1 :class="$style.hero_title">SETTINGS</h1>
-			<div :class="$style.hero_bar" />
-		</Flex>
+		<div ref="heroRef">
+			<Flex direction="column" align="center" gap="16" :class="$style.hero">
+				<h1 :class="$style.hero_title">SETTINGS</h1>
+				<div :class="$style.hero_bar" />
+			</Flex>
+		</div>
 
 		<Flex direction="column" gap="32" :class="$style.content">
 			<ItemsContainer title="Identity">
@@ -165,7 +167,6 @@ onBeforeUnmount(() => {
 	padding: 12px 24px;
 
 	background: var(--app-bg);
-	border-bottom: 1px solid var(--nulo-border);
 
 	opacity: 0;
 	pointer-events: none;
@@ -185,6 +186,11 @@ onBeforeUnmount(() => {
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	color: var(--txt-primary);
+
+	text-decoration: underline;
+	text-decoration-color: var(--nulo-accent);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 4px;
 }
 
 .hero {
