@@ -1812,7 +1812,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					)
 					this.suggestGasLimits(txRequest, op.fee)
 
-					let simulatedTx
+					let simulatedTx: Awaited<ReturnType<typeof this.simulateTxTask>>
 					try {
 						simulatedTx = await this.simulateTxTask(
 							pxe,
