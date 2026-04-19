@@ -579,7 +579,7 @@ onBeforeUnmount(() => {
 }
 
 .top {
-	padding: 0 24px;
+	padding: 20px 24px 0;
 }
 
 .section {
@@ -587,12 +587,13 @@ onBeforeUnmount(() => {
 	flex-direction: column;
 	gap: 8px;
 
-	padding: 20px 0;
+	padding: 0 0 20px 0;
 	border-bottom: 1px solid rgba(35, 31, 28, 1);
 }
 
 .section_flush {
 	border-bottom: none;
+	padding-bottom: 12px;
 }
 
 .section_last {
