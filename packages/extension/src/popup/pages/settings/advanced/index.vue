@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
 							<Text size="13" weight="600" color="primary">Account State</Text>
 							<Text size="12" weight="500" color="tertiary">Notes, authwits, contracts, senders</Text>
 						</Flex>
-						<Icon name="chevron" size="12" color="tertiary" />
+						<MaterialIcon name="chevron_right" :size="18" color="secondary" />
 					</Flex>
 				</RouterLink>
 
