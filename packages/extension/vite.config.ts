@@ -116,6 +116,11 @@ export default defineConfig({
 			],
 			dts: "src/types/auto-imports.d.ts",
 			dirs: ["src/composables/", "src/stores/", "src/utils/"],
+			// Rewrites compiled _ctx.<name> template references to resolve against the
+			// auto-import registry so {{ trimAddress(...) }} works without explicit
+			// imports in every SFC. Plugin runs enforce:"post" internally — must stay
+			// after vue() in the plugin chain.
+			vueTemplate: true,
 			eslintrc: {
 				enabled: true,
 				filepath: "src/types/.eslintrc-auto-import.json",
