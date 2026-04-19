@@ -35,3 +35,6 @@ packages/extension/tests/e2e/.test-config.json
 CLAUDE.md
 wallet_data_*/
 
+
+# Claude IDE
+.claude/
