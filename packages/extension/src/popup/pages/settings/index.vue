@@ -41,6 +41,13 @@ const appStore = useAppStore()
 
 			<ItemsContainer title="Connections">
 				<SettingItem
+					to="/popup/settings/contacts"
+					title="Contacts"
+					description="Saved addresses"
+					materialIcon="group"
+					chevron
+				/>
+				<SettingItem
 					to="/popup/settings/networks"
 					title="Networks"
 					description="Aztec networks and RPCs"
@@ -52,20 +59,6 @@ const appStore = useAppStore()
 					title="Tokens"
 					description="Tracked tokens and balances"
 					materialIcon="toll"
-					chevron
-				/>
-				<SettingItem
-					to="/popup/settings/contacts"
-					title="Contacts"
-					description="Saved addresses"
-					materialIcon="group"
-					chevron
-				/>
-				<SettingItem
-					to="/popup/settings/connected-apps"
-					title="Connected Apps"
-					description="Apps with granted permissions"
-					materialIcon="extension"
 					chevron
 				/>
 				<SettingItem
@@ -90,6 +83,13 @@ const appStore = useAppStore()
 					title="Privacy"
 					description="Stealth mode and external defaults"
 					materialIcon="shield"
+					chevron
+				/>
+				<SettingItem
+					to="/popup/settings/connected-apps"
+					title="Connected Apps"
+					description="Apps with granted permissions"
+					materialIcon="extension"
 					chevron
 				/>
 			</ItemsContainer>
