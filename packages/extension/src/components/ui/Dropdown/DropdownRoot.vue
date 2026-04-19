@@ -269,8 +269,7 @@ const onKeydown = (event) => {
 	z-index: 2001;
 
 	background: var(--nulo-surface-low);
-	border: 1px solid var(--nulo-border);
-	box-shadow: 0 8px 24px rgba(10, 9, 8, 0.6);
+	border: 1px solid var(--nulo-outline);
 
 	padding: 4px 0;
 }

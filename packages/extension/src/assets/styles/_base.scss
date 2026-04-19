@@ -348,14 +348,14 @@ body {
 	transform: translateY(2px);
 }
 
-.dropdown-enter-active {
-	transition: all 0.3s var(--bezier);
+.dropdown-enter-active,
+.dropdown-leave-active {
+	transition: opacity 80ms linear;
 }
 
 .dropdown-enter-from,
 .dropdown-leave-to {
 	opacity: 0;
-	transform: translateY(-2px);
 }
 
 .clickable {
