@@ -548,7 +548,6 @@ onBeforeUnmount(() => {
 
 .top {
 	padding: 0 24px;
-	overflow-y: auto;
 }
 
 .section {
@@ -691,7 +690,13 @@ onBeforeUnmount(() => {
 }
 
 .bottom {
+	position: sticky;
+	bottom: 0;
+	z-index: 5;
+
 	padding: 20px 24px;
+	background: var(--app-bg);
+	border-top: 1px solid var(--nulo-border);
 }
 
 .confirm_btn {
