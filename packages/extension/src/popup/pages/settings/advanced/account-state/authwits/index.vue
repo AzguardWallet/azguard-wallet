@@ -232,71 +232,52 @@ onBeforeUnmount(() => {
 			</Tooltip>
 			
 			<Flex v-else-if="filteredAuthwits.length" direction="column" gap="8">
-				<Flex v-for="aw in filteredAuthwits" @click="handleOpenAuthwit(aw)" direction="column" gap="6" :class="$style.card">
-					<Flex align="center" justify="between" gap="12" wide>
-						<Text size="14" weight="600" color="primary" :class="$style.row"> {{ aw.kindName ?? 'Custom Authwit' }} </Text>
+				<div v-for="aw in filteredAuthwits" @click="handleOpenAuthwit(aw)" :class="$style.card">
+					<div :class="$style.header">
+						<span :class="$style.type">{{ aw.kindName ?? 'Custom Authwit' }}</span>
 
 						<Tooltip position="end">
-							<Icon @click.stop="revokeAuthwits(aw)" name="close-circle" color="secondary" size="16" :class="$style.icon" />
+							<Icon
+								@click.stop="revokeAuthwits(aw)"
+								name="close-circle"
+								color="secondary"
+								size="16"
+								:class="$style.revoke"
+							/>
 
-							<template #content>
-								Revoke authwit
-							</template>
+							<template #content> Revoke authwit </template>
 						</Tooltip>
-					</Flex>
+					</div>
 
-					<div :class="$style.divider" />
-
-					<Flex v-if="aw.content.kind === 'call'" direction="column" gap="8">
-						<Flex align="center" gap="4" wide :class="$style.content">
-							<Text size="13" color="tertiary"> Caller: </Text>
-							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.caller" full />
-							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.caller }} </Text> -->
-						</Flex>
-						<Flex align="center" gap="4" wide :class="$style.content">
-							<Text size="13" color="tertiary"> Contract: </Text>
-							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.contract" full />
-							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.contract }} </Text> -->
-						</Flex>
-						<Flex align="center" gap="4" wide :class="$style.content">
-							<Text size="13" color="tertiary"> Method: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.method }} </Text>
-						</Flex>
-					</Flex>
-					<Flex v-else-if="aw.content.kind === 'encoded_call'" direction="column" gap="8">
-						<Flex align="center" gap="4" wide :class="$style.content">
-							<Text size="13" color="tertiary"> Caller: </Text>
-							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.caller" full />
-							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.caller }} </Text> -->
-						</Flex>
-						<Flex align="center" gap="4" wide :class="$style.content">
-							<Text size="13" color="tertiary"> To: </Text>
-							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.to" full />
-							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.to }} </Text> -->
-						</Flex>
-						<Flex align="center" gap="4" wide :class="$style.content">
-							<Text size="13" color="tertiary"> Selector: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.selector }} </Text>
-						</Flex>
-					</Flex>
-					<Flex v-else-if="aw.content.kind === 'intent'" direction="column" gap="8">
-						<Flex align="center" gap="4" wide :class="$style.content">
-							<Text size="13" color="tertiary"> Consumer: </Text>
-							<AddressDisplay size="13" color="tertiary" weight="600" :address="aw.content.consumer" full />
-							<!-- <Text size="13" color="tertiary" weight="600"> {{ aw.content.consumer }} </Text> -->
-						</Flex>
-						<Flex align="start" gap="4" wide :class="[$style.content_fix_lines, $style.content_2_lines]">
-							<Text size="13" color="tertiary"> intent: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.intent.join(',\u00A0') }} </Text>
-						</Flex>
-					</Flex>
-					<Flex v-else-if="aw.content.kind === 'message_hash'" direction="column" gap="8">
-						<Flex align="start" gap="4" wide :class="[$style.content_fix_lines, $style.content_3_lines]">
-							<Text size="13" color="tertiary"> Hash: </Text>
-							<Text size="13" color="tertiary" weight="600"> {{ aw.content.messageHash }} </Text>
-						</Flex>
-					</Flex>
-				</Flex>
+					<div :class="$style.kv_grid">
+						<template v-if="aw.content.kind === 'call'">
+							<span :class="$style.kv_key">caller</span>
+							<span :class="[$style.kv_val, $style.kv_val_wrap]">{{ aw.content.caller }}</span>
+							<span :class="$style.kv_key">contract</span>
+							<span :class="[$style.kv_val, $style.kv_val_wrap]">{{ aw.content.contract }}</span>
+							<span :class="$style.kv_key">method</span>
+							<span :class="$style.kv_val">{{ aw.content.method }}</span>
+						</template>
+						<template v-else-if="aw.content.kind === 'encoded_call'">
+							<span :class="$style.kv_key">caller</span>
+							<span :class="[$style.kv_val, $style.kv_val_wrap]">{{ aw.content.caller }}</span>
+							<span :class="$style.kv_key">to</span>
+							<span :class="[$style.kv_val, $style.kv_val_wrap]">{{ aw.content.to }}</span>
+							<span :class="$style.kv_key">selector</span>
+							<span :class="$style.kv_val">{{ aw.content.selector }}</span>
+						</template>
+						<template v-else-if="aw.content.kind === 'intent'">
+							<span :class="$style.kv_key">consumer</span>
+							<span :class="[$style.kv_val, $style.kv_val_wrap]">{{ aw.content.consumer }}</span>
+							<span :class="$style.kv_key">intent</span>
+							<span :class="[$style.kv_val, $style.kv_val_wrap]">{{ aw.content.intent.join(',\u00A0') }}</span>
+						</template>
+						<template v-else-if="aw.content.kind === 'message_hash'">
+							<span :class="$style.kv_key">hash</span>
+							<span :class="[$style.kv_val, $style.kv_val_wrap]">{{ aw.content.messageHash }}</span>
+						</template>
+					</div>
+				</div>
 			</Flex>
 
 			<div v-else-if="filteredAuthwits.length === 0 && searchTerm" :class="$style.no_results">
@@ -359,8 +340,12 @@ onBeforeUnmount(() => {
 }
 
 .card {
-	border-radius: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+
 	cursor: pointer;
+
 	border: 1px solid var(--nulo-border);
 
 	padding: 12px;
@@ -371,7 +356,7 @@ onBeforeUnmount(() => {
 		background: var(--nulo-surface-low);
 		border-color: var(--nulo-outline);
 
-		& .icon {
+		& .revoke {
 			opacity: 1;
 		}
 	}
@@ -381,75 +366,78 @@ onBeforeUnmount(() => {
 	}
 }
 
-.icon {
-	transition: all 0.5 ease;
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.type {
+	flex: 1;
+	min-width: 0;
+
+	font-family: var(--font-headline);
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.revoke {
 	opacity: 0;
+
+	transition: all 0.2s var(--bezier);
+
 	&:hover {
-		transform: scale(1.05);
 		fill: var(--txt-primary);
 	}
 }
 
-.badge {
-	padding: 2px 4px;
-	color: var(--txt-inverse);
+.kv_grid {
+	display: grid;
+	grid-template-columns: minmax(90px, 120px) 1fr;
+	gap: 4px 12px;
+	align-items: baseline;
 }
 
-.divider {
-	width: 100%;
-	height: 1px;
+.kv_key {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-outline);
 
-	margin: 4px 0;
-
-	background: var(--nulo-border);
-}
-
-.row {
-	text-overflow: ellipsis;
 	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
-.content {
-	max-width: 100%;
+.kv_val {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--txt-primary);
 
-	& span:last-child {
-		text-overflow: ellipsis;
-		overflow: hidden;
-		white-space: nowrap;
-	}
+	min-width: 0;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.content_fix_lines {
-	max-width: 100%;
-	
-	& span:last-child {
-		line-height: 1.2;
-
-		display: -webkit-box;
-		
-		white-space: normal;
-		overflow: hidden;
-		overflow-wrap: anywhere;
-		text-overflow: ellipsis;
-
-		box-orient: vertical;
-
-		-webkit-box-orient: vertical;
-	}
-}
-.content_2_lines {
-	& span:last-child {
-		line-clamp: 2;
-		-webkit-line-clamp: 2;
-	}
-}
-
-.content_3_lines {
-	& span:last-child {
-		line-clamp: 3;
-		-webkit-line-clamp: 3;
-	}
+/** Addresses / hashes wrap onto 2 lines instead of truncating —
+ *  users need to glance-verify head + tail bytes. */
+.kv_val_wrap {
+	white-space: normal;
+	overflow-wrap: anywhere;
+	line-height: 1.4;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
 }
 
 .empty {
