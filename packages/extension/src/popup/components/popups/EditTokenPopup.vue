@@ -163,9 +163,7 @@ watch(
 			</PopupHeader>
 
 			<Flex wide direction="column" gap="20" :class="$style.wrapper">
-				<Button v-if="isAwaitingTokenInterface" type="secondary" size="medium" disabled loading>
-					Loading token interface
-				</Button>
+				<LoadingState v-if="isAwaitingTokenInterface" label="LOADING TOKEN" />
 
 				<template v-else-if="isErrorOccurred && !isAwaitingTokenInterface">
 					<Flex direction="column" gap="16">
@@ -234,7 +232,7 @@ watch(
 							:disabled="!isAvailableToUpdateToken || isUpdatingTokenInterface"
 							:loading="isUpdatingTokenInterface"
 						>
-							{{ isUpdatingTokenInterface ? "Updating" : "Update token" }}
+							{{ isUpdatingTokenInterface ? "UPDATING" : "Update token" }}
 						</Button>
 					</Flex>
 				</template>

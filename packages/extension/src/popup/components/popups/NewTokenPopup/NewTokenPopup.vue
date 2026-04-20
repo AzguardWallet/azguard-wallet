@@ -243,8 +243,8 @@ watch(
 						:disabled="!isAvailableToCreateToken || isLoadingParseResult || isAddingNewToken"
 					>
 						{{
-							(isLoadingParseResult && "Awaiting token interface") ||
-							(isAddingNewToken && "Adding new token") ||
+							(isLoadingParseResult && "LOADING TOKEN") ||
+							(isAddingNewToken && "ADDING TOKEN") ||
 							"Import new token"
 						}}
 					</Button>
@@ -257,7 +257,7 @@ watch(
 						:loading="isSavingToken"
 						:disabled="!isAvailableToCreateToken"
 					>
-						{{ isSavingToken ? "Saving" : "Save new token" }}
+						{{ isSavingToken ? "SAVING" : "Save new token" }}
 					</Button>
 					<Button
 						v-if="!isCompleted"
