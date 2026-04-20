@@ -101,7 +101,7 @@ onBeforeUnmount(() => {
 
 		<Flex direction="column" gap="16" :class="$style.content">
 			<Input
-				v-if="filteredNotes.length"
+				v-if="notes.length"
 				v-model="searchTerm"
 				icon="search"
 				placeholder="Search by type, contract or location"
