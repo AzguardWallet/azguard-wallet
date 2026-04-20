@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
 				<Button @click="appStore.showRegisterPopup = true" wide type="primary" size="large">
 					Create profile
 				</Button>
-				<Button @click="popupStore.open('import')" wide type="primary" size="large">
+				<Button @click="popupStore.open('import')" wide type="primary_outline" size="large">
 					Import profile
 				</Button>
 			</Flex>

@@ -1061,8 +1061,8 @@ watch(
 						<Button
 							v-if="selectedImportOption"
 							@click="handleBack"
-							type="secondary"
-							size="medium"
+							type="primary_outline"
+							size="large"
 							wide
 							:disabled="restoreStatus === 'progress'"
 						>
