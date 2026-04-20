@@ -13,6 +13,8 @@ const appStore = useAppStore()
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
+const route = useRoute()
+
 const logViewerService = new LogViewerServiceClient()
 logViewerService.onLog.add(onLogAdded)
 
@@ -199,7 +201,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<header v-if="!appStore._isHomeScreenOpened" :class="$style.wrapper">
+	<header v-if="!appStore._isHomeScreenOpened && route.name !== 'popup-auth'" :class="$style.wrapper">
 		<button
 			v-if="appStore.isLogined"
 			type="button"

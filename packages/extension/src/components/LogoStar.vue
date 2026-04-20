@@ -3,13 +3,20 @@
 import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
+const route = useRoute()
+
 const isShifted = computed(() => {
 	return !appStore._isHomeScreenOpened || appStore.showRegisterPopup
 })
+
+/** Hide the decorative backdrop on the lock screen — auth already carries
+ *  its own wordmark + toggles, another glyph overhead would be redundant. */
+const isVisible = computed(() => route.name !== "popup-auth")
 </script>
 
 <template>
 	<Flex
+		v-if="isVisible"
 		align="center"
 		justify="center"
 		:class="[$style.wrapper, isShifted && $style.shift]"
@@ -62,27 +69,11 @@ const isShifted = computed(() => {
 
 .star_icon {
 	position: absolute;
-	transform: rotate(0);
 	transform-origin: center;
 
 	fill: var(--nulo-surface-low);
-	animation: rotation 100s linear infinite;
 
 	transition: all 1s var(--bezier);
-}
-
-@keyframes rotation {
-	0% {
-		transform: rotate(0);
-	}
-
-	50% {
-		transform: rotate(360deg);
-	}
-
-	100% {
-		transform: rotate(0);
-	}
 }
 
 .logo_icon {
