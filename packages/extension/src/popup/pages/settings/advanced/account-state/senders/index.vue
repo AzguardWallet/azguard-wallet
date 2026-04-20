@@ -150,7 +150,10 @@ onBeforeUnmount(() => {
 				</Flex>
 			</Flex>
 
-			<Banner v-else> To receive private transactions, add the sender account to your list </Banner>
+			<div v-else :class="$style.empty">
+				<span :class="$style.empty_headline">NO SENDERS YET</span>
+				<span :class="$style.empty_sub">Add accounts you want to receive private transactions from.</span>
+			</div>
 
 			<Button @click="popupStore.open('new_sender')" wide type="primary" size="large">
 				Add sender
@@ -198,5 +201,33 @@ onBeforeUnmount(() => {
 	&:hover {
 		fill: var(--txt-primary);
 	}
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+
+	padding: 32px 16px;
+	border: 1px dashed var(--nulo-border);
+
+	text-align: center;
+}
+
+.empty_headline {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.empty_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
 }
 </style>

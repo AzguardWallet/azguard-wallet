@@ -83,28 +83,27 @@ onBeforeUnmount(() => {
 					clearable
 					@clear="searchTerm = ''"
 				/>
-				
-				<Flex v-for="contract in filteredContracts" justify="between" :class="$style.card">
+
+				<div v-if="searchTerm && filteredContracts.length === 0" :class="$style.no_results">
+					NO MATCHES · TRY A DIFFERENT TERM
+				</div>
+
+				<Flex v-else v-for="contract in filteredContracts" justify="between" :class="$style.card">
 					<Flex gap="10">
 						<Icon name="zap" size="16" color="tertiary" />
 
 						<Flex direction="column" gap="8">
 							<Text size="14" weight="600" color="primary"> Contract </Text>
 							<AddressDisplay size="13" weight="600" color="tertiary" :address="contract" :formatter="(addr) => trimAddress(addr, 6, 4)" />
-							<!-- <Text size="13" weight="600" color="tertiary">
-								{{ contract.slice(0, 6) }}
-								<Text color="dark">•••</Text>
-								{{ contract.slice(-4) }}
-							</Text> -->
 						</Flex>
 					</Flex>
 				</Flex>
-				<Text v-if="searchTerm" size="12" weight="500" color="tertiary">
-					{{ contracts.length - filteredContracts.length }} hidden contracts due to search
-				</Text>
 			</Flex>
 
-			<Banner v-else> So far, it's empty </Banner>
+			<div v-else :class="$style.empty">
+				<span :class="$style.empty_headline">NO CONTRACTS YET</span>
+				<span :class="$style.empty_sub">Contracts registered to your account will appear here.</span>
+			</div>
 		</Flex>
 
 	</Flex>
@@ -133,7 +132,7 @@ onBeforeUnmount(() => {
 
 	&:hover {
 		background: var(--nulo-surface-low);
-		box-shadow: inset 0 0 0 1px var(--nulo-outline), 0 1px 2px rgba(10, 9, 8, 0.5);
+		border-color: var(--nulo-outline);
 
 		& .icons {
 			opacity: 1;
@@ -143,5 +142,44 @@ onBeforeUnmount(() => {
 	&:active {
 		background: var(--nulo-surface-high);
 	}
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+
+	padding: 32px 16px;
+	border: 1px dashed var(--nulo-border);
+
+	text-align: center;
+}
+
+.empty_headline {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.empty_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
+}
+
+.no_results {
+	padding: 24px 16px;
+	text-align: center;
+
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	color: var(--nulo-outline);
 }
 </style>

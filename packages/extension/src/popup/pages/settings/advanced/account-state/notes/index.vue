@@ -152,11 +152,14 @@ onBeforeUnmount(() => {
 				</Flex>
 			</Flex>
 
-			<Flex v-else-if="filteredNotes.length === 0 && searchTerm" align="center" justify="center" gap="8" :style="{marginTop: '24px'}">
-				<Text size="13" weight="600" color="tertiary"> No notes found </Text>
-			</Flex>
+			<div v-else-if="filteredNotes.length === 0 && searchTerm" :class="$style.no_results">
+				NO MATCHES · TRY A DIFFERENT TERM
+			</div>
 
-			<Banner v-else> So far, it's empty </Banner>
+			<div v-else :class="$style.empty">
+				<span :class="$style.empty_headline">NO NOTES YET</span>
+				<span :class="$style.empty_sub">Notes from your account contracts will appear here.</span>
+			</div>
 		</Flex>
 
 	</Flex>
@@ -232,5 +235,44 @@ onBeforeUnmount(() => {
 		overflow: hidden;
 		white-space: nowrap;
 	}
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+
+	padding: 32px 16px;
+	border: 1px dashed var(--nulo-border);
+
+	text-align: center;
+}
+
+.empty_headline {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.empty_sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
+}
+
+.no_results {
+	padding: 24px 16px;
+	text-align: center;
+
+	font-family: var(--font-headline);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	color: var(--nulo-outline);
 }
 </style>
