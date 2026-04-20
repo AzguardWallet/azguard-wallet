@@ -12,7 +12,6 @@ import RegisterPopup from "../components/popups/RegisterPopup/RegisterPopup.vue"
 import StealthPromoPopup from "../components/popups/StealthPromoPopup.vue"
 
 /** Utils */
-import { Config } from "@/wallet/config"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 
 /** Store */
@@ -23,22 +22,11 @@ const appStore = useAppStore()
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
-const defaultConfig = new Config()
-const theme = ref(defaultConfig.theme)
-const isSidePanelEnabled = ref(defaultConfig.sidePanel)
-
 // Stealth promo visibility
 const hasSeenStealthPromo = ref(true) // Default true to hide promo until we check
 const showStealthPromo = ref(false)
 
 const configService = new ConfigServiceClient()
-configService.onUpdate.add(onSettingUpdate)
-
-function onSettingUpdate(setting) {
-	if (setting.key === "theme") {
-		theme.value = setting.value
-	}
-}
 
 const handleOpen = (target) => {
 	chrome.windows.create({
@@ -47,33 +35,6 @@ const handleOpen = (target) => {
 		width: 360,
 		height: 600,
 	})
-}
-
-async function handleSwitchTheme() {
-	try {
-		const newTheme = theme.value === "dark" ? "light" : "dark"
-		await configService.setValue("theme", newTheme)
-		theme.value = newTheme
-	} catch (err) {
-		console.error(`Failed theme updating ${err}`)
-	}
-}
-
-async function handleSwitchAppView() {
-	try {
-		await configService.setValue("sidePanel", !isSidePanelEnabled.value)
-		isSidePanelEnabled.value = !isSidePanelEnabled.value
-		if (isSidePanelEnabled.value) {
-			const currentWindow = await chrome.windows.getCurrent()
-			chrome.sidePanel.open({
-				windowId: currentWindow.id,
-			})
-		}
-
-		window.close()
-	} catch (err) {
-		console.error(`Failed side panel updating ${err}`)
-	}
 }
 
 function handleCloseStealthPromo() {
@@ -90,8 +51,6 @@ function handleCreateProfileFromPromo(payload) {
 }
 
 onMounted(async () => {
-	theme.value = await configService.getValue("theme")
-	isSidePanelEnabled.value = await configService.getValue("sidePanel")
 	hasSeenStealthPromo.value = (await configService.getValue("hasSeenStealthPromo")) || false
 })
 
@@ -102,24 +61,6 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<!-- Top row: settings toggles -->
-		<Flex align="center" justify="end" gap="4" wide :class="$style.settings">
-			<Icon
-				@click="handleSwitchTheme"
-				:name="theme === 'dark' ? 'sun' : 'moon'"
-				size="16"
-				color="tertiary"
-				:class="$style.icon_btn"
-			/>
-			<Icon
-				@click="handleSwitchAppView"
-				name="dock-right"
-				size="16"
-				color="tertiary"
-				:class="$style.icon_btn"
-			/>
-		</Flex>
-
 		<!-- Brand signature: lock icon + NULO wordmark -->
 		<Flex align="center" justify="center" gap="8" :class="$style.brand">
 			<MaterialIcon name="lock" :size="18" color="primary" />
@@ -172,26 +113,6 @@ onBeforeUnmount(() => {
 	background: var(--app-bg);
 
 	padding: 24px;
-}
-
-.settings {
-	position: absolute;
-	top: 16px;
-	right: 16px;
-	z-index: 1;
-}
-
-.icon_btn {
-	box-sizing: content-box;
-	cursor: pointer;
-	padding: 6px;
-
-	transition: all 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--nulo-surface-high);
-		fill: var(--txt-primary);
-	}
 }
 
 .brand {

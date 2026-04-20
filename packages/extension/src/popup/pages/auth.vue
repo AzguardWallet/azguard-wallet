@@ -11,9 +11,7 @@
 import { checkNotificationsForShow } from "@/composables/notification"
 
 /** Utils */
-import { Config } from "@/wallet/config"
 import { AccountServiceClient } from "@/wallet/services/account/client"
-import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { getLastActiveProfileId, setLastActiveProfileId } from "@/utils/lastActiveProfile"
 import { initTransactionService, managers, refreshBalances } from "@/utils/core"
 import { sleep } from "@/wallet/utils"
@@ -29,13 +27,6 @@ const router = useRouter()
 if (appStore.isLogined) {
 	router.go(-1)
 }
-
-const defaultConfig = new Config()
-const theme = ref(defaultConfig.theme)
-const isSidePanelEnabled = ref(defaultConfig.sidePanel)
-
-const configService = new ConfigServiceClient()
-configService.onUpdate.add(onSettingUpdate)
 
 const passwordInput = ref(null)
 const password = ref("")
@@ -99,39 +90,6 @@ const handleUnlockWallet = async () => {
 	}
 }
 
-function onSettingUpdate(setting) {
-	if (setting.key === "theme") {
-		theme.value = setting.value
-	}
-}
-
-async function handleSwitchTheme() {
-	try {
-		const newTheme = theme.value === "dark" ? "light" : "dark"
-		await configService.setValue("theme", newTheme)
-		theme.value = newTheme
-	} catch (err) {
-		console.error(`Failed theme updating ${err}`)
-	}
-}
-
-async function handleSwitchAppView() {
-	try {
-		await configService.setValue("sidePanel", !isSidePanelEnabled.value)
-		isSidePanelEnabled.value = !isSidePanelEnabled.value
-		if (isSidePanelEnabled.value) {
-			const currentWindow = await chrome.windows.getCurrent()
-			chrome.sidePanel.open({
-				windowId: currentWindow.id,
-			})
-		}
-
-		window.close()
-	} catch (err) {
-		console.error(`Failed side panel updating ${err}`)
-	}
-}
-
 const handleSelectProfile = () => {
 	popupStore.open("select_profile")
 }
@@ -145,9 +103,6 @@ onMounted(async () => {
 		passwordInput.value?.focus()
 	}
 
-	theme.value = await configService.getValue("theme")
-	isSidePanelEnabled.value = await configService.getValue("sidePanel")
-
 	const lastActiveProfileId = await getLastActiveProfileId()
 	if (lastActiveProfileId) {
 		const profile = (await managers.profile.getProfiles())?.find((p) => p.id === lastActiveProfileId)
@@ -156,10 +111,6 @@ onMounted(async () => {
 		}
 	}
 })
-onBeforeUnmount(() => {
-	configService.disconnect()
-})
-
 watch(
 	() => appStore.isLogined,
 	async () => {
@@ -172,18 +123,9 @@ watch(
 
 <template>
 	<Flex direction="column" :class="$style.wrapper">
-		<!-- Top row: NULO wordmark + settings toggles -->
-		<Flex align="center" justify="between" :class="$style.top_row">
-			<div :class="$style.spacer" />
+		<!-- Top row: NULO wordmark -->
+		<Flex align="center" justify="center" :class="$style.top_row">
 			<span :class="$style.wordmark">NULO</span>
-			<Flex align="center" gap="4">
-				<button @click="handleSwitchTheme" :class="$style.icon_btn" type="button" aria-label="Toggle theme">
-					<MaterialIcon :name="theme === 'dark' ? 'light_mode' : 'dark_mode'" :size="18" color="secondary" />
-				</button>
-				<button @click="handleSwitchAppView" :class="$style.icon_btn" type="button" aria-label="Toggle side panel">
-					<MaterialIcon name="dock_to_right" :size="18" color="secondary" />
-				</button>
-			</Flex>
 		</Flex>
 
 		<!-- Main content -->
@@ -298,10 +240,6 @@ watch(
 	margin-bottom: 24px;
 }
 
-.spacer {
-	width: 60px;
-}
-
 .wordmark {
 	font-family: var(--font-headline);
 	font-size: 20px;
@@ -309,25 +247,6 @@ watch(
 	letter-spacing: -0.04em;
 	text-transform: uppercase;
 	color: var(--txt-primary);
-}
-
-.icon_btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-	width: 28px;
-	height: 28px;
-
-	background: transparent;
-	border: none;
-	cursor: pointer;
-
-	transition: background 0.2s var(--bezier);
-
-	&:hover {
-		background: var(--nulo-surface-high);
-	}
 }
 
 .main {
