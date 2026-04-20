@@ -474,10 +474,13 @@ onBeforeUnmount(() => {
 }
 
 .empty_sub {
+	width: 100%;
+
 	font-family: var(--font-mono);
 	font-size: 11px;
 	line-height: 1.4;
 	color: var(--nulo-outline);
+	overflow-wrap: break-word;
 }
 
 .no_results {
