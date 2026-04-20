@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
 
 				<!-- Logs (developer mode only) -->
 				<div
-					v-if="isDeveloperModeEnabled.value"
+					v-if="isDeveloperModeEnabled"
 					@click="handleOpenLogs"
 					:class="$style.logs_link"
 					role="button"
