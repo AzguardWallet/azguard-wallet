@@ -813,7 +813,7 @@ onUnmounted(() => {
 					:loading="isLoading"
 					:disabled="processingError?.type === 'error'"
 				>
-					<Text size="13" color="inverse">{{ isLoading ? "Executing" : "Confirm" }}</Text>
+					<Text size="13" color="inverse">{{ isLoading ? "EXECUTING" : "Confirm" }}</Text>
 				</Button>
 			</Flex>
 		</Flex>

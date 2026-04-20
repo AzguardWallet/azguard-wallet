@@ -80,7 +80,8 @@ defineProps({
 	font-family: var(--font-headline);
 	font-weight: 700;
 	font-size: 14px;
-	letter-spacing: -0.02em;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
 	color: var(--txt-primary);
 }
 

@@ -15,10 +15,10 @@ test("create profile with password", async ({ extension }) => {
 	await waitForHash(page, "#/popup/register")
 
 	// Wait for GlobalLoader to disappear
-	await page.waitForFunction(
-		() => !document.body.innerText.includes("Connecting to service worker") && !document.body.innerText.includes("Reconnecting"),
-		{ timeout: 15_000, polling: 500 },
-	)
+	await page.waitForFunction(() => !document.querySelector('[data-testid="global-loader"]'), {
+		timeout: 15_000,
+		polling: 500,
+	})
 
 	// Click the actual <button> element (not a descendant text node)
 	await clickButtonByText(page, "Create Profile")

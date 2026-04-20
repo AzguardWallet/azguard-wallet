@@ -44,7 +44,7 @@ test("stealth mode toggle off and on", async ({ registeredExtension }) => {
 	await page.waitForFunction(() => window.location.hash.includes("#/popup/settings/external-services"), { timeout: 5_000 })
 
 	// Wait for settings to load (not in loading state)
-	await page.waitForFunction(() => !document.body.innerText.includes("Fetching settings"), { timeout: 10_000 })
+	await page.waitForFunction(() => !document.querySelector('[data-testid="loading-state"]'), { timeout: 10_000 })
 
 	// Verify stealth mode toggle exists
 	await page.waitForSelector('[data-testid="setting-stealth-mode"]', { visible: true, timeout: 5_000 })

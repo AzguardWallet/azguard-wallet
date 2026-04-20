@@ -559,7 +559,7 @@ onBeforeUnmount(() => {
 					:disabled="!isAllowedToSend || isSending"
 					:class="$style.confirm_btn"
 				>
-					{{ isSending ? "Confirming..." : "Confirm Transaction" }}
+					{{ isSending ? "CONFIRMING" : "Confirm Transaction" }}
 				</button>
 			</Flex>
 		</Flex>
