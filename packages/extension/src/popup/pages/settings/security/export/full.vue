@@ -97,6 +97,7 @@ async function handleBackup() {
 	backup = {
 		"wallet-version": version,
 		"aztec-version": aztecVersion,
+		"schema-version": 2,
 		"master-key": key,
 		data: {},
 	}

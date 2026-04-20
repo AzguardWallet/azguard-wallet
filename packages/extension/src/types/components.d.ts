@@ -34,7 +34,6 @@ declare module 'vue' {
     MaterialIcon: typeof import('./../components/core/MaterialIcon.vue')['default']
     NotificationManager: typeof import('./../components/ui/NotificationManager.vue')['default']
     PageHeader: typeof import('./../components/ui/Settings/PageHeader.vue')['default']
-    PersistentAccountBadge: typeof import('./../components/ui/PersistentAccountBadge.vue')['default']
     Popover: typeof import('./../components/ui/Popover.vue')['default']
     Popup: typeof import('./../components/ui/Popup/Popup.vue')['default']
     PopupCard: typeof import('./../components/ui/Popup/PopupCard.vue')['default']

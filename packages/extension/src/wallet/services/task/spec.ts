@@ -34,7 +34,6 @@ export enum ContentKind {
 	ExecuteOperation,
 	Transfer,
 	RevokeAuthwits,
-	TransactionSync,
 }
 
 export interface ITaskContent {
@@ -102,12 +101,6 @@ export class RevokeAuthwitsContent implements ITaskContent {
 		public readonly authwitIds: number[],
 		public readonly estimatedTime?: number,
 	) {}
-}
-
-export class TransactionSyncContent implements ITaskContent {
-	public readonly kind = ContentKind.TransactionSync
-	public readonly label = "Sync transaction history"
-	constructor(public readonly account: string) {}
 }
 
 export enum ResultKind {

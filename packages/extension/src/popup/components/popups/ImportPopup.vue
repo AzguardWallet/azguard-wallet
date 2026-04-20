@@ -363,6 +363,18 @@ async function handleRestoreBackup() {
 	fillError()
 	restoreStatus.value = "progress"
 	const { checksum, ...backup } = selectedBackup.value.backup
+
+	const schemaVersion = backup["schema-version"]
+	if (schemaVersion !== 2) {
+		restoreStatus.value = "failed"
+		fillError(
+			"full_backup",
+			"Incompatible backup",
+			"This backup was created by a pre-release build that used custom account contracts. It cannot be imported into the current version. Re-export a backup from the same release you are importing into.",
+		)
+		return
+	}
+
 	const comparisonChecksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
 
 	if (checksum !== comparisonChecksum) {

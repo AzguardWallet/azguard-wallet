@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Monorepo Structure
 
-Bun workspaces monorepo with 4 packages:
+Bun workspaces monorepo with 3 packages:
 
 | Package | Path | Purpose |
 |---------|------|---------|
 | `@nulo/extension` | `packages/extension/` | Chrome/Firefox extension (Manifest V3) |
-| `@nulo/contracts` | `packages/contracts/` | Noir smart contracts + pre-compiled artifacts |
 | `@nulo/playground` | `packages/playground/` | Test dApp for e2e testing (scaffold) |
 | `@nulo/landing` | `packages/landing/` | Marketing landing page (scaffold) |
+
+The wallet uses Aztec's canonical `@aztec/accounts/schnorr` account contract; there is no custom Noir source in this repo.
 
 ## Build & Development Commands
 
@@ -43,23 +44,19 @@ bun run dev:landing      # Start landing dev server (port 5175)
 
 Load the extension in Chrome: `chrome://extensions` → Load unpacked → select `packages/extension/dist/chrome/`
 
-## Naming Backward-Compatibility Constraints
+## Account Contract
 
-The product was renamed from "Azguard" to "Vibeguard" to "Nulo". The following are still bytecode-embedded and MUST NOT be renamed:
+The wallet wraps upstream `@aztec/accounts/schnorr` via a thin adapter at `packages/extension/src/wallet/services/account/contracts/nulo-account.ts` (`NuloAccount` class). The adapter:
 
-- **Contract artifacts** (`azguard-v0.json`, `azguard-v0-persistent.json`): On-chain class identity. The names are embedded in compiled bytecode. Renaming requires recompile + redeploy + orphans every already-deployed account.
-- **Noir contract source directories** (`azguard-account/`, `azguard-account-persistent/`): Same constraint — rename would change bytecode and class ID.
+- Derives the Schnorr signing key via upstream `deriveSigningKey(secret)` (which uses `DomainSeparator.IVSK_M`; upstream ships a TODO to replace this with a dedicated signing-key derivation — see `AztecProtocol/aztec-packages#5837`).
+- Uses `DefaultAccountEntrypoint` for app-payload encoding and authwit signing.
+- Uses `DefaultMultiCallEntrypoint` for first-tx initialization wrapping (`ctor + app` payload via the protocol `MULTI_CALL_ENTRYPOINT_ADDRESS`).
+- Recursively chunks payloads with more than 5 calls: each chunk is wrapped through `entrypoint.wrapExecutionPayload()` so every nesting layer gets its own outer-authwit hash.
+- Pins the instantiation salt to `Fr.ZERO` for deterministic address recreation from seed + index.
 
-All other identifiers (passkey RP ID, HKDF labels, URLs, display names) have been migrated to `nulo.sh` / `nulo:*`. Any prior wallets created under the old identifiers are intentionally unrecoverable — the alpha-era cost for getting a clean namespace.
+There is no custom Noir source or compiled artifact in this repo. The on-chain class is whatever `SchnorrAccountContractArtifact` maps to in the pinned `@aztec/accounts` release.
 
-## Contracts Package
-
-The `@nulo/contracts` package contains:
-- **Noir source** (`azguard-account/`, `azguard-account-persistent/`): Built with `nargo compile`. Requires Nargo installed.
-- **Pre-compiled artifacts** (`artifacts/`): Committed JSON files for devs without Nargo.
-- **TS wrapper** (`src/index.ts`): Exports typed artifacts for the extension to import.
-
-The extension imports via: `import { nuloV0Artifact } from "@nulo/contracts"`
+The previous custom Azguard account contracts (and their on-chain `FunctionCallLog` tx-history indexing feature) were deleted in the 0.11.0 migration. Pre-0.11 wallets are not migratable; the storage-version gate at `packages/extension/src/wallet/storage/migrate.ts` wipes legacy account/tx/balance state and PXE IndexedDB on first unlock after upgrade.
 
 ## Architecture Overview
 

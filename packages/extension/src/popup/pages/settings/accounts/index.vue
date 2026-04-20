@@ -71,10 +71,6 @@ const handleCopyAddress = (target) => {
 						:icon="account?.address === appStore.account?.address ? 'check-circle' : 'circle'"
 						:iconFillColor="account?.address === appStore.account?.address ? 'primary' : 'tertiary'"
 					>
-						<template v-if="account.type === AccountType.Nulo_v0_persistent" #titleSuffix>
-							<PersistentAccountBadge />
-						</template>
-
 						<template #right>
 							<Flex align="center" gap="8">
 								<Tooltip position="end" delay="350">
@@ -141,10 +137,6 @@ const handleCopyAddress = (target) => {
 						:description="account.address"
 						icon="vault"
 					>
-						<template v-if="account.type === AccountType.Nulo_v0_persistent" #titleSuffix>
-							<PersistentAccountBadge />
-						</template>
-
 						<template #right>
 							<Icon name="arrow-back-up" size="14" color="secondary" />
 						</template>

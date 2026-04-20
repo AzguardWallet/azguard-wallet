@@ -23,6 +23,7 @@ import { TokenBalanceService } from "./services/token-balance/service"
 import { TransactionService } from "./services/transaction/service"
 import { PasskeyService } from "./services/passkey/service"
 import { initWalletSdkHandler } from "./services/wallet-sdk/background"
+import { runStorageMigration } from "./storage/migrate"
 import { sleep } from "./utils"
 import { getErrorData, getErrorMessage } from "./utils/errors"
 
@@ -72,6 +73,8 @@ const initBarretenberg = async () => {
 
 const runServices = async () => {
 	await Promise.all([initConfig(), initBarretenberg()])
+
+	await runStorageMigration((msg) => logger.log("wallet", LogLevel.Info, msg))
 
 	services.add(new AccountService(logger))
 	services.add(new AccountStateService(logger))

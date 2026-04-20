@@ -71,10 +71,6 @@ const handleManageAccounts = () => {
 						:iconFillColor="account.address === acc.address ? 'primary' : 'tertiary'"
 						data-testid="account-item"
 					>
-						<template v-if="acc.type === AccountType.Nulo_v0_persistent" #titleSuffix>
-							<PersistentAccountBadge />
-						</template>
-
 						<template #right>
 							<Flex align="center" gap="8">
 								<Tooltip position="end" delay="350">

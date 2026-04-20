@@ -3,7 +3,7 @@
 	"private": true,
 	"displayName": "Nulo",
 	"description": "User-friendly self-custody wallet for Aztec network, preserving your privacy and revealing the power of account abstraction.",
-	"version": "0.10.0",
+	"version": "0.11.0",
 	"sentinel": "7",
 	"scripts": {
 		"build:full": "bun run build:chrome && bun run build:firefox",
@@ -26,7 +26,7 @@
 	},
 	"dependencies": {
 		"@alejoamiras/aztec-accelerator": "4.2.0-nightly.20260413.1",
-		"@nulo/contracts": "workspace:*",
+		"@aztec/accounts": "4.2.0-nightly.20260413",
 		"@aztec/aztec.js": "4.2.0-nightly.20260413",
 		"@aztec/bb.js": "4.2.0-nightly.20260413",
 		"@aztec/constants": "4.2.0-nightly.20260413",
@@ -75,7 +75,6 @@
 		"globals": "^16.3.0",
 		"jsdom": "^26.1.0",
 		"postcss": "^8.5.6",
-		"@aztec/accounts": "4.2.0-nightly.20260413",
 		"@aztec/ethereum": "4.2.0-nightly.20260413",
 		"@aztec/wallets": "4.2.0-nightly.20260413",
 		"puppeteer": "^24.37.5",

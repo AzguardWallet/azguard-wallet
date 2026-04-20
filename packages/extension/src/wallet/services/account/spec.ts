@@ -1,11 +1,9 @@
 export const ACCOUNT_SERVICE_NAME = "account"
 
 export enum AccountType {
-	// SECURITY: Numeric values are used in poseidon2Hash for key derivation. NEVER change them.
-	/** Default implementation v0. */
-	Nulo_v0 = 0,
-	/** Persistent implementation of v0 (with transaction history). */
-	Nulo_v0_persistent = 1,
+	// SECURITY: Numeric value is used in poseidon2Hash for key derivation. NEVER change it.
+	/** Upstream-canonical Schnorr account (Aztec `@aztec/accounts/schnorr`). */
+	Nulo_v1 = 0,
 }
 
 export type Account = {

@@ -2,7 +2,6 @@
 	"files": [],
 	"references": [
 		{ "path": "packages/extension" },
-		{ "path": "packages/contracts" },
 		{ "path": "packages/playground" },
 		{ "path": "packages/landing" }
 	]

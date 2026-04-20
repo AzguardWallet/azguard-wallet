@@ -1,14 +1,25 @@
-import { Fr } from "@aztec/foundation/curves/bn254"
-import { FunctionSelector } from "@aztec/stdlib/abi"
+import type { Fr } from "@aztec/foundation/curves/bn254"
 import type { AuthWitness } from "@aztec/stdlib/auth-witness"
-import { AztecAddress } from "@aztec/stdlib/aztec-address"
+import type { AztecAddress } from "@aztec/stdlib/aztec-address"
 import type { CompleteAddress } from "@aztec/stdlib/contract"
 import type { AztecNode } from "@aztec/stdlib/interfaces/client"
-import type { Capsule, HashedValues, TxExecutionRequest } from "@aztec/stdlib/tx"
+import type { ExecutionPayload, TxExecutionRequest } from "@aztec/stdlib/tx"
+import type { DefaultAccountEntrypointOptions } from "@aztec/entrypoints/account"
+import { AccountFeePaymentMethodOptions } from "@aztec/entrypoints/account"
 import type { IPXE } from "@/wallet/services/pxe/client"
 
-export * from "./azguard-v0"
-export * from "./azguard-v0-persistent"
+export * from "./nulo-account"
+
+/**
+ * Re-export upstream `AccountFeePaymentMethodOptions` under the Nulo brand for call-site clarity.
+ * Values are bytecode-observable (embedded in signed payload): EXTERNAL=0, PREEXISTING_FEE_JUICE=1, FEE_JUICE_WITH_CLAIM=2.
+ */
+export const NuloFeePaymentMethod = {
+	External: AccountFeePaymentMethodOptions.EXTERNAL,
+	FeeJuice: AccountFeePaymentMethodOptions.PREEXISTING_FEE_JUICE,
+	FeeJuiceWithClaim: AccountFeePaymentMethodOptions.FEE_JUICE_WITH_CLAIM,
+} as const
+export type NuloFeePaymentMethod = AccountFeePaymentMethodOptions
 
 export interface IAccountContract {
 	readonly address: AztecAddress
@@ -19,48 +30,12 @@ export interface IAccountContract {
 
 	getCompleteAddress(): Promise<CompleteAddress>
 
-	buildAuthWitness(messageHash: Fr): Promise<AuthWitness>
+	createAuthWit(messageHash: Fr): Promise<AuthWitness>
 
 	buildTxExecutionRequest(
 		node: AztecNode,
 		pxe: IPXE,
-		calls: NuloFunctionCall[],
-		nonce: Fr,
-		feePaymentMethod: NuloFeePaymentMethod,
-		args: HashedValues[],
-		authwits?: AuthWitness[],
-		capsules?: Capsule[],
+		payload: ExecutionPayload,
+		options: DefaultAccountEntrypointOptions,
 	): Promise<TxExecutionRequest>
-}
-
-export class NuloFunctionCall {
-	constructor(
-		public readonly address: AztecAddress,
-		public readonly selector: FunctionSelector,
-		public readonly args_hash: Fr,
-		public readonly is_public: boolean,
-		public readonly is_static: boolean,
-		public readonly hide_sender: boolean,
-	) {}
-
-	public toFields(): Fr[] {
-		return [
-			this.address.toField(),
-			this.selector.toField(),
-			this.args_hash,
-			new Fr(this.is_public),
-			new Fr(this.is_static),
-			new Fr(this.hide_sender),
-		]
-	}
-
-	public static empty(): NuloFunctionCall {
-		return new NuloFunctionCall(AztecAddress.zero(), FunctionSelector.empty(), Fr.zero(), false, false, false)
-	}
-}
-
-export enum NuloFeePaymentMethod {
-	External = 0,
-	FeeJuice = 1,
-	FeeJuiceWithClaim = 2,
 }

@@ -109,7 +109,7 @@ const initAccount = async () => {
 
 	/** temp */
 	if (!appStore.accounts.length) {
-		await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Nulo_v0, "Account")
+		await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Nulo_v1, "Account")
 		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 	}
 
@@ -141,7 +141,7 @@ watch(
 		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 		if (!appStore.accounts.length) {
-			await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Nulo_v0, "Account")
+			await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Nulo_v1, "Account")
 			appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 			await appStore.setupActiveAccount()
 

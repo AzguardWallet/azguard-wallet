@@ -28,7 +28,7 @@ import {
 import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas"
 import {
 	Capsule,
-	type ExecutionPayload,
+	ExecutionPayload,
 	HashedValues,
 	TxContext,
 	TxExecutionRequest,
@@ -42,7 +42,7 @@ import z from "zod"
 import { NetworkService, type Network } from "@/wallet/services/network/service"
 import { type IPXE, PxeServiceClient } from "@/wallet/services/pxe/client"
 import { AccountService } from "@/wallet/services/account/service"
-import { NuloFeePaymentMethod, NuloFunctionCall, type IAccountContract } from "@/wallet/services/account/contracts"
+import { NuloFeePaymentMethod, type IAccountContract } from "@/wallet/services/account/contracts"
 import { ContactService } from "@/wallet/services/contact/service"
 import { ProfileService } from "@/wallet/services/profile/service"
 import { AuthRegistryService } from "@/wallet/services/auth-registry/service"
@@ -751,8 +751,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			decoded: [],
 		}
 
-		const args: HashedValues[] = []
-		const calls: [NuloFunctionCall, number, number, AbiType[]][] = []
+		const calls: [FunctionCall, number, number, AbiType[]][] = []
 		const utility: [Promise<UtilityExecutionResult>, number, AbiType[]][] = []
 		let privateCalls = 0
 		let publicCalls = 0
@@ -798,19 +797,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 							fn.returnTypes,
 						])
 					} else {
-						const packedArgs =
-							fn.functionType === FunctionType.PUBLIC
-								? await HashedValues.fromCalldata([fnSelector.toField(), ...encodedArgs])
-								: await HashedValues.fromArgs(encodedArgs)
-						args.push(packedArgs)
 						calls.push([
-							new NuloFunctionCall(
+							new FunctionCall(
+								fn.name,
 								AztecAddress.fromString(call.contract),
 								fnSelector,
-								packedArgs.hash,
-								fn.functionType === FunctionType.PUBLIC,
-								fn.isStatic,
+								fn.functionType,
 								call.hideSender === true,
+								fn.isStatic,
+								encodedArgs,
+								fn.returnTypes,
 							),
 							i,
 							fn.functionType === FunctionType.PUBLIC ? publicCalls++ : privateCalls++,
@@ -868,22 +864,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 							fn.returnTypes,
 						])
 					} else {
-						const packedArgs =
-							fn.functionType === FunctionType.PUBLIC
-								? await HashedValues.fromCalldata([
-										FunctionSelector.fromString(call.selector).toField(),
-										...call.args.map((x) => Fr.fromString(x)),
-									])
-								: await HashedValues.fromArgs(call.args.map((x) => Fr.fromString(x)))
-						args.push(packedArgs)
 						calls.push([
-							new NuloFunctionCall(
+							new FunctionCall(
+								fn.name,
 								AztecAddress.fromString(call.to),
 								FunctionSelector.fromString(call.selector),
-								packedArgs.hash,
-								fn.functionType === FunctionType.PUBLIC,
-								fn.isStatic,
+								fn.functionType,
 								call.hideMsgSender === true,
+								fn.isStatic,
+								call.args.map((x) => Fr.fromString(x)),
+								fn.returnTypes,
 							),
 							i,
 							fn.functionType === FunctionType.PUBLIC ? publicCalls++ : privateCalls++,
@@ -897,14 +887,17 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		}
 
 		if (calls.length) {
-			const txRequest = await account.buildTxExecutionRequest(
-				node,
-				pxe,
+			const payload = new ExecutionPayload(
 				calls.map((x) => x[0]),
-				Fr.random(),
-				NuloFeePaymentMethod.FeeJuice,
-				args,
+				[],
+				[],
+				[],
 			)
+			const txRequest = await account.buildTxExecutionRequest(node, pxe, payload, {
+				cancellable: false,
+				txNonce: Fr.random(),
+				feePaymentMethodOptions: NuloFeePaymentMethod.FeeJuice,
+			})
 			const simulatedTx = await pxe.simulateTx(txRequest, {
 				simulatePublic: true,
 				skipFeeEnforcement: true,
@@ -918,7 +911,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					: simulatedTx.getPrivateReturnValues().nested[1].nested
 
 			for (const [call, i, j, types] of calls) {
-				const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? []
+				const values = (call.type === FunctionType.PUBLIC ? publicReturn[j] : privateReturn[j]).values ?? []
 				result.encoded[i] = values
 				try {
 					result.decoded[i] = decodeFromAbi(types, values)
@@ -1339,7 +1332,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 						{ consumer: effect.contractAddress, innerHash: authRequest.innerHash as IntentInnerHash },
 						chainInfo,
 					)
-					const authWitness = await account.buildAuthWitness(messageHash)
+					const authWitness = await account.createAuthWit(messageHash)
 					txRequest.authWitnesses.push(authWitness)
 				} catch {
 					// Not a CallAuthorizationRequest — skip
@@ -1585,7 +1578,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent)
 		}
 
-		const authWitness = await account.buildAuthWitness(messageHash)
+		const authWitness = await account.createAuthWit(messageHash)
 
 		return authWitness
 	}
@@ -1906,8 +1899,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
 			const capsules: Capsule[] = []
 			const authwits: AuthWitness[] = []
-			const args: HashedValues[] = []
-			const calls: NuloFunctionCall[] = []
+			const extraHashedArgs: HashedValues[] = []
+			const calls: FunctionCall[] = []
 			const nonce = Fr.random()
 			const txCalls: TxCall[] = []
 
@@ -1927,7 +1920,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 					}
 					case "add_extra_args": {
 						this.logDebug("Adding extra args...")
-						args.push(await HashedValues.fromArgs(action.args.map((x) => Fr.fromString(x))))
+						extraHashedArgs.push(await HashedValues.fromArgs(action.args.map((x) => Fr.fromString(x))))
 						this.logDebug("Extra args added.")
 						break
 					}
@@ -1962,7 +1955,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 									messageHash,
 									action.authwit.map((x) => Fr.fromString(x)),
 								)
-							: await account.buildAuthWitness(messageHash)
+							: await account.createAuthWit(messageHash)
 
 						authwits.push(authwit)
 
@@ -2016,22 +2009,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 						}
 
 						const fn = getSetAuthorizedFn()
-						const packedArgs =
-							fn.functionType === FunctionType.PUBLIC
-								? await HashedValues.fromCalldata([
-										(await getSetAuthorizedSelector()).toField(),
-										...encodeArguments(fn, [messageHash, true]),
-									])
-								: await HashedValues.fromArgs(encodeArguments(fn, [messageHash, true]))
-						args.push(packedArgs)
 						calls.push(
-							new NuloFunctionCall(
+							new FunctionCall(
+								fn.name,
 								getAuthRegistryAddress(),
 								await getSetAuthorizedSelector(),
-								packedArgs.hash,
-								fn.functionType === FunctionType.PUBLIC,
-								fn.isStatic,
+								fn.functionType,
 								false,
+								fn.isStatic,
+								encodeArguments(fn, [messageHash, true]),
+								fn.returnTypes,
 							),
 						)
 						txCalls.push({
@@ -2059,19 +2046,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 							throw new Error("Method not found")
 						}
 						const fnSelector = await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters)
-						const packedArgs =
-							fn.functionType === FunctionType.PUBLIC
-								? await HashedValues.fromCalldata([fnSelector.toField(), ...encodeArguments(fn, action.args)])
-								: await HashedValues.fromArgs(encodeArguments(fn, action.args))
-						args.push(packedArgs)
 						calls.push(
-							new NuloFunctionCall(
+							new FunctionCall(
+								fn.name,
 								AztecAddress.fromString(action.contract),
 								fnSelector,
-								packedArgs.hash,
-								fn.functionType === FunctionType.PUBLIC,
-								fn.isStatic,
+								fn.functionType,
 								action.hideSender === true,
+								fn.isStatic,
+								encodeArguments(fn, action.args),
+								fn.returnTypes,
 							),
 						)
 						txCalls.push({ contract: action.contract, method: action.method, args: action.args })
@@ -2111,32 +2095,33 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 							action.type = fn.functionType
 							action.isStatic = fn.isStatic
 						}
-						const packedArgs =
-							action.type === FunctionType.PUBLIC
-								? await HashedValues.fromCalldata([
-										FunctionSelector.fromString(action.selector).toField(),
-										...action.args.map((x) => Fr.fromString(x)),
-									])
-								: await HashedValues.fromArgs(action.args.map((x) => Fr.fromString(x)))
-						args.push(packedArgs)
+						const fnName = action.name || action.selector
+						const fnReturnTypes: AbiType[] = []
 						calls.push(
-							new NuloFunctionCall(
+							new FunctionCall(
+								fnName,
 								AztecAddress.fromString(action.to),
 								FunctionSelector.fromString(action.selector),
-								packedArgs.hash,
-								action.type === FunctionType.PUBLIC,
-								action.isStatic,
+								action.type as FunctionType,
 								action.hideMsgSender === true,
+								action.isStatic ?? false,
+								action.args.map((x) => Fr.fromString(x)),
+								fnReturnTypes,
 							),
 						)
-						txCalls.push({ contract: action.to, method: action.name || action.selector, args: action.args })
+						txCalls.push({ contract: action.to, method: fnName, args: action.args })
 						this.logDebug("EncodedCall enqueued.")
 						break
 					}
 				}
 			}
 
-			const txRequest = await account.buildTxExecutionRequest(node, pxe, calls, nonce, feePaymentMethod, args, authwits, capsules)
+			const payload = new ExecutionPayload(calls, authwits, capsules, extraHashedArgs)
+			const txRequest = await account.buildTxExecutionRequest(node, pxe, payload, {
+				cancellable: false,
+				txNonce: nonce,
+				feePaymentMethodOptions: feePaymentMethod,
+			})
 
 			task.complete()
 			return [txRequest, node, pxe, account, network, nonce, txCalls]

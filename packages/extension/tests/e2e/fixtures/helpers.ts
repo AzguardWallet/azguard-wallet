@@ -99,7 +99,7 @@ export async function getAccountAddress(page: Page): Promise<string> {
 }
 
 /** Create a new account via the NewAccountPopup. */
-export async function createAccount(page: Page, name: string, persistent = false): Promise<void> {
+export async function createAccount(page: Page, name: string): Promise<void> {
 	// Navigate to accounts page
 	await navigateToSettings(page, "General", "Accounts")
 
@@ -117,12 +117,6 @@ export async function createAccount(page: Page, name: string, persistent = false
 	})
 	await nameInput!.click({ clickCount: 3 })
 	await nameInput!.type(name)
-
-	// Toggle persistent if needed
-	if (persistent) {
-		const toggle = await page.waitForSelector("text/Enable persistent history", { visible: true })
-		await toggle!.click()
-	}
 
 	// Click Create
 	const createBtn = await page.waitForSelector("text/Create", { visible: true })

@@ -15,9 +15,6 @@ dist-ssr
 
 packages/extension/src/external/*
 
-# Noir build output
-packages/contracts/*/target/
-
 # E2E test generated config
 packages/extension/tests/e2e/.test-config.json
 

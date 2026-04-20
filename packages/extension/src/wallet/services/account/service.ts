@@ -7,7 +7,7 @@ import { ProfileService, type ProfileInfo } from "@/wallet/services/profile/serv
 import { EntityStorage, StorageType } from "@/wallet/storage"
 import { array_max, hasIntersectionByKeys } from "@/wallet/utils"
 import { EventHandler } from "@/wallet/utils/event-handler"
-import { NuloV0, NuloV0Persistent, type IAccountContract } from "./contracts"
+import { NuloAccount, type IAccountContract } from "./contracts"
 import { ACCOUNT_SERVICE_NAME, AccountType, type Account, type Events, type Methods } from "./spec"
 
 export * from "./spec"
@@ -48,17 +48,10 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
 		const accounts = (await this.storage.getValues()).filter((x) => x.profileId === profileId && x.chainId === chainId)
 		const index = accounts.length > 0 ? array_max(accounts.filter((x) => x.type === type).map((x) => +x.index)) + 1 : 0
 		const secret = await this.deriveAccountSecret(profileId, chainId, type, index)
-		let address: string
-		switch (type) {
-			case AccountType.Nulo_v0:
-				address = (await NuloV0.new(secret, this.logger)).address.toString()
-				break
-			case AccountType.Nulo_v0_persistent:
-				address = (await NuloV0Persistent.new(secret, this.logger)).address.toString()
-				break
-			default:
-				throw new Error("unsupported account type")
+		if (type !== AccountType.Nulo_v1) {
+			throw new Error("unsupported account type")
 		}
+		const address = (await NuloAccount.new(secret, this.logger)).address.toString()
 		const account: Account = {
 			profileId,
 			chainId,
@@ -110,21 +103,11 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
 		if (account?.profileId !== profileId || account.chainId !== chainId) {
 			throw new Error("unknown account address")
 		}
-		let accountContract: IAccountContract
-		switch (account.type) {
-			case AccountType.Nulo_v0: {
-				const secret = await this.deriveAccountSecret(profileId, chainId, account.type, account.index)
-				accountContract = await NuloV0.new(secret, this.logger)
-				break
-			}
-			case AccountType.Nulo_v0_persistent: {
-				const secret = await this.deriveAccountSecret(profileId, chainId, account.type, account.index)
-				accountContract = await NuloV0Persistent.new(secret, this.logger)
-				break
-			}
-			default:
-				throw new Error("unknown account type")
+		if (account.type !== AccountType.Nulo_v1) {
+			throw new Error("unknown account type")
 		}
+		const secret = await this.deriveAccountSecret(profileId, chainId, account.type, account.index)
+		const accountContract: IAccountContract = await NuloAccount.new(secret, this.logger)
 		if (accountContract.address.toString() !== address) {
 			throw new Error("account address inconsistency")
 		}

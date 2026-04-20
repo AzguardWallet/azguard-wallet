@@ -1,8 +1,8 @@
 import { Fr } from "@aztec/foundation/curves/bn254"
 import { AztecAddress } from "@aztec/stdlib/aztec-address"
-import { HashedValues, type NestedProcessReturnValues } from "@aztec/stdlib/tx"
+import { ExecutionPayload, type NestedProcessReturnValues } from "@aztec/stdlib/tx"
 import { type AbiType, encodeArguments, type FunctionAbi, FunctionCall, FunctionSelector, FunctionType } from "@aztec/stdlib/abi"
-import { NuloFeePaymentMethod, NuloFunctionCall, type IAccountContract } from "@/wallet/services/account/contracts"
+import { NuloFeePaymentMethod, type IAccountContract } from "@/wallet/services/account/contracts"
 import type { AztecNode } from "@aztec/stdlib/interfaces/client"
 import type { IPXE } from "@/wallet/services/pxe/proxy"
 
@@ -78,21 +78,23 @@ export async function simulate(
 		return viewFn.unpackResult(result)
 	}
 
-	const packedArgs =
-		viewFn.type === FunctionType.PUBLIC
-			? await HashedValues.fromCalldata([fnSelector.toField(), ...encodedArgs])
-			: await HashedValues.fromArgs(encodedArgs)
-
-	const call = new NuloFunctionCall(
+	const call = new FunctionCall(
+		viewFn.name,
 		contractAddress,
 		fnSelector,
-		packedArgs.hash,
-		viewFn.type === FunctionType.PUBLIC,
-		viewFn.isStatic,
+		viewFn.type,
 		false,
+		viewFn.isStatic,
+		encodedArgs,
+		viewFn.getReturnTypes(),
 	)
 
-	const txRequest = await account.buildTxExecutionRequest(node, pxe, [call], Fr.random(), NuloFeePaymentMethod.FeeJuice, [packedArgs])
+	const payload = new ExecutionPayload([call], [], [], [])
+	const txRequest = await account.buildTxExecutionRequest(node, pxe, payload, {
+		cancellable: false,
+		txNonce: Fr.random(),
+		feePaymentMethodOptions: NuloFeePaymentMethod.FeeJuice,
+	})
 
 	const tx = await pxe.simulateTx(txRequest, {
 		simulatePublic: true,
