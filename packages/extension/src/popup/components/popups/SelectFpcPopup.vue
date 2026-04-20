@@ -260,12 +260,12 @@ watch(
 				<Button
 					@click="popupStore.open('new_fpc')"
 					wide
-					type="secondary"
+					type="primary_outline"
 					size="medium"
 					leftIcon="plus-circle"
 					leftIconColor="primary"
 				>
-					<Text size="13">New FPC</Text>
+					New FPC
 				</Button>
 			</Flex>
 		</PopupCard>

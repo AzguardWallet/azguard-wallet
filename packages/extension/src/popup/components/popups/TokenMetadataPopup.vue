@@ -202,7 +202,7 @@ watch(
 					</Flex>
 				</Flex>
 
-				<Button @click="emit('onClose')" wide type="secondary" size="medium"> Close </Button>
+				<Button @click="emit('onClose')" wide type="primary_outline" size="medium"> Close </Button>
 			</Flex>
 		</PopupCard>
 	</Popup>

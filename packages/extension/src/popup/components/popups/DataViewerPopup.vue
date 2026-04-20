@@ -32,7 +32,7 @@ watch(
 			<Flex wide align="center" direction="column" gap="24" :class="$style.wrapper">
 				<JsonViewer :data="data" />
 
-				<Button @click="emit('onClose')" type="secondary" size="medium" wide>Close</Button>
+				<Button @click="emit('onClose')" type="primary_outline" size="medium" wide>Close</Button>
 			</Flex>
 		</PopupCard>
 	</Popup>

@@ -177,7 +177,7 @@ watch(
 							</template>
 						</Tooltip>
 
-						<Button @click="emit('onClose')" type="secondary" size="medium" wide>Close</Button>
+						<Button @click="emit('onClose')" type="primary_outline" size="medium" wide>Close</Button>
 					</Flex>
 				</template>
 
@@ -220,7 +220,7 @@ watch(
 						<Button
 							@click="handleResetChanges"
 							wide
-							type="secondary"
+							type="primary_outline"
 							size="medium"
 							:disabled="!Object.keys(selectedFields).length || isUpdatingTokenInterface"
 						>

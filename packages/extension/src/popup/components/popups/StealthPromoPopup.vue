@@ -243,7 +243,7 @@ onBeforeUnmount(() => {
 							<Icon name="arrow-circle-broken-right" size="16" />
 						</Flex>
 					</Button>
-					<Button @click="handleClose" type="secondary" size="medium" wide>
+					<Button @click="handleClose" type="primary_outline" size="medium" wide>
 						Back
 					</Button>
 				</Flex>

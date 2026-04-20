@@ -202,7 +202,7 @@ onUnmounted(() => {
 					>
 						Create with {{ capitalize(profilType) }}
 					</Button>
-					<Button @click="handleCancel" type="secondary" size="medium" wide :disabled="isCreatingProfile">
+					<Button @click="handleCancel" type="primary_outline" size="medium" wide :disabled="isCreatingProfile">
 						Cancel
 					</Button>
 				</Flex>

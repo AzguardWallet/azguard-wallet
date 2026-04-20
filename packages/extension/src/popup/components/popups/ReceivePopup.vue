@@ -72,7 +72,7 @@ watch(
 					</Flex>
 				</Flex>
 
-				<Button @click="popupStore.close('receive')" wide type="secondary" size="medium"> Close </Button>
+				<Button @click="popupStore.close('receive')" wide type="primary_outline" size="medium"> Close </Button>
 			</Flex>
 		</PopupCard>
 	</Popup>

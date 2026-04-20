@@ -193,7 +193,7 @@ const onKeydown = (e) => {
 					>
 						Update Parameters
 					</Button>
-					<Button @click="handleCancel" wide type="secondary" size="medium">
+					<Button @click="handleCancel" wide type="primary_outline" size="medium">
 						Cancel
 					</Button>
 				</Flex>

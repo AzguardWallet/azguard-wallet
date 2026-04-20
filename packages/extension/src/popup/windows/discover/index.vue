@@ -238,8 +238,8 @@ onUnmounted(() => {
 			</Tooltip>
 
 			<Flex align="center" justify="between" gap="12">
-				<Button @click="reject" wide type="secondary" size="medium" :disabled="isLoading">
-					<Text size="13">Deny</Text>
+				<Button @click="reject" wide type="primary_outline" size="medium" :disabled="isLoading">
+					Deny
 				</Button>
 
 				<Button

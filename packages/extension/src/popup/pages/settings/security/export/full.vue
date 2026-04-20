@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
 				</template>
 			</Banner>
 
-			<Button @click="handleAgree" type="secondary" size="medium" right-icon="arrow-right-circle" wide>
+			<Button @click="handleAgree" type="primary" size="medium" wide>
 				Agree & Continue
 			</Button>
 		</template>
@@ -265,9 +265,8 @@ onBeforeUnmount(() => {
 
 				<Button
 					@click="handleBackup"
-					type="secondary"
+					type="primary"
 					size="medium"
-					right-icon="arrow-right-circle"
 					wide
 					:disabled="!password || isWrongPassword"
 				>
@@ -334,9 +333,8 @@ onBeforeUnmount(() => {
 					<Button
 						v-if="backupStatus === 'finished' || backupStatus == 'encrypting'"
 						@click="handleEncrypt()"
-						type="secondary"
+						type="primary"
 						size="medium"
-						right-icon="key"
 						wide
 						:loading="backupStatus === 'encrypting'"
 						:disabled="backupStatus === 'encrypting'"
@@ -346,9 +344,8 @@ onBeforeUnmount(() => {
 
 					<Button
 						@click="handleDownloadBackup"
-						type="secondary"
+						type="primary"
 						size="medium"
-						:right-icon="backupStatus !== 'progress' ? 'download' : ''"
 						wide
 						:loading="backupStatus === 'progress'"
 						:disabled="!backupStatus || backupStatus === 'progress' || backupStatus === 'encrypting'"

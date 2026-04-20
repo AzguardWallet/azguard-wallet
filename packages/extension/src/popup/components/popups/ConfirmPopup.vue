@@ -100,7 +100,7 @@ watch(
 				</Flex>
 
 				<Flex gap="12">
-					<Button @click="emit('onClose')" wide type="secondary" size="medium"> Cancel </Button>
+					<Button @click="emit('onClose')" wide type="primary_outline" size="medium"> Cancel </Button>
 
 					<Button
 						@click="handleConfirm"

@@ -71,7 +71,7 @@ const cancel = async () => {
                         v-if="notification.payload.onCancel"
                         @click="cancel"
                         wide
-                        type="secondary"
+                        type="primary_outline"
                         size="medium"
                     >
                         {{ notification.payload.cancelText || "Cancel" }}

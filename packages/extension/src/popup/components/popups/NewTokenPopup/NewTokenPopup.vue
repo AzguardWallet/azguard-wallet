@@ -263,7 +263,7 @@ watch(
 						v-if="!isCompleted"
 						@click="handleResetChanges"
 						wide
-						type="secondary"
+						type="primary_outline"
 						size="medium"
 						:disabled="!Object.keys(selectedFields).length"
 					>

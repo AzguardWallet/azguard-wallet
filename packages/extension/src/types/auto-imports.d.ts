@@ -79,6 +79,7 @@ declare global {
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getDecimalSeparator: typeof import('../utils/amount.js').getDecimalSeparator
+  const getLastActiveProfileId: typeof import('../utils/lastActiveProfile').getLastActiveProfileId
   const getOriginLabel: typeof import('../utils/tx-enrichment').getOriginLabel
   const getPrimaryCall: typeof import('../utils/tx-enrichment').getPrimaryCall
   const getTemplate: typeof import('../composables/notification.js').getTemplate
@@ -154,6 +155,7 @@ declare global {
   const resolveUnref: typeof import("@vueuse/core")["resolveUnref"]
   const sanitizeString: typeof import('../utils/string').sanitizeString
   const sendMessage: typeof import("webext-bridge")["sendMessage"]
+  const setLastActiveProfileId: typeof import('../utils/lastActiveProfile').setLastActiveProfileId
   const setSentinel: typeof import('../utils/core.js').setSentinel
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
@@ -436,6 +438,7 @@ declare module 'vue' {
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
     readonly getDecimalSeparator: UnwrapRef<typeof import('../utils/amount.js')['getDecimalSeparator']>
+    readonly getLastActiveProfileId: UnwrapRef<typeof import('../utils/lastActiveProfile')['getLastActiveProfileId']>
     readonly getOriginLabel: UnwrapRef<typeof import('../utils/tx-enrichment')['getOriginLabel']>
     readonly getPrimaryCall: UnwrapRef<typeof import('../utils/tx-enrichment')['getPrimaryCall']>
     readonly getTemplate: UnwrapRef<typeof import('../composables/notification.js')['getTemplate']>
@@ -485,6 +488,7 @@ declare module 'vue' {
     readonly refreshBalances: UnwrapRef<typeof import('../utils/core.js')['refreshBalances']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly sanitizeString: UnwrapRef<typeof import('../utils/string')['sanitizeString']>
+    readonly setLastActiveProfileId: UnwrapRef<typeof import('../utils/lastActiveProfile')['setLastActiveProfileId']>
     readonly setSentinel: UnwrapRef<typeof import('../utils/core.js')['setSentinel']>
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>

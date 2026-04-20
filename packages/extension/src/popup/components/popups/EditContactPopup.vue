@@ -263,7 +263,7 @@ const onKeydown = (e) => {
 						Update contact
 					</Button>
 
-					<Button @click="handleFillFieldsWithDefaultValues" wide type="secondary" size="medium">
+					<Button @click="handleFillFieldsWithDefaultValues" wide type="primary_outline" size="medium">
 						Reset changes
 					</Button>
 				</Flex>

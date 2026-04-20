@@ -1017,9 +1017,10 @@ watch(
 						<Button
 							v-if="restoreStatus === 'finished' && isRestoreHasErrors"
 							@click="handleShowRestoreErrorLog"
-							type="secondary"
+							type="primary_outline"
 							size="medium"
 							rightIcon="brackets"
+							rightIconColor="primary"
 							wide
 						>
 							View Errors

@@ -207,7 +207,7 @@ watch(
 					<Flex align="center" justify="between" gap="12" wide>
 						<Button
 							@click="handleReject"
-							type="secondary"
+							type="primary_outline"
 							size="medium"
 							wide
 						>
@@ -216,7 +216,7 @@ watch(
 
 						<Button
 							@click="handleResolve"
-							type="secondary"
+							type="primary"
 							size="medium"
 							wide
 						>
