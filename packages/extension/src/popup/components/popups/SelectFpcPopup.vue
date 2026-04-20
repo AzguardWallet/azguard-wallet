@@ -192,7 +192,7 @@ watch(
 					/>
 				</Flex>
 
-				<Banner v-if="isLoading" isLoading> Fetching FPCs </Banner>
+				<LoadingState v-if="isLoading" label="FETCHING FPCS" />
 
 				<Banner v-else-if="!filteredFpcs?.length" wide>
 					No FPC found, get started by adding new Fee Payment Contract

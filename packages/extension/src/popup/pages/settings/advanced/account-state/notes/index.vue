@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
 				@clear="searchTerm = ''"
 			/>
 
-			<Banner v-if="isFetchingNotes" isLoading> Fetching notes </Banner>
+			<LoadingState v-if="isFetchingNotes" label="FETCHING NOTES" />
 
 			<Tooltip v-else-if="isErrorOccurred" wide>
 				<Banner :action="{ name: 'Try again', callback: () => fetchNotes(true) }" variant="error" wide>

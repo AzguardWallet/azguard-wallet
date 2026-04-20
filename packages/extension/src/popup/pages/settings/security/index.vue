@@ -101,7 +101,7 @@ onBeforeUnmount(() => {
 		<SubPageHeader title="Security" :backTo="'/popup/settings'" />
 
 		<Flex direction="column" gap="32" :class="$style.content">
-			<Banner v-if="isLoading" isLoading> Fetching settings </Banner>
+			<LoadingState v-if="isLoading" label="FETCHING SETTINGS" />
 
 			<template v-if="!isLoading">
 				<!-- Auto-lock Timeout -->

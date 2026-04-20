@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
 		<SubPageHeader title="Contracts" :backTo="'/popup/settings/advanced/account-state'" />
 
 		<Flex direction="column" gap="16" :class="$style.content">
-			<Banner v-if="isFetchingContracts" isLoading> Fetching contracts </Banner>
+			<LoadingState v-if="isFetchingContracts" label="FETCHING CONTRACTS" />
 
 			<Tooltip v-else-if="isErrorOccurred" wide>
 				<Banner :action="{ name: 'Try again', callback: () => fetchContracts(true) }" variant="error" wide>

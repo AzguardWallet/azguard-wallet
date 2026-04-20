@@ -243,7 +243,7 @@ onBeforeUnmount(() => {
 		<SubPageHeader title="Manage FPCs" :backTo="'/popup/settings'" />
 
 		<Flex direction="column" gap="20" :class="$style.content">
-			<Banner v-if="isLoading" isLoading> Fetching FPCs </Banner>
+			<LoadingState v-if="isLoading" label="FETCHING FPCS" />
 
 		<Tooltip v-else-if="error" wide>
 			<Banner :action="{ name: 'Try again', callback: () => fetchFpcs() }" variant="error" wide>

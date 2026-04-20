@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
 				@clear="searchTerm = ''"
 			/>
 
-			<Banner v-if="isFetchingAuthwits" isLoading> Fetching authwits </Banner>
+			<LoadingState v-if="isFetchingAuthwits" label="FETCHING AUTHWITS" />
 
 			<Tooltip v-else-if="isErrorOccurred" wide>
 				<Banner :action="{ name: 'Try again', callback: () => fetchAuthwits(true) }" variant="error" wide>

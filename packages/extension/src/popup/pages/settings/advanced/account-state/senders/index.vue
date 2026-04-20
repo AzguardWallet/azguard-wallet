@@ -94,7 +94,7 @@ onBeforeUnmount(() => {
 		<SubPageHeader title="Senders" :backTo="'/popup/settings/advanced/account-state'" />
 
 		<Flex direction="column" gap="16" :class="$style.content">
-			<Banner v-if="isLoading" isLoading> Fetching senders </Banner>
+			<LoadingState v-if="isLoading" label="FETCHING SENDERS" />
 
 			<Tooltip v-else-if="error" wide>
 				<Banner :action="{ name: 'Try again', callback: () => fetchSenders() }" variant="error" wide>
