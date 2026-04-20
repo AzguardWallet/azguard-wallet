@@ -287,8 +287,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<LogoStar />
-
 	<Flex wide direction="column" :class="$style.wrapper">
 		<!-- Popup Teleport -->
 		<div id="popup" />

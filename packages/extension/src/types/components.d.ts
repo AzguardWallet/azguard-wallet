@@ -30,7 +30,6 @@ declare module 'vue' {
     Install: typeof import('./../components/install.vue')['default']
     ItemsContainer: typeof import('./../components/ui/Settings/ItemsContainer.vue')['default']
     JsonViewer: typeof import('./../components/ui/JsonViewer/JsonViewer.vue')['default']
-    LogoStar: typeof import('./../components/LogoStar.vue')['default']
     LogsViewer: typeof import('./../components/ui/JsonViewer/LogsViewer.vue')['default']
     MaterialIcon: typeof import('./../components/core/MaterialIcon.vue')['default']
     NotificationManager: typeof import('./../components/ui/NotificationManager.vue')['default']
