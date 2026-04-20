@@ -79,6 +79,16 @@ const handleOpenNote = (note) => {
 	popupStore.open("data_viewer")
 }
 
+/** Long hex values (addresses, hashes, preimages) should wrap with
+ *  overflow-wrap: anywhere instead of ellipsis-truncate — users need
+ *  to glance-verify the head and tail, not just the head. Numeric
+ *  values (amounts, block numbers) stay single-line. */
+function isLongHex(value) {
+	if (value === null || value === undefined) return false
+	const s = String(value)
+	return s.startsWith("0x") && s.length > 40
+}
+
 watch(
 	() => appStore.account,
 	() => {
@@ -122,34 +132,30 @@ onBeforeUnmount(() => {
 			</Tooltip>
 			
 			<Flex v-else-if="filteredNotes.length" direction="column" gap="8">
-				<Flex v-for="note in filteredNotes" @click="handleOpenNote(note)" direction="column" gap="6" :class="$style.card">
-					<Flex align="center" justify="between" gap="12" wide>
-						<Text size="14" weight="600" color="primary" :class="$style.row"> {{ note.type ?? 'Custom Note' }} </Text>
+				<div
+					v-for="note in filteredNotes"
+					@click="handleOpenNote(note)"
+					:class="$style.card"
+					:style="{ borderLeftColor: `var(--${getColorFromAddress(note.contract)})` }"
+				>
+					<div :class="$style.header">
+						<span :class="$style.type">{{ note.type ?? 'Custom Note' }}</span>
+						<span :class="$style.contract">{{ trimAddress(note.contract, 4, 4) }}</span>
+					</div>
 
-						<Flex
-							align="center"
-							gap="6"
-							:class="$style.badge"
-							:style="{ background: `var(--${getColorFromAddress(note.contract)})` }"
-						>
-							<AddressDisplay size="11" weight="600" :address="note.contract" :formatter="(addr) => trimAddress(addr, 4, 4)" />
-							<!-- <Text size="11" weight="600"> {{ trimAddress(note.contract, 4, 4) }} </Text> -->
-						</Flex>
-					</Flex>
+					<span v-if="note.location" :class="$style.location">{{ note.location }}</span>
 
-					<Text v-if="note.location" size="13" weight="600" color="tertiary" :class="$style.row"> {{ note.location }} </Text>
+					<div v-if="note.showingContent" :class="$style.kv_grid">
+						<template v-for="[k, v] in Object.entries(note.showingContent)" :key="k">
+							<span :class="$style.kv_key">{{ k }}</span>
+							<span :class="[$style.kv_val, isLongHex(v) && $style.kv_val_wrap]">{{ v }}</span>
+						</template>
+					</div>
 
-					<div :class="$style.divider" />
-
-					<Flex v-if="!!note.showingContent" v-for="[k, v] in Object.entries(note.showingContent)" align="center" gap="4" wide :class="$style.content">
-						<Text size="13" color="tertiary"> {{ `${k}:` }} </Text>
-						<Text size="13" color="tertiary" weight="600"> {{ v }} </Text>
-					</Flex>
-
-					<Flex v-else v-for="el in note.rawContent" align="center" gap="4" wide :class="$style.content">
-						<Text size="13" color="tertiary" weight="600"> {{ el }} </Text>
-					</Flex>
-				</Flex>
+					<div v-else :class="$style.raw">
+						<span v-for="(el, i) in note.rawContent" :key="i" :class="$style.raw_line">{{ el }}</span>
+					</div>
+				</div>
 			</Flex>
 
 			<div v-else-if="filteredNotes.length === 0 && searchTerm" :class="$style.no_results">
@@ -178,21 +184,26 @@ onBeforeUnmount(() => {
 }
 
 .card {
-	border-radius: 0;
-	cursor: pointer;
-	border: 1px solid var(--nulo-border);
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 
-	padding: 12px;
+	cursor: pointer;
+
+	/* Structural border on 3 sides; the left edge is a 4px colored
+	   accent per-contract (getColorFromAddress inline style) so notes
+	   from the same contract share a visual band. Keeps the chip
+	   itself neutral — avoids collision with semantic red/orange. */
+	border: 1px solid var(--nulo-border);
+	border-left: 4px solid var(--nulo-border);
+
+	padding: 12px 12px 12px 10px;
 
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
 		background: var(--nulo-surface-low);
 		border-color: var(--nulo-outline);
-
-		& .icons {
-			opacity: 1;
-		}
 	}
 
 	&:active {
@@ -200,33 +211,108 @@ onBeforeUnmount(() => {
 	}
 }
 
-.badge {
-	padding: 2px 4px;
-	color: var(--txt-inverse);
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 }
 
-.divider {
-	width: 100%;
-	height: 1px;
+.type {
+	flex: 1;
+	min-width: 0;
 
-	margin: 4px 0;
+	font-family: var(--font-headline);
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
 
-	background: var(--nulo-border);
-}
-
-.row {
-	text-overflow: ellipsis;
 	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
-.content {
-	max-width: 100%;
+.contract {
+	flex-shrink: 0;
 
-	& span:last-child {
-		text-overflow: ellipsis;
-		overflow: hidden;
-		white-space: nowrap;
+	padding: 3px 6px;
+
+	background: var(--nulo-surface-low);
+	border: 1px solid var(--nulo-border);
+
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	color: var(--nulo-secondary);
+}
+
+.location {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--nulo-outline);
+	line-height: 1.4;
+	word-break: break-all;
+}
+
+.kv_grid {
+	display: grid;
+	grid-template-columns: minmax(90px, 120px) 1fr;
+	gap: 4px 12px;
+	align-items: baseline;
+}
+
+.kv_key {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-outline);
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.kv_val {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--txt-primary);
+
+	min-width: 0;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/** Long hex values get a 2-line wrap so users can glance-verify head + tail. */
+.kv_val_wrap {
+	white-space: normal;
+	overflow-wrap: anywhere;
+	line-height: 1.4;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+}
+
+.raw {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.raw_line {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--nulo-secondary);
+	overflow-wrap: anywhere;
+	line-height: 1.4;
+
+	&:not(:first-child) {
+		padding-top: 4px;
+		border-top: 1px solid var(--nulo-border);
 	}
 }
 
