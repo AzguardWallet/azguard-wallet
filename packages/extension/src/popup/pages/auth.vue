@@ -188,8 +188,6 @@ watch(
 
 		<!-- Main content -->
 		<Flex direction="column" align="center" gap="32" :class="$style.main">
-			<MaterialIcon name="lock" :size="48" color="primary" :class="$style.lock_icon" />
-
 			<!-- Compact profile pill -->
 			<button
 				@click="handleSelectProfile"
@@ -209,11 +207,16 @@ watch(
 				<MaterialIcon name="chevron_right" :size="18" color="secondary" />
 			</button>
 
-			<!-- Heading + subheading -->
+			<!-- Heading + subheading. Small inline lock glyph preserves the
+			     "secure gate" cue we lost when we dropped the standalone
+			     48px lock icon from above the profile pill. -->
 			<Flex direction="column" align="center" gap="8">
-				<h1 :class="$style.heading">
-					{{ isPasskeyProfile ? 'Passkey required' : 'Password required' }}
-				</h1>
+				<Flex align="center" justify="center" gap="8">
+					<MaterialIcon name="lock" :size="16" color="primary" />
+					<h1 :class="$style.heading">
+						{{ isPasskeyProfile ? 'Passkey required' : 'Password required' }}
+					</h1>
+				</Flex>
 				<p :class="$style.subheading">
 					{{ isPasskeyProfile ? 'Use your passkey to continue' : 'Enter your profile password to continue' }}
 				</p>
@@ -335,10 +338,6 @@ watch(
 	justify-content: center;
 
 	padding: 0 8px;
-}
-
-.lock_icon {
-	color: var(--txt-primary);
 }
 
 .profile_pill {
