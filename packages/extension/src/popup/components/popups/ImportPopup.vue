@@ -592,12 +592,9 @@ watch(
 		<PopupCard :displaceIdx>
 			<Flex wide direction="column" gap="32" :class="$style.wrapper">
 				<Flex align="center" direction="column" gap="12">
-					<Flex align="center" gap="6">
-						<Icon :name="type === 'recovery' ? 'restart' : 'plus-circle'" size="18" color="blue" />
-						<Text size="16" weight="600" color="primary">
-							{{ type === "recovery" ? "Recovery Profile" : "Import Profile" }}
-						</Text>
-					</Flex>
+					<Text size="16" weight="600" color="primary">
+						{{ type === "recovery" ? "Recovery Profile" : "Import Profile" }}
+					</Text>
 
 					<Text size="14" weight="500" color="body" height="140" align="center" style="padding: 0 12px">
 						Choose from the following options to {{ type === "recovery" ? "recovery" : "import" }} your

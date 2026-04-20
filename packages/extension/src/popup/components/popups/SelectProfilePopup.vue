@@ -100,18 +100,13 @@ watch(
 						</SettingItem>
 					</ItemsContainer>
 
-					<Flex wide direction="column" gap="6">
-						<Button
-							@click="appStore.showRegisterPopup = true"
-							wide
-							type="primary"
-							size="medium"
-							leftIcon="plus-circle"
-							leftIconColor="primary"
-						>
-							<Text size="13">New Profile</Text>
+					<Flex wide direction="column" gap="8">
+						<Button @click="appStore.showRegisterPopup = true" wide type="primary" size="large">
+							New profile
 						</Button>
-						<Button @click="popupStore.open('import')" size="medium" type="secondary" wide> Import Profile </Button>
+						<Button @click="popupStore.open('import')" wide type="primary" size="large">
+							Import profile
+						</Button>
 					</Flex>
 				</Flex>
 			</Flex>

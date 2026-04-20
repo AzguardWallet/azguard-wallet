@@ -150,13 +150,12 @@ onBeforeUnmount(() => {
 
 		<Flex direction="column" gap="12" align="center" :class="$style.bottom">
 			<Flex wide direction="column" gap="8">
-				<Button @click="appStore.showRegisterPopup = true" size="medium" type="primary" wide>
-					<Flex align="center" gap="6">
-						<Text size="13">Create Profile</Text>
-						<Icon name="arrow-circle-broken-right" size="16" />
-					</Flex>
+				<Button @click="appStore.showRegisterPopup = true" wide type="primary" size="large">
+					Create profile
 				</Button>
-				<Button @click="popupStore.open('import')" size="medium" type="secondary" wide> Import Profile </Button>
+				<Button @click="popupStore.open('import')" wide type="primary" size="large">
+					Import profile
+				</Button>
 			</Flex>
 
 			<Text size="11" weight="500" color="tertiary" height="140" align="center">
