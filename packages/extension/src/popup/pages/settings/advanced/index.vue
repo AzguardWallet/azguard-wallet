@@ -19,8 +19,38 @@ import { BLOCK_EXPLORERS } from "@/wallet/constants/explorers"
 import { useToast } from "@/composables/toast"
 const { openToast } = useToast()
 
+/** Store */
+import { useAppStore } from "@/stores/app.store"
+import { useCacheStore } from "@/stores/cache.store"
+const appStore = useAppStore()
+const cacheStore = useCacheStore()
+
 const configService = new ConfigServiceClient()
 configService.onUpdate.add(onSettingUpdate)
+
+/** Developer-only: open the logs window (previously accessible via the
+ *  hamburger MenuPopup, now relocated here as part of the menu removal). */
+const handleOpenLogs = async () => {
+	if (appStore.loggerWindowId) {
+		try {
+			const win = await chrome.windows.get(appStore.loggerWindowId)
+			chrome.windows.update(win.id, { focused: true })
+			cacheStore.failureLog = null
+			return
+		} catch (_err) {
+			appStore.loggerWindowId = null
+		}
+	}
+
+	const url = new URL(chrome.runtime.getURL("src/popup/index.html#/windows/logger"))
+	if (cacheStore.failureLog?.id) {
+		url.searchParams.set("logId", cacheStore.failureLog.id)
+	}
+
+	const window = await chrome.windows.create({ type: "popup", url: url.toString(), height: 700, width: 1_200 })
+	appStore.loggerWindowId = window.id
+	cacheStore.failureLog = null
+}
 
 const isLoading = ref(true)
 
@@ -139,6 +169,33 @@ onBeforeUnmount(() => {
 					</Flex>
 				</template>
 
+				<!-- Logs (developer mode only) -->
+				<div
+					v-if="isDeveloperModeEnabled.value"
+					@click="handleOpenLogs"
+					:class="$style.logs_link"
+					role="button"
+					tabindex="0"
+					@keydown.enter="handleOpenLogs"
+				>
+					<Flex justify="between" align="center">
+						<Flex direction="column" gap="6">
+							<Flex align="center" gap="8">
+								<Text size="13" weight="600" color="primary">Logs</Text>
+								<div
+									v-if="cacheStore.failureLog?.color"
+									:class="$style.failure_dot"
+									:style="{ background: cacheStore.failureLog.color }"
+								/>
+							</Flex>
+							<Text size="12" weight="500" color="tertiary">
+								{{ cacheStore.failureLog ? '1 recent failure' : 'Open the log viewer window' }}
+							</Text>
+						</Flex>
+						<MaterialIcon name="open_in_new" :size="18" color="secondary" />
+					</Flex>
+				</div>
+
 				<!-- Account State (Notes, Authwits, Contracts, Senders) -->
 				<RouterLink to="/popup/settings/advanced/account-state" :class="$style.state_link">
 					<Flex justify="between" align="center">
@@ -221,5 +278,23 @@ onBeforeUnmount(() => {
 	&:hover {
 		opacity: 0.8;
 	}
+}
+
+.logs_link {
+	cursor: pointer;
+	outline: none;
+
+	transition: opacity 0.2s var(--bezier);
+
+	&:hover {
+		opacity: 0.8;
+	}
+}
+
+.failure_dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
 }
 </style>

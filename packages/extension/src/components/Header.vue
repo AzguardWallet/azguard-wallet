@@ -251,16 +251,6 @@ onBeforeUnmount(() => {
 				<MaterialIcon name="lock" :size="20" color="primary" />
 			</button>
 
-			<button
-				v-if="appStore.isLogined"
-				type="button"
-				@click="handleOpenPopup('menu')"
-				data-testid="menu-button"
-				aria-label="Open menu"
-				:class="$style.icon_button"
-			>
-				<MaterialIcon name="menu" :size="20" color="primary" />
-			</button>
 		</Flex>
 	</header>
 </template>

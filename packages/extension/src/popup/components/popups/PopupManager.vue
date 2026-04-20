@@ -15,7 +15,6 @@ import EditTokenPopup from "./EditTokenPopup.vue"
 import ForgotPasswordPopup from "./ForgotPasswordPopup.vue"
 import ImportContactsPopup from "./ImportContactsPopup.vue"
 import ImportPopup from "./ImportPopup.vue"
-import MenuPopup from "./MenuPopup.vue"
 import NetworksPopup from "./NetworksPopup.vue"
 import NewAccountPopup from "./NewAccountPopup.vue"
 import NewContactPopup from "./NewContactPopup.vue"
@@ -40,8 +39,6 @@ const popupStore = usePopupStore()
 </script>
 
 <template>
-	<MenuPopup :show="popupStore.isOpened('menu')" @onClose="popupStore.close('menu')" />
-
 	<ImportPopup :show="popupStore.isOpened('import')" @onClose="popupStore.close('import')" />
 	<ResetPopup :show="popupStore.isOpened('reset')" @onClose="popupStore.close('reset')" />
 	<ForgotPasswordPopup :show="popupStore.isOpened('forgot_password')" @onClose="popupStore.close('forgot_password')" />
