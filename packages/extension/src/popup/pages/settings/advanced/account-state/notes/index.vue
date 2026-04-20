@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
 
 	&:hover {
 		background: var(--nulo-surface-low);
-		box-shadow: inset 0 0 0 1px var(--nulo-outline), 0 1px 2px rgba(10, 9, 8, 0.5);
+		border-color: var(--nulo-outline);
 
 		& .icons {
 			opacity: 1;
@@ -201,7 +201,6 @@ onBeforeUnmount(() => {
 }
 
 .badge {
-	border-radius: 6px;
 	padding: 2px 4px;
 	color: var(--txt-inverse);
 }
@@ -211,14 +210,8 @@ onBeforeUnmount(() => {
 	height: 1px;
 
 	margin: 4px 0;
-	
-	background: linear-gradient(
-		to right,
-		transparent 0%,
-		var(--nulo-outline) 20%,
-		var(--nulo-outline) 80%,
-		transparent 100%
-	);
+
+	background: var(--nulo-border);
 }
 
 .row {
