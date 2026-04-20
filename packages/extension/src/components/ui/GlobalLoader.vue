@@ -4,34 +4,20 @@ import { useAppStore } from "@/stores/app.store"
 const appStore = useAppStore()
 
 const message = computed(() =>
-	appStore.isLogined
-		? {
-				title: "Reconnecting to service worker...",
-				description: "Hold on — we're restoring the connection.",
-			}
-		: {
-				title: "Connecting to service worker...",
-				description: "We're setting things up. This should only take a moment.",
-			},
+	appStore.isLogined ? { title: "RECONNECTING", sub: "Service worker dropped" } : { title: "INITIALIZING", sub: "Initial connection" },
 )
 </script>
+
 <template>
 	<Teleport to="body">
-        <Flex v-if="!isBackgroundConnected" wide direction="column" gap="32" :class="$style.wrapper">
-            <Flex align="center" direction="column" gap="24" :class="$style.card">
-                <div :class="$style.loader" />
+		<div v-if="!isBackgroundConnected" :class="$style.wrapper" data-testid="global-loader">
+			<div :class="$style.card">
+				<Spinner size="24" color="--txt-primary" />
 
-                <Flex align="center" direction="column" gap="8">
-                    <Text size="14" weight="600" color="primary">
-                        {{ message.title }}
-                    </Text>
-
-                    <Text size="12" weight="500" color="secondary" height="140" align="center">
-                        {{ message.description }}
-                    </Text>
-                </Flex>
-            </Flex>
-        </Flex>
+				<span :class="$style.title">{{ message.title }}</span>
+				<span :class="$style.sub">{{ message.sub }}</span>
+			</div>
+		</div>
 	</Teleport>
 </template>
 
@@ -39,52 +25,44 @@ const message = computed(() =>
 .wrapper {
 	position: fixed;
 	inset: 0;
-	background-color: rgba(0, 0, 0, 0.4);
-	backdrop-filter: blur(6px);
+
 	display: flex;
 	justify-content: center;
 	align-items: center;
+
+	background-color: rgba(10, 9, 8, 0.85);
 	z-index: 9999;
 }
 
 .card {
-	width: 90%;
-	padding: 24px;
-	border-radius: 16px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
 
-    transition: transform 0.3s ease, opacity 0.3s ease;
-}
+	width: 80%;
+	max-width: 320px;
+	padding: 28px 20px;
 
-.loader {
-    height: 12px;
-    aspect-ratio: 4;
-    --_g: no-repeat radial-gradient(farthest-side, var(--txt-secondary) 90%,#0000);
-    background: 
-        var(--_g) left,
-        var(--_g) right;
-    background-size: 25% 100%;
-    display: grid;
-}
-.loader:before,
-.loader:after {
-    content: "";
-    height: inherit;
-    aspect-ratio: 1;
-    grid-area: 1/1;
-    margin: auto;
-    border-radius: 50%;
-    transform-origin: -100% 50%;
-    background: var(--txt-secondary);
-    animation: jumping-dots 1s infinite linear;
-}
-.loader:after {
-    transform-origin: 200% 50%;
-    --s:-1;
-    animation-delay: -.5s;
+	background: var(--app-bg);
+	border: 1px dashed var(--nulo-border);
+
+	text-align: center;
 }
 
-@keyframes jumping-dots {
-    58%,
-    100% {transform: rotate(calc(var(--s, 1) * 1turn))}
+.title {
+	font-family: var(--font-headline);
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--nulo-secondary);
+}
+
+.sub {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--nulo-outline);
 }
 </style>
