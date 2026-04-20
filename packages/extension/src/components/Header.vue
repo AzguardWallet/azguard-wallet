@@ -5,6 +5,9 @@ import { LogViewerServiceClient } from "@/wallet/services/log-viewer/client"
 import { ConfigServiceClient } from "@/wallet/services/config/client"
 import { TaskServiceClient } from "@/wallet/services/task/client"
 
+/** Utils */
+import { managers } from "@/utils/core"
+
 /** Store */
 import { useAppStore } from "@/stores/app.store"
 import { useCacheStore } from "@/stores/cache.store"
@@ -14,6 +17,12 @@ const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
 const route = useRoute()
+
+const handleLockWallet = () => {
+	if (!appStore.isLogined) return
+	appStore.isLogined = false
+	managers.profile.lockActiveProfile()
+}
 
 const logViewerService = new LogViewerServiceClient()
 logViewerService.onLog.add(onLogAdded)
@@ -229,6 +238,17 @@ onBeforeUnmount(() => {
 			>
 				<span :class="$style.network_label">{{ appStore.network.name }}</span>
 				<div :class="[$style.status_dot, $style[String(appStore.networkStatus).toLowerCase()]]" />
+			</button>
+
+			<button
+				v-if="appStore.isLogined"
+				type="button"
+				@click="handleLockWallet"
+				data-testid="header-lock"
+				aria-label="Lock wallet"
+				:class="$style.icon_button"
+			>
+				<MaterialIcon name="lock" :size="20" color="primary" />
 			</button>
 
 			<button
