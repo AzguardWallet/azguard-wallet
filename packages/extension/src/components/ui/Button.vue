@@ -190,6 +190,26 @@ const getStyles = () => {
 	transform: scale(0.98);
 }
 
+/** Brutalist outlined variant — same typographic weight as primary
+ *  (font-headline + uppercase) but transparent bg with a 2px architectural
+ *  edge. Used for second-tier actions where a soft --nulo-surface-high
+ *  chip would fight the brutalist CTA language. */
+.wrapper.primary_outline {
+	background: transparent;
+	color: var(--txt-primary);
+	fill: var(--txt-primary);
+	font-family: var(--font-headline);
+	font-weight: 700;
+	text-transform: uppercase;
+	border: 2px solid var(--nulo-outline);
+}
+.wrapper.primary_outline:hover:not(.disabled):not(.loading) {
+	background: var(--nulo-surface-low);
+}
+.wrapper.primary_outline:active:not(.disabled):not(.loading) {
+	background: var(--nulo-surface-high);
+}
+
 .wrapper.secondary {
 	background: var(--nulo-surface-high);
 	color: var(--txt-primary);
