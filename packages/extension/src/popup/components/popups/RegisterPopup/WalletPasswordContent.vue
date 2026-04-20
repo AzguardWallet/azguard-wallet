@@ -33,24 +33,23 @@ onMounted(() => {
 <template>
 	<Flex direction="column" gap="24">
 		<Flex direction="column" gap="8">
-			<Flex @click="swithProfileType" align="end" gap="12">
-				<Text
-					size="20"
-					:class="[$style.profile_type, profilType === 'password' && $style.profile_type_active]"
+			<Flex gap="8" :class="$style.type_toggle">
+				<button
+					@click="profilType !== 'password' && swithProfileType()"
+					type="button"
+					:class="[$style.type_pill, profilType === 'password' && $style.type_pill_active]"
 				>
 					Password
-				</Text>
-
-				<Text size="20" color="tertiary">|</Text>
-
-				<Text
-					size="20"
-					:class="[$style.profile_type, profilType === 'passkey' && $style.profile_type_active]"
+				</button>
+				<button
+					@click="profilType !== 'passkey' && swithProfileType()"
+					type="button"
+					:class="[$style.type_pill, profilType === 'passkey' && $style.type_pill_active]"
 				>
 					Passkey
-				</Text>
+				</button>
 			</Flex>
-			
+
 			<Text size="13" weight="500" color="tertiary"> Will be used to protect your wallet </Text>
 		</Flex>
 
@@ -121,16 +120,42 @@ onMounted(() => {
 </template>
 
 <style module>
-.profile_type {
-	cursor: pointer;
-	color: var(--txt-tertiary);
-	font-weight: 500;
-	transition: all 0.2s ease-in-out;
+.type_toggle {
+	/* grid keeps both pills equal width regardless of label length */
+	display: grid;
+	grid-template-columns: 1fr 1fr;
 }
 
-.profile_type_active {
+.type_pill {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	height: 44px;
+	padding: 0 16px;
+
+	background: transparent;
+	border: 2px solid var(--nulo-outline);
+	cursor: pointer;
+
+	font-family: var(--font-headline);
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
 	color: var(--txt-primary);
-	font-weight: 600;
+
+	transition: all 0.15s var(--bezier);
+
+	&:hover:not(.type_pill_active) {
+		background: var(--nulo-surface-low);
+	}
+}
+
+.type_pill_active {
+	background: var(--nulo-accent);
+	color: #0a0908;
+	border-color: var(--nulo-accent);
 }
 
 .password_input {
