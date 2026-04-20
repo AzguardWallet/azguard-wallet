@@ -1,7 +1,5 @@
 <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
 	<rect width="40" height="40" fill="#0a0908"/>
-	<rect x="8" y="8" width="7" height="24" fill="#f8f1e7"/>
-	<rect x="25" y="8" width="7" height="24" fill="#f8f1e7"/>
-	<polygon points="15,8 22,8 32,32 25,32" fill="#f8f1e7"/>
-	<rect x="0" y="17" width="40" height="6" fill="#0a0908"/>
+	<path d="M32,20 A12,12 0 1,1 8,20 A12,12 0 1,1 32,20 Z M27,20 A7,7 0 1,0 13,20 A7,7 0 1,0 27,20 Z" fill="#f8f1e7"/>
+	<path d="M6.88,10.41 L10.41,6.88 L33.12,29.59 L29.59,33.12 Z" fill="#f8f1e7"/>
 </svg>
