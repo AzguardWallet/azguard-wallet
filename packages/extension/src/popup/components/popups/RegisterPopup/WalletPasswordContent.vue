@@ -66,11 +66,11 @@ onMounted(() => {
 					placeholder="Strong password"
 				>
 					<template #suffix>
-						<Icon
+						<MaterialIcon
 							@click="isPasswordType = !isPasswordType"
-							:name="isPasswordType ? 'password' : 'text'"
-							size="16"
-							color="blue"
+							:name="isPasswordType ? 'visibility' : 'visibility_off'"
+							:size="18"
+							color="secondary"
 							style="cursor: pointer"
 						/>
 					</template>
@@ -101,13 +101,12 @@ onMounted(() => {
 			</Flex>
 
 			<Flex align="center" gap="6">
-				<Icon name="password" size="12" color="tertiary" />
 				<Text size="12" weight="600" color="tertiary">
 					{{
 						(password.length < 8 && "At least 8 characters") ||
-						(password !== repeatedPassword && "Not repeated") ||
-						(password.length > 24 && "I hope you remember it") ||
-						"Looks.. strong?"
+						(password !== repeatedPassword && "Passwords don't match") ||
+						(password.length > 24 && "Long enough. Don't forget it.") ||
+						"Strong password"
 					}}
 				</Text>
 			</Flex>
