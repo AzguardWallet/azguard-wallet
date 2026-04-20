@@ -76,10 +76,6 @@ async function handleSwitchAppView() {
 	}
 }
 
-function handleOpenStealthPromo() {
-	showStealthPromo.value = true
-}
-
 function handleCloseStealthPromo() {
 	showStealthPromo.value = false
 }
@@ -105,51 +101,39 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex wide direction="column" align="center" justify="between" :class="$style.wrapper">
+	<Flex direction="column" :class="$style.wrapper">
+		<!-- Top row: settings toggles -->
 		<Flex align="center" justify="end" gap="4" wide :class="$style.settings">
 			<Icon
 				@click="handleSwitchTheme"
 				:name="theme === 'dark' ? 'sun' : 'moon'"
 				size="16"
 				color="tertiary"
-				:class="$style.icon"
+				:class="$style.icon_btn"
 			/>
 			<Icon
 				@click="handleSwitchAppView"
 				name="dock-right"
 				size="16"
 				color="tertiary"
-				:class="$style.icon"
+				:class="$style.icon_btn"
 			/>
 		</Flex>
 
-		<Flex direction="column" align="center" gap="16">
-			<Text size="32" weight="500" align="center" :class="$style.title"> Privacy of finances is paramount </Text>
-			<Text size="14" weight="500" color="body" height="140" align="center" :class="$style.description">
-				Get power of privacy on Ethereum with Aztec Blockchain
-			</Text>
-
-			<Button type="secondary" size="mini" disabled>
-				<Icon name="warning" size="16" color="orange" />
-				Nulo Alpha Testing
-			</Button>
-
-			<!-- Stealth Mode Promo (only shown before first profile) -->
-			<Flex
-				v-if="!hasSeenStealthPromo"
-				@click="handleOpenStealthPromo"
-				align="center"
-				gap="8"
-				:class="$style.promo"
-			>
-				<Icon name="eye-off" size="16" color="green" />
-				<Text size="12" weight="600" color="secondary">Try Stealth Mode for your wallet</Text>
-				<Icon name="chevron-right" size="12" color="tertiary" />
-			</Flex>
+		<!-- Brand signature: lock icon + NULO wordmark -->
+		<Flex align="center" justify="center" gap="8" :class="$style.brand">
+			<MaterialIcon name="lock" :size="18" color="primary" />
+			<span :class="$style.wordmark">NULO</span>
 		</Flex>
 
-		<Flex direction="column" gap="12" align="center" :class="$style.bottom">
-			<Flex wide direction="column" gap="8">
+		<!-- Hero + actions -->
+		<Flex direction="column" align="center" justify="center" gap="40" :class="$style.main">
+			<Flex direction="column" align="center" gap="16">
+				<h1 :class="$style.headline">Access the internet-native coordination layer.</h1>
+				<p :class="$style.subcopy">Private by default. Sovereign by design.</p>
+			</Flex>
+
+			<Flex wide direction="column" gap="8" :class="$style.actions">
 				<Button @click="appStore.showRegisterPopup = true" wide type="primary" size="large">
 					Create profile
 				</Button>
@@ -157,15 +141,15 @@ onBeforeUnmount(() => {
 					Import profile
 				</Button>
 			</Flex>
-
-			<Text size="11" weight="500" color="tertiary" height="140" align="center">
-				By continuing, you are confirming that you read and agree to
-
-				<Text @click="handleOpen('terms')" color="secondary" :class="$style.link"> Terms of Use </Text>
-				and
-				<Text @click="handleOpen('privacy')" color="secondary" :class="$style.link"> Privacy Policy </Text>
-			</Text>
 		</Flex>
+
+		<!-- Terms footer -->
+		<p :class="$style.terms">
+			By continuing, you are confirming that you read and agree to
+			<span @click="handleOpen('terms')" :class="$style.link">Terms of Use</span>
+			and
+			<span @click="handleOpen('privacy')" :class="$style.link">Privacy Policy</span>
+		</p>
 
 		<Transition name="slide">
 			<RegisterPopup v-if="appStore.showRegisterPopup" />
@@ -183,74 +167,100 @@ onBeforeUnmount(() => {
 <style module>
 .wrapper {
 	position: relative;
-	overflow: hidden;
 
-	height: 100%;
+	flex: 1;
+	background: var(--app-bg);
 
-	padding-top: 170px;
-	margin: 0 auto;
+	padding: 24px;
 }
 
 .settings {
 	position: absolute;
 	top: 16px;
 	right: 16px;
-
-	.icon {
-		box-sizing: content-box;
-		cursor: pointer;
-
-		padding: 6px;
-
-		&:hover {
-			background: var(--nulo-surface-high);
-			fill: var(--txt-primary);
-		}
-	}
+	z-index: 1;
 }
 
-.title {
-	max-width: 300px;
-
-	font-family: "Clash Display";
-
-	background-image: linear-gradient(var(--txt-primary), var(--txt-secondary));
-	background-clip: text;
-	background-size: 100%;
-	-webkit-text-fill-color: transparent;
-}
-
-.description {
-	max-width: 240px;
-}
-
-.bottom {
-	max-width: 260px;
-
-	margin-bottom: 24px;
-
-	transition: all 0.5s var(--bezier);
-}
-
-.link {
+.icon_btn {
+	box-sizing: content-box;
 	cursor: pointer;
+	padding: 6px;
 
-	&:hover {
-		color: var(--txt-primary);
-	}
-}
-
-.promo {
-	margin-top: 8px;
-	padding: 10px 16px;
-	background: var(--nulo-surface-low);
-	border: 1px solid var(--nulo-border);
-	cursor: pointer;
 	transition: all 0.2s var(--bezier);
 
 	&:hover {
 		background: var(--nulo-surface-high);
-		border-color: var(--nulo-outline);
+		fill: var(--txt-primary);
+	}
+}
+
+.brand {
+	padding: 16px 0 0 0;
+}
+
+.wordmark {
+	font-family: var(--font-headline);
+	font-size: 20px;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+}
+
+.main {
+	flex: 1;
+	padding: 0 8px;
+	text-align: center;
+}
+
+.headline {
+	font-family: var(--font-headline);
+	font-size: 28px;
+	font-weight: 500;
+	letter-spacing: -0.04em;
+	line-height: 1.1;
+	text-transform: uppercase;
+	color: var(--txt-primary);
+	margin: 0;
+
+	max-width: 300px;
+}
+
+.subcopy {
+	font-family: var(--font-body);
+	font-size: 14px;
+	line-height: 1.4;
+	color: var(--nulo-secondary);
+	margin: 0;
+
+	max-width: 260px;
+}
+
+.actions {
+	max-width: 280px;
+}
+
+.terms {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.08em;
+	line-height: 1.5;
+	color: var(--nulo-outline);
+	text-align: center;
+	margin: 0;
+
+	padding: 16px 8px 0 8px;
+}
+
+.link {
+	color: var(--nulo-secondary);
+	cursor: pointer;
+	border-bottom: 1px solid var(--nulo-border);
+
+	transition: color 0.2s var(--bezier);
+
+	&:hover {
+		color: var(--txt-primary);
 	}
 }
 </style>
