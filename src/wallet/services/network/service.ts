@@ -74,6 +74,14 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
             // }
             try {
+                const name = "Mainnet";
+                const rpcUrl = "https://aztec-mainnet.drpc.org";
+                const chainId = 2934756904; // 1 ^ 2934756905
+                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
+            } catch (error) {
+                this.logError("Failed to add 'Mainnet'", getErrorMessage(error));
+            }
+            try {
                 const name = "Testnet";
                 const rpcUrl = "https://rpc.testnet.aztec-labs.com";
                 const chainId = 4138294185; // 11155111 ^ 4127419662
