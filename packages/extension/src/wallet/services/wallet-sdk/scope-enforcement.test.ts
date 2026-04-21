@@ -265,6 +265,96 @@ describe("createAuthWit", () => {
 		const grants = [grant(accountsCap(true, [ADDR_A]))]
 		expect(() => enforceScope("createAuthWit", [addr(ADDR_B), {}], grants)).toThrow(/Scope violation/)
 	})
+
+	// ── CallIntent target-call scope enforcement (M0.1 security fix) ──────
+
+	const callIntent = (to: string, name: string) => ({
+		caller: addr(ADDR_A),
+		call: { to: addr(to), name },
+	})
+
+	test("CallIntent within transaction scope passes", () => {
+		const grants = [
+			grant(accountsCap(true, [ADDR_A])),
+			grant({ type: "transaction", scope: [{ contract: ADDR_B, function: "transfer" }] }),
+		]
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), callIntent(ADDR_B, "transfer")], grants)).not.toThrow()
+	})
+
+	test("CallIntent with function wildcard passes", () => {
+		const grants = [grant(accountsCap(true, [ADDR_A])), grant({ type: "transaction", scope: [{ contract: ADDR_B, function: "*" }] })]
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), callIntent(ADDR_B, "mint")], grants)).not.toThrow()
+	})
+
+	test("CallIntent outside transaction scope throws", () => {
+		const grants = [
+			grant(accountsCap(true, [ADDR_A])),
+			grant({ type: "transaction", scope: [{ contract: ADDR_B, function: "transfer" }] }),
+		]
+		// Authwit would authorize a call on ADDR_A, but dApp only has scope for ADDR_B
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), callIntent(ADDR_A, "transfer")], grants)).toThrow(/Scope violation/)
+	})
+
+	test("CallIntent with wrong function throws", () => {
+		const grants = [
+			grant(accountsCap(true, [ADDR_A])),
+			grant({ type: "transaction", scope: [{ contract: ADDR_B, function: "transfer" }] }),
+		]
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), callIntent(ADDR_B, "burn")], grants)).toThrow(/Scope violation/)
+	})
+
+	test("CallIntent covered by simulation.transactions.scope passes", () => {
+		const grants = [
+			grant(accountsCap(true, [ADDR_A])),
+			grant({ type: "simulation", transactions: { scope: [{ contract: ADDR_B, function: "transfer" }] } }),
+		]
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), callIntent(ADDR_B, "transfer")], grants)).not.toThrow()
+	})
+
+	test("CallIntent without any tx/sim capability (accounts-only) passes (backward-compat)", () => {
+		const grants = [grant(accountsCap(true, [ADDR_A]))]
+		// No transaction or simulation grant — call-level check is inapplicable.
+		// accounts-level check (canCreateAuthWit + matching account) still gates.
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), callIntent(ADDR_B, "transfer")], grants)).not.toThrow()
+	})
+
+	test("CallIntent with wildcard transaction scope passes", () => {
+		const grants = [grant(accountsCap(true, [ADDR_A])), grant({ type: "transaction", scope: "*" })]
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), callIntent(ADDR_B, "transfer")], grants)).not.toThrow()
+	})
+
+	// ── IntentInnerHash consumer scope ────────────────────────────────────
+
+	const innerHash = (consumer: string) => ({
+		consumer: addr(consumer),
+		innerHash: "0xabc",
+	})
+
+	test("IntentInnerHash with consumer in wildcard-fn transaction scope passes", () => {
+		const grants = [grant(accountsCap(true, [ADDR_A])), grant({ type: "transaction", scope: [{ contract: ADDR_B, function: "*" }] })]
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), innerHash(ADDR_B)], grants)).not.toThrow()
+	})
+
+	test("IntentInnerHash with consumer NOT in scope throws", () => {
+		const grants = [grant(accountsCap(true, [ADDR_A])), grant({ type: "transaction", scope: [{ contract: ADDR_B, function: "*" }] })]
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), innerHash(ADDR_A)], grants)).toThrow(/Scope violation/)
+	})
+
+	test("IntentInnerHash with consumer narrowly scoped (specific function) throws", () => {
+		const grants = [
+			grant(accountsCap(true, [ADDR_A])),
+			grant({ type: "transaction", scope: [{ contract: ADDR_B, function: "transfer" }] }),
+		]
+		// We can't verify function from inner-hash, so require wildcard coverage — narrowly scoped grants must fail.
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), innerHash(ADDR_B)], grants)).toThrow(/Scope violation/)
+	})
+
+	// ── Raw message hash (unchanged backward-compat) ──────────────────────
+
+	test("raw empty object treated as raw hash — accounts check still applies", () => {
+		const grants = [grant(accountsCap(true, [ADDR_A]))]
+		expect(() => enforceScope("createAuthWit", [addr(ADDR_A), {}], grants)).not.toThrow()
+	})
 })
 
 // ── Edge cases ────────────────────────────────────────────────────────

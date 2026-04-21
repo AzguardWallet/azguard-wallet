@@ -189,18 +189,101 @@ function checkGetPrivateEvents(args: unknown[], grants: GrantedCapabilityRecord[
 	}
 }
 
+/**
+ * Check a call ({contract, function}) against the union of transaction and
+ * simulation.transactions scopes on the given grants. Used by createAuthWit to
+ * ensure an authwit cannot authorize a call broader than the dApp's granted
+ * transaction scope.
+ *
+ * Returns true if any grant's scope covers the call, or if there are no
+ * transaction/simulation grants at all (which means the authwit is being
+ * requested without a transaction capability — let the accounts-level check
+ * decide).
+ */
+function callWithinTxOrSimulationScope(
+	contract: string,
+	fn: string,
+	grants: GrantedCapabilityRecord[],
+): { hasTxCaps: boolean; permitted: boolean } {
+	const txCaps = grantsOfType<TransactionCapability>(grants, "transaction")
+	const simCaps = grantsOfType<SimulationCapability>(grants, "simulation")
+	const hasTxCaps = txCaps.length > 0 || simCaps.some((c) => !!c.transactions?.scope)
+	if (!hasTxCaps) return { hasTxCaps: false, permitted: false }
+
+	const permitted =
+		txCaps.some((c) => matchesScope(contract, fn, c.scope)) ||
+		simCaps.some((c) => {
+			const scope = c.transactions?.scope
+			return scope ? matchesScope(contract, fn, scope) : false
+		})
+	return { hasTxCaps: true, permitted }
+}
+
+type CallIntentShape = { caller: unknown; call: { to: unknown; name: string } }
+type IntentInnerHashShape = { consumer: unknown; innerHash: unknown }
+
+function isCallIntent(x: unknown): x is CallIntentShape {
+	if (!x || typeof x !== "object") return false
+	const obj = x as Record<string, unknown>
+	if (!("caller" in obj) || !("call" in obj)) return false
+	const call = obj.call
+	if (!call || typeof call !== "object") return false
+	const c = call as Record<string, unknown>
+	return "to" in c && "name" in c && typeof c.name === "string"
+}
+
+function isIntentInnerHash(x: unknown): x is IntentInnerHashShape {
+	if (!x || typeof x !== "object") return false
+	const obj = x as Record<string, unknown>
+	return "consumer" in obj && "innerHash" in obj
+}
+
 function checkCreateAuthWit(args: unknown[], grants: GrantedCapabilityRecord[]): void {
 	const from = String(args[0])
 
 	const caps = grantsOfType<AccountsCapability>(grants, "accounts")
-	if (!caps.length) return
-
-	const permitted = caps.some((c) => c.canCreateAuthWit && c.accounts.some((a) => String(a.item) === from))
-	if (!permitted) {
-		throw new Error(`Scope violation: createAuthWit for account ${from}, not permitted by granted accounts scope`)
+	if (caps.length) {
+		const permitted = caps.some((c) => c.canCreateAuthWit && c.accounts.some((a) => String(a.item) === from))
+		if (!permitted) {
+			throw new Error(`Scope violation: createAuthWit for account ${from}, not permitted by granted accounts scope`)
+		}
 	}
-	// TODO: When args[1] is a CallIntent (has caller + call.to + call.name),
-	// also validate call.to against transaction/simulation scope.
+
+	// Validate the authorized call itself against transaction / simulation scope.
+	// An authwit authorizes a specific call on behalf of `from`; a dApp must not
+	// be able to obtain an authwit for calls broader than its granted transaction
+	// or simulation scope.
+	const intent = args[1]
+
+	if (isCallIntent(intent)) {
+		const contract = String(intent.call.to)
+		const fn = intent.call.name
+		const { hasTxCaps, permitted } = callWithinTxOrSimulationScope(contract, fn, grants)
+		if (hasTxCaps && !permitted) {
+			throw new Error(
+				`Scope violation: createAuthWit authorizes ${fn}@${contract}, not permitted by granted transaction or simulation scope`,
+			)
+		}
+		return
+	}
+
+	if (isIntentInnerHash(intent)) {
+		// We only know the consumer (target contract). Require that at least one
+		// transaction / simulation grant's scope covers that contract at any
+		// function (wildcard). This is the strongest check possible without the
+		// function name.
+		const consumer = String(intent.consumer)
+		const { hasTxCaps, permitted } = callWithinTxOrSimulationScope(consumer, "*", grants)
+		if (hasTxCaps && !permitted) {
+			throw new Error(
+				`Scope violation: createAuthWit inner-hash authorizes consumer ${consumer}, not permitted by granted transaction or simulation scope`,
+			)
+		}
+		return
+	}
+
+	// Raw Fr message hash (pre-computed by wallet-sdk) — no semantic info to
+	// validate beyond the accounts-level check above.
 }
 
 // ── Method → checker map ──────────────────────────────────────────────
