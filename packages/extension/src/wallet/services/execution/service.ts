@@ -370,9 +370,6 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 			feeSettings,
 		)
 
-		// Clone actions to prevent mutation side effects from FPC/FJWC fee payload prepending
-		op.actions = [...op.actions]
-
 		const [txRequest] = await this.buildAndEstimateTxRequest(op, op.feeSettings)
 
 		const maxFeeRaw = BigInt(getEstimatedFee(txRequest))
@@ -1716,7 +1713,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 	}
 
 	private async buildAndEstimateTxRequest(
-		op: {
+		inputOp: {
 			networkId: string
 			accountAddress: string
 			actions: Action[]
@@ -1725,6 +1722,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 		feeSettings: FeeSettings,
 		parentTask?: WrappedTask,
 	): Promise<[TxExecutionRequest, AztecNode, IPXE, IAccountContract, Network, Fr, TxCall[], NuloFeePaymentMethod]> {
+		// Clone the op + its actions array. fjwc / fpc branches mutate
+		// `op.actions` (unshift / splice) to prepend fee payloads; leaking those
+		// mutations back to the caller breaks repeat estimates and any caller
+		// that keeps a reference to the array. Defensive clone happens here so
+		// callers do not have to remember to do it themselves.
+		const op = { ...inputOp, actions: [...inputOp.actions] }
+
 		const step = new StepContent("Estimating fee")
 		const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step)
 		const feePaymentMethod = feeSettings.paymentMethod
