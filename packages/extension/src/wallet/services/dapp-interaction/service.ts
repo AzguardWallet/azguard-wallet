@@ -32,6 +32,14 @@ import {
 
 export * from "./spec"
 
+/**
+ * Hard timeout for an approval popup. Bounds the worst case when neither the
+ * user interacts nor `chrome.windows.onRemoved` fires (eg. extension reload,
+ * popup crash, MV3 suspension races). Longer than the longest realistic
+ * prove+approve flow so legitimate users aren't surprised.
+ */
+const INTERACTION_TIMEOUT_MS = 10 * 60 * 1000
+
 export class DappInteractionService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
 	public static name = DAPP_INTERACTION_SERVICE_NAME
 
@@ -170,6 +178,18 @@ export class DappInteractionService extends Service<Methods, Events> implements 
 			this.lock.leave()
 		}
 
+		const fail = (reason: string) => {
+			if (this.storage.has(interaction.id)) {
+				this.storage.delete(interaction.id)
+				interaction.reject(reason)
+			}
+		}
+
+		// Hard timeout guards against popup-approval requests sitting in storage
+		// forever when neither user interaction nor window close ever fires.
+		// 10 minutes matches the longest realistic prove+approve flow.
+		const timeoutHandle = setTimeout(() => fail("Approval request timed out"), INTERACTION_TIMEOUT_MS)
+
 		chrome.windows.create(
 			{
 				type: "popup",
@@ -178,21 +198,25 @@ export class DappInteractionService extends Service<Methods, Events> implements 
 				width: 400,
 			},
 			(createdWindow) => {
-				if (!createdWindow?.id) return
+				// chrome.runtime.lastError must be read inside the callback to clear it.
+				const runtimeError = chrome.runtime.lastError
+				if (runtimeError || !createdWindow?.id) {
+					clearTimeout(timeoutHandle)
+					fail(runtimeError?.message ?? "Failed to open approval window")
+					return
+				}
 				const windowId = createdWindow.id
 				const onWindowClosed = (closedWindowId: number) => {
 					if (closedWindowId !== windowId) return
 					chrome.windows.onRemoved.removeListener(onWindowClosed)
-					if (this.storage.has(interaction.id)) {
-						this.storage.delete(interaction.id)
-						interaction.reject("User closed the popup window")
-					}
+					clearTimeout(timeoutHandle)
+					fail("User closed the popup window")
 				}
 				chrome.windows.onRemoved.addListener(onWindowClosed)
 			},
 		)
 
-		return promise
+		return promise.finally(() => clearTimeout(timeoutHandle))
 	}
 
 	private async silentInteraction(payload: ExecutionPayload): Promise<ExecutionResult> {

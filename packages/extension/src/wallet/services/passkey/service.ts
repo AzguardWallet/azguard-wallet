@@ -7,6 +7,13 @@ import { getRandomHex } from "@/wallet/utils"
 
 export * from "./spec"
 
+/**
+ * Hard timeout for a passkey popup. Bounds the worst case when neither the
+ * user interacts nor `chrome.windows.onRemoved` fires (eg. extension reload,
+ * popup crash, MV3 suspension races). 5 minutes is ample for WebAuthn UX.
+ */
+const PASSKEY_TIMEOUT_MS = 5 * 60 * 1000
+
 export class PasskeyService extends Service<Methods> implements ServiceSpec<Methods> {
 	public static name = PASSKEY_SERVICE_NAME
 
@@ -56,6 +63,16 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
 			this.pending.set(id, { resolve, reject, request })
 		})
 
+		const fail = (reason: string) => {
+			const entry = this.pending.get(id)
+			if (entry) {
+				this.pending.delete(id)
+				entry.reject(reason)
+			}
+		}
+
+		const timeoutHandle = setTimeout(() => fail("Passkey request timed out"), PASSKEY_TIMEOUT_MS)
+
 		chrome.windows.create(
 			{
 				type: "popup",
@@ -64,20 +81,21 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
 				width: 500,
 			},
 			(createdWindow) => {
-				if (!createdWindow || createdWindow.id == null) return
+				// chrome.runtime.lastError must be read inside the callback to clear it.
+				const runtimeError = chrome.runtime.lastError
+				if (runtimeError || !createdWindow || createdWindow.id == null) {
+					clearTimeout(timeoutHandle)
+					fail(runtimeError?.message ?? "Failed to open passkey window")
+					return
+				}
 
 				const windowId = createdWindow.id
-				const pendingMap = this.pending
 
 				const onRemoved = (closedWindowId: number) => {
 					if (closedWindowId === windowId) {
 						chrome.windows.onRemoved.removeListener(onRemoved)
-
-						const entry = pendingMap.get(id)
-						if (entry) {
-							entry.reject("User closed the passkey window")
-							pendingMap.delete(id)
-						}
+						clearTimeout(timeoutHandle)
+						fail("User closed the passkey window")
 					}
 				}
 
@@ -85,6 +103,6 @@ export class PasskeyService extends Service<Methods> implements ServiceSpec<Meth
 			},
 		)
 
-		return promise
+		return promise.finally(() => clearTimeout(timeoutHandle))
 	}
 }
