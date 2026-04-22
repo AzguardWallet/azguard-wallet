@@ -24,7 +24,7 @@ import {
     CompleteAddress,
     PartialAddress,
 } from "@aztec/stdlib/contract";
-import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
+import { type AztecNode, createBatchCappedAztecNodeClient } from "@/wallet/utils/aztec-node-client";
 import { NoteDao } from "@aztec/stdlib/note";
 import type { NotesFilter } from "./spec";
 import {
@@ -348,7 +348,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     private async initChain(network: Network): Promise<void> {
-        const node = createAztecNodeClient(network.rpcUrl);
+        const node = createBatchCappedAztecNodeClient(network.rpcUrl);
         const config = {
             ...getPXEConfig(),
             dataDirectory: `pxe/${network.profileId}/${network.chainId}`,
