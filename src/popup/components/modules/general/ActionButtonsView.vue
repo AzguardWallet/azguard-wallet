@@ -1,6 +1,11 @@
 <script setup>
-/** Store */
+/** Utils */
+import { CHAIN_IDS } from "@/components/ui/utils"
+
+/** Stores */
+import { useAppStore } from "@/stores/app.store"
 import { usePopupStore } from "@/stores/popup.store"
+const appStore = useAppStore()
 const popupStore = usePopupStore()
 
 const props = defineProps({
@@ -8,6 +13,13 @@ const props = defineProps({
 		type: Object,
 		required: false,
 	},
+})
+
+const depositTarget = computed(() => {
+	// On Alphanet the faucet is not available, so always route to the
+	// deposit-method picker (which will only offer bridge).
+	if (appStore.network?.chainId === CHAIN_IDS.ALPHANET) return "select_deposit"
+	return props.token ? "faucet" : "select_deposit"
 })
 
 const handleOpenPopup = target => {
@@ -27,7 +39,7 @@ const handleOpenPopup = target => {
 			<Text size="14" weight="600" color="primary">Receive</Text>
 		</Flex>
 
-		<Flex @click="handleOpenPopup(`${token ? 'faucet' : 'select_deposit'}`)" align="center" justify="center" gap="6" :class="[$style.button]">
+		<Flex @click="handleOpenPopup(depositTarget)" align="center" justify="center" gap="6" :class="[$style.button]">
 			<Icon name="plus-circle" size="20" color="secondary" />
 			<Text size="14" weight="600" color="primary">Deposit</Text>
 		</Flex>
