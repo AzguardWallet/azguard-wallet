@@ -111,7 +111,7 @@ const getFeePaymentMethodName = (method) => {
 const formatFee = (fee) => {
 	if (!fee) return "N/A"
 	const feeBN = new BN(fee)
-	return feeBN.dividedBy(new BN(10).pow(9)).toFixed(2) + " Gwei"
+	return feeBN.dividedBy(new BN(10).pow(18)).toFixed(6) + " FJ"
 }
 
 const isCopied = ref(false)

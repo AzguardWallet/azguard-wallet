@@ -1,4 +1,5 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -13,7 +14,7 @@ import { getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
-import { Fr } from "@aztec/foundation/curves/bn254";
+import { PrivateFPCContractArtifact } from "./artifacts";
 
 export * from "./fpc";
 export * from "./spec";
@@ -62,61 +63,56 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 const node = await this.networkService.getNode(network.chainId);
                 const pxe = this.pxeService.getPXE(network);
 
-                const sponsoredFpc = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
-                    constructorArgs: [],
-                    salt: Fr.zero(),
-                });
+                const knownFpcs = [
+                    { artifact: SponsoredFPCContractArtifact, type: FpcType.DefaultSponsoredFpc },
+                    { artifact: PrivateFPCContractArtifact, type: FpcType.PrivateFpc },
+                ];
 
-                await pxe.registerContract({
-                    instance: sponsoredFpc,
-                    artifact: SponsoredFPCContractArtifact,
-                });
+                const registeredContracts = await pxe.getContracts();
+                for (const { artifact, type } of knownFpcs) {
+                    const { address } = await getContractInstanceFromInstantiationParams(artifact, {
+                        constructorArgs: [],
+                        salt: Fr.zero(),
+                    });
 
-                for (const contract of [sponsoredFpc.address]) {
-                    const contractInstance = await pxe.getContractInstance(contract);
-                    if (contractInstance) {
-                        const contractArtifact = await pxe.getContractArtifact(
-                            contractInstance.currentContractClassId,
-                        );
-                        if (contractArtifact) {
-                            this.logInfo(`Found FPC: ${contract.toString()}`);
+                    const contractInstance = await pxe.getContractInstance(address);
+                    if (!contractInstance) continue;
+                    const contractArtifact = await pxe.getContractArtifact(contractInstance.currentContractClassId);
+                    if (!contractArtifact) continue;
 
-                            const registeredContracts = await pxe.getContracts();
-                            if (!registeredContracts.find(x => x.toString() === contract.toString())) {
-                                await pxe.registerContract({
-                                    instance: contractInstance,
-                                    artifact: contractArtifact,
-                                });
-                            }
+                    this.logInfo(`Found FPC: ${address.toString()}`);
 
-                            const type =
-                                contractArtifact.name === "FPC" ? FpcType.DefaultFpc : FpcType.DefaultSponsoredFpc;
-                            const fpcHandler = getFpcHandler(type);
-                            fpcHandler.validateArtifact(contractArtifact);
-
-                            const asset = await fpcHandler.getAsset(contract.toString(), pxe, node);
-                            const acceptsPrivate = fpcHandler.acceptsPrivate();
-                            const acceptsPublic = fpcHandler.acceptsPublic();
-
-                            let id: string;
-                            do {
-                                id = getRandomHex(8);
-                            } while (await this.storage.contains(id));
-                            const fpc: FpcInfo = {
-                                id,
-                                profileId: profile.id,
-                                chainId,
-                                type,
-                                address: contract.toString(),
-                                name: undefined,
-                                asset,
-                                acceptsPrivate,
-                                acceptsPublic,
-                            };
-                            await this.storage.set(id, fpc);
-                            result.push(fpc);
-                        }
+                    if (!registeredContracts.find(x => x.toString() === address.toString())) {
+                        await pxe.registerContract({
+                            instance: contractInstance,
+                            artifact: contractArtifact,
+                        });
                     }
+
+                    const fpcHandler = getFpcHandler(type);
+                    fpcHandler.validateArtifact(contractArtifact);
+
+                    const asset = await fpcHandler.getAsset(address.toString(), pxe, node);
+                    const acceptsPrivate = fpcHandler.acceptsPrivate();
+                    const acceptsPublic = fpcHandler.acceptsPublic();
+
+                    let id: string;
+                    do {
+                        id = getRandomHex(8);
+                    } while (await this.storage.contains(id));
+                    const fpc: FpcInfo = {
+                        id,
+                        profileId: profile.id,
+                        chainId,
+                        type,
+                        address: address.toString(),
+                        name: undefined,
+                        asset,
+                        acceptsPrivate,
+                        acceptsPublic,
+                    };
+                    await this.storage.set(id, fpc);
+                    result.push(fpc);
                 }
             } finally {
                 this.lock.leave();
@@ -153,9 +149,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             throw new Error("Contract instance not found");
         }
 
-        const fpcArtifact = await pxe.getContractArtifact(
-            fpcInstance.currentContractClassId,
-        );
+        const fpcArtifact = await pxe.getContractArtifact(fpcInstance.currentContractClassId);
         if (!fpcArtifact) {
             throw new Error("Contract artifact not found");
         }

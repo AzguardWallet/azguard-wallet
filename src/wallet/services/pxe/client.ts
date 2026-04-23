@@ -41,6 +41,15 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         super(PXE_SERVICE_NAME, logger);
     }
 
+    /**
+     * Returns an `IPXE` for the given network — a `PXEProxy` around the raw `@aztec/pxe`
+     * PXE. The proxy differs from a raw PXE in two ways:
+     *   - it bridges the service-worker ↔ offscreen boundary (the raw PXE lives in the
+     *     offscreen document and is reached via message passing);
+     *   - `getContractInstance` and `getContractArtifact` extend the raw lookup with
+     *     fallbacks to the Aztec node, bundled known artifacts/instances, and the
+     *     on-chain contract registry.
+     */
     public getPXE(network: Network): IPXE {
         return new PXEProxy(this, network);
     }

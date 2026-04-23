@@ -38,7 +38,11 @@ const FEE_METHOD_LS_KEY = "azguard:ui:feePaymentMethods"
 
 const allFpcs = ref([])
 const fpcs = computed(() => {
-	const getOrder = (type) => (type === FpcType.DefaultSponsoredFpc ? 0 : 1)
+	const getOrder = (type) => {
+		if (type === FpcType.DefaultSponsoredFpc) return 0
+		if (type === FpcType.PrivateFpc) return 1
+		return 2
+	}
 
 	return allFpcs.value
 		?.map(f => prepareFpc(f))
@@ -63,11 +67,13 @@ const filteredFpcs = computed(() => {
 	const lowTerm = searchTerm.value?.toLowerCase() || ""
 
 	return fpcs.value.filter(fpc => {
+		// `f.asset` (vs `type === DefaultFpc`) keeps Private FPCs visible when
+		// the matching pFJ-style token is held — including the canonical pFJ.
 		if (
 			!showAllFpcs.value &&
 			!(
 				fpc.type === FpcType.DefaultSponsoredFpc ||
-				(fpc.type === FpcType.DefaultFpc && tokenContracts.value?.has(fpc.asset))
+				(fpc.asset && tokenContracts.value?.has(fpc.asset))
 			)
 		) {
 			return false
@@ -95,22 +101,31 @@ const getFPCBadgeTitle = (fpc) => {
 
 		return fpc.token.symbol
 	}
-	
+
 	return ""
 }
 const prepareFpc = (fpc) => {
-	return fpc.type === FpcType.DefaultSponsoredFpc
-		? {
+	if (fpc.type === FpcType.DefaultSponsoredFpc) {
+		return {
 			...fpc,
 			typeName: "sponsored",
 			color: getChainColor(appStore.network.chainId),
 		}
-		: {
+	}
+	if (fpc.type === FpcType.PrivateFpc) {
+		return {
 			...fpc,
-			typeName: "fpc",
-			color: "green",
+			typeName: "private",
+			color: "blue",
 			token: tokens.value?.get(fpc.asset),
 		}
+	}
+	return {
+		...fpc,
+		typeName: "fpc",
+		color: "green",
+		token: tokens.value?.get(fpc.asset),
+	}
 }
 const fetchFpcs = async () => {
 	isLoading.value = true
