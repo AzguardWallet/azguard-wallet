@@ -1,5 +1,6 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { Fr } from "@aztec/foundation/curves/bn254";
+import { CHAIN_IDS } from "@/components/ui/utils";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -64,9 +65,13 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 const pxe = this.pxeService.getPXE(network);
 
                 const knownFpcs = [
-                    { artifact: SponsoredFPCContractArtifact, type: FpcType.DefaultSponsoredFpc },
                     { artifact: PrivateFPCContractArtifact, type: FpcType.PrivateFpc },
                 ];
+                // Sponsored FPC is a test-network convenience — no free fee
+                // payments on mainnet, so we do not auto-discover it there.
+                if (chainId !== CHAIN_IDS.ALPHANET) {
+                    knownFpcs.push({ artifact: SponsoredFPCContractArtifact, type: FpcType.DefaultSponsoredFpc });
+                }
 
                 const registeredContracts = await pxe.getContracts();
                 for (const { artifact, type } of knownFpcs) {

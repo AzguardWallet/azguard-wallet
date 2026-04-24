@@ -1,4 +1,4 @@
-import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
+import { type AztecNode, createBatchCappedAztecNodeClient } from "@/wallet/utils/aztec-node-client";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -74,6 +74,14 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
             // }
             try {
+                const name = "Alphanet";
+                const rpcUrl = "https://aztec-mainnet.drpc.org";
+                const chainId = 2934756904; // 1 ^ 2934756905
+                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
+            } catch (error) {
+                this.logError("Failed to add 'Alphanet'", getErrorMessage(error));
+            }
+            try {
                 const name = "Testnet";
                 const rpcUrl = "https://rpc.testnet.aztec-labs.com";
                 const chainId = 4138294185; // 11155111 ^ 4127419662
@@ -91,7 +99,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             }
             for (const network of defaultNetworks.filter(x => x.isDefault)) {
                 this.emit("onDefaultNetworkChanged", network);
-                this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl));
+                this.nodes.set(network.chainId, createBatchCappedAztecNodeClient(network.rpcUrl));
             }
             return defaultNetworks;
         } finally {
@@ -209,7 +217,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             }
             network.isDefault = true;
             await this.storage.set(id, network);
-            this.nodes.set(network.chainId, createAztecNodeClient(network.rpcUrl));
+            this.nodes.set(network.chainId, createBatchCappedAztecNodeClient(network.rpcUrl));
             this.emit("onDefaultNetworkChanged", network);
             return network;
         } finally {
@@ -252,7 +260,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
                     x => x.profileId === profile.id && x.chainId === chainId,
                 );
                 const network = networks.find(x => x.isDefault) ?? networks[0];
-                node = createAztecNodeClient(network.rpcUrl);
+                node = createBatchCappedAztecNodeClient(network.rpcUrl);
                 this.nodes.set(chainId, node);
             }
             return node;
@@ -286,7 +294,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
 
     private async getChainId(rpcUrl: string): Promise<number> {
         try {
-            const rpc = createAztecNodeClient(rpcUrl);
+            const rpc = createBatchCappedAztecNodeClient(rpcUrl);
             const info = await rpc.getNodeInfo();
             // Sandbox detection by URL.
             // NOTE: resolveChainId in aztec-sdk/adapter.ts detects sandbox by l1ChainId 31337 instead.
