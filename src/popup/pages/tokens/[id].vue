@@ -13,8 +13,9 @@ import { TokenServiceClient } from "@/wallet/services/token/client"
 
 /** Components */
 import BalanceView from "../../components/modules/general/BalanceView.vue"
-import SplittedBalancesView from "../../components/modules/general/SplittedBalancesView.vue"
 import RecentActivityView from "../../components/modules/general/RecentActivityView.vue"
+import SplittedBalancesView from "../../components/modules/general/SplittedBalancesView.vue"
+import TestnetAlert from "../../../components/TestnetAlert.vue"
 import Navigation from "../../components/Navigation.vue"
 
 /** Store */
@@ -82,6 +83,8 @@ onBeforeUnmount(() => {
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<TestnetAlert />
+
 		<BalanceView :tokenBalance />
 
 		<Flex direction="column" justify="between" :class="$style.content">

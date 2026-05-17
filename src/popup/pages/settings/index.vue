@@ -14,70 +14,61 @@ import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
 import ItemsContainer from "@/components/ui/Settings/ItemsContainer.vue"
 import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
-/** Composables */
-import { useToast } from "@/composables/toast"
-const { openToast } = useToast()
-
 /** Store */
 import { useAppStore } from "@/stores/app.store"
-import { useCacheStore } from "@/stores/cache.store"
-import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
-const cacheStore = useCacheStore()
-const popupStore = usePopupStore()
-
-const handleCopyAddress = () => {
-	window.navigator.clipboard.writeText(appStore.account.address)
-	openToast({ label: "Address is copied", icon: "copy" })
-}
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs hide-navigation />
+	<Flex v-if="appStore.isLogined" direction="column" wide :class="$style.wrapper">
+		<TestnetAlert />
 
-		<Flex direction="column" gap="24">
-			<ItemsContainer title="Wallet">
-				<SettingItem
-					to="/popup/settings/profile"
-					:title="appStore.profile.name"
-					icon="user"
-					iconBgColor="blue"
-					chevron
-				/>
-				<SettingItem
-					to="/popup/settings/account"
-					:title="appStore.account.name"
-					icon="vault"
-					iconBgColor="blue"
-					chevron
-				/>
-			</ItemsContainer>
+		<Flex direction="column" gap="20" :class="$style.wrapper_inner">
+			<Breadcrumbs hide-navigation />
 
-			<ItemsContainer>
-				<SettingItem to="/popup/settings/general" title="General" icon="settings" iconBgColor="green" chevron />
-				<SettingItem
-					to="/popup/settings/security"
-					title="Security"
-					icon="key-circle"
-					iconBgColor="red"
-					chevron
-				/>
-				<SettingItem
-					to="/popup/settings/advanced"
-					title="Advanced"
-					icon="zap"
-					iconBgColor="sand"
-					chevron
-				/>
-			</ItemsContainer>
+			<Flex direction="column" gap="24">
+				<ItemsContainer title="Wallet">
+					<SettingItem
+						to="/popup/settings/profile"
+						:title="appStore.profile.name"
+						icon="user"
+						iconBgColor="blue"
+						chevron
+					/>
+					<SettingItem
+						to="/popup/settings/account"
+						:title="appStore.account.name"
+						icon="vault"
+						iconBgColor="blue"
+						chevron
+					/>
+				</ItemsContainer>
 
-			<ItemsContainer>
-				<SettingItem to="/popup/settings/about" size="small" title="About Azguard Wallet" chevron />
-			</ItemsContainer>
+				<ItemsContainer>
+					<SettingItem to="/popup/settings/general" title="General" icon="settings" iconBgColor="green" chevron />
+					<SettingItem
+						to="/popup/settings/security"
+						title="Security"
+						icon="key-circle"
+						iconBgColor="red"
+						chevron
+					/>
+					<SettingItem
+						to="/popup/settings/advanced"
+						title="Advanced"
+						icon="zap"
+						iconBgColor="sand"
+						chevron
+					/>
+				</ItemsContainer>
+
+				<ItemsContainer>
+					<SettingItem to="/popup/settings/about" size="small" title="About Azguard Wallet" chevron />
+				</ItemsContainer>
+			</Flex>
+
+			<Navigation />
 		</Flex>
-
-		<Navigation />
 	</Flex>
 </template>
 
@@ -93,6 +84,10 @@ const handleCopyAddress = () => {
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
+}
+
+.wrapper_inner {
+	flex: 1;
 
 	padding: 20px 24px 80px 24px;
 }

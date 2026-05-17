@@ -93,85 +93,89 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex v-if="appStore.isLogined" direction="column" gap="20" :class="$style.wrapper">
-		<Flex align="center" justify="between">
-			<Text size="13" weight="600" color="primary"> Transactions </Text>
+	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<TestnetAlert />
 
-			<Tooltip v-if="isPersistentAccount" position="end" :disabled="isSyncing || !syncUpdatedAt">
-				<Button
-					type="tertiary"
-					size="mini"
-					:disabled="isSyncing"
-					@click="handleSync"
-				>
-					<Spinner v-if="isSyncing" size="12" color="--txt-secondary" />
-					<Icon v-else name="refresh" size="12" color="secondary" />
-				</Button>
+		<Flex direction="column" gap="20" :class="$style.wrapper_inner">
+			<Flex align="center" justify="between">
+				<Text size="13" weight="600" color="primary"> Transactions </Text>
 
-				<template #content>
-					<Text color="secondary">Last sync - </Text>
-					<Text>{{ DateTime.fromMillis(syncUpdatedAt).toRelative({ locale: "en" }) }}</Text>
+				<Tooltip v-if="isPersistentAccount" position="end" :disabled="isSyncing || !syncUpdatedAt">
+					<Button
+						type="tertiary"
+						size="mini"
+						:disabled="isSyncing"
+						@click="handleSync"
+					>
+						<Spinner v-if="isSyncing" size="12" color="--txt-secondary" />
+						<Icon v-else name="refresh" size="12" color="secondary" />
+					</Button>
+
+					<template #content>
+						<Text color="secondary">Last sync - </Text>
+						<Text>{{ DateTime.fromMillis(syncUpdatedAt).toRelative({ locale: "en" }) }}</Text>
+					</template>
+				</Tooltip>
+			</Flex>
+
+			<Flex direction="column" gap="8" :class="$style.list">
+				<template v-if="!appStore.transactions.length">
+					<Flex align="center" gap="12" :class="$style.dummy">
+						<Flex align="center" justify="center" :class="$style.dummy_circle">
+							<div />
+						</Flex>
+
+						<Flex direction="column" gap="8">
+							<div :class="$style.dummy_title" />
+							<div :class="$style.dummy_subtitle" />
+						</Flex>
+					</Flex>
+
+					<Flex align="center" gap="12" :class="$style.dummy">
+						<Flex align="center" justify="center" :class="$style.dummy_circle">
+							<div />
+						</Flex>
+
+						<Flex direction="column" gap="8">
+							<div :class="$style.dummy_title" />
+							<div :class="$style.dummy_subtitle" />
+						</Flex>
+					</Flex>
 				</template>
-			</Tooltip>
-		</Flex>
 
-		<Flex direction="column" gap="8" :class="$style.list">
-			<template v-if="!appStore.transactions.length">
-				<Flex align="center" gap="12" :class="$style.dummy">
-					<Flex align="center" justify="center" :class="$style.dummy_circle">
-						<div />
+				<TransactionsList :transactions="appStore.transactions" />
+			</Flex>
+
+			<Flex
+				v-if="!appStore.transactions.length"
+				direction="column"
+				ap
+				align="center"
+				gap="12"
+				:class="$style.empty_banner"
+			>
+				<template v-if="isPersistentAccount && isSyncing">
+					<Spinner size="20" color="--txt-tertiary" />
+
+					<Flex direction="column" align="center" gap="6">
+						<Text size="13" weight="600" color="secondary" align="center"> Syncing transactions </Text>
+						<Text size="12" weight="500" height="140" color="tertiary" align="center">
+							Fetching your transaction history from the network
+						</Text>
 					</Flex>
+				</template>
 
-					<Flex direction="column" gap="8">
-						<div :class="$style.dummy_title" />
-						<div :class="$style.dummy_subtitle" />
+				<template v-else>
+					<Icon name="zap-circle" size="20" color="tertiary" />
+
+					<Flex direction="column" align="center" gap="6">
+						<Text size="13" weight="600" color="secondary" align="center"> So far, it's empty </Text>
+						<Text size="12" weight="500" height="140" color="tertiary" align="center">
+							Once you start working with your assets, all activities will be displayed here
+						</Text>
 					</Flex>
-				</Flex>
-
-				<Flex align="center" gap="12" :class="$style.dummy">
-					<Flex align="center" justify="center" :class="$style.dummy_circle">
-						<div />
-					</Flex>
-
-					<Flex direction="column" gap="8">
-						<div :class="$style.dummy_title" />
-						<div :class="$style.dummy_subtitle" />
-					</Flex>
-				</Flex>
-			</template>
-
-			<TransactionsList :transactions="appStore.transactions" />
-		</Flex>
-
-		<Flex
-			v-if="!appStore.transactions.length"
-			direction="column"
-			ap
-			align="center"
-			gap="12"
-			:class="$style.empty_banner"
-		>
-			<template v-if="isPersistentAccount && isSyncing">
-				<Spinner size="20" color="--txt-tertiary" />
-
-				<Flex direction="column" align="center" gap="6">
-					<Text size="13" weight="600" color="secondary" align="center"> Syncing transactions </Text>
-					<Text size="12" weight="500" height="140" color="tertiary" align="center">
-						Fetching your transaction history from the network
-					</Text>
-				</Flex>
-			</template>
-
-			<template v-else>
-				<Icon name="zap-circle" size="20" color="tertiary" />
-
-				<Flex direction="column" align="center" gap="6">
-					<Text size="13" weight="600" color="secondary" align="center"> So far, it's empty </Text>
-					<Text size="12" weight="500" height="140" color="tertiary" align="center">
-						Once you start working with your assets, all activities will be displayed here
-					</Text>
-				</Flex>
-			</template>
+				</template>
+			</Flex>
 		</Flex>
 
 		<Navigation />
@@ -190,6 +194,10 @@ onBeforeUnmount(() => {
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
+}
+
+.wrapper_inner {
+	flex: 1;
 
 	padding: 20px 24px 80px 24px;
 }
