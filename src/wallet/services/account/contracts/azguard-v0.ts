@@ -9,7 +9,8 @@ import { ILogger } from '@/wallet/logger';
 import { AzguardV0Base } from './azguard-v0-base';
 
 import compiled from './azguard-v0.json' with { type: "json" };
-const azguardV0Artifact = loadContractArtifact(compiled as NoirCompiledContract);
+// rc.2 artifact lacks `file_map[*].function_locations` (added in v4.2.0); runtime injects [] via @aztec/stdlib abi.ts → fillMissingFunctionLocations.
+const azguardV0Artifact = loadContractArtifact(compiled as unknown as NoirCompiledContract);
 
 /**
  * Standard Azguard account contract
