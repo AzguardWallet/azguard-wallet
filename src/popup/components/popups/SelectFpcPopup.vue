@@ -10,6 +10,7 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 /** Utils */
 import { getChainColor } from "@/components/ui/utils.js"
 import { stringCompare } from "@/utils/string"
+import { getPrivateFpcAddress } from "@/wallet/utils/private-fpc"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -33,11 +34,22 @@ let fpcService = null
 let tokenBalanceService = null
 const selectedFpc = ref()
 const allFpcs = ref([])
+const canonicalPfpcAddr = ref("")
 const fpcs = computed(() => {
-	const getOrder = (type) => (type === "sponsored" ? 0 : 1)
+	const getOrder = (type) => {
+		if (type === "sponsored") return 0
+		if (type === "private") return 1
+		return 2
+	}
 
 	return allFpcs.value
-		?.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.type === FpcType.DefaultFpc && tokenContracts.value?.has(f.asset)))
+		// Canonical pFJ is picked via the unified Fee Juice UI, not here.
+		// Until canonicalPfpcAddr is resolved (initial ""), no real address
+		// matches so every FPC passes.
+		?.filter(f => f.address !== canonicalPfpcAddr.value)
+		// `f.asset` (vs `type === DefaultFpc`) lets through user-added Private FPCs
+		// when their matching pFJ-style token is also registered.
+		.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.asset && tokenContracts.value?.has(f.asset)))
 		.map(f => prepareFpc(f))
 		.sort((a, b) => {
 			const typeOrder = getOrder(a.type) - getOrder(b.type)
@@ -80,7 +92,12 @@ const init = async () => {
 		tokenBalanceService = new TokenBalanceServiceClient()
 		tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
 		tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
-		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
+		const [allBalances, pfpcAddr] = await Promise.all([
+			tokenBalanceService.getTokenBalances(undefined, appStore.account.address),
+			getPrivateFpcAddress(),
+		])
+		balances.value = allBalances
+		canonicalPfpcAddr.value = pfpcAddr
 		allFpcs.value = await fpcService.getFpcs(appStore.network.chainId)
 	}
 	catch (err) {
@@ -105,18 +122,18 @@ const handleSelectFpc = (fpc) => {
 }
 
 const prepareFpc = (fpc) => {
-	return fpc.type === FpcType.DefaultSponsoredFpc
-		? {
+	if (fpc.type === FpcType.DefaultSponsoredFpc) {
+		return {
 			...fpc,
 			typeName: "sponsored",
 			color: getChainColor(appStore.network.chainId),
 		}
-		: {
-			...fpc,
-			typeName: "fpc",
-			color: "green",
-			balance: balances.value.find(b => b.token.contract === fpc.asset),
-		}
+	}
+	const balance = balances.value.find(b => b.token.contract === fpc.asset)
+	if (fpc.type === FpcType.PrivateFpc) {
+		return { ...fpc, typeName: "private", color: "blue", balance }
+	}
+	return { ...fpc, typeName: "fpc", color: "green", balance }
 }
 const onFpcAdded = (fpc) => {
 	allFpcs.value.push(prepareFpc(fpc))

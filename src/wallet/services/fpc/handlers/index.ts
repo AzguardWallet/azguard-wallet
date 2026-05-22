@@ -4,6 +4,7 @@ import { Gas } from "@aztec/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
 import { IPXE } from "@/wallet/services/pxe/proxy";
 import { FpcInfo, FpcType } from "../spec";
+import { PrivateFpcHandler } from "./private-fpc-handler";
 import { DefaultFpcHandler } from "./default-fpc-handler";
 import { DefaultSponsoredFpcHandler } from "./default-sponsored-fpc-handler";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
@@ -25,6 +26,9 @@ export function getFpcHandler(type: FpcType) {
         }
         case FpcType.DefaultSponsoredFpc: {
             return new DefaultSponsoredFpcHandler();
+        }
+        case FpcType.PrivateFpc: {
+            return new PrivateFpcHandler();
         }
         default: {
             throw new Error("Invalid FPC type");

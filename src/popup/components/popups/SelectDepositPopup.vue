@@ -3,12 +3,17 @@
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
+/** Utils */
+import { CHAIN_IDS } from "@/components/ui/utils"
+
+/** Stores */
+import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
+const appStore = useAppStore()
+const popupStore = usePopupStore()
+
 /** Composables */
 const { handleExternalLink } = useExternalLink()
-
-/** Store */
-import { usePopupStore } from "@/stores/popup.store"
-const popupStore = usePopupStore()
 
 const emit = defineEmits(["onClose"])
 
@@ -20,22 +25,28 @@ const displaceIdx = computed(() => {
 	return popupStore.len - popupStore.popups.select_deposit?.order
 })
 
-const depositMethods = [
-    {
-        title: "Human Tech Bridge",
-        alias: "human_tech",
-        description: "Bridge between Etherium and Aztec",
-        target: "https://bridge.human.tech/",
-        icon: "human_tech",
-    },
-    {
-        title: "Azguard Faucet",
-        alias: "faucet",
-        description: "Mint your own Aztec token",
-        target: "faucet",
-        icon: "logo",
-    },
-]
+const depositMethods = computed(() => {
+	const methods = [
+		{
+			title: "Human Tech Bridge",
+			alias: "human_tech",
+			description: "Bridge between Etherium and Aztec",
+			target: "https://bridge.human.tech/",
+			icon: "human_tech",
+		},
+	]
+	// Faucet is available on test networks only — no free minting on mainnet.
+	if (appStore.network?.chainId !== CHAIN_IDS.ALPHANET) {
+		methods.push({
+			title: "Azguard Faucet",
+			alias: "faucet",
+			description: "Mint your own Aztec token",
+			target: "faucet",
+			icon: "logo",
+		})
+	}
+	return methods
+})
 
 const handleSelectDepositMethod = (event, deposit) => {
 	emit("onClose")
