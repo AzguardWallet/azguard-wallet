@@ -58,6 +58,50 @@ export const useAppStore = defineStore("app", () => {
 	const isSessionChecked = ref<boolean>(false)
 	const pageAwaitingAuth = ref<string>("")
 
+	async function onAccountAdded(acc: Account) {
+		const idx = accounts.value.findIndex(a => a.address === acc.address)
+		if (idx !== -1) return
+
+		accounts.value.push(acc)
+
+		if (account.value?.address === acc.address) {
+			await selectAccount(acc)
+		}
+	}
+
+	async function onAccountUpdated(acc: Account) {
+		const idx = accounts.value.findIndex(a => a.address === acc.address)
+		if (idx === -1) return
+		
+		accounts.value[idx] = acc
+
+		if (account.value?.address === acc.address) {
+			if (acc.visible) {
+				await selectAccount(acc)
+			} else {
+				const nextAccount = accounts.value.filter(a => a.address !== acc.address && a.visible).at(0)
+				if (nextAccount) {
+					await selectAccount(nextAccount)
+				}
+			}
+		}
+	}
+
+	async function onAccountDeleted(acc: Account) {
+		const idx = accounts.value.findIndex(a => a.address === acc.address)
+		if (idx === -1) return
+		
+		accounts.value.splice(idx, 1)
+
+		if (account.value?.address === acc.address) {
+			const nextAccount = accounts.value.filter(a => a.address !== acc.address && a.visible).at(0)
+			if (nextAccount) {
+				account.value = nextAccount
+				await setActiveAccount(nextAccount.address)
+			}
+		}
+	}
+
 	const activeAccountKey = computed(() => `azguard:ui:activeAccount@${profile.value?.id}`)
 	async function setActiveAccount(address: String) {
 		if (!address || !profile.value?.id) return
@@ -78,30 +122,6 @@ export const useAppStore = defineStore("app", () => {
 	const selectAccount = async (acc: Account) => {
 		account.value = acc
 		await setActiveAccount(account.value?.address)
-	}
-	const changeAccountVisibility = async (acc: Account, value: boolean) => {
-		const accIdx = accounts.value.findIndex(a => acc.address === a.address)
-
-		await managers.account.changeAccountVisibility(profile.value.id, network.value.id, acc.address, value)
-		accounts.value[accIdx] = { ...acc, visible: value }
-
-		if (!value) {
-			if (accounts.value.length) {
-				account.value = accounts.value.filter(a => a.visible).sort((a, b) => a.index - b.index)[0]
-				await setActiveAccount(account.value?.address)
-			}
-		}
-	}
-	const updateAccount = async (address: string, name: string) => {
-		const accIdx = accounts.value.findIndex(a => address === a.address)
-
-		await managers.account.changeAccountName(profile.value.id, network.value.id, address, name)
-
-		const updatedAccount = { ...accounts.value[accIdx], name: name }
-		accounts.value[accIdx] = updatedAccount
-		if (address === account.value?.address) {
-			account.value = updatedAccount
-		}
 	}
 
 	const network = ref()
@@ -177,11 +197,12 @@ export const useAppStore = defineStore("app", () => {
 		isSessionChecked,
 		pageAwaitingAuth,
 		accounts,
+		onAccountAdded,
+		onAccountUpdated,
+		onAccountDeleted,
 		setActiveAccount,
 		setupActiveAccount,
 		selectAccount,
-		changeAccountVisibility,
-		updateAccount,
 		network,
 		networkStatus,
 		syncNetworkStatus,

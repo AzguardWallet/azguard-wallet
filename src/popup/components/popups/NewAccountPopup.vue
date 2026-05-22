@@ -1,4 +1,7 @@
 <script setup>
+/** Services */
+import { AccountServiceClient } from "@/wallet/services/account/client";
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -37,11 +40,12 @@ const isAvailableToCreateAccount = computed(() => {
 	return true
 })
 
+const accountService = new AccountServiceClient()
 const handleCreateAccount = async () => {
 	if (!isAvailableToCreateAccount.value) return
 
 	const accountType = enablePersistentHistory.value ? AccountType.Azguard_v0_persistent : AccountType.Azguard_v0
-	const account = await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, accountType, name.value.trim())
+	const account = await accountService.createAccount(appStore.profile.id, appStore.network.chainId, accountType, name.value.trim())
 
 	appStore.account = account
 	appStore.accounts.push(account)
@@ -58,6 +62,7 @@ watch(
 
 			name.value = ""
 			enablePersistentHistory.value = false
+			accountService.disconnect()
 		} else {
 			document.addEventListener("keydown", onKeydown)
 

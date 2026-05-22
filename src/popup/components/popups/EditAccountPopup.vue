@@ -1,4 +1,7 @@
 <script setup>
+/** Services */
+import { AccountServiceClient } from "@/wallet/services/account/client";
+
 /** Components */
 import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
@@ -27,6 +30,8 @@ const props = defineProps({
 	show: Boolean,
 })
 
+const accountService = new AccountServiceClient()
+
 const accountToEdit = computed(() => appStore.accounts.find(n => n.address === cacheStore.accountToEditIdx))
 
 const notAllowedAccountNames = computed(() => appStore.accounts.map(n => n.name))
@@ -51,7 +56,8 @@ const handleUpdateAccount = async () => {
 	if (!isAvailableToUpdateAccount.value) return
 
 	isAccountUpdateInProgress.value = true
-	await appStore.updateAccount(cacheStore.accountToEditIdx, nameTerm.value)
+	await accountService.changeAccountName(appStore.profile?.id, appStore.network?.chainId, cacheStore.accountToEditIdx, nameTerm.value)
+	
 	isAccountUpdateInProgress.value = false
 
 	emit("onClose")
@@ -66,6 +72,7 @@ watch(
 			document.removeEventListener("keydown", onKeydown)
 
 			handleFillFieldsWithDefaultValues()
+			accountService.disconnect()
 		} else {
 			document.addEventListener("keydown", onKeydown)
 

@@ -103,10 +103,11 @@ const handleCreateProfile = async () => {
 		await sleep(100) // wait for services initialization
 	}
 
-	managers.account = new AccountServiceClient()
-
 	appStore.profile = profile
-	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
+
+	const accountService = new AccountServiceClient()
+	appStore.accounts = await accountService.getAccounts(appStore.profile.id, appStore.network.chainId, true)
+	accountService.disconnect()
 
 	initTransactionService(appStore.onTxAdded, appStore.onTxUpdated)
 	await appStore.setActiveAccount(appStore.account?.address)

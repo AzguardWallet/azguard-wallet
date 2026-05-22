@@ -8,6 +8,9 @@
 </route>
 
 <script setup>
+/** Services */
+import { AccountServiceClient } from "@/wallet/services/account/client";
+
 /** Components */
 import Navigation from "../../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
@@ -28,6 +31,8 @@ const appStore = useAppStore()
 const popupStore = usePopupStore()
 const cacheStore = useCacheStore()
 
+const accountService = new AccountServiceClient()
+
 const accounts = computed(() => appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index))
 const hiddenAccounts = computed(() => appStore.accounts.filter(a => !a.visible))
 
@@ -40,15 +45,15 @@ const handleEditAccount = target => {
 	popupStore.open("edit_account")
 }
 
-const handleHideAccount = acc => {
+const handleHideAccount = async (acc) => {
 	if (accounts.value.length === 1) return
 
-	appStore.changeAccountVisibility(acc, false)
+	await accountService.changeAccountVisibility(appStore.profile?.id, appStore.network?.chainId, acc.address, false)
 	openToast({ label: "Account successfully hidden" })
 }
 
-const handleShowAccount = acc => {
-	appStore.changeAccountVisibility(acc, true)
+const handleShowAccount = async (acc) => {
+	await accountService.changeAccountVisibility(appStore.profile?.id, appStore.network?.chainId, acc.address, true)
 	openToast({ label: "Account visible again" })
 }
 
@@ -68,7 +73,7 @@ const handleCopyAddress = target => {
 			<Flex direction="column" gap="40">
 				<Flex direction="column" gap="16">
 					<Text size="13" weight="600" color="primary">
-						Accounts &nbsp;<Text color="tertiary">{{ appStore.accounts.length }} </Text>
+						Accounts &nbsp;<Text color="tertiary">{{ accounts.length }} </Text>
 					</Text>
 
 					<ItemsContainer>

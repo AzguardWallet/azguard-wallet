@@ -31,6 +31,11 @@ import LogoIcon from "@/assets/logo.svg?raw"
 const route = useRoute()
 const router = useRouter()
 
+const accountService = new AccountServiceClient()
+accountService.onAccountAdded.add(appStore.onAccountAdded)
+accountService.onAccountUpdated.add(appStore.onAccountUpdated)
+accountService.onAccountDeleted.add(appStore.onAccountDeleted)
+
 const configService = new ConfigServiceClient()
 configService.onUpdate.add(applySetting)
 
@@ -94,13 +99,12 @@ const initNetworks = async () => {
 }
 
 const initAccount = async () => {
-	managers.account = new AccountServiceClient()
-	appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
+	appStore.accounts = await accountService.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 	/** temp */
 	if (!appStore.accounts.length) {
-		await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Azguard_v0, "Account")
-		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
+		await accountService.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Azguard_v0, "Account")
+		appStore.accounts = await accountService.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 	}
 
 	await appStore.setupActiveAccount()
@@ -126,12 +130,11 @@ watch(
 
 		appStore.syncNetworkStatus()
 
-		managers.account = new AccountServiceClient()
-		appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
+		appStore.accounts = await accountService.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 
 		if (!appStore.accounts.length) {
-			await managers.account.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Azguard_v0, "Account")
-			appStore.accounts = await managers.account.getAccounts(appStore.profile.id, appStore.network.chainId, true)
+			await accountService.createAccount(appStore.profile.id, appStore.network.chainId, AccountType.Azguard_v0, "Account")
+			appStore.accounts = await accountService.getAccounts(appStore.profile.id, appStore.network.chainId, true)
 			await appStore.setupActiveAccount()
 
 			await appStore.syncTransactions()

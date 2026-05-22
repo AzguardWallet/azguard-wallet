@@ -140,7 +140,7 @@ const initAccounts = async () => {
 				const network = networks.value.find(x => x.chainId === chainId)
 				if (network) {
 					const accountClient = new AccountServiceClient()
-					const _accounts = await accountClient.getAccounts(profile.value.id, network.chainId, true)
+					const _accounts = await accountClient.getAccounts(profile.value.id, network.chainId, false)
 					res.push(..._accounts.toSorted((a, b) => a.index - b.index))
 				}
 			}

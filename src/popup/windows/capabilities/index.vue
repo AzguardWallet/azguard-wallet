@@ -113,7 +113,7 @@ const initAccounts = async () => {
 	const network = networks.value.find(x => x.chainId === chainId)
 	if (!network) return
 
-	const accounts = await accountService.getAccounts(profile.value.id, network.chainId, true)
+	const accounts = await accountService.getAccounts(profile.value.id, network.chainId, false)
 
 	for (const cap of capabilities.value) {
 		if (cap.type === "accounts") {

@@ -27,8 +27,6 @@ const displaceIdx = computed(() => {
 const emit = defineEmits(["onClose"])
 
 const account = computed(() => appStore.account)
-
-const showAllOtherAccounts = ref(false)
 const accounts = computed(() => {
 	return appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index)
 })
