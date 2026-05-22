@@ -44,6 +44,10 @@ function onTokenDeleted(token) {
 	tokens.value.splice(idx, 1)
 }
 
+const transferableTokens = computed(() =>
+	tokens.value.filter(t => t.hasPrivateTransfers || t.hasPublicTransfers)
+)
+
 const handleSelectToken = id => {
 	cacheStore.activeTokenIdx = id
 	emit("onClose")
@@ -79,7 +83,7 @@ watch(
 			<Flex wide direction="column" gap="24" :class="$style.wrapper">
 				<ItemsContainer>
 					<SettingItem
-						v-for="token in tokens"
+						v-for="token in transferableTokens"
 						@click="handleSelectToken(token.id)"
 						:title="token.symbol"
 						:icon="token.id === cacheStore.activeTokenIdx ? 'check-circle' : 'circle'"

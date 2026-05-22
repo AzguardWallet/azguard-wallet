@@ -27,7 +27,7 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 				</template>
 			</Dropdown>
 
-			<Text size="13" weight="600" color="primary"> 0 FJC </Text>
+			<Text size="13" weight="600" color="primary"> 0 FJ </Text>
 		</Flex>
 
 		<Flex align="center" justify="between" :class="$style.fjc_price">
@@ -35,7 +35,7 @@ import { Dropdown, DropdownItem } from "@/components/ui/Dropdown"
 				Estimated Fee Juice
 			</Text>
 			<Text size="12" weight="600" color="primary">
-				<Text color="body">$0.00</Text>&nbsp; 0 FJC
+				<Text color="body">$0.00</Text>&nbsp; 0 FJ
 			</Text>
 		</Flex>
 	</Flex>

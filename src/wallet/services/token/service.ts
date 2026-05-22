@@ -4,13 +4,14 @@ import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
 import { NetworkService } from "@/wallet/services/network/service";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
-import { AccountService } from "@/wallet/services/account/service";
+import { AccountService, Account } from "@/wallet/services/account/service";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { TaskService, StepContent, WrappedTask } from "@/wallet/services/task/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
+import { getPrivateFpcAddress, privateFpcName, privateFpcSymbol } from "@/wallet/utils/private-fpc";
 import { simulate } from "@/wallet/utils/fn";
 import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, Methods, Events } from "./spec";
 import {
@@ -56,6 +57,8 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         this.accounts = services.get(AccountService.name);
         this.tasks = services.get(TaskService.name);
         this.profiles.onProfileDeleted.add(this.onProfileDeleted);
+        this.accounts.onAccountAdded.add(this.onAccountAdded);
+        await this.migrateFeeTokenDecimals();
     }
 
     public async getTokens(profileId?: string, chainId?: number): Promise<TokenInfo[]> {
@@ -427,21 +430,23 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             ? GetDecimalsFn.new(ti.getDecimalsFn.name, ti.getDecimalsFn.impl)
             : undefined;
 
-        return [
+        const pfpcAddress = await getPrivateFpcAddress();
+        const fallback = {
+            [feeJuiceAddress]: { name: feeJuiceName, symbol: feeJuiceSymbol, decimals: 18 },
+            [pfpcAddress]: { name: privateFpcName, symbol: privateFpcSymbol, decimals: 18 },
+        }[ti.contract];
+
+        return await Promise.all([
             getNameFn
-                ? await simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
-                : ti.contract === feeJuiceAddress
-                ? feeJuiceName
-                : "<name>",
+                ? simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
+                : fallback?.name ?? "<name>",
             getSymbolFn
-                ? await simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
-                : ti.contract === feeJuiceAddress
-                ? feeJuiceSymbol
-                : "<symbol>",
+                ? simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
+                : fallback?.symbol ?? "<symbol>",
             getDecimalsFn
-                ? await simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())
-                : 0,
-        ];
+                ? simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())
+                : fallback?.decimals ?? 0,
+        ]);
     }
 
     private async findToken(profileId: string, chainId: number, contract: string): Promise<Token | undefined> {
@@ -450,6 +455,39 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             token => token.profileId === profileId && token.chainId === chainId && token.contract === contract,
         );
     }
+
+    // TODO: remove on the next wallet update that requires wiping profiles
+    private async migrateFeeTokenDecimals() {
+        const pfpcAddress = await getPrivateFpcAddress();
+        const feeContracts = new Set([feeJuiceAddress, pfpcAddress]);
+        for (const token of await this.tokens.getValues()) {
+            if (feeContracts.has(token.contract) && token.decimals !== 18) {
+                token.decimals = 18;
+                await this.tokens.set(`${token.id}`, token);
+                this.emit("onTokenUpdated", getTokenInfo(token));
+                this.logDebug(`Migrated decimals for ${token.contract} (token ${token.id})`);
+            }
+        }
+    }
+
+    private readonly onAccountAdded = async (account: Account) => {
+        try {
+            const networks = await this.networks.getNetworks(account.chainId);
+            const network = networks.find(x => x.isDefault) ?? networks[0];
+            if (!network) return;
+
+            for (const contract of [feeJuiceAddress, await getPrivateFpcAddress()]) {
+                try {
+                    const ti = await this.parseTokenInterface(network.id, contract);
+                    await this.addToken(account.profileId, network.id, account.address, ti);
+                } catch (e) {
+                    this.logDebug(`Failed to auto-add token ${contract}: ${e}`);
+                }
+            }
+        } catch (e) {
+            this.logDebug(`Failed to auto-add default tokens: ${e}`);
+        }
+    };
 
     private readonly onProfileDeleted = async (profile: ProfileInfo) => {
         this.logDebug(`Profile ${profile.id} deleted, remove related tokens`);

@@ -9,7 +9,7 @@ export const feeJuiceArtifact = FeeJuiceContractArtifact;
 
 export const feeJuiceName = "Fee Juice";
 
-export const feeJuiceSymbol = "FJC";
+export const feeJuiceSymbol = "FJ";
 
 export const getFeeJuiceClaimPayload = (
     to: string,

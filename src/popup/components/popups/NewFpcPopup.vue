@@ -41,7 +41,8 @@ const balances = ref([])
 const selectedFpcType = ref(null)
 const fpcTypes = {
 	"DefaultFpc": "FPC",
-	"DefaultSponsoredFpc": "Sponsored FPC"
+	"DefaultSponsoredFpc": "Sponsored FPC",
+	"PrivateFpc": "Private FPC",
 }
 const isTypeDropdownOpen = ref(false)
 const nameTerm = ref("")
