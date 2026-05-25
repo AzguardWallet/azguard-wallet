@@ -1,7 +1,7 @@
 import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
 import { extractOffchainOutput, type InteractionWaitOptions, type SendReturn } from "@aztec/aztec.js/contracts";
 import { waitForTx } from "@aztec/aztec.js/node";
-import type { SimulateTxOpts } from "@aztec/pxe/client/bundle";
+import type { SimulateTxOpts, ProveTxOpts } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import {
     type AbiDecoded,
@@ -243,7 +243,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const [txRequest, node, pxe, account, network, nonce, __, feePaymentMethod] =
                 await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, transferTask);
 
-            const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], transferTask);
+            const provedTx = await this.proveTxTask(pxe, txRequest, { scopes: [account.address], senderForTags: account.address }, transferTask);
 
             const tx = await provedTx.toTx();
             await this.sendTxTask(node, tx, transferTask);
@@ -430,7 +430,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const [txRequest, node, pxe, account, network, nonce, __, feePaymentMethod] =
                 await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, cancelTxTask);
 
-            const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], cancelTxTask);
+            const provedTx = await this.proveTxTask(pxe, txRequest, { scopes: [account.address], senderForTags: account.address }, cancelTxTask);
 
             const tx = await provedTx.toTx();
             await this.sendTxTask(node, tx, cancelTxTask);
@@ -537,7 +537,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
             await this.buildAndEstimateTxRequest(op, op.feeSettings.paymentMethod, parentTask);
 
-        const provedTx = await this.proveTxTask(pxe, txRequest, [account.address], parentTask);
+        const provedTx = await this.proveTxTask(pxe, txRequest, { scopes: [account.address], senderForTags: account.address }, parentTask);
 
         const tx = await provedTx.toTx();
         await this.sendTxTask(node, tx, parentTask);
@@ -562,6 +562,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             simulatePublic: op.simulatePublic ?? false,
             skipFeeEnforcement: true,
             scopes: [account.address],
+            senderForTags: account.address,
         });
         return {
             gasUsed: simulatedTx.gasUsed,
@@ -815,6 +816,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 simulatePublic: true,
                 skipFeeEnforcement: true,
                 scopes: [account.address],
+                senderForTags: account.address,
             });
 
             const publicReturn = simulatedTx.getPublicReturnValues();
@@ -1008,6 +1010,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             skipTxValidation: op.opts.skipTxValidation,
             skipFeeEnforcement: op.opts.skipFeeEnforcement ?? true,
             scopes: scopesFrom(account.address, op.opts.additionalScopes),
+            senderForTags: op.opts.sendMessagesAs ?? account.address,
         });
     }
 
@@ -1049,6 +1052,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
             scopes: scopesFrom(AztecAddress.fromString(op.accountAddress), op.opts.additionalScopes),
+            senderForTags: op.opts.sendMessagesAs ?? AztecAddress.fromString(op.accountAddress),
         });
     }
 
@@ -1064,7 +1068,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
             await this.buildAndEstimateTxRequest({ ...op, actions, fee }, op.feeSettings.paymentMethod, parentTask);
 
-        const provedTx = await this.proveTxTask(pxe, txRequest, scopesFrom(account.address, op.opts.additionalScopes), parentTask);
+        const provedTx = await this.proveTxTask(pxe, txRequest, { scopes: scopesFrom(account.address, op.opts.additionalScopes), senderForTags: op.opts.sendMessagesAs ?? account.address }, parentTask);
         const offchainOutput = extractOffchainOutput(provedTx.getOffchainEffects(), provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp);
 
         const tx = await provedTx.toTx();
@@ -1289,7 +1293,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address], senderForTags: account.address },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
@@ -1310,7 +1314,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address], senderForTags: account.address },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding);
@@ -1340,7 +1344,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     let simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address], senderForTags: account.address },
                         task,
                     );
                     // Fetch actual fees for FPC fee payload (with FEE_PADDING_MULTIPLIER)
@@ -1364,7 +1368,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address], senderForTags: account.address },
                         task,
                     );
                     maxFee = simulatedTx.gasUsed.totalGas
@@ -1408,7 +1412,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     const simulatedTx = await this.simulateTxTask(
                         pxe,
                         txRequest,
-                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address] },
+                        { simulatePublic: true, skipFeeEnforcement: true, scopes: [account.address], senderForTags: account.address },
                         task,
                     );
                     await this.finalizeGasLimits(node, txRequest, simulatedTx, gasPadding, maxFeesPerGas);
@@ -1764,11 +1768,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
     }
 
-    private async proveTxTask(pxe: IPXE, txRequest: TxExecutionRequest, scopes: AztecAddress[], parentTask?: WrappedTask) {
+    private async proveTxTask(pxe: IPXE, txRequest: TxExecutionRequest, opts: ProveTxOpts, parentTask?: WrappedTask) {
         const step = new StepContent("Generating proof");
         const task = parentTask ? parentTask.startSubtask(step) : this.taskService.startNewTask(step);
         try {
-            const provedTx = await pxe.proveTx(txRequest, scopes);
+            const provedTx = await pxe.proveTx(txRequest, opts);
             task.complete();
             return provedTx;
         } catch (error) {
