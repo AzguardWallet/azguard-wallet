@@ -67,8 +67,8 @@ const txTime = computed(() => {
 
 const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
 const type = computed(() => {
-	if (call.value?.method.startsWith("transfer")) return "transfer"
-	if (call.value?.method.startsWith("mint_to_")) return "mint"
+	if (call.value?.method?.startsWith("transfer")) return "transfer"
+	if (call.value?.method?.startsWith("mint_to_")) return "mint"
 	return "tx"
 })
 const transfer = computed(() => (call.value?.transfers ? call.value.transfers[0] : null))
