@@ -2,4 +2,5 @@ import { loadContractArtifact } from "@aztec/stdlib/abi";
 import { NoirCompiledContract } from "@aztec/stdlib/noir";
 import PrivateFPCJson from "./PrivateFPC.json" with { type: "json" };
 
-export const PrivateFPCContractArtifact = loadContractArtifact(PrivateFPCJson as NoirCompiledContract);
+// rc.2 artifact lacks `file_map[*].function_locations` (added in v4.2.0); runtime injects [] via @aztec/stdlib abi.ts → fillMissingFunctionLocations.
+export const PrivateFPCContractArtifact = loadContractArtifact(PrivateFPCJson as unknown as NoirCompiledContract);
