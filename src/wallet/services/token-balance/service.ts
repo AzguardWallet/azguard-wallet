@@ -192,7 +192,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                 const tokenIds = new Set<number>()
 
                 for (const c of tx.calls) {
-                    if (c.contract && c.transfers) {
+                    if (c.contract) {
                         contracts.add(c.contract);
                     }
                 }
