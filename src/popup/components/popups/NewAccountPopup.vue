@@ -48,8 +48,7 @@ const handleCreateAccount = async () => {
 	const account = await accountService.createAccount(appStore.profile.id, appStore.network.chainId, accountType, name.value.trim())
 
 	appStore.account = account
-	appStore.accounts.push(account)
-	await appStore.setActiveAccount(account.address)
+	await appStore.selectAccount(account)
 
 	emit("onClose")
 }
