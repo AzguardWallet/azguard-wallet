@@ -186,7 +186,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     };
 
     private readonly onTransactionUpdated = async (tx: Tx) => {
-        if (tx.status == TxStatus.Proven) {
+        if (tx.status == TxStatus.Checkpointed) {
             if (isLocalTx(tx)) {
                 const contracts = new Set<string>()
                 const tokenIds = new Set<number>()

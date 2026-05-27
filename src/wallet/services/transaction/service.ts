@@ -522,7 +522,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
     }
 
     private isFinalized(r: TxReceipt) {
-        return (![AztecTxStatus.PENDING, AztecTxStatus.PROPOSED, AztecTxStatus.CHECKPOINTED].includes(r.status))
+        return (![AztecTxStatus.PENDING, AztecTxStatus.PROPOSED].includes(r.status))
     }
 
     private async updateTxGroup(txs: Tx[]) {
