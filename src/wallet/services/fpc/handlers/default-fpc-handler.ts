@@ -8,7 +8,7 @@ import { FpcInfo, FpcType } from "../spec";
 import { IFpcHandler } from ".";
 import { IPXE } from "../../pxe/proxy";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
-import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec/constants";
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec/stdlib/gas";
 
 export class DefaultFpcHandler implements IFpcHandler {
     public async getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined> {

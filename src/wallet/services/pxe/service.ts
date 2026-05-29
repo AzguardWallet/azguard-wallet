@@ -38,7 +38,7 @@ import {
 import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
 import z from "zod";
 
-const AccessScopesSchema = z.union([z.literal("ALL_SCOPES"), z.array(AztecAddress.schema)]);
+const AccessScopesSchema = z.array(AztecAddress.schema);
 import { ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/offscreen";
 import { ConfigServiceClient } from "@/wallet/services/config/client";
