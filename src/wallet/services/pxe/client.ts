@@ -1,5 +1,5 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
-import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import { ContractArtifactSchema } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -147,10 +147,10 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
     public async proveTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        scopes: AztecAddress[],
+        opts: ProveTxOpts,
     ): Promise<TxProvingResult> {
         await ensureOffscreenRunning();
-        const result = await this.request("proveTx", network, txRequest, scopes);
+        const result = await this.request("proveTx", network, txRequest, opts);
         return await TxProvingResult.schema.parseAsync(result);
     }
 

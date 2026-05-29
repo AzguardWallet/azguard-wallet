@@ -6,6 +6,7 @@ import {
 } from "@aztec/wallet-sdk/extension/handlers";
 import type { BatchedMethod } from "@aztec/aztec.js/wallet";
 import type { WalletMessage } from "@aztec/wallet-sdk/types";
+import { NOOP_LOGGER } from "@aztec/wallet-sdk/types";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -96,6 +97,7 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
                 walletName: WALLET_NAME,
                 walletVersion: WALLET_VERSION,
                 walletIcon: chrome.runtime.getURL("src/assets/images/azguard-icon-32.png"),
+                logger: NOOP_LOGGER,
             },
             {
                 sendToTab: (tabId, message) => chrome.tabs.sendMessage(tabId, message),

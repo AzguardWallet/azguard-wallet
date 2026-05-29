@@ -35,7 +35,7 @@ import {
     UtilityExecutionResult,
     TxProfileResult,
 } from "@aztec/stdlib/tx";
-import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec/pxe/client/bundle";
 import z from "zod";
 
 const AccessScopesSchema = z.array(AztecAddress.schema);
@@ -224,13 +224,13 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     public async proveTx(
         network: Network,
         txRequest: TxExecutionRequest,
-        scopes: AztecAddress[],
+        opts: ProveTxOpts,
     ): Promise<TxProvingResult> {
         return this.withPxe(network, async (pxe) =>
-            pxe.proveTx(
-                await TxExecutionRequest.schema.parseAsync(txRequest),
-                await z.array(AztecAddress.schema).parseAsync(scopes),
-            ),
+            pxe.proveTx(await TxExecutionRequest.schema.parseAsync(txRequest), {
+                scopes: await z.array(AztecAddress.schema).parseAsync(opts.scopes),
+                senderForTags: await AztecAddress.schema.optional().parseAsync(opts.senderForTags),
+            }),
         );
     }
 
@@ -240,16 +240,14 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         opts: SimulateTxOpts,
     ): Promise<TxSimulationResult> {
         return this.withPxe(network, async (pxe) => {
-            return await pxe.simulateTx(
-                await TxExecutionRequest.schema.parseAsync(txRequest),
-                {
-                    simulatePublic: opts.simulatePublic,
-                    skipTxValidation: opts.skipTxValidation,
-                    skipFeeEnforcement: opts.skipFeeEnforcement,
-                    overrides: await SimulationOverrides.schema.optional().parseAsync(opts.overrides),
-                    scopes: await AccessScopesSchema.parseAsync(opts.scopes),
-                },
-            );
+            return await pxe.simulateTx(await TxExecutionRequest.schema.parseAsync(txRequest), {
+                simulatePublic: opts.simulatePublic,
+                skipTxValidation: opts.skipTxValidation,
+                skipFeeEnforcement: opts.skipFeeEnforcement,
+                overrides: await SimulationOverrides.schema.optional().parseAsync(opts.overrides),
+                scopes: await AccessScopesSchema.parseAsync(opts.scopes),
+                senderForTags: await AztecAddress.schema.optional().parseAsync(opts.senderForTags),
+            });
         });
     }
 
@@ -275,14 +273,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         opts: ProfileTxOpts,
     ): Promise<TxProfileResult> {
         return this.withPxe(network, async (pxe) => {
-            return await pxe.profileTx(
-                await TxExecutionRequest.schema.parseAsync(txRequest),
-                {
-                    profileMode: opts.profileMode,
-                    skipProofGeneration: opts.skipProofGeneration,
-                    scopes: await AccessScopesSchema.parseAsync(opts.scopes),
-                },
-            );
+            return await pxe.profileTx(await TxExecutionRequest.schema.parseAsync(txRequest), {
+                profileMode: opts.profileMode,
+                skipProofGeneration: opts.skipProofGeneration,
+                scopes: await AccessScopesSchema.parseAsync(opts.scopes),
+                senderForTags: await AztecAddress.schema.optional().parseAsync(opts.senderForTags),
+            });
         });
     }
 
@@ -422,6 +418,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private getRegistryUrl(network: Network): string | undefined {
         switch (network.chainId) {
+            case 2934756904: // alphanet (mainnet), 1 ^ 2934756905
+                return "https://mainnet.aztec-registry.xyz";
             case 4138294185: // 11155111 ^ 4127419662
                 return "https://testnet.aztec-registry.xyz";
             case 604129785: // 11155111 ^ 615022430

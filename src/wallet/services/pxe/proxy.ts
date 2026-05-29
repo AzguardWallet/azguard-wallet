@@ -1,5 +1,5 @@
 import type { Fr } from "@aztec/foundation/curves/bn254";
-import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts } from "@aztec/pxe/client/bundle";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec/pxe/client/bundle";
 import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
@@ -34,7 +34,7 @@ export interface IPXE {
     updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void>;
     getContracts(): Promise<AztecAddress[]>;
     getNotes(filter: NotesFilter): Promise<NoteDao[]>;
-    proveTx(txRequest: TxExecutionRequest, scopes: AztecAddress[]): Promise<TxProvingResult>;
+    proveTx(txRequest: TxExecutionRequest, opts: ProveTxOpts): Promise<TxProvingResult>;
     profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult>;
     simulateTx(txRequest: TxExecutionRequest, opts: SimulateTxOpts): Promise<TxSimulationResult>;
     executeUtility(call: FunctionCall, opts: ExecuteUtilityOpts): Promise<UtilityExecutionResult>;
@@ -92,8 +92,8 @@ export class PXEProxy implements IPXE {
         return this.pxeService.getNotes(this.network, filter);
     }
 
-    proveTx(txRequest: TxExecutionRequest, scopes: AztecAddress[]): Promise<TxProvingResult> {
-        return this.pxeService.proveTx(this.network, txRequest, scopes);
+    proveTx(txRequest: TxExecutionRequest, opts: ProveTxOpts): Promise<TxProvingResult> {
+        return this.pxeService.proveTx(this.network, txRequest, opts);
     }
 
     profileTx(txRequest: TxExecutionRequest, opts: ProfileTxOpts): Promise<TxProfileResult> {
