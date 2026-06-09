@@ -275,7 +275,6 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                 const tb = tbs[i];
                 const token = this.tokens.get(tb.token);
                 if (!token) {
-                    this.logError(`Unknown token #${tb.token}`);
                     const taskId = this.pendingTasks.get(tb.id)!;
                     this.taskService.failTask(taskId, `Unknown token #${tb.token}`);
                     continue;

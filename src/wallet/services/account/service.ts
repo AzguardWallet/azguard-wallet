@@ -138,6 +138,10 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
                 throw new Error("unknown account type");
         }
         if (accountContract.address.toString() !== address) {
+            this.logError(
+                "Account address inconsistency",
+                `expected ${address}, derived ${accountContract.address.toString()}`,
+            );
             throw new Error("account address inconsistency");
         }
         return accountContract;

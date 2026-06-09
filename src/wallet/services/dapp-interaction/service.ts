@@ -189,6 +189,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             const [_, chainId] = caipChain.split(":");
             const networks = await this.networkService.getNetworks(+chainId);
             if (networks.length === 0) {
+                this.logError("Silent interaction: network no longer exists", caipChain);
                 throw new Error("Network no longer exists");
             }
             return networks.find(x => x.isDefault) ?? networks[0];
@@ -197,11 +198,13 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             const [_, chainId, address] = caipAccount.split(":");
             const networks = await this.networkService.getNetworks(+chainId);
             if (networks.length === 0) {
+                this.logError("Silent interaction: network no longer exists", caipAccount);
                 throw new Error("Network no longer exists");
             }
             const network = networks.find(x => x.isDefault) ?? networks[0];
             const account = await this.accountService.getAccount(profile!.id, network.chainId, address);
             if (!account) {
+                this.logError("Silent interaction: account no longer exists", caipAccount);
                 throw new Error("Account no longer exists");
             }
             return [network, account];
@@ -253,6 +256,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     break;
                 }
                 default: {
+                    this.logError("Silent interaction: invalid operation kind", (op as Operation).kind);
                     throw new Error("Invalid operation kind");
                 }
             }
