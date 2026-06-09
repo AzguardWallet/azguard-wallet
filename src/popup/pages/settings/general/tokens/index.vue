@@ -82,64 +82,68 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<Flex direction="column" gap="20" :class="$style.wrapper">
-		<Breadcrumbs />
+	<Flex direction="column" :class="$style.wrapper">
+		<TestnetAlert />
 
-		<Flex direction="column" gap="16">
-			<Text size="13" weight="600" color="primary">
-				Tokens &nbsp;<Text color="tertiary">{{ tokens.length }} </Text>
-			</Text>
+		<Flex direction="column" gap="20" :class="$style.wrapper_inner">
+			<Breadcrumbs />
 
-			<ItemsContainer>
-				<SettingItem
-					v-for="token in tokens"
-					size="large"
-					:title="token.symbol"
-					:description="token.name"
-					icon="banknote"
-					raw
+			<Flex direction="column" gap="16">
+				<Text size="13" weight="600" color="primary">
+					Tokens &nbsp;<Text color="tertiary">{{ tokens.length }} </Text>
+				</Text>
+
+				<ItemsContainer>
+					<SettingItem
+						v-for="token in tokens"
+						size="large"
+						:title="token.symbol"
+						:description="token.name"
+						icon="banknote"
+						raw
+					>
+						<template #right>
+							<Flex align="center" gap="8">
+								<Tooltip position="end" delay="350">
+									<Icon
+										@click.stop="handleEdit(token)"
+										name="edit"
+										size="14"
+										color="tertiary"
+										:class="$style.icon_btn"
+									/>
+
+									<template #content> Edit token </template>
+								</Tooltip>
+
+								<Tooltip position="end" delay="350">
+									<Icon
+										v-if="appStore.networks.length > 1"
+										@click.stop="handleDelete(token)"
+										name="close-circle"
+										size="14"
+										color="tertiary"
+										:class="$style.icon_btn"
+									/>
+
+									<template #content> Delete token </template>
+								</Tooltip>
+							</Flex>
+						</template>
+					</SettingItem>
+				</ItemsContainer>
+
+				<Button
+					@click="popupStore.open('new_token')"
+					wide
+					type="secondary"
+					size="medium"
+					leftIcon="plus-circle"
+					leftIconColor="primary"
 				>
-					<template #right>
-						<Flex align="center" gap="8">
-							<Tooltip position="end" delay="350">
-								<Icon
-									@click.stop="handleEdit(token)"
-									name="edit"
-									size="14"
-									color="tertiary"
-									:class="$style.icon_btn"
-								/>
-
-								<template #content> Edit token </template>
-							</Tooltip>
-
-							<Tooltip position="end" delay="350">
-								<Icon
-									v-if="appStore.networks.length > 1"
-									@click.stop="handleDelete(token)"
-									name="close-circle"
-									size="14"
-									color="tertiary"
-									:class="$style.icon_btn"
-								/>
-
-								<template #content> Delete token </template>
-							</Tooltip>
-						</Flex>
-					</template>
-				</SettingItem>
-			</ItemsContainer>
-
-			<Button
-				@click="popupStore.open('new_token')"
-				wide
-				type="secondary"
-				size="medium"
-				leftIcon="plus-circle"
-				leftIconColor="primary"
-			>
-				<Text size="13">New token</Text>
-			</Button>
+					<Text size="13">New token</Text>
+				</Button>
+			</Flex>
 		</Flex>
 
 		<Navigation />
@@ -158,6 +162,10 @@ onBeforeUnmount(() => {
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
+}
+
+.wrapper_inner {
+	flex: 1;
 
 	padding: 20px 24px 80px 24px;
 }

@@ -521,6 +521,10 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         return groups;
     }
 
+    private isFinalized(r: TxReceipt) {
+        return (![AztecTxStatus.PENDING, AztecTxStatus.PROPOSED].includes(r.status))
+    }
+
     private async updateTxGroup(txs: Tx[]) {
         const node = await this.networkService.getNode(txs[0].chainId);
         if (!node) {
@@ -537,8 +541,9 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 }
             )
         );
+        
+        const finalized = receipts.filter(r => this.isFinalized(r.receipt));
 
-        const finalized = receipts.filter(r => r.receipt.status !== AztecTxStatus.PENDING);
         if (!finalized.length || finalized.length === receipts.length) {
             for (const r of receipts) {
                 await this.applyReceipt(r.tx, r.receipt);
@@ -571,7 +576,8 @@ export class TransactionService extends Service<Methods, Events> implements Serv
     private async applyReceipt(tx: Tx, receipt: TxReceipt) {
         const status = this.getTxStatus(receipt.status);
         const executionResult = this.getTxExecutionResult(receipt.executionResult);
-        if (status == TxStatus.Pending) {
+        const _tx = await this.txs.get(tx.hash);
+        if (status == _tx?.status) {
             this.logDebug(`Tx ${tx.hash.slice(0, 8)} still ${TxStatus[tx.status]}`);
             return;
         }
@@ -588,14 +594,17 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
         await this.txs.set(tx.hash, tx);
         this.emit("onTransactionUpdated", tx);
-        this.pending.delete(tx.hash);
+        if (this.isFinalized(receipt)) {
+            this.pending.delete(tx.hash);
+        }
+        
         this.logDebug(`Tx ${tx.hash.slice(0, 8)} ${receipt.status}`);
     }
 
     public async updateTxStatus(tx: Tx, status: TxStatus) {
         const current = await this.txs.get(tx.hash);  
-        if (!current) {  
-            throw new Error("Transaction not found in storage");  
+        if (!current) {
+            throw new Error("Transaction not found in storage");
         }
 
         if (current.status != TxStatus.Pending && status == TxStatus.Cancelling) {

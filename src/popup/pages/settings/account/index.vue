@@ -8,6 +8,9 @@
 </route>
 
 <script setup>
+/** Services */
+import { AccountServiceClient } from "@/wallet/services/account/client";
+
 /** Components */
 import Navigation from "../../../components/Navigation.vue"
 import Breadcrumbs from "@/components/ui/Settings/Breadcrumbs.vue"
@@ -31,6 +34,8 @@ const { openToast } = useToast()
 
 const router = useRouter()
 const version = __VERSION__
+
+const accountService = new AccountServiceClient()
 
 const accounts = computed(() => appStore.accounts.filter(a => a.visible).sort((a, b) => a.index - b.index))
 const isLoading = ref(false)
@@ -58,10 +63,8 @@ const handleHideAccount = async () => {
 	if (accounts.value.length === 1) return
 	isLoading.value = true
 
-	const nextAccount = accounts.value.filter(acc => acc.address !== appStore.account.address)[0]
 	try {
-		await appStore.changeAccountVisibility(appStore.account, false)
-		await appStore.selectAccount(nextAccount)
+		await accountService.changeAccountVisibility(appStore.profile?.id, appStore.network?.chainId, appStore.account.address, false)
 
 		openToast({ label: "Account successfully hidden" })
 
@@ -71,6 +74,7 @@ const handleHideAccount = async () => {
 		openToast({ label: "Failed to hide account", icon: "error" })
 	} finally {
 		isLoading.value = false
+		accountService.disconnect()
 	}
 }
 

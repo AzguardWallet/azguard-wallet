@@ -46,6 +46,7 @@ declare module 'vue' {
     SettingItem: typeof import('./../components/ui/Settings/SettingItem.vue')['default']
     SettingValue: typeof import('./../components/ui/Settings/SettingValue.vue')['default']
     Spinner: typeof import('./../components/ui/Spinner.vue')['default']
+    TestnetAlert: typeof import('./../components/TestnetAlert.vue')['default']
     Text: typeof import('./../components/core/Text.vue')['default']
     ToastManager: typeof import('./../components/ui/ToastManager.vue')['default']
     Toggle: typeof import('./../components/ui/Toggle.vue')['default']

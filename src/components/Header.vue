@@ -15,6 +15,8 @@ const appStore = useAppStore()
 const cacheStore = useCacheStore()
 const popupStore = usePopupStore()
 
+const account = computed(() => appStore.account)
+
 const logViewerService = new LogViewerServiceClient()
 logViewerService.onLog.add(onLogAdded)
 
@@ -232,7 +234,7 @@ onBeforeUnmount(() => {
 				<Icon name="vault" size="18" color="primary" />
 
 				<Text size="13" weight="600" color="primary" :class="$style.account_name">
-					{{ appStore.account?.name }}
+					{{ account?.name }}
 				</Text>
 
 				<Text

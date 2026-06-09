@@ -21,6 +21,8 @@ const appStore = useAppStore()
 
 <template>
 	<Flex v-if="appStore.isLogined" direction="column" :class="$style.wrapper">
+		<TestnetAlert />
+
 		<BalanceView />
 
 		<Flex direction="column" gap="32" :class="$style.content">

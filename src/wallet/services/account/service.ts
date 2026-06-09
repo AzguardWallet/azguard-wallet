@@ -84,14 +84,17 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
         name: string,
     ): Promise<Account | undefined> {
         const account = await this.storage.get(address);
+        
         if (account?.profileId !== profileId || account.chainId !== chainId) {
             return undefined;
         }
+
         if (account.name !== name) {
             account.name = name;
             await this.storage.set(address, account);
             this.emit("onAccountUpdated", account);
         }
+        
         return account;
     }
 

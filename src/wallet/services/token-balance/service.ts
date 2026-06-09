@@ -186,21 +186,14 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     };
 
     private readonly onTransactionUpdated = async (tx: Tx) => {
-        if (![TxStatus.Pending, TxStatus.Cancelling, TxStatus.Cancelled].includes(tx.status)) {
-            if (tx.origin.type === OriginType.UI && isLocalTx(tx)) {
-                const addresses = new Set<string>()
+        if (tx.status == TxStatus.Checkpointed) {
+            if (isLocalTx(tx)) {
                 const contracts = new Set<string>()
                 const tokenIds = new Set<number>()
 
                 for (const c of tx.calls) {
-                    if (c.contract && c.transfers) {
+                    if (c.contract) {
                         contracts.add(c.contract);
-                    }
-                    if (c.transfers) {
-                        for (const t of c.transfers) {
-                            addresses.add(t.to);
-                            addresses.add(t.from);
-                        }
                     }
                 }
 
@@ -212,7 +205,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
 
                 const _balances = await this.balances.getValues();
                 for (const tb of _balances) {
-                    if (addresses.has(tb.account) && tokenIds.has(tb.token)) {
+                    if (tokenIds.has(tb.token)) {
                         this.addBalanceToRefreshQueue(tb);
                     }
                 }

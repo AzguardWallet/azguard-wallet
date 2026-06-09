@@ -11,6 +11,10 @@ export const CHAIN_IDS = {
 	SANDBOX: 0,           // localhost:8080
 } as const
 
+export function isTestnet(chainId: number): boolean {
+	return chainId !== CHAIN_IDS.ALPHANET
+}
+
 export function getColorFromAddress(address: string): string {
 	if (!address) return colors[0]
 
@@ -30,13 +34,13 @@ export function getChainPosition(chainId: number): number {
 		case CHAIN_IDS.ALPHANET:
 			return 0
 		case CHAIN_IDS.TESTNET:
-			return 1
-		case CHAIN_IDS.DEVNET:
 			return 2
-		case CHAIN_IDS.SANDBOX:
+		case CHAIN_IDS.DEVNET:
 			return 3
-		default:
+		case CHAIN_IDS.SANDBOX:
 			return 4
+		default:
+			return 5
 	}
 }
 

@@ -9,10 +9,6 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 /** Utils */
 import { balanceFormatted } from "@/utils/amount.js"
 
-/** Store */
-import { useAppStore } from "@/stores/app.store"
-const appStore = useAppStore()
-
 const emit = defineEmits(["onRefreshBalance"])
 const props = defineProps({
 	tokenBalance: {
@@ -36,8 +32,8 @@ const totalBalance = computed(() => {
 	return balanceFormatted(total, 10).value
 })
 const description = computed(() => {
-	if (props.tokenBalance?.isMinting) return "Minting more tokens..."
 	if (props.tokenBalance?.isUpdating) return "Refreshing balance..."
+	if (props.tokenBalance?.isMinting) return "Minting more tokens..."
 	if (props.newToken) return "Minting in progress..."
 
 	return token.value?.name || 'unknown'
