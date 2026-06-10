@@ -5,7 +5,7 @@ import { ILogger } from "@/wallet/logger";
 import { ProfileService } from "@/wallet/services/profile/service";
 import { NetworkService, Network } from "@/wallet/services/network/service";
 import { AccountService, Account } from "@/wallet/services/account/service";
-import { DappSessionService, AccessLevel, DappSession } from "@/wallet/services/dapp-session/service";
+import { DappSessionService, AccessLevel, DappSession, DappMetadata } from "@/wallet/services/dapp-session/service";
 import { ExecutionService, type Operation, type OperationKind } from "@/wallet/services/execution/service";
 import { OriginType } from "@/wallet/services/transaction/service";
 import { getRandomHex, Lock } from "@/wallet/utils";
@@ -25,6 +25,10 @@ import {
     type CaipChain,
     type CaipAccount,
     type OperationRequest,
+    type VerificationPayload,
+    type VerificationResult,
+    type InteractionPayload,
+    type InteractionResult,
     Methods,
     Events,
     DappInteraction,
@@ -59,7 +63,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         this.executionService = services.get(ExecutionService.name);
     }
 
-    public async getInteractionPayload(id: string): Promise<ConnectionPayload | ExecutionPayload | CapabilitiesPayload> {
+    public async getInteractionPayload(id: string): Promise<InteractionPayload> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -67,7 +71,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         return interactionRequest.payload;
     }
 
-    public async resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilitiesResult): Promise<void> {
+    public async resolveInteraction(id: string, result: InteractionResult): Promise<void> {
         const interactionRequest = this.storage.get(id);
         if (!interactionRequest) {
             throw new Error("Invalid id");
@@ -93,6 +97,20 @@ export class DappInteractionService extends Service<Methods, Events> implements 
     public async connect(params: ConnectionParams, cancellationToken?: string): Promise<ConnectionResult> {
         const payload: ConnectionPayload = { params };
         return (await this.interaction("connect", payload, cancellationToken)) as ConnectionResult;
+    }
+
+    /**
+     * Shows the emoji verification window for a newly established SDK session.
+     * The window is informational (the protocol-required confirmation happens on the dApp side),
+     * but lets the user terminate the session if the emojis don't match the dApp's.
+     */
+    public async showVerification(
+        dappMetadata: DappMetadata,
+        verificationHash: string,
+        cancellationToken?: string,
+    ): Promise<VerificationResult> {
+        const payload: VerificationPayload = { params: { dappMetadata, verificationHash } };
+        return (await this.interaction("verify", payload, cancellationToken, { width: 400, height: 560 })) as VerificationResult;
     }
 
     public async execute(params: ExecutionParams, cancellationToken?: string): Promise<ExecutionResult> {
@@ -138,11 +156,12 @@ export class DappInteractionService extends Service<Methods, Events> implements 
 
     private async interaction(
         type: string,
-        payload: ConnectionPayload | ExecutionPayload | CapabilitiesPayload,
+        payload: InteractionPayload,
         cancellationToken?: string,
-    ): Promise<ConnectionResult | ExecutionResult | CapabilitiesResult> {
+        size?: { width: number; height: number },
+    ): Promise<InteractionResult> {
         let interaction: DappInteraction;
-        let promise: Promise<ConnectionResult | ExecutionResult | CapabilitiesResult>;
+        let promise: Promise<InteractionResult>;
 
         try {
             await this.lock.enter();
@@ -160,7 +179,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 cancellationToken: cancellationToken ?? id,
             };
 
-            promise = new Promise<ConnectionResult | ExecutionResult | CapabilitiesResult>((resolve, reject) => {
+            promise = new Promise<InteractionResult>((resolve, reject) => {
                 interaction.resolve = resolve;
                 interaction.reject = reject;
             });
@@ -173,8 +192,8 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         chrome.windows.create({
             type: "popup",
             url: chrome.runtime.getURL(`src/popup/index.html#/windows/${type}?requestId=${interaction.id}`),
-            height: 800,
-            width: 400,
+            height: size?.height ?? 800,
+            width: size?.width ?? 400,
         });
 
         return promise;
