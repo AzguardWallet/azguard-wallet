@@ -10,6 +10,10 @@ import type {
 } from "@aztec/aztec.js/wallet"
 import { CapabilitySchema } from "@aztec/aztec.js/wallet"
 import type { Account } from "@/wallet/services/account/spec"
+import type { Aliased } from "@/wallet/services/execution/spec"
+
+/** Utils */
+import { trimAddress } from "@/utils/string"
 
 // ── Public types ─────────────────────────────────────────────────────
 
@@ -31,9 +35,11 @@ export type Wildcard = { kind: "wildcard"; label: string }
  *
  * Exclusion keys are formed as `{keyPrefix}:{itemKey}` via `gridItemKey()`.
  */
+export type AccountItem = Aliased<Account>
+
 export type Grid =
 	| { kind: "grid"; keyPrefix: string; variant: "address"; items: string[] }
-	| { kind: "grid"; keyPrefix: string; variant: "account"; items: Account[] }
+	| { kind: "grid"; keyPrefix: string; variant: "account"; items: AccountItem[] }
 	| { kind: "grid"; keyPrefix: string; variant: "scope-pattern"; items: ScopePatternItem[] }
 
 /** Either a wildcard or a grid of items. */
@@ -377,14 +383,14 @@ export class UICapability {
 	setAccountItems(items: Account[]): void {
 		for (const f of this.features) {
 			if (f.items?.kind === "grid" && f.items.variant === "account") {
-				f.items.items = items
+				f.items.items = items.map(a => ({ ...a, alias: trimAddress(a.address, 6, 4) }))
 				return
 			}
 		}
 	}
 
 	/** Returns non-excluded account items (approved accounts for the session). */
-	getActiveAccountItems(): Account[] {
+	getActiveAccountItems(): AccountItem[] {
 		for (const f of this.features) {
 			if (f.items?.kind === "grid" && f.items.variant === "account") {
 				const g = f.items

@@ -25,6 +25,7 @@ import { Network, NetworkServiceClient } from "@/wallet/services/network/client"
 import { AccountServiceClient } from "@/wallet/services/account/client"
 import { DappMetadata } from "@/wallet/services/dapp-session/client"
 import { CapabilitiesPayload, DappInteractionServiceClient } from "@/wallet/services/dapp-interaction/client"
+import type { AliasedAddress } from "@/wallet/services/execution/spec"
 
 type UIDappMetadata = DappMetadata & {
 	loadingLogo?: boolean
@@ -186,18 +187,22 @@ const approve = async () => {
 		}
 
 		// Build per-capability accounts map (index in narrowedCaps → addresses)
-		const accountsMap = new Map<number, string[]>()
+		const accountsMap = new Map<number, AliasedAddress[]>()
 		let narrowedIdx = 0
 		for (const { cap, narrowed } of narrowResults) {
 			if (narrowed !== null) {
 				if (cap.type === "accounts") {
-					const approved = cap.getActiveAccountItems().map(a => a.address)
+					const approved = cap.getActiveAccountItems().map(a => {
+						return {
+							alias: a.alias!,
+							address: a.address,
+						}
+					})
 					accountsMap.set(narrowedIdx, approved)
 				}
 				narrowedIdx++
 			}
 		}
-
 		const result = capabilitiesToPermissions(
 			filteredManifest,
 			payload.value!.params.chainId,

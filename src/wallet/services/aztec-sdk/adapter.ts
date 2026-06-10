@@ -15,8 +15,8 @@ import type {
     AztecProfileTxOperation,
     AztecSendTxOperation,
     AztecCreateAuthWitOperation,
+    AliasedAddress
 } from "@/wallet/services/execution/models/operation";
-import { trimAddress } from "@/utils/string";
 
 /** Validates that an account address is present and non-empty. */
 function requireAccountAddress(value: unknown, errorMessage: string): string {
@@ -205,7 +205,7 @@ export const BASE_METHODS = ["aztec_getChainInfo", "aztec_registerSender"];
 export function capabilitiesToPermissions(
     manifest: AppCapabilities,
     chainId: number,
-    accountsMap: Map<number, string[]>,
+    accountsMap: Map<number, AliasedAddress[]>,
 ): CapabilitiesResult {
     const chain: CaipChain = `aztec:${chainId}`;
     const methods = new Set<string>(BASE_METHODS);
@@ -221,8 +221,8 @@ export function capabilitiesToPermissions(
                 granted.push({
                     ...cap,
                     accounts: capAccounts.map(addr => ({
-                        alias: trimAddress(addr),
-                        item: AztecAddress.fromString(addr),
+                        alias: addr.alias!,
+                        item: AztecAddress.fromString(addr.address),
                     })),
                 });
                 break;
@@ -271,7 +271,7 @@ export function capabilitiesToPermissions(
     const allAddresses = new Set<string>();
     for (const addrs of accountsMap.values()) {
         for (const addr of addrs) {
-            allAddresses.add(addr);
+            allAddresses.add(addr.address);
         }
     }
     const accounts = [...allAddresses].map(addr => `${chain}:${addr}` as CaipAccount);

@@ -1,4 +1,8 @@
-import type { OperationRequest } from "./spec";
+import type { CaipChain, OperationRequest } from "./spec";
+
+import type { DappSession } from "@/wallet/services/dapp-session/spec";
+import type { AliasedAddress } from "@/wallet/services/execution/spec";
+import { trimAddress } from "@/utils/string";
 
 // Serialized capability types — shapes after jsonSanitize() on GrantedCapability instances.
 // AztecAddress/Fr become strings, everything else passes through.
@@ -212,4 +216,22 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
         // Operations not subject to scope enforcement: getChainInfo, registerSender,
         // getAccounts, getAddressBook pass through without checks.
     }
+}
+
+/**
+ * Resolves session accounts for `chain` to { address, alias } pairs.
+ * Alias comes from the granted "accounts" capability (set by the user
+ * in the capabilities approval popup); falls back to trimAddress for
+ * sessions without stored capabilities.
+ */
+export function getAliasedAccounts(session: DappSession, chain: CaipChain): AliasedAddress[] {
+    const accountsCap = session.capabilities?.find(
+        (c): c is SerializedAccountsCapability => c.type === "accounts",
+    );
+    const aliasMap = new Map(accountsCap?.accounts.map(a => [a.item, a.alias]) ?? []);
+
+    return session.accounts
+        .filter(x => x.startsWith(chain))
+        .map(x => x.split(":").at(-1)!)
+        .map(address => ({ address, alias: aliasMap.get(address) ?? trimAddress(address, 6, 4) }));
 }
