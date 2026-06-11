@@ -1,15 +1,16 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T">
 /**
  * A grid of toggleable items with consistent include/exclude behavior.
  * Used for all item lists: contracts, classes, event sources, accounts, and scope patterns.
  *
  * Renders items as rows in a CSS subgrid (icon + 2 content columns).
- * Row content is provided via the #item slot — the parent determines what to render.
+ * Row content is provided via the #item slot — the parent determines what to render,
+ * and the slot's `item` is typed from the `items` prop.
  */
 
 defineProps<{
 	/** Array of items to render as grid rows */
-	items: unknown[]
+	items: T[]
 	/** Returns true if item at index is active (green check), false for inactive (gray circle, dimmed) */
 	isActive: (index: number) => boolean
 	/** Non-interactive and visually dimmed (e.g., parent switch is excluded) */

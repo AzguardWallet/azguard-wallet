@@ -104,115 +104,126 @@ const finishEditingAlias = (item: AccountItem) => {
 						</Badge>
 					</Flex>
 
-					<!-- Item grid -->
+					<!-- Identifier grid: contract addresses, class ids, or event sources -->
 					<ItemsGrid
-						v-else-if="feature.items?.kind === 'grid' && feature.items.items.length > 0"
+						v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'address' && feature.items.items.length > 0"
+						:items="feature.items.items"
+						:isActive="(i: number) => !isExcluded(itemKey(feature, i))"
+						@toggle="(i: number) => toggleItem(itemKey(feature, i))"
+					>
+						<template #item="{ item }">
+							<Text size="13" color="primary" mono>{{ trimAddress(item, 6, 4) }}</Text>
+						</template>
+					</ItemsGrid>
+
+					<!-- Wallet accounts grid: name + address + editable shared alias -->
+					<ItemsGrid
+						v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'account' && feature.items.items.length > 0"
 						:items="feature.items.items"
 						:isActive="(i: number) => !isExcluded(itemKey(feature, i))"
 						@toggle="(i: number) => toggleItem(itemKey(feature, i))"
 					>
 						<template #item="{ item, index }">
-							<!-- Identifier: contract address, class id, or event source -->
-							<template v-if="feature.items.variant === 'address'">
-								<Text size="13" color="primary" mono>{{ trimAddress(item, 6, 4) }}</Text>
-							</template>
+							<Flex align="center" justify="between" wide style="min-width: 0;">
+								<Flex direction="column" gap="4" wide style="min-width: 0;">
+									<Text size="13" weight="600" color="primary">{{ item.name }}</Text>
+									<Flex align="center" gap="6">
+										<Text size="13" color="secondary"> Address: </Text>
+										<Text size="13" color="primary" mono>{{ trimAddress(item.address, 6, 4) }}</Text>
+									</Flex>
 
-							<!-- Wallet account: name + address -->
-							<template v-else-if="feature.items.variant === 'account'">
-								<Flex align="center" justify="between" wide style="min-width: 0;">
-									<Flex direction="column" gap="4" wide style="min-width: 0;">
-										<Text size="13" weight="600" color="primary">{{ item.name }}</Text>
-										<Flex align="center" gap="6">
-											<Text size="13" color="secondary"> Address: </Text>
-											<Text size="13" color="primary" mono>{{ trimAddress(item.address, 6, 4) }}</Text>
+									<Flex align="center" gap="6" justify="between" wide>
+										<Flex align="center" gap="6" v-if="editingIndex !== index" style="flex: 1; min-width: 0; overflow: hidden;">
+											<Text size="13" color="secondary" style="flex-shrink: 0;">Shared name:</Text>
+											<Text size="13" color="primary" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+												{{ item.alias }}
+											</Text>
 										</Flex>
 
-										<Flex align="center" gap="6" justify="between" wide>
-											<Flex align="center" gap="6" v-if="editingIndex !== index" style="flex: 1; min-width: 0; overflow: hidden;">
-												<Text size="13" color="secondary" style="flex-shrink: 0;">Shared name:</Text>
-												<Text size="13" color="primary" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-													{{ item.alias }}
-												</Text>
-											</Flex>
+										<Input
+											v-else
+											@click.stop
+											size="small"
+											maxLength="25"
+											:placeholder="trimAddress(item.address, 6, 4)"
+											:modelValue="editingAlias"
+											:autofocus="true"
+											:sanitize="true"
+											@maxLengthReached="handleMaxLengthReached"
+											@update:modelValue="editingAlias = $event"
+											@blur="finishEditingAlias(item)"
+											@keydown.enter="finishEditingAlias(item)"
+										>
+											<template #suffix>
+												<Transition name="fade">
+													<Tooltip position="end">
+														<Flex v-show="maxLengthReached" align="center" gap="6">
+															<Icon name="warning" size="12" color="yellow" />
+														</Flex>
 
-											<Input
-												v-else
-												@click.stop
-												size="small"
-												maxLength="25"
-												:placeholder="trimAddress(item.address, 6, 4)"
-												:modelValue="editingAlias"
-												:autofocus="true"
-												:sanitize="true"
-												@maxLengthReached="handleMaxLengthReached"
-												@update:modelValue="editingAlias = $event"
-												@blur="finishEditingAlias(item as AccountItem)"
-												@keydown.enter="finishEditingAlias(item as AccountItem)"
-											>
-												<template #suffix>
-													<Transition name="fade">
-														<Tooltip position="end">
-															<Flex v-show="maxLengthReached" align="center" gap="6">
-																<Icon name="warning" size="12" color="yellow" />
-															</Flex>
+														<template #content>
+															{{ `Maximum alias length is 25 characters` }}
+														</template>
+													</Tooltip>
+												</Transition>
 
-															<template #content>
-																{{ `Maximum alias length is 25 characters` }}
-															</template>
-														</Tooltip>
-													</Transition>
+											</template>
+										</Input>
 
-												</template>
-											</Input>
-
-											<Flex
-												v-if="editingIndex !== index"
-												@click.stop="startEditingAlias(item as AccountItem, index)"
-												align="center"
-												:class="$style.edit_icon_wrapper"
-											>
-												<Icon name="edit" size="11" color="tertiary" :class="$style.edit_icon" />
-											</Flex>
+										<Flex
+											v-if="editingIndex !== index"
+											@click.stop="startEditingAlias(item, index)"
+											align="center"
+											:class="$style.edit_icon_wrapper"
+										>
+											<Icon name="edit" size="11" color="tertiary" :class="$style.edit_icon" />
 										</Flex>
 									</Flex>
 								</Flex>
-							</template>
+							</Flex>
+						</template>
+					</ItemsGrid>
 
-							<!-- Scope pattern: function + "in" + contract -->
-							<template v-else-if="feature.items.variant === 'scope-pattern'">
-								<Flex align="center" gap="8" justify="between" wide style="min-width: 0;">
-									<Flex align="center" style="flex: 1; min-width: 0; overflow: hidden;">
-										<template v-if="item.function === '*'">
-											<Flex align="center" gap="4">
-												<Badge variant="purple" :class="$style.inline_badge">
-													<Text size="10" weight="600" color="inverse">any</Text>
-												</Badge>
-												<Text size="13" color="primary">method</Text>
-											</Flex>
-										</template>
-										<Tooltip v-else position="center" side="top" wide>
-											<Text size="13" weight="600" color="primary" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-												{{ item.function }}
-											</Text>
-
-											<template #content>
-												{{ item.function }}
-											</template>
-										</Tooltip>
-									</Flex>
-
-									<Flex align="center" justify="end" gap="4" style="flex-shrink: 0;">
-										<Text size="12" color="tertiary">in</Text>
-										<template v-if="item.contract === '*'">
+					<!-- Scope patterns grid: function + "in" + contract -->
+					<ItemsGrid
+						v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'scope-pattern' && feature.items.items.length > 0"
+						:items="feature.items.items"
+						:isActive="(i: number) => !isExcluded(itemKey(feature, i))"
+						@toggle="(i: number) => toggleItem(itemKey(feature, i))"
+					>
+						<template #item="{ item }">
+							<Flex align="center" gap="8" justify="between" wide style="min-width: 0;">
+								<Flex align="center" style="flex: 1; min-width: 0; overflow: hidden;">
+									<template v-if="item.function === '*'">
+										<Flex align="center" gap="4">
 											<Badge variant="purple" :class="$style.inline_badge">
 												<Text size="10" weight="600" color="inverse">any</Text>
 											</Badge>
-											<Text size="12" color="secondary">contract</Text>
+											<Text size="13" color="primary">method</Text>
+										</Flex>
+									</template>
+									<Tooltip v-else position="center" side="top" wide>
+										<Text size="13" weight="600" color="primary" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+											{{ item.function }}
+										</Text>
+
+										<template #content>
+											{{ item.function }}
 										</template>
-										<Text v-else size="13" color="primary" mono>{{ trimAddress(item.contract, 6, 4) }}</Text>
-									</Flex>
+									</Tooltip>
 								</Flex>
-							</template>
+
+								<Flex align="center" justify="end" gap="4" style="flex-shrink: 0;">
+									<Text size="12" color="tertiary">in</Text>
+									<template v-if="item.contract === '*'">
+										<Badge variant="purple" :class="$style.inline_badge">
+											<Text size="10" weight="600" color="inverse">any</Text>
+										</Badge>
+										<Text size="12" color="secondary">contract</Text>
+									</template>
+									<Text v-else size="13" color="primary" mono>{{ trimAddress(item.contract, 6, 4) }}</Text>
+								</Flex>
+							</Flex>
 						</template>
 					</ItemsGrid>
 				</template>
