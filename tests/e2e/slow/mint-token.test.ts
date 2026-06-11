@@ -28,6 +28,28 @@ test("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension
     await typeIntoInput(page, "Symbol", "TST")
     await typeIntoInput(page, "0.00", "100")
 
+    // 4a. Select the Sponsored FPC fee method — a fresh account has 0 FJ, so the
+    // default "Fee Juice" method yields no valid fee settings and Mint stays disabled.
+    // Wait for fee init to finish (method dropdown shows "Fee Juice" instead of "Select method")
+    await page.waitForFunction(
+        () => document.body.innerText.includes("Pay fee with") && !document.body.innerText.includes("Select method"),
+        { timeout: 30_000 }
+    )
+    const methodTrigger = await page.waitForSelector("text/Fee Juice", { visible: true })
+    await methodTrigger!.click()
+    // Pick "FPC" in the methods dropdown
+    await page.waitForSelector("text/FPC", { visible: true, timeout: 5_000 })
+    await page.evaluate(() => {
+        const els = [...document.querySelectorAll("*")]
+        const fpcItem = els.filter((el) => el.textContent?.trim() === "FPC").pop()
+        fpcItem?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    })
+    // Open the FPC selection popup and pick the discovered Sponsored FPC
+    const selectFpc = await page.waitForSelector("text/Select FPC", { visible: true, timeout: 10_000 })
+    await selectFpc!.click()
+    const sponsored = await page.waitForSelector("text/Sponsored", { visible: true, timeout: 15_000 })
+    await sponsored!.click()
+
     // Wait for Mint button enabled (FeeSettingsCard must finish init first)
     // Note: Button component uses CSS class (pointer-events: none) not HTML disabled attribute
     await page.waitForFunction(() => {
