@@ -33,12 +33,20 @@ The logger captures service worker logs that are otherwise not directly visible.
 
 **Log trimming:** Large Aztec objects (ContractArtifact, bytecode, witnesses) are automatically truncated to prevent memory issues.
 
+**Per-line cap for agent reading:** the logger accepts a `maxLength` query param that truncates every log line to N chars (`... (truncated, full length: X)`). When reading logs via MCP snapshots, open the logger with it — full payloads flood the snapshot/context otherwise:
+
+```
+chrome-extension://<extension-id>/src/popup/index.html?maxLength=300#/windows/logger
+```
+
+Note the param goes in the query string *before* the `#` hash, not after the route.
+
 ## Key Routes
 
 | Page | Route |
 |------|-------|
 | Main | `#/popup/general` |
-| Logger | `#/windows/logger` |
+| Logger | `#/windows/logger` (supports `?maxLength=N` before the hash) |
 | Advanced Settings | `#/popup/settings/advanced` |
 
 ## Interaction Popup Windows (connect / capabilities / execute / verify)
