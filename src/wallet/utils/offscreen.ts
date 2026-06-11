@@ -23,6 +23,12 @@ const onOffscreenTimeout = () => {
 }
 
 export async function ensureOffscreenRunning() {
+    // While creation is in flight the context already exists but has no message listener yet, so wait for READY first
+    if (offscreenPromise) {
+        await offscreenPromise;
+        return;
+    }
+
     const existingContexts = await chrome.runtime.getContexts({
         contextTypes: ["OFFSCREEN_DOCUMENT"],
         documentUrls: [offscreenUrl],
@@ -43,6 +49,11 @@ export async function ensureOffscreenRunning() {
             url: path,
             reasons: ["WORKERS"],
             justification: "Offscreen document is used for running PXE in it",
+        }).catch((error: Error) => {
+            chrome.runtime.onMessage.removeListener(onOffscreenReady);
+            clearTimeout(offscreenTimeout);
+            rejectOffscreenPromise(`Failed to create offscreen document: ${error.message}`);
+            offscreenPromise = null;
         });
     }
 
