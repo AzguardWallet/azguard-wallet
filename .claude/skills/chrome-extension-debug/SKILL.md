@@ -40,3 +40,31 @@ The logger captures service worker logs that are otherwise not directly visible.
 | Main | `#/popup/general` |
 | Logger | `#/windows/logger` |
 | Advanced Settings | `#/popup/settings/advanced` |
+
+## Interaction Popup Windows (connect / capabilities / execute / verify)
+
+Chrome DevTools MCP does **not** see windows opened via `chrome.windows.create` — they never appear in `list_pages`, so you cannot select, snapshot, or click them directly. Also, `new_page` with a `chrome-extension://` URL silently fails to register; pages created with `new_page("about:blank")` and then navigated via `navigate_page` to the extension URL work fine.
+
+**Workaround — drive popups via `chrome.extension.getViews()`:**
+
+1. `new_page("about:blank")` → `navigate_page` to any extension page (e.g. the logger route). This tab IS visible to MCP.
+2. From that tab, `evaluate_script` gives you direct `Window` references to ALL extension views, including popup windows:
+
+```javascript
+() => {
+  const views = chrome.extension.getViews();           // all extension pages incl. popups
+  const v = views.find(v => v.location.hash.startsWith('#/windows/connect'));
+  // full DOM access: read state, click buttons
+  const approve = [...v.document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Approve');
+  approve.click();
+  return v.document.body.innerText;
+}
+```
+
+Useful patterns:
+- Poll for a window to appear: loop with `setTimeout` inside one async `evaluate_script` (faster than switching MCP pages).
+- Toggle elements (checkboxes like "Remember this app"): click the element ONCE — clicking both element and its parent fires the Vue handler twice and toggles back.
+- `chrome.storage.local.get(null)` from the extension tab inspects background state (e.g. `azguard:core:aztecSdkConnectedApps`).
+- Reload the extension after a rebuild from a `chrome://extensions` page: `chrome.developerPrivate.reload(extId, {failQuietly: false}, cb)`.
+
+**Timing caveat**: dApp discovery has a timeout (typically 30–60s) — if the connect popup isn't approved in time, the dApp reports that no wallet was found even though the wallet-side approve succeeded.
