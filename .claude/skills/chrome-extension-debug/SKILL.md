@@ -76,3 +76,9 @@ Useful patterns:
 - Reload the extension after a rebuild from a `chrome://extensions` page: `chrome.developerPrivate.reload(extId, {failQuietly: false}, cb)`.
 
 **Timing caveat**: dApp discovery has a timeout (typically 30–60s) — if the connect popup isn't approved in time, the dApp reports that no wallet was found even though the wallet-side approve succeeded.
+
+## Driving Transactions Through the UI
+
+Empirical timings (Testnet): proof generation 40–80s, ~1–3 min per transaction total; balance refresh takes a while and is not always immediate. Poll with snapshots every ~20s — tighter polling just burns context while proofs grind.
+
+**Sequential sends**: submit the next transaction only after the previous one's "Creating transaction" card resolves into a completed transaction with a tx hash (the label varies by operation type — not always "Transfer"). Balances can be refreshed manually if needed: ⋮ menu near "Tokens" → "Refresh balances".
