@@ -194,7 +194,7 @@ const approve = async () => {
 				if (cap.type === "accounts") {
 					const approved = cap.getActiveAccountItems().map(a => {
 						return {
-							alias: a.alias!,
+							alias: a.alias,
 							address: a.address,
 						}
 					})

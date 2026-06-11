@@ -940,7 +940,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return op.accounts
             .filter(acc => allAccounts.some(x => x.address === acc.address))
             .map(acc => ({
-                alias: acc.alias!,
+                alias: acc.alias,
                 item: AztecAddress.fromString(acc.address),
             }));
     }

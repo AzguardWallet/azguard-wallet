@@ -10,7 +10,7 @@ import type {
 } from "@aztec/aztec.js/wallet"
 import { CapabilitySchema } from "@aztec/aztec.js/wallet"
 import type { Account } from "@/wallet/services/account/spec"
-import type { Aliased } from "@/wallet/services/execution/spec"
+import type { WithAlias } from "@/wallet/services/execution/spec"
 
 /** Utils */
 import { trimAddress } from "@/utils/string"
@@ -35,7 +35,7 @@ export type Wildcard = { kind: "wildcard"; label: string }
  *
  * Exclusion keys are formed as `{keyPrefix}:{itemKey}` via `gridItemKey()`.
  */
-export type AccountItem = Aliased<Account>
+export type AccountItem = WithAlias<Account>
 
 export type Grid =
 	| { kind: "grid"; keyPrefix: string; variant: "address"; items: string[] }

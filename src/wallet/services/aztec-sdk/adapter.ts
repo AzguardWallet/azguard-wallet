@@ -221,7 +221,7 @@ export function capabilitiesToPermissions(
                 granted.push({
                     ...cap,
                     accounts: capAccounts.map(addr => ({
-                        alias: addr.alias!,
+                        alias: addr.alias,
                         item: AztecAddress.fromString(addr.address),
                     })),
                 });

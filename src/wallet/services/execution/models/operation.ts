@@ -151,8 +151,8 @@ export type AztecGetAddressBookOperation = {
 };
 
 
-export type Aliased<T> = T & { alias?: string };
-export type AliasedAddress = Aliased<{ address: string }>; // { address: string; alias: string }
+export type WithAlias<T> = T & { alias: string };
+export type AliasedAddress = WithAlias<{ address: string }>; // { address: string; alias: string }
 export type AztecGetAccountsOperation = {
     readonly kind: "aztec_getAccounts";
     readonly networkId: string;

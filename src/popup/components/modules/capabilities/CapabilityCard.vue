@@ -38,12 +38,22 @@ const itemKey = (f: Feature, i: number): string => {
 }
 
 const editingIndex = ref<number | null>(null)
-const handleAccountAliasUpdate = (item: AccountItem, alias: string) => {
-	item.alias = alias
+const editingAlias = ref<string | null>(null)
+const startEditingAlias = (item: AccountItem, index: number) => {
+	editingAlias.value = item.alias === trimAddress(item.address, 6, 4) ? "" : item.alias ?? ""
+	editingIndex.value = index
 }
+
+const maxLengthReached = ref(false)
+const handleMaxLengthReached = (event: boolean) => {
+	maxLengthReached.value = event
+}
+
 const finishEditingAlias = (item: AccountItem) => {
-	if (!item.alias!.trim()) item.alias = trimAddress(item.address, 6, 4)
+	const trimmedAlias = editingAlias.value?.trim() ?? ""
+	item.alias = trimmedAlias || trimAddress(item.address, 6, 4)
 	editingIndex.value = null
+	maxLengthReached.value = false
 }
 </script>
 
@@ -129,17 +139,35 @@ const finishEditingAlias = (item: AccountItem) => {
 												v-else
 												@click.stop
 												size="small"
+												maxLength="25"
 												:placeholder="trimAddress(item.address, 6, 4)"
-												:modelValue="item.alias"
+												:modelValue="editingAlias"
 												:autofocus="true"
-												@update:modelValue="handleAccountAliasUpdate(item as AccountItem, $event)"
+												:sanitize="true"
+												@maxLengthReached="handleMaxLengthReached"
+												@update:modelValue="editingAlias = $event"
 												@blur="finishEditingAlias(item as AccountItem)"
 												@keydown.enter="finishEditingAlias(item as AccountItem)"
-											/>
+											>
+												<template #suffix>
+													<Transition name="fade">
+														<Tooltip position="end">
+															<Flex v-show="maxLengthReached" align="center" gap="6">
+																<Icon name="warning" size="12" color="yellow" />
+															</Flex>
+
+															<template #content>
+																{{ `Maximum alias length is 25 characters` }}
+															</template>
+														</Tooltip>
+													</Transition>
+
+												</template>
+											</Input>
 
 											<Flex
 												v-if="editingIndex !== index"
-												@click.stop="editingIndex = index"
+												@click.stop="startEditingAlias(item as AccountItem, index)"
 												align="center"
 												:class="$style.edit_icon_wrapper"
 											>
@@ -152,24 +180,37 @@ const finishEditingAlias = (item: AccountItem) => {
 
 							<!-- Scope pattern: function + "in" + contract -->
 							<template v-else-if="feature.items.variant === 'scope-pattern'">
-								<template v-if="item.function === '*'">
-									<Flex align="center" gap="4">
-										<Badge variant="purple" :class="$style.inline_badge">
-											<Text size="10" weight="600" color="inverse">any</Text>
-										</Badge>
-										<Text size="13" color="primary">method</Text>
+								<Flex align="center" gap="8" justify="between" wide style="min-width: 0;">
+									<Flex align="center" style="flex: 1; min-width: 0; overflow: hidden;">
+										<template v-if="item.function === '*'">
+											<Flex align="center" gap="4">
+												<Badge variant="purple" :class="$style.inline_badge">
+													<Text size="10" weight="600" color="inverse">any</Text>
+												</Badge>
+												<Text size="13" color="primary">method</Text>
+											</Flex>
+										</template>
+										<Tooltip v-else position="center" side="top" wide>
+											<Text size="13" weight="600" color="primary" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+												{{ item.function }}
+											</Text>
+
+											<template #content>
+												{{ item.function }}
+											</template>
+										</Tooltip>
 									</Flex>
-								</template>
-								<Text v-else size="13" weight="600" color="primary">{{ item.function }}</Text>
-								<Flex align="center" gap="4">
-									<Text size="12" color="tertiary">in</Text>
-									<template v-if="item.contract === '*'">
-										<Badge variant="purple" :class="$style.inline_badge">
-											<Text size="10" weight="600" color="inverse">any</Text>
-										</Badge>
-										<Text size="12" color="secondary">contract</Text>
-									</template>
-									<Text v-else size="13" color="primary" mono>{{ trimAddress(item.contract, 6, 4) }}</Text>
+
+									<Flex align="center" justify="end" gap="4" style="flex-shrink: 0;">
+										<Text size="12" color="tertiary">in</Text>
+										<template v-if="item.contract === '*'">
+											<Badge variant="purple" :class="$style.inline_badge">
+												<Text size="10" weight="600" color="inverse">any</Text>
+											</Badge>
+											<Text size="12" color="secondary">contract</Text>
+										</template>
+										<Text v-else size="13" color="primary" mono>{{ trimAddress(item.contract, 6, 4) }}</Text>
+									</Flex>
 								</Flex>
 							</template>
 						</template>
