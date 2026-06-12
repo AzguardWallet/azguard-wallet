@@ -198,7 +198,7 @@ function reconstructSimScope(
  * Each feature: one switch (badge "Any" if wildcard scope) + scope pattern items or null.
  */
 const SIMULATION_DEF: CapabilityDef<SimulationCapability> = {
-	label: "Transaction simulation",
+	label: "Simulation",
 	extract: (cap) => {
 		const features: Feature[] = []
 		if (cap.transactions) features.push(extractSimScope(cap.transactions.scope, "transactions", "Transaction simulation", "tx_pattern"))
