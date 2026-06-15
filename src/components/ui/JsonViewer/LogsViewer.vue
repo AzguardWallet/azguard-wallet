@@ -27,6 +27,7 @@ import { createLoggerTheme } from "./creator.js"
 
 const editorRef = ref(null)
 let view = null
+let maxDataLength = null
 
 const logViewerService = new LogViewerServiceClient()
 logViewerService.onLog.add(onLogAdded)
@@ -268,6 +269,10 @@ function formatSingleLog(log) {
 		data = formatArg(log.data)
 	}
 
+	if (maxDataLength && data.length > maxDataLength) {
+		data = `${data.slice(0, maxDataLength)}... (truncated, full length: ${data.length})`
+	}
+
 	return `[${time}] [${log.source}] ${getLogLevelName(log.level)}: ${data}`
 }
 function formatLogs(logs) {
@@ -470,6 +475,13 @@ async function onSettingUpdate(setting) {
 onMounted(async () => {
 	await nextTick()
 
+	const params = new URLSearchParams(window.location.search)
+	const maxLengthParam = params.get("maxLength")
+	if (maxLengthParam) {
+		maxDataLength = parseInt(maxLengthParam)
+		if (isNaN(maxDataLength) || maxDataLength <= 0) maxDataLength = null
+	}
+
 	maxLogsCount.value = (await configService.getValue("debugMode")) ? 10_000 : 1_000
 	
 	logs.value = await getLogs()
@@ -504,9 +516,8 @@ onMounted(async () => {
 		}
 	})
 
-	const params = new URLSearchParams(window.location.search)
 	const targetLogId = params.get("logId")
-	if (targetLogId) {		
+	if (targetLogId) {
 		scrollToTargetLog(+targetLogId)
 		disableAutoScroll()
 	} else {
