@@ -151,6 +151,7 @@ export class TaskService extends Service<Methods, Events> implements ServiceSpec
         this.validateNotPending(task);
         this.validateTaskBeforeFinish(task);
 
+        this.logError("Task failed", task.content.label, error);
         task.error = error;
         task.finishedAt = Date.now();
         task.status = TaskStatus.Failed;

@@ -45,7 +45,7 @@ test("create profile with password", async ({ extension }) => {
 
     // Verify post-registration state
     await page.waitForSelector("text/Account", { visible: true, timeout: 3_000 })
-    await page.waitForSelector("text/Devnet", { visible: true })
+    await page.waitForSelector("text/Testnet", { visible: true })
     await page.waitForSelector("text/Send", { visible: true })
     await page.waitForSelector("text/Receive", { visible: true })
 

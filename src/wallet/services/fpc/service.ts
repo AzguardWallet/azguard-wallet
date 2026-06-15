@@ -151,11 +151,16 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
         const fpcInstance = await pxe.getContractInstance(AztecAddress.fromString(address));
         if (!fpcInstance) {
+            this.logError("Failed to add FPC: contract instance not found", address);
             throw new Error("Contract instance not found");
         }
 
         const fpcArtifact = await pxe.getContractArtifact(fpcInstance.currentContractClassId);
         if (!fpcArtifact) {
+            this.logError(
+                "Failed to add FPC: contract artifact not found",
+                fpcInstance.currentContractClassId.toString(),
+            );
             throw new Error("Contract artifact not found");
         }
 
