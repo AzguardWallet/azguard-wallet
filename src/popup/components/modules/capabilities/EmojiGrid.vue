@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { hashToEmoji } from "@aztec/wallet-sdk/crypto"
 
-const props = defineProps<{
-	hash: string
-}>()
+const props = withDefaults(
+	defineProps<{
+		hash: string
+		size?: "small" | "large"
+	}>(),
+	{ size: "small" },
+)
 
 const grid = computed(() => {
 	const emojis = [...hashToEmoji(props.hash, 9)]
@@ -14,7 +18,9 @@ const grid = computed(() => {
 <template>
 	<Flex direction="column" align="center" gap="2">
 		<Flex v-for="(row, i) in grid" :key="i" align="center" gap="2">
-			<Text v-for="(emoji, j) in row" :key="j" :class="$style.emoji_cell">{{ emoji }}</Text>
+			<Text v-for="(emoji, j) in row" :key="j" :class="[$style.emoji_cell, size === 'large' && $style.large]">{{
+				emoji
+			}}</Text>
 		</Flex>
 	</Flex>
 </template>
@@ -30,5 +36,12 @@ const grid = computed(() => {
 	justify-content: center;
 	border-radius: 4px;
 	background: var(--gray-3);
+}
+
+.large {
+	font-size: 32px;
+	width: 52px;
+	height: 52px;
+	border-radius: 8px;
 }
 </style>

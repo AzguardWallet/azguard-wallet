@@ -29,8 +29,8 @@ export const DAPP_INTERACTION_SERVICE_NAME = "dapp-interaction";
 
 export type DappInteraction = {
     id: string;
-    payload: ConnectionPayload | ExecutionPayload | CapabilitiesPayload;
-    resolve: (result: ConnectionResult | ExecutionResult | CapabilitiesResult) => void;
+    payload: InteractionPayload;
+    resolve: (result: InteractionResult) => void;
     reject: (reason: string) => void;
     cancellationToken: string;
 };
@@ -206,9 +206,32 @@ export type CapabilitiesResult = {
 
 export type ExecutionResult = OperationResult[];
 
+/**
+ * Payload for the emoji verification window shown when an SDK session is established.
+ * The verificationHash is derived from the ECDH key exchange (see @aztec/wallet-sdk crypto)
+ * and is rendered as an emoji grid for visual anti-MITM comparison with the dApp.
+ */
+export type VerificationPayload = {
+    params: {
+        dappMetadata: DappMetadata;
+        verificationHash: string;
+    };
+};
+
+export type VerificationResult = {
+    /** "mismatch" means the user reported the emojis differ from the dApp's — the session must be terminated */
+    action: "match" | "mismatch";
+};
+
+/** Any interaction window's payload, discriminated at the call site by the window route. */
+export type InteractionPayload = ConnectionPayload | ExecutionPayload | CapabilitiesPayload | VerificationPayload;
+
+/** The matching result for any interaction window. */
+export type InteractionResult = ConnectionResult | ExecutionResult | CapabilitiesResult | VerificationResult;
+
 export type Methods = {
-    getInteractionPayload(id: string): ConnectionPayload | ExecutionPayload | CapabilitiesPayload;
-    resolveInteraction(id: string, result: ConnectionResult | ExecutionResult | CapabilitiesResult): void;
+    getInteractionPayload(id: string): InteractionPayload;
+    resolveInteraction(id: string, result: InteractionResult): void;
     rejectInteraction(id: string, reason: string): void;
 };
 

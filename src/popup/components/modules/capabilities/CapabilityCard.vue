@@ -33,6 +33,8 @@ const toggleItem = (key: string) => {
 	}
 }
 
+const isFeatureOff = (f: Feature) => f.switches.length > 0 && f.switches.every(s => isExcluded(s.key))
+
 const itemKey = (f: Feature, i: number): string => {
 	return gridItemKey(f.items as Grid, i)
 }
@@ -78,47 +80,60 @@ const finishEditingAlias = (item: AccountItem) => {
 
 		<!-- Detail area -->
 		<div :class="[$style.detail_wrapper, expanded && $style.detail_expanded]">
-			<Flex direction="column" gap="8" :class="$style.detail_content">
-				<template v-for="(feature, fi) in cap.features" :key="fi">
-					<!-- Boolean switch rows -->
-					<SwitchRow
-						v-for="s in feature.switches"
-						:key="s.key"
-						:excluded="isExcluded(s.key)"
-						:label="s.label"
-						@toggle="toggleItem(s.key)"
-					>
-						<Badge
-							v-if="s.badge && !isExcluded(s.key)"
-							variant="purple"
+			<div :class="$style.detail_clip">
+				<Flex direction="column" gap="8" :class="$style.detail_content">
+					<template v-for="(feature, fi) in cap.features" :key="fi">
+						<!-- Boolean switch rows -->
+						<SwitchRow
+							v-for="s in feature.switches"
+							:key="s.key"
+							:excluded="isExcluded(s.key)"
+							:label="s.label"
+							@toggle="toggleItem(s.key)"
 						>
-							<Text size="11" weight="600" color="inverse">{{ s.badge }}</Text>
-						</Badge>
-					</SwitchRow>
+							<Badge
+								v-if="s.badge && !isExcluded(s.key)"
+								variant="purple"
+							>
+								<Text size="11" weight="600" color="inverse">{{ s.badge }}</Text>
+							</Badge>
+						</SwitchRow>
 
-					<!-- Wildcard indicator -->
-					<Flex v-if="feature.items?.kind === 'wildcard'" align="center" gap="6">
-						<Text size="13" color="tertiary">{{ feature.items.label }}:</Text>
-						<Badge variant="purple">
-							<Text size="11" weight="600" color="inverse">Any</Text>
-						</Badge>
-					</Flex>
+						<!-- Wildcard indicator -->
+						<Flex
+							v-if="feature.items?.kind === 'wildcard'"
+							align="center"
+							gap="6"
+							:class="isFeatureOff(feature) && $style.feature_off"
+						>
+							<Text size="13" color="tertiary">{{ feature.items.label }}:</Text>
+							<Badge variant="purple">
+								<Text size="11" weight="600" color="inverse">Any</Text>
+							</Badge>
+						</Flex>
 
-					<!-- Item grid -->
-					<ItemsGrid
-						v-else-if="feature.items?.kind === 'grid' && feature.items.items.length > 0"
-						:items="feature.items.items"
-						:isActive="(i: number) => !isExcluded(itemKey(feature, i))"
-						@toggle="(i: number) => toggleItem(itemKey(feature, i))"
-					>
-						<template #item="{ item, index }">
-							<!-- Identifier: contract address, class id, or event source -->
-							<template v-if="feature.items.variant === 'address'">
+						<!-- Identifier grid: contract addresses, class ids, or event sources -->
+						<ItemsGrid
+							v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'address' && feature.items.items.length > 0"
+							:items="feature.items.items"
+							:isActive="(i: number) => !isExcluded(itemKey(feature, i))"
+							:class="isFeatureOff(feature) && $style.feature_off"
+							@toggle="(i: number) => toggleItem(itemKey(feature, i))"
+						>
+							<template #item="{ item }">
 								<Text size="13" color="primary" mono>{{ trimAddress(item, 6, 4) }}</Text>
 							</template>
+						</ItemsGrid>
 
-							<!-- Wallet account: name + address -->
-							<template v-else-if="feature.items.variant === 'account'">
+						<!-- Wallet accounts grid: name + address + editable shared alias -->
+						<ItemsGrid
+							v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'account' && feature.items.items.length > 0"
+							:items="feature.items.items"
+							:isActive="(i: number) => !isExcluded(itemKey(feature, i))"
+							:class="isFeatureOff(feature) && $style.feature_off"
+							@toggle="(i: number) => toggleItem(itemKey(feature, i))"
+						>
+							<template #item="{ item, index }">
 								<Flex align="center" justify="between" wide style="min-width: 0;">
 									<Flex direction="column" gap="4" wide style="min-width: 0;">
 										<Text size="13" weight="600" color="primary">{{ item.name }}</Text>
@@ -146,8 +161,8 @@ const finishEditingAlias = (item: AccountItem) => {
 												:sanitize="true"
 												@maxLengthReached="handleMaxLengthReached"
 												@update:modelValue="editingAlias = $event"
-												@blur="finishEditingAlias(item as AccountItem)"
-												@keydown.enter="finishEditingAlias(item as AccountItem)"
+												@blur="finishEditingAlias(item)"
+												@keydown.enter="finishEditingAlias(item)"
 											>
 												<template #suffix>
 													<Transition name="fade">
@@ -167,7 +182,7 @@ const finishEditingAlias = (item: AccountItem) => {
 
 											<Flex
 												v-if="editingIndex !== index"
-												@click.stop="startEditingAlias(item as AccountItem, index)"
+												@click.stop="startEditingAlias(item, index)"
 												align="center"
 												:class="$style.edit_icon_wrapper"
 											>
@@ -177,9 +192,17 @@ const finishEditingAlias = (item: AccountItem) => {
 									</Flex>
 								</Flex>
 							</template>
+						</ItemsGrid>
 
-							<!-- Scope pattern: function + "in" + contract -->
-							<template v-else-if="feature.items.variant === 'scope-pattern'">
+						<!-- Scope patterns grid: function + "in" + contract -->
+						<ItemsGrid
+							v-else-if="feature.items?.kind === 'grid' && feature.items.variant === 'scope-pattern' && feature.items.items.length > 0"
+							:items="feature.items.items"
+							:isActive="(i: number) => !isExcluded(itemKey(feature, i))"
+							:class="isFeatureOff(feature) && $style.feature_off"
+							@toggle="(i: number) => toggleItem(itemKey(feature, i))"
+						>
+							<template #item="{ item }">
 								<Flex align="center" gap="8" justify="between" wide style="min-width: 0;">
 									<Flex align="center" style="flex: 1; min-width: 0; overflow: hidden;">
 										<template v-if="item.function === '*'">
@@ -213,10 +236,10 @@ const finishEditingAlias = (item: AccountItem) => {
 									</Flex>
 								</Flex>
 							</template>
-						</template>
-					</ItemsGrid>
-				</template>
-			</Flex>
+						</ItemsGrid>
+					</template>
+				</Flex>
+			</div>
 		</div>
 	</Flex>
 </template>
@@ -261,13 +284,18 @@ const finishEditingAlias = (item: AccountItem) => {
 }
 
 .detail_wrapper {
-	max-height: 0;
-	overflow: hidden;
-	transition: max-height 0.25s var(--bezier);
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.25s var(--bezier);
 }
 
 .detail_expanded {
-	max-height: 500px;
+	grid-template-rows: 1fr;
+}
+
+.detail_clip {
+	overflow: hidden;
+	min-height: 0;
 }
 
 .detail_content {
@@ -277,6 +305,11 @@ const finishEditingAlias = (item: AccountItem) => {
 	padding-left: 24px;
 
 	border-top: 1px solid var(--gray-10);
+}
+
+.feature_off {
+	opacity: 0.5;
+	pointer-events: none;
 }
 
 .inline_badge {

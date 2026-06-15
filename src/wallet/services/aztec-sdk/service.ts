@@ -34,6 +34,9 @@ const WALLET_ID = "azguard-wallet";
 const WALLET_NAME = "Azguard Wallet";
 const WALLET_VERSION = __VERSION__;
 
+/** Builds the interaction cancellation token for the verify window of the given SDK session */
+const makeVerifyToken = (sdkSessionId: string): string => `verify:${sdkSessionId}`;
+
 function operationResultToResponse(
     messageId: string,
     result: OperationResult,
@@ -73,6 +76,9 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
 
     /** Maps SDK session IDs to DappSession IDs */
     private readonly sdkSessionToDappSession = new Map<string, string>();
+
+    /** Open emoji verification windows: SDK session ID -> dApp origin */
+    private readonly openVerifications = new Map<string, string>();
 
     /** Tracks SDK-connected apps for session reuse and cleanup */
     private readonly connectedApps = new EntityStorage<ConnectedApp>(
@@ -211,11 +217,13 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
             appId: session.appId,
             hasDappSession: this.sdkSessionToDappSession.has(session.sessionId),
         });
+        void this.showVerification(session);
     };
 
     private readonly onSessionTerminated = (sessionId: string) => {
         this.logInfo("SDK session terminated", { sessionId });
         this.sdkSessionToDappSession.delete(sessionId);
+        this.closeVerification(sessionId);
     };
 
     private readonly onWalletMessage = async (session: ActiveSession, message: WalletMessage) => {
@@ -226,6 +234,10 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
             const chainId = resolveChainId(session.chainInfo);
 
             if (message.type === "requestCapabilities") {
+                // Hand off to the capabilities window, which shows the same emoji grid.
+                // Other message types (incl. silent ones) must not close the verify
+                // window — only an explicit user action or session termination does.
+                this.closeVerification(session.sessionId);
                 await this.handleRequestCapabilities(session, message, chainId, dappSessionId);
                 return;
             }
@@ -334,6 +346,61 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
         );
         await this.handler.sendResponse(session.sessionId, response);
         this.logDebug("SDK batch response sent", { count: batchResults.length });
+    }
+
+    /**
+     * Opens the emoji verification window for an established session so the user
+     * can compare the grid with the one shown by the dApp (anti-MITM check).
+     * Informational by design — the protocol-required confirmation is on the dApp
+     * side — but a "mismatch" report terminates the session and its DappSession.
+     */
+    private async showVerification(session: ActiveSession) {
+        try {
+            // Only one verification window per origin: a reconnecting (or misbehaving)
+            // dApp closes the previous window instead of stacking new ones
+            for (const [sdkSessionId, origin] of this.openVerifications) {
+                if (origin === session.origin) {
+                    this.closeVerification(sdkSessionId);
+                }
+            }
+
+            const dappSessionId = this.sdkSessionToDappSession.get(session.sessionId);
+            const dappSession = dappSessionId
+                ? await this.dappSessionService.tryGetDappSession(dappSessionId)
+                : undefined;
+            const dappMetadata = dappSession?.dappMetadata ?? { name: session.appId, url: session.origin };
+
+            this.openVerifications.set(session.sessionId, session.origin);
+            const result = await this.dappInteractionService.showVerification(
+                dappMetadata,
+                session.verificationHash,
+                makeVerifyToken(session.sessionId),
+            );
+
+            if (result.action === "mismatch") {
+                this.logInfo("User reported emoji mismatch, terminating session", {
+                    sessionId: session.sessionId,
+                    origin: session.origin,
+                });
+                if (dappSessionId) {
+                    // Cascades via onDappSessionDeleted: connectedApps cleanup + SDK session termination
+                    await this.dappSessionService.deleteDappSession(dappSessionId);
+                } else {
+                    this.handler.terminateSession(session.sessionId);
+                }
+            }
+        } catch (error) {
+            this.logError("Emoji verification window failed", getErrorMessage(error));
+        } finally {
+            this.openVerifications.delete(session.sessionId);
+        }
+    }
+
+    /** Closes the emoji verification window for the given SDK session, if open. */
+    private closeVerification(sdkSessionId: string) {
+        if (this.openVerifications.delete(sdkSessionId)) {
+            this.dappInteractionService.cancelInteraction(makeVerifyToken(sdkSessionId));
+        }
     }
 
     /** Finds the DappSession ID for the given SDK session. */
