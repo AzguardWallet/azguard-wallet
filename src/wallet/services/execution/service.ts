@@ -58,7 +58,6 @@ import { TransactionService, OriginType, TransferType, type Tx as AzguardTx, TxC
 import { getAuthRegistryAddress, getSetAuthorizedFn, getSetAuthorizedSelector } from "@/wallet/utils/auth-registry";
 import type { Fn } from "@/wallet/utils/fn";
 import { getFeeJuiceClaimPayload } from "@/wallet/utils/fee-juice";
-import { trimAddress } from "@/utils/string";
 import {
     TaskService,
     WrappedTask,
@@ -924,7 +923,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async executeAztecGetAddressBook(op: AztecGetAddressBookOperation): Promise<Aliased<AztecAddress>[]> {
         // TODO: filter by chainId
         // TODO: `x.name` leaks internal contact labels to dApps — consider permissions
-        //       or returning trimAddress(x.address) like getAccounts does
+        //       or returning trimAddress(x.address)
         return (await this.contactService.getContacts()).map(x => ({
             alias: x.name,
             item: AztecAddress.fromString(x.address),
@@ -938,12 +937,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
         const network = await this.networkService.getNetwork(op.networkId);
         const allAccounts = await this.accountService.getAccounts(profile.id, network.chainId, true);
-        return allAccounts
-            .filter(x => op.accounts.includes(x.address))
-            .map(x => ({
-                // TODO: provide user with a flow showing internal account names for dApps
-                alias: trimAddress(x.address),
-                item: AztecAddress.fromString(x.address),
+        return op.accounts
+            .filter(acc => allAccounts.some(x => x.address === acc.address))
+            .map(acc => ({
+                alias: acc.alias,
+                item: AztecAddress.fromString(acc.address),
             }));
     }
 

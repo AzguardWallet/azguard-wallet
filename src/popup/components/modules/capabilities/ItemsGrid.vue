@@ -27,7 +27,7 @@ defineEmits<{
 		<div
 			v-for="(item, i) in items"
 			:key="i"
-			:class="[$style.row, !isActive(i) && $style.inactive]"
+			:class="[$style.row, isActive(i) && $style.reveal, !isActive(i) && $style.inactive]"
 			@click.stop="$emit('toggle', i)"
 		>
 			<Icon
@@ -43,26 +43,40 @@ defineEmits<{
 
 <style module>
 .grid {
+	width: 100%;
+
 	display: grid;
-	grid-template-columns: 14px auto auto;
-	column-gap: 6px;
+	grid-template-columns: 14px 1fr;
+	column-gap: 12px;
 	row-gap: 0;
+
 	margin-top: 4px;
 }
 
 .row {
+    padding: 6px;
+
 	display: grid;
 	grid-template-columns: subgrid;
 	grid-column: 1 / -1;
-	align-items: center;
+
+	align-items: start;
+
 	cursor: pointer;
+	
 	border-radius: 6px;
-	padding: 4px 6px;
-	margin: 0 -6px;
 	transition: background 0.15s ease;
 
 	&:hover {
 		background: var(--gray-5);
+	}
+}
+
+.reveal {
+	&:hover {
+		* {
+			visibility: visible;
+		}
 	}
 }
 
@@ -76,6 +90,6 @@ defineEmits<{
 }
 
 .grid_icon {
-	margin-top: -2.5px;
+	margin-top: -1px;
 }
 </style>

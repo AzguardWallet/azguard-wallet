@@ -29,7 +29,7 @@ import {
     Events,
     DappInteraction,
 } from "./spec";
-import { enforceCapabilityScope, sdkName, type SerializedCapability } from "./scope-enforcement";
+import { enforceCapabilityScope, sdkName, type SerializedCapability, getAliasedAccounts } from "./scope-enforcement";
 
 export * from "./spec";
 
@@ -224,10 +224,8 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 }
                 case "aztec_getAccounts": {
                     const network = await getNetwork(op.chain);
-                    const accounts = payload.session.accounts
-                        .filter(x => x.startsWith(op.chain))
-                        .map(x => x.split(":").at(-1)!);
-                    operations.push({ ...op, networkId: network.id, accounts });
+                    const accounts = getAliasedAccounts(payload.session, op.chain);
+                    operations.push({ ...op, networkId: network.id, accounts: accounts });
                     break;
                 }
                 case "get_complete_address":

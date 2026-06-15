@@ -23,6 +23,7 @@ import {
 	DappInteractionServiceClient,
 	ExecutionPayload,
 } from "@/wallet/services/dapp-interaction/client"
+import { getAliasedAccounts } from "@/wallet/services/dapp-interaction/scope-enforcement"
 import { DappMetadata } from "@/wallet/services/dapp-session/client"
 import { OriginType } from "@/wallet/services/transaction/client"
 
@@ -153,14 +154,11 @@ const init = async () => {
 				}
 				case "aztec_getAccounts": {
 					const network = await getNetwork(op.chain)
-					const sessionAccounts = payload.value!.session.accounts
-						.filter(x => x.startsWith(op.chain))
-						.map(x => x.split(":").at(-1)!)
 					_operations.push({
 						...op,
 						network,
 						networkId: network.id,
-						accounts: sessionAccounts,
+						accounts: getAliasedAccounts(payload.value!.session, op.chain),
 					})
 					break
 				}

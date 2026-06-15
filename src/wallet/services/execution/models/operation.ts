@@ -3,7 +3,6 @@ import type { InteractionWaitOptions } from "@aztec/aztec.js/contracts";
 import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions, ExecuteUtilityOptions } from "@aztec/aztec.js/wallet";
 import type { Fr } from "@aztec/foundation/curves/bn254";
 import type { ContractArtifact, EventMetadataDefinition, FunctionCall } from "@aztec/stdlib/abi";
-import type { AuthWitness } from "@aztec/stdlib/auth-witness";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract";
 import type { ExecutionPayload } from "@aztec/stdlib/tx";
@@ -151,10 +150,13 @@ export type AztecGetAddressBookOperation = {
     readonly networkId: string;
 };
 
+
+export type WithAlias<T> = T & { alias: string };
+export type AliasedAddress = WithAlias<{ address: string }>; // { address: string; alias: string }
 export type AztecGetAccountsOperation = {
     readonly kind: "aztec_getAccounts";
     readonly networkId: string;
-    readonly accounts: string[];
+    readonly accounts: AliasedAddress[];
 };
 
 export type AztecRegisterContractOperation = {
