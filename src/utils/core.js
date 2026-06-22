@@ -21,8 +21,10 @@ contactService.connect()
 
 export const managers = {
 	profile: profileService,
-	network: null, // must be initialized after profile.onActiveProfileChanged
-	transaction: null,
+	// network/transaction are assigned during startup (app.vue) before any consumer reads them,
+	// so they are cast to their non-null client type to match real usage.
+	network: /** @type {import("@/wallet/services/network/client").NetworkServiceClient} */ (null), // must be initialized after profile.onActiveProfileChanged
+	transaction: /** @type {import("@/wallet/services/transaction/client").TransactionServiceClient} */ (null),
 	contact: contactService,
 }
 

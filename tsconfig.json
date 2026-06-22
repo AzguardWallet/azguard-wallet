@@ -16,6 +16,8 @@
 		"resolveJsonModule": true,
 		"types": ["webextension-polyfill", "chrome-types"],
 		"strict": true,
+		"allowJs": true,
+		"checkJs": false,
 		"noEmit": true,
 		"esModuleInterop": true,
 		"isolatedModules": true,
