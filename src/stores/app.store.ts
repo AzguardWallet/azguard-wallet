@@ -112,7 +112,7 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const activeAccountKey = computed(() => `azguard:ui:activeAccount@${profile.value?.id}`)
-	async function setActiveAccount(address: String) {
+	async function setActiveAccount(address?: string) {
 		if (!address || !profile.value?.id) return
 
 		await chrome.storage.local.set({ [activeAccountKey.value]: address })

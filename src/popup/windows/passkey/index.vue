@@ -120,7 +120,7 @@ const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
 
 const run = async () => {
 	const requestId = route.query.requestId
-	if (!requestId) {
+	if (!requestId || typeof requestId !== "string") {
 		window.close()
 		return
 	}

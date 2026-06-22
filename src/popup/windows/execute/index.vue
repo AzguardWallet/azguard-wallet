@@ -501,7 +501,7 @@ const showJson = () => {
 										<Text color="secondary"> call </Text>
 										{{ call.name ?? call.selector }}
 										<Text color="secondary"> in </Text>
-										<AddressDisplay :address="call.to" />
+										<AddressDisplay :address="call.to.toString()" />
 									</Text>
 								</Flex>
 							</Flex>
@@ -640,7 +640,7 @@ const showJson = () => {
 										<Text color="secondary"> call </Text>
 										{{ call.name ?? call.selector }}
 										<Text color="secondary"> in </Text>
-										<AddressDisplay :address="call.to" />
+										<AddressDisplay :address="call.to.toString()" />
 									</Text>
 								</Flex>
 							</Flex>
@@ -668,7 +668,7 @@ const showJson = () => {
 										<Text color="secondary"> call </Text>
 										{{ call.name ?? call.selector }}
 										<Text color="secondary"> in </Text>
-										<AddressDisplay :address="call.to" />
+										<AddressDisplay :address="call.to.toString()" />
 									</Text>
 								</Flex>
 							</Flex>
@@ -690,7 +690,7 @@ const showJson = () => {
 							</Flex>
 						</template>
 						<template v-else-if="op.kind === 'aztec_createAuthWit'">
-							<Flex v-if="op.messageHashOrIntent?.caller" :class="$style.prop">
+							<Flex v-if="'caller' in op.messageHashOrIntent" :class="$style.prop">
 								<Text size="12" color="secondary">Authorized caller:</Text>
 								<AddressDisplay :address="op.messageHashOrIntent.caller.toString()" />
 							</Flex>
@@ -727,7 +727,7 @@ const showJson = () => {
 					type="primary"
 					size="medium"
 					:loading="isLoading"
-					:disabled="processingError"
+					:disabled="!!processingError"
 				>
 					<Text size="13" color="inverse"> {{ `${isLoading ? "Executing" : "Confirm"}` }} </Text>
 				</Button>
