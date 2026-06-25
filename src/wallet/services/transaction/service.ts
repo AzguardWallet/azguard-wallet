@@ -1,4 +1,5 @@
-import { TxExecutionResult as AztecTxExecutionResult, TxHash, TxReceipt, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
+import { TxExecutionResult as AztecTxExecutionResult, TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
+import type { TxReceipt } from "@aztec/stdlib/tx";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { FunctionSelector } from "@aztec/stdlib/abi";
@@ -282,7 +283,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 nonce: event.nonce.toString(),
                 feePaymentMethod: event.feePaymentMethod,
                 hash: txHash,
-                createdAt: Number(block.timestamp) * 1000,
+                createdAt: Number(block.header.globalVariables.timestamp) * 1000,
                 updatedAt: Date.now(),
                 status: this.getTxStatus(receipt.status),
                 executionResult: this.getTxExecutionResult(receipt.executionResult),
@@ -644,12 +645,8 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         switch (result) {
             case AztecTxExecutionResult.SUCCESS:
                 return TxExecutionResult.Success;
-            case AztecTxExecutionResult.APP_LOGIC_REVERTED:
-                return TxExecutionResult.AppLogicReverted;
-            case AztecTxExecutionResult.TEARDOWN_REVERTED:
-                return TxExecutionResult.TeardownReverted;
-            case AztecTxExecutionResult.BOTH_REVERTED:
-                return TxExecutionResult.BothReverted;
+            case AztecTxExecutionResult.REVERTED:
+                return TxExecutionResult.Reverted;
             default:
                 return undefined;
         }

@@ -34,11 +34,10 @@ export enum TxStatus {
 }
 
 /** Execution result — only meaningful when tx is in a block. */
+// v5 collapsed the node-side enum to SUCCESS/REVERTED; the revert phase is no longer distinguishable.
 export enum TxExecutionResult {
     Success,
-    AppLogicReverted,
-    TeardownReverted,
-    BothReverted,
+    Reverted,
 }
 
 /** Full transaction call from UI/DApp interaction. */

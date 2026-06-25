@@ -137,12 +137,12 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
             const deployedInstance = await node.getContract(instance.address);
             if (!deployedInstance) {
                 this.logDebug("deploy faucet token");
-                const { salt, currentContractClassId, initializationHash, publicKeys } = instance;
+                const { salt, currentContractClassId, initializationHash, immutablesHash, publicKeys } = instance;
                 deployActions.push({
                     kind: "call",
                     contract: AztecAddress.fromNumber(CONTRACT_INSTANCE_REGISTRY_CONTRACT_ADDRESS).toString(),
                     method: "publish_for_public_execution",
-                    args: [salt, currentContractClassId, initializationHash, publicKeys, true],
+                    args: [salt, currentContractClassId, initializationHash, immutablesHash, publicKeys, true],
                 });
             }
 

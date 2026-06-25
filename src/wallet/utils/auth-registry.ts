@@ -1,17 +1,18 @@
-import { CANONICAL_AUTH_REGISTRY_ADDRESS } from "@aztec/constants";
+import { STANDARD_AUTH_REGISTRY_ADDRESS } from "@aztec/standard-contracts/auth-registry/constants";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { deriveStorageSlotInMap } from "@aztec/stdlib/hash";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 
-// Auth Registry storage slots (derived from Noir contract storage layout)
-// TODO: This is not reliable: contract may change, slot shift, alternative
-//       is to use `AuthRegistry.utility_is_consumable` & `AuthRegistry.is_reject_all`
-const APPROVED_ACTIONS_SLOT = new Fr(1);
-const REJECT_ALL_SLOT = new Fr(2);
+// Auth Registry storage slots — hardcoded from the contract's storage layout, so NOT reliable:
+// a struct field reorder silently shifts them (it did on the v5 bump).
+// TODO(backlog): switch to `AuthRegistry.utility_is_consumable` & `AuthRegistry.is_reject_all`
+//               view fns to drop the slot dependency entirely.
+const APPROVED_ACTIONS_SLOT = new Fr(2);
+const REJECT_ALL_SLOT = new Fr(1);
 
-export const getAuthRegistryAddress = () => AztecAddress.fromNumber(CANONICAL_AUTH_REGISTRY_ADDRESS);
+export const getAuthRegistryAddress = () => STANDARD_AUTH_REGISTRY_ADDRESS;
 
 export const getSetAuthorizedFn = () =>
     ({
