@@ -9,8 +9,7 @@ import { ILogger } from '@/wallet/logger';
 import { AzguardV0Base } from './azguard-v0-base';
 
 import compiled from './azguard-v0-persistent.json' with { type: "json" };
-// rc.2 artifact lacks `file_map[*].function_locations` (added in v4.2.0); runtime injects [] via @aztec/stdlib abi.ts → fillMissingFunctionLocations.
-const azguardV0PersistentArtifact = loadContractArtifact(compiled as unknown as NoirCompiledContract);
+const azguardV0PersistentArtifact = loadContractArtifact(compiled as NoirCompiledContract);
 
 /**
  * Event selector for FunctionCallLog events emitted by the persistent account contract.

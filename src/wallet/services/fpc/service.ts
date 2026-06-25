@@ -149,7 +149,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const node = await this.networkService.getNode(network.chainId);
         const pxe = this.pxeService.getPXE(network);
 
-        const fpcInstance = await pxe.getContractInstance(AztecAddress.fromString(address));
+        const fpcInstance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(address));
         if (!fpcInstance) {
             this.logError("Failed to add FPC: contract instance not found", address);
             throw new Error("Contract instance not found");

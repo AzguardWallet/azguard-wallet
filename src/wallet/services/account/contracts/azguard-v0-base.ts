@@ -83,8 +83,8 @@ export abstract class AzguardV0Base implements IAccountContract {
 
     public async buildAuthWitness(messageHash: Fr): Promise<AuthWitness> {
         const schnorr = new Schnorr();
-        const signature = await schnorr.constructSignature(messageHash.toBuffer(), this.signingKey);
-        return new AuthWitness(messageHash, [...signature.toBuffer()]);
+        const signature = await schnorr.constructSignature(messageHash, this.signingKey);
+        return new AuthWitness(messageHash, signature.toLimbFields());
     }
 
     public async buildTxExecutionRequest(

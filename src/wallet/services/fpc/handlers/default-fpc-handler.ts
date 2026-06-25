@@ -24,7 +24,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         );
         const txContext = new TxContext(l1ChainId, rollupVersion, gasSettings);
         const txRequest = new TxExecutionRequest(
-            AztecAddress.fromString(fpcAddress),
+            AztecAddress.fromStringUnsafe(fpcAddress),
             fnSelector,
             packedArgs.hash,
             txContext,

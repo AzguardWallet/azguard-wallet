@@ -238,7 +238,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
         const pxe = this.pxeService.getPXE(network);
 
-        const instance = await pxe.getContractInstance(AztecAddress.fromString(token.contract));
+        const instance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(token.contract));
         if (!instance) {
             throw new Error("contract instance not found");
         }
@@ -331,7 +331,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
             const pxe = this.pxeService.getPXE(network);
 
-            const instance = await pxe.getContractInstance(AztecAddress.fromString(contract));
+            const instance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(contract));
             if (!instance) {
                 throw new Error("contract instance not found");
             }

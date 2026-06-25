@@ -222,7 +222,7 @@ export function capabilitiesToPermissions(
                     ...cap,
                     accounts: capAccounts.map(addr => ({
                         alias: addr.alias,
-                        item: AztecAddress.fromString(addr.address),
+                        item: AztecAddress.fromStringUnsafe(addr.address),
                     })),
                 });
                 break;

@@ -2,12 +2,12 @@ import { SPONSORED_FPC_SALT } from "@aztec/constants";
 import { getPXEConfig, type PXEConfig } from "@aztec/pxe/config";
 import { createPXE, PackedPrivateEvent, PXE } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
-import { AuthRegistryArtifact } from "@aztec/protocol-contracts/auth-registry";
+import { AuthRegistryArtifact } from "@aztec/standard-contracts/auth-registry";
 import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-registry";
 import { FeeJuiceArtifact } from "@aztec/protocol-contracts/fee-juice";
 import { ContractInstanceRegistryArtifact } from "@aztec/protocol-contracts/instance-registry";
-import { MultiCallEntrypointArtifact } from "@aztec/protocol-contracts/multi-call-entrypoint";
-import { PublicChecksArtifact } from "@aztec/protocol-contracts/public-checks";
+import { MultiCallEntrypointArtifact } from "@aztec/standard-contracts/multi-call-entrypoint";
+import { PublicChecksArtifact } from "@aztec/standard-contracts/public-checks";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
@@ -161,18 +161,26 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     public async registerSender(network: Network, address: AztecAddress): Promise<AztecAddress> {
-        return this.withPxe(network, async (pxe) =>
-            pxe.registerSender(await AztecAddress.schema.parseAsync(address)),
-        );
+        return this.withPxe(network, async (pxe) => {
+            const sender = await AztecAddress.schema.parseAsync(address);
+            await pxe.registerTaggingSecretSource({ kind: "address-derived", sender });
+            return sender;
+        });
     }
 
     public async getSenders(network: Network): Promise<AztecAddress[]> {
-        return this.withPxe(network, (pxe) => pxe.getSenders());
+        return this.withPxe(network, async (pxe) => {
+            const sources = await pxe.getTaggingSecretSources({ kind: "address-derived" });
+            return sources.map((s) => s.sender);
+        });
     }
 
     public async removeSender(network: Network, address: AztecAddress): Promise<void> {
         return this.withPxe(network, async (pxe) =>
-            pxe.removeSender(await AztecAddress.schema.parseAsync(address)),
+            pxe.removeTaggingSecretSource({
+                kind: "address-derived",
+                sender: await AztecAddress.schema.parseAsync(address),
+            }),
         );
     }
 

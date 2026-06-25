@@ -1,4 +1,5 @@
-import { TxExecutionResult as AztecTxExecutionResult, TxHash, TxReceipt, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
+import { TxExecutionResult as AztecTxExecutionResult, TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
+import type { TxReceipt } from "@aztec/stdlib/tx";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { FunctionSelector } from "@aztec/stdlib/abi";
@@ -208,8 +209,8 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
     private parsePackedEvent(ev: PackedPrivateEvent): FunctionCallLogEvent {
         const event = {
-            sender: AztecAddress.fromField(ev.packedEvent[0]),
-            address: AztecAddress.fromField(ev.packedEvent[1]),
+            sender: AztecAddress.fromFieldUnsafe(ev.packedEvent[0]),
+            address: AztecAddress.fromFieldUnsafe(ev.packedEvent[1]),
             args_hash: ev.packedEvent[2],
             nonce: ev.packedEvent[3],
             callIndex: ev.packedEvent[4].toNumber(),
@@ -232,7 +233,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
     ): Promise<void> {
         try {
             const event = this.parsePackedEvent(ev);
-            const accountAddress = AztecAddress.fromString(account.address);
+            const accountAddress = AztecAddress.fromStringUnsafe(account.address);
             const txHash = ev.txHash.toString();
 
             const existingTx = await this.txs.get(txHash);
@@ -282,7 +283,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 nonce: event.nonce.toString(),
                 feePaymentMethod: event.feePaymentMethod,
                 hash: txHash,
-                createdAt: Number(block.timestamp) * 1000,
+                createdAt: Number(block.header.globalVariables.timestamp) * 1000,
                 updatedAt: Date.now(),
                 status: this.getTxStatus(receipt.status),
                 executionResult: this.getTxExecutionResult(receipt.executionResult),
@@ -338,7 +339,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             if (caches.contractInstances.has(contractAddress)) {
                 contractInstance = caches.contractInstances.get(contractAddress);
             } else {
-                const address = AztecAddress.fromString(contractAddress);
+                const address = AztecAddress.fromStringUnsafe(contractAddress);
                 contractInstance = await pxe.getContractInstance(address);
                 caches.contractInstances.set(contractAddress, contractInstance);
             }
@@ -440,7 +441,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
             // Persist immediately so onActiveProfileChanged can resume if we crash before the first batch
             await this.cursors.set(address, cursor);
             const node = await this.networkService.getNode(account.chainId);
-            const contractAddress = AztecAddress.fromString(address);
+            const contractAddress = AztecAddress.fromStringUnsafe(address);
 
             // Ensure account contract is registered with PXE before querying private events
             // TODO: consider moving this logic to the IAccountContract interface
@@ -644,12 +645,8 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         switch (result) {
             case AztecTxExecutionResult.SUCCESS:
                 return TxExecutionResult.Success;
-            case AztecTxExecutionResult.APP_LOGIC_REVERTED:
-                return TxExecutionResult.AppLogicReverted;
-            case AztecTxExecutionResult.TEARDOWN_REVERTED:
-                return TxExecutionResult.TeardownReverted;
-            case AztecTxExecutionResult.BOTH_REVERTED:
-                return TxExecutionResult.BothReverted;
+            case AztecTxExecutionResult.REVERTED:
+                return TxExecutionResult.Reverted;
             default:
                 return undefined;
         }
