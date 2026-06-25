@@ -420,7 +420,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         switch (network.chainId) {
             case 2934756904: // alphanet (mainnet), 1 ^ 2934756905
                 return "https://mainnet.aztec-registry.xyz";
-            case 4138294185: // 11155111 ^ 4127419662
+            case 4229590296: // 11155111 ^ 4239416255
                 return "https://testnet.aztec-registry.xyz";
             case 604129785: // 11155111 ^ 615022430
                 return "https://devnet.aztec-registry.xyz";
