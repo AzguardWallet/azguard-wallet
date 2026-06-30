@@ -10,7 +10,6 @@ import { trimAddress } from "@/utils/string"
 import { getRandomHex } from "@/wallet/utils"
 import { getErrorData, getErrorMessage } from "@/wallet/utils/errors"
 import { feeJuiceAddress, feeJuiceSymbol } from "@/wallet/utils/fee-juice"
-import { getPrivateFpcAddress } from "@/wallet/utils/private-fpc"
 
 /** Services */
 import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
@@ -66,23 +65,7 @@ const selectedMethod = ref()
 const isMethodsDropdownOpen = ref(false)
 
 const balances = ref([])
-const privateFpc = ref(null)
-// Synthetic balance that exposes Fee Juice (public) and Private Fee Juice
-// (private) under the same shape as a regular TokenBalanceInfo, so the
-// Visibility/Available snippet can be reused 1-to-1 with the FPC branch.
-const fjWrappedBalance = computed(() => {
-	const fjBal = balances.value?.find(b => b.token.contract === feeJuiceAddress)
-	const pfjAddr = privateFpc.value?.address
-	const pfjBal = pfjAddr ? balances.value?.find(b => b.token.contract === pfjAddr) : undefined
-	return {
-		publicBalance: fjBal?.publicBalance ?? "0",
-		privateBalance: pfjBal?.privateBalance ?? "0",
-		token: {
-			symbol: feeJuiceSymbol,
-			decimals: fjBal?.token?.decimals ?? 18,
-		},
-	}
-})
+const feeJuiceBalance = computed(() => balances.value?.find(b => b.token.contract === feeJuiceAddress))
 const isLoading = ref(false)
 const error = ref("")
 
@@ -106,17 +89,8 @@ const upsertFpcInCache = (fpc) => {
 	else cacheStore.feePaymentMethods[ix].fpc = fpc
 }
 
-const defaultFjInPublic = () => {
-	if (!privateFpc.value) return true
-	const wb = fjWrappedBalance.value
-	const fjZero = (wb.publicBalance ?? "0") === "0"
-	const pfjNonZero = (wb.privateBalance ?? "0") !== "0"
-	return !(fjZero && pfjNonZero)
-}
-
 const showVisibility = (m) => {
 	if (!m) return false
-	if (m.type === "fj") return !!privateFpc.value
 	if (m.type === "fpc") return m.fpc?.type === FpcType.DefaultFpc
 	return false
 }
@@ -204,23 +178,15 @@ const init = async () => {
 		isLoading.value = true
 
 		if (props.network && props.account && !isCustomMethod.value) {
-			const [allBalances, privateFpcAddr, allFpcs, savedStore] = await Promise.all([
+			const [allBalances, savedStore] = await Promise.all([
 				tokenBalanceService.getTokenBalances(undefined, props.account.address),
-				getPrivateFpcAddress(),
-				fpcService.getFpcs(props.network.chainId),
 				chrome.storage.local.get(FEE_METHOD_LS_KEY),
 			])
 			balances.value = allBalances
-			privateFpc.value = allFpcs.find(
-				f => f.type === FpcType.PrivateFpc && f.address === privateFpcAddr
-			) ?? null
 
 			const restored = (savedStore[FEE_METHOD_LS_KEY] || {})[props.account.address]
 			if (restored?.type === "fj") {
-				const inPublic = privateFpc.value && typeof restored.inPublic === "boolean"
-					? restored.inPublic
-					: true
-				selectedMethod.value = { ...methods.value[0], inPublic }
+				selectedMethod.value = { ...methods.value[0] }
 			} else if (restored?.type === "fjwc") {
 				selectedMethod.value = { ...methods.value[1] }
 			} else if (restored?.type === "fpc" && restored.fpc) {
@@ -235,7 +201,7 @@ const init = async () => {
 						: inferPublicMode(balance),
 				}
 			} else {
-				selectedMethod.value = { ...methods.value[0], inPublic: defaultFjInPublic() }
+				selectedMethod.value = { ...methods.value[0] }
 			}
 		}
 	} catch (e) {
@@ -251,32 +217,12 @@ watch(
 	() => {
 		switch (selectedMethod.value?.type) {
 			case "fj":
-				if (selectedMethod.value.inPublic === undefined) {
-					selectedMethod.value = {
-						...selectedMethod.value,
-						inPublic: defaultFjInPublic(),
-					}
-					break
-				}
-				if (!showVisibility(selectedMethod.value) && selectedMethod.value.inPublic === false) {
-					selectedMethod.value = { ...selectedMethod.value, inPublic: true }
-					break
-				}
-				if (isZeroBalance({ balance: fjWrappedBalance.value, inPublic: selectedMethod.value.inPublic })) {
+				if (isZeroBalance({ balance: feeJuiceBalance.value, inPublic: true })) {
 					settings.value = undefined
 					break
 				}
-				if (selectedMethod.value.inPublic) {
-					settings.value = { paymentMethod: { kind: "fj" } }
-				} else {
-					settings.value = {
-						paymentMethod: {
-							kind: "fpc",
-							fpcId: privateFpc.value.id,
-						},
-					}
-				}
-				saveSelectedMethod({ type: "fj", inPublic: selectedMethod.value.inPublic })
+				settings.value = { paymentMethod: { kind: "fj" } }
+				saveSelectedMethod({ type: "fj" })
 				break
 			case "fjwc":
 				if (!selectedMethod.value.claimAmount && claimParameters.value) {
@@ -459,35 +405,13 @@ onBeforeUnmount(() => {
 			</Flex>
 		</template>
 		<template v-else-if="selectedMethod?.type === 'fj'">
-			<Flex
-				v-if="showVisibility(selectedMethod)"
-				align="center" justify="between"
-				:class="$style.fjc_price"
-				:style="{padding: '6px 12px'}"
-			>
-				<Text size="12" weight="600" color="secondary"> Visibility </Text>
-				<Flex
-					@click="selectedMethod.inPublic = !selectedMethod.inPublic"
-					align="center" gap="6"
-					:class="$style.type"
-				>
-					<Icon
-						:name="selectedMethod.inPublic ? 'face' : 'key-square'"
-						size="16"
-						:color="selectedMethod.inPublic ? 'orange' : 'green'"
-					/>
-					<Text size="13" weight="600" color="primary" class="capitalize">
-						{{ selectedMethod.inPublic ? 'Public' : 'Private' }}
-					</Text>
-				</Flex>
-			</Flex>
 			<Flex align="center" justify="between" :class="$style.fjc_price">
 				<Text size="12" weight="600" color="secondary"> Available </Text>
 				<Text
 					size="12" weight="600"
-					:color="isZeroBalance({ balance: fjWrappedBalance, inPublic: selectedMethod.inPublic }) ? 'red' : 'primary'"
+					:color="isZeroBalance({ balance: feeJuiceBalance, inPublic: true }) ? 'red' : 'primary'"
 				>
-					{{ formatBalance(fjWrappedBalance, selectedMethod.inPublic) }} {{ fjWrappedBalance.token.symbol }}
+					{{ feeJuiceBalance ? formatBalance(feeJuiceBalance, true) : '0' }} {{ feeJuiceSymbol }}
 				</Text>
 			</Flex>
 		</template>

@@ -11,7 +11,6 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
-import { getPrivateFpcAddress, privateFpcName, privateFpcSymbol } from "@/wallet/utils/private-fpc";
 import { simulate } from "@/wallet/utils/fn";
 import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, Methods, Events } from "./spec";
 import {
@@ -430,10 +429,8 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             ? GetDecimalsFn.new(ti.getDecimalsFn.name, ti.getDecimalsFn.impl)
             : undefined;
 
-        const pfpcAddress = await getPrivateFpcAddress();
         const fallback = {
             [feeJuiceAddress]: { name: feeJuiceName, symbol: feeJuiceSymbol, decimals: 18 },
-            [pfpcAddress]: { name: privateFpcName, symbol: privateFpcSymbol, decimals: 18 },
         }[ti.contract];
 
         return await Promise.all([
@@ -458,10 +455,8 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
     // TODO: remove on the next wallet update that requires wiping profiles
     private async migrateFeeTokenDecimals() {
-        const pfpcAddress = await getPrivateFpcAddress();
-        const feeContracts = new Set([feeJuiceAddress, pfpcAddress]);
         for (const token of await this.tokens.getValues()) {
-            if (feeContracts.has(token.contract) && token.decimals !== 18) {
+            if (token.contract === feeJuiceAddress && token.decimals !== 18) {
                 token.decimals = 18;
                 await this.tokens.set(`${token.id}`, token);
                 this.emit("onTokenUpdated", getTokenInfo(token));
@@ -476,13 +471,11 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             const network = networks.find(x => x.isDefault) ?? networks[0];
             if (!network) return;
 
-            for (const contract of [feeJuiceAddress, await getPrivateFpcAddress()]) {
-                try {
-                    const ti = await this.parseTokenInterface(network.id, contract);
-                    await this.addToken(account.profileId, network.id, account.address, ti);
-                } catch (e) {
-                    this.logDebug(`Failed to auto-add token ${contract}: ${e}`);
-                }
+            try {
+                const ti = await this.parseTokenInterface(network.id, feeJuiceAddress);
+                await this.addToken(account.profileId, network.id, account.address, ti);
+            } catch (e) {
+                this.logDebug(`Failed to auto-add token ${feeJuiceAddress}: ${e}`);
             }
         } catch (e) {
             this.logDebug(`Failed to auto-add default tokens: ${e}`);

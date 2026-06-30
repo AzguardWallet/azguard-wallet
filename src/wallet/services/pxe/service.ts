@@ -12,7 +12,6 @@ import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
-import { PrivateFPCContractArtifact } from "@/wallet/services/fpc/artifacts";
 import { type ContractArtifact, ContractArtifactSchema, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -317,7 +316,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             NFTContractArtifact,
             SponsoredFPCContractArtifact,
             TokenContractArtifact,
-            PrivateFPCContractArtifact,
         ]) {
             const contractClass = await getContractClassFromArtifact(artifact);
             this.knownArtifacts.set(contractClass.id.toString(), artifact);
@@ -327,12 +325,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             salt: new Fr(SPONSORED_FPC_SALT),
         });
         this.knownInstances.set(sponsoredFpcInstance.address.toString(), sponsoredFpcInstance);
-
-        const privateFpcInstance = await getContractInstanceFromInstantiationParams(PrivateFPCContractArtifact, {
-            constructorArgs: [],
-            salt: Fr.zero(),
-        });
-        this.knownInstances.set(privateFpcInstance.address.toString(), privateFpcInstance);
     }
 
     private async withPxe<T>(network: Network, fn: (pxe: PXE, node: AztecNode) => Promise<T>): Promise<T> {
