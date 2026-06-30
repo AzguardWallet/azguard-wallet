@@ -57,7 +57,6 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         this.tasks = services.get(TaskService.name);
         this.profiles.onProfileDeleted.add(this.onProfileDeleted);
         this.accounts.onAccountAdded.add(this.onAccountAdded);
-        await this.migrateFeeTokenDecimals();
     }
 
     public async getTokens(profileId?: string, chainId?: number): Promise<TokenInfo[]> {
@@ -451,18 +450,6 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         return tokens.find(
             token => token.profileId === profileId && token.chainId === chainId && token.contract === contract,
         );
-    }
-
-    // TODO: remove on the next wallet update that requires wiping profiles
-    private async migrateFeeTokenDecimals() {
-        for (const token of await this.tokens.getValues()) {
-            if (token.contract === feeJuiceAddress && token.decimals !== 18) {
-                token.decimals = 18;
-                await this.tokens.set(`${token.id}`, token);
-                this.emit("onTokenUpdated", getTokenInfo(token));
-                this.logDebug(`Migrated decimals for ${token.contract} (token ${token.id})`);
-            }
-        }
     }
 
     private readonly onAccountAdded = async (account: Account) => {
