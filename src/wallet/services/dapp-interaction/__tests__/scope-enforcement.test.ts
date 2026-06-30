@@ -41,6 +41,14 @@ const getContractClassMetadataOp = (id: string) =>
         id: mockAddress(id),
     }) as any as OperationRequest;
 
+// classId is a plain string by enforcement time (derived in validateSession).
+const registerContractClassOp = (classId: string) =>
+    ({
+        kind: "aztec_registerContractClass",
+        chain: "aztec:1",
+        classId,
+    }) as any as OperationRequest;
+
 const sendTxOp = (calls: { to: string; name: string }[]) =>
     ({
         kind: "aztec_sendTx",
@@ -204,6 +212,38 @@ describe("contractClasses — getContractClassMetadata", () => {
     test("wrong id throws", () => {
         const caps = [contractClassesCap({ classes: ["0xbbbb"], canGetMetadata: true })];
         expect(() => enforceCapabilityScope(caps, getContractClassMetadataOp(CLASS_ID_A))).toThrow(
+            "Operation not in capability scope",
+        );
+    });
+});
+
+describe("contractClasses — registerContractClass", () => {
+    test("wildcard classes passes", () => {
+        const caps = [contractClassesCap({ classes: "*", canGetMetadata: false, canRegister: true })];
+        expect(() => enforceCapabilityScope(caps, registerContractClassOp(CLASS_ID_A))).not.toThrow();
+    });
+
+    test("exact id match passes", () => {
+        const caps = [contractClassesCap({ classes: [CLASS_ID_A], canGetMetadata: false, canRegister: true })];
+        expect(() => enforceCapabilityScope(caps, registerContractClassOp(CLASS_ID_A))).not.toThrow();
+    });
+
+    test("no capability throws", () => {
+        expect(() => enforceCapabilityScope([], registerContractClassOp(CLASS_ID_A))).toThrow(
+            "Operation not in capability scope",
+        );
+    });
+
+    test("canGetMetadata without canRegister throws", () => {
+        const caps = [contractClassesCap({ classes: "*", canGetMetadata: true })];
+        expect(() => enforceCapabilityScope(caps, registerContractClassOp(CLASS_ID_A))).toThrow(
+            "Operation not in capability scope",
+        );
+    });
+
+    test("wrong id throws", () => {
+        const caps = [contractClassesCap({ classes: ["0xbbbb"], canGetMetadata: false, canRegister: true })];
+        expect(() => enforceCapabilityScope(caps, registerContractClassOp(CLASS_ID_A))).toThrow(
             "Operation not in capability scope",
         );
     });

@@ -143,11 +143,12 @@ const CONTRACTS_DEF: CapabilityDef<ContractsCapability> = {
 	},
 }
 
-/** One feature: optional canGetMetadata switch + wildcard or class ID list. */
+/** One feature: optional canRegister/canGetMetadata switches + wildcard or class ID list. */
 const CONTRACT_CLASSES_DEF: CapabilityDef<ContractClassesCapability> = {
-	label: "Contract class metadata",
+	label: "Contract classes",
 	extract: (cap) => [{
 		switches: [
+			...(cap.canRegister ? [{ key: "canRegister", label: "Register contract classes" }] : []),
 			...(cap.canGetMetadata ? [{ key: "canGetMetadata", label: "Get class metadata" }] : []),
 		],
 		items: cap.classes === "*"
@@ -156,6 +157,7 @@ const CONTRACT_CLASSES_DEF: CapabilityDef<ContractClassesCapability> = {
 	}],
 	reconstruct: (cap, exclusions) => {
 		const r = { ...cap }
+		if (exclusions.has("canRegister")) r.canRegister = false
 		if (exclusions.has("canGetMetadata")) r.canGetMetadata = false
 		if (r.classes !== "*") {
 			r.classes = r.classes.filter(c => !exclusions.has(`class:${String(c)}`))

@@ -18,6 +18,7 @@ import type {
     AztecGetAddressBookOperation,
     AztecGetAccountsOperation,
     AztecRegisterContractOperation,
+    AztecRegisterContractClassOperation,
     AztecSimulateTxOperation,
     AztecExecuteUtilityOperation,
     AztecProfileTxOperation,
@@ -85,6 +86,7 @@ export type OperationRequest =
     | AztecGetAddressBookRequest
     | AztecGetAccountsRequest
     | AztecRegisterContractRequest
+    | AztecRegisterContractClassRequest
     | AztecSimulateTxRequest
     | AztecExecuteUtilityRequest
     | AztecProfileTxRequest
@@ -164,6 +166,11 @@ export type AztecGetAccountsRequest = Omit<AztecGetAccountsOperation, NetworkPar
 
 export type AztecRegisterContractRequest = Omit<AztecRegisterContractOperation, NetworkParams> & {
     chain: CaipChain;
+};
+
+export type AztecRegisterContractClassRequest = Omit<AztecRegisterContractClassOperation, NetworkParams> & {
+    chain: CaipChain;
+    classId?: string; // derived wallet-side
 };
 
 export type AztecSimulateTxRequest = Omit<AztecSimulateTxOperation, AccountParams> & {

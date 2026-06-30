@@ -28,6 +28,7 @@ export type Operation =
     | AztecRegisterSenderOperation
     | AztecGetAddressBookOperation
     | AztecRegisterContractOperation
+    | AztecRegisterContractClassOperation
     | AztecSimulateTxOperation
     | AztecExecuteUtilityOperation
     | AztecProfileTxOperation
@@ -165,6 +166,12 @@ export type AztecRegisterContractOperation = {
     readonly instance: ContractInstanceWithAddress;
     readonly artifact?: ContractArtifact;
     readonly secretKey?: Fr;
+};
+
+export type AztecRegisterContractClassOperation = {
+    readonly kind: "aztec_registerContractClass";
+    readonly networkId: string;
+    readonly artifact: ContractArtifact;
 };
 
 export type AztecSimulateTxOperation = {
