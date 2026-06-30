@@ -98,6 +98,7 @@ import {
     type AztecGetAddressBookOperation,
     type AztecGetAccountsOperation,
     type AztecRegisterContractOperation,
+    type AztecRegisterContractClassOperation,
     type AztecSimulateTxOperation,
     type AztecExecuteUtilityOperation,
     type AztecProfileTxOperation,
@@ -363,6 +364,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     }
                     case "aztec_registerContract": {
                         result = await this.executeAztecRegisterContract(operation);
+                        break;
+                    }
+                    case "aztec_registerContractClass": {
+                        result = await this.executeAztecRegisterContractClass(operation);
                         break;
                     }
                     case "aztec_simulateTx": {
@@ -981,6 +986,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         return instance;
+    }
+
+    private async executeAztecRegisterContractClass(op: AztecRegisterContractClassOperation): Promise<void> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        const artifact = await ContractArtifactSchema.parseAsync(op.artifact);
+        // TODO(backlog): detect type from artifact, offer add-as-token/FPC
+        await this.pxeService.registerContractClass(network, artifact);
     }
 
     private async executeAztecSimulateTx(op: AztecSimulateTxOperation): Promise<TxSimulationResult> {

@@ -1,4 +1,6 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { ContractArtifactSchema } from "@aztec/stdlib/abi";
+import { getContractClassFromArtifact } from "@aztec/stdlib/contract";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -239,6 +241,7 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
                 case "aztec_registerContract":
+                case "aztec_registerContractClass":
                 case "aztec_getPrivateEvents": {
                     const network = await getNetwork(op.chain);
                     operations.push({ ...op, networkId: network.id });
@@ -303,7 +306,8 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 case "aztec_registerSender":
                 case "aztec_getAddressBook":
                 case "aztec_getAccounts":
-                case "aztec_registerContract": {
+                case "aztec_registerContract":
+                case "aztec_registerContractClass": {
                     this.checkMethodPermission(session, operation.kind, operation.chain);
                     break;
                 }
@@ -351,10 +355,24 @@ export class DappInteractionService extends Service<Methods, Events> implements 
         // Scope enforcement — only when capabilities are stored (SDK sessions with requestCapabilities)
         if (session.capabilities) {
             for (const operation of operations) {
-                enforceCapabilityScope(session.capabilities, operation);
+                enforceCapabilityScope(session.capabilities, await this.resolveScopeData(operation));
             }
         }
         return session;
+    }
+
+    /**
+     * Resolves any data a scope check needs but the request doesn't carry directly.
+     * registerContractClass is scoped by class id, which the dApp doesn't send — derive
+     * it from the artifact. Always derived (never read from the request) so it can't be spoofed.
+     */
+    private async resolveScopeData(operation: OperationRequest): Promise<OperationRequest> {
+        if (operation.kind === "aztec_registerContractClass") {
+            const artifact = await ContractArtifactSchema.parseAsync(operation.artifact);
+            const classId = (await getContractClassFromArtifact(artifact)).id.toString();
+            return { ...operation, classId };
+        }
+        return operation;
     }
 
     private checkAccountPermission(session: DappSession, account: string) {
@@ -439,6 +457,8 @@ export class DappInteractionService extends Service<Methods, Events> implements 
             case "aztec_getAccounts":
                 return AccessLevel.AppState;
             case "aztec_registerContract":
+                return AccessLevel.PxeState;
+            case "aztec_registerContractClass":
                 return AccessLevel.PxeState;
             case "aztec_simulateTx":
                 return AccessLevel.PrivateData;
