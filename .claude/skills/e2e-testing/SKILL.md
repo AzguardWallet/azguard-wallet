@@ -9,7 +9,8 @@ description: Write and run E2E tests for the Azguard browser extension using Vit
 
 - **Vitest** — test runner
 - **Puppeteer** — browser automation via Chrome DevTools Protocol
-- Extensions require `headless: false`
+- Chrome **new-headless** (`headless: true`) *does* load MV3 extensions — no display/xvfb
+  needed (older headless didn't; that's why some docs still say `headless: false`).
 
 ## Debugging
 
