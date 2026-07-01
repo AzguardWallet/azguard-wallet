@@ -5,55 +5,116 @@ description: Upgrade the Azguard wallet to a new Aztec version. Use when user sa
 
 # Update Aztec
 
-Upgrades the wallet's `@aztec/*` dependencies to a target Aztec version — **JS-side only**. Work *with* the user: they read the migration notes too and decide what applies. Agents propose; the user approves before any code changes.
+Bump the wallet's `@aztec/*` to a target Aztec version. **Wallet repo only.** Work *with* the user — they read the migration notes too; agents propose, the user approves before edits. Bundled contract artifacts are an **input**: on a major bump they're regenerated outside this skill (ask the owner where if unclear).
 
-## Core principle — account artifacts stay pinned
+## Classify the bump first — everything forks on this
 
-Do **not** recompile the account contract artifacts against the new aztec-nr. Recompiling changes the contract `classId` → changes the derived address for the same seed → existing user accounts become unreachable. Keep the currently-bundled artifacts; the newer PXE loads them via legacy-compat shims (e.g. zod `.default()` for fields added later, parse-time preprocessors that fill missing fields). **Tell the user explicitly each time** that artifacts are not being updated. Revisit only at a major boundary (≈ v5 / a new mainnet), where fully re-versioning accounts may be warranted.
+**Minor** — wallet-only. Bump `@aztec/*`, adapt the JS ripple. Contracts untouched, **bundled artifacts stay PINNED**: recompiling changes `classId` → the derived address for a seed → existing accounts unreachable (the newer PXE loads pinned artifacts via compat shims). Say so explicitly. No sentinel bump.
+- If pinned JSON stops matching `NoirCompiledContract` (new required field), cast `as unknown as NoirCompiledContract` — the runtime shim defaults it, the cast just silences typecheck.
 
-When a new **required** field is added to the artifact type (`NoirCompiledContract`), the bundled JSON won't structurally match → cast it `as unknown as NoirCompiledContract`. Runtime is fine (the shim defaults it); the cast just silences the static check. Add a one-line comment pointing at the upstream shim.
+**Major** — one or both deep triggers; either makes it major:
+- **Rollup / protocol version changed** (rc.2 did) — an old wallet can't transact on the new network, so the bump is forced even with a tiny code ripple. Protocol contract addresses may move too.
+- **Account address hard fork** — derivation inputs change (`classId` from recompile, `PublicKeys` hashing, salted-init) → same seed, new address, no migration. This drops the pinned-artifact rule:
+  - Regenerated artifacts come from outside this skill (ask the owner if unclear); drop them into the bundled paths and confirm they load at runtime.
+  - Bump `package.json` `sentinel` → fires the `aztecReset` "Profile Reset Needed" prompt (`deleteProfile` cascade).
+  - Run the migration audit (below).
+  - Legacy-build / asset-migration is a product decision to flag, not skill work.
 
 ## Workflow
 
-1. **Target version.** Infer from context; if unclear, ask the user.
+1. **Classify** (above); tell the user the path.
+2. **Get aztec-packages at the target TAG.** The agent does/verifies the checkout — don't assume the owner left it on the right ref. Local checkout → `git fetch && git checkout <tag>`; else offer to clone to scratch. Read migration notes from the tag's versioned docs, not `next`.
+3. **Baseline.** Confirm `yarn typecheck` + `yarn test` are green before any change; the upgrade must keep them green.
+4. **Branch** named after the tag (e.g. `v5.0.0-rc.2`).
+5. **Research — two deliverables, before editing:**
+   - **(a) Per migration-note.** Sources: tag's `migration_notes.md`, `git log <current>..<target>` (`feat!`/`refactor!`/`fix!`), `release-notes-*`. Sub-agent per entry (batch trivial ones): affects us? what edits? what opportunities? Catches silent behavior changes that don't fail to compile.
+   - **(b) SDK-surface diff.** Diff each invariant surface (see Interface sync) at the target vs what the wallet handles. A new field/method that compiles but is unhandled is the failure mode — why `registerContractClass` was missed.
+6. **Plan + approve.** Show the change list + both research outputs; present options where they exist. Explicit approval before editing.
+7. **Apply.** Deps first (`@aztec/*` → target, add split packages, align peers, `yarn install`), then the edits. Commit in layers as you go (see Commit layering).
+8. **Silent-break sweep** (see block).
+9. **Major only:** bump `sentinel`, run the migration audit, drop in the regenerated artifacts + confirm they load.
+10. **Verify.** typecheck/build vs baseline. A green build ≠ works (v5's PrivateFPC throw built fine); real acceptance is a runtime/e2e run — harness/owner territory, not a gate here. Auto-check what you can, flag the rest.
+11. **Report** (see block).
+12. **Optional:** rebuild the branch into clean layers (see Commit layering) in a worktree — do it silently only if easy, else propose it.
 
-2. **Get aztec-packages at the target.** If a local `aztec-packages` checkout is available, `git pull` and `git checkout <target>` there. If not, ask the user whether to clone it to a scratch dir (e.g. `/tmp`) at the target tag.
+## Interface sync — the invariant surfaces
 
-3. **Baseline first.** `yarn typecheck` and `yarn test` have known flaws (broken e2e, pre-existing typecheck errors). Capture both **before** changing anything. Success criterion = **no new typecheck errors (same set/files)** and tests stay green. Do not fix pre-existing errors — only ensure the upgrade adds none.
+The wallet mirrors the SDK; walk these every bump (this is also the 5b diff):
+- **Capabilities + methods.** Enumerate cap interfaces/action-fields (`@aztec/aztec.js/dest/wallet/capabilities.d.ts`) + `Wallet` methods (`wallet.d.ts` alongside); diff vs `aztec-sdk/adapter.ts`. Full wiring path for a new one: map + dispatch (`adapter.ts`), operation type + union (`execution/models/operation.ts`), handler (`execution/service.ts`), **and the approval UI** (`popup/components/modules/capabilities/models/UICapability.ts` — a new permission does NOT appear automatically). Wiring is part of the upgrade; keep it a separate `feat:` from the ripple.
+- **`IPXE`** (`src/wallet/services/pxe/`) imports opts types from `@aztec/pxe/client/bundle` so typecheck enforces sync; propagate signature changes through `spec`/`proxy`/`client`/`service`, don't cast around them.
+- **wallet-sdk handlers** (`@aztec/wallet-sdk`) — confirm unchanged (behavioral changes like heartbeat timeouts won't show in types — read the notes).
+- **`BaseWallet`** is the canonical behavior reference — we don't extend it, so replicate its PXE-boundary logic. Review its `current..target` diff; compare option bags field-for-field.
 
-4. **Branch.** If not already on one, create a branch named after the aztec-packages tag/branch (e.g. `v4.3.0`, `v4.2.0-aztecnr-rc.2`).
+Also flag SDK functions that could replace low-level logic we wrote before they existed — default keep what works, just make the user aware (→ report bucket 4).
 
-5. **Analyze impact, per migration-note entry.** Sources in aztec-packages:
-   - `docs/docs-developers/docs/resources/migration_notes.md` (diff current..target — primary)
-   - `git log --oneline <current>..<target>` (look for `feat!`/`refactor!`/`fix!`)
-   - `release-notes-*.md` in the repo root
+## Silent breaks typecheck can't catch
 
-   For each migration-note entry, spawn a sub-agent (Explore/general-purpose) to determine: does it affect us, what wallet changes it requires, what opportunities it opens. Batch the clearly-irrelevant or trivial entries together; reserve a dedicated agent for substantive ones. Aggregate the per-item reports and present them to the user. **Why per-item:** some breakages are silent — a runtime/oracle behavior change (e.g. altered scoping or propagation) can require wallet-side compensation even when nothing fails to compile. Per-item analysis catches these, where a glance at the headline would miss them.
+The examples below are what bit us on past bumps — the same ones probably won't recur, they just show the *vector* to watch: values that compile fine but are semantically wrong.
 
-6. **Plan + approve.** Show the change list. Invite the user's questions ("does everything match expectations?"). For any item with multiple resolution options, present the options and let the user choose — they read first, then pick. Describe the planned wallet edits. Get explicit approval before editing.
+**A. Silent runtime** (compiles on loose types, semantically wrong):
+- positional call-arg arrays — faucet `publish_for_public_execution` 5→6 args; verify count/order vs the target artifact.
+- RPC namespace strings — `node_*`→`aztec_*` (`utils/aztec-node-client.ts`).
+- enum collapse — `TxExecutionResult` (`transaction/service.ts`).
+- value vs type-only import under `isolatedModules` — `TxReceipt`.
 
-7. **Apply.** Start with the dependency bump — set `@aztec/*` to the target in `package.json`, then `yarn install`. Then make the per-item edits (see interface-sync, new-SDK-functions, and bb.js below).
+**B. Hardcoded / hand-rolled mirrors of aztec artifacts:**
+- storage slots — v5 reordered AuthRegistry `Storage`, swapping `approved_actions`/`reject_all` → authwit silently misreported (`utils/auth-registry.ts`). Fix: derive from `*Artifact.storageLayout.<field>.slot`.
+- hand-rolled `FunctionAbi` (multicall entrypoint, auth-registry `set_authorized`) — recompute the selector (`FunctionSelector.fromNameAndParameters`) and assert it equals the target artifact's.
+- `AztecAddress.fromNumber(<literal>)` for protocol contracts — use the imported constant (addresses moved; `CANONICAL_AUTH_REGISTRY_ADDRESS`/`MULTI_CALL_ENTRYPOINT_ADDRESS` removed, FeeJuice 5→3).
 
-8. **Verify.** Re-run typecheck/tests; diff against the baseline. Runtime verification on a sandbox of the target version is the real acceptance test (especially anything touching private note tagging/discovery — send a private tx, re-sync at the recipient, check balance). When done, offer to save the upgrade artifacts (see "Saving artifacts" below).
+Sweep: `grep -rn "as FunctionAbi\|fromNumber([0-9]\|getPublicStorageAt\|_SLOT" src`, `grep -rn 'method:\s*"' src`. Verify each hit against the target artifact.
 
-## Interface sync (invariant)
+**Principle:** artifact-derived > hardcoded — `storageLayout` / recomputed selectors / imported constants track upstream; every `new Fr(n)` / literal / hand-rolled ABI is a future silent break.
 
-The wallet mirrors Aztec SDK types — keep them in sync on every upgrade:
-- `IPXE` (`src/wallet/services/pxe/`) mirrors PXE; it imports opts types from `@aztec/pxe/client/bundle`. When a PXE method signature changes upstream, propagate it through our `spec`/`proxy`/`client`/`service` wrappers rather than casting around it.
-- Wallet SDK types and connection handlers (`@aztec/wallet-sdk`).
+## Commit layering
 
-For behavior, **BaseWallet** (`@aztec/wallet-sdk`) is the canonical reference — read how it derives/passes parameters and borrow that logic rather than reinventing. We are our own wallet implementation (we don't extend BaseWallet), so we must replicate what it does at the PXE boundary ourselves.
+Keep the reviewable diff tiny by isolating churn into frozen lower commits:
+1. `chore(artifacts):` regenerated account JSON — major only.
+2. `chore(wasm):` `libs/@aztec/bb.js/*.wasm.gz`.
+3. `chore(deps):` `package.json` deps + `yarn.lock`.
+4. `feat:` (+) the source adaptation — **the diff to study**. Keep new-capability wiring as its own `feat:`.
 
-## New SDK functions vs our low-level logic
+1–3 don't build alone; fine. Re-slice a fat WIP (no `rebase -i` / `add -p` here):
+```
+git reset --mixed <base>
+git add <artifact json>            ; git commit   # 1
+git add libs/@aztec/bb.js/*.wasm.gz; git commit   # 2
+git add package.json yarn.lock     ; git commit   # 3
+git add -u                         ; git commit   # 4
+```
+- Split a mixed file: `git checkout <intermediate-ref> -- <file>`, commit, then `git checkout <tip> -- <file>` for the next.
+- Fold a commit: `git checkout --detach <target>; git cherry-pick --no-commit <fixup>; git commit --amend; git cherry-pick <later>; git branch -f <branch> HEAD`.
+- Verify byte-identical: `git diff --quiet <pre-restructure-ref> HEAD`; keep a backup branch.
+- Comments must be version-agnostic — no "was X, now Y" referencing state a rebuild erases.
 
-If the upgrade ships SDK functions that could replace low-level logic we wrote before they existed, surface it and let the user decide. **Default: keep what works** — just make the user aware of the option.
+## Minimize the diff
+
+Result = minimal diff (only what the version requires) + a list of everything else needed to fully sync (user approves into the backlog).
+- Minimal correct change (v5 slot swap = swap two constants, not re-architect to artifact-derive).
+- Don't fold an improvement into the diff — but **do** leave a `TODO(backlog):` at the site and add it to the deferred list. Be generous with these: whenever you see something the upgrade didn't finish or that's future work, mark it. A TODO is cheap; a lost follow-up isn't.
+- A correctness fix the version forces (slot swap, arity, namespace) belongs in the upgrade. A robustness or cleanup change (artifact-derive, guard tests) belongs in the backlog. A mirror you've verified is still correct doesn't need to change at all.
+
+## The report
+
+Buckets, so the owner sees what remains, not just what changed:
+1. Migration impacts (research aggregate).
+2. Mechanical edits done (the ripple).
+3. Spec-conformance wired — new capabilities/methods (part of the upgrade, not optional; full wiring path). `registerContractClass` was one.
+4. Product decisions surfaced / likely follow-up — the skill flags, the owner decides (a bundled thing that lost its artifact → drop or re-add; a feature the bump opens; SDK fns replacing our logic).
+5. Deferred → backlog (user approves each).
+
+For 3–4: spawn a sub-agent per large follow-up to assess complexity; optionally an exploration sub-agent that walks the implementation and returns the approach (discard the code, keep the path). Applying any implementation is user-approved only.
+
+## Migration audit (major / sentinel bump)
+
+The sentinel-driven profile reset is a GC point — audit one-shot migrations/backfills by storage scope:
+- `azguard:core:*` (profile-scoped: `token`/`fpc`/`account`/`network`/`contact`/`dapp-session`, `pxe` IndexedDB) is wiped by `onProfileDeleted` → the migration is dead after the wipe → **drop**.
+- `azguard:ui:*` (UI prefs) survives → **keep** (dropping it loses the user's setting).
+
+When writing a migration, tag its site `TODO(... requires wiping profiles)` so the next major finds it.
 
 ## bb.js WASM
 
-The wallet bundles barretenberg WASM at `libs/@aztec/bb.js/*.wasm.gz` (copied into the build by vite). On a version bump these *may* need regenerating — but often don't.
-- **Compare DECOMPRESSED content, not `.gz` bytes.** gzip embeds metadata (timestamp/OS), so `.gz` hashes differ spuriously even when the wasm is identical: `gunzip -c a.wasm.gz | sha256sum` vs the new one. If equal → no-op, leave as-is.
-- If different: download the release tarballs (`barretenberg-wasm.tar.gz`, `barretenberg-threads-wasm.tar.gz`) from https://github.com/AztecProtocol/aztec-packages/releases for the target version into a scratch dir, then run `extract-wasm.sh` (bundled in this skill): it extracts and gzips them into the wallet's `libs/@aztec/bb.js/`.
-
-## Saving artifacts
-
-If the user has a knowledge base (a repo/dir where agent findings are aggregated), offer to save the upgrade artifacts there: the per-item migration-impact report, the final change list, and any decisions made. If no such base is found, mention it's possible but skip it.
+Bundled at `libs/@aztec/bb.js/*.wasm.gz` (vite copies into the build). May need regenerating on a bump — often doesn't.
+- Compare DECOMPRESSED, not `.gz` (gzip metadata makes `.gz` hashes differ spuriously): `gunzip -c a.wasm.gz | sha256sum`. Equal → no-op.
+- If different: download `barretenberg-wasm.tar.gz` + `barretenberg-threads-wasm.tar.gz` from the target release, run `extract-wasm.sh` (bundled). If a symbol change is expected (signature-scheme swap), verify the decompressed wasm contains it and that it lands in `dist/`.
