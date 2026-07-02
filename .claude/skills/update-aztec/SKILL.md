@@ -61,6 +61,7 @@ The examples below are what bit us on past bumps — the same ones probably won'
 - storage slots — v5 reordered AuthRegistry `Storage`, swapping `approved_actions`/`reject_all` → authwit silently misreported (`utils/auth-registry.ts`). Fix: derive from `*Artifact.storageLayout.<field>.slot`.
 - hand-rolled `FunctionAbi` (multicall entrypoint, auth-registry `set_authorized`) — recompute the selector (`FunctionSelector.fromNameAndParameters`) and assert it equals the target artifact's.
 - `AztecAddress.fromNumber(<literal>)` for protocol contracts — use the imported constant (addresses moved; `CANONICAL_AUTH_REGISTRY_ADDRESS`/`MULTI_CALL_ENTRYPOINT_ADDRESS` removed, FeeJuice 5→3).
+- network chainId literals (`l1ChainId ^ rollupVersion`) — stale after any rollup upgrade; grep the old value, recompute from `aztec_getNodeInfo` (rc.2: `network/service.ts`, `ui/utils.ts`, `pxe/service.ts`).
 
 Sweep: `grep -rn "as FunctionAbi\|fromNumber([0-9]\|getPublicStorageAt\|_SLOT" src`, `grep -rn 'method:\s*"' src`. Verify each hit against the target artifact.
 
