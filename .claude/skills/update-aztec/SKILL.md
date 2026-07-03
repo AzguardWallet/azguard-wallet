@@ -5,17 +5,18 @@ description: Upgrade the Azguard wallet to a new Aztec version. Use when user sa
 
 # Update Aztec
 
-Bump the wallet's `@aztec/*` to a target Aztec version. **Wallet repo only.** Work *with* the user — they read the migration notes too; agents propose, the user approves before edits. Bundled contract artifacts are an **input**: on a major bump they're regenerated outside this skill (ask the owner where if unclear).
+Bump the wallet's `@aztec/*` to a target Aztec version. **Wallet repo only.** Work *with* the user — they read the migration notes too; agents propose, the user approves before edits. Bundled contract artifacts are an **input**: on a major bump they're regenerated separately and copied in before this skill runs (if they're missing, ask the user where to get them).
 
 ## Classify the bump first — everything forks on this
 
 **Minor** — wallet-only. Bump `@aztec/*`, adapt the JS ripple. Contracts untouched, **bundled artifacts stay PINNED**: recompiling changes `classId` → the derived address for a seed → existing accounts unreachable (the newer PXE loads pinned artifacts via compat shims). Say so explicitly. No sentinel bump.
 - If pinned JSON stops matching `NoirCompiledContract` (new required field), cast `as unknown as NoirCompiledContract` — the runtime shim defaults it, the cast just silences typecheck.
 
-**Major** — one or both deep triggers; either makes it major:
+**Major** — deep triggers; any one makes it major:
 - **Rollup / protocol version changed** (rc.2 did) — an old wallet can't transact on the new network, so the bump is forced even with a tiny code ripple. Protocol contract addresses may move too.
+- **`ORACLE_VERSION_MAJOR` bumped** — diff `noir-projects/aztec-nr/aztec/src/oracle/version.nr` between the current and target tags. The PXE↔Aztec.nr oracle interface is versioned `major.minor`: minor = oracle additions, backward compatible (PXE minor ≥ artifact minor is fine); **major must match exactly** — artifacts compiled under the old major fail the new PXE at runtime. A major bump forces artifact regen (→ class IDs move → hard fork by consequence), voiding the pinned-artifact rule even when nothing else looks major (rc.1→rc.2: 29→30).
 - **Account address hard fork** — derivation inputs change (`classId` from recompile, `PublicKeys` hashing, salted-init) → same seed, new address, no migration. This drops the pinned-artifact rule:
-  - Regenerated artifacts come from outside this skill (ask the owner if unclear); drop them into the bundled paths and confirm they load at runtime.
+  - Artifacts are regenerated separately and copied in before this skill runs; if missing, ask the user where to get them. Before bundling, assert each artifact JSON has `transpiled: true` (a mis-compiled artifact builds fine and fails the PXE at runtime); drop them into the bundled paths and confirm they load at runtime.
   - Bump `package.json` `sentinel` → fires the `aztecReset` "Profile Reset Needed" prompt (`deleteProfile` cascade).
   - Run the migration audit (below).
   - Legacy-build / asset-migration is a product decision to flag, not skill work.
@@ -23,17 +24,17 @@ Bump the wallet's `@aztec/*` to a target Aztec version. **Wallet repo only.** Wo
 ## Workflow
 
 1. **Classify** (above); tell the user the path.
-2. **Get aztec-packages at the target TAG.** The agent does/verifies the checkout — don't assume the owner left it on the right ref. Local checkout → `git fetch && git checkout <tag>`; else offer to clone to scratch. Read migration notes from the tag's versioned docs, not `next`.
+2. **Get aztec-packages at the target TAG.** The agent does/verifies the checkout — don't assume it's already on the right ref. Local checkout → `git fetch && git checkout <tag>`; else offer to clone to scratch. **Migration notes = the delta of the living cumulative file between tags:** `git diff <current-tag> <target-tag> -- docs/docs-developers/docs/resources/migration_notes.md`. Don't look for the target's versioned-docs snapshot (`docs/developer_versioned_docs/version-*/`) — snapshots are cut only at stable releases and don't exist at rc tags.
 3. **Baseline.** Confirm `yarn typecheck` + `yarn test` are green before any change; the upgrade must keep them green.
-4. **Branch** named after the tag (e.g. `v5.0.0-rc.2`).
+4. **Branch** named after the tag (e.g. `v5.0.0-rc.2`); reuse it if it already exists.
 5. **Research — two deliverables, before editing:**
-   - **(a) Per migration-note.** Sources: tag's `migration_notes.md`, `git log <current>..<target>` (`feat!`/`refactor!`/`fix!`), `release-notes-*`. Sub-agent per entry (batch trivial ones): affects us? what edits? what opportunities? Catches silent behavior changes that don't fail to compile.
+   - **(a) Per migration-note.** Sources: the migration-notes delta (step 2), `git log <current>..<target>` (`feat!`/`refactor!`/`fix!`), `release-notes-*`. Sub-agent per entry (batch trivial ones): affects us? what edits? what opportunities? Catches silent behavior changes that don't fail to compile.
    - **(b) SDK-surface diff.** Diff each invariant surface (see Interface sync) at the target vs what the wallet handles. A new field/method that compiles but is unhandled is the failure mode — why `registerContractClass` was missed.
 6. **Plan + approve.** Show the change list + both research outputs; present options where they exist. Explicit approval before editing.
 7. **Apply.** Deps first (`@aztec/*` → target, add split packages, align peers, `yarn install`), then the edits. Commit in layers as you go (see Commit layering).
 8. **Silent-break sweep** (see block).
 9. **Major only:** bump `sentinel`, run the migration audit, drop in the regenerated artifacts + confirm they load.
-10. **Verify.** typecheck/build vs baseline. A green build ≠ works (v5's PrivateFPC throw built fine); real acceptance is a runtime/e2e run — harness/owner territory, not a gate here. Auto-check what you can, flag the rest.
+10. **Verify.** typecheck/build vs baseline. A green build ≠ works (v5's PrivateFPC throw built fine); real acceptance is a runtime/e2e run — the user's call, not a gate here. Auto-check what you can, flag the rest.
 11. **Report** (see block).
 12. **Optional:** rebuild the branch into clean layers (see Commit layering) in a worktree — do it silently only if easy, else propose it.
 
@@ -97,11 +98,11 @@ Result = minimal diff (only what the version requires) + a list of everything el
 
 ## The report
 
-Buckets, so the owner sees what remains, not just what changed:
+Buckets, so the user sees what remains, not just what changed:
 1. Migration impacts (research aggregate).
 2. Mechanical edits done (the ripple).
 3. Spec-conformance wired — new capabilities/methods (part of the upgrade, not optional; full wiring path). `registerContractClass` was one.
-4. Product decisions surfaced / likely follow-up — the skill flags, the owner decides (a bundled thing that lost its artifact → drop or re-add; a feature the bump opens; SDK fns replacing our logic).
+4. Product decisions surfaced / likely follow-up — the skill flags, the user decides (a bundled thing that lost its artifact → drop or re-add; a feature the bump opens; SDK fns replacing our logic).
 5. Deferred → backlog (user approves each).
 
 For 3–4: spawn a sub-agent per large follow-up to assess complexity; optionally an exploration sub-agent that walks the implementation and returns the approach (discard the code, keep the path). Applying any implementation is user-approved only.
