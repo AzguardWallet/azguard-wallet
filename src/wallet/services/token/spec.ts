@@ -51,6 +51,13 @@ export type TokenInfo = {
     hasPrivateToPublicTransfers: boolean;
 };
 
+/** Explicit metadata for contracts that don't expose name/symbol/decimals on-chain (e.g. Private FPC). */
+export type TokenMetadataOverride = {
+    name?: string;
+    symbol?: string;
+    decimals?: number;
+};
+
 export type TokenInterface = {
     /** Chain id. */
     chainId: number;
@@ -102,6 +109,9 @@ export type TokenInterface = {
     /** Functions with `transferPrivateToPublicFn`-like signature. */
     transferPrivateToPublicFnCandidates: FnImpl[];
 
+    /** Metadata used when the contract exposes no on-chain metadata fns: placeholders, or proper values for known contracts (Fee Juice, Private-FPC-shaped). */
+    fallbackMetadata: { name: string; symbol: string; decimals: number };
+
     /** Whether or not the token has complete functionality */
     isComplete: boolean;
 };
@@ -126,8 +136,15 @@ export type Methods = {
      * @param networkId Network id.
      * @param accountAddress Account address.
      * @param tokenInterface Token interface, determining token's functionality.
+     * @param metadata Metadata overriding the on-chain/fallback name, symbol and decimals.
      */
-    addToken(profileId: string, networkId: string, accountAddress: string, tokenInterface: TokenInterface): TokenInfo;
+    addToken(
+        profileId: string,
+        networkId: string,
+        accountAddress: string,
+        tokenInterface: TokenInterface,
+        metadata?: TokenMetadataOverride,
+    ): TokenInfo;
 
     /**
      * Updates token and returns it.

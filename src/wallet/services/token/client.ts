@@ -2,7 +2,7 @@ import { ServiceSpec } from "@/wallet/base";
 import { ServiceClient } from "@/wallet/base/background";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import { Events, Methods, TOKEN_SERVICE_NAME, TokenInfo, TokenInterface } from "./spec";
+import { Events, Methods, TOKEN_SERVICE_NAME, TokenInfo, TokenInterface, TokenMetadataOverride } from "./spec";
 
 export * from "./spec";
 
@@ -28,8 +28,9 @@ export class TokenServiceClient extends ServiceClient<Methods, Events> implement
         networkId: string,
         accountAddress: string,
         tokenInterface: TokenInterface,
+        metadata?: TokenMetadataOverride,
     ): Promise<TokenInfo> {
-        return this.request("addToken", profileId, networkId, accountAddress, tokenInterface);
+        return this.request("addToken", profileId, networkId, accountAddress, tokenInterface, metadata);
     }
 
     public updateToken(

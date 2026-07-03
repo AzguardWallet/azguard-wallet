@@ -528,7 +528,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         ) {
             throw new Error("Couldn't find necessary methods in the contract interface. Try to add token manually.");
         }
-        await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti, parentTask);
+        await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti, undefined, parentTask);
     }
 
     public async executeSendTransaction(

@@ -1,3 +1,4 @@
+import { ContractArtifact } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -11,8 +12,13 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
-import { simulate } from "@/wallet/utils/fn";
-import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, Methods, Events } from "./spec";
+import { simulate, ViewFn } from "@/wallet/utils/fn";
+import {
+    isPrivateFpcArtifact,
+    privateFpcTokenName,
+    privateFpcTokenSymbol,
+} from "@/wallet/services/fpc/handlers/private-fpc-handler";
+import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
 import {
     BalanceOfPrivateFn,
     BalanceOfPublicFn,
@@ -28,6 +34,17 @@ import { getTokenInfo, isTokenComplete } from "./utils";
 
 export * from "./functions";
 export * from "./spec";
+
+// proper values for known contracts without on-chain metadata fns (Fee Juice, Private-FPC-shaped), placeholders otherwise
+function getFallbackMetadata(contract: string, artifact: ContractArtifact): TokenInterface["fallbackMetadata"] {
+    if (contract === feeJuiceAddress) {
+        return { name: feeJuiceName, symbol: feeJuiceSymbol, decimals: 18 };
+    }
+    if (isPrivateFpcArtifact(artifact)) {
+        return { name: privateFpcTokenName, symbol: privateFpcTokenSymbol, decimals: 18 };
+    }
+    return { name: "<name>", symbol: "<symbol>", decimals: 0 };
+}
 
 export class TokenService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = TOKEN_SERVICE_NAME;
@@ -98,6 +115,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         networkId: string,
         accountAddress: string,
         tokenInterface: TokenInterface,
+        metadata?: TokenMetadataOverride,
         parentTask?: WrappedTask,
     ): Promise<TokenInfo> {
         await this.ensureInitialized();
@@ -113,6 +131,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
                     networkId,
                     accountAddress,
                     tokenInterface,
+                    metadata,
                 );
                 token = {
                     id: array_max((await this.tokens.getKeys()).map(x => +x)) + 1,
@@ -306,6 +325,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             transferPublicToPrivateFnCandidates,
             transferPrivateToPublicFn,
             transferPrivateToPublicFnCandidates,
+            fallbackMetadata: getFallbackMetadata(token.contract, artifact),
             isComplete: false,
         };
         ti.isComplete = isTokenComplete(ti);
@@ -395,6 +415,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
                 transferPublicToPrivateFnCandidates: transferPublicToPrivateFnCandidates.map(x => x.getImpl()),
                 transferPrivateToPublicFn: transferPrivateToPublicFn?.getImpl(),
                 transferPrivateToPublicFnCandidates: transferPrivateToPublicFnCandidates.map(x => x.getImpl()),
+                fallbackMetadata: getFallbackMetadata(contract, artifact),
                 isComplete: false,
             };
             result.isComplete = isTokenComplete(result);
@@ -411,6 +432,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         networkId: string,
         address: string,
         ti: TokenInterface,
+        metadata?: TokenMetadataOverride,
     ): Promise<[string, string, number]> {
         const network = await this.networks.getNetwork(networkId);
         if (!network) {
@@ -428,20 +450,15 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             ? GetDecimalsFn.new(ti.getDecimalsFn.name, ti.getDecimalsFn.impl)
             : undefined;
 
-        const fallback = {
-            [feeJuiceAddress]: { name: feeJuiceName, symbol: feeJuiceSymbol, decimals: 18 },
-        }[ti.contract];
+        const fallback = ti.fallbackMetadata;
+        const fetchField = (fn: ViewFn | undefined, fallbackValue: string | number) =>
+            fn ? simulate(node, pxe, account, ti.contract, fn, fn.buildArgs()) : fallbackValue;
 
+        // per field: explicit override → on-chain view fn → fallback
         return await Promise.all([
-            getNameFn
-                ? simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
-                : fallback?.name ?? "<name>",
-            getSymbolFn
-                ? simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
-                : fallback?.symbol ?? "<symbol>",
-            getDecimalsFn
-                ? simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())
-                : fallback?.decimals ?? 0,
+            metadata?.name ?? fetchField(getNameFn, fallback.name),
+            metadata?.symbol ?? fetchField(getSymbolFn, fallback.symbol),
+            metadata?.decimals ?? fetchField(getDecimalsFn, fallback.decimals),
         ]);
     }
 
