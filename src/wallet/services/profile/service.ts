@@ -15,6 +15,7 @@ import {
     ENCRYPTION_GUARD,
     SENTINEL_STORAGE_KEY,
     UNKNOWN_ORIGIN,
+    isCurrentGeneration,
     ProfileInfo,
     ProfileOrigin,
     Profile,
@@ -701,12 +702,24 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         return (await this.getActiveProfile());
     }
 
-    /** Keeps the origin the profile was created with — never stamps the current build's. */
+    /**
+     * Refuses backups from another profile generation (backstop behind the import UI's own check)
+     * and keeps the origin the profile was created with — never stamps the current build's.
+     */
     public async restore(profile: ProfileInfo, masterKey: string, password?: string): Promise<Restored<ProfileInfo>> {
         await this.ensureInitialized();
 
         if (!masterKey) {
             throw new Error("Master key is required to restore profile");
+        }
+
+        if (!isCurrentGeneration(profile.origin)) {
+            return {
+                ...profile,
+                restoreError: profile.origin
+                    ? "Backup profile is from an incompatible generation"
+                    : "Backup predates profile versioning",
+            };
         }
 
         const profileNames = (await this.profiles.getValues()).map(p => p.name);
@@ -745,7 +758,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                         id,
                         name,
                         type: "password",
-                        origin: profile.origin ?? UNKNOWN_ORIGIN,
+                        origin: profile.origin,
                         guard: Buffer.from(guard.buffer).toString("base64"),
                         secret: Buffer.from(encodedSecret.buffer).toString("base64"),
                     };
@@ -785,7 +798,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                         id,
                         name,
                         type: "passkey",
-                        origin: profile.origin ?? UNKNOWN_ORIGIN,
+                        origin: profile.origin,
                         credentialId: credential.id,
                     };
                     await this.profiles.set(id, newProfile);

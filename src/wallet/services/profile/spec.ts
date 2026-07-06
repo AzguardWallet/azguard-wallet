@@ -20,6 +20,9 @@ export type ProfileOrigin = {
 /** For profiles whose creation-time versions are unknowable (pre-versioning backups and storage). */
 export const UNKNOWN_ORIGIN: ProfileOrigin = { sentinel: "unknown", walletVersion: "unknown", aztecVersion: "unknown" };
 
+/** The single compatibility rule: profiles are usable only within their generation (exact sentinel match). */
+export const isCurrentGeneration = (origin?: ProfileOrigin): boolean => origin?.sentinel === __SENTINEL__;
+
 export type ProfileInfo = {
     /** Randomly generated id. */
     id: string;
