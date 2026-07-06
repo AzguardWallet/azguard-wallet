@@ -59,7 +59,7 @@ const handleReset = () => {
 		cacheStore.confirm = {}
 
 		appStore.profiles = appStore.profiles.filter(p => p.id !== appStore.profile.id)
-		appStore.profile = appStore.profiles.length && appStore.profiles[0]
+		appStore.profile = appStore.profiles[0]
 		appStore.networks = []
 		appStore.network = null
 		appStore.accounts = []
@@ -95,7 +95,7 @@ watch(
 				if (element) checks[key] = false
 			}
 		} else {
-			isMigration.value = !(await checkSentinel())
+			isMigration.value = !checkProfileSentinel(appStore.profile)
 			await nextTick()
 		}
 	},

@@ -27,7 +27,7 @@ declare global {
   const capitalize: typeof import('../utils/string').capitalize
   const capitilize: typeof import('../utils/string.js')['capitilize']
   const checkNotificationsForShow: typeof import('../composables/notification.js').checkNotificationsForShow
-  const checkSentinel: typeof import('../utils/core').checkSentinel
+  const checkProfileSentinel: typeof import('../utils/core').checkProfileSentinel
   const comma: typeof import('../utils/amount.js').comma
   const compressData: typeof import('../utils/files').compressData
   const computed: typeof import('vue').computed

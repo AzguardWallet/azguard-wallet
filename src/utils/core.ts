@@ -1,5 +1,5 @@
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { SENTINEL_STORAGE_KEY } from "@/wallet/services/profile/spec"
+import { SENTINEL_STORAGE_KEY, isCurrentGeneration, type ProfileInfo } from "@/wallet/services/profile/spec"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TransactionServiceClient, type Tx } from "@/wallet/services/transaction/client"
 import { ContactServiceClient } from "@/wallet/services/contact/client"
@@ -77,6 +77,6 @@ export const setSentinel = async () => {
 	chrome.storage.local.remove("azguard:ui:aztecVersion") // TODO: delete me at some point
 }
 
-export const checkSentinel = async () => {
-	return (await chrome.storage.local.get(SENTINEL_STORAGE_KEY))[SENTINEL_STORAGE_KEY] === __SENTINEL__
+export const checkProfileSentinel = (profile?: ProfileInfo): boolean => {
+	return isCurrentGeneration(profile?.origin)
 }
