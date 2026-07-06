@@ -13,7 +13,9 @@ import { PasskeyService } from "@/wallet/services/passkey/service";
 import {
     PROFILE_SERVICE_NAME,
     ENCRYPTION_GUARD,
+    UNKNOWN_ORIGIN,
     ProfileInfo,
+    ProfileOrigin,
     Profile,
     Session,
     ActiveSession,
@@ -106,6 +108,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 id,
                 name,
                 type: "password",
+                origin: this.currentOrigin(),
                 guard: Buffer.from(guard.buffer).toString("base64"),
                 secret: Buffer.from(encryptedSecret.buffer).toString("base64"),
             };
@@ -174,6 +177,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 id,
                 name,
                 type: "passkey",
+                origin: this.currentOrigin(),
                 credentialId: credential.id,
             };
             await this.profiles.set(id, profile);
@@ -596,6 +600,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 id,
                 name,
                 type: "password",
+                origin: this.currentOrigin(),
                 guard: Buffer.from(guard.buffer).toString("base64"),
                 secret: Buffer.from(encodedSecret.buffer).toString("base64"),
             };
@@ -632,6 +637,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 id,
                 name,
                 type: "passkey",
+                origin: this.currentOrigin(),
                 credentialId,
             };
             await this.profiles.set(id, profile);
@@ -656,7 +662,11 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     private getProfileInfo(profile: Profile): ProfileInfo {
-        return { id: profile.id, name: profile.name, type: profile.type };
+        return { id: profile.id, name: profile.name, type: profile.type, origin: profile.origin };
+    }
+
+    private currentOrigin(): ProfileOrigin {
+        return { sentinel: __SENTINEL__, walletVersion: __VERSION__, aztecVersion: __AZTEC_VERSION__ };
     }
 
     private readonly onConfigUpdated = (prop: ConfigProp) => {
@@ -669,6 +679,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         return (await this.getActiveProfile());
     }
 
+    /** Keeps the origin the profile was created with — never stamps the current build's. */
     public async restore(profile: ProfileInfo, masterKey: string, password?: string): Promise<Restored<ProfileInfo>> {
         await this.ensureInitialized();
 
@@ -712,6 +723,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                         id,
                         name,
                         type: "password",
+                        origin: profile.origin ?? UNKNOWN_ORIGIN,
                         guard: Buffer.from(guard.buffer).toString("base64"),
                         secret: Buffer.from(encodedSecret.buffer).toString("base64"),
                     };
@@ -751,6 +763,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                         id,
                         name,
                         type: "passkey",
+                        origin: profile.origin ?? UNKNOWN_ORIGIN,
                         credentialId: credential.id,
                     };
                     await this.profiles.set(id, newProfile);

@@ -6,6 +6,17 @@ export const ENCRYPTION_GUARD = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
 
 export type ProfileType = "password" | "passkey";
 
+/** Versions of the wallet build that created the profile ("unknown" when backfilled). */
+export type ProfileOrigin = {
+    /** Profile-compatibility sentinel; restore requires an exact match with the current build. */
+    sentinel: string;
+    walletVersion: string;
+    aztecVersion: string;
+};
+
+/** For profiles whose creation-time versions are unknowable (pre-versioning backups and storage). */
+export const UNKNOWN_ORIGIN: ProfileOrigin = { sentinel: "unknown", walletVersion: "unknown", aztecVersion: "unknown" };
+
 export type ProfileInfo = {
     /** Randomly generated id. */
     id: string;
@@ -13,6 +24,8 @@ export type ProfileInfo = {
     name: string;
     /** Profile type. */
     type: ProfileType;
+    /** Creation-time versions, immutable for the profile's lifetime. */
+    origin: ProfileOrigin;
 };
 
 export type Profile = ProfileInfo &
