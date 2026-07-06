@@ -4,6 +4,9 @@ export const PROFILE_SERVICE_NAME = "profile";
 
 export const ENCRYPTION_GUARD = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
 
+/** chrome.storage.local key holding the sentinel written by the popup on register/import. */
+export const SENTINEL_STORAGE_KEY = "azguard:ui:sentinel";
+
 export type ProfileType = "password" | "passkey";
 
 /** Versions of the wallet build that created the profile ("unknown" when backfilled). */

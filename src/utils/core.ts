@@ -1,4 +1,5 @@
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
+import { SENTINEL_STORAGE_KEY } from "@/wallet/services/profile/spec"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TransactionServiceClient, type Tx } from "@/wallet/services/transaction/client"
 import { ContactServiceClient } from "@/wallet/services/contact/client"
@@ -71,13 +72,11 @@ export const initTransactionService = (
 	managers.transaction.connect()
 }
 
-const sentinelPath = "azguard:ui:sentinel"
-
 export const setSentinel = async () => {
-	await chrome.storage.local.set({ [sentinelPath]: __SENTINEL__ })
+	await chrome.storage.local.set({ [SENTINEL_STORAGE_KEY]: __SENTINEL__ })
 	chrome.storage.local.remove("azguard:ui:aztecVersion") // TODO: delete me at some point
 }
 
 export const checkSentinel = async () => {
-	return (await chrome.storage.local.get(sentinelPath))[sentinelPath] === __SENTINEL__
+	return (await chrome.storage.local.get(SENTINEL_STORAGE_KEY))[SENTINEL_STORAGE_KEY] === __SENTINEL__
 }

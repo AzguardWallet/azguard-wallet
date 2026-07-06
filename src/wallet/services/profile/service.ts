@@ -13,6 +13,7 @@ import { PasskeyService } from "@/wallet/services/passkey/service";
 import {
     PROFILE_SERVICE_NAME,
     ENCRYPTION_GUARD,
+    SENTINEL_STORAGE_KEY,
     UNKNOWN_ORIGIN,
     ProfileInfo,
     ProfileOrigin,
@@ -51,6 +52,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
     protected async init(services: ServiceCollection) {
         this.passkeys = services.get(PasskeyService.name);
+
+        await this.backfillOrigins();
 
         const session = await this.session.get();
         if (!session) {
@@ -667,6 +670,25 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
     private currentOrigin(): ProfileOrigin {
         return { sentinel: __SENTINEL__, walletVersion: __VERSION__, aztecVersion: __AZTEC_VERSION__ };
+    }
+
+    /**
+     * Migration: profiles created before origin tracking get stamped once at startup.
+     * Their epoch is the global sentinel recorded by the last register/import; the build
+     * versions are unknowable by then. Runs before setSentinel can overwrite the global
+     * value, and normally finds nothing — but must stay for installs that skip many
+     * versions at once (extension updates can jump straight from any old build).
+     */
+    private async backfillOrigins() {
+        const legacy = (await this.profiles.getValues()).filter((p) => !p.origin);
+        if (!legacy.length) {
+            return;
+        }
+        const sentinel: string = (await chrome.storage.local.get(SENTINEL_STORAGE_KEY))[SENTINEL_STORAGE_KEY] ?? UNKNOWN_ORIGIN.sentinel;
+        for (const profile of legacy) {
+            await this.profiles.set(profile.id, { ...profile, origin: { ...UNKNOWN_ORIGIN, sentinel } });
+            this.logDebug(`Backfilled origin for profile ${profile.id}, sentinel: ${sentinel}`);
+        }
     }
 
     private readonly onConfigUpdated = (prop: ConfigProp) => {
