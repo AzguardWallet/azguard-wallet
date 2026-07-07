@@ -98,6 +98,7 @@ import {
     type AztecGetAddressBookOperation,
     type AztecGetAccountsOperation,
     type AztecRegisterContractOperation,
+    type AztecRegisterContractClassOperation,
     type AztecSimulateTxOperation,
     type AztecExecuteUtilityOperation,
     type AztecProfileTxOperation,
@@ -365,6 +366,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         result = await this.executeAztecRegisterContract(operation);
                         break;
                     }
+                    case "aztec_registerContractClass": {
+                        result = await this.executeAztecRegisterContractClass(operation);
+                        break;
+                    }
                     case "aztec_simulateTx": {
                         result = await this.executeAztecSimulateTx(operation);
                         break;
@@ -467,7 +472,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     private async executeRegisterContract(op: RegisterContractOperation): Promise<void> {
-        const addressNum = AztecAddress.fromString(op.address).toBigInt();
+        const addressNum = AztecAddress.fromStringUnsafe(op.address).toBigInt();
         if (addressNum >= 0 && addressNum <= 6) {
             // ignore protocol contracts registration,
             // because we cannot validate it due to hardcoded addresses
@@ -475,7 +480,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         const network = await this.networkService.getNetwork(op.networkId);
-        const address = AztecAddress.fromString(op.address);
+        const address = AztecAddress.fromStringUnsafe(op.address);
 
         const providedInstance = await optional(ContractInstanceWithAddressSchema).parseAsync(op.instance);
         const instance = providedInstance ?? (await this.pxeService.getContractInstance(network, address));
@@ -506,7 +511,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
         const network = await this.networkService.getNetwork(op.networkId);
-        await this.pxeService.registerSender(network, AztecAddress.fromString(op.address));
+        await this.pxeService.registerSender(network, AztecAddress.fromStringUnsafe(op.address));
     }
 
     private async executeRegisterToken(op: RegisterTokenOperation, parentTask?: WrappedTask): Promise<void> {
@@ -523,7 +528,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         ) {
             throw new Error("Couldn't find necessary methods in the contract interface. Try to add token manually.");
         }
-        await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti, parentTask);
+        await this.tokenService.addToken(profile.id, op.networkId, op.accountAddress, ti, undefined, parentTask);
     }
 
     public async executeSendTransaction(
@@ -601,7 +606,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const encodedArgs = encodeArguments(fn, op.args);
         const call = new FunctionCall(
             fn.name,
-            AztecAddress.fromString(op.contract),
+            AztecAddress.fromStringUnsafe(op.contract),
             fnSelector,
             fn.functionType,
             false,
@@ -690,7 +695,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                             pxe.executeUtility(
                                 new FunctionCall(
                                     fn.name,
-                                    AztecAddress.fromString(call.contract),
+                                    AztecAddress.fromStringUnsafe(call.contract),
                                     fnSelector,
                                     fn.functionType,
                                     false,
@@ -711,7 +716,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         args.push(packedArgs);
                         calls.push([
                             new AzguardFunctionCall(
-                                AztecAddress.fromString(call.contract),
+                                AztecAddress.fromStringUnsafe(call.contract),
                                 fnSelector,
                                 packedArgs.hash,
                                 fn.functionType === FunctionType.PUBLIC,
@@ -760,7 +765,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                             pxe.executeUtility(
                                 new FunctionCall(
                                     fn.name,
-                                    AztecAddress.fromString(call.to),
+                                    AztecAddress.fromStringUnsafe(call.to),
                                     FunctionSelector.fromString(call.selector),
                                     fn.functionType,
                                     false,
@@ -784,7 +789,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         args.push(packedArgs);
                         calls.push([
                             new AzguardFunctionCall(
-                                AztecAddress.fromString(call.to),
+                                AztecAddress.fromStringUnsafe(call.to),
                                 FunctionSelector.fromString(call.selector),
                                 packedArgs.hash,
                                 fn.functionType === FunctionType.PUBLIC,
@@ -926,7 +931,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         //       or returning trimAddress(x.address)
         return (await this.contactService.getContacts()).map(x => ({
             alias: x.name,
-            item: AztecAddress.fromString(x.address),
+            item: AztecAddress.fromStringUnsafe(x.address),
         }));
     }
 
@@ -941,7 +946,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             .filter(acc => allAccounts.some(x => x.address === acc.address))
             .map(acc => ({
                 alias: acc.alias,
-                item: AztecAddress.fromString(acc.address),
+                item: AztecAddress.fromStringUnsafe(acc.address),
             }));
     }
 
@@ -981,6 +986,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         return instance;
+    }
+
+    private async executeAztecRegisterContractClass(op: AztecRegisterContractClassOperation): Promise<void> {
+        const network = await this.networkService.getNetwork(op.networkId);
+        const artifact = await ContractArtifactSchema.parseAsync(op.artifact);
+        // TODO(backlog): detect type from artifact, offer add-as-token/FPC
+        await this.pxeService.registerContractClass(network, artifact);
     }
 
     private async executeAztecSimulateTx(op: AztecSimulateTxOperation): Promise<TxSimulationResult> {
@@ -1049,8 +1061,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
-            scopes: scopesFrom(AztecAddress.fromString(op.accountAddress), op.opts.additionalScopes),
-            senderForTags: op.opts.sendMessagesAs ?? AztecAddress.fromString(op.accountAddress),
+            scopes: scopesFrom(AztecAddress.fromStringUnsafe(op.accountAddress), op.opts.additionalScopes),
+            senderForTags: op.opts.sendMessagesAs ?? AztecAddress.fromStringUnsafe(op.accountAddress),
         });
     }
 
@@ -1483,10 +1495,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         this.logDebug("Adding capsule...");
                         capsules.push(
                             new Capsule(
-                                AztecAddress.fromString(action.contract),
+                                AztecAddress.fromStringUnsafe(action.contract),
                                 Fr.fromString(action.storageSlot),
                                 action.capsule.map(Fr.fromString),
-                                action.scope ? AztecAddress.fromString(action.scope) : undefined,
+                                action.scope ? AztecAddress.fromStringUnsafe(action.scope) : undefined,
                             ),
                         );
                         this.logDebug("Capsule added.");
@@ -1656,7 +1668,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         args.push(packedArgs);
                         calls.push(
                             new AzguardFunctionCall(
-                                AztecAddress.fromString(action.contract),
+                                AztecAddress.fromStringUnsafe(action.contract),
                                 fnSelector,
                                 packedArgs.hash,
                                 fn.functionType === FunctionType.PUBLIC,
@@ -1714,7 +1726,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         args.push(packedArgs);
                         calls.push(
                             new AzguardFunctionCall(
-                                AztecAddress.fromString(action.to),
+                                AztecAddress.fromStringUnsafe(action.to),
                                 FunctionSelector.fromString(action.selector),
                                 packedArgs.hash,
                                 action.type === FunctionType.PUBLIC,
@@ -1813,10 +1825,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
         return await computeAuthWitMessageHash(
             {
-                caller: AztecAddress.fromString(content.caller),
+                caller: AztecAddress.fromStringUnsafe(content.caller),
                 call: new FunctionCall(
                     fn.name,
-                    AztecAddress.fromString(content.contract),
+                    AztecAddress.fromStringUnsafe(content.contract),
                     await FunctionSelector.fromNameAndParameters(fn.name, fn.parameters),
                     fn.functionType,
                     content.hideSender === true,
@@ -1879,10 +1891,10 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
         return await computeAuthWitMessageHash(
             {
-                caller: AztecAddress.fromString(content.caller),
+                caller: AztecAddress.fromStringUnsafe(content.caller),
                 call: new FunctionCall(
                     content.name,
-                    AztecAddress.fromString(content.to),
+                    AztecAddress.fromStringUnsafe(content.to),
                     FunctionSelector.fromString(content.selector),
                     content.type as FunctionType,
                     content.hideMsgSender === true,
@@ -1901,7 +1913,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async getIntentMessageHash(content: IntentAuthwitContent, nodeInfo: NodeInfo): Promise<Fr> {
         return await computeAuthWitMessageHash(
             {
-                consumer: AztecAddress.fromString(content.consumer),
+                consumer: AztecAddress.fromStringUnsafe(content.consumer),
                 innerHash: await computeInnerAuthWitHash(content.intent.map(x => Fr.fromString(x))),
             },
             {
@@ -1951,7 +1963,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 
     private async getInstance(pxe: IPXE, contract: string): Promise<[string, ContractInstanceWithAddress]> {
-        const instance = await pxe.getContractInstance(AztecAddress.fromString(contract));
+        const instance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(contract));
         if (!instance) {
             throw new Error("Contract instance not found");
         }

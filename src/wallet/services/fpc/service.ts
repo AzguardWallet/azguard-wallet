@@ -15,7 +15,6 @@ import { getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
-import { PrivateFPCContractArtifact } from "./artifacts";
 
 export * from "./fpc";
 export * from "./spec";
@@ -64,9 +63,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 const node = await this.networkService.getNode(network.chainId);
                 const pxe = this.pxeService.getPXE(network);
 
-                const knownFpcs = [
-                    { artifact: PrivateFPCContractArtifact, type: FpcType.PrivateFpc },
-                ];
+                const knownFpcs: { artifact: typeof SponsoredFPCContractArtifact; type: FpcType }[] = [];
                 // Sponsored FPC is a test-network convenience — no free fee
                 // payments on mainnet, so we do not auto-discover it there.
                 if (chainId !== CHAIN_IDS.ALPHANET) {
@@ -149,7 +146,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const node = await this.networkService.getNode(network.chainId);
         const pxe = this.pxeService.getPXE(network);
 
-        const fpcInstance = await pxe.getContractInstance(AztecAddress.fromString(address));
+        const fpcInstance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(address));
         if (!fpcInstance) {
             this.logError("Failed to add FPC: contract instance not found", address);
             throw new Error("Contract instance not found");

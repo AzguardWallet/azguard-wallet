@@ -10,7 +10,6 @@ import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/clien
 /** Utils */
 import { getChainColor } from "@/components/ui/utils.js"
 import { stringCompare } from "@/utils/string"
-import { getPrivateFpcAddress } from "@/wallet/utils/private-fpc"
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
@@ -34,7 +33,6 @@ let fpcService = null
 let tokenBalanceService = null
 const selectedFpc = ref()
 const allFpcs = ref([])
-const canonicalPfpcAddr = ref("")
 const fpcs = computed(() => {
 	const getOrder = (type) => {
 		if (type === "sponsored") return 0
@@ -43,13 +41,9 @@ const fpcs = computed(() => {
 	}
 
 	return allFpcs.value
-		// Canonical pFJ is picked via the unified Fee Juice UI, not here.
-		// Until canonicalPfpcAddr is resolved (initial ""), no real address
-		// matches so every FPC passes.
-		?.filter(f => f.address !== canonicalPfpcAddr.value)
 		// `f.asset` (vs `type === DefaultFpc`) lets through user-added Private FPCs
-		// when their matching pFJ-style token is also registered.
-		.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.asset && tokenContracts.value?.has(f.asset)))
+		// when their matching token is also registered.
+		?.filter(f => f.type === FpcType.DefaultSponsoredFpc || (f.asset && tokenContracts.value?.has(f.asset)))
 		.map(f => prepareFpc(f))
 		.sort((a, b) => {
 			const typeOrder = getOrder(a.type) - getOrder(b.type)
@@ -92,12 +86,7 @@ const init = async () => {
 		tokenBalanceService = new TokenBalanceServiceClient()
 		tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
 		tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
-		const [allBalances, pfpcAddr] = await Promise.all([
-			tokenBalanceService.getTokenBalances(undefined, appStore.account.address),
-			getPrivateFpcAddress(),
-		])
-		balances.value = allBalances
-		canonicalPfpcAddr.value = pfpcAddr
+		balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
 		allFpcs.value = await fpcService.getFpcs(appStore.network.chainId)
 	}
 	catch (err) {

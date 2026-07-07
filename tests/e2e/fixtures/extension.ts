@@ -13,7 +13,7 @@ async function launchExtension(): Promise<ExtensionContext> {
     const extensionPath = inject("extensionPath")
 
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         args: [
             `--disable-extensions-except=${extensionPath}`,
             `--load-extension=${extensionPath}`,

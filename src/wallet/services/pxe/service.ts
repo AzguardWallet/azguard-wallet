@@ -2,17 +2,16 @@ import { SPONSORED_FPC_SALT } from "@aztec/constants";
 import { getPXEConfig, type PXEConfig } from "@aztec/pxe/config";
 import { createPXE, PackedPrivateEvent, PXE } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
-import { AuthRegistryArtifact } from "@aztec/protocol-contracts/auth-registry";
+import { AuthRegistryArtifact } from "@aztec/standard-contracts/auth-registry";
 import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-registry";
 import { FeeJuiceArtifact } from "@aztec/protocol-contracts/fee-juice";
 import { ContractInstanceRegistryArtifact } from "@aztec/protocol-contracts/instance-registry";
-import { MultiCallEntrypointArtifact } from "@aztec/protocol-contracts/multi-call-entrypoint";
-import { PublicChecksArtifact } from "@aztec/protocol-contracts/public-checks";
+import { MultiCallEntrypointArtifact } from "@aztec/standard-contracts/multi-call-entrypoint";
+import { PublicChecksArtifact } from "@aztec/standard-contracts/public-checks";
 import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
 import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
-import { PrivateFPCContractArtifact } from "@/wallet/services/fpc/artifacts";
 import { type ContractArtifact, ContractArtifactSchema, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
 import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
@@ -161,18 +160,26 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     public async registerSender(network: Network, address: AztecAddress): Promise<AztecAddress> {
-        return this.withPxe(network, async (pxe) =>
-            pxe.registerSender(await AztecAddress.schema.parseAsync(address)),
-        );
+        return this.withPxe(network, async (pxe) => {
+            const sender = await AztecAddress.schema.parseAsync(address);
+            await pxe.registerTaggingSecretSource({ kind: "address-derived", sender });
+            return sender;
+        });
     }
 
     public async getSenders(network: Network): Promise<AztecAddress[]> {
-        return this.withPxe(network, (pxe) => pxe.getSenders());
+        return this.withPxe(network, async (pxe) => {
+            const sources = await pxe.getTaggingSecretSources({ kind: "address-derived" });
+            return sources.map((s) => s.sender);
+        });
     }
 
     public async removeSender(network: Network, address: AztecAddress): Promise<void> {
         return this.withPxe(network, async (pxe) =>
-            pxe.removeSender(await AztecAddress.schema.parseAsync(address)),
+            pxe.removeTaggingSecretSource({
+                kind: "address-derived",
+                sender: await AztecAddress.schema.parseAsync(address),
+            }),
         );
     }
 
@@ -309,7 +316,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             NFTContractArtifact,
             SponsoredFPCContractArtifact,
             TokenContractArtifact,
-            PrivateFPCContractArtifact,
         ]) {
             const contractClass = await getContractClassFromArtifact(artifact);
             this.knownArtifacts.set(contractClass.id.toString(), artifact);
@@ -319,12 +325,6 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             salt: new Fr(SPONSORED_FPC_SALT),
         });
         this.knownInstances.set(sponsoredFpcInstance.address.toString(), sponsoredFpcInstance);
-
-        const privateFpcInstance = await getContractInstanceFromInstantiationParams(PrivateFPCContractArtifact, {
-            constructorArgs: [],
-            salt: Fr.zero(),
-        });
-        this.knownInstances.set(privateFpcInstance.address.toString(), privateFpcInstance);
     }
 
     private async withPxe<T>(network: Network, fn: (pxe: PXE, node: AztecNode) => Promise<T>): Promise<T> {
@@ -420,7 +420,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         switch (network.chainId) {
             case 2934756904: // alphanet (mainnet), 1 ^ 2934756905
                 return "https://mainnet.aztec-registry.xyz";
-            case 4138294185: // 11155111 ^ 4127419662
+            case 2793892258: // 11155111 ^ 2787991301
                 return "https://testnet.aztec-registry.xyz";
             case 604129785: // 11155111 ^ 615022430
                 return "https://devnet.aztec-registry.xyz";

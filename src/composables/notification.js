@@ -1,19 +1,13 @@
 /** Utils */
-import { checkSentinel,	managers } from "@/utils/core"
-
-/** Composables */
-import { useToast } from "@/composables/toast"
-const { openToast } = useToast()
+import { checkSentinel } from "@/utils/core"
 
 /** Store */
-import { useAppStore } from "@/stores/app.store"
 import { useNotificationStore } from "@/stores/notification.store"
 import { usePopupStore } from "@/stores/popup.store"
-const appStore = useAppStore()
 const notificationStore = useNotificationStore()
 const popupStore = usePopupStore()
 
-export const getTemplate = (name, params) => {
+export const getTemplate = (name) => {
     switch (name) {
         case "aztecReset":
             return {
@@ -21,32 +15,12 @@ export const getTemplate = (name, params) => {
                 autoDestroy: false,
                 payload: {
                     title: "Profile Reset Needed",
-                    description: "Due to breaking changes in the new version of Aztec, please, delete your profile and create a new one to ensure compatibility.",
+                    description: "A breaking Aztec upgrade made this profile incompatible with the current wallet. If you have assets, back them up before resetting.",
                     onConfirm: async () => {
-                        await managers.profile.deleteProfile(appStore.profile.id)
-                        popupStore.closeAll()
-        
-                        appStore.profiles = appStore.profiles.filter(p => p.id !== appStore.profile.id)
-                        appStore.profile = appStore.profiles.length && appStore.profiles[0]
-                        appStore.networks = []
-                        appStore.network = null
-                        appStore.accounts = []
-                        appStore.account = null
-                        appStore.transactions = []
-                        appStore.awaitingTransactions = []
-                        chrome.storage.local.remove("azguard:ui:feePaymentMethods")
-        
-                        appStore.isLogined = false
-                        appStore.isSessionChecked = false
-        
-                        if (!appStore.profiles.length) {
-                            params.router.push("/popup/register")
-                        }
-        
-                        openToast({ label: "Profile deleted", icon: "check-circle" })
+                        popupStore.open("reset")
                     },
                     onCancel: async () => {},
-                    confirmText: "Delete Profile",
+                    confirmText: "Continue",
                     cancelText: "Later",
                 }
             }
@@ -55,10 +29,10 @@ export const getTemplate = (name, params) => {
     }
 }
 
-export async function checkNotificationsForShow(router) {
+export async function checkNotificationsForShow() {
     const isSentinelValid = await checkSentinel()
     if (!isSentinelValid) {
-        const template = getTemplate("aztecReset", { router })
+        const template = getTemplate("aztecReset")
         notificationStore.create({ ...template })
     }
 }

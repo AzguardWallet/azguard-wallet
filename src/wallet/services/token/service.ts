@@ -1,3 +1,4 @@
+import { ContractArtifact } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -11,9 +12,13 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
-import { getPrivateFpcAddress, privateFpcName, privateFpcSymbol } from "@/wallet/utils/private-fpc";
-import { simulate } from "@/wallet/utils/fn";
-import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, Methods, Events } from "./spec";
+import { simulate, ViewFn } from "@/wallet/utils/fn";
+import {
+    isPrivateFpcArtifact,
+    privateFpcTokenName,
+    privateFpcTokenSymbol,
+} from "@/wallet/services/fpc/handlers/private-fpc-handler";
+import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
 import {
     BalanceOfPrivateFn,
     BalanceOfPublicFn,
@@ -29,6 +34,17 @@ import { getTokenInfo, isTokenComplete } from "./utils";
 
 export * from "./functions";
 export * from "./spec";
+
+// proper values for known contracts without on-chain metadata fns (Fee Juice, Private-FPC-shaped), placeholders otherwise
+function getFallbackMetadata(contract: string, artifact: ContractArtifact): TokenInterface["fallbackMetadata"] {
+    if (contract === feeJuiceAddress) {
+        return { name: feeJuiceName, symbol: feeJuiceSymbol, decimals: 18 };
+    }
+    if (isPrivateFpcArtifact(artifact)) {
+        return { name: privateFpcTokenName, symbol: privateFpcTokenSymbol, decimals: 18 };
+    }
+    return { name: "<name>", symbol: "<symbol>", decimals: 0 };
+}
 
 export class TokenService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = TOKEN_SERVICE_NAME;
@@ -58,7 +74,6 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         this.tasks = services.get(TaskService.name);
         this.profiles.onProfileDeleted.add(this.onProfileDeleted);
         this.accounts.onAccountAdded.add(this.onAccountAdded);
-        await this.migrateFeeTokenDecimals();
     }
 
     public async getTokens(profileId?: string, chainId?: number): Promise<TokenInfo[]> {
@@ -100,6 +115,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         networkId: string,
         accountAddress: string,
         tokenInterface: TokenInterface,
+        metadata?: TokenMetadataOverride,
         parentTask?: WrappedTask,
     ): Promise<TokenInfo> {
         await this.ensureInitialized();
@@ -115,6 +131,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
                     networkId,
                     accountAddress,
                     tokenInterface,
+                    metadata,
                 );
                 token = {
                     id: array_max((await this.tokens.getKeys()).map(x => +x)) + 1,
@@ -238,7 +255,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
         const pxe = this.pxeService.getPXE(network);
 
-        const instance = await pxe.getContractInstance(AztecAddress.fromString(token.contract));
+        const instance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(token.contract));
         if (!instance) {
             throw new Error("contract instance not found");
         }
@@ -308,6 +325,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             transferPublicToPrivateFnCandidates,
             transferPrivateToPublicFn,
             transferPrivateToPublicFnCandidates,
+            fallbackMetadata: getFallbackMetadata(token.contract, artifact),
             isComplete: false,
         };
         ti.isComplete = isTokenComplete(ti);
@@ -331,7 +349,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
             const pxe = this.pxeService.getPXE(network);
 
-            const instance = await pxe.getContractInstance(AztecAddress.fromString(contract));
+            const instance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(contract));
             if (!instance) {
                 throw new Error("contract instance not found");
             }
@@ -397,6 +415,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
                 transferPublicToPrivateFnCandidates: transferPublicToPrivateFnCandidates.map(x => x.getImpl()),
                 transferPrivateToPublicFn: transferPrivateToPublicFn?.getImpl(),
                 transferPrivateToPublicFnCandidates: transferPrivateToPublicFnCandidates.map(x => x.getImpl()),
+                fallbackMetadata: getFallbackMetadata(contract, artifact),
                 isComplete: false,
             };
             result.isComplete = isTokenComplete(result);
@@ -413,6 +432,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         networkId: string,
         address: string,
         ti: TokenInterface,
+        metadata?: TokenMetadataOverride,
     ): Promise<[string, string, number]> {
         const network = await this.networks.getNetwork(networkId);
         if (!network) {
@@ -430,22 +450,15 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             ? GetDecimalsFn.new(ti.getDecimalsFn.name, ti.getDecimalsFn.impl)
             : undefined;
 
-        const pfpcAddress = await getPrivateFpcAddress();
-        const fallback = {
-            [feeJuiceAddress]: { name: feeJuiceName, symbol: feeJuiceSymbol, decimals: 18 },
-            [pfpcAddress]: { name: privateFpcName, symbol: privateFpcSymbol, decimals: 18 },
-        }[ti.contract];
+        const fallback = ti.fallbackMetadata;
+        const fetchField = (fn: ViewFn | undefined, fallbackValue: string | number) =>
+            fn ? simulate(node, pxe, account, ti.contract, fn, fn.buildArgs()) : fallbackValue;
 
+        // per field: explicit override → on-chain view fn → fallback
         return await Promise.all([
-            getNameFn
-                ? simulate(node, pxe, account, ti.contract, getNameFn, getNameFn.buildArgs())
-                : fallback?.name ?? "<name>",
-            getSymbolFn
-                ? simulate(node, pxe, account, ti.contract, getSymbolFn, getSymbolFn.buildArgs())
-                : fallback?.symbol ?? "<symbol>",
-            getDecimalsFn
-                ? simulate(node, pxe, account, ti.contract, getDecimalsFn, getDecimalsFn.buildArgs())
-                : fallback?.decimals ?? 0,
+            metadata?.name ?? fetchField(getNameFn, fallback.name),
+            metadata?.symbol ?? fetchField(getSymbolFn, fallback.symbol),
+            metadata?.decimals ?? fetchField(getDecimalsFn, fallback.decimals),
         ]);
     }
 
@@ -456,33 +469,17 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         );
     }
 
-    // TODO: remove on the next wallet update that requires wiping profiles
-    private async migrateFeeTokenDecimals() {
-        const pfpcAddress = await getPrivateFpcAddress();
-        const feeContracts = new Set([feeJuiceAddress, pfpcAddress]);
-        for (const token of await this.tokens.getValues()) {
-            if (feeContracts.has(token.contract) && token.decimals !== 18) {
-                token.decimals = 18;
-                await this.tokens.set(`${token.id}`, token);
-                this.emit("onTokenUpdated", getTokenInfo(token));
-                this.logDebug(`Migrated decimals for ${token.contract} (token ${token.id})`);
-            }
-        }
-    }
-
     private readonly onAccountAdded = async (account: Account) => {
         try {
             const networks = await this.networks.getNetworks(account.chainId);
             const network = networks.find(x => x.isDefault) ?? networks[0];
             if (!network) return;
 
-            for (const contract of [feeJuiceAddress, await getPrivateFpcAddress()]) {
-                try {
-                    const ti = await this.parseTokenInterface(network.id, contract);
-                    await this.addToken(account.profileId, network.id, account.address, ti);
-                } catch (e) {
-                    this.logDebug(`Failed to auto-add token ${contract}: ${e}`);
-                }
+            try {
+                const ti = await this.parseTokenInterface(network.id, feeJuiceAddress);
+                await this.addToken(account.profileId, network.id, account.address, ti);
+            } catch (e) {
+                this.logDebug(`Failed to auto-add token ${feeJuiceAddress}: ${e}`);
             }
         } catch (e) {
             this.logDebug(`Failed to auto-add default tokens: ${e}`);

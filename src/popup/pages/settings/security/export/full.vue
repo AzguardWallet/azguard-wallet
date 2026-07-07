@@ -40,9 +40,21 @@ const backupHelpUrl = "https://azguardwallet.io/help/wallet-setup/backup-methods
 
 /** Store */
 import { useAppStore } from "@/stores/app.store"
+import { usePopupStore } from "@/stores/popup.store"
 const appStore = useAppStore()
+const popupStore = usePopupStore()
 
+const route = useRoute()
 const router = useRouter()
+
+// Reached from the profile-reset flow (?returnTo=reset): offer "Continue to
+// delete profile" once the backup has actually been downloaded.
+const isResetFlow = computed(() => route.query.returnTo === "reset")
+const showContinueReset = ref(false)
+const handleContinueReset = () => {
+	router.push("/popup/general")
+	popupStore.open("reset")
+}
 
 let backup = {}
 const backupServices = [
@@ -169,6 +181,10 @@ async function handleDownloadBackup() {
 		})
 
 		openToast({ label: "Backup downloaded successfully", icon: "download" }, 2000)
+
+		if (isResetFlow.value) {
+			showContinueReset.value = true
+		}
 	} catch (err) {
 		console.error("Download failed:", err.message || err);
 		openToast({ label: "Failed to download backup", icon: "warning" }, 2000)
@@ -363,6 +379,17 @@ onBeforeUnmount(() => {
 				</Flex>
 			</Flex>
 		</template>
+
+		<Button
+			v-if="showContinueReset"
+			@click="handleContinueReset"
+			type="red"
+			size="medium"
+			wide
+			right-icon="trash"
+		>
+			Continue to delete profile
+		</Button>
 
 		<Navigation />
 	</Flex>

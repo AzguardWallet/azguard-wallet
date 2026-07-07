@@ -35,7 +35,7 @@ export class NoteService extends Service<Methods> implements ServiceSpec<Methods
         const network = await this.networkService.getNetwork(networkId);
         try {
             const notes = contract
-                ? await this.fetchContractNotes(network, account, AztecAddress.fromString(contract))
+                ? await this.fetchContractNotes(network, account, AztecAddress.fromStringUnsafe(contract))
                 : await this.fetchKnownContractsNotes(network, account);
             const res = [];
             for (const note of notes) {
@@ -61,7 +61,7 @@ export class NoteService extends Service<Methods> implements ServiceSpec<Methods
         return await this.pxeService.getNotes(network, {
             contractAddress: contract,
             status: NoteStatus.ACTIVE,
-            scopes: [AztecAddress.fromString(account)],
+            scopes: [AztecAddress.fromStringUnsafe(account)],
         });
     }
 

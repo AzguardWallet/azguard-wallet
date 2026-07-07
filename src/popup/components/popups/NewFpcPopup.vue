@@ -12,6 +12,7 @@ import { isValidHex } from "@/utils/string"
 /** Services */
 import { FpcServiceClient, FpcType } from "@/wallet/services/fpc/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
+import { TokenServiceClient } from "@/wallet/services/token/client"
 
 /** Composables */
 import { useToast } from "@/composables/toast"
@@ -36,6 +37,7 @@ const props = defineProps({
 
 let fpcService = null
 let tokenBalanceService = null
+let tokenService = null
 const fpcs = ref([])
 const balances = ref([])
 const selectedFpcType = ref(null)
@@ -47,16 +49,18 @@ const fpcTypes = {
 const isTypeDropdownOpen = ref(false)
 const nameTerm = ref("")
 const fpcAddressTerm = ref("")
+const tokenSymbolTerm = ref("pFJ")
 
 const notAllowedFpcNames = computed(() => fpcs.value.map(n => n.name))
-const isAlreadyExist = computed(() => notAllowedFpcNames.value.includes(nameTerm.value))
+const isAlreadyExist = computed(() => notAllowedFpcNames.value.includes(nameTerm.value.trim()))
 const isValidAddress = computed(() => isValidHex(fpcAddressTerm.value))
 const isAvailableToAddFpc = computed(() => {
 	if (!nameTerm.value.replace(/\s/g, '').length) return
 	if (!isValidAddress.value) return
 	if (selectedFpcType.value === null) return
 	if (isAlreadyExist.value) return
-	
+	if (selectedFpcType.value === "PrivateFpc" && !tokenSymbolTerm.value.replace(/\s/g, '').length) return
+
 	return true
 })
 
@@ -76,8 +80,32 @@ const handleAddFpc = async () => {
 			appStore.network.id,
 			FpcType[selectedFpcType.value],
 			fpcAddressTerm.value,
-			nameTerm.value,
+			nameTerm.value.trim(),
 		)
+
+		if (newFpc.type === FpcType.PrivateFpc) {
+			// Private FPC charges in itself and exposes no metadata fns — add it as a token
+			// right away (user-entered name/symbol, 18 decimals), otherwise it is invisible
+			// in the fee picker and its balance renders unscaled
+			try {
+				const ti = await tokenService.parseTokenInterface(appStore.network.id, newFpc.asset)
+				const newToken = await tokenService.addToken(
+					appStore.profile.id,
+					appStore.network.id,
+					appStore.account.address,
+					ti,
+					{ name: nameTerm.value.trim(), symbol: tokenSymbolTerm.value.trim(), decimals: 18 },
+				)
+
+				const tokenBalances = await tokenBalanceService.getTokenBalances(newToken?.id)
+				tokenBalances.forEach(tb => {
+					tokenBalanceService.refreshTokenBalance(tb.id)
+				})
+			} catch (err) {
+				console.error("Failed to add Private FPC token", err)
+				openToast({ label: "FPC is added, but token creation failed", icon: "warning" })
+			}
+		}
 
 		if (newFpc.type === FpcType.DefaultFpc) {
 			const balanceIdx = balances.value.findIndex(b => b.token.contract === newFpc.asset)
@@ -137,9 +165,12 @@ watch(
 			tokenBalanceService.disconnect()
 			tokenBalanceService = null
 			balances.value = []
+			tokenService.disconnect()
+			tokenService = null
 			selectedFpcType.value = null
 			nameTerm.value = ""
 			fpcAddressTerm.value = ""
+			tokenSymbolTerm.value = "pFJ"
 
 			document.removeEventListener("keydown", onKeydown)
 		} else {
@@ -153,6 +184,8 @@ watch(
 			tokenBalanceService.onTokenBalanceAdded.add(onBalanceAdded)
 			tokenBalanceService.onTokenBalanceDeleted.add(onBalanceDeleted)
 			balances.value = await tokenBalanceService.getTokenBalances(undefined, appStore.account.address)
+
+			tokenService = new TokenServiceClient()
 
 			document.addEventListener("keydown", onKeydown)
 		}
@@ -248,6 +281,20 @@ const onKeydown = e => {
 						</Transition>
 					</template>
 				</Input>
+
+				<Flex v-if="selectedFpcType === 'PrivateFpc'" direction="column" gap="8">
+					<Input
+						label="Token symbol"
+						placeholder="pFJ"
+						sanitize
+						:maxLength="10"
+						v-model="tokenSymbolTerm"
+					/>
+
+					<Text size="12" weight="500" color="tertiary" height="140">
+						Private FPC will also be added as a token, so you can track its balance and select it for fee payments
+					</Text>
+				</Flex>
 
 				<Flex direction="column" gap="10">
 					<Transition name="fade">

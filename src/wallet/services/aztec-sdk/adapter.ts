@@ -10,6 +10,7 @@ import type {
     AztecGetPrivateEventsOperation,
     AztecRegisterSenderOperation,
     AztecRegisterContractOperation,
+    AztecRegisterContractClassOperation,
     AztecSimulateTxOperation,
     AztecExecuteUtilityOperation,
     AztecProfileTxOperation,
@@ -113,6 +114,13 @@ export function walletMessageToOperationRequest(
                 instance: args[0] as AztecRegisterContractOperation["instance"],
                 artifact: args[1] as AztecRegisterContractOperation["artifact"],
                 secretKey: args[2] as AztecRegisterContractOperation["secretKey"],
+            };
+
+        case "registerContractClass":
+            return {
+                kind: "aztec_registerContractClass",
+                chain,
+                artifact: args[0] as AztecRegisterContractClassOperation["artifact"],
             };
 
         case "simulateTx": {
@@ -222,7 +230,7 @@ export function capabilitiesToPermissions(
                     ...cap,
                     accounts: capAccounts.map(addr => ({
                         alias: addr.alias,
-                        item: AztecAddress.fromString(addr.address),
+                        item: AztecAddress.fromStringUnsafe(addr.address),
                     })),
                 });
                 break;
@@ -234,6 +242,7 @@ export function capabilitiesToPermissions(
                 break;
             }
             case "contractClasses": {
+                if (cap.canRegister) methods.add("aztec_registerContractClass");
                 if (cap.canGetMetadata) methods.add("aztec_getContractClassMetadata");
                 granted.push({ ...cap });
                 break;

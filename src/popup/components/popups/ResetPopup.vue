@@ -31,6 +31,7 @@ const props = defineProps({
 	show: Boolean,
 })
 
+const isMigration = ref(false)
 const checks = reactive({
 	permanent: false,
 	undone: false,
@@ -80,6 +81,11 @@ const handleReset = () => {
 	popupStore.open("confirm")
 }
 
+const handleBackup = () => {
+	router.push("/popup/settings/security/export/full?returnTo=reset")
+	emit("onClose")
+}
+
 watch(
 	() => props.show,
 	async () => {
@@ -89,6 +95,7 @@ watch(
 				if (element) checks[key] = false
 			}
 		} else {
+			isMigration.value = !(await checkSentinel())
 			await nextTick()
 		}
 	},
@@ -108,6 +115,19 @@ watch(
 					<Text size="14" weight="500" color="body" height="140" align="center" style="padding: 0 12px">
 						This action cannot be undone if you have not saved your profile credentials
 					</Text>
+				</Flex>
+
+				<Flex v-if="isMigration" direction="column" gap="16">
+					<Banner variant="warning" direction="vertical">
+						<template #title> This profile is from an older Aztec version </template>
+						<template #description>
+							It is no longer compatible with this wallet. If you hold assets, please back up the
+							profile before deleting it.
+						</template>
+					</Banner>
+					<Button @click="handleBackup" type="primary" size="medium" wide>
+						Back up profile
+					</Button>
 				</Flex>
 
 				<ItemsContainer title="Profile to delete">

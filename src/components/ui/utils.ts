@@ -6,7 +6,7 @@ export const colors = ["blue", "green", "mint", "neutral-mint", "orange", "yello
  */
 export const CHAIN_IDS = {
 	ALPHANET: 2934756904,  // 1 ^ 2934756905
-	TESTNET: 4138294185,  // 11155111 ^ 4127419662
+	TESTNET: 2793892258,  // 11155111 ^ 2787991301
 	DEVNET: 604129785,    // 11155111 ^ 615022430
 	SANDBOX: 0,           // localhost:8080
 } as const

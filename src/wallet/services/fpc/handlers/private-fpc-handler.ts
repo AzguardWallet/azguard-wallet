@@ -4,6 +4,19 @@ import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo } from "../spec";
 import { IFpcHandler } from ".";
 
+export const privateFpcTokenName = "Private Fee Juice";
+export const privateFpcTokenSymbol = "pFJ";
+
+/** Shape check: `pay_fee()` (0 args/returns) + `balance_of(address)` — specific enough to not match real tokens. */
+export function isPrivateFpcArtifact(artifact: ContractArtifact): boolean {
+    try {
+        new PrivateFpcHandler().validateArtifact(artifact);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export class PrivateFpcHandler implements IFpcHandler {
     public async getAsset(fpcAddress: string): Promise<string | undefined> {
         return fpcAddress;

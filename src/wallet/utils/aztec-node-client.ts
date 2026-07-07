@@ -15,7 +15,7 @@ const MAX_BATCH_SIZE = 3;
 
 export function createBatchCappedAztecNodeClient(url: string): AztecNode {
     return createSafeJsonRpcClient(url, AztecNodeApiSchema, {
-        namespaceMethods: "node",
+        namespaceMethods: "aztec",
         maxBatchSize: MAX_BATCH_SIZE,
         fetch: makeFetch([1, 2, 3], false),
         onResponse: getVersioningResponseHandler({}),

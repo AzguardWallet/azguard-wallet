@@ -28,6 +28,7 @@ export type SerializedContractClassesCapability = {
     type: "contractClasses";
     classes: "*" | string[];
     canGetMetadata: boolean;
+    canRegister?: boolean;
 };
 
 export type SerializedSimulationCapability = {
@@ -71,9 +72,9 @@ type DataWithPrivateEvents = SerializedDataCapability & {
 
 // --- Helpers ---
 
-/** Checks if an address/id is in a wildcard-or-list. */
-function addressInList(list: "*" | string[], address: string): boolean {
-    return list === "*" || list.includes(address);
+/** Checks if a value (contract address or class id) is in a wildcard-or-list. */
+function inWildcardOrList(list: "*" | string[], value: string): boolean {
+    return list === "*" || list.includes(value);
 }
 
 /** Matches a single contract+function against a ContractFunctionPattern. */
@@ -132,7 +133,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             const matching = capabilities.filter(
                 (c): c is SerializedContractsCapability => c.type === "contracts" && !!c.canRegister,
             );
-            if (!matching.some(c => addressInList(c.contracts, address))) {
+            if (!matching.some(c => inWildcardOrList(c.contracts, address))) {
                 throw new Error(`Operation not in capability scope: registerContract, contract=${address}`);
             }
             break;
@@ -142,7 +143,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             const matching = capabilities.filter(
                 (c): c is SerializedContractsCapability => c.type === "contracts" && !!c.canGetMetadata,
             );
-            if (!matching.some(c => addressInList(c.contracts, address))) {
+            if (!matching.some(c => inWildcardOrList(c.contracts, address))) {
                 throw new Error(`Operation not in capability scope: getContractMetadata, contract=${address}`);
             }
             break;
@@ -152,8 +153,18 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             const matching = capabilities.filter(
                 (c): c is SerializedContractClassesCapability => c.type === "contractClasses" && !!c.canGetMetadata,
             );
-            if (!matching.some(c => addressInList(c.classes, id))) {
+            if (!matching.some(c => inWildcardOrList(c.classes, id))) {
                 throw new Error(`Operation not in capability scope: getContractClassMetadata, classId=${id}`);
+            }
+            break;
+        }
+        case "aztec_registerContractClass": {
+            const id = requireString(operation.classId, "classId");
+            const matching = capabilities.filter(
+                (c): c is SerializedContractClassesCapability => c.type === "contractClasses" && !!c.canRegister,
+            );
+            if (!matching.some(c => inWildcardOrList(c.classes, id))) {
+                throw new Error(`Operation not in capability scope: registerContractClass, classId=${id}`);
             }
             break;
         }
@@ -195,7 +206,7 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             const matching = capabilities.filter(
                 (c): c is DataWithPrivateEvents => c.type === "data" && !!c.privateEvents,
             );
-            if (!matching.some(c => addressInList(c.privateEvents.contracts, contractAddress))) {
+            if (!matching.some(c => inWildcardOrList(c.privateEvents.contracts, contractAddress))) {
                 throw new Error(`Operation not in capability scope: getPrivateEvents, contract=${contractAddress}`);
             }
             break;
