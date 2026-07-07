@@ -1,5 +1,5 @@
 import { createApp } from "vue"
-import { createRouter, createWebHashHistory } from "vue-router/auto"
+import { createRouter, createWebHashHistory } from "vue-router"
 import App from "./app.vue"
 import routes from "~pages"
 // import "@/assets/styles/base.scss"

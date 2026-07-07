@@ -1,7 +1,9 @@
 import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
-import { TransactionServiceClient } from "@/wallet/services/transaction/client"
+import { TransactionServiceClient, type Tx } from "@/wallet/services/transaction/client"
 import { ContactServiceClient } from "@/wallet/services/contact/client"
+import type { NetworkServiceClient } from "@/wallet/services/network/client"
+import type { TokenBalanceInfo } from "@/wallet/services/token-balance/spec"
 
 export const isBackgroundConnected = ref(false)
 const onConnected = () => {
@@ -19,23 +21,31 @@ profileService.connect()
 const contactService = new ContactServiceClient()
 contactService.connect()
 
-export const managers = {
+type Managers = {
+	profile: ProfileServiceClient
+	/** Assigned during startup (app.vue) before any consumer reads it. */
+	network: NetworkServiceClient
+	transaction: TransactionServiceClient
+	contact: ContactServiceClient
+}
+
+export const managers: Managers = {
 	profile: profileService,
-	network: null, // must be initialized after profile.onActiveProfileChanged
-	transaction: null,
+	network: null as unknown as NetworkServiceClient, // initialized after profile.onActiveProfileChanged
+	transaction: null as unknown as TransactionServiceClient,
 	contact: contactService,
 }
 
-export async function refreshBalances(minutes, accounts) {
+export async function refreshBalances(minutes: number | undefined, accounts: ReadonlyArray<{ address: string }>) {
 	if (!accounts?.length) return
 
 	const tokenBalanceService = new TokenBalanceServiceClient()
-	const tokenBalances = []
+	const tokenBalances: TokenBalanceInfo[] = []
 	for (const acc of accounts) {
-		tokenBalances.push(...(await tokenBalanceService.getTokenBalances(undefined, acc.address)));
+		tokenBalances.push(...(await tokenBalanceService.getTokenBalances(undefined, acc.address)))
 	}
 
-	function checkAge(updatedAt, minutes) {
+	function checkAge(updatedAt: number, minutes: number) {
 		if (!minutes) return true
 
 		const now = Date.now()
@@ -50,7 +60,10 @@ export async function refreshBalances(minutes, accounts) {
 	tokenBalanceService.disconnect()
 }
 
-export const initTransactionService = (onTransactionAdded, onTransactionUpdated) => {
+export const initTransactionService = (
+	onTransactionAdded: (tx: Tx) => void,
+	onTransactionUpdated: (tx: Tx) => void,
+) => {
 	if (managers.transaction) managers.transaction.disconnect()
 	managers.transaction = new TransactionServiceClient()
 	managers.transaction.onTransactionAdded.add(onTransactionAdded)

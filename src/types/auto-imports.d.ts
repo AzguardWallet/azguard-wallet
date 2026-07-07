@@ -27,7 +27,7 @@ declare global {
   const capitalize: typeof import('../utils/string').capitalize
   const capitilize: typeof import('../utils/string.js')['capitilize']
   const checkNotificationsForShow: typeof import('../composables/notification.js').checkNotificationsForShow
-  const checkSentinel: typeof import('../utils/core.js').checkSentinel
+  const checkSentinel: typeof import('../utils/core').checkSentinel
   const comma: typeof import('../utils/amount.js').comma
   const compressData: typeof import('../utils/files').compressData
   const computed: typeof import('vue').computed
@@ -76,10 +76,10 @@ declare global {
   const initConfigClient: typeof import('../composables/configClient').initConfigClient
   const initProfileService: typeof import('../utils/core.js')['initProfileService']
   const initTokenService: typeof import('../utils/core.js').initTokenService
-  const initTransactionService: typeof import('../utils/core.js').initTransactionService
+  const initTransactionService: typeof import('../utils/core').initTransactionService
   const inject: typeof import('vue').inject
   const injectLocal: typeof import("@vueuse/core")["injectLocal"]
-  const isBackgroundConnected: typeof import('../utils/core.js').isBackgroundConnected
+  const isBackgroundConnected: typeof import('../utils/core').isBackgroundConnected
   const isDefined: typeof import("@vueuse/core")["isDefined"]
   const isPrefersDarkScheme: typeof import('../utils/general.js').isPrefersDarkScheme
   const isProxy: typeof import('vue').isProxy
@@ -90,7 +90,7 @@ declare global {
   const isValidAmount: typeof import('../utils/amount.js').isValidAmount
   const isValidHex: typeof import('../utils/string').isValidHex
   const makeDestructurable: typeof import("@vueuse/core")["makeDestructurable"]
-  const managers: typeof import('../utils/core.js').managers
+  const managers: typeof import('../utils/core').managers
   const markRaw: typeof import('vue').markRaw
   const nextTick: typeof import('vue').nextTick
   const normalizeAmount: typeof import('../utils/amount.js').normalizeAmount
@@ -135,13 +135,13 @@ declare global {
   const refDefault: typeof import("@vueuse/core")["refDefault"]
   const refThrottled: typeof import("@vueuse/core")["refThrottled"]
   const refWithControl: typeof import("@vueuse/core")["refWithControl"]
-  const refreshBalances: typeof import('../utils/core.js').refreshBalances
+  const refreshBalances: typeof import('../utils/core').refreshBalances
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveRef: typeof import("@vueuse/core")["resolveRef"]
   const resolveUnref: typeof import("@vueuse/core")["resolveUnref"]
   const sanitizeString: typeof import('../utils/string').sanitizeString
   const sendMessage: typeof import("webext-bridge")["sendMessage"]
-  const setSentinel: typeof import('../utils/core.js').setSentinel
+  const setSentinel: typeof import('../utils/core').setSentinel
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef

@@ -4,12 +4,21 @@ import { defineStore } from "pinia"
 import type { Account } from "@/wallet/services/account/client"
 import { NodeStatus } from "@/wallet/services/network/client"
 import { Tx, TxStatus } from "@/wallet/services/transaction/client"
+import { isLocalTx } from "@/wallet/services/transaction/spec"
+import type { Network } from "@/wallet/services/network/spec"
 import type { BlockExplorerType } from "@/wallet/constants/explorers"
 
 import { useSyncedRef } from "@/composables/syncedRef.js"
 
 type WalletMetadata = {
 	created_at: number
+}
+
+/** A pending send shown in "recent activity" until the matching tx is observed. */
+type AwaitingTx = {
+	account: string
+	contract: string
+	destination: string
 }
 
 class AccountTokenMap {
@@ -103,7 +112,7 @@ export const useAppStore = defineStore("app", () => {
 	}
 
 	const activeAccountKey = computed(() => `azguard:ui:activeAccount@${profile.value?.id}`)
-	async function setActiveAccount(address: String) {
+	async function setActiveAccount(address?: string) {
 		if (!address || !profile.value?.id) return
 
 		await chrome.storage.local.set({ [activeAccountKey.value]: address })
@@ -126,7 +135,7 @@ export const useAppStore = defineStore("app", () => {
 
 	const network = ref()
 	const networkStatus = ref()
-	const networks = ref([])
+	const networks = ref<Network[]>([])
 
 	const syncNetworkStatus = async () => {
 		networkStatus.value = "sync"
@@ -137,30 +146,30 @@ export const useAppStore = defineStore("app", () => {
 		
 		networkStatus.value = NodeStatus[status]
 	}
-	const updateNetwork = async (id, name, url) => {
+	const updateNetwork = async (id: string, name: string, url: string) => {
 		await managers.network.updateNetwork(id, name, url)
 		networks.value = await managers.network.getNetworks()
 	}
-	const removeNetwork = async target => {
+	const removeNetwork = async (target: Network) => {
 		await managers.network.deleteNetwork(target.id)
 		networks.value = networks.value.filter(n => n.id !== target.id)
 	}
 
-	const awaitingTransactions = ref([])
+	const awaitingTransactions = ref<AwaitingTx[]>([])
 	const transactions = ref<Tx[]>([])
 	const cancellingTxs = computed(() => {
 		return transactions.value.filter(t => t.status === TxStatus.Cancelling)
 	})
 	const onTxAdded = async (tx: Tx) => {
 		transactions.value.unshift(tx)
-		const call = tx.calls[0]
-		const destination = call?.transfers?.length ? call?.transfers[0].to : call?.args?.[1]
+		const call = isLocalTx(tx) ? tx.calls[0] : undefined
+		const destination = call?.transfers?.[0]?.to ?? call?.args?.[1]
 		const awaitingTxIdx = awaitingTransactions.value.findIndex(t => t.account === tx.account && t.contract === call?.contract && t.destination === destination)
 		if (awaitingTxIdx > -1) {
 			awaitingTransactions.value.splice(awaitingTxIdx, 1)
 		}
 	}
-	const onTxUpdated = tx => {
+	const onTxUpdated = (tx: Tx) => {
 		const ind = transactions.value.findIndex(x => x.hash === tx.hash);
 		if (ind !== -1) {
 			transactions.value.splice(ind, 1, tx);

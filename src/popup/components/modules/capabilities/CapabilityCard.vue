@@ -154,9 +154,9 @@ const finishEditingAlias = (item: AccountItem) => {
 												v-else
 												@click.stop
 												size="small"
-												maxLength="25"
+												:maxLength="25"
 												:placeholder="trimAddress(item.address, 6, 4)"
-												:modelValue="editingAlias"
+												:modelValue="editingAlias ?? undefined"
 												:autofocus="true"
 												:sanitize="true"
 												@maxLengthReached="handleMaxLengthReached"

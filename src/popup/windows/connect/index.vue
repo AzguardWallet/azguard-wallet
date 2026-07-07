@@ -606,7 +606,7 @@ const packPermissions = (permissions: UIDappPermission[]): DappPermissions[] => 
 					type="primary"
 					size="medium"
 					:loading="isLoading"
-					:disabled="(!isSdkSource && !selectedAccounts.length) || processingError"
+					:disabled="(!isSdkSource && !selectedAccounts.length) || !!processingError"
 				>
 					<Text size="13" color="inverse">Approve</Text>
 				</Button>
