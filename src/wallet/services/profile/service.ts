@@ -548,7 +548,11 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             return;
         }
         const passhash = Buffer.from(session.passhash, "base64");
-        const key = await EncryptionKey.fromPasshash(passhash.buffer);
+        // Slice to the view's own window: a base64-decoded Buffer can be a subview of a shared
+        // pool, so passing raw `.buffer` would hand the whole pool (wrong key) to fromPasshash.
+        const key = await EncryptionKey.fromPasshash(
+            passhash.buffer.slice(passhash.byteOffset, passhash.byteOffset + passhash.byteLength),
+        );
         const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), key);
         if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
             this.logDebug("Session contains wrong credentials");
