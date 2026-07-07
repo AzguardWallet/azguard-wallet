@@ -28,7 +28,7 @@
     "browser": true,
     "capitalize": true,
     "checkNotificationsForShow": true,
-    "checkSentinel": true,
+    "checkProfileSentinel": true,
     "comma": true,
     "compressData": true,
     "computed": true,

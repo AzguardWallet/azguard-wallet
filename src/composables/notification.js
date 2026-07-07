@@ -1,9 +1,11 @@
 /** Utils */
-import { checkSentinel } from "@/utils/core"
+import { checkProfileSentinel } from "@/utils/core"
 
 /** Store */
+import { useAppStore } from "@/stores/app.store"
 import { useNotificationStore } from "@/stores/notification.store"
 import { usePopupStore } from "@/stores/popup.store"
+const appStore = useAppStore()
 const notificationStore = useNotificationStore()
 const popupStore = usePopupStore()
 
@@ -30,7 +32,7 @@ export const getTemplate = (name) => {
 }
 
 export async function checkNotificationsForShow() {
-    const isSentinelValid = await checkSentinel()
+    const isSentinelValid = checkProfileSentinel(appStore.profile)
     if (!isSentinelValid) {
         const template = getTemplate("aztecReset")
         notificationStore.create({ ...template })

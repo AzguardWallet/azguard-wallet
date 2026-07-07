@@ -19,6 +19,7 @@ import { TokenServiceClient } from "@/wallet/services/token/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
 import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key"
+import { isCurrentGeneration } from "@/wallet/services/profile/spec"
 
 /** Utils */
 import { pickFile } from "@/utils"
@@ -398,6 +399,21 @@ async function handleRestoreBackup() {
 			"full_backup",
 			"Backup Integrity Check Failed",
 			"The backup file appears to be corrupted or has been tampered with. Please ensure you have the correct backup file.",
+		)
+		return
+	}
+
+	// Profiles are only usable within their sentinel generation; a cross-generation
+	// restore would silently produce a broken profile, so refuse it upfront.
+	const origin = backup?.data?.profile?.origin
+	if (!isCurrentGeneration(origin)) {
+		restoreStatus.value = "failed"
+		fillError(
+			"full_backup",
+			origin ? "Incompatible Backup" : "Outdated Backup",
+			origin
+				? "The profile in this backup belongs to a different Aztec network generation and can't be restored into this wallet version."
+				: "This backup is from an older wallet generation and can't be restored into this wallet version.",
 		)
 		return
 	}

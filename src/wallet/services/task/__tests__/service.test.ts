@@ -1,7 +1,7 @@
 import { expect, test, vi, describe } from "vitest";
 import { ServiceCollection } from "@/wallet/base";
 import { DummyLogger } from "@/wallet/logger";
-import { ProfileInfo, ProfileService } from "@/wallet/services/profile/service";
+import { ProfileInfo, ProfileService, ProfileType } from "@/wallet/services/profile/service";
 import { OriginType, TxOrigin } from "@/wallet/services/transaction/client";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import {
@@ -61,7 +61,13 @@ const createTestSetup = async () => {
         }
     };
 
-    const switchToProfile = (profile?: ProfileInfo) => {
+    const switchToProfile = (name: string, type: ProfileType = "password") => {
+        const profile: ProfileInfo = {
+            id: name,
+            name,
+            type,
+            origin: { sentinel: "test", walletVersion: "test", aztecVersion: "test" },
+        };
         profileServiceMock.onActiveProfileChanged.invoke(profile);
     };
 
@@ -354,26 +360,26 @@ describe("Task Tree Implementation", () => {
         test("clears tasks when switching to a different profile", async () => {
             const { service, switchToProfile } = await createTestSetup();
 
-            switchToProfile({ id: "A", name: "A", type: "password" });
+            switchToProfile("A");
             service.createNewTask(new StepContent("T1"));
             service.createNewTask(new StepContent("T2"));
             expect((await service.getTasks()).length).toBe(2);
 
             // Switch to a different profile - should clear
-            switchToProfile({ id: "B", name: "B", type: "password" });
+            switchToProfile("B");
             expect((await service.getTasks()).length).toBe(0);
         });
 
         test("keeps tasks when switching to the same profile", async () => {
             const { service, switchToProfile } = await createTestSetup();
 
-            switchToProfile({ id: "A", name: "A", type: "password" });
+            switchToProfile("A");
             service.createNewTask(new StepContent("T1"));
             service.createNewTask(new StepContent("T2"));
             expect((await service.getTasks()).length).toBe(2);
 
             // Set to the same profile - no clearing
-            switchToProfile({ id: "A", name: "A", type: "password" });
+            switchToProfile("A");
             expect((await service.getTasks()).length).toBe(2);
         });
     });

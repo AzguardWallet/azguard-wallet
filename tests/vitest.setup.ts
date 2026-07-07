@@ -29,6 +29,23 @@ export const captureMessage = () => {
 
 type Fn = (...args: any[]) => void;
 
+// In-memory chrome.storage.StorageArea; a fresh pair is stubbed into `chrome` before each test.
+export const makeStorageArea = () => {
+    const data = new Map<string, unknown>();
+    return {
+        get: async (key?: string) => {
+            if (key === undefined) return Object.fromEntries(data);
+            return data.has(key) ? { [key]: data.get(key) } : {};
+        },
+        set: async (items: Record<string, unknown>) => {
+            for (const [k, v] of Object.entries(items)) data.set(k, v);
+        },
+        remove: async (key: string) => {
+            data.delete(key);
+        },
+    };
+};
+
 const portMessageListeners = new Map<string, Fn[]>();
 const sendPortMessageMocks = new Map<string, Mock<Fn>>();
 const messageListeners: Fn[] = [];
@@ -74,7 +91,10 @@ const mockPort = (service: string) => {
 
 beforeEach(() => {
     vi.stubGlobal("chrome", {
-        storage: {},
+        storage: {
+            local: makeStorageArea(),
+            session: makeStorageArea(),
+        },
         runtime: {
             connect: vi.fn().mockImplementation((_, { name }) => mockPort(name)),
             getContexts: vi.fn(),

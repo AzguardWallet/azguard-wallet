@@ -13,7 +13,11 @@ import { PasskeyService } from "@/wallet/services/passkey/service";
 import {
     PROFILE_SERVICE_NAME,
     ENCRYPTION_GUARD,
+    SENTINEL_STORAGE_KEY,
+    UNKNOWN_ORIGIN,
+    isCurrentGeneration,
     ProfileInfo,
+    ProfileOrigin,
     Profile,
     Session,
     ActiveSession,
@@ -49,6 +53,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
     protected async init(services: ServiceCollection) {
         this.passkeys = services.get(PasskeyService.name);
+
+        await this.backfillOrigins();
 
         const session = await this.session.get();
         if (!session) {
@@ -106,6 +112,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 id,
                 name,
                 type: "password",
+                origin: this.currentOrigin(),
                 guard: Buffer.from(guard.buffer).toString("base64"),
                 secret: Buffer.from(encryptedSecret.buffer).toString("base64"),
             };
@@ -174,6 +181,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 id,
                 name,
                 type: "passkey",
+                origin: this.currentOrigin(),
                 credentialId: credential.id,
             };
             await this.profiles.set(id, profile);
@@ -596,6 +604,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 id,
                 name,
                 type: "password",
+                origin: this.currentOrigin(),
                 guard: Buffer.from(guard.buffer).toString("base64"),
                 secret: Buffer.from(encodedSecret.buffer).toString("base64"),
             };
@@ -632,6 +641,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 id,
                 name,
                 type: "passkey",
+                origin: this.currentOrigin(),
                 credentialId,
             };
             await this.profiles.set(id, profile);
@@ -656,7 +666,30 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
     }
 
     private getProfileInfo(profile: Profile): ProfileInfo {
-        return { id: profile.id, name: profile.name, type: profile.type };
+        return { id: profile.id, name: profile.name, type: profile.type, origin: profile.origin };
+    }
+
+    private currentOrigin(): ProfileOrigin {
+        return { sentinel: __SENTINEL__, walletVersion: __VERSION__, aztecVersion: __AZTEC_VERSION__ };
+    }
+
+    /**
+     * Migration: profiles created before origin tracking get stamped once at startup.
+     * Their epoch is the global sentinel recorded by the last register/import; the build
+     * versions are unknowable by then. Runs before setSentinel can overwrite the global
+     * value, and normally finds nothing — but must stay for installs that skip many
+     * versions at once (extension updates can jump straight from any old build).
+     */
+    private async backfillOrigins() {
+        const legacy = (await this.profiles.getValues()).filter((p) => !p.origin);
+        if (!legacy.length) {
+            return;
+        }
+        const sentinel: string = (await chrome.storage.local.get(SENTINEL_STORAGE_KEY))[SENTINEL_STORAGE_KEY] ?? UNKNOWN_ORIGIN.sentinel;
+        for (const profile of legacy) {
+            await this.profiles.set(profile.id, { ...profile, origin: { ...UNKNOWN_ORIGIN, sentinel } });
+            this.logDebug(`Backfilled origin for profile ${profile.id}, sentinel: ${sentinel}`);
+        }
     }
 
     private readonly onConfigUpdated = (prop: ConfigProp) => {
@@ -669,11 +702,24 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         return (await this.getActiveProfile());
     }
 
+    /**
+     * Refuses backups from another profile generation (backstop behind the import UI's own check)
+     * and keeps the origin the profile was created with — never stamps the current build's.
+     */
     public async restore(profile: ProfileInfo, masterKey: string, password?: string): Promise<Restored<ProfileInfo>> {
         await this.ensureInitialized();
 
         if (!masterKey) {
             throw new Error("Master key is required to restore profile");
+        }
+
+        if (!isCurrentGeneration(profile.origin)) {
+            return {
+                ...profile,
+                restoreError: profile.origin
+                    ? "Backup profile is from an incompatible generation"
+                    : "Backup predates profile versioning",
+            };
         }
 
         const profileNames = (await this.profiles.getValues()).map(p => p.name);
@@ -712,6 +758,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                         id,
                         name,
                         type: "password",
+                        origin: profile.origin,
                         guard: Buffer.from(guard.buffer).toString("base64"),
                         secret: Buffer.from(encodedSecret.buffer).toString("base64"),
                     };
@@ -751,6 +798,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                         id,
                         name,
                         type: "passkey",
+                        origin: profile.origin,
                         credentialId: credential.id,
                     };
                     await this.profiles.set(id, newProfile);

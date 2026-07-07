@@ -4,7 +4,24 @@ export const PROFILE_SERVICE_NAME = "profile";
 
 export const ENCRYPTION_GUARD = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
 
+/** chrome.storage.local key holding the sentinel written by the popup on register/import. */
+export const SENTINEL_STORAGE_KEY = "azguard:ui:sentinel";
+
 export type ProfileType = "password" | "passkey";
+
+/** Versions of the wallet build that created the profile ("unknown" when backfilled). */
+export type ProfileOrigin = {
+    /** Profile-compatibility sentinel; restore requires an exact match with the current build. */
+    sentinel: string;
+    walletVersion: string;
+    aztecVersion: string;
+};
+
+/** For profiles whose creation-time versions are unknowable (pre-versioning backups and storage). */
+export const UNKNOWN_ORIGIN: ProfileOrigin = { sentinel: "unknown", walletVersion: "unknown", aztecVersion: "unknown" };
+
+/** The single compatibility rule: profiles are usable only within their generation (exact sentinel match). */
+export const isCurrentGeneration = (origin?: ProfileOrigin): boolean => origin?.sentinel === __SENTINEL__;
 
 export type ProfileInfo = {
     /** Randomly generated id. */
@@ -13,6 +30,8 @@ export type ProfileInfo = {
     name: string;
     /** Profile type. */
     type: ProfileType;
+    /** Creation-time versions, immutable for the profile's lifetime. */
+    origin: ProfileOrigin;
 };
 
 export type Profile = ProfileInfo &
