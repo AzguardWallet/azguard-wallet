@@ -270,6 +270,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
             const start = Date.now();
 
             const calls: [CallAction | EncodedCallAction, number, boolean, ViewFn][] = [];
+            const failed = new Set<number>();
             let chainId: number | undefined;
             for (let i = 0; i < tbs.length; i++) {
                 const tb = tbs[i];
@@ -277,6 +278,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                 if (!token) {
                     const taskId = this.pendingTasks.get(tb.id)!;
                     this.taskService.failTask(taskId, `Unknown token #${tb.token}`);
+                    failed.add(tb.id);
                     continue;
                 }
                 chainId = token.chainId;
@@ -395,6 +397,9 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
             const now = Date.now();
             const balances = await this.balances.getValues();
             for (const tb of tbs) {
+                if (failed.has(tb.id)) {
+                    continue;
+                }
                 tb.updatedAt = now;
                 const balance = balances.find(x => x.token === tb.token && x.account === tb.account);
 
