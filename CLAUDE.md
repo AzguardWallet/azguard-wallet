@@ -107,12 +107,12 @@ These are auto-imported, no explicit imports needed:
 
 ### Privacy/Stealth Mode
 
-Default config (`src/wallet/config/config.ts`) is privacy-first:
-- `stealthMode: true` - Master toggle for external services
-- `contractRegistry: false` - External contract lookups
-- `walletConnectEnabled: false` - WalletConnect connections
-- `uploadExternalImages: false` - External image loading
-- `externalLinks: "disabled"` - External link behavior ("disabled" | "confirm" | "enabled")
+Default config (`src/wallet/config/config.ts`) enables external services; `stealthMode` is the master off-switch that disables them all at once (snapshotting the previous state for restore):
+- `stealthMode: false` - Master toggle: when ON, all external services are disabled
+- `contractRegistry: true` - External contract lookups
+- `walletConnectEnabled: true` - WalletConnect connections
+- `uploadExternalImages: true` - External image loading
+- `externalLinks: "enabled"` - External link behavior ("disabled" | "confirm" | "enabled")
 
 Privacy settings page: `src/popup/pages/settings/external-services/index.vue`
 
