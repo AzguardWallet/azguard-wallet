@@ -4,7 +4,7 @@ import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions, 
 import type { Fr } from "@aztec/foundation/curves/bn254";
 import type { ContractArtifact, EventMetadataDefinition, FunctionCall } from "@aztec/stdlib/abi";
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract";
+import type { ContractInstancePreimageWithAddress } from "@aztec/stdlib/contract";
 import type { ExecutionPayload } from "@aztec/stdlib/tx";
 import type { Action, CallAction, EncodedCallAction, FeeSettings } from ".";
 
@@ -163,7 +163,7 @@ export type AztecGetAccountsOperation = {
 export type AztecRegisterContractOperation = {
     readonly kind: "aztec_registerContract";
     readonly networkId: string;
-    readonly instance: ContractInstanceWithAddress;
+    readonly instance: ContractInstancePreimageWithAddress;
     readonly artifact?: ContractArtifact;
     readonly secretKey?: Fr;
 };

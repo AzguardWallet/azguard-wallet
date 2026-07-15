@@ -116,9 +116,7 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
                     const instance = await this.pxeService.getContractInstance(n, AztecAddress.fromStringUnsafe(c));
                     if (!instance) continue;
 
-                    if (!instance.currentContractClassId) continue;
-
-                    const artifact = await this.pxeService.getContractArtifact(n, instance.currentContractClassId);
+                    const artifact = await this.pxeService.getContractArtifact(n, instance.originalContractClassId);
                     if (!artifact) continue;
 
                     contractsFull.push({

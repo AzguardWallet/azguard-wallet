@@ -79,7 +79,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
                     const contractInstance = await pxe.getContractInstance(address);
                     if (!contractInstance) continue;
-                    const contractArtifact = await pxe.getContractArtifact(contractInstance.currentContractClassId);
+                    const contractArtifact = await pxe.getContractArtifact(contractInstance.originalContractClassId);
                     if (!contractArtifact) continue;
 
                     this.logInfo(`Found FPC: ${address.toString()}`);
@@ -152,11 +152,11 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             throw new Error("Contract instance not found");
         }
 
-        const fpcArtifact = await pxe.getContractArtifact(fpcInstance.currentContractClassId);
+        const fpcArtifact = await pxe.getContractArtifact(fpcInstance.originalContractClassId);
         if (!fpcArtifact) {
             this.logError(
                 "Failed to add FPC: contract artifact not found",
-                fpcInstance.currentContractClassId.toString(),
+                fpcInstance.originalContractClassId.toString(),
             );
             throw new Error("Contract artifact not found");
         }

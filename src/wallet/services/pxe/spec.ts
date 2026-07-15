@@ -7,7 +7,7 @@ import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdli
 import type { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type {
     CompleteAddress,
-    ContractInstanceWithAddress,
+    ContractInstancePreimageWithAddress,
     PartialAddress,
 } from "@aztec/stdlib/contract";
 import type { NoteDao } from "@aztec/stdlib/note";
@@ -27,7 +27,7 @@ export type Methods = {
         network: Network,
         address: AztecAddress,
         options?: { fetchFromNode?: boolean },
-    ): ContractInstanceWithAddress | undefined;
+    ): ContractInstancePreimageWithAddress | undefined;
     getContractArtifact(
         network: Network,
         id: Fr,
@@ -41,9 +41,8 @@ export type Methods = {
     registerContractClass(network: Network, artifact: ContractArtifact): void;
     registerContract(
         network: Network,
-        contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
+        contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact },
     ): void;
-    updateContract(network: Network, contractAddress: AztecAddress, artifact: ContractArtifact): void;
     getContracts(network: Network): AztecAddress[];
     getNotes(network: Network, filter: NotesFilter): NoteDao[];
     proveTx(network: Network, txRequest: TxExecutionRequest, opts: ProveTxOpts): TxProvingResult;

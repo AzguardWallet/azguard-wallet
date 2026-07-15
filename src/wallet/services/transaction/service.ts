@@ -23,7 +23,7 @@ import { AzguardFeePaymentMethod } from "../account/contracts";
 import { FUNCTION_CALL_LOG_EVENT_SELECTOR } from "../account/contracts/azguard-v0-persistent";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
-import type { ContractInstanceWithAddress } from "@aztec/stdlib/contract";
+import type { ContractInstancePreimageWithAddress } from "@aztec/stdlib/contract";
 
 export * from "./spec";
 
@@ -34,8 +34,8 @@ const SYNC_BATCH_PAUSE_MS = 1000;
 
 /** Session-scoped caches for sync operation */
 type SyncCaches = {
-    /** contractAddress -> ContractInstanceWithAddress */
-    contractInstances: Map<string, ContractInstanceWithAddress | undefined>;
+    /** contractAddress -> ContractInstancePreimageWithAddress */
+    contractInstances: Map<string, ContractInstancePreimageWithAddress | undefined>;
     /** classId -> (selector -> methodName) */
     selectorMap: Map<string, Map<string, string>>;
     /** txHash -> TxReceipt */
@@ -335,7 +335,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
     ): Promise<string | null> {
         try {
             // Check contract instance cache
-            let contractInstance: ContractInstanceWithAddress | undefined;
+            let contractInstance: ContractInstancePreimageWithAddress | undefined;
             if (caches.contractInstances.has(contractAddress)) {
                 contractInstance = caches.contractInstances.get(contractAddress);
             } else {
@@ -349,7 +349,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
                 return null;
             }
 
-            const classId = contractInstance.currentContractClassId.toString();
+            const classId = contractInstance.originalContractClassId.toString();
 
             // Check selector map cache for this class
             let selectorMap = caches.selectorMap.get(classId);
@@ -359,7 +359,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
 
                 // Build selector -> methodName map for this class
                 const artifact = await pxe.getContractArtifact(
-                    contractInstance.currentContractClassId,
+                    contractInstance.originalContractClassId,
                 );
                 if (!artifact) {
                     this.logDebug(`resolveMethodName: no artifact for classId=${classId}`);

@@ -17,12 +17,14 @@ import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     type ContractInstanceWithAddress,
-    ContractInstanceWithAddressSchema,
+    type ContractInstancePreimageWithAddress,
+    ContractInstancePreimageWithAddressSchema,
     getContractClassFromArtifact,
     getContractInstanceFromInstantiationParams,
     CompleteAddress,
     PartialAddress,
 } from "@aztec/stdlib/contract";
+import { deriveKeys } from "@aztec/stdlib/keys";
 import { type AztecNode, createBatchCappedAztecNodeClient } from "@/wallet/utils/aztec-node-client";
 import { NoteDao } from "@aztec/stdlib/note";
 import type { NotesFilter } from "./spec";
@@ -71,6 +73,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     protected async init() {
         // delete orhpan PXE DBs
+        // TODO(backlog): PXE store moved to SQLite-OPFS in v5 — this IndexedDB sweep no longer GCs
+        // orphan PXE data; port orphan/profile-delete cleanup to the OPFS directory API.
         const dbs = await indexedDB.databases();
         const pxes = dbs.filter(x => x.name?.startsWith("pxe/"));
         if (pxes.length) {
@@ -98,7 +102,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         network: Network,
         address: AztecAddress,
         options?: { fetchFromNode?: boolean },
-    ): Promise<ContractInstanceWithAddress | undefined> {
+    ): Promise<ContractInstancePreimageWithAddress | undefined> {
         const fetchFromNode = options?.fetchFromNode ?? true;
         address = await AztecAddress.schema.parseAsync(address);
         return this.withPxe(network, async (pxe, node) => {
@@ -152,8 +156,9 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         partialAddress: PartialAddress,
     ): Promise<CompleteAddress> {
         return this.withPxe(network, async (pxe) =>
+            // v5: registerAccount takes derived AccountPrivacyKeys, not the raw seed (the seed is not trusted to PXE).
             pxe.registerAccount(
-                await Fr.schema.parseAsync(secretKey),
+                await deriveKeys(await Fr.schema.parseAsync(secretKey)),
                 await Fr.schema.parseAsync(partialAddress),
             ),
         );
@@ -195,27 +200,16 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     public async registerContract(
         network: Network,
-        contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
+        contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact },
     ): Promise<void> {
-        return this.withPxe(network, async (pxe) =>
-            pxe.registerContract({
-                instance: await ContractInstanceWithAddressSchema.parseAsync(contract.instance),
-                artifact: await ContractArtifactSchema.optional().parseAsync(contract.artifact),
-            }),
-        );
-    }
-
-    public async updateContract(
-        network: Network,
-        contractAddress: AztecAddress,
-        artifact: ContractArtifact,
-    ): Promise<void> {
-        return this.withPxe(network, async (pxe) =>
-            pxe.updateContract(
-                await AztecAddress.schema.parseAsync(contractAddress),
-                await ContractArtifactSchema.parseAsync(artifact),
-            ),
-        );
+        // v5: class and instance register separately; registerContract no longer takes an artifact.
+        return this.withPxe(network, async (pxe) => {
+            const instance = await ContractInstancePreimageWithAddressSchema.parseAsync(contract.instance);
+            if (contract.artifact) {
+                await pxe.registerContractClass(await ContractArtifactSchema.parseAsync(contract.artifact));
+            }
+            await pxe.registerContract(instance);
+        });
     }
 
     public async getContracts(network: Network): Promise<AztecAddress[]> {
@@ -420,7 +414,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         switch (network.chainId) {
             case 2934756904: // alphanet (mainnet), 1 ^ 2934756905
                 return "https://mainnet.aztec-registry.xyz";
-            case 2793892258: // 11155111 ^ 2787991301
+            case 1816023401: // 11155111 ^ 1821665230
                 return "https://testnet.aztec-registry.xyz";
             case 604129785: // 11155111 ^ 615022430
                 return "https://devnet.aztec-registry.xyz";
@@ -435,6 +429,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             this.nodes.clear();
             this.pxes.clear();
             this.rpcs.clear();
+            // TODO(backlog): v5 PXE persists to SQLite-OPFS, not IndexedDB — this no longer removes
+            // the deleted profile's PXE data (it now lingers as an orphan OPFS directory).
             for (const db of await indexedDB.databases()) {
                 if (db.name?.startsWith(`pxe/${profile.id}/`) || db.name === "keyval-store") {
                     const _ = indexedDB.deleteDatabase(db.name);

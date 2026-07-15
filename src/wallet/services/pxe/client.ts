@@ -5,9 +5,9 @@ import { ContractArtifactSchema } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     CompleteAddress,
-    type ContractInstanceWithAddress,
+    type ContractInstancePreimageWithAddress,
     type PartialAddress,
-    ContractInstanceWithAddressSchema,
+    ContractInstancePreimageWithAddressSchema,
 } from "@aztec/stdlib/contract";
 import { NoteDao } from "@aztec/stdlib/note";
 import type { NotesFilter } from "./spec";
@@ -58,10 +58,10 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         network: Network,
         address: AztecAddress,
         options?: { fetchFromNode?: boolean },
-    ): Promise<ContractInstanceWithAddress | undefined> {
+    ): Promise<ContractInstancePreimageWithAddress | undefined> {
         await ensureOffscreenRunning();
         const result = await this.request("getContractInstance", network, address, options);
-        return await ContractInstanceWithAddressSchema.optional().parseAsync(result);
+        return await ContractInstancePreimageWithAddressSchema.optional().parseAsync(result);
     }
 
     public async getContractArtifact(
@@ -114,19 +114,10 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
 
     public async registerContract(
         network: Network,
-        contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
+        contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact },
     ): Promise<void> {
         await ensureOffscreenRunning();
         await this.request("registerContract", network, contract);
-    }
-
-    public async updateContract(
-        network: Network,
-        contractAddress: AztecAddress,
-        artifact: ContractArtifact,
-    ): Promise<void> {
-        await ensureOffscreenRunning();
-        await this.request("updateContract", network, contractAddress, artifact);
     }
 
     public async getContracts(network: Network): Promise<AztecAddress[]> {
