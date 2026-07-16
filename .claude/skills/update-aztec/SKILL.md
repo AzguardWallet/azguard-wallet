@@ -31,7 +31,7 @@ Bump the wallet's `@aztec/*` to a target Aztec version. **Wallet repo only.** Wo
    - **(a) Per migration-note.** Sources: the migration-notes delta (step 2), `git log <current>..<target>` (`feat!`/`refactor!`/`fix!`), `release-notes-*`. Sub-agent per entry (batch trivial ones): affects us? what edits? what opportunities? Catches silent behavior changes that don't fail to compile.
    - **(b) SDK-surface diff.** Diff each invariant surface (see Interface sync) at the target vs what the wallet handles. A new field/method that compiles but is unhandled is the failure mode — why `registerContractClass` was missed.
 6. **Plan + approve.** Show the change list + both research outputs; present options where they exist. Explicit approval before editing.
-7. **Apply.** Deps first (`@aztec/*` → target, add split packages, align peers, `yarn install`), then the edits. Commit in layers as you go (see Commit layering).
+7. **Apply.** Deps first (`@aztec/*` → target, add split packages, align peers, `yarn install`), then the edits, then **regenerate the bb.js wasm** (see block — every bump, unconditional). Commit in layers as you go (see Commit layering).
 8. **Silent-break sweep** (see block).
 9. **Major only:** bump `sentinel`, run the migration audit, drop in the regenerated artifacts + confirm they load.
 10. **Verify.** typecheck/build vs baseline. A green build ≠ works (v5's PrivateFPC throw built fine); real acceptance is a runtime/e2e run — the user's call, not a gate here. Auto-check what you can, flag the rest.
@@ -117,6 +117,6 @@ When writing a migration, tag its site `TODO(... requires wiping profiles)` so t
 
 ## bb.js WASM
 
-Bundled at `libs/@aztec/bb.js/*.wasm.gz` (vite copies into the build). May need regenerating on a bump — often doesn't.
-- Compare DECOMPRESSED, not `.gz` (gzip metadata makes `.gz` hashes differ spuriously): `gunzip -c a.wasm.gz | sha256sum`. Equal → no-op.
-- If different: download `barretenberg-wasm.tar.gz` + `barretenberg-threads-wasm.tar.gz` from the target release, run `extract-wasm.sh` (bundled). If a symbol change is expected (signature-scheme swap), verify the decompressed wasm contains it and that it lands in `dist/`.
+Bundled at `libs/@aztec/bb.js/*.wasm.gz` (vite copies into the build). **Regenerate on EVERY bump, minor or major — no judgment call; the step is idempotent:** download `barretenberg-wasm.tar.gz` + `barretenberg-threads-wasm.tar.gz` from the target release, run `extract-wasm.sh` (bundled), compare the result DECOMPRESSED against the currently bundled pair (`gunzip -c x.wasm.gz | sha256sum`; never compare `.gz` — gzip metadata makes the hashes differ spuriously). Identical → discard, nothing to commit. Different → replace, confirm the new wasm lands in `dist/`, and re-run the proving path (e.g. account creation).
+- **The tell of a stale wasm is a runtime `verification key has wrong size: expected X, got Y`** at proving time — the recompiled artifacts carry the new VK size, the old wasm expects the old one. Build stays green; only the unconditional regen (or a prover run) catches it.
+- If a symbol change is expected (signature-scheme swap), also verify the decompressed wasm contains it.
