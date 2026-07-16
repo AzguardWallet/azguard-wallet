@@ -131,8 +131,8 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		include: ["pino", "vue", "webextension-polyfill"],
-		exclude: ["@aztec/bb.js", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi", "vue-demi"],
+		include: ["pino", "vue", "webextension-polyfill", "comlink", "util", "tty", "sha3", "hash.js", "msgpackr/index-no-eval"],
+		exclude: ["@aztec/bb.js", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi", "@aztec/kv-store", "@aztec/sqlite3mc-wasm", "vue-demi"],
 		esbuildOptions: {
 			target: "esnext",
 		},
