@@ -113,6 +113,13 @@ export default defineConfig({
 					src: "./libs/@aztec/bb.js/*.wasm.gz",
 					dest: "assets/",
 				},
+				{
+					// sqlite3mc's emscripten loader requests plain "sqlite3.wasm" relative to the
+					// worker at runtime, bypassing Vite's hashed asset URL — without this copy the
+					// fetch 404s and PXE store init hangs forever (no error propagates)
+					src: "./node_modules/@aztec/sqlite3mc-wasm/vendor/jswasm/sqlite3.wasm",
+					dest: "assets/",
+				},
 			],
 		}),
 
