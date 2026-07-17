@@ -337,7 +337,40 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         return this.rpcs.get(network.chainId) === network.rpcUrl;
     }
 
+    // A dropped PXE keeps its store worker (and the exclusive OPFS handle) alive until GC —
+    // the next open of the same store races it. Always stop before dropping the reference.
+    // stop() runs under this.lock and can hang on a wedged store worker, so cap the wait;
+    // on timeout the worker just stays orphaned, which is no worse than not stopping at all.
+    private async stopPxe(pxe: PXE): Promise<void> {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+            await Promise.race([
+                pxe.stop(),
+                new Promise<never>((_, reject) => {
+                    timer = setTimeout(() => reject(new Error("PXE stop timed out")), 5_000);
+                }),
+            ]);
+        } catch (error: unknown) {
+            this.logError("Failed to stop PXE", getErrorMessage(error));
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    private async stopChains(): Promise<void> {
+        for (const pxe of this.pxes.values()) {
+            await this.stopPxe(pxe);
+        }
+        this.nodes.clear();
+        this.pxes.clear();
+        this.rpcs.clear();
+    }
+
     private async initChain(network: Network): Promise<void> {
+        const previous = this.pxes.get(network.chainId);
+        if (previous) {
+            await this.stopPxe(previous);
+        }
         const node = createBatchCappedAztecNodeClient(network.rpcUrl);
         const config = {
             ...getPXEConfig(),
@@ -426,9 +459,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private readonly onProfileDeleted = async (profile: ProfileInfo): Promise<void> => {
         try {
             await this.lock.enter();
-            this.nodes.clear();
-            this.pxes.clear();
-            this.rpcs.clear();
+            await this.stopChains();
             // TODO(backlog): v5 PXE persists to SQLite-OPFS, not IndexedDB — this no longer removes
             // the deleted profile's PXE data (it now lingers as an orphan OPFS directory).
             for (const db of await indexedDB.databases()) {
@@ -444,9 +475,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private readonly onActiveProfileChanged = async (): Promise<void> => {
         try {
             await this.lock.enter();
-            this.nodes.clear();
-            this.pxes.clear();
-            this.rpcs.clear();
+            await this.stopChains();
         } finally {
             this.lock.leave();
         }
