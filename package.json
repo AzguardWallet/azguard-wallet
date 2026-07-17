@@ -25,6 +25,7 @@
 		"@aztec/constants": "5.0.1",
 		"@aztec/entrypoints": "5.0.1",
 		"@aztec/foundation": "5.0.1",
+		"@aztec/kv-store": "5.0.1",
 		"@aztec/noir-contracts.js": "5.0.1",
 		"@aztec/protocol-contracts": "5.0.1",
 		"@aztec/pxe": "5.0.1",

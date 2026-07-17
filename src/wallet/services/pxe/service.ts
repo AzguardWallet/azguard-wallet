@@ -1,6 +1,6 @@
 import { SPONSORED_FPC_SALT } from "@aztec/constants";
 import { getPXEConfig, type PXEConfig } from "@aztec/pxe/config";
-import { createPXE, openBrowserStore, PackedPrivateEvent, PXE, PXE_DATA_SCHEMA_VERSION } from "@aztec/pxe/client/bundle";
+import { createPXE, PackedPrivateEvent, PXE } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { AuthRegistryArtifact } from "@aztec/standard-contracts/auth-registry";
 import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-registry";
@@ -49,6 +49,7 @@ import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/cli
 import { Lock } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
+import { deletePxeStores, openPxeStore } from "./stores";
 import { PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet";
 import { NotesFilterSchema } from "@/wallet/utils/schemas";
 
@@ -72,9 +73,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     protected async init() {
-        // delete orhpan PXE DBs
-        // TODO(backlog): PXE store moved to SQLite-OPFS in v5 — this IndexedDB sweep no longer GCs
-        // orphan PXE data; port orphan/profile-delete cleanup to the OPFS directory API.
+        // TODO(backlog): consider deleteOrphanPxeStores(profiles.map(x => x.id)) here once
+        // registered senders are persisted wallet-side — until then a mistaken deletion is
+        // unrecoverable, so orphaned stores (profiles deleted while the offscreen document
+        // was down) just accumulate.
+
+        // v4 leftovers: PXE data lived in IndexedDB, keyed pxe/<profileId>/<chainId>
         const dbs = await indexedDB.databases();
         const pxes = dbs.filter(x => x.name?.startsWith("pxe/"));
         if (pxes.length) {
@@ -377,13 +381,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             proverEnabled: true,
         } as PXEConfig;
         // The default store name carries only the network identity: profiles on one network share
-        // notes and keys. Prefixing the name with the profile id gives each profile its own store.
-        const { l1ChainId, l1ContractAddresses } = await node.getNodeInfo();
-        const store = await openBrowserStore(`pxe_data_${network.profileId}`, PXE_DATA_SCHEMA_VERSION, {
-            l1ChainId,
-            rollupAddress: l1ContractAddresses.rollupAddress,
-            dataStoreMapSizeKb: config.dataStoreMapSizeKb,
-        });
+        // notes and keys. openPxeStore names stores per profile — see stores.ts.
+        const store = await openPxeStore(node, network.profileId);
         let pxe: PXE;
         try {
             pxe = await createPXE(node, config, { store });
@@ -474,8 +473,13 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         try {
             await this.lock.enter();
             await this.stopChains();
-            // TODO(backlog): v5 PXE persists to SQLite-OPFS, not IndexedDB — this no longer removes
-            // the deleted profile's PXE data (it now lingers as an orphan OPFS directory).
+            try {
+                const deleted = await deletePxeStores(profile.id);
+                this.logDebug("Deleted PXE stores", deleted);
+            } catch (error: unknown) {
+                this.logError("Failed to delete PXE stores", getErrorMessage(error));
+            }
+            // v4 leftovers: PXE data lived in IndexedDB, keyed pxe/<profileId>/<chainId>
             for (const db of await indexedDB.databases()) {
                 if (db.name?.startsWith(`pxe/${profile.id}/`) || db.name === "keyval-store") {
                     const _ = indexedDB.deleteDatabase(db.name);
