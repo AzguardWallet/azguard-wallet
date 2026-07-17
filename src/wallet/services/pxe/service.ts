@@ -1,6 +1,6 @@
 import { SPONSORED_FPC_SALT } from "@aztec/constants";
 import { getPXEConfig, type PXEConfig } from "@aztec/pxe/config";
-import { createPXE, PackedPrivateEvent, PXE } from "@aztec/pxe/client/bundle";
+import { createPXE, openBrowserStore, PackedPrivateEvent, PXE, PXE_DATA_SCHEMA_VERSION } from "@aztec/pxe/client/bundle";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { AuthRegistryArtifact } from "@aztec/standard-contracts/auth-registry";
 import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-registry";
@@ -374,10 +374,24 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         const node = createBatchCappedAztecNodeClient(network.rpcUrl);
         const config = {
             ...getPXEConfig(),
-            dataDirectory: `pxe/${network.profileId}/${network.chainId}`,
             proverEnabled: true,
         } as PXEConfig;
-        const pxe = await createPXE(node, config);
+        // The default store name carries only the network identity: profiles on one network share
+        // notes and keys. Prefixing the name with the profile id gives each profile its own store.
+        const { l1ChainId, l1ContractAddresses } = await node.getNodeInfo();
+        const store = await openBrowserStore(`pxe_data_${network.profileId}`, PXE_DATA_SCHEMA_VERSION, {
+            l1ChainId,
+            rollupAddress: l1ContractAddresses.rollupAddress,
+            dataStoreMapSizeKb: config.dataStoreMapSizeKb,
+        });
+        let pxe: PXE;
+        try {
+            pxe = await createPXE(node, config, { store });
+        } catch (error: unknown) {
+            // the store handle owns a worker and the OPFS lock — release before surfacing
+            await store.close().catch(() => {});
+            throw error;
+        }
 
         this.nodes.set(network.chainId, node);
         this.pxes.set(network.chainId, pxe);
