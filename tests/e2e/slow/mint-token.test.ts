@@ -10,6 +10,18 @@ test("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension
     await page.waitForSelector("text/$0.00", { visible: true })
     await page.waitForSelector("text/New token", { visible: true })
 
+    // 1a. Switch to the Sandbox network — a fresh profile defaults to Testnet,
+    // but this test targets a local sandbox on localhost:8080
+    await page.evaluate(() => { window.location.hash = "#/popup/settings/general/networks" })
+    await waitForHash(page, "#/popup/settings/general/networks")
+    const sandboxItem = await page.waitForSelector("text/Sandbox", { visible: true, timeout: 10_000 })
+    await sandboxItem!.click()
+    await page.evaluate(() => { window.location.hash = "#/popup/general" })
+    await waitForHash(page, "#/popup/general")
+    // Wait for the sandbox account to be ready (general page re-inits on network change)
+    await page.waitForSelector("text/Account Value", { visible: true, timeout: 30_000 })
+    await page.waitForSelector("text/New token", { visible: true, timeout: 30_000 })
+
     // 2. Click Deposit → select method modal
     const depositBtn = await page.waitForSelector("text/Deposit", { visible: true })
     await depositBtn!.click()
@@ -92,10 +104,10 @@ test("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension
     await waitForHash(page, "#/popup/activity")
     await page.waitForSelector("text/Mint", { visible: true, timeout: 10_000 })
 
-    const txCount = await page.evaluate(() => {
-        const links = [...document.querySelectorAll("a")]
-        return links.filter((a) => a.href?.includes("aztecscan")).length
-    })
+    // No explorer links on sandbox networks — count short tx hashes (0x1234..abcdef) instead
+    const txCount = await page.evaluate(
+        () => document.body.innerText.match(/0x[0-9a-fA-F]{4}\.\.[0-9a-fA-F]{6}/g)?.length ?? 0
+    )
     expect(txCount).toBeGreaterThanOrEqual(2)
 
     // Navigate back to general
