@@ -30,7 +30,7 @@ export interface IPXE {
     removeSender(address: AztecAddress): Promise<void>;
     getRegisteredAccounts(): Promise<CompleteAddress[]>;
     registerContractClass(artifact: ContractArtifact): Promise<void>;
-    registerContract(contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact }): Promise<void>;
+    ensureContractRegistered(contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact }): Promise<void>;
     getContracts(): Promise<AztecAddress[]>;
     getNotes(filter: NotesFilter): Promise<NoteDao[]>;
     proveTx(txRequest: TxExecutionRequest, opts: ProveTxOpts): Promise<TxProvingResult>;
@@ -75,8 +75,8 @@ export class PXEProxy implements IPXE {
         return this.pxeService.registerContractClass(this.network, artifact);
     }
 
-    registerContract(contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact }): Promise<void> {
-        return this.pxeService.registerContract(this.network, contract);
+    ensureContractRegistered(contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact }): Promise<void> {
+        return this.pxeService.ensureContractRegistered(this.network, contract);
     }
 
     getContracts(): Promise<AztecAddress[]> {

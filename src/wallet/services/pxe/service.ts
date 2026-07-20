@@ -202,7 +202,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         );
     }
 
-    public async registerContract(
+    public async ensureContractRegistered(
         network: Network,
         contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact },
     ): Promise<void> {

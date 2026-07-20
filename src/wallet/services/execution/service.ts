@@ -506,7 +506,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Contract address doesn't match instance address");
         }
 
-        await this.pxeService.registerContract(network, { instance, artifact });
+        await this.pxeService.ensureContractRegistered(network, { instance, artifact });
     }
 
     private async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
@@ -590,7 +590,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             const [_, instance] = await this.getInstance(pxe, op.contract);
             const [__, artifact] = await this.getArtifact(pxe, instance.originalContractClassId.toString());
             this.logDebug("Register contract");
-            await pxe.registerContract({ instance, artifact });
+            await pxe.ensureContractRegistered({ instance, artifact });
         }
 
         const [_, instance] = await this.getInstance(pxe, op.contract);
@@ -647,7 +647,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         for (const [contract, instance] of instances) {
             if (!registeredContracts.has(contract)) {
                 this.logDebug("Register contract");
-                await pxe.registerContract({
+                await pxe.ensureContractRegistered({
                     instance,
                     artifact: artifacts.get(instance.originalContractClassId.toString()),
                 });
@@ -980,7 +980,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Contract artifact doesn't match instance's class id");
         }
 
-        await this.pxeService.registerContract(network, { instance, artifact });
+        await this.pxeService.ensureContractRegistered(network, { instance, artifact });
 
         if (op.secretKey) {
             await this.pxeService.registerAccount(network, op.secretKey, await computePartialAddress(instance));
@@ -1474,7 +1474,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             for (const [contract, instance] of instances) {
                 if (!registeredContracts.has(contract)) {
                     this.logDebug("Register contract");
-                    await pxe.registerContract({
+                    await pxe.ensureContractRegistered({
                         instance,
                         artifact: artifacts.get(instance.originalContractClassId.toString()),
                     });

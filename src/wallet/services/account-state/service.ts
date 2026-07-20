@@ -171,7 +171,7 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
                         continue;
                     }
                     
-                    await this.pxeService.registerContract(network, {
+                    await this.pxeService.ensureContractRegistered(network, {
                         instance: contract.instance,
                         artifact: contract.artifact,
                     });

@@ -85,7 +85,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                     this.logInfo(`Found FPC: ${address.toString()}`);
 
                     if (!registeredContracts.find(x => x.toString() === address.toString())) {
-                        await pxe.registerContract({
+                        await pxe.ensureContractRegistered({
                             instance: contractInstance,
                             artifact: contractArtifact,
                         });
@@ -163,7 +163,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
         const registeredContracts = await pxe.getContracts();
         if (!registeredContracts.find(x => x.toString() === address)) {
-            await pxe.registerContract({
+            await pxe.ensureContractRegistered({
                 instance: fpcInstance,
                 artifact: fpcArtifact,
             });

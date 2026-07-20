@@ -112,12 +112,12 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
         await this.request("registerContractClass", network, artifact);
     }
 
-    public async registerContract(
+    public async ensureContractRegistered(
         network: Network,
         contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact },
     ): Promise<void> {
         await ensureOffscreenRunning();
-        await this.request("registerContract", network, contract);
+        await this.request("ensureContractRegistered", network, contract);
     }
 
     public async getContracts(network: Network): Promise<AztecAddress[]> {

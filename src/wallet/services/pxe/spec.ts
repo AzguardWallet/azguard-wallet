@@ -39,7 +39,7 @@ export type Methods = {
     removeSender(network: Network, address: AztecAddress): void;
     getRegisteredAccounts(network: Network): CompleteAddress[];
     registerContractClass(network: Network, artifact: ContractArtifact): void;
-    registerContract(
+    ensureContractRegistered(
         network: Network,
         contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact },
     ): void;

@@ -267,7 +267,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
         const registeredContracts = await pxe.getContracts();
         if (!registeredContracts.find(x => x.toString() === token.contract)) {
-            await pxe.registerContract({
+            await pxe.ensureContractRegistered({
                 instance,
                 artifact,
             });
@@ -361,7 +361,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
 
             const registeredContracts = await pxe.getContracts();
             if (!registeredContracts.find(x => x.toString() === contract)) {
-                await pxe.registerContract({
+                await pxe.ensureContractRegistered({
                     instance,
                     artifact,
                 });
