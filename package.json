@@ -2,7 +2,7 @@
 	"name": "azguard-wallet",
 	"displayName": "Azguard Wallet",
 	"description": "User-friendly self-custody wallet for Aztec network, preserving your privacy and revealing the power of account abstraction.",
-	"version": "0.14.0",
+	"version": "0.15.0",
 	"sentinel": "11",
 	"scripts": {
 		"build:full": "npm run build:chrome && npm run build:firefox",
