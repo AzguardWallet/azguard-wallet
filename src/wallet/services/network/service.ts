@@ -76,7 +76,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             try {
                 const name = "Alphanet";
                 const rpcUrl = "https://aztec-mainnet.drpc.org";
-                const chainId = 2934756904; // 1 ^ 2934756905
+                const chainId = 4248422646; // 1 ^ 4248422647
                 defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, false));
             } catch (error) {
                 this.logError("Failed to add 'Alphanet'", getErrorMessage(error));
@@ -84,7 +84,7 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             try {
                 const name = "Testnet";
                 const rpcUrl = "https://v5.testnet.rpc.aztec-labs.com";
-                const chainId = 2793892258; // 11155111 ^ 2787991301
+                const chainId = 1816023401; // 11155111 ^ 1821665230
                 defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
             } catch (error) {
                 this.logError("Failed to add 'Testnet'", getErrorMessage(error));

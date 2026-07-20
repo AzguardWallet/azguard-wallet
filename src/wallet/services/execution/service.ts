@@ -20,8 +20,8 @@ import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     type CompleteAddress,
     computeContractAddressFromInstance,
-    type ContractInstanceWithAddress,
-    ContractInstanceWithAddressSchema,
+    type ContractInstancePreimageWithAddress,
+    ContractInstancePreimageWithAddressSchema,
     getContractClassFromArtifact,
     type NodeInfo,
     computePartialAddress,
@@ -482,7 +482,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(op.networkId);
         const address = AztecAddress.fromStringUnsafe(op.address);
 
-        const providedInstance = await optional(ContractInstanceWithAddressSchema).parseAsync(op.instance);
+        const providedInstance = await optional(ContractInstancePreimageWithAddressSchema).parseAsync(op.instance);
         const instance = providedInstance ?? (await this.pxeService.getContractInstance(network, address));
         if (!instance) {
             throw new Error("Contract instance not found");
@@ -491,14 +491,14 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const providedArtifact = await optional(ContractArtifactSchema).parseAsync(op.artifact);
         const artifact =
             providedArtifact ??
-            (await this.pxeService.getContractArtifact(network, instance.currentContractClassId));
+            (await this.pxeService.getContractArtifact(network, instance.originalContractClassId));
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
 
         const contractClass = await getContractClassFromArtifact(artifact);
-        if (contractClass.id.toString() !== instance.currentContractClassId.toString()) {
-            throw new Error("Contract artifact doesn't match instance's current class id");
+        if (contractClass.id.toString() !== instance.originalContractClassId.toString()) {
+            throw new Error("Contract artifact doesn't match instance's class id");
         }
 
         const contractAddress = await computeContractAddressFromInstance(instance);
@@ -506,7 +506,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Contract address doesn't match instance address");
         }
 
-        await this.pxeService.registerContract(network, { instance, artifact });
+        await this.pxeService.ensureContractRegistered(network, { instance, artifact });
     }
 
     private async executeRegisterSender(op: RegisterSenderOperation): Promise<void> {
@@ -588,13 +588,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const registeredContracts = new Set<string>((await pxe.getContracts()).map(x => x.toString()));
         if (!registeredContracts.has(op.contract)) {
             const [_, instance] = await this.getInstance(pxe, op.contract);
-            const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
+            const [__, artifact] = await this.getArtifact(pxe, instance.originalContractClassId.toString());
             this.logDebug("Register contract");
-            await pxe.registerContract({ instance, artifact });
+            await pxe.ensureContractRegistered({ instance, artifact });
         }
 
         const [_, instance] = await this.getInstance(pxe, op.contract);
-        const [__, artifact] = await this.getArtifact(pxe, instance.currentContractClassId.toString());
+        const [__, artifact] = await this.getArtifact(pxe, instance.originalContractClassId.toString());
 
         const fn =
             artifact.functions.find(x => x.name === op.method) ??
@@ -647,9 +647,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         for (const [contract, instance] of instances) {
             if (!registeredContracts.has(contract)) {
                 this.logDebug("Register contract");
-                await pxe.registerContract({
+                await pxe.ensureContractRegistered({
                     instance,
-                    artifact: artifacts.get(instance.currentContractClassId.toString()),
+                    artifact: artifacts.get(instance.originalContractClassId.toString()),
                 });
             }
         }
@@ -678,7 +678,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     if (!instance) {
                         throw new Error("Contract not found");
                     }
-                    const artifact = artifacts.get(instance.currentContractClassId.toString());
+                    const artifact = artifacts.get(instance.originalContractClassId.toString());
                     if (!artifact) {
                         throw new Error("Contract artifact not found");
                     }
@@ -736,7 +736,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     if (!instance) {
                         throw new Error("Contract not found");
                     }
-                    const artifact = artifacts.get(instance.currentContractClassId.toString());
+                    const artifact = artifacts.get(instance.originalContractClassId.toString());
                     if (!artifact) {
                         throw new Error("Contract artifact not found");
                     }
@@ -952,40 +952,39 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
 
     private async executeAztecRegisterContract(
         op: AztecRegisterContractOperation,
-    ): Promise<ContractInstanceWithAddress> {
+    ): Promise<void> {
         if (!op.instance) {
             throw new Error("Contract instance is required for registerContract");
         }
-        const instance = await ContractInstanceWithAddressSchema.parseAsync(op.instance);
+        // v5: dApps send a ContractInstancePreimage (no currentContractClassId); the wire response is void.
+        const instance = await ContractInstancePreimageWithAddressSchema.parseAsync(op.instance);
         const network = await this.networkService.getNetwork(op.networkId);
 
         const addressNum = instance.address.toBigInt();
         if (addressNum >= 0 && addressNum <= 6) {
             // ignore protocol contracts registration,
             // because we cannot validate it due to hardcoded addresses
-            return instance;
+            return;
         }
 
         const providedArtifact = await optional(ContractArtifactSchema).parseAsync(op.artifact);
         const artifact =
             providedArtifact ??
-            (await this.pxeService.getContractArtifact(network, instance.currentContractClassId));
+            (await this.pxeService.getContractArtifact(network, instance.originalContractClassId));
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
 
         const contractClass = await getContractClassFromArtifact(artifact);
-        if (contractClass.id.toString() !== instance.currentContractClassId.toString()) {
-            throw new Error("Contract artifact doesn't match instance's current class id");
+        if (contractClass.id.toString() !== instance.originalContractClassId.toString()) {
+            throw new Error("Contract artifact doesn't match instance's class id");
         }
 
-        await this.pxeService.registerContract(network, { instance, artifact });
+        await this.pxeService.ensureContractRegistered(network, { instance, artifact });
 
         if (op.secretKey) {
             await this.pxeService.registerAccount(network, op.secretKey, await computePartialAddress(instance));
         }
-
-        return instance;
     }
 
     private async executeAztecRegisterContractClass(op: AztecRegisterContractClassOperation): Promise<void> {
@@ -1475,9 +1474,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             for (const [contract, instance] of instances) {
                 if (!registeredContracts.has(contract)) {
                     this.logDebug("Register contract");
-                    await pxe.registerContract({
+                    await pxe.ensureContractRegistered({
                         instance,
-                        artifact: artifacts.get(instance.currentContractClassId.toString()),
+                        artifact: artifacts.get(instance.originalContractClassId.toString()),
                     });
                 }
             }
@@ -1647,7 +1646,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         if (!instance) {
                             throw new Error("Contract not found");
                         }
-                        const artifact = artifacts.get(instance.currentContractClassId.toString());
+                        const artifact = artifacts.get(instance.originalContractClassId.toString());
                         if (!artifact) {
                             throw new Error("Contract artifact not found");
                         }
@@ -1686,7 +1685,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                             if (!instance) {
                                 throw new Error("Contract not found");
                             }
-                            const artifact = artifacts.get(instance.currentContractClassId.toString());
+                            const artifact = artifacts.get(instance.originalContractClassId.toString());
                             if (!artifact) {
                                 throw new Error("Contract artifact not found");
                             }
@@ -1806,14 +1805,14 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async getCallMessageHash(
         content: CallAuthwitContent,
         nodeInfo: NodeInfo,
-        instances: Map<string, ContractInstanceWithAddress>,
+        instances: Map<string, ContractInstancePreimageWithAddress>,
         artifacts: Map<string, ContractArtifact>,
     ): Promise<Fr> {
         const instance = instances.get(content.contract);
         if (!instance) {
             throw new Error("Contract not found");
         }
-        const artifact = artifacts.get(instance.currentContractClassId.toString());
+        const artifact = artifacts.get(instance.originalContractClassId.toString());
         if (!artifact) {
             throw new Error("Contract artifact not found");
         }
@@ -1847,7 +1846,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     private async getEncodedCallMessageHash(
         content: EncodedCallAuthwitContent,
         nodeInfo: NodeInfo,
-        instances: Map<string, ContractInstanceWithAddress>,
+        instances: Map<string, ContractInstancePreimageWithAddress>,
         artifacts: Map<string, ContractArtifact>,
     ): Promise<Fr> {
         if (
@@ -1860,7 +1859,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             if (!instance) {
                 throw new Error("Contract not found");
             }
-            const artifact = artifacts.get(instance.currentContractClassId.toString());
+            const artifact = artifacts.get(instance.originalContractClassId.toString());
             if (!artifact) {
                 throw new Error("Contract artifact not found");
             }
@@ -1950,9 +1949,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         ];
     }
 
-    private async getInstances(pxe: IPXE, contracts: string[]): Promise<Map<string, ContractInstanceWithAddress>> {
+    private async getInstances(pxe: IPXE, contracts: string[]): Promise<Map<string, ContractInstancePreimageWithAddress>> {
         this.logDebug("Get instances...");
-        const instances = new Map<string, ContractInstanceWithAddress>();
+        const instances = new Map<string, ContractInstancePreimageWithAddress>();
         this.logDebug(`Fetching ${contracts.length} instances...`);
         const fetched = await Promise.all(contracts.map(x => this.getInstance(pxe, x)));
         this.logDebug(`${fetched.length} instances fetched`);
@@ -1962,7 +1961,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return instances;
     }
 
-    private async getInstance(pxe: IPXE, contract: string): Promise<[string, ContractInstanceWithAddress]> {
+    private async getInstance(pxe: IPXE, contract: string): Promise<[string, ContractInstancePreimageWithAddress]> {
         const instance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(contract));
         if (!instance) {
             throw new Error("Contract instance not found");
@@ -1970,17 +1969,20 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return [contract, instance];
     }
 
+    // TODO(backlog): v5 dropped currentContractClassId from the PXE contract-instance preimage, so we key
+    // artifact resolution on originalContractClassId — calls build against the originally-deployed class,
+    // not a target's on-chain-upgraded current class. Re-resolve via node.getContract() if that's needed.
     private async getArtifacts(
         pxe: IPXE,
-        instances: Map<string, ContractInstanceWithAddress>,
+        instances: Map<string, ContractInstancePreimageWithAddress>,
     ): Promise<Map<string, ContractArtifact>> {
         this.logDebug("Get artifacts...");
         const artifacts = new Map<string, ContractArtifact>();
         const classIds = new Set(
             instances
                 .values()
-                .filter(x => !artifacts.has(x.currentContractClassId.toString()))
-                .map(x => x.currentContractClassId.toString()),
+                .filter(x => !artifacts.has(x.originalContractClassId.toString()))
+                .map(x => x.originalContractClassId.toString()),
         );
         this.logDebug(`Fetching ${classIds.size} artifacts...`);
         const fetched = await Promise.all(classIds.values().map(x => this.getArtifact(pxe, x)));

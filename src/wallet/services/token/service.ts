@@ -260,14 +260,14 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             throw new Error("contract instance not found");
         }
 
-        const artifact = await pxe.getContractArtifact(instance.currentContractClassId);
+        const artifact = await pxe.getContractArtifact(instance.originalContractClassId);
         if (!artifact) {
             throw new Error("contract artifact not found");
         }
 
         const registeredContracts = await pxe.getContracts();
         if (!registeredContracts.find(x => x.toString() === token.contract)) {
-            await pxe.registerContract({
+            await pxe.ensureContractRegistered({
                 instance,
                 artifact,
             });
@@ -354,14 +354,14 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
                 throw new Error("contract instance not found");
             }
 
-            const artifact = await pxe.getContractArtifact(instance.currentContractClassId);
+            const artifact = await pxe.getContractArtifact(instance.originalContractClassId);
             if (!artifact) {
                 throw new Error("contract artifact not found");
             }
 
             const registeredContracts = await pxe.getContracts();
             if (!registeredContracts.find(x => x.toString() === contract)) {
-                await pxe.registerContract({
+                await pxe.ensureContractRegistered({
                     instance,
                     artifact,
                 });

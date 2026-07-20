@@ -73,7 +73,7 @@ export abstract class AzguardV0Base implements IAccountContract {
         const instance = await pxe.getContractInstance(this.address);
         if (!instance) {
             this.logger.log(this.name, LogLevel.Debug, "register contract...");
-            await pxe.registerContract({ instance: this.instance, artifact: this.artifact });
+            await pxe.ensureContractRegistered({ instance: this.instance, artifact: this.artifact });
         }
     }
 
@@ -158,7 +158,7 @@ export abstract class AzguardV0Base implements IAccountContract {
         const contractInstance = await pxe.getContractInstance(this.address);
         if (!contractInstance) {
             this.logger.log(this.name, LogLevel.Debug, 'register contract...');
-            await pxe.registerContract({instance: this.instance, artifact: this.artifact});
+            await pxe.ensureContractRegistered({instance: this.instance, artifact: this.artifact});
         }
         // Check if the contract is initialized on-chain via init nullifier
         const initNullifier = await computeSiloedPrivateInitializationNullifier(this.address, this.instance.initializationHash);

@@ -4,7 +4,7 @@ import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdli
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     CompleteAddress,
-    type ContractInstanceWithAddress,
+    type ContractInstancePreimageWithAddress,
     type PartialAddress,
 } from "@aztec/stdlib/contract";
 import { NoteDao } from "@aztec/stdlib/note";
@@ -22,7 +22,7 @@ import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
 import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
 
 export interface IPXE {
-    getContractInstance(address: AztecAddress): Promise<ContractInstanceWithAddress | undefined>;
+    getContractInstance(address: AztecAddress): Promise<ContractInstancePreimageWithAddress | undefined>;
     getContractArtifact(id: Fr, options?: { fetchFromNode?: boolean }): Promise<ContractArtifact | undefined>;
     registerAccount(secretKey: Fr, partialAddress: PartialAddress): Promise<CompleteAddress>;
     registerSender(address: AztecAddress): Promise<AztecAddress>;
@@ -30,8 +30,7 @@ export interface IPXE {
     removeSender(address: AztecAddress): Promise<void>;
     getRegisteredAccounts(): Promise<CompleteAddress[]>;
     registerContractClass(artifact: ContractArtifact): Promise<void>;
-    registerContract(contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact }): Promise<void>;
-    updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void>;
+    ensureContractRegistered(contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact }): Promise<void>;
     getContracts(): Promise<AztecAddress[]>;
     getNotes(filter: NotesFilter): Promise<NoteDao[]>;
     proveTx(txRequest: TxExecutionRequest, opts: ProveTxOpts): Promise<TxProvingResult>;
@@ -44,7 +43,7 @@ export interface IPXE {
 export class PXEProxy implements IPXE {
     public constructor(private readonly pxeService: PxeServiceClient, private readonly network: Network) {}
 
-    getContractInstance(address: AztecAddress): Promise<ContractInstanceWithAddress | undefined> {
+    getContractInstance(address: AztecAddress): Promise<ContractInstancePreimageWithAddress | undefined> {
         return this.pxeService.getContractInstance(this.network, address);
     }
 
@@ -76,12 +75,8 @@ export class PXEProxy implements IPXE {
         return this.pxeService.registerContractClass(this.network, artifact);
     }
 
-    registerContract(contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact }): Promise<void> {
-        return this.pxeService.registerContract(this.network, contract);
-    }
-
-    updateContract(contractAddress: AztecAddress, artifact: ContractArtifact): Promise<void> {
-        return this.pxeService.updateContract(this.network, contractAddress, artifact);
+    ensureContractRegistered(contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact }): Promise<void> {
+        return this.pxeService.ensureContractRegistered(this.network, contract);
     }
 
     getContracts(): Promise<AztecAddress[]> {

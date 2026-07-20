@@ -5,8 +5,8 @@ export const colors = ["blue", "green", "mint", "neutral-mint", "orange", "yello
  * Computed as: l1ChainId ^ rollupVersion
  */
 export const CHAIN_IDS = {
-	ALPHANET: 2934756904,  // 1 ^ 2934756905
-	TESTNET: 2793892258,  // 11155111 ^ 2787991301
+	ALPHANET: 4248422646,  // 1 ^ 4248422647
+	TESTNET: 1816023401,  // 11155111 ^ 1821665230
 	DEVNET: 604129785,    // 11155111 ^ 615022430
 	SANDBOX: 0,           // localhost:8080
 } as const

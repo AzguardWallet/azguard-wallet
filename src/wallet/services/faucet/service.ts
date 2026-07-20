@@ -202,7 +202,7 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
         const mintTask = rootTask.startSubtask(new StepContent("Minting token"));
         try {
             const _amount = new BN(amount).dividedBy(2).toString();
-            const [mintResult, registerResult] = await this.executionService.executeOperations(
+            const [mintResult] = await this.executionService.executeOperations(
                 [
                     {
                         kind: "send_transaction",
@@ -224,6 +224,21 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                             },
                         ],
                     },
+                ],
+                origin,
+                mintTask,
+            );
+            if (mintResult.status === "failed") {
+                throw new Error(`Token mint failed: ${mintResult.error}`);
+            }
+            const mintTx = (mintResult as OkOperationResult<string>).result;
+            this.logDebug("faucet mint tx:", mintTx);
+            await this.transactionService.waitForTx(mintTx, mintTask);
+            this.logDebug("faucet mint tx mined");
+            // register_token simulates through the account entrypoint, whose constrained log delivery
+            // requires the previous tx's sequence nullifier to be settled — so only after the mint is mined
+            const [registerResult] = await this.executionService.executeOperations(
+                [
                     {
                         kind: "register_token",
                         networkId,
@@ -234,16 +249,9 @@ export class FaucetService extends Service<Methods> implements ServiceSpec<Metho
                 origin,
                 mintTask,
             );
-            if (mintResult.status === "failed") {
-                throw new Error(`Token mint failed: ${mintResult.error}`);
-            }
             if (registerResult.status === "failed") {
                 throw new Error(`Token register failed: ${registerResult.error}`);
             }
-            const mintTx = (mintResult as OkOperationResult<string>).result;
-            this.logDebug("faucet mint tx:", mintTx);
-            await this.transactionService.waitForTx(mintTx, mintTask);
-            this.logDebug("faucet mint tx mined");
             mintTask.complete();
         } catch (error) {
             mintTask.fail(error);

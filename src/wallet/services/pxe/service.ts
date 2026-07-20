@@ -17,12 +17,14 @@ import { AuthWitness } from "@aztec/stdlib/auth-witness";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import {
     type ContractInstanceWithAddress,
-    ContractInstanceWithAddressSchema,
+    type ContractInstancePreimageWithAddress,
+    ContractInstancePreimageWithAddressSchema,
     getContractClassFromArtifact,
     getContractInstanceFromInstantiationParams,
     CompleteAddress,
     PartialAddress,
 } from "@aztec/stdlib/contract";
+import { deriveKeys } from "@aztec/stdlib/keys";
 import { type AztecNode, createBatchCappedAztecNodeClient } from "@/wallet/utils/aztec-node-client";
 import { NoteDao } from "@aztec/stdlib/note";
 import type { NotesFilter } from "./spec";
@@ -47,6 +49,7 @@ import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/cli
 import { Lock } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
+import { deletePxeStores, openPxeStore } from "./stores";
 import { PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet";
 import { NotesFilterSchema } from "@/wallet/utils/schemas";
 
@@ -70,7 +73,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     protected async init() {
-        // delete orhpan PXE DBs
+        // TODO(backlog): consider deleteOrphanPxeStores(profiles.map(x => x.id)) here once
+        // registered senders are persisted wallet-side — until then a mistaken deletion is
+        // unrecoverable, so orphaned stores (profiles deleted while the offscreen document
+        // was down) just accumulate.
+
+        // v4 leftovers: PXE data lived in IndexedDB, keyed pxe/<profileId>/<chainId>
         const dbs = await indexedDB.databases();
         const pxes = dbs.filter(x => x.name?.startsWith("pxe/"));
         if (pxes.length) {
@@ -98,7 +106,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         network: Network,
         address: AztecAddress,
         options?: { fetchFromNode?: boolean },
-    ): Promise<ContractInstanceWithAddress | undefined> {
+    ): Promise<ContractInstancePreimageWithAddress | undefined> {
         const fetchFromNode = options?.fetchFromNode ?? true;
         address = await AztecAddress.schema.parseAsync(address);
         return this.withPxe(network, async (pxe, node) => {
@@ -152,8 +160,9 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         partialAddress: PartialAddress,
     ): Promise<CompleteAddress> {
         return this.withPxe(network, async (pxe) =>
+            // v5: registerAccount takes derived AccountPrivacyKeys, not the raw seed (the seed is not trusted to PXE).
             pxe.registerAccount(
-                await Fr.schema.parseAsync(secretKey),
+                await deriveKeys(await Fr.schema.parseAsync(secretKey)),
                 await Fr.schema.parseAsync(partialAddress),
             ),
         );
@@ -193,29 +202,18 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         );
     }
 
-    public async registerContract(
+    public async ensureContractRegistered(
         network: Network,
-        contract: { instance: ContractInstanceWithAddress; artifact?: ContractArtifact },
+        contract: { instance: ContractInstancePreimageWithAddress; artifact?: ContractArtifact },
     ): Promise<void> {
-        return this.withPxe(network, async (pxe) =>
-            pxe.registerContract({
-                instance: await ContractInstanceWithAddressSchema.parseAsync(contract.instance),
-                artifact: await ContractArtifactSchema.optional().parseAsync(contract.artifact),
-            }),
-        );
-    }
-
-    public async updateContract(
-        network: Network,
-        contractAddress: AztecAddress,
-        artifact: ContractArtifact,
-    ): Promise<void> {
-        return this.withPxe(network, async (pxe) =>
-            pxe.updateContract(
-                await AztecAddress.schema.parseAsync(contractAddress),
-                await ContractArtifactSchema.parseAsync(artifact),
-            ),
-        );
+        // v5: class and instance register separately; registerContract no longer takes an artifact.
+        return this.withPxe(network, async (pxe) => {
+            const instance = await ContractInstancePreimageWithAddressSchema.parseAsync(contract.instance);
+            if (contract.artifact) {
+                await pxe.registerContractClass(await ContractArtifactSchema.parseAsync(contract.artifact));
+            }
+            await pxe.registerContract(instance);
+        });
     }
 
     public async getContracts(network: Network): Promise<AztecAddress[]> {
@@ -343,14 +341,56 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         return this.rpcs.get(network.chainId) === network.rpcUrl;
     }
 
+    // A dropped PXE keeps its store worker (and the exclusive OPFS handle) alive until GC —
+    // the next open of the same store races it. Always stop before dropping the reference.
+    // stop() runs under this.lock and can hang on a wedged store worker, so cap the wait;
+    // on timeout the worker just stays orphaned, which is no worse than not stopping at all.
+    private async stopPxe(pxe: PXE): Promise<void> {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+            await Promise.race([
+                pxe.stop(),
+                new Promise<never>((_, reject) => {
+                    timer = setTimeout(() => reject(new Error("PXE stop timed out")), 5_000);
+                }),
+            ]);
+        } catch (error: unknown) {
+            this.logError("Failed to stop PXE", getErrorMessage(error));
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    private async stopChains(): Promise<void> {
+        for (const pxe of this.pxes.values()) {
+            await this.stopPxe(pxe);
+        }
+        this.nodes.clear();
+        this.pxes.clear();
+        this.rpcs.clear();
+    }
+
     private async initChain(network: Network): Promise<void> {
+        const previous = this.pxes.get(network.chainId);
+        if (previous) {
+            await this.stopPxe(previous);
+        }
         const node = createBatchCappedAztecNodeClient(network.rpcUrl);
         const config = {
             ...getPXEConfig(),
-            dataDirectory: `pxe/${network.profileId}/${network.chainId}`,
             proverEnabled: true,
         } as PXEConfig;
-        const pxe = await createPXE(node, config);
+        // The default store name carries only the network identity: profiles on one network share
+        // notes and keys. openPxeStore names stores per profile — see stores.ts.
+        const store = await openPxeStore(node, network.profileId);
+        let pxe: PXE;
+        try {
+            pxe = await createPXE(node, config, { store });
+        } catch (error: unknown) {
+            // the store handle owns a worker and the OPFS lock — release before surfacing
+            await store.close().catch(() => {});
+            throw error;
+        }
 
         this.nodes.set(network.chainId, node);
         this.pxes.set(network.chainId, pxe);
@@ -418,9 +458,9 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private getRegistryUrl(network: Network): string | undefined {
         switch (network.chainId) {
-            case 2934756904: // alphanet (mainnet), 1 ^ 2934756905
+            case 4248422646: // alphanet (mainnet), 1 ^ 4248422647
                 return "https://mainnet.aztec-registry.xyz";
-            case 2793892258: // 11155111 ^ 2787991301
+            case 1816023401: // 11155111 ^ 1821665230
                 return "https://testnet.aztec-registry.xyz";
             case 604129785: // 11155111 ^ 615022430
                 return "https://devnet.aztec-registry.xyz";
@@ -432,9 +472,14 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private readonly onProfileDeleted = async (profile: ProfileInfo): Promise<void> => {
         try {
             await this.lock.enter();
-            this.nodes.clear();
-            this.pxes.clear();
-            this.rpcs.clear();
+            await this.stopChains();
+            try {
+                const deleted = await deletePxeStores(profile.id);
+                this.logDebug("Deleted PXE stores", deleted);
+            } catch (error: unknown) {
+                this.logError("Failed to delete PXE stores", getErrorMessage(error));
+            }
+            // v4 leftovers: PXE data lived in IndexedDB, keyed pxe/<profileId>/<chainId>
             for (const db of await indexedDB.databases()) {
                 if (db.name?.startsWith(`pxe/${profile.id}/`) || db.name === "keyval-store") {
                     const _ = indexedDB.deleteDatabase(db.name);
@@ -448,9 +493,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private readonly onActiveProfileChanged = async (): Promise<void> => {
         try {
             await this.lock.enter();
-            this.nodes.clear();
-            this.pxes.clear();
-            this.rpcs.clear();
+            await this.stopChains();
         } finally {
             this.lock.leave();
         }

@@ -113,6 +113,13 @@ export default defineConfig({
 					src: "./libs/@aztec/bb.js/*.wasm.gz",
 					dest: "assets/",
 				},
+				{
+					// sqlite3mc's emscripten loader requests plain "sqlite3.wasm" relative to the
+					// worker at runtime, bypassing Vite's hashed asset URL — without this copy the
+					// fetch 404s and PXE store init hangs forever (no error propagates)
+					src: "./node_modules/@aztec/sqlite3mc-wasm/vendor/jswasm/sqlite3.wasm",
+					dest: "assets/",
+				},
 			],
 		}),
 
@@ -131,8 +138,8 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		include: ["pino", "vue", "webextension-polyfill"],
-		exclude: ["@aztec/bb.js", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi", "vue-demi"],
+		include: ["pino", "vue", "webextension-polyfill", "comlink", "util", "tty", "sha3", "hash.js", "msgpackr/index-no-eval"],
+		exclude: ["@aztec/bb.js", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi", "@aztec/kv-store", "@aztec/sqlite3mc-wasm", "vue-demi"],
 		esbuildOptions: {
 			target: "esnext",
 		},
