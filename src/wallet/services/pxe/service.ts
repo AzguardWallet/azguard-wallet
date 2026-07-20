@@ -458,7 +458,7 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private getRegistryUrl(network: Network): string | undefined {
         switch (network.chainId) {
-            case 2934756904: // alphanet (mainnet), 1 ^ 2934756905
+            case 4248422646: // alphanet (mainnet), 1 ^ 4248422647
                 return "https://mainnet.aztec-registry.xyz";
             case 1816023401: // 11155111 ^ 1821665230
                 return "https://testnet.aztec-registry.xyz";
