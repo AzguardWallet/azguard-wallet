@@ -29,15 +29,17 @@ const depositMethods = computed(() => {
 	const bridgeUrl = isTestnet(appStore.network?.chainId)
 		? "https://testnet.shield.human.tech/"
 		: "https://shield.human.tech/"
-	const methods = [
-		{
+	const methods = []
+	// Human Tech bridges Sepolia↔testnet — meaningless against a local sandbox.
+	if (appStore.network?.chainId !== CHAIN_IDS.SANDBOX) {
+		methods.push({
 			title: "Human Tech Bridge",
 			alias: "human_tech",
 			description: "Bridge between Etherium and Aztec",
 			target: bridgeUrl,
 			icon: "human_tech",
-		},
-	]
+		})
+	}
 	// Faucet is available on test networks only — no free minting on mainnet.
 	if (appStore.network?.chainId !== CHAIN_IDS.ALPHANET) {
 		methods.push({
