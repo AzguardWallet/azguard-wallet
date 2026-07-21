@@ -12,6 +12,7 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
+import { getDefaultTokens } from "@/wallet/constants/default-tokens";
 import { simulate, ViewFn } from "@/wallet/utils/fn";
 import {
     isPrivateFpcArtifact,
@@ -475,11 +476,13 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             const network = networks.find(x => x.isDefault) ?? networks[0];
             if (!network) return;
 
-            try {
-                const ti = await this.parseTokenInterface(network.id, feeJuiceAddress);
-                await this.addToken(account.profileId, network.id, account.address, ti);
-            } catch (e) {
-                this.logDebug(`Failed to auto-add token ${feeJuiceAddress}: ${e}`);
+            for (const { address } of getDefaultTokens(account.chainId)) {
+                try {
+                    const ti = await this.parseTokenInterface(network.id, address);
+                    await this.addToken(account.profileId, network.id, account.address, ti);
+                } catch (e) {
+                    this.logDebug(`Failed to auto-add token ${address}: ${e}`);
+                }
             }
         } catch (e) {
             this.logDebug(`Failed to auto-add default tokens: ${e}`);
