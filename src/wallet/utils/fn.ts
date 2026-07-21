@@ -1,6 +1,6 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { HashedValues, NestedProcessReturnValues } from "@aztec/stdlib/tx";
+import { HashedValues, NestedProcessReturnValues, PrivateCallExecutionResult } from "@aztec/stdlib/tx";
 import { AbiType, encodeArguments, FunctionAbi, FunctionCall, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
 import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
@@ -104,9 +104,37 @@ export async function simulate(
         scopes: [account.address],
     });
 
-    return viewFn.type === FunctionType.PUBLIC
-        ? viewFn.unpackResult(extractReturnValues(tx.getPublicReturnValues()))
-        : viewFn.unpackResult(extractReturnValues([tx.getPrivateReturnValues()]));
+    if (viewFn.type === FunctionType.PUBLIC) {
+        return viewFn.unpackResult(extractReturnValues(tx.getPublicReturnValues()));
+    }
+
+    // Target our specific call's frame by contract+selector. For a not-yet-deployed account
+    // simulateTx bundles the deployment (constructor + handshake) whose private return values
+    // would otherwise precede ours in a flat list, so blindly reading result[0] grabs a
+    // deployment field (crashes on decimals, silently garbles name/symbol).
+    const returnValues = findReturnValues(tx.privateExecutionResult.entrypoint, contractAddress, fnSelector);
+    if (!returnValues) {
+        throw new Error(`Simulation return values not found for ${viewFn.name}`);
+    }
+    return viewFn.unpackResult(returnValues);
+}
+
+function findReturnValues(
+    node: PrivateCallExecutionResult,
+    contract: AztecAddress,
+    selector: FunctionSelector,
+): Fr[] | undefined {
+    const cc = node.publicInputs.callContext;
+    if (cc.contractAddress.toString() === contract.toString() && cc.functionSelector.toString() === selector.toString()) {
+        return node.returnValues;
+    }
+    for (const child of node.nestedExecutionResults) {
+        const found = findReturnValues(child, contract, selector);
+        if (found) {
+            return found;
+        }
+    }
+    return undefined;
 }
 
 function extractReturnValues(values: NestedProcessReturnValues[]): Fr[] {

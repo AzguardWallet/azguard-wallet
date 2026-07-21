@@ -4,7 +4,7 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Utils */
-import { CHAIN_IDS } from "@/components/ui/utils"
+import { CHAIN_IDS, isTestnet } from "@/components/ui/utils"
 
 /** Stores */
 import { useAppStore } from "@/stores/app.store"
@@ -26,15 +26,20 @@ const displaceIdx = computed(() => {
 })
 
 const depositMethods = computed(() => {
-	const methods = [
-		{
+	const bridgeUrl = isTestnet(appStore.network?.chainId)
+		? "https://testnet.shield.human.tech/"
+		: "https://shield.human.tech/"
+	const methods = []
+	// Human Tech bridges Sepolia↔testnet — meaningless against a local sandbox.
+	if (appStore.network?.chainId !== CHAIN_IDS.SANDBOX) {
+		methods.push({
 			title: "Human Tech Bridge",
 			alias: "human_tech",
 			description: "Bridge between Etherium and Aztec",
-			target: "https://bridge.human.tech/",
+			target: bridgeUrl,
 			icon: "human_tech",
-		},
-	]
+		})
+	}
 	// Faucet is available on test networks only — no free minting on mainnet.
 	if (appStore.network?.chainId !== CHAIN_IDS.ALPHANET) {
 		methods.push({
