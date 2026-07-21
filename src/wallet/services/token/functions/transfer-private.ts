@@ -1,7 +1,8 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi";
+import { ContractArtifact, FunctionAbi, FunctionType } from "@aztec/stdlib/abi";
 import { Fn } from "@/wallet/utils/fn";
+import { isAztecAddressType } from "./abi-types";
 
 export enum TransferPrivateImpl {
     Default,
@@ -121,8 +122,7 @@ export class DefaultTransferPrivateFn extends TransferPrivateFn {
                 fn.functionType === FunctionType.PRIVATE &&
                 fn.parameters.length === 2 &&
                 fn.parameters[0].name === "to" &&
-                (fn.parameters[0].type as StructType)?.path ===
-                    "aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                isAztecAddressType(fn.parameters[0].type) &&
                 fn.parameters[1].name === "amount" &&
                 fn.parameters[1].type.kind === "integer" &&
                 fn.returnTypes.length === 0
@@ -199,11 +199,9 @@ export class DefaultFromTransferPrivateFn extends TransferPrivateFn {
                 fn.functionType === FunctionType.PRIVATE &&
                 fn.parameters.length === 4 &&
                 fn.parameters[0].name === "from" &&
-                (fn.parameters[0].type as StructType)?.path ===
-                    "aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                isAztecAddressType(fn.parameters[0].type) &&
                 fn.parameters[1].name === "to" &&
-                (fn.parameters[1].type as StructType)?.path ===
-                    "aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                isAztecAddressType(fn.parameters[1].type) &&
                 fn.parameters[2].name === "amount" &&
                 fn.parameters[2].type.kind === "integer" &&
                 (fn.parameters[3].name === "authwit_nonce" || fn.parameters[3].name === "_nonce") &&

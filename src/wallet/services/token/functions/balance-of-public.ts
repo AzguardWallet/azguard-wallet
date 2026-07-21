@@ -1,7 +1,8 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi";
+import { ContractArtifact, FunctionAbi, FunctionType } from "@aztec/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
+import { isAztecAddressType } from "./abi-types";
 
 export enum BalanceOfPublicImpl {
     Default,
@@ -92,8 +93,7 @@ export class DefaultBalanceOfPublicFn extends BalanceOfPublicFn {
                 fn.isStatic &&
                 fn.functionType === FunctionType.PUBLIC &&
                 fn.parameters.length === 1 &&
-                (fn.parameters[0].type as StructType)?.path ===
-                    "aztec::protocol_types::address::aztec_address::AztecAddress" &&
+                isAztecAddressType(fn.parameters[0].type) &&
                 fn.returnTypes.length === 1 &&
                 fn.returnTypes[0].kind === "integer"
             ) {
