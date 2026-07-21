@@ -1,5 +1,4 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { Fr } from "@aztec/foundation/curves/bn254";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -10,19 +9,11 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { Fpc } from "./fpc";
-import { getFpcHandler, getKnownFpcs } from "./handlers";
+import { getFpcHandler, resolveCanonicalFpcs } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
-import {
-    getContractInstanceFromInstantiationParams,
-    type ContractInstancePreimageWithAddress,
-} from "@aztec/stdlib/contract";
-import type { ContractArtifact } from "@aztec/stdlib/abi";
-import type { IPXE } from "@/wallet/services/pxe/proxy";
 
 export * from "./fpc";
 export * from "./spec";
-
-type ResolvedFpc = { contractInstance: ContractInstancePreimageWithAddress; contractArtifact: ContractArtifact };
 
 export class FpcService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = FPC_SERVICE_NAME;
@@ -69,13 +60,9 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 const node = await this.networkService.getNode(network.chainId);
                 const pxe = this.pxeService.getPXE(network);
 
-                const knownFpcs = await getKnownFpcs(chainId);
+                const canonicalFpcs = await resolveCanonicalFpcs(chainId, pxe);
                 const registeredContracts = await pxe.getContracts();
-                for (const { address, type, classId } of knownFpcs) {
-                    const resolved = await this.resolveKnownFpc(pxe, address, classId);
-                    if (!resolved) continue;
-                    const { contractInstance, contractArtifact } = resolved;
-
+                for (const { address, type, contractInstance, contractArtifact } of canonicalFpcs) {
                     this.logInfo(`Found FPC: ${address.toString()}`);
 
                     if (!registeredContracts.find(x => x.toString() === address.toString())) {
@@ -116,52 +103,6 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             }
         }
         return result;
-    }
-
-    /** Resolves a known FPC to its instance + artifact, or undefined if absent on this network. */
-    private async resolveKnownFpc(pxe: IPXE, address: AztecAddress, classId?: Fr): Promise<ResolvedFpc | undefined> {
-        const published = await pxe.getContractInstance(address);
-        if (published) {
-            return this.resolvePublishedFpc(pxe, published);
-        }
-        if (classId) {
-            return this.deriveUnpublishedFpc(pxe, address, classId);
-        }
-        return undefined;
-    }
-
-    /** The instance is published on-chain: fetch the artifact of whatever class it points to. */
-    private async resolvePublishedFpc(
-        pxe: IPXE,
-        contractInstance: ContractInstancePreimageWithAddress,
-    ): Promise<ResolvedFpc | undefined> {
-        const contractArtifact = await pxe.getContractArtifact(contractInstance.originalContractClassId);
-        if (!contractArtifact) {
-            return undefined;
-        }
-        return { contractInstance, contractArtifact };
-    }
-
-    /** The canonical instance is deployed unpublished: fetch the artifact by our pinned
-     * class id and derive the instance from it, verifying it lands on the pinned address. */
-    private async deriveUnpublishedFpc(
-        pxe: IPXE,
-        address: AztecAddress,
-        classId: Fr,
-    ): Promise<ResolvedFpc | undefined> {
-        const contractArtifact = await pxe.getContractArtifact(classId);
-        if (!contractArtifact) {
-            return undefined;
-        }
-        const contractInstance = await getContractInstanceFromInstantiationParams(contractArtifact, {
-            salt: Fr.zero(),
-            deployer: AztecAddress.ZERO,
-            skipArgsDecoding: true,
-        });
-        if (!contractInstance.address.equals(address)) {
-            return undefined;
-        }
-        return { contractInstance, contractArtifact };
     }
 
     public async getFpc(id: string): Promise<FpcInfo> {

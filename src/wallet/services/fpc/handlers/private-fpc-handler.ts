@@ -1,10 +1,12 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
 import { Gas } from "@aztec/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
+import { IPXE } from "@/wallet/services/pxe/proxy";
 import { FpcInfo, FpcType } from "../spec";
-import { IFpcHandler, KnownFpc } from ".";
+import { CanonicalFpc, IFpcHandler } from ".";
 
 export const privateFpcTokenName = "Private Fee Juice";
 export const privateFpcTokenSymbol = "pFJ";
@@ -14,14 +16,6 @@ export const privateFpcTokenSymbol = "pFJ";
 // the node — we pin the class id and derive the instance from the artifact (registry-backed) instead.
 export const CANONICAL_PRIVATE_FPC_ADDRESS = "0x1966fc6084e79aa92a5395d11149ee8cd87e8c43081e05294e7824f7b2927181";
 const CANONICAL_PRIVATE_FPC_CLASS_ID = "0x032bc73c22b1d0ab26cce0c99d7ab71f0078962f9a92b060cc9c5cb87e4cfb08";
-
-export function canonicalPrivateFpc(): KnownFpc {
-    return {
-        address: AztecAddress.fromStringUnsafe(CANONICAL_PRIVATE_FPC_ADDRESS),
-        type: FpcType.PrivateFpc,
-        classId: Fr.fromHexString(CANONICAL_PRIVATE_FPC_CLASS_ID),
-    };
-}
 
 /** Shape check: `pay_fee()` (0 args/returns) + `balance_of(address)` — specific enough to not match real tokens. */
 export function isPrivateFpcArtifact(artifact: ContractArtifact): boolean {
@@ -34,6 +28,26 @@ export function isPrivateFpcArtifact(artifact: ContractArtifact): boolean {
 }
 
 export class PrivateFpcHandler implements IFpcHandler {
+    // Available on every chain (the canonical address is chain-independent). Deployed
+    // unpublished: fetch the artifact by the pinned class id (registry-backed fallback
+    // in the PXE wrapper), derive the instance and verify it lands on the pinned address.
+    public static async resolveCanonical(_chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined> {
+        const address = AztecAddress.fromStringUnsafe(CANONICAL_PRIVATE_FPC_ADDRESS);
+        const contractArtifact = await pxe.getContractArtifact(Fr.fromHexString(CANONICAL_PRIVATE_FPC_CLASS_ID));
+        if (!contractArtifact) {
+            return undefined;
+        }
+        const contractInstance = await getContractInstanceFromInstantiationParams(contractArtifact, {
+            salt: Fr.zero(),
+            deployer: AztecAddress.ZERO,
+            skipArgsDecoding: true,
+        });
+        if (!contractInstance.address.equals(address)) {
+            return undefined;
+        }
+        return { address, type: FpcType.PrivateFpc, contractInstance, contractArtifact };
+    }
+
     public async getAsset(fpcAddress: string): Promise<string | undefined> {
         return fpcAddress;
     }

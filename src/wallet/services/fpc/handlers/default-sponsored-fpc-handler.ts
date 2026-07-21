@@ -3,19 +3,35 @@ import { ContractArtifact } from "@aztec/stdlib/abi";
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
 import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { Gas } from "@aztec/stdlib/gas";
+import { CHAIN_IDS } from "@/components/ui/utils";
 import { Action } from "@/wallet/services/execution/spec";
+import { IPXE } from "@/wallet/services/pxe/proxy";
 import { FpcInfo, FpcType } from "../spec";
-import { IFpcHandler, KnownFpc } from ".";
-
-export async function canonicalSponsoredFpc(): Promise<KnownFpc> {
-    const { address } = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
-        constructorArgs: [],
-        salt: Fr.zero(),
-    });
-    return { address, type: FpcType.DefaultSponsoredFpc };
-}
+import { CanonicalFpc, IFpcHandler } from ".";
 
 export class DefaultSponsoredFpcHandler implements IFpcHandler {
+    // Sponsored FPC is a test-network convenience — no free fee payments on mainnet,
+    // so it has no canonical instance there. Published on-chain: instance from the
+    // network, artifact by its class id.
+    public static async resolveCanonical(chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined> {
+        if (chainId === CHAIN_IDS.ALPHANET) {
+            return undefined;
+        }
+        const { address } = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
+            constructorArgs: [],
+            salt: Fr.zero(),
+        });
+        const contractInstance = await pxe.getContractInstance(address);
+        if (!contractInstance) {
+            return undefined;
+        }
+        const contractArtifact = await pxe.getContractArtifact(contractInstance.originalContractClassId);
+        if (!contractArtifact) {
+            return undefined;
+        }
+        return { address, type: FpcType.DefaultSponsoredFpc, contractInstance, contractArtifact };
+    }
+
     public async getAsset(): Promise<string | undefined> {
         return undefined;
     }
