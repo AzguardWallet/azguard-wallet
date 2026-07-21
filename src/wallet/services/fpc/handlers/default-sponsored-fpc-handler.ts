@@ -1,3 +1,4 @@
+import { SPONSORED_FPC_SALT } from "@aztec/constants";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact } from "@aztec/stdlib/abi";
 import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
@@ -19,7 +20,7 @@ export class DefaultSponsoredFpcHandler implements IFpcHandler {
         }
         const { address } = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
             constructorArgs: [],
-            salt: Fr.zero(),
+            salt: new Fr(SPONSORED_FPC_SALT),
         });
         const contractInstance = await pxe.getContractInstance(address);
         if (!contractInstance) {
@@ -29,7 +30,7 @@ export class DefaultSponsoredFpcHandler implements IFpcHandler {
         if (!contractArtifact) {
             return undefined;
         }
-        return { address, type: FpcType.DefaultSponsoredFpc, contractInstance, contractArtifact };
+        return { type: FpcType.DefaultSponsoredFpc, contractInstance, contractArtifact };
     }
 
     public async getAsset(): Promise<string | undefined> {

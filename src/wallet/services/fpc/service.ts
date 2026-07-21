@@ -62,7 +62,8 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
                 const canonicalFpcs = await resolveCanonicalFpcs(chainId, pxe);
                 const registeredContracts = await pxe.getContracts();
-                for (const { address, type, contractInstance, contractArtifact } of canonicalFpcs) {
+                for (const { type, contractInstance, contractArtifact } of canonicalFpcs) {
+                    const address = contractInstance.address;
                     this.logInfo(`Found FPC: ${address.toString()}`);
 
                     if (!registeredContracts.find(x => x.toString() === address.toString())) {

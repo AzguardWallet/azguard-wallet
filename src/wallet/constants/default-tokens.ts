@@ -1,8 +1,5 @@
 import { feeJuiceAddress, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
-import {
-    CANONICAL_PRIVATE_FPC_ADDRESS,
-    privateFpcTokenSymbol,
-} from "@/wallet/services/fpc/handlers/private-fpc-handler";
+import { CANONICAL_PRIVATE_FPC_ADDRESS, privateFpcTokenSymbol } from "@/wallet/utils/private-fpc";
 
 /**
  * Tokens auto-added to every new account. Single source of truth for defaults.

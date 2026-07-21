@@ -1,6 +1,5 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact } from "@aztec/stdlib/abi";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import type { ContractInstancePreimageWithAddress } from "@aztec/stdlib/contract";
 import { Gas } from "@aztec/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
@@ -13,7 +12,6 @@ import { AztecNode } from "@aztec/stdlib/interfaces/client";
 
 /** A canonical default FPC resolved on a concrete network, ready to register. */
 export type CanonicalFpc = {
-    address: AztecAddress;
     type: FpcType;
     contractInstance: ContractInstancePreimageWithAddress;
     contractArtifact: ContractArtifact;
@@ -22,17 +20,11 @@ export type CanonicalFpc = {
 /** Default FPCs to auto-add. Each handler's static `resolveCanonical(chainId, pxe)`
  * decides itself whether its FPC exists on the given chain and how to find it. */
 export async function resolveCanonicalFpcs(chainId: number, pxe: IPXE): Promise<CanonicalFpc[]> {
-    const candidates = [
-        await DefaultSponsoredFpcHandler.resolveCanonical(chainId, pxe),
-        await PrivateFpcHandler.resolveCanonical(chainId, pxe),
-    ];
-    const resolved: CanonicalFpc[] = [];
-    for (const candidate of candidates) {
-        if (candidate) {
-            resolved.push(candidate);
-        }
-    }
-    return resolved;
+    const candidates = await Promise.all([
+        DefaultSponsoredFpcHandler.resolveCanonical(chainId, pxe),
+        PrivateFpcHandler.resolveCanonical(chainId, pxe),
+    ]);
+    return candidates.filter(candidate => candidate !== undefined);
 }
 
 export interface IFpcHandler {

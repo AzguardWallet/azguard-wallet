@@ -14,11 +14,8 @@ import { EventHandler } from "@/wallet/utils/event-handler";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
 import { getDefaultTokens } from "@/wallet/constants/default-tokens";
 import { simulate, ViewFn } from "@/wallet/utils/fn";
-import {
-    isPrivateFpcArtifact,
-    privateFpcTokenName,
-    privateFpcTokenSymbol,
-} from "@/wallet/services/fpc/handlers/private-fpc-handler";
+import { privateFpcTokenName, privateFpcTokenSymbol } from "@/wallet/utils/private-fpc";
+import { isPrivateFpcArtifact } from "@/wallet/services/fpc/handlers/private-fpc-handler";
 import { FpcService } from "@/wallet/services/fpc/service";
 import { FpcInfo, FpcType } from "@/wallet/services/fpc/spec";
 import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
@@ -503,8 +500,10 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     };
 
     // A Private FPC charges in itself and exposes no metadata fns — without its token
-    // it is invisible in the fee picker. Add the token for every account on the chain
-    // as soon as the FPC appears (manual add or discovery); addToken dedups by presence.
+    // it is invisible in the fee picker. Add the token as soon as the FPC appears
+    // (manual add or discovery); tokens are profile-scoped, so one addToken suffices —
+    // the account only serves as the metadata-simulation context. Interim bridge until
+    // default FPCs are seeded at profile creation (see TODO in FpcService.getFpcs).
     private readonly onFpcAdded = async (fpc: FpcInfo) => {
         if (fpc.type !== FpcType.PrivateFpc || !fpc.asset) {
             return;
@@ -514,17 +513,13 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             const network = networks.find(x => x.isDefault) ?? networks[0];
             if (!network) return;
 
-            const accounts = await this.accounts.getAccounts(fpc.profileId, fpc.chainId);
-            for (const account of accounts) {
-                try {
-                    const ti = await this.parseTokenInterface(network.id, fpc.asset);
-                    await this.addToken(fpc.profileId, network.id, account.address, ti);
-                } catch (e) {
-                    this.logDebug(`Failed to auto-add Private FPC token ${fpc.asset}: ${e}`);
-                }
-            }
+            const [account] = await this.accounts.getAccounts(fpc.profileId, fpc.chainId);
+            if (!account) return;
+
+            const ti = await this.parseTokenInterface(network.id, fpc.asset);
+            await this.addToken(fpc.profileId, network.id, account.address, ti);
         } catch (e) {
-            this.logDebug(`Failed to auto-add Private FPC token: ${e}`);
+            this.logDebug(`Failed to auto-add Private FPC token ${fpc.asset}: ${e}`);
         }
     };
 
