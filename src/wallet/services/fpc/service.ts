@@ -1,6 +1,5 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { Fr } from "@aztec/foundation/curves/bn254";
-import { CHAIN_IDS } from "@/components/ui/utils";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -11,13 +10,19 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { Fpc } from "./fpc";
-import { getFpcHandler } from "./handlers";
+import { getFpcHandler, getKnownFpcs } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
-import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
-import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
+import {
+    getContractInstanceFromInstantiationParams,
+    type ContractInstancePreimageWithAddress,
+} from "@aztec/stdlib/contract";
+import type { ContractArtifact } from "@aztec/stdlib/abi";
+import type { IPXE } from "@/wallet/services/pxe/proxy";
 
 export * from "./fpc";
 export * from "./spec";
+
+type ResolvedFpc = { contractInstance: ContractInstancePreimageWithAddress; contractArtifact: ContractArtifact };
 
 export class FpcService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = FPC_SERVICE_NAME;
@@ -53,7 +58,8 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const result = (await this.storage.getValues()).filter(
             fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
         );
-        // TODO: remove it
+        // TODO: seed default FPCs on profile/account creation instead of this
+        // discover-when-empty block (profiles that already have FPCs never pick up new defaults)
         if (!result.length && chainId !== undefined) {
             this.logInfo("Discovering FPCs...");
             try {
@@ -63,24 +69,12 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 const node = await this.networkService.getNode(network.chainId);
                 const pxe = this.pxeService.getPXE(network);
 
-                const knownFpcs: { artifact: typeof SponsoredFPCContractArtifact; type: FpcType }[] = [];
-                // Sponsored FPC is a test-network convenience — no free fee
-                // payments on mainnet, so we do not auto-discover it there.
-                if (chainId !== CHAIN_IDS.ALPHANET) {
-                    knownFpcs.push({ artifact: SponsoredFPCContractArtifact, type: FpcType.DefaultSponsoredFpc });
-                }
-
+                const knownFpcs = await getKnownFpcs(chainId);
                 const registeredContracts = await pxe.getContracts();
-                for (const { artifact, type } of knownFpcs) {
-                    const { address } = await getContractInstanceFromInstantiationParams(artifact, {
-                        constructorArgs: [],
-                        salt: Fr.zero(),
-                    });
-
-                    const contractInstance = await pxe.getContractInstance(address);
-                    if (!contractInstance) continue;
-                    const contractArtifact = await pxe.getContractArtifact(contractInstance.originalContractClassId);
-                    if (!contractArtifact) continue;
+                for (const { address, type, classId } of knownFpcs) {
+                    const resolved = await this.resolveKnownFpc(pxe, address, classId);
+                    if (!resolved) continue;
+                    const { contractInstance, contractArtifact } = resolved;
 
                     this.logInfo(`Found FPC: ${address.toString()}`);
 
@@ -114,6 +108,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                         acceptsPublic,
                     };
                     await this.storage.set(id, fpc);
+                    this.emit("onFpcAdded", fpc);
                     result.push(fpc);
                 }
             } finally {
@@ -121,6 +116,52 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             }
         }
         return result;
+    }
+
+    /** Resolves a known FPC to its instance + artifact, or undefined if absent on this network. */
+    private async resolveKnownFpc(pxe: IPXE, address: AztecAddress, classId?: Fr): Promise<ResolvedFpc | undefined> {
+        const published = await pxe.getContractInstance(address);
+        if (published) {
+            return this.resolvePublishedFpc(pxe, published);
+        }
+        if (classId) {
+            return this.deriveUnpublishedFpc(pxe, address, classId);
+        }
+        return undefined;
+    }
+
+    /** The instance is published on-chain: fetch the artifact of whatever class it points to. */
+    private async resolvePublishedFpc(
+        pxe: IPXE,
+        contractInstance: ContractInstancePreimageWithAddress,
+    ): Promise<ResolvedFpc | undefined> {
+        const contractArtifact = await pxe.getContractArtifact(contractInstance.originalContractClassId);
+        if (!contractArtifact) {
+            return undefined;
+        }
+        return { contractInstance, contractArtifact };
+    }
+
+    /** The canonical instance is deployed unpublished: fetch the artifact by our pinned
+     * class id and derive the instance from it, verifying it lands on the pinned address. */
+    private async deriveUnpublishedFpc(
+        pxe: IPXE,
+        address: AztecAddress,
+        classId: Fr,
+    ): Promise<ResolvedFpc | undefined> {
+        const contractArtifact = await pxe.getContractArtifact(classId);
+        if (!contractArtifact) {
+            return undefined;
+        }
+        const contractInstance = await getContractInstanceFromInstantiationParams(contractArtifact, {
+            salt: Fr.zero(),
+            deployer: AztecAddress.ZERO,
+            skipArgsDecoding: true,
+        });
+        if (!contractInstance.address.equals(address)) {
+            return undefined;
+        }
+        return { contractInstance, contractArtifact };
     }
 
     public async getFpc(id: string): Promise<FpcInfo> {

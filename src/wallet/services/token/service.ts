@@ -19,6 +19,8 @@ import {
     privateFpcTokenName,
     privateFpcTokenSymbol,
 } from "@/wallet/services/fpc/handlers/private-fpc-handler";
+import { FpcService } from "@/wallet/services/fpc/service";
+import { FpcInfo, FpcType } from "@/wallet/services/fpc/spec";
 import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
 import {
     BalanceOfPrivateFn,
@@ -62,6 +64,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     private networks: NetworkService = null!;
     private accounts: AccountService = null!;
     private tasks: TaskService = null!;
+    private fpcs: FpcService = null!;
 
     public constructor(logger: ILogger) {
         super(TOKEN_SERVICE_NAME, logger);
@@ -73,8 +76,10 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         this.networks = services.get(NetworkService.name);
         this.accounts = services.get(AccountService.name);
         this.tasks = services.get(TaskService.name);
+        this.fpcs = services.get(FpcService.name);
         this.profiles.onProfileDeleted.add(this.onProfileDeleted);
         this.accounts.onAccountAdded.add(this.onAccountAdded);
+        this.fpcs.onFpcAdded.add(this.onFpcAdded);
     }
 
     public async getTokens(profileId?: string, chainId?: number): Promise<TokenInfo[]> {
@@ -476,8 +481,16 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             const network = networks.find(x => x.isDefault) ?? networks[0];
             if (!network) return;
 
+            const pxe = this.pxeService.getPXE(network);
             for (const { address } of getDefaultTokens(account.chainId)) {
                 try {
+                    // a default token may not exist on this network yet (e.g. the canonical
+                    // pFJ before FPC discovery) — skip quietly instead of failing a task
+                    const instance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(address));
+                    if (!instance) {
+                        this.logDebug(`Default token ${address} not resolvable on chain ${account.chainId}, skipping`);
+                        continue;
+                    }
                     const ti = await this.parseTokenInterface(network.id, address);
                     await this.addToken(account.profileId, network.id, account.address, ti);
                 } catch (e) {
@@ -486,6 +499,32 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             }
         } catch (e) {
             this.logDebug(`Failed to auto-add default tokens: ${e}`);
+        }
+    };
+
+    // A Private FPC charges in itself and exposes no metadata fns — without its token
+    // it is invisible in the fee picker. Add the token for every account on the chain
+    // as soon as the FPC appears (manual add or discovery); addToken dedups by presence.
+    private readonly onFpcAdded = async (fpc: FpcInfo) => {
+        if (fpc.type !== FpcType.PrivateFpc || !fpc.asset) {
+            return;
+        }
+        try {
+            const networks = await this.networks.getNetworks(fpc.chainId);
+            const network = networks.find(x => x.isDefault) ?? networks[0];
+            if (!network) return;
+
+            const accounts = await this.accounts.getAccounts(fpc.profileId, fpc.chainId);
+            for (const account of accounts) {
+                try {
+                    const ti = await this.parseTokenInterface(network.id, fpc.asset);
+                    await this.addToken(fpc.profileId, network.id, account.address, ti);
+                } catch (e) {
+                    this.logDebug(`Failed to auto-add Private FPC token ${fpc.asset}: ${e}`);
+                }
+            }
+        } catch (e) {
+            this.logDebug(`Failed to auto-add Private FPC token: ${e}`);
         }
     };
 

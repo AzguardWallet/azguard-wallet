@@ -1,8 +1,19 @@
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact } from "@aztec/stdlib/abi";
+import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
+import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { Gas } from "@aztec/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
-import { FpcInfo } from "../spec";
-import { IFpcHandler } from ".";
+import { FpcInfo, FpcType } from "../spec";
+import { IFpcHandler, KnownFpc } from ".";
+
+export async function canonicalSponsoredFpc(): Promise<KnownFpc> {
+    const { address } = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
+        constructorArgs: [],
+        salt: Fr.zero(),
+    });
+    return { address, type: FpcType.DefaultSponsoredFpc };
+}
 
 export class DefaultSponsoredFpcHandler implements IFpcHandler {
     public async getAsset(): Promise<string | undefined> {
