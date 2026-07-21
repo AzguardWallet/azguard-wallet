@@ -1,6 +1,7 @@
 import { Fr } from "@aztec/foundation/curves/bn254";
-import { ContractArtifact, FunctionAbi, FunctionType, StructType } from "@aztec/stdlib/abi";
+import { ContractArtifact, FunctionAbi, FunctionType } from "@aztec/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
+import { isFieldCompressedStringType } from "./abi-types";
 
 export enum GetSymbolImpl {
     DefaultPublic,
@@ -102,8 +103,7 @@ export class DefaultPublicGetSymbolFn extends GetSymbolFn {
                 fn.functionType === FunctionType.PUBLIC &&
                 fn.parameters.length === 0 &&
                 fn.returnTypes.length === 1 &&
-                (fn.returnTypes[0] as StructType)?.path ===
-                    "compressed_string::field_compressed_string::FieldCompressedString"
+                isFieldCompressedStringType(fn.returnTypes[0])
             ) {
                 res.push(new DefaultPublicGetSymbolFn(fn.name));
             }
@@ -150,8 +150,7 @@ export class DefaultPrivateGetSymbolFn extends GetSymbolFn {
                 fn.functionType === FunctionType.PRIVATE &&
                 fn.parameters.length === 0 &&
                 fn.returnTypes.length === 1 &&
-                (fn.returnTypes[0] as StructType)?.path ===
-                    "compressed_string::field_compressed_string::FieldCompressedString"
+                isFieldCompressedStringType(fn.returnTypes[0])
             ) {
                 res.push(new DefaultPrivateGetSymbolFn(fn.name));
             }
