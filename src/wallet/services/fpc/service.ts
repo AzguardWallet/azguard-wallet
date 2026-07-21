@@ -3,6 +3,7 @@ import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
+import { AccountService, Account } from "@/wallet/services/account/service";
 import { NetworkService } from "@/wallet/services/network/service";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
@@ -27,6 +28,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
     private pxeService: PxeServiceClient = null!;
     private profileService: ProfileService = null!;
+    private accountService: AccountService = null!;
     private networkService: NetworkService = null!;
 
     public constructor(logger: ILogger) {
@@ -36,8 +38,10 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
     protected async init(services: ServiceCollection) {
         this.pxeService = new PxeServiceClient(this.logger);
         this.profileService = services.get(ProfileService.name);
+        this.accountService = services.get(AccountService.name);
         this.networkService = services.get(NetworkService.name);
         this.profileService.onProfileDeleted.add(this.onProfileDeleted);
+        this.accountService.onAccountAdded.add(this.onAccountAdded);
     }
 
     public async getFpcs(chainId?: number): Promise<FpcInfo[]> {
@@ -46,64 +50,75 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         if (!profile) {
             throw new Error("Profile locked");
         }
-        const result = (await this.storage.getValues()).filter(
-            fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
-        );
-        // TODO: seed default FPCs on profile/account creation instead of this
-        // discover-when-empty block (profiles that already have FPCs never pick up new defaults)
+        const filter = (fpcs: FpcInfo[]) =>
+            fpcs.filter(fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId));
+        let result = filter(await this.storage.getValues());
+        // Default FPCs are seeded eagerly on account creation (onAccountAdded); this
+        // lazy pass only covers profiles whose accounts predate that seeding.
         if (!result.length && chainId !== undefined) {
-            this.logInfo("Discovering FPCs...");
-            try {
-                await this.lock.enter();
-                const networks = await this.networkService.getNetworks(chainId);
-                const network = networks.find(x => x.isDefault) ?? networks[0];
-                const node = await this.networkService.getNode(network.chainId);
-                const pxe = this.pxeService.getPXE(network);
-
-                const canonicalFpcs = await resolveCanonicalFpcs(chainId, pxe);
-                const registeredContracts = await pxe.getContracts();
-                for (const { type, contractInstance, contractArtifact } of canonicalFpcs) {
-                    const address = contractInstance.address;
-                    this.logInfo(`Found FPC: ${address.toString()}`);
-
-                    if (!registeredContracts.find(x => x.toString() === address.toString())) {
-                        await pxe.ensureContractRegistered({
-                            instance: contractInstance,
-                            artifact: contractArtifact,
-                        });
-                    }
-
-                    const fpcHandler = getFpcHandler(type);
-                    fpcHandler.validateArtifact(contractArtifact);
-
-                    const asset = await fpcHandler.getAsset(address.toString(), pxe, node);
-                    const acceptsPrivate = fpcHandler.acceptsPrivate();
-                    const acceptsPublic = fpcHandler.acceptsPublic();
-
-                    let id: string;
-                    do {
-                        id = getRandomHex(8);
-                    } while (await this.storage.contains(id));
-                    const fpc: FpcInfo = {
-                        id,
-                        profileId: profile.id,
-                        chainId,
-                        type,
-                        address: address.toString(),
-                        name: undefined,
-                        asset,
-                        acceptsPrivate,
-                        acceptsPublic,
-                    };
-                    await this.storage.set(id, fpc);
-                    this.emit("onFpcAdded", fpc);
-                    result.push(fpc);
-                }
-            } finally {
-                this.lock.leave();
-            }
+            await this.seedCanonicalFpcs(profile.id, chainId);
+            result = filter(await this.storage.getValues());
         }
         return result;
+    }
+
+    /** Discover the canonical default FPCs for a profile+chain and persist any not
+     * already stored. Idempotent (dedupes by address under the lock), best-effort
+     * (network/resolve failures are logged, never thrown — a flaky PXE must not break
+     * account creation or getFpcs). Emits onFpcAdded per newly seeded FPC. */
+    private async seedCanonicalFpcs(profileId: string, chainId: number): Promise<void> {
+        try {
+            await this.lock.enter();
+            const stored = (await this.storage.getValues()).filter(
+                fpc => fpc.profileId === profileId && fpc.chainId === chainId,
+            );
+            const networks = await this.networkService.getNetworks(chainId);
+            const network = networks.find(x => x.isDefault) ?? networks[0];
+            if (!network) return;
+            const node = await this.networkService.getNode(network.chainId);
+            const pxe = this.pxeService.getPXE(network);
+
+            const canonicalFpcs = await resolveCanonicalFpcs(chainId, pxe);
+            const registeredContracts = await pxe.getContracts();
+            for (const { type, contractInstance, contractArtifact } of canonicalFpcs) {
+                const address = contractInstance.address.toString();
+                if (stored.some(fpc => fpc.address === address)) continue;
+                this.logInfo(`Seeding default FPC: ${address}`);
+
+                if (!registeredContracts.find(x => x.toString() === address)) {
+                    await pxe.ensureContractRegistered({
+                        instance: contractInstance,
+                        artifact: contractArtifact,
+                    });
+                }
+
+                const fpcHandler = getFpcHandler(type);
+                fpcHandler.validateArtifact(contractArtifact);
+
+                const asset = await fpcHandler.getAsset(address, pxe, node);
+                let id: string;
+                do {
+                    id = getRandomHex(8);
+                } while (await this.storage.contains(id));
+                const fpc: FpcInfo = {
+                    id,
+                    profileId,
+                    chainId,
+                    type,
+                    address,
+                    name: undefined,
+                    asset,
+                    acceptsPrivate: fpcHandler.acceptsPrivate(),
+                    acceptsPublic: fpcHandler.acceptsPublic(),
+                };
+                await this.storage.set(id, fpc);
+                this.emit("onFpcAdded", fpc);
+            }
+        } catch (e) {
+            this.logError(`Failed to seed default FPCs for chain ${chainId}`, `${e}`);
+        } finally {
+            this.lock.leave();
+        }
     }
 
     public async getFpc(id: string): Promise<FpcInfo> {
@@ -238,6 +253,13 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         const fpcHandler = getFpcHandler(fpcInfo.type);
         return new Fpc(fpcInfo, fpcHandler);
     }
+
+    // Seed default FPCs the moment an account exists for a profile+chain — the natural
+    // point where both are known. seedCanonicalFpcs is idempotent, so a second account
+    // on the same profile+chain is a no-op.
+    private readonly onAccountAdded = async (account: Account) => {
+        await this.seedCanonicalFpcs(account.profileId, account.chainId);
+    };
 
     private readonly onProfileDeleted = async (profile: ProfileInfo) => {
         this.logDebug(`Profile ${profile.id} deleted, remove related FPCs`);

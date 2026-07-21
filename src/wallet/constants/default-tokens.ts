@@ -1,5 +1,4 @@
 import { feeJuiceAddress, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
-import { CANONICAL_PRIVATE_FPC_ADDRESS, privateFpcTokenSymbol } from "@/wallet/utils/private-fpc";
 
 /**
  * Tokens auto-added to every new account. Single source of truth for defaults.
@@ -10,15 +9,10 @@ import { CANONICAL_PRIVATE_FPC_ADDRESS, privateFpcTokenSymbol } from "@/wallet/u
  */
 export type DefaultToken = { label: string; address: string };
 
-// Added on every network — Fee Juice is a protocol constant, same address on all chains;
-// the canonical PrivateFPC charges in itself (pFJ) and its salt-0 address is chain-independent.
-// NOTE: auto-add succeeds only when the contract is resolvable at account-creation time —
-// for pFJ that means FPC discovery already registered it; the onFpcAdded hook in TokenService
-// covers accounts that exist before discovery runs.
-const ALL_CHAINS: DefaultToken[] = [
-    { label: feeJuiceSymbol, address: feeJuiceAddress },
-    { label: privateFpcTokenSymbol, address: CANONICAL_PRIVATE_FPC_ADDRESS },
-];
+// Added on every network — Fee Juice is a protocol constant, same address on all chains.
+// The canonical Private FPC's pFJ token is NOT here: it is seeded via TokenService's
+// onFpcAdded hook when FpcService seeds the FPC on account creation.
+const ALL_CHAINS: DefaultToken[] = [{ label: feeJuiceSymbol, address: feeJuiceAddress }];
 
 // Per-network extras, keyed by chainId.
 const BY_CHAIN: Record<number, DefaultToken[]> = {

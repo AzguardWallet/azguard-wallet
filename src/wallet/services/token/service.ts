@@ -478,16 +478,8 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             const network = networks.find(x => x.isDefault) ?? networks[0];
             if (!network) return;
 
-            const pxe = this.pxeService.getPXE(network);
             for (const { address } of getDefaultTokens(account.chainId)) {
                 try {
-                    // a default token may not exist on this network yet (e.g. the canonical
-                    // pFJ before FPC discovery) — skip quietly instead of failing a task
-                    const instance = await pxe.getContractInstance(AztecAddress.fromStringUnsafe(address));
-                    if (!instance) {
-                        this.logDebug(`Default token ${address} not resolvable on chain ${account.chainId}, skipping`);
-                        continue;
-                    }
                     const ti = await this.parseTokenInterface(network.id, address);
                     await this.addToken(account.profileId, network.id, account.address, ti);
                 } catch (e) {
