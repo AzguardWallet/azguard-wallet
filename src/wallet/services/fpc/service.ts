@@ -16,6 +16,10 @@ import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 export * from "./fpc";
 export * from "./spec";
 
+/** Records that default FPCs were seeded for a profile+chain, so seeding runs at most
+ * once — a user deletion is never undone by a later account. */
+type Provisioned = { profileId: string; chainId: number };
+
 export class FpcService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = FPC_SERVICE_NAME;
 
@@ -24,6 +28,9 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
     public readonly onFpcDeleted = new EventHandler<FpcInfo>();
 
     private readonly storage = new EntityStorage<FpcInfo>("azguard:core:fpcs", StorageType.Local);
+    // Per-profile+chain marker that default FPCs were seeded — makes seeding one-shot, so
+    // deletions stick and later accounts don't re-run it.
+    private readonly provisioned = new EntityStorage<Provisioned>("azguard:core:fpcs-provisioned", StorageType.Local);
     private readonly lock = new Lock();
 
     private pxeService: PxeServiceClient = null!;
@@ -50,39 +57,51 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         if (!profile) {
             throw new Error("Profile locked");
         }
-        const filter = (fpcs: FpcInfo[]) =>
-            fpcs.filter(fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId));
-        let result = filter(await this.storage.getValues());
-        // Default FPCs are seeded eagerly on account creation (onAccountAdded); this
-        // lazy pass only covers profiles whose accounts predate that seeding.
-        if (!result.length && chainId !== undefined) {
-            await this.seedCanonicalFpcs(profile.id, chainId);
-            result = filter(await this.storage.getValues());
-        }
-        return result;
+        return (await this.storage.getValues()).filter(
+            fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
+        );
     }
 
-    /** Discover the canonical default FPCs for a profile+chain and persist any not
-     * already stored. Idempotent (dedupes by address under the lock), best-effort
-     * (network/resolve failures are logged, never thrown — a flaky PXE must not break
-     * account creation or getFpcs). Emits onFpcAdded per newly seeded FPC. */
+    private provisionedKey(profileId: string, chainId: number): string {
+        return `${profileId}:${chainId}`;
+    }
+
+    /** A storage id not currently in use. Call sites hold the lock while persisting. */
+    private async newId(): Promise<string> {
+        let id: string;
+        do {
+            id = getRandomHex(8);
+        } while (await this.storage.contains(id));
+        return id;
+    }
+
+    /** Seed the canonical default FPCs for a profile+chain, exactly once (guarded by the
+     * `provisioned` marker) — so a user deletion is never undone by a later account.
+     * Sole trigger is account creation (onAccountAdded). Best-effort: network/resolve
+     * failures are logged, never thrown, and leave the marker unset so the next account
+     * retries. Emits onFpcAdded per newly seeded FPC. */
     private async seedCanonicalFpcs(profileId: string, chainId: number): Promise<void> {
+        const key = this.provisionedKey(profileId, chainId);
+        if (await this.provisioned.contains(key)) return;
         try {
             await this.lock.enter();
-            const stored = (await this.storage.getValues()).filter(
-                fpc => fpc.profileId === profileId && fpc.chainId === chainId,
-            );
-            const networks = await this.networkService.getNetworks(chainId);
-            const network = networks.find(x => x.isDefault) ?? networks[0];
-            if (!network) return;
-            const node = await this.networkService.getNode(network.chainId);
-            const pxe = this.pxeService.getPXE(network);
+            if (await this.provisioned.contains(key)) return; // lost the race while waiting
 
-            const canonicalFpcs = await resolveCanonicalFpcs(chainId, pxe);
+            const network = await this.networkService.getDefaultNetwork(chainId);
+            if (!network) return; // not ready — leave unprovisioned, retry on next account
+
+            const pxe = this.pxeService.getPXE(network);
+            const node = await this.networkService.getNode(network.chainId);
             const registeredContracts = await pxe.getContracts();
-            for (const { type, contractInstance, contractArtifact } of canonicalFpcs) {
+            const storedAddresses = new Set(
+                (await this.storage.getValues())
+                    .filter(fpc => fpc.profileId === profileId && fpc.chainId === chainId)
+                    .map(fpc => fpc.address),
+            );
+
+            for (const { type, contractInstance, contractArtifact } of await resolveCanonicalFpcs(chainId, pxe)) {
                 const address = contractInstance.address.toString();
-                if (stored.some(fpc => fpc.address === address)) continue;
+                if (storedAddresses.has(address)) continue;
                 this.logInfo(`Seeding default FPC: ${address}`);
 
                 if (!registeredContracts.find(x => x.toString() === address)) {
@@ -92,14 +111,10 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                     });
                 }
 
-                const fpcHandler = getFpcHandler(type);
-                fpcHandler.validateArtifact(contractArtifact);
-
-                const asset = await fpcHandler.getAsset(address, pxe, node);
-                let id: string;
-                do {
-                    id = getRandomHex(8);
-                } while (await this.storage.contains(id));
+                const handler = getFpcHandler(type);
+                handler.validateArtifact(contractArtifact);
+                const asset = await handler.getAsset(address, pxe, node);
+                const id = await this.newId();
                 const fpc: FpcInfo = {
                     id,
                     profileId,
@@ -108,12 +123,13 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                     address,
                     name: undefined,
                     asset,
-                    acceptsPrivate: fpcHandler.acceptsPrivate(),
-                    acceptsPublic: fpcHandler.acceptsPublic(),
+                    acceptsPrivate: handler.acceptsPrivate(),
+                    acceptsPublic: handler.acceptsPublic(),
                 };
                 await this.storage.set(id, fpc);
                 this.emit("onFpcAdded", fpc);
             }
+            await this.provisioned.set(key, { profileId, chainId });
         } catch (e) {
             this.logError(`Failed to seed default FPCs for chain ${chainId}`, `${e}`);
         } finally {
@@ -176,10 +192,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
         try {
             await this.lock.enter();
-            let id: string;
-            do {
-                id = getRandomHex(8);
-            } while (await this.storage.contains(id));
+            const id = await this.newId();
             const fpc: FpcInfo = {
                 id,
                 profileId: profile.id,
@@ -254,9 +267,8 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         return new Fpc(fpcInfo, fpcHandler);
     }
 
-    // Seed default FPCs the moment an account exists for a profile+chain — the natural
-    // point where both are known. seedCanonicalFpcs is idempotent, so a second account
-    // on the same profile+chain is a no-op.
+    // The one automatic seeding trigger: seed default FPCs the moment an account exists
+    // for a profile+chain. seedCanonicalFpcs is one-shot, so later accounts are no-ops.
     private readonly onAccountAdded = async (account: Account) => {
         await this.seedCanonicalFpcs(account.profileId, account.chainId);
     };
@@ -270,6 +282,11 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 this.logDebug(`Remove fpc #${fpc.id}`);
                 await this.storage.delete(fpc.id);
                 this.emit("onFpcDeleted", fpc);
+            }
+            for (const [key, record] of await this.provisioned.getAll()) {
+                if (record.profileId === profile.id) {
+                    await this.provisioned.delete(key);
+                }
             }
         } finally {
             this.lock.leave();

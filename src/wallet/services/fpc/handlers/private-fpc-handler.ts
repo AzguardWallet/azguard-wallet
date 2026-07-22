@@ -20,10 +20,10 @@ export function isPrivateFpcArtifact(artifact: ContractArtifact): boolean {
 }
 
 export class PrivateFpcHandler implements IFpcHandler {
-    // Available on every chain (the canonical address is chain-independent). Deployed
+    // Available on every chain (canonical address is chain-independent). Deployed
     // unpublished: fetch the artifact by the pinned class id (registry-backed fallback
     // in the PXE wrapper), derive the instance and verify it lands on the pinned address.
-    public static async resolveCanonical(_chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined> {
+    public async resolveCanonical(_chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined> {
         const address = AztecAddress.fromStringUnsafe(CANONICAL_PRIVATE_FPC_ADDRESS);
         const contractArtifact = await pxe.getContractArtifact(Fr.fromHexString(CANONICAL_PRIVATE_FPC_CLASS_ID));
         if (!contractArtifact) {

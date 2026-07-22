@@ -17,17 +17,19 @@ export type CanonicalFpc = {
     contractArtifact: ContractArtifact;
 };
 
-/** Default FPCs to auto-add. Each handler's static `resolveCanonical(chainId, pxe)`
- * decides itself whether its FPC exists on the given chain and how to find it. */
+/** Resolve the canonical default FPCs for a chain. Driving this off `getFpcHandler`
+ * keeps seeding and dispatch on one registry, and `IFpcHandler` forces every new
+ * handler to declare whether it has a canonical FPC (user-added types return undefined). */
 export async function resolveCanonicalFpcs(chainId: number, pxe: IPXE): Promise<CanonicalFpc[]> {
-    const candidates = await Promise.all([
-        DefaultSponsoredFpcHandler.resolveCanonical(chainId, pxe),
-        PrivateFpcHandler.resolveCanonical(chainId, pxe),
-    ]);
+    const handlers = [FpcType.DefaultFpc, FpcType.DefaultSponsoredFpc, FpcType.PrivateFpc].map(getFpcHandler);
+    const candidates = await Promise.all(handlers.map(handler => handler.resolveCanonical(chainId, pxe)));
     return candidates.filter(candidate => candidate !== undefined);
 }
 
 export interface IFpcHandler {
+    /** Fetch the instance + artifact of this handler's canonical default FPC (hits the
+     * PXE), or undefined if unavailable. User-added handlers always return undefined. */
+    resolveCanonical(chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined>;
     getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined>;
     acceptsPublic(): boolean | undefined;
     acceptsPrivate(): boolean | undefined;

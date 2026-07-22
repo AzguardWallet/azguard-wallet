@@ -118,6 +118,12 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
         );
     }
 
+    /** The chain's default network (falls back to the first one), or undefined if none. */
+    public async getDefaultNetwork(chainId?: number): Promise<Network | undefined> {
+        const networks = await this.getNetworks(chainId);
+        return networks.find(x => x.isDefault) ?? networks[0];
+    }
+
     public async getNetwork(id: string): Promise<Network> {
         await this.ensureInitialized();
         const profile = await this.profileService.getActiveProfile();

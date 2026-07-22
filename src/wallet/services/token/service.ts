@@ -492,21 +492,20 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     };
 
     // A Private FPC charges in itself and exposes no metadata fns — without its token
-    // it is invisible in the fee picker. Add the token as soon as the FPC appears
-    // (manual add or discovery); tokens are profile-scoped, so one addToken suffices —
-    // the account only serves as the metadata-simulation context. Interim bridge until
-    // default FPCs are seeded at profile creation (see TODO in FpcService.getFpcs).
+    // it is invisible in the fee picker. When such an FPC appears (manual add or
+    // seeding on account creation) register its asset as a token; tokens are
+    // profile-scoped, so one addToken suffices — the account only serves as the
+    // metadata-simulation context.
     private readonly onFpcAdded = async (fpc: FpcInfo) => {
         if (fpc.type !== FpcType.PrivateFpc || !fpc.asset) {
             return;
         }
         try {
-            const networks = await this.networks.getNetworks(fpc.chainId);
-            const network = networks.find(x => x.isDefault) ?? networks[0];
-            if (!network) return;
-
-            const [account] = await this.accounts.getAccounts(fpc.profileId, fpc.chainId);
-            if (!account) return;
+            const [network, [account]] = await Promise.all([
+                this.networks.getDefaultNetwork(fpc.chainId),
+                this.accounts.getAccounts(fpc.profileId, fpc.chainId),
+            ]);
+            if (!network || !account) return;
 
             const ti = await this.parseTokenInterface(network.id, fpc.asset);
             await this.addToken(fpc.profileId, network.id, account.address, ti);

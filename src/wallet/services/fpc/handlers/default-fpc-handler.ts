@@ -5,12 +5,17 @@ import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
 import { HashedValues, TxContext, TxExecutionRequest } from "@aztec/stdlib/tx";
 import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo, FpcType } from "../spec";
-import { IFpcHandler } from ".";
+import { CanonicalFpc, IFpcHandler } from ".";
 import { IPXE } from "../../pxe/proxy";
 import { AztecNode } from "@aztec/stdlib/interfaces/client";
 import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec/stdlib/gas";
 
 export class DefaultFpcHandler implements IFpcHandler {
+    // User-added FPCs have no canonical instance to seed.
+    public async resolveCanonical(_chainId: number, _pxe: IPXE): Promise<CanonicalFpc | undefined> {
+        return undefined;
+    }
+
     public async getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined> {
         const fnSelector = await FunctionSelector.fromSignature("get_accepted_asset()");
         const packedArgs = await HashedValues.fromArgs([]);
