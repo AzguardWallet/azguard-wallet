@@ -17,17 +17,12 @@ export type CanonicalFpc = {
     contractArtifact: ContractArtifact;
 };
 
-/** Every type whose handler may have a canonical default FPC to seed. Driving seeding
- * off this list + `getFpcHandler` keeps seeding and dispatch on one registry, and
- * `IFpcHandler` forces every new handler to declare whether it has a canonical FPC. */
+/** Types with a possible canonical default FPC — seeding and dispatch share one registry. */
 export const CANONICAL_FPC_TYPES = [FpcType.DefaultFpc, FpcType.DefaultSponsoredFpc, FpcType.PrivateFpc];
 
 export interface IFpcHandler {
-    /** Fetch the instance + artifact of this handler's canonical default FPC (hits the
-     * PXE). Returns undefined when there is no canonical by design (user-added types
-     * always, chain-specific opt-outs) — seeding marks the type as done. Throws when a
-     * canonical is expected but cannot be resolved — seeding leaves the type unmarked
-     * and retries on the next account. */
+    /** Canonical default FPC (hits the PXE). undefined = none by design (marks the type
+     * provisioned); throw = expected but unresolvable (unmarked, retried on next account). */
     resolveCanonical(chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined>;
     getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined>;
     acceptsPublic(): boolean | undefined;

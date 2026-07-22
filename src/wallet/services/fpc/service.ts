@@ -16,8 +16,7 @@ import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 export * from "./fpc";
 export * from "./spec";
 
-/** Records that default FPCs were seeded for a profile+chain, so seeding runs at most
- * once — a user deletion is never undone by a later account. */
+/** One-shot seeding marker per profile+chain+type: deletions stick, unresolved types retry. */
 type Provisioned = { profileId: string; chainId: number; type: FpcType };
 
 export class FpcService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
@@ -28,8 +27,6 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
     public readonly onFpcDeleted = new EventHandler<FpcInfo>();
 
     private readonly storage = new EntityStorage<FpcInfo>("azguard:core:fpcs", StorageType.Local);
-    // Per-profile+chain+type marker that a default FPC was seeded — makes seeding one-shot
-    // per FPC, so deletions stick while an unresolved FPC still retries on later accounts.
     private readonly provisioned = new EntityStorage<Provisioned>("azguard:core:fpcs-provisioned", StorageType.Local);
     private readonly lock = new Lock();
 
@@ -75,13 +72,9 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         return id;
     }
 
-    /** Seed the canonical default FPCs for a profile+chain, at most once per FPC type
-     * (guarded by the per-type `provisioned` marker) — so a user deletion is never undone
-     * by a later account, while a type that failed to resolve (resolveCanonical threw)
-     * stays unmarked and retries on the next account. resolveCanonical returning
-     * undefined means "no canonical by design" and marks the type as done. Sole trigger
-     * is account creation (onAccountAdded). Best-effort: failures are logged, never
-     * thrown. Emits onFpcAdded per newly seeded FPC. */
+    /** Seed the canonical default FPCs, at most once per type (`provisioned` marker):
+     * a user deletion is never undone, a type whose resolve threw stays unmarked and
+     * retries on the next onAccountAdded. Best-effort — logs, never throws. */
     private async seedCanonicalFpcs(profileId: string, chainId: number): Promise<void> {
         const pending: FpcType[] = [];
         for (const type of CANONICAL_FPC_TYPES) {
@@ -286,8 +279,7 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         return new Fpc(fpcInfo, fpcHandler);
     }
 
-    // The one automatic seeding trigger: seed default FPCs the moment an account exists
-    // for a profile+chain. seedCanonicalFpcs is one-shot, so later accounts are no-ops.
+    // The one automatic seeding trigger; seeding is one-shot per type, so repeats are no-ops.
     private readonly onAccountAdded = async (account: Account) => {
         await this.seedCanonicalFpcs(account.profileId, account.chainId);
     };

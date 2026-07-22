@@ -11,9 +11,7 @@ import { FpcInfo, FpcType } from "../spec";
 import { CanonicalFpc, IFpcHandler } from ".";
 
 export class DefaultSponsoredFpcHandler implements IFpcHandler {
-    // Sponsored FPC is a test-network convenience — no free fee payments on mainnet, so
-    // it has no canonical instance there. Address derived from a fixed salt; published
-    // on-chain, so instance comes from the network and artifact by its class id.
+    // Test-network convenience — no free fee payments on mainnet, so no canonical there.
     public async resolveCanonical(chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined> {
         if (chainId === CHAIN_IDS.ALPHANET) {
             return undefined;

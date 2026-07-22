@@ -10,8 +10,7 @@ import { feeJuiceAddress, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
 export type DefaultToken = { label: string; address: string };
 
 // Added on every network — Fee Juice is a protocol constant, same address on all chains.
-// The canonical Private FPC's pFJ token is NOT here: it is seeded via TokenService's
-// onFpcAdded hook when FpcService seeds the FPC on account creation.
+// pFJ is deliberately absent — seeded by TokenService.onFpcAdded alongside its FPC.
 const ALL_CHAINS: DefaultToken[] = [{ label: feeJuiceSymbol, address: feeJuiceAddress }];
 
 // Per-network extras, keyed by chainId.
