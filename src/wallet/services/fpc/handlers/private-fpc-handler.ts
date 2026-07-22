@@ -27,7 +27,7 @@ export class PrivateFpcHandler implements IFpcHandler {
         const address = AztecAddress.fromStringUnsafe(CANONICAL_PRIVATE_FPC_ADDRESS);
         const contractArtifact = await pxe.getContractArtifact(Fr.fromHexString(CANONICAL_PRIVATE_FPC_CLASS_ID));
         if (!contractArtifact) {
-            return undefined;
+            throw new Error(`PrivateFPC artifact not available (class ${CANONICAL_PRIVATE_FPC_CLASS_ID})`);
         }
         const contractInstance = await getContractInstanceFromInstantiationParams(contractArtifact, {
             salt: Fr.zero(),
@@ -35,7 +35,7 @@ export class PrivateFpcHandler implements IFpcHandler {
             skipArgsDecoding: true,
         });
         if (!contractInstance.address.equals(address)) {
-            return undefined;
+            throw new Error(`derived PrivateFPC address ${contractInstance.address} does not match the canonical pin`);
         }
         return { type: FpcType.PrivateFpc, contractInstance, contractArtifact };
     }

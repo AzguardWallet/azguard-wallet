@@ -10,7 +10,7 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { Fpc } from "./fpc";
-import { getFpcHandler, resolveCanonicalFpcs } from "./handlers";
+import { CANONICAL_FPC_TYPES, getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
 
 export * from "./fpc";
@@ -18,7 +18,7 @@ export * from "./spec";
 
 /** Records that default FPCs were seeded for a profile+chain, so seeding runs at most
  * once — a user deletion is never undone by a later account. */
-type Provisioned = { profileId: string; chainId: number };
+type Provisioned = { profileId: string; chainId: number; type: FpcType };
 
 export class FpcService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = FPC_SERVICE_NAME;
@@ -28,8 +28,8 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
     public readonly onFpcDeleted = new EventHandler<FpcInfo>();
 
     private readonly storage = new EntityStorage<FpcInfo>("azguard:core:fpcs", StorageType.Local);
-    // Per-profile+chain marker that default FPCs were seeded — makes seeding one-shot, so
-    // deletions stick and later accounts don't re-run it.
+    // Per-profile+chain+type marker that a default FPC was seeded — makes seeding one-shot
+    // per FPC, so deletions stick while an unresolved FPC still retries on later accounts.
     private readonly provisioned = new EntityStorage<Provisioned>("azguard:core:fpcs-provisioned", StorageType.Local);
     private readonly lock = new Lock();
 
@@ -62,8 +62,8 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         );
     }
 
-    private provisionedKey(profileId: string, chainId: number): string {
-        return `${profileId}:${chainId}`;
+    private provisionedKey(profileId: string, chainId: number, type: FpcType): string {
+        return `${profileId}:${chainId}:${type}`;
     }
 
     /** A storage id not currently in use. Call sites hold the lock while persisting. */
@@ -75,17 +75,23 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         return id;
     }
 
-    /** Seed the canonical default FPCs for a profile+chain, exactly once (guarded by the
-     * `provisioned` marker) — so a user deletion is never undone by a later account.
-     * Sole trigger is account creation (onAccountAdded). Best-effort: network/resolve
-     * failures are logged, never thrown, and leave the marker unset so the next account
-     * retries. Emits onFpcAdded per newly seeded FPC. */
+    /** Seed the canonical default FPCs for a profile+chain, at most once per FPC type
+     * (guarded by the per-type `provisioned` marker) — so a user deletion is never undone
+     * by a later account, while a type that failed to resolve (resolveCanonical threw)
+     * stays unmarked and retries on the next account. resolveCanonical returning
+     * undefined means "no canonical by design" and marks the type as done. Sole trigger
+     * is account creation (onAccountAdded). Best-effort: failures are logged, never
+     * thrown. Emits onFpcAdded per newly seeded FPC. */
     private async seedCanonicalFpcs(profileId: string, chainId: number): Promise<void> {
-        const key = this.provisionedKey(profileId, chainId);
-        if (await this.provisioned.contains(key)) return;
+        const pending: FpcType[] = [];
+        for (const type of CANONICAL_FPC_TYPES) {
+            if (!(await this.provisioned.contains(this.provisionedKey(profileId, chainId, type)))) {
+                pending.push(type);
+            }
+        }
+        if (!pending.length) return;
         try {
             await this.lock.enter();
-            if (await this.provisioned.contains(key)) return; // lost the race while waiting
 
             const network = await this.networkService.getDefaultNetwork(chainId);
             if (!network) return; // not ready — leave unprovisioned, retry on next account
@@ -99,38 +105,49 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                     .map(fpc => fpc.address),
             );
 
-            for (const { type, contractInstance, contractArtifact } of await resolveCanonicalFpcs(chainId, pxe)) {
-                const address = contractInstance.address.toString();
-                if (storedAddresses.has(address)) continue;
-                this.logInfo(`Seeding default FPC: ${address}`);
+            for (const type of pending) {
+                const key = this.provisionedKey(profileId, chainId, type);
+                if (await this.provisioned.contains(key)) continue; // lost the race while waiting
+                try {
+                    const handler = getFpcHandler(type);
+                    const canonical = await handler.resolveCanonical(chainId, pxe);
+                    if (canonical) {
+                        const { contractInstance, contractArtifact } = canonical;
+                        const address = contractInstance.address.toString();
+                        if (!storedAddresses.has(address)) {
+                            this.logInfo(`Seeding default FPC: ${address}`);
 
-                if (!registeredContracts.find(x => x.toString() === address)) {
-                    await pxe.ensureContractRegistered({
-                        instance: contractInstance,
-                        artifact: contractArtifact,
-                    });
+                            if (!registeredContracts.find(x => x.toString() === address)) {
+                                await pxe.ensureContractRegistered({
+                                    instance: contractInstance,
+                                    artifact: contractArtifact,
+                                });
+                            }
+
+                            handler.validateArtifact(contractArtifact);
+                            const asset = await handler.getAsset(address, pxe, node);
+                            const id = await this.newId();
+                            const fpc: FpcInfo = {
+                                id,
+                                profileId,
+                                chainId,
+                                type,
+                                source: "seeded",
+                                address,
+                                name: undefined,
+                                asset,
+                                acceptsPrivate: handler.acceptsPrivate(),
+                                acceptsPublic: handler.acceptsPublic(),
+                            };
+                            await this.storage.set(id, fpc);
+                            this.emit("onFpcAdded", fpc);
+                        }
+                    }
+                    await this.provisioned.set(key, { profileId, chainId, type });
+                } catch (e) {
+                    this.logError(`Failed to seed default FPC (type ${type}) for chain ${chainId}`, `${e}`);
                 }
-
-                const handler = getFpcHandler(type);
-                handler.validateArtifact(contractArtifact);
-                const asset = await handler.getAsset(address, pxe, node);
-                const id = await this.newId();
-                const fpc: FpcInfo = {
-                    id,
-                    profileId,
-                    chainId,
-                    type,
-                    source: "seeded",
-                    address,
-                    name: undefined,
-                    asset,
-                    acceptsPrivate: handler.acceptsPrivate(),
-                    acceptsPublic: handler.acceptsPublic(),
-                };
-                await this.storage.set(id, fpc);
-                this.emit("onFpcAdded", fpc);
             }
-            await this.provisioned.set(key, { profileId, chainId });
         } catch (e) {
             this.logError(`Failed to seed default FPCs for chain ${chainId}`, `${e}`);
         } finally {

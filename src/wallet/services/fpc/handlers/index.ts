@@ -17,18 +17,17 @@ export type CanonicalFpc = {
     contractArtifact: ContractArtifact;
 };
 
-/** Resolve the canonical default FPCs for a chain. Driving this off `getFpcHandler`
- * keeps seeding and dispatch on one registry, and `IFpcHandler` forces every new
- * handler to declare whether it has a canonical FPC (user-added types return undefined). */
-export async function resolveCanonicalFpcs(chainId: number, pxe: IPXE): Promise<CanonicalFpc[]> {
-    const handlers = [FpcType.DefaultFpc, FpcType.DefaultSponsoredFpc, FpcType.PrivateFpc].map(getFpcHandler);
-    const candidates = await Promise.all(handlers.map(handler => handler.resolveCanonical(chainId, pxe)));
-    return candidates.filter(candidate => candidate !== undefined);
-}
+/** Every type whose handler may have a canonical default FPC to seed. Driving seeding
+ * off this list + `getFpcHandler` keeps seeding and dispatch on one registry, and
+ * `IFpcHandler` forces every new handler to declare whether it has a canonical FPC. */
+export const CANONICAL_FPC_TYPES = [FpcType.DefaultFpc, FpcType.DefaultSponsoredFpc, FpcType.PrivateFpc];
 
 export interface IFpcHandler {
     /** Fetch the instance + artifact of this handler's canonical default FPC (hits the
-     * PXE), or undefined if unavailable. User-added handlers always return undefined. */
+     * PXE). Returns undefined when there is no canonical by design (user-added types
+     * always, chain-specific opt-outs) — seeding marks the type as done. Throws when a
+     * canonical is expected but cannot be resolved — seeding leaves the type unmarked
+     * and retries on the next account. */
     resolveCanonical(chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined>;
     getAsset(fpcAddress: string, pxe: IPXE, node: AztecNode): Promise<string | undefined>;
     acceptsPublic(): boolean | undefined;

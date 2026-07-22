@@ -24,11 +24,11 @@ export class DefaultSponsoredFpcHandler implements IFpcHandler {
         });
         const contractInstance = await pxe.getContractInstance(address);
         if (!contractInstance) {
-            return undefined;
+            throw new Error(`SponsoredFPC instance not found at ${address}`);
         }
         const contractArtifact = await pxe.getContractArtifact(contractInstance.originalContractClassId);
         if (!contractArtifact) {
-            return undefined;
+            throw new Error(`SponsoredFPC artifact not found (class ${contractInstance.originalContractClassId})`);
         }
         return { type: FpcType.DefaultSponsoredFpc, contractInstance, contractArtifact };
     }
