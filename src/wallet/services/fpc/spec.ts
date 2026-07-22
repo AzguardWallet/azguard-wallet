@@ -11,6 +11,8 @@ export type FpcInfo = {
     profileId: string;
     chainId: number;
     type: FpcType;
+    /** Who created the record; absent on records stored before this field = "user". */
+    source?: "seeded" | "user";
     address: string;
     name?: string;
     asset?: string;

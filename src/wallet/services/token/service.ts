@@ -492,12 +492,13 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     };
 
     // A Private FPC charges in itself and exposes no metadata fns — without its token
-    // it is invisible in the fee picker. When such an FPC appears (manual add or
-    // seeding on account creation) register its asset as a token; tokens are
-    // profile-scoped, so one addToken suffices — the account only serves as the
-    // metadata-simulation context.
+    // it is invisible in the fee picker. When seeding adds such an FPC, register its
+    // asset as a token; tokens are profile-scoped, so one addToken suffices — the
+    // account only serves as the metadata-simulation context. Seeded records only:
+    // manual adds are handled by the popup itself with user-entered name/symbol,
+    // and reacting here too would race it (fallback pFJ name wins over the user's).
     private readonly onFpcAdded = async (fpc: FpcInfo) => {
-        if (fpc.type !== FpcType.PrivateFpc || !fpc.asset) {
+        if (fpc.source !== "seeded" || fpc.type !== FpcType.PrivateFpc || !fpc.asset) {
             return;
         }
         try {
