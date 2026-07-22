@@ -1,10 +1,36 @@
+import { SPONSORED_FPC_SALT } from "@aztec/constants";
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact } from "@aztec/stdlib/abi";
+import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
+import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 import { Gas } from "@aztec/stdlib/gas";
+import { CHAIN_IDS } from "@/components/ui/utils";
 import { Action } from "@/wallet/services/execution/spec";
-import { FpcInfo } from "../spec";
-import { IFpcHandler } from ".";
+import { IPXE } from "@/wallet/services/pxe/proxy";
+import { FpcInfo, FpcType } from "../spec";
+import { CanonicalFpc, IFpcHandler } from ".";
 
 export class DefaultSponsoredFpcHandler implements IFpcHandler {
+    // Test-network convenience — no free fee payments on mainnet, so no canonical there.
+    public async resolveCanonical(chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined> {
+        if (chainId === CHAIN_IDS.ALPHANET) {
+            return undefined;
+        }
+        const { address } = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
+            constructorArgs: [],
+            salt: new Fr(SPONSORED_FPC_SALT),
+        });
+        const contractInstance = await pxe.getContractInstance(address);
+        if (!contractInstance) {
+            throw new Error(`SponsoredFPC instance not found at ${address}`);
+        }
+        const contractArtifact = await pxe.getContractArtifact(contractInstance.originalContractClassId);
+        if (!contractArtifact) {
+            throw new Error(`SponsoredFPC artifact not found (class ${contractInstance.originalContractClassId})`);
+        }
+        return { type: FpcType.DefaultSponsoredFpc, contractInstance, contractArtifact };
+    }
+
     public async getAsset(): Promise<string | undefined> {
         return undefined;
     }

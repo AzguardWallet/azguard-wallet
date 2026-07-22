@@ -1,23 +1,23 @@
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { CHAIN_IDS } from "@/components/ui/utils";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
+import { AccountService, Account } from "@/wallet/services/account/service";
 import { NetworkService } from "@/wallet/services/network/service";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { Fpc } from "./fpc";
-import { getFpcHandler } from "./handlers";
+import { CANONICAL_FPC_TYPES, getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
-import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
-import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
 
 export * from "./fpc";
 export * from "./spec";
+
+/** One-shot seeding marker per profile+chain+type: deletions stick, unresolved types retry. */
+type Provisioned = { profileId: string; chainId: number; type: FpcType };
 
 export class FpcService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = FPC_SERVICE_NAME;
@@ -27,10 +27,12 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
     public readonly onFpcDeleted = new EventHandler<FpcInfo>();
 
     private readonly storage = new EntityStorage<FpcInfo>("azguard:core:fpcs", StorageType.Local);
+    private readonly provisioned = new EntityStorage<Provisioned>("azguard:core:fpcs-provisioned", StorageType.Local);
     private readonly lock = new Lock();
 
     private pxeService: PxeServiceClient = null!;
     private profileService: ProfileService = null!;
+    private accountService: AccountService = null!;
     private networkService: NetworkService = null!;
 
     public constructor(logger: ILogger) {
@@ -40,8 +42,10 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
     protected async init(services: ServiceCollection) {
         this.pxeService = new PxeServiceClient(this.logger);
         this.profileService = services.get(ProfileService.name);
+        this.accountService = services.get(AccountService.name);
         this.networkService = services.get(NetworkService.name);
         this.profileService.onProfileDeleted.add(this.onProfileDeleted);
+        this.accountService.onAccountAdded.add(this.onAccountAdded);
     }
 
     public async getFpcs(chainId?: number): Promise<FpcInfo[]> {
@@ -50,77 +54,98 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         if (!profile) {
             throw new Error("Profile locked");
         }
-        const result = (await this.storage.getValues()).filter(
+        return (await this.storage.getValues()).filter(
             fpc => fpc.profileId === profile.id && (chainId === undefined || fpc.chainId === chainId),
         );
-        // TODO: remove it
-        if (!result.length && chainId !== undefined) {
-            this.logInfo("Discovering FPCs...");
-            try {
-                await this.lock.enter();
-                const networks = await this.networkService.getNetworks(chainId);
-                const network = networks.find(x => x.isDefault) ?? networks[0];
-                const node = await this.networkService.getNode(network.chainId);
-                const pxe = this.pxeService.getPXE(network);
+    }
 
-                const knownFpcs: { artifact: typeof SponsoredFPCContractArtifact; type: FpcType }[] = [];
-                // Sponsored FPC is a test-network convenience — no free fee
-                // payments on mainnet, so we do not auto-discover it there.
-                if (chainId !== CHAIN_IDS.ALPHANET) {
-                    knownFpcs.push({ artifact: SponsoredFPCContractArtifact, type: FpcType.DefaultSponsoredFpc });
-                }
+    private provisionedKey(profileId: string, chainId: number, type: FpcType): string {
+        return `${profileId}:${chainId}:${type}`;
+    }
 
-                const registeredContracts = await pxe.getContracts();
-                for (const { artifact, type } of knownFpcs) {
-                    const { address } = await getContractInstanceFromInstantiationParams(artifact, {
-                        constructorArgs: [],
-                        salt: Fr.zero(),
-                    });
+    /** A storage id not currently in use. Call sites hold the lock while persisting. */
+    private async newId(): Promise<string> {
+        let id: string;
+        do {
+            id = getRandomHex(8);
+        } while (await this.storage.contains(id));
+        return id;
+    }
 
-                    const contractInstance = await pxe.getContractInstance(address);
-                    if (!contractInstance) continue;
-                    const contractArtifact = await pxe.getContractArtifact(contractInstance.originalContractClassId);
-                    if (!contractArtifact) continue;
-
-                    this.logInfo(`Found FPC: ${address.toString()}`);
-
-                    if (!registeredContracts.find(x => x.toString() === address.toString())) {
-                        await pxe.ensureContractRegistered({
-                            instance: contractInstance,
-                            artifact: contractArtifact,
-                        });
-                    }
-
-                    const fpcHandler = getFpcHandler(type);
-                    fpcHandler.validateArtifact(contractArtifact);
-
-                    const asset = await fpcHandler.getAsset(address.toString(), pxe, node);
-                    const acceptsPrivate = fpcHandler.acceptsPrivate();
-                    const acceptsPublic = fpcHandler.acceptsPublic();
-
-                    let id: string;
-                    do {
-                        id = getRandomHex(8);
-                    } while (await this.storage.contains(id));
-                    const fpc: FpcInfo = {
-                        id,
-                        profileId: profile.id,
-                        chainId,
-                        type,
-                        address: address.toString(),
-                        name: undefined,
-                        asset,
-                        acceptsPrivate,
-                        acceptsPublic,
-                    };
-                    await this.storage.set(id, fpc);
-                    result.push(fpc);
-                }
-            } finally {
-                this.lock.leave();
+    /** Seed the canonical default FPCs, at most once per type (`provisioned` marker):
+     * a user deletion is never undone, a type whose resolve threw stays unmarked and
+     * retries on the next onAccountAdded. Best-effort — logs, never throws. */
+    private async seedCanonicalFpcs(profileId: string, chainId: number): Promise<void> {
+        const pending: FpcType[] = [];
+        for (const type of CANONICAL_FPC_TYPES) {
+            if (!(await this.provisioned.contains(this.provisionedKey(profileId, chainId, type)))) {
+                pending.push(type);
             }
         }
-        return result;
+        if (!pending.length) return;
+        try {
+            await this.lock.enter();
+
+            const network = await this.networkService.getDefaultNetwork(chainId);
+            if (!network) return; // not ready — leave unprovisioned, retry on next account
+
+            const pxe = this.pxeService.getPXE(network);
+            const node = await this.networkService.getNode(network.chainId);
+            const registeredContracts = await pxe.getContracts();
+            const storedAddresses = new Set(
+                (await this.storage.getValues())
+                    .filter(fpc => fpc.profileId === profileId && fpc.chainId === chainId)
+                    .map(fpc => fpc.address),
+            );
+
+            for (const type of pending) {
+                const key = this.provisionedKey(profileId, chainId, type);
+                if (await this.provisioned.contains(key)) continue; // lost the race while waiting
+                try {
+                    const handler = getFpcHandler(type);
+                    const canonical = await handler.resolveCanonical(chainId, pxe);
+                    if (canonical) {
+                        const { contractInstance, contractArtifact } = canonical;
+                        const address = contractInstance.address.toString();
+                        if (!storedAddresses.has(address)) {
+                            this.logInfo(`Seeding default FPC: ${address}`);
+
+                            if (!registeredContracts.find(x => x.toString() === address)) {
+                                await pxe.ensureContractRegistered({
+                                    instance: contractInstance,
+                                    artifact: contractArtifact,
+                                });
+                            }
+
+                            handler.validateArtifact(contractArtifact);
+                            const asset = await handler.getAsset(address, pxe, node);
+                            const id = await this.newId();
+                            const fpc: FpcInfo = {
+                                id,
+                                profileId,
+                                chainId,
+                                type,
+                                source: "seeded",
+                                address,
+                                name: undefined,
+                                asset,
+                                acceptsPrivate: handler.acceptsPrivate(),
+                                acceptsPublic: handler.acceptsPublic(),
+                            };
+                            await this.storage.set(id, fpc);
+                            this.emit("onFpcAdded", fpc);
+                        }
+                    }
+                    await this.provisioned.set(key, { profileId, chainId, type });
+                } catch (e) {
+                    this.logError(`Failed to seed default FPC (type ${type}) for chain ${chainId}`, `${e}`);
+                }
+            }
+        } catch (e) {
+            this.logError(`Failed to seed default FPCs for chain ${chainId}`, `${e}`);
+        } finally {
+            this.lock.leave();
+        }
     }
 
     public async getFpc(id: string): Promise<FpcInfo> {
@@ -178,15 +203,13 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
 
         try {
             await this.lock.enter();
-            let id: string;
-            do {
-                id = getRandomHex(8);
-            } while (await this.storage.contains(id));
+            const id = await this.newId();
             const fpc: FpcInfo = {
                 id,
                 profileId: profile.id,
                 chainId: network.chainId,
                 type,
+                source: "user",
                 address,
                 name,
                 asset,
@@ -256,6 +279,11 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         return new Fpc(fpcInfo, fpcHandler);
     }
 
+    // The one automatic seeding trigger; seeding is one-shot per type, so repeats are no-ops.
+    private readonly onAccountAdded = async (account: Account) => {
+        await this.seedCanonicalFpcs(account.profileId, account.chainId);
+    };
+
     private readonly onProfileDeleted = async (profile: ProfileInfo) => {
         this.logDebug(`Profile ${profile.id} deleted, remove related FPCs`);
         try {
@@ -265,6 +293,11 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
                 this.logDebug(`Remove fpc #${fpc.id}`);
                 await this.storage.delete(fpc.id);
                 this.emit("onFpcDeleted", fpc);
+            }
+            for (const [key, record] of await this.provisioned.getAll()) {
+                if (record.profileId === profile.id) {
+                    await this.provisioned.delete(key);
+                }
             }
         } finally {
             this.lock.leave();

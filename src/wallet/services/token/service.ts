@@ -14,11 +14,10 @@ import { EventHandler } from "@/wallet/utils/event-handler";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
 import { getDefaultTokens } from "@/wallet/constants/default-tokens";
 import { simulate, ViewFn } from "@/wallet/utils/fn";
-import {
-    isPrivateFpcArtifact,
-    privateFpcTokenName,
-    privateFpcTokenSymbol,
-} from "@/wallet/services/fpc/handlers/private-fpc-handler";
+import { privateFpcTokenName, privateFpcTokenSymbol } from "@/wallet/utils/private-fpc";
+import { isPrivateFpcArtifact } from "@/wallet/services/fpc/handlers/private-fpc-handler";
+import { FpcService } from "@/wallet/services/fpc/service";
+import { FpcInfo, FpcType } from "@/wallet/services/fpc/spec";
 import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
 import {
     BalanceOfPrivateFn,
@@ -62,6 +61,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     private networks: NetworkService = null!;
     private accounts: AccountService = null!;
     private tasks: TaskService = null!;
+    private fpcs: FpcService = null!;
 
     public constructor(logger: ILogger) {
         super(TOKEN_SERVICE_NAME, logger);
@@ -73,8 +73,10 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         this.networks = services.get(NetworkService.name);
         this.accounts = services.get(AccountService.name);
         this.tasks = services.get(TaskService.name);
+        this.fpcs = services.get(FpcService.name);
         this.profiles.onProfileDeleted.add(this.onProfileDeleted);
         this.accounts.onAccountAdded.add(this.onAccountAdded);
+        this.fpcs.onFpcAdded.add(this.onFpcAdded);
     }
 
     public async getTokens(profileId?: string, chainId?: number): Promise<TokenInfo[]> {
@@ -486,6 +488,27 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
             }
         } catch (e) {
             this.logDebug(`Failed to auto-add default tokens: ${e}`);
+        }
+    };
+
+    // A seeded Private FPC is invisible in the fee picker until its asset is a token.
+    // Seeded records only: manual adds register the token in the popup with user-entered
+    // name/symbol, and reacting here too would race that (fallback pFJ name would win).
+    private readonly onFpcAdded = async (fpc: FpcInfo) => {
+        if (fpc.source !== "seeded" || fpc.type !== FpcType.PrivateFpc || !fpc.asset) {
+            return;
+        }
+        try {
+            const [network, [account]] = await Promise.all([
+                this.networks.getDefaultNetwork(fpc.chainId),
+                this.accounts.getAccounts(fpc.profileId, fpc.chainId),
+            ]);
+            if (!network || !account) return;
+
+            const ti = await this.parseTokenInterface(network.id, fpc.asset);
+            await this.addToken(fpc.profileId, network.id, account.address, ti);
+        } catch (e) {
+            this.logDebug(`Failed to auto-add Private FPC token ${fpc.asset}: ${e}`);
         }
     };
 

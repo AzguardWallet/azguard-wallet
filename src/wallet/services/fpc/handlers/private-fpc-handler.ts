@@ -1,11 +1,13 @@
+import { Fr } from "@aztec/foundation/curves/bn254";
 import { ContractArtifact } from "@aztec/stdlib/abi";
+import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
 import { Gas } from "@aztec/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
-import { FpcInfo } from "../spec";
-import { IFpcHandler } from ".";
-
-export const privateFpcTokenName = "Private Fee Juice";
-export const privateFpcTokenSymbol = "pFJ";
+import { IPXE } from "@/wallet/services/pxe/proxy";
+import { CANONICAL_PRIVATE_FPC_ADDRESS, CANONICAL_PRIVATE_FPC_CLASS_ID } from "@/wallet/utils/private-fpc";
+import { FpcInfo, FpcType } from "../spec";
+import { CanonicalFpc, IFpcHandler } from ".";
 
 /** Shape check: `pay_fee()` (0 args/returns) + `balance_of(address)` — specific enough to not match real tokens. */
 export function isPrivateFpcArtifact(artifact: ContractArtifact): boolean {
@@ -18,6 +20,25 @@ export function isPrivateFpcArtifact(artifact: ContractArtifact): boolean {
 }
 
 export class PrivateFpcHandler implements IFpcHandler {
+    // Deployed unpublished — the node can't serve the instance, so derive it from the
+    // artifact (fetched by pinned class id) and verify it lands on the pinned address.
+    public async resolveCanonical(_chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined> {
+        const address = AztecAddress.fromStringUnsafe(CANONICAL_PRIVATE_FPC_ADDRESS);
+        const contractArtifact = await pxe.getContractArtifact(Fr.fromHexString(CANONICAL_PRIVATE_FPC_CLASS_ID));
+        if (!contractArtifact) {
+            throw new Error(`PrivateFPC artifact not available (class ${CANONICAL_PRIVATE_FPC_CLASS_ID})`);
+        }
+        const contractInstance = await getContractInstanceFromInstantiationParams(contractArtifact, {
+            salt: Fr.zero(),
+            deployer: AztecAddress.ZERO,
+            skipArgsDecoding: true,
+        });
+        if (!contractInstance.address.equals(address)) {
+            throw new Error(`derived PrivateFPC address ${contractInstance.address} does not match the canonical pin`);
+        }
+        return { type: FpcType.PrivateFpc, contractInstance, contractArtifact };
+    }
+
     public async getAsset(fpcAddress: string): Promise<string | undefined> {
         return fpcAddress;
     }
