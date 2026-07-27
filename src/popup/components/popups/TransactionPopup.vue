@@ -65,6 +65,11 @@ const txTime = computed(() => {
 	return DateTime.fromMillis(tx.value.updatedAt).toFormat("MMM dd, yyyy 'at' HH:mm")
 })
 
+/** Methods that debit the sender's private balance (legacy + explicit naming) */
+const FROM_PRIVATE_METHODS = ["transfer", "transfer_in_private", "transfer_to_public", "transfer_private_to_private", "transfer_private_to_public"]
+/** Methods that credit the recipient's private balance (legacy + explicit naming) */
+const TO_PRIVATE_METHODS = ["transfer", "transfer_in_private", "transfer_to_private", "transfer_private_to_private", "transfer_public_to_private"]
+
 const call = computed(() => tx.value.calls.at(1)?.method?.startsWith("mint") ? tx.value.calls[1] : tx.value.calls[0])
 const type = computed(() => {
 	if (call.value?.method?.startsWith("transfer")) return "transfer"
@@ -215,9 +220,9 @@ watch(
 						</Flex>
 
 						<Icon
-							:name="['transfer', 'transfer_to_public'].includes(call?.method) ? 'key-square' : 'face'"
+							:name="FROM_PRIVATE_METHODS.includes(call?.method) ? 'key-square' : 'face'"
 							size="16"
-							:color="['transfer', 'transfer_to_public'].includes(call?.method) ? 'green' : 'orange'"
+							:color="FROM_PRIVATE_METHODS.includes(call?.method) ? 'green' : 'orange'"
 						/>
 					</Flex>
 
@@ -228,9 +233,9 @@ watch(
 						</Flex>
 
 						<Icon
-							:name="['transfer', 'transfer_to_private'].includes(call?.method) ? 'key-square' : 'face'"
+							:name="TO_PRIVATE_METHODS.includes(call?.method) ? 'key-square' : 'face'"
 							size="16"
-							:color="['transfer', 'transfer_to_private'].includes(call?.method) ? 'green' : 'orange'"
+							:color="TO_PRIVATE_METHODS.includes(call?.method) ? 'green' : 'orange'"
 						/>
 					</Flex>
 				</Flex>
