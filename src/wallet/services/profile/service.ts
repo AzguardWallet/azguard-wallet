@@ -548,7 +548,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
             return;
         }
         const passhash = Buffer.from(session.passhash, "base64");
-        const key = await EncryptionKey.fromPasshash(passhash.buffer);
+        const key = await EncryptionKey.fromPasshash(passhash);
         const guard = await this.tryDecrypt(Buffer.from(profile.guard, "base64"), key);
         if (!guard || !array_equals(guard, ENCRYPTION_GUARD)) {
             this.logDebug("Session contains wrong credentials");

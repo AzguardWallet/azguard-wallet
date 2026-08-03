@@ -125,7 +125,7 @@ export type Methods = {
     getTokens(profileId?: string, chainId?: number): TokenInfo[];
 
     /**
-     * Returns a token with the specified id, or undefined if it doesn't exist.
+     * Returns a token with the specified id, or throws if it doesn't exist.
      * @param id Token id.
      */
     getToken(id: number): TokenInfo;

@@ -1,5 +1,5 @@
 import { ILogger, LogLevel } from "@/wallet/logger";
-import { sleep } from "@walletconnect/utils";
+import { sleep } from "@/wallet/utils/sleep";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import { EventsMap, MethodsMap, MethodsSpec, IService, EventsSpec, ServiceCollection } from "../.";

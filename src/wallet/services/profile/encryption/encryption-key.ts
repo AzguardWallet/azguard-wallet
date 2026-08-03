@@ -81,7 +81,7 @@ export class EncryptionKey {
      * @param passhash - Hash of the password
      * @returns New instance of EncryptionKey
      */
-    public static async fromPasshash(passhash: ArrayBuffer): Promise<EncryptionKey> {
+    public static async fromPasshash(passhash: BufferSource): Promise<EncryptionKey> {
         const baseKey = await self.crypto.subtle.importKey("raw", passhash, "PBKDF2", false, ["deriveKey"]);
         return new EncryptionKey(baseKey);
     }

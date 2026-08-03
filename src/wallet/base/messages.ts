@@ -6,7 +6,7 @@ import { EventsMap, MethodsMap } from ".";
  * IMPORTANT: Internal messages share chrome.runtime.onMessage with the Aztec Wallet SDK protocol.
  * The SDK filters messages by an `origin` field ('content-script' / 'background').
  * Internal messages must NEVER include an `origin` field to avoid leaking data to external SDK code.
- * See: services/aztec-sdk/service.ts, content-script/sdk-handler.ts
+ * See: services/aztec-sdk/service.ts, content-script/content.ts
  */
 export enum MessageType {
     Event = 1,

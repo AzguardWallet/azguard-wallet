@@ -48,9 +48,9 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
     public async createAccount(profileId: string, chainId: number, type: AccountType, name: string): Promise<Account> {
         await this.ensureInitialized();
         const accounts = (await this.storage.getValues()).filter(
-            x => x.profileId === profileId && x.chainId === chainId,
+            x => x.profileId === profileId && x.chainId === chainId && x.type === type,
         );
-        const index = accounts.length > 0 ? array_max(accounts.filter(x => x.type === type).map(x => +x.index)) + 1 : 0;
+        const index = accounts.length > 0 ? array_max(accounts.map(x => +x.index)) + 1 : 0;
         const secret = await this.deriveAccountSecret(profileId, chainId, type, index);
         let address: string;
         switch (type) {

@@ -198,7 +198,10 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         const task = parentTask.startSubtask(new StepContent(`Sync authwit #${authwit.id}`));
         try {
             const isConsumable = await isAuthwitConsumable(node, authwit.account, authwit.hash);
-            if (isConsumable) return;
+            if (isConsumable) {
+                task.complete();
+                return;
+            }
             try {
                 await this.lock.enter();
                 if (await this.authwits.get(`${authwit.id}`)) {
