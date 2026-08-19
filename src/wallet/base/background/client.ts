@@ -69,7 +69,7 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
     };
 
     private readonly onMessage = (message: ResponseMessage<TRequests> | EventMessage<TEvents>) => {
-        if ((message?.type !== MessageType.Response && message.type !== MessageType.Event) || !message.content) {
+        if ((message?.type !== MessageType.Response && message?.type !== MessageType.Event) || !message.content) {
             this.logWarn("Invalid message received", message);
             return;
         }
