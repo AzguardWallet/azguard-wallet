@@ -92,8 +92,21 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
                 },
             };
         }
-        this.send(response, client);
-        this.logDebug("Response sent", response);
+        try {
+            client.postMessage(response);
+            this.logDebug("Response sent", requestId);
+        } catch (error) {
+            if (!this.clients.includes(client)) {
+                return; // the client disconnected — nobody is waiting
+            }
+            const deliveryError = getErrorMessage(error);
+            this.logError("Failed to send response", requestId, deliveryError);
+            // the throw is per message and the port is alive, so this smaller answer goes through
+            this.send({
+                type: MessageType.Response,
+                content: { requestId, error: `Failed to deliver response: ${deliveryError}` },
+            }, client);
+        }
     };
 
     protected emit<T extends keyof TEvents>(event: T, payload: TEvents[T]) {
