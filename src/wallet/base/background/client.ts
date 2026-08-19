@@ -116,10 +116,11 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
                 params: jsonSanitize(wrapParams(params)),
             },
         };
+        // post first: a throwing postMessage must not leave an unsettleable pending entry
+        this.port!.postMessage(request);
         const promise = new Promise<ReturnType<TRequests[T]>>((resolve, reject) => {
             this.requests.set(request.content.requestId, [resolve, reject]);
         });
-        this.port!.postMessage(request);
         this.logDebug("Request sent", request);
         this.logDebug("Pending requests", this.requests.size);
         return promise;
