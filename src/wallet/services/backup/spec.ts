@@ -25,6 +25,7 @@ export const BACKUP_ERRORS = {
     outdated: "The backup is from an older wallet generation",
     noNetworks: "Unable to restore any networks, import aborted",
     profileExists: "Profile already exists, import aborted",
+    newer: "The backup was created by a newer wallet version",
     superseded: "The backup operation was superseded by a newer one",
     sessionOpen: "A profile session is open, import aborted",
 } as const;
