@@ -77,12 +77,6 @@ const initNetworks = async () => {
 
 	appStore.networks = await managers.network.getOrInitNetworks()
 
-	const activeNetworkResult = await chrome.storage.local.get("azguard:ui:activeNetwork")
-	if ("azguard:ui:activeNetwork" in activeNetworkResult) {
-		const localActiveNetworkId = activeNetworkResult["azguard:ui:activeNetwork"]
-		appStore.network = appStore.networks.find(n => n.id === localActiveNetworkId)
-	}
-
 	const key = `azguard:ui:lastActiveNetwork@${appStore.profile?.id}`
 	const lastActiveNetworkId = (await chrome.storage.local.get(key))[key]
 
