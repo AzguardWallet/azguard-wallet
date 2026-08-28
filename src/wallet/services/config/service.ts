@@ -42,7 +42,8 @@ export class ConfigService extends Service<Methods, Events> implements ServiceSp
 
     /**
      * Config is wallet-global, not per-profile. An imported file must never silently
-     * lower a privacy toggle (re-enabling outbound requests for every profile).
+     * lower a privacy toggle (re-enabling outbound requests for every profile), and the
+     * developer toggles describe this machine's session, not the profile in the file.
      */
     private static readonly nonRestorableKeys = new Set<string>([
         "stealthMode",
@@ -51,6 +52,9 @@ export class ConfigService extends Service<Methods, Events> implements ServiceSp
         "walletConnectEnabled",
         "uploadExternalImages",
         "externalLinks",
+        "developerMode",
+        "debugMode",
+        "indicateFailures",
     ] satisfies ConfigKey[]);
 
     public async restore(configProps: ConfigProp[]): Promise<Restored<ConfigProp>[]> {
