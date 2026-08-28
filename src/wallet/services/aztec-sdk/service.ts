@@ -19,6 +19,7 @@ import { DappSessionService, type DappSession } from "@/wallet/services/dapp-ses
 import { ProfileService } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getErrorMessage } from "@/wallet/utils/errors";
+import { migrateLegacyConnectedApps } from "./migration";
 import { AZTEC_SDK_SERVICE_NAME, CONNECTED_APPS_STORAGE_ROOT, getConnectedAppKey, type Methods, type Events } from "./spec";
 import { AppCapabilitiesSchema, type AppCapabilities, type WalletCapabilities } from "@aztec/aztec.js/wallet";
 import type { WalletResponse } from "@aztec/wallet-sdk/types";
@@ -97,6 +98,12 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
         this.dappInteractionService = services.get(DappInteractionService.name);
         this.dappSessionService = services.get(DappSessionService.name);
         this.profileService = services.get(ProfileService.name);
+
+        try {
+            await migrateLegacyConnectedApps((...args) => this.logInfo(...args));
+        } catch (error) {
+            this.logError("Legacy connected-app migration failed", getErrorMessage(error));
+        }
 
         // Clean up connected apps when their DappSession is deleted
         this.dappSessionService.onDappSessionDeleted.add(this.onDappSessionDeleted);
