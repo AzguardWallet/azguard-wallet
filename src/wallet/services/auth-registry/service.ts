@@ -257,8 +257,8 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
 
         const authwits: Authwit[] = [];
 
-        for (const n of networks) {
-            const accounts = await this.accountService.getAccounts(profile.id, n.chainId, true);
+        for (const chainId of new Set(networks.map(n => n.chainId))) {
+            const accounts = await this.accountService.getAccounts(profile.id, chainId, true);
             for (const acc of accounts) {
                 authwits.push(...(await this.getAuthwits(acc.address)));
             }
@@ -275,11 +275,18 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         try {
             await this.lock.enter();
 
-            let id = array_max((await this.authwits.getValues()).map(x => x.id)) + 1;
+            const existing = await this.authwits.getValues();
+            let id = array_max(existing.map(x => x.id)) + 1;
             for (const authwit of authwits) {
                 try {
-                    await this.authwits.set(`${id}`, {...authwit, id});
-                    result.push({ ...authwit, id });
+                    // NOTE: idempotent on (account, hash), same as trackAuthwit — a file may carry duplicated rows
+                    if (existing.some(x => x.account === authwit.account && x.hash === authwit.hash)) {
+                        continue;
+                    }
+                    const entry = { ...authwit, id };
+                    await this.authwits.set(`${id}`, entry);
+                    existing.push(entry);
+                    result.push(entry);
                     id++;
                 } catch (err) {
                     result.push({
