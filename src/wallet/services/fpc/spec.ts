@@ -20,6 +20,9 @@ export type FpcInfo = {
     acceptsPublic?: boolean;
 };
 
+/** One-shot seeding marker per profile+chain+type: deletions stick, unresolved types retry. */
+export type Provisioned = { profileId: string; chainId: number; type: FpcType };
+
 export type Methods = {
     /**
      * Returns a list of FPCs.

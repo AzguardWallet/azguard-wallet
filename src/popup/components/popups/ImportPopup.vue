@@ -550,7 +550,9 @@ async function handleRestoreBackup() {
 			const serviceName = getServiceName(s.name)
 			const data = backup.data[serviceName]
 			if (Array.isArray(data)) {
-				const restoredData = serviceName === "account-state" ? await s.restore(data, createdNetworks) : await s.restore(data)
+				const restoredData = serviceName === "account-state" || serviceName === "fpc"
+					? await s.restore(data, createdNetworks)
+					: await s.restore(data)
 				s.disconnect()
 				processRestoredData(serviceName, restoredData)
 			}

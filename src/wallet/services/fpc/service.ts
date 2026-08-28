@@ -4,7 +4,7 @@ import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { AccountService, Account } from "@/wallet/services/account/service";
-import { NetworkService } from "@/wallet/services/network/service";
+import { Network, NetworkService } from "@/wallet/services/network/service";
 import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
@@ -12,13 +12,10 @@ import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Fpc } from "./fpc";
 import { CANONICAL_FPC_TYPES, getFpcHandler } from "./handlers";
-import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
+import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods, Provisioned } from "./spec";
 
 export * from "./fpc";
 export * from "./spec";
-
-/** One-shot seeding marker per profile+chain+type: deletions stick, unresolved types retry. */
-type Provisioned = { profileId: string; chainId: number; type: FpcType };
 
 export class FpcService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = FPC_SERVICE_NAME;
@@ -313,12 +310,21 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
         return (await this.getFpcs());
     }
 
-    public async restore(fpcs: FpcInfo[]): Promise<Restored<FpcInfo>[]> {
+    public async restore(fpcs: FpcInfo[], networks: Network[]): Promise<Restored<FpcInfo>[]> {
         await this.ensureInitialized();
 
         const result: Restored<FpcInfo>[] = [];
         try {
             await this.lock.enter();
+
+            // NOTE: every restored chain counts as provisioned for every type — the file
+            // holds the FPC set the user kept, so a restore never reseeds deleted defaults
+            for (const network of networks) {
+                for (const type of CANONICAL_FPC_TYPES) {
+                    const p = { profileId: network.profileId, chainId: network.chainId, type };
+                    await this.provisioned.set(this.provisionedKey(p.profileId, p.chainId, p.type), p);
+                }
+            }
 
             for (const fpc of fpcs) {
                 try {
