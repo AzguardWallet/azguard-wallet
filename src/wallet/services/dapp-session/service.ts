@@ -12,6 +12,7 @@ import {
     type DappPermissions,
     type DappSession,
     AccessLevel,
+    DAPP_SESSIONS_STORAGE_ROOT,
     Methods,
     Events,
 } from "./spec";
@@ -25,7 +26,7 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
     public readonly onDappSessionUpdated = new EventHandler<DappSession>();
     public readonly onDappSessionDeleted = new EventHandler<DappSession>();
 
-    private readonly storage = new EntityStorage<DappSession>("azguard:core:dappSessions", StorageType.Local);
+    private readonly storage = new EntityStorage<DappSession>(DAPP_SESSIONS_STORAGE_ROOT, StorageType.Local);
     private readonly lock = new Lock();
 
     private profileService: ProfileService = null!;

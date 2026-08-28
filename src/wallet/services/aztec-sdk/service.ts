@@ -18,7 +18,7 @@ import {
 import { DappSessionService, type DappSession } from "@/wallet/services/dapp-session/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getErrorMessage } from "@/wallet/utils/errors";
-import { AZTEC_SDK_SERVICE_NAME, type Methods, type Events } from "./spec";
+import { AZTEC_SDK_SERVICE_NAME, CONNECTED_APPS_STORAGE_ROOT, type Methods, type Events } from "./spec";
 import { AppCapabilitiesSchema, type AppCapabilities, type WalletCapabilities } from "@aztec/aztec.js/wallet";
 import type { WalletResponse } from "@aztec/wallet-sdk/types";
 import type { OperationResult } from "@/wallet/services/execution/models";
@@ -82,7 +82,7 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
 
     /** Tracks SDK-connected apps for session reuse and cleanup */
     private readonly connectedApps = new EntityStorage<ConnectedApp>(
-        "azguard:core:aztecSdkConnectedApps",
+        CONNECTED_APPS_STORAGE_ROOT,
         StorageType.Local,
     );
 

@@ -18,7 +18,7 @@ import { privateFpcTokenName, privateFpcTokenSymbol } from "@/wallet/utils/priva
 import { isPrivateFpcArtifact } from "@/wallet/services/fpc/handlers/private-fpc-handler";
 import { FpcService } from "@/wallet/services/fpc/service";
 import { FpcInfo, FpcType } from "@/wallet/services/fpc/spec";
-import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
+import { Token, TokenInfo, TOKEN_SERVICE_NAME, TOKENS_STORAGE_ROOT, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
 import {
     BalanceOfPrivateFn,
     BalanceOfPublicFn,
@@ -53,7 +53,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     public readonly onTokenUpdated = new EventHandler<TokenInfo>();
     public readonly onTokenDeleted = new EventHandler<TokenInfo>();
 
-    private readonly tokens = new EntityStorage<Token>("azguard:core:tokens", StorageType.Local);
+    private readonly tokens = new EntityStorage<Token>(TOKENS_STORAGE_ROOT, StorageType.Local);
     private readonly lock = new Lock();
 
     private pxeService: PxeServiceClient = null!;

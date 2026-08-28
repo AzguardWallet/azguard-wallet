@@ -2,6 +2,9 @@ import { FnImpl } from "@/wallet/utils/fn";
 
 export const TOKEN_SERVICE_NAME = "token";
 
+/** Raw storage root of the tokens table. */
+export const TOKENS_STORAGE_ROOT = "azguard:core:tokens";
+
 export type Token = {
     id: number;
     profileId: string;

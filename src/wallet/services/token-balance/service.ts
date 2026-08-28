@@ -17,7 +17,7 @@ import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/servic
 import { isLocalTx, OriginType, TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
 import type { ViewFn } from "@/wallet/utils/fn";
 import { getErrorMessage } from "@/wallet/utils/errors";
-import { TOKEN_BALANCE_SERVICE_NAME, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec";
+import { TOKEN_BALANCE_SERVICE_NAME, TOKEN_BALANCES_STORAGE_ROOT, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec";
 
 export * from "./spec";
 
@@ -28,7 +28,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     public readonly onTokenBalanceUpdated = new EventHandler<TokenBalanceInfo>();
     public readonly onTokenBalanceDeleted = new EventHandler<TokenBalanceInfo>();
 
-    private readonly balances = new EntityStorage<TokenBalanceRaw>("azguard:core:token-balances", StorageType.Local);
+    private readonly balances = new EntityStorage<TokenBalanceRaw>(TOKEN_BALANCES_STORAGE_ROOT, StorageType.Local);
     private readonly queue = new Queue<number, TokenBalanceRaw>(x => x.id);
     private readonly pendingTasks = new Map<number, string>();
     private readonly tokens = new Map<number, Token>();

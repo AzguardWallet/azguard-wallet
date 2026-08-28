@@ -18,6 +18,7 @@ import {
     isCurrentGeneration,
     ProfileInfo,
     ProfileOrigin,
+    PROFILES_STORAGE_ROOT,
     Profile,
     Session,
     ActiveSession,
@@ -45,7 +46,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
     public constructor(config: IConfig, logger: ILogger) {
         super(PROFILE_SERVICE_NAME, logger);
-        this.profiles = new EntityStorage("azguard:core:profiles", StorageType.Local);
+        this.profiles = new EntityStorage(PROFILES_STORAGE_ROOT, StorageType.Local);
         this.session = new ValueStorage("azguard:core:session", StorageType.Session);
         this.sessionTtl = config.get("sessionTtl");
         config.onUpdate.add(this.onConfigUpdated);
