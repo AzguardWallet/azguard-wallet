@@ -98,14 +98,6 @@ onBeforeUnmount(() => {
 						iconBgColor="blue"
 						chevron
 					/>
-					<!-- <SettingItem
-						@click="popupStore.open('select_profile')"
-						size="small"
-						title="Switch profile"
-						icon="switch"
-						iconBgColor="transparent"
-						:disabled="appStore.profiles.length === 1"
-					/> -->
 					<SettingItem
 						@click="handleNavigation('/popup/settings/general/contacts')"
 						title="Contacts"

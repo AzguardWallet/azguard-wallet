@@ -1,7 +1,14 @@
 import { ServiceSpec } from "@/wallet/base";
 import { ServiceClient } from "@/wallet/base/background";
 import { LoggerServiceClient } from "@/wallet/services/logger/client";
-import { BACKUP_SERVICE_NAME, Events, Methods, StartedExport } from "./spec";
+import {
+    BACKUP_SERVICE_NAME,
+    BackupInspection,
+    Events,
+    ImportReport,
+    Methods,
+    StartedExport,
+} from "./spec";
 import { IncomingFile, OutgoingFile } from "./transfer";
 
 export * from "./spec";
@@ -23,6 +30,44 @@ export class BackupServiceClient
 
     public finishExport(op: number): Promise<void> {
         return this.request("finishExport", op);
+    }
+
+    public beginImport(chunks: number): Promise<number> {
+        return this.request("beginImport", chunks);
+    }
+
+    public putImportChunk(op: number, index: number, data: string): Promise<void> {
+        return this.request("putImportChunk", op, index, data);
+    }
+
+    public inspectImport(op: number): Promise<BackupInspection> {
+        return this.request("inspectImport", op);
+    }
+
+    public abortImport(op: number): Promise<void> {
+        return this.request("abortImport", op);
+    }
+
+    public decryptImport(op: number, password: string): Promise<BackupInspection> {
+        return this.request("decryptImport", op, password);
+    }
+
+    public finishImport(op: number, password?: string): Promise<ImportReport> {
+        return this.request("finishImport", op, password);
+    }
+
+    /**
+     * Sends a backup file into the service: begin, then every chunk in order. Returns
+     * the job's op ticket and deliberately does not finish it — the file stays with the
+     * job for inspectImport and finishImport, and finishImport is what drops it.
+     */
+    public async sendImport(file: string): Promise<number> {
+        const outgoing = new OutgoingFile(file);
+        const op = await this.beginImport(outgoing.count);
+        for (let i = 0; i < outgoing.count; i++) {
+            await this.putImportChunk(op, i, outgoing.getChunk(i));
+        }
+        return op;
     }
 
     /** Fetches the whole export across the port: begin, every chunk in order, finish. */
