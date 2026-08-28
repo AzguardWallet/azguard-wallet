@@ -1,5 +1,5 @@
 // copied from @aztec/foundation/json-rpc
-export function jsonStringify(obj: any): string {
+export function jsonStringify(obj: any, space?: number): string {
     return JSON.stringify(obj, (_key, value) => {
         if (typeof value === "bigint") {
             return value.toString();
@@ -14,7 +14,7 @@ export function jsonStringify(obj: any): string {
         } else {
             return value;
         }
-    });
+    }, space);
 }
 
 export function jsonSanitize(obj: any): any {

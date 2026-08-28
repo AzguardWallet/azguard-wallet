@@ -18,8 +18,13 @@ import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
-import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key"
-import { isCurrentGeneration } from "@/wallet/services/profile/spec"
+import { BACKUP_ERRORS } from "@/wallet/services/backup/spec"
+import {
+	decryptBackupText,
+	detectBackupType,
+	parseBackupFile,
+	validateBackup,
+} from "@/wallet/services/backup/format"
 
 /** Utils */
 import { pickFile } from "@/utils"
@@ -279,7 +284,7 @@ async function processBackupFile(file) {
 	const type = detectBackupType(text)
 	if (type === "plain") {
 		try {
-			backup = JSON.parse(text)
+			backup = parseBackupFile(text)
 			profileType = backup?.data?.profile?.type || null
 		} catch (err) {
 			fillError(
@@ -299,36 +304,12 @@ async function processBackupFile(file) {
 		profileType,
 	}
 }
-function detectBackupType(text) {
-    const trimmed = text.trim()
-
-    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-        return "plain"
-    }
-
-    try {
-        // 13 bytes decide the type — decoding the whole base64 of a 100MB+ encrypted
-        // backup (per-char callback over the full string) freezes the renderer
-        const bin = atob(trimmed.slice(0, 32))
-        if (bin.length >= 13 && bin.charCodeAt(0) === 0) {
-            return "encrypted"
-        }
-    } catch (err) {
-        return "unknown"
-    }
-
-    return "unknown"
-}
 async function handleDecryptBackup() {
 	if (!decryptionPassword.value) return
 
 	try {
-		const passhash = await EncryptionKey.getPasshash(decryptionPassword.value)
-		const key = await EncryptionKey.fromPasshash(passhash)
-		const encryptedBytes = new Uint8Array(Buffer.from(selectedBackup.value?.backup, "base64"))
-		const decryptedBytes = await key.decrypt(encryptedBytes)
-		const decodedJson = new TextDecoder().decode(decryptedBytes)
-		const backupObject = JSON.parse(decodedJson)
+		const decodedJson = await decryptBackupText(selectedBackup.value?.backup, decryptionPassword.value)
+		const backupObject = parseBackupFile(decodedJson)
 
 		selectedBackup.value = {
 			...selectedBackup.value,
@@ -392,40 +373,13 @@ async function handleRestoreBackup() {
 
 	fillError()
 	restoreStatus.value = "progress"
-	const { checksum, ...backup } = selectedBackup.value.backup
-	const comparisonChecksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
-	
-	if (checksum !== comparisonChecksum) {
-		restoreStatus.value = "failed"
-		fillError(
-			"full_backup",
-			"Backup Integrity Check Failed",
-			"The backup file appears to be corrupted or has been tampered with. Please ensure you have the correct backup file.",
-		)
-		return
-	}
-
-	// Profiles are only usable within their sentinel generation; a cross-generation
-	// restore would silently produce a broken profile, so refuse it upfront.
-	const origin = backup?.data?.profile?.origin
-	if (!isCurrentGeneration(origin)) {
-		restoreStatus.value = "failed"
-		fillError(
-			"full_backup",
-			origin ? "Incompatible Backup" : "Outdated Backup",
-			origin
-				? "The profile in this backup belongs to a different Aztec network generation and can't be restored into this wallet version."
-				: "This backup is from an older wallet generation and can't be restored into this wallet version.",
-		)
-		return
-	}
 
 	try {
 		restoreErrorLog.value = {}
-		const masterKey = backup["master-key"]
-		
+		const backup = await validateBackup(selectedBackup.value.backup)
+		const { profile, masterKey } = backup
+
 		const profileService = new ProfileServiceClient()
-		const profile = backup?.data?.profile
 		const newProfile = await profileService.restore(profile, masterKey, password.value)
 		profileService.disconnect()
 		
@@ -573,9 +527,33 @@ async function handleRestoreBackup() {
 		// so a blind retry against the same file must stay disabled
 		restoreStatus.value = "failed"
 
-		fillError("full_backup", "Import failed", err)
-		console.error(err.message || err);
-		
+		switch (err?.message) {
+			case BACKUP_ERRORS.integrity:
+				fillError(
+					"full_backup",
+					"Backup Integrity Check Failed",
+					"The backup file appears to be corrupted or has been tampered with. Please ensure you have the correct backup file.",
+				)
+				break
+			case BACKUP_ERRORS.incompatible:
+				fillError(
+					"full_backup",
+					"Incompatible Backup",
+					"The profile in this backup belongs to a different Aztec network generation and can't be restored into this wallet version.",
+				)
+				break
+			case BACKUP_ERRORS.outdated:
+				fillError(
+					"full_backup",
+					"Outdated Backup",
+					"This backup is from an older wallet generation and can't be restored into this wallet version.",
+				)
+				break
+			default:
+				fillError("full_backup", "Import failed", err?.message ?? err)
+				console.error(err?.message ?? err);
+		}
+
 		return
 	}
 }

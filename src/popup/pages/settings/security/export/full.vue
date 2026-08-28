@@ -26,7 +26,7 @@ import { ProfileServiceClient } from "@/wallet/services/profile/client"
 import { TokenServiceClient } from "@/wallet/services/token/client"
 import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
 import { TransactionServiceClient } from "@/wallet/services/transaction/client"
-import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key"
+import { encryptBackupText, serializeBackup } from "@/wallet/services/backup/format"
 
 /** Utils */
 import { downloadFile } from "@/utils"
@@ -56,7 +56,11 @@ const handleContinueReset = () => {
 	popupStore.open("reset")
 }
 
-let backup = {}
+// the export as file text: the pretty-printed JSON, or the encrypted container over
+// its compact form
+let backup = ""
+let masterKey = ""
+let backupData = {}
 const backupServices = [
 	new ProfileServiceClient(),
 	new NetworkServiceClient(),
@@ -70,9 +74,6 @@ const backupServices = [
 	new ContactServiceClient(),
 	new ConfigServiceClient(),
 ]
-const version = __VERSION__
-const aztecVersion = __AZTEC_VERSION__
-
 const isPasskeyProfile = computed(() => appStore.profile.type === "passkey")
 const password = ref()
 const repeatedPassword = ref()
@@ -110,12 +111,8 @@ async function handleBackup() {
 	}
 	
 	backupStatus.value = "progress"
-	backup = {
-		"wallet-version": version,
-		"aztec-version": aztecVersion,
-		"master-key": key,
-		data: {},
-	}
+	masterKey = key
+	backupData = {}
 
 	try {
 		for (const s of backupServices) {
@@ -123,11 +120,10 @@ async function handleBackup() {
 
 			if (data === null || data === undefined) continue;
 
-			backup.data[s.name?.replace("-client", "")] = data
+			backupData[s.name?.replace("-client", "")] = data
 		}
 
-		const checksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
-		backup.checksum = checksum
+		backup = await serializeBackup(masterKey, backupData, 2)
 	} catch (error) {
 		console.error("Failed to create the backup", error)
 		openToast({ label: "Failed to create the backup", icon: "warning" }, 2000)
@@ -155,9 +151,7 @@ async function handleEncrypt() {
 	showRecommendation.value = false
 
 	try {
-		const passhash = await EncryptionKey.getPasshash(password.value)
-		const key = await EncryptionKey.fromPasshash(passhash)
-		backup = Buffer(await key.encrypt(new TextEncoder().encode(JSON.stringify(backup)))).toString("base64")
+		backup = await encryptBackupText(await serializeBackup(masterKey, backupData), password.value)
 		
 		backupStatus.value = "encrypted"
 	} catch (error) {
@@ -174,16 +168,9 @@ async function handleDownloadBackup() {
 		? `AzguardWalletEncryptedBackup${filename}.txt`
 		: `AzguardWalletBackup${filename}.json`
 
-	let fileContent = ""
-	if (isEncrypted) {
-		fileContent = backup
-	} else {
-		fileContent = JSON.stringify(backup, null, 2)
-	}
-
 	try {
 		await downloadFile({
-			data: fileContent,
+			data: backup,
 			filename,
 			compressionFormat: "gzip",
 		})
