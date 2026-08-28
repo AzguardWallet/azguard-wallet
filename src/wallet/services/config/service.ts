@@ -1,6 +1,6 @@
 import { Restored, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
-import { IConfigStore } from "@/wallet/config";
+import { Config as ConfigDefaults, IConfigStore } from "@/wallet/config";
 import { ILogger } from "@/wallet/logger";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { CONFIG_SERVICE_NAME, Config, ConfigKey, ConfigProp, Events, Methods } from "./spec";
@@ -40,10 +40,27 @@ export class ConfigService extends Service<Methods, Events> implements ServiceSp
         return await this.getProps();
     }
 
+    /**
+     * Config is wallet-global, not per-profile. An imported file must never silently
+     * lower a privacy toggle (re-enabling outbound requests for every profile).
+     */
+    private static readonly nonRestorableKeys = new Set<string>([
+        "stealthMode",
+        "stealthModeSnapshot",
+        "contractRegistry",
+        "walletConnectEnabled",
+        "uploadExternalImages",
+        "externalLinks",
+    ] satisfies ConfigKey[]);
+
     public async restore(configProps: ConfigProp[]): Promise<Restored<ConfigProp>[]> {
+        const knownKeys = new Set(Object.keys(new ConfigDefaults()));
         const result: Restored<ConfigProp>[] = [];
 
         for (const cp of configProps) {
+            if (!knownKeys.has(cp.key) || ConfigService.nonRestorableKeys.has(cp.key)) {
+                continue;
+            }
             try {
                 await this.setValue(cp.key, cp.value);
                 result.push(cp);
