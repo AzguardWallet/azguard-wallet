@@ -80,16 +80,33 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
         if (!balance) {
             throw new Error("unknown token balance id");
         }
-        
-        return this.getTokenBalanceInfo(balance);
+        const token = (await this.activeProfileTokens()).get(balance.token);
+        if (!token) {
+            throw new Error("unknown token");
+        }
+        return this.getTokenBalanceInfo(balance, getTokenInfo(token));
     }
 
     public async getTokenBalances(tokenId?: number, accountAddress?: string): Promise<TokenBalanceInfo[]> {
         await this.ensureInitialized();
+        const tokens = await this.activeProfileTokens();
         return (await this.balances.getValues())
             .filter(x => tokenId === undefined || x.token === tokenId)
             .filter(x => accountAddress === undefined || x.account === accountAddress)
-            .map(x => this.getTokenBalanceInfo(x), this);
+            .filter(x => tokens.has(x.token))
+            .map(x => this.getTokenBalanceInfo(x, getTokenInfo(tokens.get(x.token)!)));
+    }
+
+    /**
+     * The active profile's tokens, read from storage. The balances table spans every
+     * profile's rows, and the in-memory token map lags a profile switch.
+     */
+    private async activeProfileTokens(): Promise<Map<number, Token>> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            return new Map();
+        }
+        return new Map((await this.tokenService.getTokensRaw(profile.id)).map(x => [x.id, x]));
     }
 
     public async refreshTokenBalance(id: number): Promise<void> {
