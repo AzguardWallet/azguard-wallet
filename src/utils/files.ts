@@ -48,9 +48,8 @@ export async function downloadFile({
 	if (compressionFormat) {
 		const compressedData = await compressData(data, compressionFormat);
 		const compressedMimeType = getCompressedMimeType(compressionFormat);
-		const arrayBuffer = await (compressedData as any).arrayBuffer() as ArrayBuffer;
 
-		blob = new Blob([arrayBuffer], { type: compressedMimeType });
+		blob = new Blob([compressedData as BlobPart], { type: compressedMimeType });
 		finalFilename = getCompressedFilename(filename, compressionFormat);
 	} else {
 		const resolvedMime = resolveMime(filename, mime);
