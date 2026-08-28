@@ -453,7 +453,8 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
             throw new Error("Profile locked");
         }
 
-        return (await this.balances.getValues());
+        const tokens = await this.activeProfileTokens();
+        return (await this.balances.getValues()).filter(x => tokens.has(x.token));
     }
 
     public async restore(tokenBalances: TokenBalanceRaw[]): Promise<Restored<TokenBalanceRaw>[]> {
