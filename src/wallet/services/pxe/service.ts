@@ -49,7 +49,7 @@ import { ProfileServiceClient, ProfileInfo } from "@/wallet/services/profile/cli
 import { Lock } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
-import { deletePxeStores, openPxeStore } from "./stores";
+import { deleteOrphanPxeStores, deletePxeStores, openPxeStore } from "./stores";
 import { PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet";
 import { NotesFilterSchema } from "@/wallet/utils/schemas";
 
@@ -63,6 +63,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private readonly nodes = new Map<number, AztecNode>();
     private readonly pxes = new Map<number, PXE>();
     private readonly rpcs = new Map<number, string>();
+    // NOTE: the cache is keyed by chain while stores are per profile. Safe because a
+    // Network always carries the active profile — NetworkService gates every call by it.
     private readonly lock = new Lock();
 
     private readonly knownArtifacts = new Map<string, ContractArtifact>();
@@ -73,10 +75,16 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     }
 
     protected async init() {
-        // TODO(backlog): consider deleteOrphanPxeStores(profiles.map(x => x.id)) here once
-        // registered senders are persisted wallet-side — until then a mistaken deletion is
-        // unrecoverable, so orphaned stores (profiles deleted while the offscreen document
-        // was down) just accumulate.
+        // NOTE: deleting a store loses its sender registrations — accepted
+        try {
+            const profiles = await this.profiles.getProfiles();
+            const deleted = await deleteOrphanPxeStores(profiles.map(x => x.id));
+            if (deleted.length) {
+                this.logInfo("Deleted orphaned PXE stores", deleted);
+            }
+        } catch (error: unknown) {
+            this.logError("Failed to sweep orphaned PXE stores", getErrorMessage(error));
+        }
 
         // v4 leftovers: PXE data lived in IndexedDB, keyed pxe/<profileId>/<chainId>
         const dbs = await indexedDB.databases();
@@ -328,6 +336,8 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
     private async withPxe<T>(network: Network, fn: (pxe: PXE, node: AztecNode) => Promise<T>): Promise<T> {
         try {
             await this.lock.enter();
+            // TODO: consider asserting that network.profileId matches the active profile
+            // (a fail-fast guard, at the cost of an extra RPC roundtrip per call)
             if (!this.hasChain(network)) {
                 await this.initChain(network);
             }
