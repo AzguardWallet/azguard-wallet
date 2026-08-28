@@ -467,7 +467,9 @@ async function handleRestoreBackup() {
 			
 			return
 		}
-		// Patch backup with new networkId
+		// Patch backup with new networkId: build the old → new map first, then patch each item
+		// through its own source network, leaving items of unchanged or failed networks alone
+		const networkIdMap = new Map()
 		for (const network of newNetworks) {
 			const oldNetwork = backup.data.network.find(n =>
 				n.name === network.name &&
@@ -476,30 +478,21 @@ async function handleRestoreBackup() {
 			)
 
 			if (oldNetwork && oldNetwork.id !== network.id) {
-				for (const key of Object.keys(backup?.data)) {
-					const value = backup.data[key]
+				networkIdMap.set(oldNetwork.id, network.id)
+			}
+		}
+		if (networkIdMap.size) {
+			for (const key of Object.keys(backup?.data)) {
+				const value = backup.data[key]
 
-					if (Array.isArray(value)) {
-						backup.data[key] = value.map(item => {
-							if (item && typeof item === "object" && "networkId" in item) {
-								return { ...item, networkId: network.id }
-							}
-							return item
-						})
-					}
-
-					// ??? Maybe it's better to do it this way? ???
-					//
-					// if (Array.isArray(value)) {
-					// 	backup.data[key] = value.flatMap(item => {
-					// 		if (item && typeof item === "object" && "networkId" in item) {
-					// 			if (network.restoreError) return []
-								
-					// 			return [{ ...item, networkId: network.id }]
-					// 		}
-					// 		return [item]
-					// 	})
-					// }
+				if (Array.isArray(value)) {
+					backup.data[key] = value.map(item => {
+						if (item && typeof item === "object" && "networkId" in item) {
+							const newId = networkIdMap.get(item.networkId)
+							if (newId !== undefined) return { ...item, networkId: newId }
+						}
+						return item
+					})
 				}
 			}
 		}
