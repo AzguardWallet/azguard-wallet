@@ -307,8 +307,10 @@ function detectBackupType(text) {
     }
 
     try {
-        const bytes = Uint8Array.from(atob(trimmed), c => c.charCodeAt(0))
-        if (bytes.length >= 13 && bytes[0] === 0) {
+        // 13 bytes decide the type — decoding the whole base64 of a 100MB+ encrypted
+        // backup (per-char callback over the full string) freezes the renderer
+        const bin = atob(trimmed.slice(0, 32))
+        if (bin.length >= 13 && bin.charCodeAt(0) === 0) {
             return "encrypted"
         }
     } catch (err) {
