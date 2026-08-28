@@ -1,3 +1,4 @@
+import { type ContractArtifact } from "@aztec/stdlib/abi";
 import { AztecAddress } from "@aztec/stdlib/aztec-address";
 import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
 import { ILogger } from "@/wallet/logger";
@@ -9,7 +10,7 @@ import { type Network } from "@/wallet/services/network/spec"
 import { NodeStatus } from "@/wallet/services/network/spec"
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { getErrorMessage } from "@/wallet/utils/errors";
-import { ACCOUNT_STATE_SERVICE_NAME, BackupAccountState, BackupContract, BackupSender, Events, Methods } from "./spec";
+import { ACCOUNT_STATE_SERVICE_NAME, BackupAccountState, BackupContract, BackupSender, Events, Methods, RestoredAccountState } from "./spec";
 
 export * from "./spec";
 
@@ -107,22 +108,30 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
             seenChainIds.add(n.chainId);
             return true;
         });
+        // TODO: `post-import` a chain whose node is not Active is silently absent from the file —
+        // record skipped networks in the backup and warn in the export UI (a format change, so it
+        // waits behind the current-format restores)
         for (const n of uniqueNetworks) {
             if ((await this.networkService.getNodeStatus(n.id)) === NodeStatus.Active) {
                 const senders = await this.getSenders(n.id);
                 const contracts = await this.getContracts(n.id);
                 const contractsFull: BackupContract[] = []
+                const artifacts: Record<string, ContractArtifact> = {};
                 for (const c of contracts) {
                     const instance = await this.pxeService.getContractInstance(n, AztecAddress.fromStringUnsafe(c));
                     if (!instance) continue;
 
-                    const artifact = await this.pxeService.getContractArtifact(n, instance.originalContractClassId);
-                    if (!artifact) continue;
+                    const classId = String(instance.originalContractClassId);
+                    if (!(classId in artifacts)) {
+                        const artifact = await this.pxeService.getContractArtifact(n, instance.originalContractClassId);
+                        if (!artifact) continue;
+                        artifacts[classId] = artifact;
+                    }
 
                     contractsFull.push({
                         address: c,
                         instance,
-                        artifact,
+                        classId,
                     })
                 }
 
@@ -130,6 +139,7 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
                     networkId: n.id,
                     senders: senders.map(address => ({ address })),
                     contracts: contractsFull,
+                    artifacts,
                 });
             }
         }
@@ -137,24 +147,25 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
         return result;
     }
 
-    public async restore(backupAccountState: BackupAccountState[], networks: Network[]): Promise<Restored<BackupAccountState>[]> {
+    public async restore(backupAccountState: BackupAccountState[], networks: Network[]): Promise<RestoredAccountState[]> {
         await this.ensureInitialized();
 
-        const result: Restored<BackupAccountState>[] = [];
+        const result: RestoredAccountState[] = [];
 
         for (const item of backupAccountState) {
-            const senders: Restored<BackupSender>[] = [];
-            const contracts: Restored<BackupContract>[] = [];
+            const senders: RestoredAccountState["senders"] = [];
+            const contracts: RestoredAccountState["contracts"] = [];
+            // NOTE: networkId in the item was already remapped to the restored network's id
             const network = networks.find(n => n.id === item.networkId);
             for (const sender of item.senders) {
                 try {
                     if (!network) throw new Error("Network not found");
 
                     await this.pxeService.registerSender(network, AztecAddress.fromStringUnsafe(sender.address));
-                    senders.push(sender);
+                    senders.push({ address: sender.address });
                 } catch (err) {
                     senders.push({
-                        ...sender,
+                        address: sender.address,
                         restoreError: err instanceof Error ? err.message : err,
                     });
                 }
@@ -171,14 +182,17 @@ export class AccountStateService extends Service<Methods, Events> implements Ser
                         continue;
                     }
                     
+                    const artifact = item.artifacts[contract.classId];
+                    if (!artifact) throw new Error("Artifact missing in backup");
+
                     await this.pxeService.ensureContractRegistered(network, {
                         instance: contract.instance,
-                        artifact: contract.artifact,
+                        artifact,
                     });
-                    contracts.push(contract);
+                    contracts.push({ address: contract.address });
                 } catch(err) {
                     contracts.push({
-                        ...contract,
+                        address: contract.address,
                         restoreError: err instanceof Error ? err.message : err,
                     });
                 }

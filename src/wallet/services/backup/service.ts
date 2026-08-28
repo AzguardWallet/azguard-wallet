@@ -11,7 +11,11 @@ import { ILogger } from "@/wallet/logger";
 import type { AccountService } from "@/wallet/services/account/service";
 import { ACCOUNT_ERRORS, ACCOUNT_SERVICE_NAME, Account } from "@/wallet/services/account/spec";
 import type { AccountStateService } from "@/wallet/services/account-state/service";
-import { ACCOUNT_STATE_SERVICE_NAME, BackupAccountState } from "@/wallet/services/account-state/spec";
+import {
+    ACCOUNT_STATE_SERVICE_NAME,
+    BackupAccountState,
+    RestoredAccountState,
+} from "@/wallet/services/account-state/spec";
 import type { AuthRegistryService } from "@/wallet/services/auth-registry/service";
 import { AUTH_REGISTRY_SERVICE_NAME } from "@/wallet/services/auth-registry/spec";
 import type { ConfigService } from "@/wallet/services/config/service";
@@ -429,7 +433,7 @@ export class BackupService
             ({ ...item, restoreError: getErrorMessage(item.restoreError) });
         let failures: unknown[];
         if (serviceName === ACCOUNT_STATE_SERVICE_NAME) {
-            failures = (restored as Restored<BackupAccountState>[]).flatMap(state => {
+            failures = (restored as RestoredAccountState[]).flatMap(state => {
                 const contracts = state.contracts.filter(x => x.restoreError).map(flat);
                 const senders = state.senders.filter(x => x.restoreError).map(flat);
                 return contracts.length || senders.length
