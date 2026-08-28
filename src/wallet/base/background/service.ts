@@ -1,10 +1,14 @@
 import { ILogger, LogLevel } from "@/wallet/logger";
 import { sleep } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
-import { jsonSanitize } from "@/wallet/utils/serialization";
+import { jsonSanitize, jsonStringify } from "@/wallet/utils/serialization";
 import { EventsMap, MethodsMap, MethodsSpec, IService, EventsSpec, ServiceCollection } from "../.";
 import { MessageType, EventMessage, RequestMessage, ResponseMessage } from "../messages";
 import { unwrapParams } from "../utils";
+
+// TODO: measure the real port message cap on a live extension — the margin covers
+// Chrome's own serialization differing from ours
+const MAX_PORT_JSON_LENGTH = 32 * 1024 * 1024;
 
 export abstract class Service<TRequests extends MethodsMap, TEvents extends EventsMap = {}> implements IService {
     public readonly name: string;
@@ -70,28 +74,26 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
         }
         const params = unwrapParams(wrappedParams);
         this.logDebug("Request received", requestId, method, params);
-        let response: ResponseMessage<TRequests>;
+        let content: ResponseMessage<TRequests>["content"];
         try {
             const result = await this.requests[method](...params);
             this.logDebug("Request processed", requestId, result);
-            response = {
-                type: MessageType.Response,
-                content: {
-                    requestId,
-                    result: jsonSanitize(result),
-                },
-            };
+            if (result === undefined) {
+                content = { requestId, result: undefined };
+            } else {
+                const json = jsonStringify(result);
+                if (json.length > MAX_PORT_JSON_LENGTH) {
+                    content = { requestId, error: "Response too large to deliver" };
+                } else {
+                    content = { requestId, result: JSON.parse(json) };
+                }
+            }
         } catch (error) {
             const errorMessage = getErrorMessage(error);
             this.logDebug("Request failed", requestId, errorMessage);
-            response = {
-                type: MessageType.Response,
-                content: {
-                    requestId,
-                    error: errorMessage,
-                },
-            };
+            content = { requestId, error: errorMessage };
         }
+        const response: ResponseMessage<TRequests> = { type: MessageType.Response, content };
         this.send(response, client);
         this.logDebug("Response sent", response);
     };
