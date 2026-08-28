@@ -383,6 +383,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
             await this.profiles.delete(id);
 
+            // TODO: `cleanup/orphan-hygiene` the cascade (accounts, tokens, balances, sessions, …)
+            // is fire-and-forget, so a worker death right here strands invisible orphans
             this.emit("onProfileDeleted", this.getProfileInfo(profile));
 
             const session = await this._getSession();

@@ -334,8 +334,12 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             const networks = (await this.storage.getValues()).filter(x => x.profileId === profile.id);
             for (const network of networks) {
                 this.logDebug(`Remove network #${network.id}`);
-                await this.storage.delete(network.id);
-                this.emit("onNetworkDeleted", network);
+                try {
+                    await this.storage.delete(network.id);
+                    this.emit("onNetworkDeleted", network);
+                } catch (error) {
+                    this.logError(`Failed to delete network ${network.id} of the deleted profile`, getErrorMessage(error));
+                }
             }
         } finally {
             this.lock.leave();

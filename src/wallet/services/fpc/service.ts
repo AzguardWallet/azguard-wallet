@@ -9,6 +9,7 @@ import { PxeServiceClient } from "@/wallet/services/pxe/client";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { Fpc } from "./fpc";
 import { CANONICAL_FPC_TYPES, getFpcHandler } from "./handlers";
 import { Events, FPC_SERVICE_NAME, FpcInfo, FpcType, Methods } from "./spec";
@@ -291,8 +292,12 @@ export class FpcService extends Service<Methods, Events> implements ServiceSpec<
             const fpcs = (await this.storage.getValues()).filter(fpc => fpc.profileId === profile.id);
             for (const fpc of fpcs) {
                 this.logDebug(`Remove fpc #${fpc.id}`);
-                await this.storage.delete(fpc.id);
-                this.emit("onFpcDeleted", fpc);
+                try {
+                    await this.storage.delete(fpc.id);
+                    this.emit("onFpcDeleted", fpc);
+                } catch (error) {
+                    this.logError(`Failed to delete fpc ${fpc.id} of the deleted profile`, getErrorMessage(error));
+                }
             }
             for (const [key, record] of await this.provisioned.getAll()) {
                 if (record.profileId === profile.id) {

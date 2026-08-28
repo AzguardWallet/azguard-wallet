@@ -11,6 +11,7 @@ import { TaskService, StepContent, WrappedTask } from "@/wallet/services/task/se
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
 import { getDefaultTokens } from "@/wallet/constants/default-tokens";
 import { simulate, ViewFn } from "@/wallet/utils/fn";
@@ -516,7 +517,11 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         this.logDebug(`Profile ${profile.id} deleted, remove related tokens`);
         for (const token of (await this.tokens.getValues()).filter(x => x.profileId === profile.id)) {
             this.logDebug(`Remove token ${token.id}`);
-            await this.deleteToken(token.id);
+            try {
+                await this.deleteToken(token.id);
+            } catch (error) {
+                this.logError(`Failed to delete token ${token.id} of the deleted profile`, getErrorMessage(error));
+            }
         }
     };
 

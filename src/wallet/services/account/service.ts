@@ -7,6 +7,7 @@ import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, hasIntersectionByKeys } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { AzguardV0, AzguardV0Persistent, IAccountContract } from "./contracts";
 import { ACCOUNT_SERVICE_NAME, AccountType, Account, Events, Methods } from "./spec";
 
@@ -160,8 +161,12 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
         const accounts = (await this.storage.getValues()).filter(x => x.profileId === profile.id);
         for (const account of accounts) {
             this.logDebug(`remove account ${account.address}`);
-            await this.storage.delete(account.address);
-            this.emit("onAccountDeleted", account);
+            try {
+                await this.storage.delete(account.address);
+                this.emit("onAccountDeleted", account);
+            } catch (error) {
+                this.logError(`Failed to delete account ${account.address} of the deleted profile`, getErrorMessage(error));
+            }
         }
     };
 

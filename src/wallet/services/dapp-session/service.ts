@@ -5,6 +5,7 @@ import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import type { SerializedCapability } from "@/wallet/services/dapp-interaction/scope-enforcement";
 import {
     DAPP_SESSION_SERVICE_NAME,
@@ -217,8 +218,12 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
             const sessions = (await this.storage.getValues()).filter(x => x.profileId === profile.id);
             for (const session of sessions) {
                 this.logDebug(`Remove session #${session.id}`);
-                await this.storage.delete(session.id);
-                this.emit("onDappSessionDeleted", session);
+                try {
+                    await this.storage.delete(session.id);
+                    this.emit("onDappSessionDeleted", session);
+                } catch (error) {
+                    this.logError(`Failed to delete session ${session.id} of the deleted profile`, getErrorMessage(error));
+                }
             }
         } finally {
             this.lock.leave();

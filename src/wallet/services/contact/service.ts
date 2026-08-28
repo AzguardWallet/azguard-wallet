@@ -246,8 +246,12 @@ export class ContactService extends Service<Methods, Events> implements ServiceS
             for (const contact of contacts) {
                 this.logDebug(`Remove contact #${contact.id} - ${contact.name}`);
 
-                await this.storage.delete(contact.id);
-                this.emit("onContactDeleted", contact);
+                try {
+                    await this.storage.delete(contact.id);
+                    this.emit("onContactDeleted", contact);
+                } catch (error) {
+                    this.logError(`Failed to delete contact ${contact.id} of the deleted profile`, getErrorMessage(error));
+                }
             }
         } finally {
             this.lock.leave();
