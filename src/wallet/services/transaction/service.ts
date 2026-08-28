@@ -666,7 +666,7 @@ export class TransactionService extends Service<Methods, Events> implements Serv
         const txs: Tx[] = [];
 
         for (const n of networks) {
-            const accounts = await this.accountService.getAccounts(profile.id, n.chainId);
+            const accounts = await this.accountService.getAccounts(profile.id, n.chainId, true);
             for (const acc of accounts) {
                 txs.push(...(await this.getTransactions(acc.address)));
             }

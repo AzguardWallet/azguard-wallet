@@ -258,7 +258,7 @@ export class AuthRegistryService extends Service<Methods, Events> implements Ser
         const authwits: Authwit[] = [];
 
         for (const n of networks) {
-            const accounts = await this.accountService.getAccounts(profile.id, n.chainId);
+            const accounts = await this.accountService.getAccounts(profile.id, n.chainId, true);
             for (const acc of accounts) {
                 authwits.push(...(await this.getAuthwits(acc.address)));
             }
