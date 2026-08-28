@@ -1,5 +1,10 @@
 export const ACCOUNT_SERVICE_NAME = "account";
 
+/** Abort reasons this service throws. They cross the RPC as plain strings, so consumers match on these constants. */
+export const ACCOUNT_ERRORS = {
+    duplicateAddress: "Duplicate address",
+} as const;
+
 export enum AccountType {
     /** Default implementation v0. */
     Azguard_v0 = 0,
