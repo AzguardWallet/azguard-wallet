@@ -569,7 +569,9 @@ async function handleRestoreBackup() {
 
 		importedProfile.value = newProfile
 	} catch (err) {
-		restoreStatus.value = ""
+		// Fail closed: a mid-restore failure may have left a half-restored profile,
+		// so a blind retry against the same file must stay disabled
+		restoreStatus.value = "failed"
 
 		fillError("full_backup", "Import failed", err)
 		console.error(err.message || err);
