@@ -156,8 +156,9 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
                     transferPrivateToPublicFn: tokenInterface.transferPrivateToPublicFn,
                 };
                 await this.tokens.set(`${token.id}`, token);
-                this.emit("onTokenAdded", getTokenInfo(token));
             }
+            // NOTE: emitted for an existing record too — re-adding heals missing balance rows
+            this.emit("onTokenAdded", getTokenInfo(token));
             const result = getTokenInfo(token);
             task.complete();
             return result;

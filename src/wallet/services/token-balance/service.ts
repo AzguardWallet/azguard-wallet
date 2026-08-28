@@ -132,8 +132,12 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     }
 
     private async createTokenBalance(token: Token, account: Account) {
+        const balances = await this.balances.getValues();
+        if (balances.some(x => x.token === token.id && x.account === account.address)) {
+            return;
+        }
         const tb: TokenBalanceRaw = {
-            id: array_max((await this.balances.getKeys()).map(x => +x)) + 1,
+            id: array_max(balances.map(x => x.id)) + 1,
             token: token.id,
             account: account.address,
             privateBalance: "0",

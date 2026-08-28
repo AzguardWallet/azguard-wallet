@@ -523,13 +523,14 @@ async function handleRestoreBackup() {
 		const tokenService = new TokenServiceClient()
 		const newTokens = await tokenService.restore(backup.data.token)
 		tokenService.disconnect()
-		// Patch backup with new token ids
+		// Patch backup with new token ids: a balance follows its token by (chainId, contract),
+		// not contract alone — canonical contracts (Fee Juice) share one address on every chain
 		if (backup.data["token-balance"]?.length) {
-			const oldIdToContract = new Map(backup.data.token.map(t => [t.id, t.contract]));
-			const contractToNewId = new Map(newTokens.filter(t => !t.restoreError).map(t => [t.contract, t.id]));
+			const oldIdToKey = new Map(backup.data.token.map(t => [t.id, `${t.chainId}:${t.contract}`]));
+			const keyToNewId = new Map(newTokens.filter(t => !t.restoreError).map(t => [`${t.chainId}:${t.contract}`, t.id]));
 			backup.data["token-balance"] = backup.data["token-balance"].flatMap(tb => {
-				const contract = oldIdToContract.get(tb.token)
-				const newId = contractToNewId.get(contract)
+				const key = oldIdToKey.get(tb.token)
+				const newId = keyToNewId.get(key)
 				return newId ? [{ ...tb, token: newId }] : []
 			})
 		}
