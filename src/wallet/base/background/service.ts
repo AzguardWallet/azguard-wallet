@@ -8,7 +8,7 @@ import { unwrapParams } from "../utils";
 
 // TODO: measure the real port message cap on a live extension — the margin covers
 // Chrome's own serialization differing from ours
-const MAX_PORT_JSON_LENGTH = 32 * 1024 * 1024;
+export const MAX_PORT_JSON_LENGTH = 32 * 1024 * 1024;
 
 export abstract class Service<TRequests extends MethodsMap, TEvents extends EventsMap = {}> implements IService {
     public readonly name: string;
