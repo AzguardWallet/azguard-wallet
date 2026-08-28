@@ -752,10 +752,11 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 try {
                     await this.lock.enter();
 
-                    let id = profile.id;
-                    while ((await this.profiles.contains(id))) {
+                    // NOTE: never use the profile id from the backup — a dead id returning would adopt leftovers of an interrupted deletion cascade
+                    let id: string;
+                    do {
                         id = getRandomHex(8);
-                    }
+                    } while (await this.profiles.contains(id));
 
                     const newProfile: Profile = {
                         id,
