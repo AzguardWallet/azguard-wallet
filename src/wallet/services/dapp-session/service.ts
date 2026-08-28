@@ -67,6 +67,13 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
         if (session && (await this.isExpired(session))) {
             return undefined;
         }
+        // NOTE: another profile's session must not resolve — a locked wallet keeps it, the unlock decides
+        if (session) {
+            const profile = await this.profileService.getActiveProfile();
+            if (profile && session.profileId !== profile.id) {
+                return undefined;
+            }
+        }
         return session;
     }
 
