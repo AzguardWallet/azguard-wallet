@@ -1018,7 +1018,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             simulatePublic: true,
             skipTxValidation: op.opts.skipTxValidation,
             skipFeeEnforcement: op.opts.skipFeeEnforcement ?? true,
-            scopes: scopesFrom(account.address, op.opts.additionalScopes),
+            scopes: scopesFrom(account.address, op.opts.additionalScopes, op.opts.sendMessagesAs),
             senderForTags: op.opts.sendMessagesAs ?? account.address,
         });
     }
@@ -1060,7 +1060,11 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
-            scopes: scopesFrom(AztecAddress.fromStringUnsafe(op.accountAddress), op.opts.additionalScopes),
+            scopes: scopesFrom(
+                AztecAddress.fromStringUnsafe(op.accountAddress),
+                op.opts.additionalScopes,
+                op.opts.sendMessagesAs,
+            ),
             senderForTags: op.opts.sendMessagesAs ?? AztecAddress.fromStringUnsafe(op.accountAddress),
         });
     }
@@ -1077,7 +1081,19 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const [txRequest, node, pxe, account, network, nonce, txCalls, feePaymentMethod] =
             await this.buildAndEstimateTxRequest({ ...op, actions, fee }, op.feeSettings.paymentMethod, parentTask);
 
-        const provedTx = await this.proveTxTask(pxe, txRequest, { scopes: scopesFrom(account.address, op.opts.additionalScopes), senderForTags: op.opts.sendMessagesAs ?? account.address }, parentTask);
+        const provedTx = await this.proveTxTask(
+            pxe,
+            txRequest,
+            {
+                scopes: scopesFrom(
+                    account.address,
+                    op.opts.additionalScopes,
+                    op.opts.sendMessagesAs,
+                ),
+                senderForTags: op.opts.sendMessagesAs ?? account.address,
+            },
+            parentTask,
+        );
         const offchainOutput = extractOffchainOutput(provedTx.getOffchainEffects(), provedTx.publicInputs.constants.anchorBlockHeader.globalVariables.timestamp);
 
         const tx = await provedTx.toTx();
@@ -2002,10 +2018,16 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
     }
 }
 
-/** Merges sender address with optional additionalScopes from dApp opts. */
-function scopesFrom(from: AztecAddress, additionalScopes?: AztecAddress[]): AztecAddress[] {
-    if (!additionalScopes?.length) {
-        return [from];
-    }
-    return [from, ...additionalScopes];
+/**
+ * Merges the sender address, the dApp's additionalScopes and the sendMessagesAs override.
+ * sendMessagesAs must be in scope: the PXE derives tagging secrets for scoped senders only.
+ */
+function scopesFrom(
+    from: AztecAddress,
+    additionalScopes: AztecAddress[] | undefined,
+    sendMessagesAs: AztecAddress | undefined,
+): AztecAddress[] {
+    const all = [from, ...(additionalScopes ?? []), ...(sendMessagesAs ? [sendMessagesAs] : [])];
+    const unique = new Set(all.map((address) => address.toString()));
+    return [...unique].map(AztecAddress.fromStringUnsafe);
 }
