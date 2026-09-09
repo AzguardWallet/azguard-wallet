@@ -6,6 +6,7 @@ import { consoleMethods, LoggerStore, LogLevel } from "./logger";
 import { AccountService } from "./services/account/service";
 import { AccountStateService } from "./services/account-state/service";
 import { AuthRegistryService } from "./services/auth-registry/service";
+import { BackupService } from "./services/backup/service";
 import { ConfigService } from "./services/config/service";
 import { ContactService } from "./services/contact/service";
 import { DappInteractionService } from "./services/dapp-interaction/service";
@@ -79,6 +80,7 @@ const runServices = async () => {
     services.add(new AccountService(logger));
     services.add(new AccountStateService(logger));
     services.add(new AuthRegistryService(logger));
+    services.add(new BackupService(logger));
     services.add(new ConfigService(config, logger));
     services.add(new ContactService(logger));
     services.add(new DappInteractionService(logger));

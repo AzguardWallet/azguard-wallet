@@ -7,19 +7,8 @@ import SettingItem from "@/components/ui/Settings/SettingItem.vue"
 
 /** Services */
 import { managers, setSentinel } from "@/utils/core"
-import { AccountServiceClient } from "@/wallet/services/account/client"
-import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
-import { AuthRegistryServiceClient } from "@/wallet/services/auth-registry/client"
-import { ConfigServiceClient } from "@/wallet/services/config/client"
-import { ContactServiceClient } from "@/wallet/services/contact/client"
-import { FpcServiceClient } from "@/wallet/services/fpc/client"
-import { NetworkServiceClient } from "@/wallet/services/network/client"
-import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { TokenServiceClient } from "@/wallet/services/token/client"
-import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
-import { TransactionServiceClient } from "@/wallet/services/transaction/client"
-import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key"
-import { isCurrentGeneration } from "@/wallet/services/profile/spec"
+import { BackupServiceClient, BACKUP_ERRORS } from "@/wallet/services/backup/client"
+import { getErrorMessage } from "@/wallet/utils/errors"
 
 /** Utils */
 import { pickFile } from "@/utils"
@@ -68,6 +57,8 @@ const hideCredentials = ref(true)
 const maxPasswordLength = 128
 const isSeedPhraseCorrect = ref(undefined)
 const error = ref({ type: "", title: "", tooltip: ""})
+
+const backupService = new BackupServiceClient()
 const fillError = (type, title, tooltip) => {
 	if (!title) {
 		error.value = { type: "", title: "", tooltip: "" }
@@ -228,9 +219,12 @@ const handleImportPasskey = async () => {
 	}
 }
 
+// NOTE: backup files reach 100MB+ — the text goes straight to the service and never
+// enters reactive state; this holds only the inspection summary
 const selectedBackup = ref(null)
+let importOp = -1
 const isAllowedToImportBackup = computed(() => {
-	if (!selectedBackup.value?.profileType || !selectedBackup.value?.backup) return
+	if (!selectedBackup.value?.profileType) return
 	if (selectedBackup.value?.profileType === "password") {
 		if (!password.value ||
 			password.value !== repeatedPassword.value ||
@@ -246,9 +240,24 @@ async function handlePickBackupFile() {
 	try {
 		const file = await pickFile()
 		if (!file) return
+		const text = await file.text()
 
-		selectedBackup.value = await processBackupFile(file)
-		if (selectedBackup.value?.type === "unknown" || (selectedBackup.value?.type === "plain" && !selectedBackup.value?.profileType)) {
+		let inspection
+		try {
+			importOp = await backupService.sendImport(text)
+			inspection = await backupService.inspectImport(importOp)
+		} catch (err) {
+			selectedBackup.value = { name: file.name, stage: "unrecognized", profileType: null, profileName: null }
+			fillError(
+				"full_backup",
+				"Invalid JSON Format",
+				"The selected file is not a valid JSON backup. Please select a correct backup file.",
+			)
+			return
+		}
+
+		selectedBackup.value = { name: file.name, ...inspection }
+		if (inspection.stage === "unrecognized") {
 			fillError(
 				"full_backup",
 				"Unrecognized Backup File",
@@ -268,72 +277,23 @@ async function handlePickBackupFile() {
 			"full_backup",
 			"Failed to read the backup file",
 		)
-		console.error("Failed to read backup file:", err.message || err)
+		console.error("Failed to read backup file:", getErrorMessage(err))
 	}
-}
-async function processBackupFile(file) {
-	let backup = null
-	let profileType = null
-
-	const text = await file.text()
-	const type = detectBackupType(text)
-	if (type === "plain") {
-		try {
-			backup = JSON.parse(text)
-			profileType = backup?.data?.profile?.type || null
-		} catch (err) {
-			fillError(
-				"full_backup",
-				"Invalid JSON Format",
-				"The selected file is not a valid JSON backup. Please select a correct backup file.",
-			)
-		}
-	} else {
-		backup = text
-	}
-
-	return {
-		name: file.name,
-		backup,
-		type,
-		profileType,
-	}
-}
-function detectBackupType(text) {
-    const trimmed = text.trim()
-
-    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-        return "plain"
-    }
-
-    try {
-        // 13 bytes decide the type — decoding the whole base64 of a 100MB+ encrypted
-        // backup (per-char callback over the full string) freezes the renderer
-        const bin = atob(trimmed.slice(0, 32))
-        if (bin.length >= 13 && bin.charCodeAt(0) === 0) {
-            return "encrypted"
-        }
-    } catch (err) {
-        return "unknown"
-    }
-
-    return "unknown"
 }
 async function handleDecryptBackup() {
 	if (!decryptionPassword.value) return
 
 	try {
-		const passhash = await EncryptionKey.getPasshash(decryptionPassword.value)
-		const key = await EncryptionKey.fromPasshash(passhash)
-		const encryptedBytes = new Uint8Array(Buffer.from(selectedBackup.value?.backup, "base64"))
-		const decryptedBytes = await key.decrypt(encryptedBytes)
-		const decodedJson = new TextDecoder().decode(decryptedBytes)
-		const backupObject = JSON.parse(decodedJson)
+		const inspection = await backupService.decryptImport(importOp, decryptionPassword.value)
 
-		selectedBackup.value = {
-			...selectedBackup.value,
-			backup: backupObject,
-			profileType: backupObject?.data?.profile?.type
+		selectedBackup.value = { name: selectedBackup.value.name, ...inspection }
+		if (inspection.stage === "unrecognized") {
+			fillError(
+				"full_backup",
+				"Unrecognized Backup File",
+				"The decrypted content is not a valid backup.",
+			)
+			return
 		}
 
 		fillError()
@@ -345,220 +305,28 @@ async function handleDecryptBackup() {
 		)
 	}	
 }
-const getServiceName = (clientName) => {
-	return clientName ? clientName.replace("-client", "") : ""
-}
-
 const restoreStatus = ref()
 const restoreErrorLog = ref({})
-const isRestoreHasErrors = computed(() => {
-	if (!restoreErrorLog.value) return false
-    for (const _ in restoreErrorLog.value) return true
-    return false
-})
+const isRestoreHasErrors = computed(() => Object.keys(restoreErrorLog.value).length > 0)
 function handleShowRestoreErrorLog() {
 	if (!isRestoreHasErrors.value) return
 
 	cacheStore.viewerData = restoreErrorLog.value
 	popupStore.open("data_viewer")
 }
-function processRestoredData(serviceName, data) {
-	if (!Array.isArray(data) || !data.length || !serviceName) return
-
-	let restoreErrors = []
-	if (serviceName === "account-state") {
-		for (const item of data) {
-			const failedContracts = item.contracts.filter(c => c.restoreError)
-			const failedSenders = item.senders.filter(s => s.restoreError)
-			
-			if (!failedContracts.length && !failedSenders.length) continue
-
-			restoreErrors.push({
-				networkId: item.networkId,
-				contracts: failedContracts,
-				senders: failedSenders,
-			})
-		}
-	} else {
-		restoreErrors = data.filter(item => item.restoreError)
-	}	
-	
-	if (!restoreErrors.length) return
-
-	restoreErrorLog.value[serviceName] = restoreErrors
-}
 async function handleRestoreBackup() {
 	if (!isAllowedToImportBackup.value) return
 
 	fillError()
 	restoreStatus.value = "progress"
-	const { checksum, ...backup } = selectedBackup.value.backup
-	const comparisonChecksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
-	
-	if (checksum !== comparisonChecksum) {
-		restoreStatus.value = "failed"
-		fillError(
-			"full_backup",
-			"Backup Integrity Check Failed",
-			"The backup file appears to be corrupted or has been tampered with. Please ensure you have the correct backup file.",
-		)
-		return
-	}
-
-	// Profiles are only usable within their sentinel generation; a cross-generation
-	// restore would silently produce a broken profile, so refuse it upfront.
-	const origin = backup?.data?.profile?.origin
-	if (!isCurrentGeneration(origin)) {
-		restoreStatus.value = "failed"
-		fillError(
-			"full_backup",
-			origin ? "Incompatible Backup" : "Outdated Backup",
-			origin
-				? "The profile in this backup belongs to a different Aztec network generation and can't be restored into this wallet version."
-				: "This backup is from an older wallet generation and can't be restored into this wallet version.",
-		)
-		return
-	}
 
 	try {
 		restoreErrorLog.value = {}
-		const masterKey = backup["master-key"]
-		
-		const profileService = new ProfileServiceClient()
-		const profile = backup?.data?.profile
-		const newProfile = await profileService.restore(profile, masterKey, password.value)
-		profileService.disconnect()
-		
-		if (newProfile.restoreError) {
-			restoreStatus.value = "failed"
-			fillError("full_backup", "Import failed", newProfile.restoreError)
-			
-			return
-		}
-		// Patch backup with new profileId
-		if (newProfile.id !== profile.id) {
-			for (const key of Object.keys(backup?.data)) {
-				const value = backup.data[key]
 
-				if (Array.isArray(value)) {
-					backup.data[key] = value.map(item => {
-						if (item && typeof item === "object" && "profileId" in item) {
-							return { ...item, profileId: newProfile.id }
-						}
-						return item
-					})
-				}
-			}
-		}
+		const report = await backupService.finishImport(importOp, password.value || undefined)
 
-		const networkService = new NetworkServiceClient()
-		const newNetworks = await networkService.restore(backup.data.network)
-		networkService.disconnect()
-		const createdNetworks = newNetworks.filter(n => !n.restoreError)
-		if (!createdNetworks.length) {
-			try {
-				await profileService.deleteProfile(newProfile.id);
-			} catch (err) {
-				console.error(err);
-			} finally {
-				profileService.disconnect()
-			}
-
-			restoreStatus.value = "failed"
-			fillError("full_backup", "Import failed", "Unable to restore any networks, import aborted")
-			
-			return
-		}
-		// Patch backup with new networkId: build the old → new map first, then patch each item
-		// through its own source network, leaving items of unchanged or failed networks alone
-		const networkIdMap = new Map()
-		for (const network of newNetworks) {
-			const oldNetwork = backup.data.network.find(n =>
-				n.name === network.name &&
-				n.rpcUrl === network.rpcUrl &&
-				n.chainId=== network.chainId
-			)
-
-			if (oldNetwork && oldNetwork.id !== network.id) {
-				networkIdMap.set(oldNetwork.id, network.id)
-			}
-		}
-		if (networkIdMap.size) {
-			for (const key of Object.keys(backup?.data)) {
-				const value = backup.data[key]
-
-				if (Array.isArray(value)) {
-					backup.data[key] = value.map(item => {
-						if (item && typeof item === "object" && "networkId" in item) {
-							const newId = networkIdMap.get(item.networkId)
-							if (newId !== undefined) return { ...item, networkId: newId }
-						}
-						return item
-					})
-				}
-			}
-		}
-		processRestoredData(getServiceName(networkService.name), newNetworks)
-		
-		const accountService = new AccountServiceClient()
-		try {
-			const newAccounts = await accountService.restore(backup.data.account)
-			accountService.disconnect()
-			processRestoredData(getServiceName(accountService.name), newAccounts)
-		} catch (err) {
-			if (err === "Duplicate address") {
-				try {
-					await profileService.deleteProfile(newProfile.id);
-				} catch (err) {
-					console.error(err);
-				} finally {
-					fillError("full_backup", "Import failed", "Profile already exists, import aborted")
-					profileService.disconnect()
-				}
-
-				restoreStatus.value = "failed"
-				return
-			}
-		}
-		
-
-		const tokenService = new TokenServiceClient()
-		const newTokens = await tokenService.restore(backup.data.token)
-		tokenService.disconnect()
-		// Patch backup with new token ids: a balance follows its token by (chainId, contract),
-		// not contract alone — canonical contracts (Fee Juice) share one address on every chain
-		if (backup.data["token-balance"]?.length) {
-			const oldIdToKey = new Map(backup.data.token.map(t => [t.id, `${t.chainId}:${t.contract}`]));
-			const keyToNewId = new Map(newTokens.filter(t => !t.restoreError).map(t => [`${t.chainId}:${t.contract}`, t.id]));
-			backup.data["token-balance"] = backup.data["token-balance"].flatMap(tb => {
-				const key = oldIdToKey.get(tb.token)
-				const newId = keyToNewId.get(key)
-				return newId ? [{ ...tb, token: newId }] : []
-			})
-		}
-		processRestoredData(getServiceName(tokenService.name), newTokens)
-
-		const backupServices = [
-			new TransactionServiceClient(),
-			new TokenBalanceServiceClient(),
-			new AccountStateServiceClient(),
-			new AuthRegistryServiceClient(),
-			new FpcServiceClient(),
-			new ContactServiceClient(),
-			new ConfigServiceClient(),
-		]
-
-		for (const s of backupServices) {
-			const serviceName = getServiceName(s.name)
-			const data = backup.data[serviceName]
-			if (Array.isArray(data)) {
-				const restoredData = serviceName === "account-state" || serviceName === "fpc"
-					? await s.restore(data, createdNetworks)
-					: await s.restore(data)
-				s.disconnect()
-				processRestoredData(serviceName, restoredData)
-			}
-		}
+		restoreErrorLog.value = report.failures
+		const newProfile = report.profile
 
 		restoreStatus.value = "finished"
 		if (!isRestoreHasErrors.value) {
@@ -569,18 +337,47 @@ async function handleRestoreBackup() {
 
 		importedProfile.value = newProfile
 	} catch (err) {
-		// Fail closed: a mid-restore failure may have left a half-restored profile,
-		// so a blind retry against the same file must stay disabled
+		// NOTE: fail closed — the service has already dropped the job's file, so a retry
+		// has nothing to run, the user must pick the file again
 		restoreStatus.value = "failed"
 
-		fillError("full_backup", "Import failed", err)
-		console.error(err.message || err);
-		
+		switch (err) {
+			case BACKUP_ERRORS.integrity:
+				fillError(
+					"full_backup",
+					"Backup Integrity Check Failed",
+					"The backup file appears to be corrupted or has been tampered with. Please ensure you have the correct backup file.",
+				)
+				break
+			case BACKUP_ERRORS.incompatible:
+				fillError(
+					"full_backup",
+					"Incompatible Backup",
+					"The profile in this backup belongs to a different Aztec network generation and can't be restored into this wallet version.",
+				)
+				break
+			case BACKUP_ERRORS.outdated:
+				fillError(
+					"full_backup",
+					"Outdated Backup",
+					"This backup is from an older wallet generation and can't be restored into this wallet version.",
+				)
+				break
+			default:
+				fillError("full_backup", "Import failed", err)
+				console.error(getErrorMessage(err))
+		}
+
 		return
 	}
 }
 
 function clearPopup() {
+	if (importOp !== -1) {
+		backupService.abortImport(importOp).catch(() => {})
+		importOp = -1
+	}
+
 	selectedImportOption.value = null
 	importedProfile.value = null
 
@@ -606,7 +403,7 @@ const handleBack = () => {
 
 const onKeydown = e => {
 	if (e.key === "Enter") {
-		if (selectedBackup.value?.type === "encrypted" && !selectedBackup.value?.profileType) {
+		if (selectedBackup.value?.stage === "needs-password") {
 			handleDecryptBackup()
 		} else if (selectedBackup.value?.profileType && restoreStatus.value !== "finished") {
 			handleRestoreBackup()
@@ -631,6 +428,8 @@ watch(
 		}
 	},
 )
+
+onBeforeUnmount(() => backupService.disconnect())
 </script>
 
 <template>
@@ -749,7 +548,7 @@ watch(
 							</Flex>
 						</Flex>
 
-						<Flex v-if="selectedBackup?.type === 'encrypted' && !selectedBackup?.profileType" direction="column" gap="12">
+						<Flex v-if="selectedBackup?.stage === 'needs-password'" direction="column" gap="12">
 							<Input
 								v-model="decryptionPassword"
 								:type="isPasswordType ? 'password' : 'text'"
@@ -1037,7 +836,7 @@ watch(
 						</Tooltip>
 
 						<Button
-							v-if="selectedBackup?.type === 'encrypted' &&  !selectedBackup?.profileType"
+							v-if="selectedBackup?.stage === 'needs-password'"
 							@click="handleDecryptBackup"
 							:disabled="!decryptionPassword"
 							type="primary"
@@ -1057,7 +856,7 @@ watch(
 							rightIcon="arrow-right-circle"
 							wide
 						>
-							Import {{ selectedBackup?.backup?.data?.profile?.name ?? "Profile" }}
+							Import {{ selectedBackup?.profileName ?? "Profile" }}
 						</Button>
 						<Button
 							v-if="restoreStatus === 'finished' && isRestoreHasErrors"

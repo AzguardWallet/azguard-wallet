@@ -15,18 +15,7 @@ import PageHeader from "@/components/ui/Settings/PageHeader.vue"
 
 /** Services */
 import { managers } from "@/utils/core"
-import { AccountServiceClient } from "@/wallet/services/account/client"
-import { AccountStateServiceClient } from "@/wallet/services/account-state/client"
-import { AuthRegistryServiceClient } from "@/wallet/services/auth-registry/client"
-import { ConfigServiceClient } from "@/wallet/services/config/client"
-import { ContactServiceClient } from "@/wallet/services/contact/client"
-import { FpcServiceClient } from "@/wallet/services/fpc/client"
-import { NetworkServiceClient } from "@/wallet/services/network/client"
-import { ProfileServiceClient } from "@/wallet/services/profile/client"
-import { TokenServiceClient } from "@/wallet/services/token/client"
-import { TokenBalanceServiceClient } from "@/wallet/services/token-balance/client"
-import { TransactionServiceClient } from "@/wallet/services/transaction/client"
-import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key"
+import { BackupServiceClient } from "@/wallet/services/backup/client"
 
 /** Utils */
 import { downloadFile } from "@/utils"
@@ -56,22 +45,8 @@ const handleContinueReset = () => {
 	popupStore.open("reset")
 }
 
-let backup = {}
-const backupServices = [
-	new ProfileServiceClient(),
-	new NetworkServiceClient(),
-	new AccountServiceClient(),
-	new TransactionServiceClient(),
-	new TokenServiceClient(),
-	new TokenBalanceServiceClient(),
-	new AccountStateServiceClient(),
-	new AuthRegistryServiceClient(),
-	new FpcServiceClient(),
-	new ContactServiceClient(),
-	new ConfigServiceClient(),
-]
-const version = __VERSION__
-const aztecVersion = __AZTEC_VERSION__
+// NOTE: plain string on purpose — the file is large, keep it out of reactivity
+let backupFile = ""
 
 const isPasskeyProfile = computed(() => appStore.profile.type === "passkey")
 const password = ref()
@@ -79,25 +54,45 @@ const repeatedPassword = ref()
 const isWrongPassword = ref(false)
 const isPasswordMismatch = ref(false)
 
-const showRecommendation = ref(false)
-
 const isAgreed = ref(false)
 const handleAgree = () => {
 	isAgreed.value = true
-
-	if (isPasskeyProfile.value) {
-		handleBackup()
-	}
 }
 
 const backupStatus = ref("")
-async function handleBackup() {
-	let key = ""
+const isEncrypted = ref(false)
+const showEncryptInputs = ref(false)
+
+async function handleCreateEncrypted() {
+	if (isPasskeyProfile.value) {
+		if (!showEncryptInputs.value) {
+			showEncryptInputs.value = true
+			return
+		}
+		if (!password.value) return
+		if (password.value !== repeatedPassword.value) {
+			isPasswordMismatch.value = true
+			return
+		}
+	}
+
+	await createBackup(true)
+}
+
+async function handleCreatePlain() {
+	await createBackup(false)
+}
+
+async function createBackup(encrypt) {
+	let key
 
 	try {
 		if (isPasskeyProfile.value) backupStatus.value = "waiting-for-authentication"
 
-		key = await managers.profile.exportPlain(appStore.profile.id, password.value)
+		key = await managers.profile.exportPlain(
+			appStore.profile.id,
+			isPasskeyProfile.value ? undefined : password.value,
+		)
 	} catch (error) {
 		if (!isPasskeyProfile.value) {
 			isWrongPassword.value = true
@@ -108,82 +103,33 @@ async function handleBackup() {
 
 		return
 	}
-	
+
 	backupStatus.value = "progress"
-	backup = {
-		"wallet-version": version,
-		"aztec-version": aztecVersion,
-		"master-key": key,
-		data: {},
-	}
-
+	const backupClient = new BackupServiceClient()
 	try {
-		for (const s of backupServices) {
-			const data = await s.backup()
-
-			if (data === null || data === undefined) continue;
-
-			backup.data[s.name?.replace("-client", "")] = data
-		}
-
-		const checksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
-		backup.checksum = checksum
+		// NOTE: for a password profile the profile password also seals the backup, as before
+		backupFile = await backupClient.fetchExport(key, encrypt ? password.value : undefined)
 	} catch (error) {
 		console.error("Failed to create the backup", error)
 		openToast({ label: "Failed to create the backup", icon: "warning" }, 2000)
 		backupStatus.value = ""
 		return
 	} finally {
-		for (const s of backupServices) s.disconnect()
+		backupClient.disconnect()
 	}
 
+	isEncrypted.value = encrypt
 	backupStatus.value = "finished"
-	showRecommendation.value = true
-}
-async function handleEncrypt() {
-	if (isPasskeyProfile.value) {
-		showRecommendation.value = false
-		if (!password.value) return
-
-		if (password.value !== repeatedPassword.value) {
-			isPasswordMismatch.value = true
-			return
-		}
-	}
-
-	backupStatus.value = "encrypting"
-	showRecommendation.value = false
-
-	try {
-		const passhash = await EncryptionKey.getPasshash(password.value)
-		const key = await EncryptionKey.fromPasshash(passhash)
-		backup = Buffer(await key.encrypt(new TextEncoder().encode(JSON.stringify(backup)))).toString("base64")
-		
-		backupStatus.value = "encrypted"
-	} catch (error) {
-		console.error('Failed to encrypt the backup', error);
-		openToast({ label: "Failed to encrypt the backup", icon: "warning" }, 2000)
-		
-		backupStatus.value = "finished"
-	}
 }
 async function handleDownloadBackup() {
-	const isEncrypted = backupStatus.value === "encrypted"
 	let filename = `_${appStore.profile.name.replace(" ", "_")}_${Math.floor(Date.now() / 1000)}`
-	filename = isEncrypted
+	filename = isEncrypted.value
 		? `AzguardWalletEncryptedBackup${filename}.txt`
 		: `AzguardWalletBackup${filename}.json`
 
-	let fileContent = ""
-	if (isEncrypted) {
-		fileContent = backup
-	} else {
-		fileContent = JSON.stringify(backup, null, 2)
-	}
-
 	try {
 		await downloadFile({
-			data: fileContent,
+			data: backupFile,
 			filename,
 			compressionFormat: "gzip",
 		})
@@ -203,17 +149,10 @@ const onKeydown = e => {
 	if (!isAgreed.value) return
 
 	if (e.key === "Enter") {
-		switch (backupStatus.value) {
-			case "finished":
-				handleEncrypt()
-				break;
-			case "encrypted":
-				handleDownloadBackup()
-				break;
-		
-			default:
-				handleBackup()
-				break;
+		if (backupStatus.value === "finished") {
+			handleDownloadBackup()
+		} else {
+			handleCreateEncrypted()
 		}
 	}
 }
@@ -236,11 +175,11 @@ onBeforeUnmount(() => {
 			title="Full Backup"
 			description="Full backup includes your master key and all profile data so you can restore current state of your wallet anytime."
 		>
-			<template v-if="backupStatus === 'finished' || backupStatus === 'encrypted'" #rightdownicon>
+			<template v-if="backupStatus === 'finished'" #rightdownicon>
 				<Icon
 					size="22"
-					:color="backupStatus === 'finished' ? 'red' : 'green'"
-					:name="backupStatus === 'finished' ? 'lock-unlock' : 'lock'"
+					:color="isEncrypted ? 'green' : 'red'"
+					:name="isEncrypted ? 'lock' : 'lock-unlock'"
 					:class="$style.right_down_icon" />
 			</template>
 		</PageHeader>
@@ -272,8 +211,9 @@ onBeforeUnmount(() => {
 			</Button>
 		</template>
 		<template v-else-if="isAgreed">
-			<template v-if="!isPasskeyProfile && !backupStatus">
+			<template v-if="!backupStatus">
 				<Input
+					v-if="!isPasskeyProfile"
 					v-model="password"
 					@click="isWrongPassword = false"
 					@input="isWrongPassword = false"
@@ -292,33 +232,18 @@ onBeforeUnmount(() => {
 					</template>
 				</Input>
 
-				<Button
-					@click="handleBackup"
-					type="secondary"
-					size="medium"
-					right-icon="arrow-right-circle"
-					wide
-					:disabled="!password || isWrongPassword"
-				>
-					Create Backup
-				</Button>
-			</template>
-
-			<Flex v-else-if="backupStatus === 'waiting-for-authentication'" align="center" justify="center" style="flex: 1;">
-				<Text size="14" weight="600" color="secondary"> Waiting for passkey... </Text>
-			</Flex>
-
-			<Flex v-else-if="backupStatus" direction="column" gap="12">
-				<Banner v-if="showRecommendation" variant="info" direction="vertical">
-					<template #title> Backup is ready </template>
+				<Banner variant="info" direction="vertical">
+					<template #title> Protecting the backup </template>
 					<template #description>
 						<Text height="140">
-							You can download it right now, but we strongly recommend to encrypt it before downloading.
+							We strongly recommend the encrypted backup.
+							{{ isPasskeyProfile ? "The" : "Your profile" }} password will be
+							required to restore it.
 						</Text>
 					</template>
 				</Banner>
 
-				<Flex v-if="!showRecommendation && isPasskeyProfile && backupStatus === 'finished'" direction="column" gap="8">
+				<Flex v-if="showEncryptInputs" direction="column" gap="8">
 					<Input
 						v-model="password"
 						@click="isPasswordMismatch = false"
@@ -327,7 +252,6 @@ onBeforeUnmount(() => {
 						label="Password"
 						placeholder="Enter password"
 						autofocus
-						:disabled="backupStatus === 'encrypting'"
 					>
 						<template #right>
 							<Transition name="fade">
@@ -344,12 +268,50 @@ onBeforeUnmount(() => {
 						@input="isPasswordMismatch = false"
 						type="password"
 						placeholder="Repeat password"
-						:disabled="backupStatus === 'encrypting'"
 					/>
 				</Flex>
 
-				<Banner v-if="backupStatus === 'encrypted'" variant="done" direction="vertical">
-					<template #title> Backup is successfully encrypted </template>
+				<Button
+					@click="handleCreateEncrypted"
+					type="secondary"
+					size="medium"
+					right-icon="key"
+					wide
+					:disabled="!isPasskeyProfile && (!password || isWrongPassword)"
+				>
+					Create Encrypted Backup
+				</Button>
+				<Button
+					@click="handleCreatePlain"
+					type="secondary"
+					size="medium"
+					right-icon="arrow-right-circle"
+					wide
+					:disabled="!isPasskeyProfile && (!password || isWrongPassword)"
+				>
+					Create Plain Backup
+				</Button>
+			</template>
+
+			<Flex
+				v-else-if="backupStatus === 'waiting-for-authentication'"
+				align="center"
+				justify="center"
+				style="flex: 1;"
+			>
+				<Text size="14" weight="600" color="secondary"> Waiting for passkey... </Text>
+			</Flex>
+
+			<Flex v-else-if="backupStatus" direction="column" gap="12">
+				<Banner v-if="backupStatus === 'finished' && !isEncrypted" variant="info" direction="vertical">
+					<template #title> Backup is ready </template>
+					<template #description>
+						<Text height="140"> The backup is not encrypted — store it securely. </Text>
+					</template>
+				</Banner>
+
+				<Banner v-if="backupStatus === 'finished' && isEncrypted" variant="done" direction="vertical">
+					<template #title> Backup is ready and encrypted </template>
 					<template #description>
 						<Text color="secondary" height="140">
 							Don't forget your 
@@ -359,32 +321,17 @@ onBeforeUnmount(() => {
 					</template>
 				</Banner>
 
-				<Flex direction="column" gap="8">
-					<Button
-						v-if="backupStatus === 'finished' || backupStatus == 'encrypting'"
-						@click="handleEncrypt()"
-						type="secondary"
-						size="medium"
-						right-icon="key"
-						wide
-						:loading="backupStatus === 'encrypting'"
-						:disabled="backupStatus === 'encrypting'"
-					>
-						Protect with Password
-					</Button>
-
-					<Button
-						@click="handleDownloadBackup"
-						type="secondary"
-						size="medium"
-						:right-icon="backupStatus !== 'progress' ? 'download' : ''"
-						wide
-						:loading="backupStatus === 'progress'"
-						:disabled="!backupStatus || backupStatus === 'progress' || backupStatus === 'encrypting'"
-					>
-						{{ backupStatus === 'progress' ? 'Creating Backup' : 'Download Backup' }}
-					</Button>
-				</Flex>
+				<Button
+					@click="handleDownloadBackup"
+					type="secondary"
+					size="medium"
+					:right-icon="backupStatus !== 'progress' ? 'download' : ''"
+					wide
+					:loading="backupStatus === 'progress'"
+					:disabled="backupStatus !== 'finished'"
+				>
+					{{ backupStatus === 'progress' ? 'Creating Backup' : 'Download Backup' }}
+				</Button>
 			</Flex>
 		</template>
 

@@ -44,6 +44,14 @@ export class EncryptionKey {
     }
 
     /**
+     * Whether the bytes start like this class's sealed output: the version tag,
+     * then the 12-byte IV. The counterpart of the layout encrypt() writes.
+     */
+    public static isSealed(prefix: Uint8Array): boolean {
+        return prefix.length >= 13 && prefix[0] === 0;
+    }
+
+    /**
      * Decrypts payload
      * @param payload - Bytes to be decrypted
      * @returns Decrypted bytes
