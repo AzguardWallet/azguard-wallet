@@ -55,7 +55,14 @@ const isLoadingParseResult = ref(false)
 const isAddingNewToken = ref(false)
 
 const tokens = ref([])
-const isAlreadyExist = computed(() => tokens.value?.findLast(t => t.contract === contractAddressTerm.value))
+const visibleTokenIds = ref(new Set())
+// NOTE: block only tokens the user can actually see — the main list renders through balances,
+// so a record whose balance rows are missing must not refuse the add, re-adding heals it
+const isAlreadyExist = computed(() =>
+	tokens.value?.findLast(
+		t => t.contract === contractAddressTerm.value && visibleTokenIds.value.has(t.id),
+	),
+)
 const isAvailableToCreateToken = computed(() => {
 	if (!isValidHex(contractAddressTerm.value)) return
 	if (isAlreadyExist.value) return
@@ -179,7 +186,12 @@ watch(
 			tokenBalanceService.disconnect()
 			tokenService.disconnect()
 		} else {
-			tokens.value = await tokenService.getTokens(appStore.profile.id, appStore.network.chainId)
+			const [profileTokens, accountBalances] = await Promise.all([
+				tokenService.getTokens(appStore.profile.id, appStore.network.chainId),
+				tokenBalanceService.getTokenBalances(undefined, appStore.account.address),
+			])
+			tokens.value = profileTokens
+			visibleTokenIds.value = new Set(accountBalances.map(tb => tb.token.id))
 
 			if (cacheStore.preselectedTokenAddressToAdd) {
 				contractAddressTerm.value = cacheStore.preselectedTokenAddressToAdd

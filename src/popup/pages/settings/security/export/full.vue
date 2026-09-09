@@ -117,17 +117,25 @@ async function handleBackup() {
 		data: {},
 	}
 
-	for (const s of backupServices) {
-		const data = await s.backup()
-		s.disconnect();
+	try {
+		for (const s of backupServices) {
+			const data = await s.backup()
 
-		if (data === null || data === undefined) continue;
+			if (data === null || data === undefined) continue;
 
-		backup.data[s.name?.replace("-client", "")] = data
+			backup.data[s.name?.replace("-client", "")] = data
+		}
+
+		const checksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
+		backup.checksum = checksum
+	} catch (error) {
+		console.error("Failed to create the backup", error)
+		openToast({ label: "Failed to create the backup", icon: "warning" }, 2000)
+		backupStatus.value = ""
+		return
+	} finally {
+		for (const s of backupServices) s.disconnect()
 	}
-
-	const checksum = await EncryptionKey.getHashHex(JSON.stringify(backup))
-	backup.checksum = checksum
 
 	backupStatus.value = "finished"
 	showRecommendation.value = true

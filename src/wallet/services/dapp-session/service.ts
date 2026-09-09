@@ -5,6 +5,7 @@ import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import type { SerializedCapability } from "@/wallet/services/dapp-interaction/scope-enforcement";
 import {
     DAPP_SESSION_SERVICE_NAME,
@@ -12,6 +13,7 @@ import {
     type DappPermissions,
     type DappSession,
     AccessLevel,
+    DAPP_SESSIONS_STORAGE_ROOT,
     Methods,
     Events,
 } from "./spec";
@@ -25,7 +27,7 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
     public readonly onDappSessionUpdated = new EventHandler<DappSession>();
     public readonly onDappSessionDeleted = new EventHandler<DappSession>();
 
-    private readonly storage = new EntityStorage<DappSession>("azguard:core:dappSessions", StorageType.Local);
+    private readonly storage = new EntityStorage<DappSession>(DAPP_SESSIONS_STORAGE_ROOT, StorageType.Local);
     private readonly lock = new Lock();
 
     private profileService: ProfileService = null!;
@@ -64,6 +66,13 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
         const session = await this.storage.get(sessionId);
         if (session && (await this.isExpired(session))) {
             return undefined;
+        }
+        // NOTE: another profile's session must not resolve — a locked wallet keeps it, the unlock decides
+        if (session) {
+            const profile = await this.profileService.getActiveProfile();
+            if (profile && session.profileId !== profile.id) {
+                return undefined;
+            }
         }
         return session;
     }
@@ -216,8 +225,12 @@ export class DappSessionService extends Service<Methods, Events> implements Serv
             const sessions = (await this.storage.getValues()).filter(x => x.profileId === profile.id);
             for (const session of sessions) {
                 this.logDebug(`Remove session #${session.id}`);
-                await this.storage.delete(session.id);
-                this.emit("onDappSessionDeleted", session);
+                try {
+                    await this.storage.delete(session.id);
+                    this.emit("onDappSessionDeleted", session);
+                } catch (error) {
+                    this.logError(`Failed to delete session ${session.id} of the deleted profile`, getErrorMessage(error));
+                }
             }
         } finally {
             this.lock.leave();

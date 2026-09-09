@@ -11,6 +11,7 @@ import { TaskService, StepContent, WrappedTask } from "@/wallet/services/task/se
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { array_max, Lock } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { feeJuiceAddress, feeJuiceName, feeJuiceSymbol } from "@/wallet/utils/fee-juice";
 import { getDefaultTokens } from "@/wallet/constants/default-tokens";
 import { simulate, ViewFn } from "@/wallet/utils/fn";
@@ -18,7 +19,7 @@ import { privateFpcTokenName, privateFpcTokenSymbol } from "@/wallet/utils/priva
 import { isPrivateFpcArtifact } from "@/wallet/services/fpc/handlers/private-fpc-handler";
 import { FpcService } from "@/wallet/services/fpc/service";
 import { FpcInfo, FpcType } from "@/wallet/services/fpc/spec";
-import { Token, TokenInfo, TOKEN_SERVICE_NAME, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
+import { Token, TokenInfo, TOKEN_SERVICE_NAME, TOKENS_STORAGE_ROOT, TokenInterface, TokenMetadataOverride, Methods, Events } from "./spec";
 import {
     BalanceOfPrivateFn,
     BalanceOfPublicFn,
@@ -53,7 +54,7 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
     public readonly onTokenUpdated = new EventHandler<TokenInfo>();
     public readonly onTokenDeleted = new EventHandler<TokenInfo>();
 
-    private readonly tokens = new EntityStorage<Token>("azguard:core:tokens", StorageType.Local);
+    private readonly tokens = new EntityStorage<Token>(TOKENS_STORAGE_ROOT, StorageType.Local);
     private readonly lock = new Lock();
 
     private pxeService: PxeServiceClient = null!;
@@ -155,8 +156,9 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
                     transferPrivateToPublicFn: tokenInterface.transferPrivateToPublicFn,
                 };
                 await this.tokens.set(`${token.id}`, token);
-                this.emit("onTokenAdded", getTokenInfo(token));
             }
+            // NOTE: emitted for an existing record too — re-adding heals missing balance rows
+            this.emit("onTokenAdded", getTokenInfo(token));
             const result = getTokenInfo(token);
             task.complete();
             return result;
@@ -516,7 +518,11 @@ export class TokenService extends Service<Methods, Events> implements ServiceSpe
         this.logDebug(`Profile ${profile.id} deleted, remove related tokens`);
         for (const token of (await this.tokens.getValues()).filter(x => x.profileId === profile.id)) {
             this.logDebug(`Remove token ${token.id}`);
-            await this.deleteToken(token.id);
+            try {
+                await this.deleteToken(token.id);
+            } catch (error) {
+                this.logError(`Failed to delete token ${token.id} of the deleted profile`, getErrorMessage(error));
+            }
         }
     };
 

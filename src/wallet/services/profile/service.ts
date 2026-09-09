@@ -18,6 +18,7 @@ import {
     isCurrentGeneration,
     ProfileInfo,
     ProfileOrigin,
+    PROFILES_STORAGE_ROOT,
     Profile,
     Session,
     ActiveSession,
@@ -45,7 +46,7 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
     public constructor(config: IConfig, logger: ILogger) {
         super(PROFILE_SERVICE_NAME, logger);
-        this.profiles = new EntityStorage("azguard:core:profiles", StorageType.Local);
+        this.profiles = new EntityStorage(PROFILES_STORAGE_ROOT, StorageType.Local);
         this.session = new ValueStorage("azguard:core:session", StorageType.Session);
         this.sessionTtl = config.get("sessionTtl");
         config.onUpdate.add(this.onConfigUpdated);
@@ -382,6 +383,8 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
 
             await this.profiles.delete(id);
 
+            // TODO: `cleanup/orphan-hygiene` the cascade (accounts, tokens, balances, sessions, …)
+            // is fire-and-forget, so a worker death right here strands invisible orphans
             this.emit("onProfileDeleted", this.getProfileInfo(profile));
 
             const session = await this._getSession();
@@ -749,10 +752,11 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
                 try {
                     await this.lock.enter();
 
-                    let id = profile.id;
-                    while ((await this.profiles.contains(id))) {
+                    // NOTE: never use the profile id from the backup — a dead id returning would adopt leftovers of an interrupted deletion cascade
+                    let id: string;
+                    do {
                         id = getRandomHex(8);
-                    }
+                    } while (await this.profiles.contains(id));
 
                     const newProfile: Profile = {
                         id,

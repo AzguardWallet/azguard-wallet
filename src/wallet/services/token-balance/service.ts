@@ -17,7 +17,7 @@ import { TaskService, BalanceUpdateContent } from "@/wallet/services/task/servic
 import { isLocalTx, OriginType, TransactionService, Tx, TxStatus } from "@/wallet/services/transaction/service";
 import type { ViewFn } from "@/wallet/utils/fn";
 import { getErrorMessage } from "@/wallet/utils/errors";
-import { TOKEN_BALANCE_SERVICE_NAME, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec";
+import { TOKEN_BALANCE_SERVICE_NAME, TOKEN_BALANCES_STORAGE_ROOT, TokenBalanceRaw, TokenBalanceInfo, Methods, Events } from "./spec";
 
 export * from "./spec";
 
@@ -28,7 +28,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     public readonly onTokenBalanceUpdated = new EventHandler<TokenBalanceInfo>();
     public readonly onTokenBalanceDeleted = new EventHandler<TokenBalanceInfo>();
 
-    private readonly balances = new EntityStorage<TokenBalanceRaw>("azguard:core:token-balances", StorageType.Local);
+    private readonly balances = new EntityStorage<TokenBalanceRaw>(TOKEN_BALANCES_STORAGE_ROOT, StorageType.Local);
     private readonly queue = new Queue<number, TokenBalanceRaw>(x => x.id);
     private readonly pendingTasks = new Map<number, string>();
     private readonly tokens = new Map<number, Token>();
@@ -80,16 +80,33 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
         if (!balance) {
             throw new Error("unknown token balance id");
         }
-        
-        return this.getTokenBalanceInfo(balance);
+        const token = (await this.activeProfileTokens()).get(balance.token);
+        if (!token) {
+            throw new Error("unknown token");
+        }
+        return this.getTokenBalanceInfo(balance, getTokenInfo(token));
     }
 
     public async getTokenBalances(tokenId?: number, accountAddress?: string): Promise<TokenBalanceInfo[]> {
         await this.ensureInitialized();
+        const tokens = await this.activeProfileTokens();
         return (await this.balances.getValues())
             .filter(x => tokenId === undefined || x.token === tokenId)
             .filter(x => accountAddress === undefined || x.account === accountAddress)
-            .map(x => this.getTokenBalanceInfo(x), this);
+            .filter(x => tokens.has(x.token))
+            .map(x => this.getTokenBalanceInfo(x, getTokenInfo(tokens.get(x.token)!)));
+    }
+
+    /**
+     * The active profile's tokens, read from storage. The balances table spans every
+     * profile's rows, and the in-memory token map lags a profile switch.
+     */
+    private async activeProfileTokens(): Promise<Map<number, Token>> {
+        const profile = await this.profileService.getActiveProfile();
+        if (!profile) {
+            return new Map();
+        }
+        return new Map((await this.tokenService.getTokensRaw(profile.id)).map(x => [x.id, x]));
     }
 
     public async refreshTokenBalance(id: number): Promise<void> {
@@ -115,8 +132,12 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
     }
 
     private async createTokenBalance(token: Token, account: Account) {
+        const balances = await this.balances.getValues();
+        if (balances.some(x => x.token === token.id && x.account === account.address)) {
+            return;
+        }
         const tb: TokenBalanceRaw = {
-            id: array_max((await this.balances.getKeys()).map(x => +x)) + 1,
+            id: array_max(balances.map(x => x.id)) + 1,
             token: token.id,
             account: account.address,
             privateBalance: "0",
@@ -436,7 +457,8 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
             throw new Error("Profile locked");
         }
 
-        return (await this.balances.getValues());
+        const tokens = await this.activeProfileTokens();
+        return (await this.balances.getValues()).filter(x => tokens.has(x.token));
     }
 
     public async restore(tokenBalances: TokenBalanceRaw[]): Promise<Restored<TokenBalanceRaw>[]> {

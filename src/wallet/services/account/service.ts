@@ -5,10 +5,11 @@ import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ProfileService, ProfileInfo } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
-import { array_max, hasIntersectionByKeys } from "@/wallet/utils";
+import { array_max } from "@/wallet/utils";
 import { EventHandler } from "@/wallet/utils/event-handler";
+import { getErrorMessage } from "@/wallet/utils/errors";
 import { AzguardV0, AzguardV0Persistent, IAccountContract } from "./contracts";
-import { ACCOUNT_SERVICE_NAME, AccountType, Account, Events, Methods } from "./spec";
+import { ACCOUNT_ERRORS, ACCOUNT_SERVICE_NAME, AccountType, Account, Events, Methods } from "./spec";
 
 export * from "./spec";
 
@@ -160,8 +161,12 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
         const accounts = (await this.storage.getValues()).filter(x => x.profileId === profile.id);
         for (const account of accounts) {
             this.logDebug(`remove account ${account.address}`);
-            await this.storage.delete(account.address);
-            this.emit("onAccountDeleted", account);
+            try {
+                await this.storage.delete(account.address);
+                this.emit("onAccountDeleted", account);
+            } catch (error) {
+                this.logError(`Failed to delete account ${account.address} of the deleted profile`, getErrorMessage(error));
+            }
         }
     };
 
@@ -176,18 +181,35 @@ export class AccountService extends Service<Methods, Events> implements ServiceS
         );
     }
 
+    /**
+     * Rows are keyed by address, so a collision can only be refused or overwritten.
+     * A live profile's account is refused — overwriting would steal it. An orphan row
+     * of a deleted profile finishes deleting here, and the restore proceeds. A row under
+     * the restoring profile's own id is an orphan too: a passkey profile restores under
+     * its old id, so an interrupted deletion's leftovers look owned by a live profile.
+     */
     public async restore(accounts: Account[]): Promise<Restored<Account>[]> {
         await this.ensureInitialized();
 
         const result: Restored<Account>[] = [];
 
-        const hasIntersectionByAddress = hasIntersectionByKeys(
-            await this.storage.getValues(),
-            accounts,
-            ["address"],
-        );
-        if (hasIntersectionByAddress) throw new Error("Duplicate address");
-        
+        const addresses = new Set(accounts.map(x => x.address));
+        const colliding = (await this.storage.getValues()).filter(x => addresses.has(x.address));
+        if (colliding.length) {
+            const restoringProfileIds = new Set(accounts.map(x => x.profileId));
+            const liveProfileIds = new Set(
+                (await this.profileService.getProfiles()).map(x => x.id).filter(x => !restoringProfileIds.has(x)),
+            );
+            if (colliding.some(x => liveProfileIds.has(x.profileId))) {
+                throw new Error(ACCOUNT_ERRORS.duplicateAddress);
+            }
+            for (const orphan of colliding) {
+                this.logInfo(`Deleting orphan account ${orphan.address} of deleted profile ${orphan.profileId} before restore`);
+                await this.storage.delete(orphan.address);
+                this.emit("onAccountDeleted", orphan);
+            }
+        }
+
         for (const account of accounts) {
             try {
                 await this.storage.set(account.address, account);

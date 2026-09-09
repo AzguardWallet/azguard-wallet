@@ -125,7 +125,7 @@ export const useAppStore = defineStore("app", () => {
 			return
 		}
 
-		account.value = accounts.value[0]
+		account.value = accounts.value.find(a => a.visible) ?? accounts.value[0]
 		await setActiveAccount(account.value?.address)
 	}
 	const selectAccount = async (acc: Account) => {

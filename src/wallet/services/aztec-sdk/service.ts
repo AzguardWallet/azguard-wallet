@@ -16,9 +16,11 @@ import {
     type OperationRequest,
 } from "@/wallet/services/dapp-interaction/service";
 import { DappSessionService, type DappSession } from "@/wallet/services/dapp-session/service";
+import { ProfileService } from "@/wallet/services/profile/service";
 import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getErrorMessage } from "@/wallet/utils/errors";
-import { AZTEC_SDK_SERVICE_NAME, type Methods, type Events } from "./spec";
+import { migrateLegacyConnectedApps } from "./migration";
+import { AZTEC_SDK_SERVICE_NAME, CONNECTED_APPS_STORAGE_ROOT, getConnectedAppKey, type Methods, type Events } from "./spec";
 import { AppCapabilitiesSchema, type AppCapabilities, type WalletCapabilities } from "@aztec/aztec.js/wallet";
 import type { WalletResponse } from "@aztec/wallet-sdk/types";
 import type { OperationResult } from "@/wallet/services/execution/models";
@@ -58,6 +60,7 @@ function operationResultToResponse(
 
 type ConnectedApp = {
     id: string;
+    profileId: string;
     origin: string;
     chainId: number;
     dappSessionId: string;
@@ -73,6 +76,7 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
 
     private dappInteractionService: DappInteractionService = null!;
     private dappSessionService: DappSessionService = null!;
+    private profileService: ProfileService = null!;
 
     /** Maps SDK session IDs to DappSession IDs */
     private readonly sdkSessionToDappSession = new Map<string, string>();
@@ -82,7 +86,7 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
 
     /** Tracks SDK-connected apps for session reuse and cleanup */
     private readonly connectedApps = new EntityStorage<ConnectedApp>(
-        "azguard:core:aztecSdkConnectedApps",
+        CONNECTED_APPS_STORAGE_ROOT,
         StorageType.Local,
     );
 
@@ -93,6 +97,13 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
     protected async init(services: ServiceCollection) {
         this.dappInteractionService = services.get(DappInteractionService.name);
         this.dappSessionService = services.get(DappSessionService.name);
+        this.profileService = services.get(ProfileService.name);
+
+        try {
+            await migrateLegacyConnectedApps((...args) => this.logInfo(...args));
+        } catch (error) {
+            this.logError("Legacy connected-app migration failed", getErrorMessage(error));
+        }
 
         // Clean up connected apps when their DappSession is deleted
         this.dappSessionService.onDappSessionDeleted.add(this.onDappSessionDeleted);
@@ -141,24 +152,23 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
         try {
             const chainId = resolveChainId(discovery.chainInfo);
 
-            // Check if this app has connected before
-            const appKey = this.getConnectedAppKey(discovery.appId, discovery.origin, chainId);
-            const existing = await this.connectedApps.get(appKey);
-
-            if (existing) {
-                const session = await this.dappSessionService.tryGetDappSession(existing.dappSessionId);
-                if (session && existing.autoApprove) {
-                    // Auto-approve: reuse existing DappSession
-                    this.logInfo("Auto-approving connected app", { appId: discovery.appId });
-                    this.sdkSessionToDappSession.set(discovery.requestId, session.id);
-                    this.handler.approveDiscovery(discovery.requestId);
-                    return;
-                }
-                // Session expired/invalid or not auto-approved — clean up old entry and session
-                this.logInfo("Cleaning up previous SDK session", { appId: discovery.appId });
-                await this.connectedApps.delete(appKey);
-                if (session) {
-                    await this.dappSessionService.deleteDappSession(session.id);
+            const profile = await this.profileService.getActiveProfile();
+            if (profile) {
+                const appKey = getConnectedAppKey(profile.id, discovery.appId, discovery.origin, chainId);
+                const existing = await this.connectedApps.get(appKey);
+                if (existing) {
+                    const session = await this.dappSessionService.tryGetDappSession(existing.dappSessionId);
+                    if (session && existing.autoApprove) {
+                        this.logInfo("Auto-approving connected app", { appId: discovery.appId });
+                        this.sdkSessionToDappSession.set(discovery.requestId, session.id);
+                        this.handler.approveDiscovery(discovery.requestId);
+                        return;
+                    }
+                    this.logInfo("Cleaning up previous SDK session", { appId: discovery.appId });
+                    await this.connectedApps.delete(appKey);
+                    if (session) {
+                        await this.dappSessionService.deleteDappSession(session.id);
+                    }
                 }
             }
 
@@ -191,9 +201,15 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
             this.sdkSessionToDappSession.set(discovery.requestId, result.id);
             this.handler.approveDiscovery(discovery.requestId);
 
-            // Always track the session for cleanup; autoApprove controls reconnect behavior
-            await this.connectedApps.set(appKey, {
+            // TODO: consider storing the binding only when autoApprove is set — the
+            // always-stored binding exists only to be cleaned up
+            // NOTE: the key is rebuilt from the session's own profile — the approval may
+            // have unlocked the wallet or run under a switched profile
+            const session = await this.dappSessionService.getDappSession(result.id);
+            const storeKey = getConnectedAppKey(session.profileId, discovery.appId, discovery.origin, chainId);
+            await this.connectedApps.set(storeKey, {
                 id: discovery.appId,
+                profileId: session.profileId,
                 origin: discovery.origin,
                 chainId,
                 dappSessionId: result.id,
@@ -412,16 +428,12 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
         throw new Error("No active DappSession for this SDK session");
     }
 
-    private getConnectedAppKey(appId: string, origin: string, chainId: number): string {
-        return JSON.stringify([appId, origin, chainId]);
-    }
-
     private readonly onDappSessionDeleted = async (session: DappSession) => {
         // Clean up connected apps that reference the deleted DappSession
         const apps = await this.connectedApps.getValues();
         for (const app of apps) {
             if (app.dappSessionId === session.id) {
-                const key = this.getConnectedAppKey(app.id, app.origin, app.chainId);
+                const key = getConnectedAppKey(app.profileId, app.id, app.origin, app.chainId);
                 await this.connectedApps.delete(key);
                 this.logInfo("Removed connected app for deleted DappSession", {
                     appId: app.id,

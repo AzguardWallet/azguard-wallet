@@ -4,10 +4,9 @@ import { IConfig } from "@/wallet/config";
 import { DummyLogger } from "@/wallet/logger";
 import { PasskeyService } from "@/wallet/services/passkey/service";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import { ProfileInfo, ProfileOrigin, ProfileService, SENTINEL_STORAGE_KEY, UNKNOWN_ORIGIN } from "../service";
+import { ProfileInfo, ProfileOrigin, ProfileService, PROFILES_STORAGE_ROOT, SENTINEL_STORAGE_KEY, UNKNOWN_ORIGIN } from "../service";
 
 const BUILD_ORIGIN: ProfileOrigin = { sentinel: "9-test", walletVersion: "0.14.0-test", aztecVersion: "5.0.0-test" };
-const PROFILES_ROOT = "azguard:core:profiles";
 const MASTER_KEY = Buffer.from(new Uint8Array(32).fill(7)).toString("base64");
 
 beforeEach(() => {
@@ -18,7 +17,7 @@ beforeEach(() => {
 });
 
 const seedProfile = (profile: { id: string; [key: string]: unknown }) =>
-    chrome.storage.local.set({ [`${PROFILES_ROOT}@${profile.id}`]: JSON.stringify(profile) });
+    chrome.storage.local.set({ [`${PROFILES_STORAGE_ROOT}@${profile.id}`]: JSON.stringify(profile) });
 
 const createService = async () => {
     const config: IConfig = {

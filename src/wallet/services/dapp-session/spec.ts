@@ -2,6 +2,9 @@ import type { SerializedCapability } from "@/wallet/services/dapp-interaction/sc
 
 export const DAPP_SESSION_SERVICE_NAME = "dapp-session";
 
+/** Raw storage root of the dapp-sessions table. */
+export const DAPP_SESSIONS_STORAGE_ROOT = "azguard:core:dappSessions";
+
 export type DappMetadata = {
     name?: string;
     description?: string;

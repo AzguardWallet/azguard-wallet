@@ -34,7 +34,6 @@ export async function deletePxeStores(profileId: string): Promise<string[]> {
 /**
  * Deletes every store no profile can open: stores without a profile segment in the name and
  * stores of profiles missing from `profileIds`. Stores must be closed. Returns the deleted names.
- * Not called yet — see the TODO at PxeService.init().
  */
 export async function deleteOrphanPxeStores(profileIds: string[]): Promise<string[]> {
     const deleted: string[] = [];

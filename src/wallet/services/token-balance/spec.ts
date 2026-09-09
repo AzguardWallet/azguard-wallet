@@ -2,6 +2,9 @@ import { TokenInfo } from "@/wallet/services/token/spec";
 
 export const TOKEN_BALANCE_SERVICE_NAME = "token-balance";
 
+/** Raw storage root of the token-balances table. */
+export const TOKEN_BALANCES_STORAGE_ROOT = "azguard:core:token-balances";
+
 export type TokenBalanceRaw = {
     id: number;
     token: number;

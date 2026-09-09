@@ -2,6 +2,9 @@ import type { Fr } from "@aztec/foundation/curves/bn254";
 
 export const PROFILE_SERVICE_NAME = "profile";
 
+/** Raw storage root of the profiles table. */
+export const PROFILES_STORAGE_ROOT = "azguard:core:profiles";
+
 export const ENCRYPTION_GUARD = new Uint8Array([6, 11, 20, 20, 22, 4, 20, 22]);
 
 /** chrome.storage.local key holding the sentinel written by the popup on register/import. */
