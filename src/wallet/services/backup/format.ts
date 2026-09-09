@@ -1,26 +1,28 @@
 /**
  * The file boundary of a backup: raw text on one side, typed data on the other.
- * Type sniffing, parsing, the checksum and the generation gate all live here, so the
- * restore orchestration only ever sees a validated backup. Optional fields exist only
- * in ParsedBackup — the honest shape of untrusted JSON. Past validateBackup the types
- * are strict.
+ * Type sniffing, parsing, the checksum, the generation gate and the migration
+ * step all live here, so the restore orchestration only ever sees a validated,
+ * current-format backup. Optional fields exist only in ParsedBackup — the honest shape
+ * of untrusted JSON. Past validateBackup the types are strict.
  */
 
 import { EncryptionKey } from "@/wallet/services/profile/encryption/encryption-key";
 import { ProfileInfo, isCurrentGeneration } from "@/wallet/services/profile/spec";
 import { BACKUP_ERRORS, BackupFileType } from "./spec";
 import { jsonStringify } from "@/wallet/utils/serialization";
+import { BACKUP_VERSION, upgradeBackup } from "./migrations";
 
 /** The raw parse of a backup file — JSON guarantees nothing, so every field is optional. */
 export type ParsedBackup = {
     checksum?: string;
     "wallet-version"?: string;
     "aztec-version"?: string;
+    "backup-version"?: number;
     "master-key"?: string;
     data?: Record<string, unknown>;
 };
 
-/** A backup that passed the checksum and the generation gate. */
+/** A backup that passed the checksum, the generation gate and the migrations. */
 export type ValidBackup = {
     profile: ProfileInfo;
     masterKey: string;
@@ -85,6 +87,7 @@ export async function serializeBackup(
     const file: Record<string, unknown> = {
         "wallet-version": __VERSION__,
         "aztec-version": __AZTEC_VERSION__,
+        "backup-version": BACKUP_VERSION,
         "master-key": masterKey,
         data,
     };
@@ -103,8 +106,8 @@ export function parseBackupFile(file: string): ParsedBackup {
 }
 
 /**
- * Checksum → generation gate, in that order. Throws the matching BACKUP_ERRORS
- * wording, and returns the strictly-typed backup the restore consumes.
+ * Checksum → generation gate → migrations, in that order. Throws the matching
+ * BACKUP_ERRORS wording, and returns the strictly-typed backup the restore consumes.
  */
 export async function validateBackup(parsed: ParsedBackup): Promise<ValidBackup> {
     const { checksum, ...backup } = parsed;
@@ -121,9 +124,11 @@ export async function validateBackup(parsed: ParsedBackup): Promise<ValidBackup>
         throw new Error(profile?.origin ? BACKUP_ERRORS.incompatible : BACKUP_ERRORS.outdated);
     }
 
-    const masterKey = backup["master-key"];
+    const upgraded = upgradeBackup({ ...backup, data: backup.data });
+
+    const masterKey = upgraded["master-key"];
     if (typeof masterKey !== "string") {
         throw new Error("Invalid backup file: no master key");
     }
-    return { profile: profile as ProfileInfo, masterKey, data: backup.data };
+    return { profile: upgraded.data.profile as ProfileInfo, masterKey, data: upgraded.data };
 }

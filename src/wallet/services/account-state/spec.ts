@@ -10,12 +10,27 @@ export type BackupSender = {
 export type BackupContract = {
     address: string;
     instance: ContractInstancePreimageWithAddress;
-    artifact: ContractArtifact;
+    /** key into BackupAccountState.artifacts */
+    classId: string;
 };
 export type BackupAccountState = {
     networkId: string;
     senders: Restored<BackupSender>[];
     contracts: Restored<BackupContract>[];
+    /** one artifact per contract class, keyed by originalContractClassId */
+    artifacts: Record<string, ContractArtifact>;
+};
+
+export type RestoredAddress = {
+    address: string;
+    restoreError?: unknown;
+};
+
+/** Restore outcome, slim by contract: addresses and errors only, no artifact echo. */
+export type RestoredAccountState = {
+    networkId: string;
+    senders: RestoredAddress[];
+    contracts: RestoredAddress[];
 };
 
 export type Methods = {

@@ -363,6 +363,13 @@ async function handleRestoreBackup() {
 					"This backup is from an older wallet generation and can't be restored into this wallet version.",
 				)
 				break
+			case BACKUP_ERRORS.newer:
+				fillError(
+					"full_backup",
+					"Backup From a Newer Wallet",
+					"This backup was created by a newer wallet version and can't be imported here. Update the wallet and try again.",
+				)
+				break
 			default:
 				fillError("full_backup", "Import failed", err)
 				console.error(getErrorMessage(err))
