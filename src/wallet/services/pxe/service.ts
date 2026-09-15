@@ -416,7 +416,15 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
             if (!artifact) {
                 return undefined;
             }
-            return await ContractArtifactSchema.parseAsync(artifact);
+            const parsed = await ContractArtifactSchema.parseAsync(artifact);
+            // The registry is asked by class id, and the class id is the artifact's hash: an artifact
+            // that hashes to another id is not the class it was served for.
+            const served = (await getContractClassFromArtifact(parsed)).id;
+            if (!served.equals(classId)) {
+                this.logError("Registry artifact does not hash to its class", classId.toString(), served.toString());
+                return undefined;
+            }
+            return parsed;
         } catch (error: unknown) {
             this.logError("Failed to parse artifact from registry", getErrorMessage(error));
             return undefined;
