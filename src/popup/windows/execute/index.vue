@@ -498,6 +498,7 @@ const showJson = () => {
 										size="12"
 										color="primary"
 									>
+										<!-- NOTE: the name is the dApp's word, here and in the utility row below, unchecked against the selector. If it is a lie, execution is expected to refuse the call with an error. -->
 										<Text color="secondary"> call </Text>
 										{{ call.name ?? call.selector }}
 										<Text color="secondary"> in </Text>
