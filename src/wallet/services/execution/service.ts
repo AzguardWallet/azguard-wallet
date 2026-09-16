@@ -71,6 +71,7 @@ import {
 import { ILogger } from "@/wallet/logger";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
+import { dappScopes } from "@/wallet/utils/scopes";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import {
     EXECUTION_SERVICE_NAME,
@@ -1021,7 +1022,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             simulatePublic: true,
             skipTxValidation: op.opts.skipTxValidation,
             skipFeeEnforcement: op.opts.skipFeeEnforcement ?? true,
-            scopes: scopesFrom(account.address, op.opts.additionalScopes, op.opts.sendMessagesAs),
+            scopes: scopesFrom(account.address, op.opts),
             senderForTags: op.opts.sendMessagesAs ?? account.address,
         });
     }
@@ -1070,11 +1071,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
-            scopes: scopesFrom(
-                AztecAddress.fromStringUnsafe(op.accountAddress),
-                op.opts.additionalScopes,
-                op.opts.sendMessagesAs,
-            ),
+            scopes: scopesFrom(AztecAddress.fromStringUnsafe(op.accountAddress), op.opts),
             senderForTags: op.opts.sendMessagesAs ?? AztecAddress.fromStringUnsafe(op.accountAddress),
         });
     }
@@ -1095,11 +1092,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             pxe,
             txRequest,
             {
-                scopes: scopesFrom(
-                    account.address,
-                    op.opts.additionalScopes,
-                    op.opts.sendMessagesAs,
-                ),
+                scopes: scopesFrom(account.address, op.opts),
                 senderForTags: op.opts.sendMessagesAs ?? account.address,
             },
             parentTask,
@@ -2058,10 +2051,9 @@ function assertCallName(name: string | undefined, fn: FunctionAbi): void {
  */
 function scopesFrom(
     from: AztecAddress,
-    additionalScopes: AztecAddress[] | undefined,
-    sendMessagesAs: AztecAddress | undefined,
+    opts: { additionalScopes?: AztecAddress[]; sendMessagesAs?: AztecAddress },
 ): AztecAddress[] {
-    const all = [from, ...(additionalScopes ?? []), ...(sendMessagesAs ? [sendMessagesAs] : [])];
+    const all = [from, ...dappScopes(opts)];
     const unique = new Set(all.map((address) => address.toString()));
     return [...unique].map(AztecAddress.fromStringUnsafe);
 }

@@ -36,6 +36,7 @@ import {
     DappInteraction,
 } from "./spec";
 import { enforceCapabilityScope, sdkName, type SerializedCapability, getAliasedAccounts } from "./scope-enforcement";
+import { dappScopes } from "@/wallet/utils/scopes";
 
 export * from "./spec";
 
@@ -322,12 +323,18 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                     this.checkScopesPermissions(session, operation.opts.scopes);
                     break;
                 }
+                case "aztec_simulateTx":
+                case "aztec_profileTx":
+                case "aztec_sendTx": {
+                    const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
+                    this.checkAccountPermission(session, operation.account);
+                    this.checkMethodPermission(session, operation.kind, chain);
+                    this.checkScopesPermissions(session, dappScopes(operation.opts));
+                    break;
+                }
                 case "get_complete_address":
                 case "register_token":
                 case "simulate_utility":
-                case "aztec_simulateTx":
-                case "aztec_profileTx":
-                case "aztec_sendTx":
                 case "aztec_createAuthWit": {
                     const chain = operation.account.substring(0, operation.account.lastIndexOf(":"));
                     this.checkAccountPermission(session, operation.account);
