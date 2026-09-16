@@ -1047,6 +1047,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         if (op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
+        // NOTE: under `full` and `execution-steps` the PXE keeps the private execution
+        // witness in the result, with the notes' amounts and addresses in it, and the
+        // result goes to the dApp as is. Under `gates` the PXE returns the witness zeroed.
+        if (op.opts.profileMode !== "gates") {
+            throw new Error("Only `profileMode: 'gates'` is supported");
+        }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
         const [txRequest, node, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
