@@ -283,7 +283,6 @@ export class DappInteractionService extends Service<Methods, Events> implements 
                 }
             }
         }
-        await this.profileService.refreshSession();
         return await this.executionService.executeOperations(operations, {
             type: OriginType.DAPP,
             name: payload.session.dappMetadata.name ?? "Unknown dapp",
