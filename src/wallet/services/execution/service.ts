@@ -10,6 +10,8 @@ import {
     type ContractArtifact,
     ContractArtifactSchema,
     encodeArguments,
+    findFunctionAbiBySelector,
+    type FunctionAbi,
     FunctionSelector,
     FunctionType,
     FunctionCall,
@@ -760,6 +762,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     if (!fn) {
                         throw new Error("Method not found");
                     }
+                    assertCallName(call.name, fn);
                     if (fn.functionType === FunctionType.UTILITY) {
                         utility.push([
                             pxe.executeUtility(
@@ -1033,6 +1036,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const pxe = this.pxeService.getPXE(network);
 
         await account.ensureRegistered(pxe);
+        await this.assertCallNames(op.networkId, [op.call]);
         return pxe.executeUtility(op.call, {
             authwits: await optional(z.array(AuthWitness.schema)).parseAsync(op.opts.authWitnesses),
             scopes: await Promise.all(op.opts.scopes.map(s => AztecAddress.schema.parseAsync(s))),
@@ -1165,6 +1169,24 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         }
 
         return await account.buildAuthWitness(messageHash);
+    }
+
+    /**
+     * Refuses a dApp's call whose `name` is not the name of the function its `selector` runs in
+     * the callee's artifact. The name is the dApp's word: the popup shows it and the scope check
+     * reads it, while only the selector runs, so a lie must stop here, before anything executes.
+     */
+    private async assertCallNames(networkId: string, calls: FunctionCall[]): Promise<void> {
+        const pxe = this.pxeService.getPXE(await this.networkService.getNetwork(networkId));
+        for (const call of calls) {
+            const [, instance] = await this.getInstance(pxe, call.to.toString());
+            const [, artifact] = await this.getArtifact(pxe, instance.originalContractClassId.toString());
+            const fn = await findFunctionAbiBySelector(artifact, FunctionSelector.fromString(call.selector.toString()));
+            if (!fn) {
+                throw new Error(`Method not found: ${call.selector.toString()}`);
+            }
+            assertCallName(call.name, fn);
+        }
     }
 
     // internals
@@ -1696,41 +1718,40 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                         break;
                     }
                     case "encoded_call": {
-                        if (action.type === undefined || action.isStatic === undefined) {
-                            const instance = instances.get(action.to);
-                            if (!instance) {
-                                throw new Error("Contract not found");
+                        const instance = instances.get(action.to);
+                        if (!instance) {
+                            throw new Error("Contract not found");
+                        }
+                        const artifact = artifacts.get(instance.originalContractClassId.toString());
+                        if (!artifact) {
+                            throw new Error("Contract artifact not found");
+                        }
+                        let fn;
+                        for (const _fn of artifact.functions) {
+                            const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
+                            if (selector.toString() === action.selector) {
+                                fn = _fn;
+                                break;
                             }
-                            const artifact = artifacts.get(instance.originalContractClassId.toString());
-                            if (!artifact) {
-                                throw new Error("Contract artifact not found");
-                            }
-                            let fn;
-                            for (const _fn of artifact.functions) {
-                                const selector = await FunctionSelector.fromNameAndParameters(_fn.name, _fn.parameters);
+                        }
+                        if (!fn) {
+                            for (const _fn of artifact.nonDispatchPublicFunctions) {
+                                const selector = await FunctionSelector.fromNameAndParameters(
+                                    _fn.name,
+                                    _fn.parameters,
+                                );
                                 if (selector.toString() === action.selector) {
                                     fn = _fn;
                                     break;
                                 }
                             }
-                            if (!fn) {
-                                for (const _fn of artifact.nonDispatchPublicFunctions) {
-                                    const selector = await FunctionSelector.fromNameAndParameters(
-                                        _fn.name,
-                                        _fn.parameters,
-                                    );
-                                    if (selector.toString() === action.selector) {
-                                        fn = _fn;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (!fn) {
-                                throw new Error("Method not found");
-                            }
-                            action.type = fn.functionType;
-                            action.isStatic = fn.isStatic;
                         }
+                        if (!fn) {
+                            throw new Error("Method not found");
+                        }
+                        assertCallName(action.name, fn);
+                        action.type = fn.functionType;
+                        action.isStatic ??= fn.isStatic;
                         const packedArgs =
                             action.type === FunctionType.PUBLIC
                                 ? await HashedValues.fromCalldata([
@@ -2015,6 +2036,13 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             throw new Error("Contract artifact not found");
         }
         return [classId, artifact];
+    }
+}
+
+/** Refuses a call whose `name` is not the function's; a call that carries no name claims nothing and passes. */
+function assertCallName(name: string | undefined, fn: FunctionAbi): void {
+    if (name !== undefined && name !== fn.name) {
+        throw new Error(`Call name does not match its selector: ${name} is not ${fn.name}`);
     }
 }
 
