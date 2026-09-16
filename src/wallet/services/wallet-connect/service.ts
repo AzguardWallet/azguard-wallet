@@ -54,7 +54,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
         this.configStore.onUpdate.add(this.onConfigUpdate);
 
         // Only initialize if enabled
-        this.isEnabled = this.configStore.get("walletConnectEnabled");
+        this.isEnabled = this.configStore.get("walletConnect");
         if (this.isEnabled) {
             await this.initializeWalletKit();
         } else {
@@ -66,7 +66,7 @@ export class WalletConnectService extends Service<Methods> implements ServiceSpe
      * Handle config changes at runtime
      */
     private readonly onConfigUpdate = async (prop: ConfigProp) => {
-        if (prop.key !== "walletConnectEnabled") return;
+        if (prop.key !== "walletConnect") return;
 
         const newValue = prop.value as boolean;
         if (newValue && !this.walletKit) {

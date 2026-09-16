@@ -49,7 +49,7 @@ export class ConfigService extends Service<Methods, Events> implements ServiceSp
         "stealthMode",
         "stealthModeSnapshot",
         "contractRegistry",
-        "walletConnectEnabled",
+        "walletConnect",
         "uploadExternalImages",
         "externalLinks",
         "developerMode",
