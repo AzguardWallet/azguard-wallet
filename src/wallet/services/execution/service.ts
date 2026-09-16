@@ -1171,7 +1171,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
             messageHash = await computeAuthWitMessageHash(intentHash, metadata);
         } else {
-            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
+            throw new Error("Only a call intent or an inner-hash intent can be authorized");
         }
 
         return await account.buildAuthWitness(messageHash);
