@@ -1574,6 +1574,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 break;
                             }
                             case "message_hash": {
+                                if (!action.authwit) {
+                                    throw new Error("A message_hash authwit must carry its witness");
+                                }
                                 messageHash = Fr.fromString(action.content.messageHash);
                                 break;
                             }
