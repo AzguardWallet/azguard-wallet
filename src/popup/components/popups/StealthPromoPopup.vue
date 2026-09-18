@@ -31,14 +31,14 @@ const displaceIdx = computed(() => {
 // Privacy settings state - defaults per spec: stealth OFF, all toggles ON, links enabled
 const stealthMode = ref(false)
 const contractRegistry = ref(true)
-const walletConnectEnabled = ref(true)
+const walletConnect = ref(true)
 const uploadExternalImages = ref(true)
 const externalLinks = ref("enabled")
 
 // Check if all privacy settings are disabled (for auto-enable stealth)
 const isAllDisabled = computed(() => {
 	return !contractRegistry.value &&
-		!walletConnectEnabled.value &&
+		!walletConnect.value &&
 		!uploadExternalImages.value &&
 		externalLinks.value === "disabled"
 })
@@ -54,10 +54,10 @@ const settings = {
 		description: "Fetch contract info externally",
 		model: contractRegistry,
 	},
-	walletConnectEnabled: {
+	walletConnect: {
 		title: "WalletConnect",
 		description: "Connect to dApps via WalletConnect",
-		model: walletConnectEnabled,
+		model: walletConnect,
 	},
 	uploadExternalImages: {
 		title: "Upload external images",
@@ -75,30 +75,28 @@ const settings = {
 async function enableStealthMode() {
 	stealthMode.value = true
 	contractRegistry.value = false
-	walletConnectEnabled.value = false
+	walletConnect.value = false
 	uploadExternalImages.value = false
 	externalLinks.value = "disabled"
 
 	// Save to config immediately
 	await configService.setValue("stealthMode", true)
 	await configService.setValue("contractRegistry", false)
-	await configService.setValue("walletConnectEnabled", false)
+	await configService.setValue("walletConnect", false)
 	await configService.setValue("uploadExternalImages", false)
 	await configService.setValue("externalLinks", "disabled")
 }
 
-// Disable stealth mode: turn on all settings
+// Disable stealth mode: turn on all settings but WalletConnect, whose default is off
 async function disableStealthMode() {
 	stealthMode.value = false
 	contractRegistry.value = true
-	walletConnectEnabled.value = true
 	uploadExternalImages.value = true
 	externalLinks.value = "enabled"
 
 	// Save to config immediately
 	await configService.setValue("stealthMode", false)
 	await configService.setValue("contractRegistry", true)
-	await configService.setValue("walletConnectEnabled", true)
 	await configService.setValue("uploadExternalImages", true)
 	await configService.setValue("externalLinks", "enabled")
 }
@@ -148,7 +146,7 @@ watch(
 			// Load current values from config (defaults: stealth OFF, all ON, links enabled)
 			stealthMode.value = await configService.getValue("stealthMode")
 			contractRegistry.value = await configService.getValue("contractRegistry")
-			walletConnectEnabled.value = await configService.getValue("walletConnectEnabled")
+			walletConnect.value = await configService.getValue("walletConnect")
 			uploadExternalImages.value = await configService.getValue("uploadExternalImages")
 			externalLinks.value = await configService.getValue("externalLinks")
 		}
@@ -197,7 +195,7 @@ onBeforeUnmount(() => {
 					<Flex :class="$style.divider" />
 
 					<!-- Toggle Settings -->
-					<template v-for="sk in ['contractRegistry', 'walletConnectEnabled', 'uploadExternalImages']" :key="sk">
+					<template v-for="sk in ['contractRegistry', 'walletConnect', 'uploadExternalImages']" :key="sk">
 						<Flex align="center" justify="between">
 							<Flex direction="column" justify="center" gap="4">
 								<Text size="13" weight="600" color="primary">{{ settings[sk].title }}</Text>

@@ -71,6 +71,7 @@ import {
 import { ILogger } from "@/wallet/logger";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
+import { dappScopes } from "@/wallet/utils/scopes";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import {
     EXECUTION_SERVICE_NAME,
@@ -1021,7 +1022,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             simulatePublic: true,
             skipTxValidation: op.opts.skipTxValidation,
             skipFeeEnforcement: op.opts.skipFeeEnforcement ?? true,
-            scopes: scopesFrom(account.address, op.opts.additionalScopes, op.opts.sendMessagesAs),
+            scopes: scopesFrom(account.address, op.opts),
             senderForTags: op.opts.sendMessagesAs ?? account.address,
         });
     }
@@ -1047,6 +1048,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         if (op.accountAddress !== op.opts?.from?.toString()) {
             throw new Error("Invalid `opts.from`");
         }
+        // NOTE: under `full` and `execution-steps` the PXE keeps the private execution
+        // witness in the result, with the notes' amounts and addresses in it, and the
+        // result goes to the dApp as is. Under `gates` the PXE returns the witness zeroed.
+        if (op.opts.profileMode !== "gates") {
+            throw new Error("Only `profileMode: 'gates'` is supported");
+        }
         const [actions, feePaymentMethod, fee] = await this.processAztecJsPayload(op.exec, op.opts);
         const [txRequest, node, pxe] = await this.buildTxRequest({ ...op, actions }, feePaymentMethod);
         this.suggestGasLimits(txRequest, fee);
@@ -1064,11 +1071,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         return pxe.profileTx(txRequest, {
             profileMode: op.opts.profileMode,
             skipProofGeneration: op.opts.skipProofGeneration,
-            scopes: scopesFrom(
-                AztecAddress.fromStringUnsafe(op.accountAddress),
-                op.opts.additionalScopes,
-                op.opts.sendMessagesAs,
-            ),
+            scopes: scopesFrom(AztecAddress.fromStringUnsafe(op.accountAddress), op.opts),
             senderForTags: op.opts.sendMessagesAs ?? AztecAddress.fromStringUnsafe(op.accountAddress),
         });
     }
@@ -1089,11 +1092,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             pxe,
             txRequest,
             {
-                scopes: scopesFrom(
-                    account.address,
-                    op.opts.additionalScopes,
-                    op.opts.sendMessagesAs,
-                ),
+                scopes: scopesFrom(account.address, op.opts),
                 senderForTags: op.opts.sendMessagesAs ?? account.address,
             },
             parentTask,
@@ -1165,7 +1164,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             };
             messageHash = await computeAuthWitMessageHash(intentHash, metadata);
         } else {
-            messageHash = await Fr.schema.parseAsync(op.messageHashOrIntent);
+            throw new Error("Only a call intent or an inner-hash intent can be authorized");
         }
 
         return await account.buildAuthWitness(messageHash);
@@ -1575,6 +1574,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                 break;
                             }
                             case "message_hash": {
+                                if (!action.authwit) {
+                                    throw new Error("A message_hash authwit must carry its witness");
+                                }
                                 messageHash = Fr.fromString(action.content.messageHash);
                                 break;
                             }
@@ -2052,10 +2054,9 @@ function assertCallName(name: string | undefined, fn: FunctionAbi): void {
  */
 function scopesFrom(
     from: AztecAddress,
-    additionalScopes: AztecAddress[] | undefined,
-    sendMessagesAs: AztecAddress | undefined,
+    opts: { additionalScopes?: AztecAddress[]; sendMessagesAs?: AztecAddress },
 ): AztecAddress[] {
-    const all = [from, ...(additionalScopes ?? []), ...(sendMessagesAs ? [sendMessagesAs] : [])];
+    const all = [from, ...dappScopes(opts)];
     const unique = new Set(all.map((address) => address.toString()));
     return [...unique].map(AztecAddress.fromStringUnsafe);
 }
