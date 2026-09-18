@@ -50,15 +50,15 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
         }
         const { requestId, method, params: wrappedParams } = message.content;
         if (!requestId || !(method in this.requests) || typeof wrappedParams !== "object") {
-            this.logWarn("Invalid request received", message);
+            this.logWarn("Invalid request received", requestId, method);
             return;
         }
         const params = unwrapParams(wrappedParams);
-        this.logDebug("Request received", requestId, method, params);
+        this.logDebug("Request received", requestId, method);
         let response: ResponseMessage<TRequests>;
         try {
             const result = await this.requests[method](...params);
-            this.logDebug("Request processed", requestId, result);
+            this.logDebug("Request processed", requestId, method);
             response = {
                 type: MessageType.Response,
                 content: {
@@ -70,7 +70,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
             };
         } catch (error) {
             const errorMessage = getErrorMessage(error);
-            this.logDebug("Request failed", requestId, errorMessage);
+            this.logDebug("Request failed", requestId, method, errorMessage);
             response = {
                 type: MessageType.Response,
                 content: {
@@ -82,7 +82,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
             };
         }
         chrome.runtime.sendMessage(response);
-        this.logDebug("Response sent", response);
+        this.logDebug("Response sent", requestId, method);
     };
 
     protected emit<T extends keyof TEvents>(event: T, payload: TEvents[T]) {
@@ -96,7 +96,7 @@ export abstract class Service<TRequests extends MethodsMap, TEvents extends Even
         };
         chrome.runtime.sendMessage(message);
         this.events[event].invoke(payload);
-        this.logDebug("Event sent", message);
+        this.logDebug("Event sent", event);
     }
 
     protected async ensureInitialized() {

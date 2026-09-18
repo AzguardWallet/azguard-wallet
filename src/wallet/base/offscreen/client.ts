@@ -72,13 +72,13 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
                 this.logDebug("Request rejected", message.content);
             } else {
                 resolve(result);
-                this.logDebug("Request resolved", message.content);
+                this.logDebug("Request resolved", requestId);
             }
             this.requests.delete(requestId);
             this.logDebug("Pending requests", this.requests.size);
         } else {
             const { event, payload } = message.content;
-            this.logDebug("Event received", event, payload);
+            this.logDebug("Event received", event);
             (this as EventsSpec<TEvents>)[event].invoke(payload);
         }
     };
@@ -104,7 +104,7 @@ export abstract class ServiceClient<TRequests extends MethodsMap, TEvents extend
             this.requests.set(request.content.requestId, [resolve, reject]);
         });
         await chrome.runtime.sendMessage(request);
-        this.logDebug("Request sent", request);
+        this.logDebug("Request sent", request.content.requestId, method);
         this.logDebug("Pending requests", this.requests.size);
         return promise;
     }
