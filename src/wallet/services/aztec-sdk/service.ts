@@ -243,7 +243,11 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
     };
 
     private readonly onWalletMessage = async (session: ActiveSession, message: WalletMessage) => {
-        this.logDebug("SDK wallet message", message);
+        this.logDebug("SDK wallet message", {
+            messageId: message.messageId,
+            type: message.type,
+            appId: message.appId,
+        });
 
         try {
             const dappSessionId = this.findDappSessionId(session);
@@ -268,7 +272,7 @@ export class AztecSdkService extends Service<Methods, Events> implements Service
                 });
                 const response = operationResultToResponse(message.messageId, results[0], WALLET_ID);
                 await this.handler.sendResponse(session.sessionId, response);
-                this.logDebug("SDK response sent", { type: message.type, result: results[0] });
+                this.logDebug("SDK response sent", { messageId: message.messageId, type: message.type });
             }
         } catch (error) {
             this.logError("SDK message handling failed", getErrorMessage(error));
