@@ -168,6 +168,8 @@ export function enforceCapabilityScope(capabilities: SerializedCapability[], ope
             }
             break;
         }
+        // NOTE: a call's name is the dApp's word, and nothing here checks it against the selector
+        // that runs. The patterns below grant on that word; whoever executes the call owns the check.
         case "aztec_sendTx": {
             const calls = operation.exec.calls as { to: unknown; name: unknown }[];
             const scopes = capabilities
