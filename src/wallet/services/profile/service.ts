@@ -1,3 +1,4 @@
+import { toBigIntBE } from "@aztec/foundation/bigint-buffer";
 import { Fr } from "@aztec/foundation/curves/bn254";
 import { ConfigProp, IConfig } from "@/wallet/config";
 import { ILogger } from "@/wallet/logger";
@@ -594,6 +595,11 @@ export class ProfileService extends Service<Methods, Events> implements ServiceS
         secret: Uint8Array<ArrayBuffer>,
         passhash: ArrayBuffer,
     ): Promise<Profile> {
+        // NOTE: `Fr.fromBuffer` names the value in its error, and the error is logged.
+        // Imported bytes past the modulus are refused here, without the bytes.
+        if (toBigIntBE(Buffer.from(secret)) >= Fr.MODULUS) {
+            throw new Error("Secret is not a field element");
+        }
         try {
             await this.lock.enter();
             let id: string;

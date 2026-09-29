@@ -31,15 +31,15 @@ const { loadExternalImage } = useExternalImage()
 const router = useRouter()
 
 const dappSessions = ref([])
-const walletConnectEnabled = ref(true)
+const walletConnect = ref(true)
 const isLoading = ref(true)
 
 const configService = new ConfigServiceClient()
 
 // Listen for config changes
 configService.onUpdate.add((setting) => {
-	if (setting.key === "walletConnectEnabled") {
-		walletConnectEnabled.value = setting.value
+	if (setting.key === "walletConnect") {
+		walletConnect.value = setting.value
 	}
 })
 
@@ -92,8 +92,8 @@ watchEffect(() => {
 })
 
 onBeforeMount(async () => {
-	const wcSetting = await configService.getValue("walletConnectEnabled")
-	walletConnectEnabled.value = wcSetting
+	const wcSetting = await configService.getValue("walletConnect")
+	walletConnect.value = wcSetting
 
 	dappSessions.value = await dappSessionService.getDappSessions()
 
@@ -110,7 +110,7 @@ onBeforeMount(async () => {
 
 			<Flex direction="column" gap="16" :class="$style.section_wrapper">
 				<!-- WalletConnect Disabled State -->
-				<Flex v-if="!isLoading && !walletConnectEnabled" direction="column" align="center" justify="center" :class="$style.disabled_section">
+				<Flex v-if="!isLoading && !walletConnect" direction="column" align="center" justify="center" :class="$style.disabled_section">
 					<Flex direction="column" align="center" gap="12" :class="$style.disabled_banner">
 						<Icon name="plug-circle" size="24" color="tertiary" />
 
