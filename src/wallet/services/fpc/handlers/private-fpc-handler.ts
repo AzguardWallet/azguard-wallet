@@ -1,8 +1,8 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { ContractArtifact } from "@aztec/stdlib/abi";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
-import { Gas } from "@aztec/stdlib/gas";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { ContractArtifact, getFunctionReturnType } from "@aztec-labs/stdlib/abi";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { getContractInstanceFromInstantiationParams } from "@aztec-labs/stdlib/contract";
+import { Gas } from "@aztec-labs/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
 import { IPXE } from "@/wallet/services/pxe/proxy";
 import { CANONICAL_PRIVATE_FPC_ADDRESS, CANONICAL_PRIVATE_FPC_CLASS_ID } from "@/wallet/utils/private-fpc";
@@ -56,7 +56,7 @@ export class PrivateFpcHandler implements IFpcHandler {
         if (!fn) {
             throw new Error("Function `pay_fee` not found");
         }
-        if (fn.parameters.length !== 0 || fn.returnTypes.length !== 0) {
+        if (fn.parameters.length !== 0 || getFunctionReturnType(fn) !== undefined) {
             throw new Error("Function `pay_fee` has unsupported signature");
         }
 
@@ -64,7 +64,7 @@ export class PrivateFpcHandler implements IFpcHandler {
         if (!fn) {
             throw new Error("Function `balance_of` not found");
         }
-        if (fn.parameters.length !== 1 || fn.returnTypes.length !== 1) {
+        if (fn.parameters.length !== 1 || getFunctionReturnType(fn) === undefined) {
             throw new Error("Function `balance_of` has unsupported signature");
         }
     }

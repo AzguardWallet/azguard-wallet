@@ -1,23 +1,23 @@
-import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
-import type { Fr } from "@aztec/foundation/curves/bn254";
-import { PackedPrivateEvent, type NotesFilter } from "@aztec/pxe/client/bundle";
+import { PrivateEventFilter } from "@aztec-labs/aztec.js/wallet";
+import type { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { PackedPrivateEvent, type NotesFilter } from "@aztec-labs/pxe/client/bundle";
 export type { NotesFilter };
-import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec/pxe/client/bundle";
-import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
-import type { AztecAddress } from "@aztec/stdlib/aztec-address";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec-labs/pxe/client/bundle";
+import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec-labs/stdlib/abi";
+import type { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
 import type {
     CompleteAddress,
     ContractInstancePreimageWithAddress,
     PartialAddress,
-} from "@aztec/stdlib/contract";
-import type { NoteDao } from "@aztec/stdlib/note";
+} from "@aztec-labs/stdlib/contract";
+import type { NoteDao } from "@aztec-labs/stdlib/note";
 import type {
     TxExecutionRequest,
     TxProfileResult,
     TxProvingResult,
     TxSimulationResult,
     UtilityExecutionResult,
-} from "@aztec/stdlib/tx";
+} from "@aztec-labs/stdlib/tx";
 import type { Network } from "@/wallet/services/network/spec";
 
 export const PXE_SERVICE_NAME = "pxe";

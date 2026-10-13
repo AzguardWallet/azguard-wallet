@@ -1,7 +1,7 @@
-import { /*ContractNote,*/ FieldLayout } from "@aztec/stdlib/abi";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { deriveStorageSlotInMap } from "@aztec/stdlib/hash";
-import { NoteStatus, NoteDao } from "@aztec/stdlib/note";
+import { /*ContractNote,*/ FieldLayout } from "@aztec-labs/stdlib/abi";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { deriveStorageSlotInMap } from "@aztec-labs/stdlib/hash";
+import { NoteStatus, NoteDao } from "@aztec-labs/stdlib/note";
 import { ILogger } from "@/wallet/logger";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";

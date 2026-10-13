@@ -117,7 +117,7 @@ export default defineConfig({
 					// sqlite3mc's emscripten loader requests plain "sqlite3.wasm" relative to the
 					// worker at runtime, bypassing Vite's hashed asset URL — without this copy the
 					// fetch 404s and PXE store init hangs forever (no error propagates)
-					src: "./node_modules/@aztec/sqlite3mc-wasm/vendor/jswasm/sqlite3.wasm",
+					src: "./node_modules/@aztec-labs/sqlite3mc-wasm/vendor/jswasm/sqlite3.wasm",
 					dest: "assets/",
 				},
 			],
@@ -139,7 +139,7 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		include: ["pino", "vue", "webextension-polyfill", "comlink", "util", "tty", "sha3", "hash.js", "msgpackr/index-no-eval"],
-		exclude: ["@aztec/bb.js", "@aztec/noir-acvm_js", "@aztec/noir-noirc_abi", "@aztec/kv-store", "@aztec/sqlite3mc-wasm", "vue-demi"],
+		exclude: ["@aztec-foundation/bb.js", "@aztec-foundation/noir-acvm_js", "@aztec-foundation/noir-noirc_abi", "@aztec-labs/kv-store", "@aztec-labs/sqlite3mc-wasm", "vue-demi"],
 		esbuildOptions: {
 			target: "esnext",
 		},
@@ -147,7 +147,7 @@ export default defineConfig({
 	define: {
 		__VERSION__: JSON.stringify(packageJson.version),
 		__SENTINEL__: JSON.stringify(packageJson.sentinel),
-		__AZTEC_VERSION__: JSON.stringify(packageJson.dependencies["@aztec/pxe"] ?? "unknown"),
+		__AZTEC_VERSION__: JSON.stringify(packageJson.dependencies["@aztec-labs/pxe"] ?? "unknown"),
 		__NAME__: JSON.stringify(packageJson.name),
 		__DISPLAY_NAME__: JSON.stringify(packageJson.displayName),
 		"import.meta.env.HTML_TITLE": JSON.stringify(packageJson.displayName),

@@ -1,5 +1,5 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { ContractArtifact, FunctionAbi, FunctionType } from "@aztec/stdlib/abi";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { ContractArtifact, FunctionAbi, FunctionType, getFunctionReturnType } from "@aztec-labs/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
 import { isFieldCompressedStringType } from "./abi-types";
 
@@ -78,13 +78,11 @@ export class DefaultPublicGetSymbolFn extends GetSymbolFn {
             isOnlySelf: false,
             isStatic: true,
             parameters: [],
-            returnTypes: [
-                {
-                    fields: [{ name: "value", type: { kind: "field" } }],
-                    kind: "struct",
-                    path: "compressed_string::field_compressed_string::FieldCompressedString",
-                },
-            ],
+            returnType: {
+                fields: [{ name: "value", type: { kind: "field" } }],
+                kind: "struct",
+                path: "compressed_string::field_compressed_string::FieldCompressedString",
+            },
             errorTypes: {},
         };
     }
@@ -102,8 +100,7 @@ export class DefaultPublicGetSymbolFn extends GetSymbolFn {
                 fn.isStatic &&
                 fn.functionType === FunctionType.PUBLIC &&
                 fn.parameters.length === 0 &&
-                fn.returnTypes.length === 1 &&
-                isFieldCompressedStringType(fn.returnTypes[0])
+                isFieldCompressedStringType(getFunctionReturnType(fn))
             ) {
                 res.push(new DefaultPublicGetSymbolFn(fn.name));
             }
@@ -125,13 +122,11 @@ export class DefaultPrivateGetSymbolFn extends GetSymbolFn {
             isOnlySelf: false,
             isStatic: true,
             parameters: [],
-            returnTypes: [
-                {
-                    fields: [{ name: "value", type: { kind: "field" } }],
-                    kind: "struct",
-                    path: "compressed_string::field_compressed_string::FieldCompressedString",
-                },
-            ],
+            returnType: {
+                fields: [{ name: "value", type: { kind: "field" } }],
+                kind: "struct",
+                path: "compressed_string::field_compressed_string::FieldCompressedString",
+            },
             errorTypes: {},
         };
     }
@@ -149,8 +144,7 @@ export class DefaultPrivateGetSymbolFn extends GetSymbolFn {
                 fn.isStatic &&
                 fn.functionType === FunctionType.PRIVATE &&
                 fn.parameters.length === 0 &&
-                fn.returnTypes.length === 1 &&
-                isFieldCompressedStringType(fn.returnTypes[0])
+                isFieldCompressedStringType(getFunctionReturnType(fn))
             ) {
                 res.push(new DefaultPrivateGetSymbolFn(fn.name));
             }

@@ -1,6 +1,7 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { ContractArtifact, FunctionAbi, FunctionType } from "@aztec/stdlib/abi";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { ContractArtifact, FunctionAbi, FunctionType, getFunctionReturnType } from "@aztec-labs/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
+import { isUnsignedIntegerType } from "./abi-types";
 
 export enum GetDecimalsImpl {
     DefaultPublic,
@@ -77,7 +78,7 @@ export class DefaultPublicGetDecimalsFn extends GetDecimalsFn {
             isOnlySelf: false,
             isStatic: true,
             parameters: [],
-            returnTypes: [{ kind: "integer", sign: "unsigned", width: 8 }],
+            returnType: { kind: "integer", sign: "unsigned", width: 8 },
             errorTypes: {},
         };
     }
@@ -95,10 +96,7 @@ export class DefaultPublicGetDecimalsFn extends GetDecimalsFn {
                 fn.isStatic &&
                 fn.functionType === FunctionType.PUBLIC &&
                 fn.parameters.length === 0 &&
-                fn.returnTypes.length === 1 &&
-                fn.returnTypes[0].kind === "integer" &&
-                fn.returnTypes[0].sign === "unsigned" &&
-                fn.returnTypes[0].width === 8
+                isUnsignedIntegerType(getFunctionReturnType(fn), 8)
             ) {
                 res.push(new DefaultPublicGetDecimalsFn(fn.name));
             }
@@ -120,7 +118,7 @@ export class DefaultPrivateGetDecimalsFn extends GetDecimalsFn {
             isOnlySelf: false,
             isStatic: true,
             parameters: [],
-            returnTypes: [{ kind: "integer", sign: "unsigned", width: 8 }],
+            returnType: { kind: "integer", sign: "unsigned", width: 8 },
             errorTypes: {},
         };
     }
@@ -138,10 +136,7 @@ export class DefaultPrivateGetDecimalsFn extends GetDecimalsFn {
                 fn.isStatic &&
                 fn.functionType === FunctionType.PRIVATE &&
                 fn.parameters.length === 0 &&
-                fn.returnTypes.length === 1 &&
-                fn.returnTypes[0].kind === "integer" &&
-                fn.returnTypes[0].sign === "unsigned" &&
-                fn.returnTypes[0].width === 8
+                isUnsignedIntegerType(getFunctionReturnType(fn), 8)
             ) {
                 res.push(new DefaultPrivateGetDecimalsFn(fn.name));
             }

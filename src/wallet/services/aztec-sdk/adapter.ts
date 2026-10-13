@@ -1,7 +1,7 @@
-import type { ChainInfo } from "@aztec/aztec.js/account";
-import type { AppCapabilities, GrantedCapability } from "@aztec/aztec.js/wallet";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { WalletMessage } from "@aztec/wallet-sdk/types";
+import type { ChainInfo } from "@aztec-labs/aztec.js/account";
+import type { AppCapabilities, GrantedCapability } from "@aztec-labs/aztec.js/wallet";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import type { WalletMessage } from "@aztec-labs/wallet-sdk/types";
 import type { DappPermissions } from "@/wallet/services/dapp-session/spec";
 import type { CaipChain, CaipAccount, OperationRequest, CapabilitiesResult } from "@/wallet/services/dapp-interaction/spec";
 import type {

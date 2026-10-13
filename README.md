@@ -21,7 +21,7 @@
 
 - **Self-custody** — private keys and secrets never leave your device.
 - **Privacy** — Aztec's private execution model, plus an optional stealth mode that disables all external service calls.
-- **Account abstraction** — built on Aztec's native account abstraction, powered by `@aztec/wallet-sdk`.
+- **Account abstraction** — built on Aztec's native account abstraction, powered by `@aztec-labs/wallet-sdk`.
 - **Dapp connectivity** — in-page provider injected via a content script, built on the Aztec SDK.
 
 ## Architecture

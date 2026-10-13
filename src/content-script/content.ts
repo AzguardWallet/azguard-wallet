@@ -1,7 +1,7 @@
 // @ts-ignore
 import inpageScript from "./inpage?script&module";
 import { ProxyServer } from "./proxy/server";
-import { ContentScriptConnectionHandler, MessageOrigin } from "@aztec/wallet-sdk/extension/handlers";
+import { ContentScriptConnectionHandler, MessageOrigin } from "@aztec-labs/wallet-sdk/extension/handlers";
 
 const _ = new ProxyServer();
 

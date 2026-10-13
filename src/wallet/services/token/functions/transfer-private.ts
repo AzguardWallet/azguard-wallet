@@ -1,6 +1,6 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { ContractArtifact, FunctionAbi, FunctionType } from "@aztec/stdlib/abi";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { ContractArtifact, FunctionAbi, FunctionType, getFunctionReturnType } from "@aztec-labs/stdlib/abi";
 import { Fn } from "@/wallet/utils/fn";
 import { isAztecAddressType } from "./abi-types";
 
@@ -107,7 +107,6 @@ export class DefaultTransferPrivateFn extends TransferPrivateFn {
                     visibility: "private",
                 },
             ],
-            returnTypes: [],
             errorTypes: {},
         };
     }
@@ -125,7 +124,7 @@ export class DefaultTransferPrivateFn extends TransferPrivateFn {
                 isAztecAddressType(fn.parameters[0].type) &&
                 fn.parameters[1].name === "amount" &&
                 fn.parameters[1].type.kind === "integer" &&
-                fn.returnTypes.length === 0
+                getFunctionReturnType(fn) === undefined
             ) {
                 res.push(new DefaultTransferPrivateFn(fn.name));
             }
@@ -184,7 +183,6 @@ export class DefaultFromTransferPrivateFn extends TransferPrivateFn {
                     visibility: "private",
                 },
             ],
-            returnTypes: [],
             errorTypes: {},
         };
     }
@@ -206,7 +204,7 @@ export class DefaultFromTransferPrivateFn extends TransferPrivateFn {
                 fn.parameters[2].type.kind === "integer" &&
                 (fn.parameters[3].name === "authwit_nonce" || fn.parameters[3].name === "_nonce") &&
                 fn.parameters[3].type.kind === "field" &&
-                fn.returnTypes.length === 0
+                getFunctionReturnType(fn) === undefined
             ) {
                 res.push(new DefaultFromTransferPrivateFn(fn.name));
             }

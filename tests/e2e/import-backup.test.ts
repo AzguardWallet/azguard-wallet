@@ -9,7 +9,7 @@ import { test, openPopup, waitForHash, typeIntoInput } from "./fixtures/extensio
 // The fixture backup is generated against the CURRENT build constants (package.json),
 // so these tests keep passing across sentinel/version bumps.
 const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"))
-const AZTEC_VERSION = pkg.dependencies["@aztec/pxe"] ?? "unknown"
+const AZTEC_VERSION = pkg.dependencies["@aztec-labs/pxe"] ?? "unknown"
 const CURRENT_ORIGIN = { sentinel: pkg.sentinel, walletVersion: pkg.version, aztecVersion: AZTEC_VERSION }
 
 const MASTER_KEY = Buffer.alloc(32, 7).toString("base64")

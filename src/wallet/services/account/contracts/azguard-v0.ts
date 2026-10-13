@@ -1,10 +1,10 @@
-import { Fr } from '@aztec/foundation/curves/bn254';
-import { sha512ToGrumpkinScalar } from '@aztec/foundation/crypto/sha512';
-import { Schnorr } from '@aztec/foundation/crypto/schnorr';
-import { ContractArtifact, loadContractArtifact } from '@aztec/stdlib/abi';
-import { getContractInstanceFromInstantiationParams } from '@aztec/stdlib/contract';
-import { deriveKeys } from '@aztec/stdlib/keys';
-import { NoirCompiledContract } from '@aztec/stdlib/noir';
+import { Fr } from '@aztec-labs/foundation/curves/bn254';
+import { sha512ToGrumpkinScalar } from '@aztec-labs/foundation/crypto/sha512';
+import { Schnorr } from '@aztec-labs/foundation/crypto/schnorr';
+import { ContractArtifact, loadContractArtifact } from '@aztec-labs/stdlib/abi';
+import { getContractInstanceFromInstantiationParams } from '@aztec-labs/stdlib/contract';
+import { deriveKeys } from '@aztec-labs/stdlib/keys';
+import { NoirCompiledContract } from '@aztec-labs/stdlib/noir';
 import { ILogger } from '@/wallet/logger';
 import { AzguardV0Base } from './azguard-v0-base';
 

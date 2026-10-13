@@ -1,5 +1,5 @@
-import { type ContractArtifact} from "@aztec/stdlib/abi";
-import { type ContractInstancePreimageWithAddress } from "@aztec/stdlib/contract";
+import { type ContractArtifact} from "@aztec-labs/stdlib/abi";
+import { type ContractInstancePreimageWithAddress } from "@aztec-labs/stdlib/contract";
 import { Restored } from "@/wallet/base";
 
 export const ACCOUNT_STATE_SERVICE_NAME = "account-state";

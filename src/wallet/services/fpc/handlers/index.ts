@@ -1,14 +1,14 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { ContractArtifact } from "@aztec/stdlib/abi";
-import type { ContractInstancePreimageWithAddress } from "@aztec/stdlib/contract";
-import { Gas } from "@aztec/stdlib/gas";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { ContractArtifact } from "@aztec-labs/stdlib/abi";
+import type { ContractInstancePreimageWithAddress } from "@aztec-labs/stdlib/contract";
+import { Gas } from "@aztec-labs/stdlib/gas";
 import { Action } from "@/wallet/services/execution/spec";
 import { IPXE } from "@/wallet/services/pxe/proxy";
 import { FpcInfo, FpcType } from "../spec";
 import { PrivateFpcHandler } from "./private-fpc-handler";
 import { DefaultFpcHandler } from "./default-fpc-handler";
 import { DefaultSponsoredFpcHandler } from "./default-sponsored-fpc-handler";
-import { AztecNode } from "@aztec/stdlib/interfaces/client";
+import { AztecNode } from "@aztec-labs/stdlib/interfaces/client";
 
 /** A canonical default FPC resolved on a concrete network, ready to register. */
 export type CanonicalFpc = {

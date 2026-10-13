@@ -1,9 +1,9 @@
-import { SPONSORED_FPC_SALT } from "@aztec/constants";
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { ContractArtifact } from "@aztec/stdlib/abi";
-import { getContractInstanceFromInstantiationParams } from "@aztec/stdlib/contract";
-import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
-import { Gas } from "@aztec/stdlib/gas";
+import { SPONSORED_FPC_SALT } from "@aztec-labs/constants";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { ContractArtifact, getFunctionReturnType } from "@aztec-labs/stdlib/abi";
+import { getContractInstanceFromInstantiationParams } from "@aztec-labs/stdlib/contract";
+import { SponsoredFPCContractArtifact } from "@aztec-labs/noir-contracts.js/SponsoredFPC";
+import { Gas } from "@aztec-labs/stdlib/gas";
 import { CHAIN_IDS } from "@/components/ui/utils";
 import { Action } from "@/wallet/services/execution/spec";
 import { IPXE } from "@/wallet/services/pxe/proxy";
@@ -48,7 +48,7 @@ export class DefaultSponsoredFpcHandler implements IFpcHandler {
         if (!fn) {
             throw new Error("Function `sponsor_unconditionally` not found");
         }
-        if (fn.parameters.length !== 0 || fn.returnTypes.length !== 0) {
+        if (fn.parameters.length !== 0 || getFunctionReturnType(fn) !== undefined) {
             throw new Error("Function `sponsor_unconditionally` has unsupported signature");
         }
     }

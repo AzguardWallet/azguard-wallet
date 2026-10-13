@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { hashToEmoji } from "@aztec/wallet-sdk/crypto"
+import { hashToEmoji } from "@aztec-labs/wallet-sdk/crypto"
 
 const props = withDefaults(
 	defineProps<{

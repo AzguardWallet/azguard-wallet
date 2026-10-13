@@ -7,8 +7,8 @@ import type {
 	SimulationCapability,
 	TransactionCapability,
 	DataCapability,
-} from "@aztec/aztec.js/wallet"
-import { CapabilitySchema } from "@aztec/aztec.js/wallet"
+} from "@aztec-labs/aztec.js/wallet"
+import { CapabilitySchema } from "@aztec-labs/aztec.js/wallet"
 import type { Account } from "@/wallet/services/account/spec"
 import type { WithAlias } from "@/wallet/services/execution/spec"
 

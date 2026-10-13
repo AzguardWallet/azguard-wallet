@@ -1,5 +1,5 @@
-import { deleteStore, listStores, type AztecSQLiteOPFSStore } from "@aztec/kv-store/sqlite-opfs";
-import { openBrowserStore, PXE_DATA_SCHEMA_VERSION } from "@aztec/pxe/client/bundle";
+import { deleteStore, listStores, type AztecSQLiteOPFSStore } from "@aztec-labs/kv-store/sqlite-opfs";
+import { openBrowserStore, PXE_DATA_SCHEMA_VERSION } from "@aztec-labs/pxe/client/bundle";
 import { type AztecNode } from "@/wallet/utils/aztec-node-client";
 
 // All PXE store naming lives here. Physical name:

@@ -1,4 +1,4 @@
-// copied from @aztec/foundation/json-rpc
+// copied from @aztec-labs/foundation/json-rpc
 export function jsonStringify(obj: any, space?: number): string {
     return JSON.stringify(obj, (_key, value) => {
         if (typeof value === "bigint") {

@@ -1,11 +1,11 @@
-import type { CallIntent, IntentInnerHash } from "@aztec/aztec.js/authorization";
-import type { InteractionWaitOptions } from "@aztec/aztec.js/contracts";
-import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions, ExecuteUtilityOptions } from "@aztec/aztec.js/wallet";
-import type { Fr } from "@aztec/foundation/curves/bn254";
-import type { ContractArtifact, EventMetadataDefinition, FunctionCall } from "@aztec/stdlib/abi";
-import type { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { ContractInstancePreimageWithAddress } from "@aztec/stdlib/contract";
-import type { ExecutionPayload } from "@aztec/stdlib/tx";
+import type { CallIntent, IntentInnerHash } from "@aztec-labs/aztec.js/authorization";
+import type { InteractionWaitOptions } from "@aztec-labs/aztec.js/contracts";
+import type { PrivateEventFilter, ProfileOptions, SendOptions, SimulateOptions, ExecuteUtilityOptions } from "@aztec-labs/aztec.js/wallet";
+import type { Fr } from "@aztec-labs/foundation/curves/bn254";
+import type { ContractArtifact, EventMetadataDefinition, FunctionCall } from "@aztec-labs/stdlib/abi";
+import type { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import type { ContractInstancePreimageWithAddress } from "@aztec-labs/stdlib/contract";
+import type { ExecutionPayload } from "@aztec-labs/stdlib/tx";
 import type { Action, CallAction, EncodedCallAction, FeeSettings } from ".";
 
 export type OperationKind = Operation["kind"];
