@@ -1,5 +1,3 @@
-import { CHAIN_IDS } from "@/components/ui/utils"
-
 export type BlockExplorerType = "aztecscan"
 
 export type BlockExplorer = {
@@ -26,10 +24,8 @@ export const BLOCK_EXPLORERS: BlockExplorer[] = [
  * add to BLOCK_EXPLORERS array, and add URLs here.
  */
 const EXPLORER_BASE_URLS: Record<BlockExplorerType, Record<number, string>> = {
-	aztecscan: {
-		[CHAIN_IDS.TESTNET]: "https://testnet.aztecscan.xyz",
-		[CHAIN_IDS.DEVNET]: "https://devnet.aztecscan.xyz",
-	},
+	// TODO: `v6-network` add the v6 testnet and mainnet explorer URLs once their chain ids are public.
+	aztecscan: {},
 }
 
 /**

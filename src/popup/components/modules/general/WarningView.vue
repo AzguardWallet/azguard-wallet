@@ -3,7 +3,7 @@
 import { useAppStore } from "@/stores/app.store"
 
 /** Utils */
-import { CHAIN_IDS } from "@/components/ui/utils"
+import { isMainnet } from "@/components/ui/utils"
 
 const appStore = useAppStore()
 
@@ -11,7 +11,7 @@ const { handleExternalLink } = useExternalLink()
 
 const reportIssueUrl = "https://azguardwallet.io/forms/report-issue"
 
-const isAlphanet = computed(() => appStore.network?.chainId === CHAIN_IDS.ALPHANET)
+const isAlphanet = computed(() => isMainnet(appStore.network?.chainId))
 const networkLabel = computed(() => `Aztec ${appStore.network?.name ?? ""}`)
 </script>
 

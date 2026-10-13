@@ -4,7 +4,7 @@ import Popup from "@/components/ui/Popup/Popup.vue"
 import PopupCard from "@/components/ui/Popup/PopupCard.vue"
 
 /** Utils */
-import { CHAIN_IDS, isTestnet } from "@/components/ui/utils"
+import { CHAIN_IDS, isMainnet, isTestnet } from "@/components/ui/utils"
 
 /** Stores */
 import { useAppStore } from "@/stores/app.store"
@@ -41,7 +41,7 @@ const depositMethods = computed(() => {
 		})
 	}
 	// Faucet is available on test networks only — no free minting on mainnet.
-	if (appStore.network?.chainId !== CHAIN_IDS.ALPHANET) {
+	if (!isMainnet(appStore.network?.chainId)) {
 		methods.push({
 			title: "Azguard Faucet",
 			alias: "faucet",

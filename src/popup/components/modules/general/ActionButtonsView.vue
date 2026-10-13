@@ -1,6 +1,6 @@
 <script setup>
 /** Utils */
-import { CHAIN_IDS } from "@/components/ui/utils"
+import { isMainnet } from "@/components/ui/utils"
 
 /** Stores */
 import { useAppStore } from "@/stores/app.store"
@@ -16,9 +16,9 @@ const props = defineProps({
 })
 
 const depositTarget = computed(() => {
-	// On Alphanet the faucet is not available, so always route to the
+	// On mainnet the faucet is not available, so always route to the
 	// deposit-method picker (which will only offer bridge).
-	if (appStore.network?.chainId === CHAIN_IDS.ALPHANET) return "select_deposit"
+	if (isMainnet(appStore.network?.chainId)) return "select_deposit"
 	return props.token ? "faucet" : "select_deposit"
 })
 

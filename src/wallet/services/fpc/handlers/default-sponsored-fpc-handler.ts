@@ -4,7 +4,7 @@ import { ContractArtifact, getFunctionReturnType } from "@aztec-labs/stdlib/abi"
 import { getContractInstanceFromInstantiationParams } from "@aztec-labs/stdlib/contract";
 import { SponsoredFPCContractArtifact } from "@aztec-labs/noir-contracts.js/SponsoredFPC";
 import { Gas } from "@aztec-labs/stdlib/gas";
-import { CHAIN_IDS } from "@/components/ui/utils";
+import { isMainnet } from "@/components/ui/utils";
 import { Action } from "@/wallet/services/execution/spec";
 import { IPXE } from "@/wallet/services/pxe/proxy";
 import { FpcInfo, FpcType } from "../spec";
@@ -13,7 +13,7 @@ import { CanonicalFpc, IFpcHandler } from ".";
 export class DefaultSponsoredFpcHandler implements IFpcHandler {
     // Test-network convenience — no free fee payments on mainnet, so no canonical there.
     public async resolveCanonical(chainId: number, pxe: IPXE): Promise<CanonicalFpc | undefined> {
-        if (chainId === CHAIN_IDS.ALPHANET) {
+        if (isMainnet(chainId)) {
             return undefined;
         }
         const { address } = await getContractInstanceFromInstantiationParams(SponsoredFPCContractArtifact, {
