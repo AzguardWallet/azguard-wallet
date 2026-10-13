@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { expect } from "vitest"
 import type { Page } from "puppeteer"
+import { BACKUP_VERSION } from "@/wallet/services/backup/migrations"
 import { test, openPopup, waitForHash, typeIntoInput } from "./fixtures/extension"
 
 // The fixture backup is generated against the CURRENT build constants (package.json),
@@ -16,11 +17,12 @@ const MASTER_KEY = Buffer.alloc(32, 7).toString("base64")
 const PASSWORD = "TestPassword123!"
 const fixtureDir = mkdtempSync(join(tmpdir(), "azguard-backup-"))
 
-/** Mirrors export/full.vue: checksum = sha256 hex over the compact JSON, appended last. */
+/** Mirrors the wallet's export: checksum = sha256 hex over the compact JSON, appended last. */
 function writeBackupFixture(name: string, data: Record<string, unknown>): string {
     const backup = {
         "wallet-version": pkg.version,
         "aztec-version": AZTEC_VERSION,
+        "backup-version": BACKUP_VERSION,
         "master-key": MASTER_KEY,
         data,
     }
