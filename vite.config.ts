@@ -110,7 +110,7 @@ export default defineConfig({
 		viteStaticCopy({
 			targets: [
 				{
-					src: "./libs/@aztec/bb.js/*.wasm.gz",
+					src: "./libs/@aztec-foundation/bb.js/*.wasm.gz",
 					dest: "assets/",
 				},
 				{
