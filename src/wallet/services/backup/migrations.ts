@@ -23,7 +23,8 @@ export function getBackupVersion(backup: BackupFile): number {
 
 /**
  * Brings a parsed backup file to the current format, stamping the version it reached.
- * Refuses a file stamped by a newer wallet — this is the single owner of that check.
+ * Refuses a file stamped by a newer wallet — this is the single owner of that check —
+ * and throws "Invalid backup file" for an older version that no migration covers.
  */
 export function upgradeBackup(backup: BackupFile): BackupFile {
     let version = getBackupVersion(backup);
@@ -32,7 +33,11 @@ export function upgradeBackup(backup: BackupFile): BackupFile {
     }
     let upgraded = backup;
     while (version < BACKUP_VERSION) {
-        upgraded = { ...MIGRATIONS[version](upgraded), "backup-version": ++version };
+        const migrate = MIGRATIONS[version];
+        if (!migrate) {
+            throw new Error(`Invalid backup file: no migration from backup-version ${version}`);
+        }
+        upgraded = { ...migrate(upgraded), "backup-version": ++version };
     }
     return upgraded;
 }
