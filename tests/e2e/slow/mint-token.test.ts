@@ -5,7 +5,7 @@ test("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension
     const page = await openPopup(registeredExtension)
 
     // 1. Switch to the Sandbox.
-    // NOTE: a fresh profile starts on the public Testnet; this test may transact
+    // NOTE: a fresh profile may start on the public Testnet; this test may transact
     // only on the local sandbox, so the "Aztec Sandbox" check guards every step after it.
     await waitForHash(page, "#/popup/general")
     await page.evaluate(() => { window.location.hash = "#/popup/settings/general/networks" })
