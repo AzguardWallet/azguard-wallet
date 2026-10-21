@@ -11,6 +11,9 @@ import { Events, Methods, Network, NETWORK_SERVICE_NAME, NodeStatus } from "./sp
 
 export * from "./spec";
 
+// NOTE: a node on another Aztec release rejects every tx for its verification key tree root,
+// so this entry sends txs only while the testnet runs the wallet's release.
+// TODO: `v6-network` a testnet relaunch changes its rollup version: set the new chain id.
 const TESTNET = {
     rpcUrl: "https://aztec-testnet.drpc.org",
     chainId: 3415328944, // 11155111 ^ 3409706519
