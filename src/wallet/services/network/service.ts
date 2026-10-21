@@ -16,12 +16,13 @@ const ALPHANET = {
     chainId: 2070860441, // 1 ^ 2070860440
 };
 
-// NOTE: a node on another Aztec release rejects every tx for its verification key tree root,
-// so this entry sends txs only while the testnet runs the wallet's release.
-// TODO: `v6-network` a testnet relaunch changes its rollup version: set the new chain id.
+// NOTE: the chain id is the one a testnet relaunched on this Aztec release gets from the
+// upgrade deploy script. A node on another release rejects every tx for its verification
+// key tree root, so the testnet works with this build only after that relaunch.
+// TODO: `v6-network` check the chain id against the relaunched testnet's rollup version.
 const TESTNET = {
     rpcUrl: "https://aztec-testnet.drpc.org",
-    chainId: 3415328944, // 11155111 ^ 3409706519
+    chainId: 3285532346, // 11155111 ^ 3279882269
 };
 
 export class NetworkService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
