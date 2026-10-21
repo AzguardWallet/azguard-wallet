@@ -4,15 +4,14 @@ export const colors = ["blue", "green", "mint", "neutral-mint", "orange", "yello
  * Known Aztec network chain IDs.
  * Computed as: l1ChainId ^ rollupVersion
  */
-// TODO: `v6-network` add the v6 mainnet chain id once it is public.
 export const CHAIN_IDS = {
+	ALPHANET: 2070860441,  // 1 ^ 2070860440
 	TESTNET: 3415328944,  // 11155111 ^ 3409706519
 	SANDBOX: 0,           // localhost:8080
 } as const
 
-// TODO: `v6-network` match the v6 mainnet chain id. Until one exists, no chain is mainnet.
 export function isMainnet(chainId: number): boolean {
-	return false
+	return chainId === CHAIN_IDS.ALPHANET
 }
 
 export function isTestnet(chainId: number): boolean {
@@ -35,6 +34,8 @@ export function getColorFromAddress(address: string): string {
 
 export function getChainPosition(chainId: number): number {
 	switch (chainId) {
+		case CHAIN_IDS.ALPHANET:
+			return 0
 		case CHAIN_IDS.TESTNET:
 			return 2
 		case CHAIN_IDS.SANDBOX:
@@ -46,6 +47,8 @@ export function getChainPosition(chainId: number): number {
 
 export function getChainColor(chainId: number): string {
 	switch (chainId) {
+		case CHAIN_IDS.ALPHANET:
+			return "purple"
 		case CHAIN_IDS.TESTNET:
 			return "neutral-mint"
 		case CHAIN_IDS.SANDBOX:
@@ -57,6 +60,8 @@ export function getChainColor(chainId: number): string {
 
 export function getChainName(chainId: number): string {
 	switch (chainId) {
+		case CHAIN_IDS.ALPHANET:
+			return "Alphanet"
 		case CHAIN_IDS.TESTNET:
 			return "Testnet"
 		case CHAIN_IDS.SANDBOX:

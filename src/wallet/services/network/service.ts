@@ -11,6 +11,11 @@ import { Events, Methods, Network, NETWORK_SERVICE_NAME, NodeStatus } from "./sp
 
 export * from "./spec";
 
+const ALPHANET = {
+    rpcUrl: "https://aztec-mainnet.drpc.org",
+    chainId: 2070860441, // 1 ^ 2070860440
+};
+
 // NOTE: a node on another Aztec release rejects every tx for its verification key tree root,
 // so this entry sends txs only while the testnet runs the wallet's release.
 // TODO: `v6-network` a testnet relaunch changes its rollup version: set the new chain id.
@@ -81,6 +86,13 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             // } catch (error) {
             //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
             // }
+            try {
+                defaultNetworks.push(
+                    await this._addNetwork(profile.id, "Alphanet", ALPHANET.rpcUrl, ALPHANET.chainId, true),
+                );
+            } catch (error) {
+                this.logError("Failed to add 'Alphanet'", getErrorMessage(error));
+            }
             try {
                 defaultNetworks.push(
                     await this._addNetwork(profile.id, "Testnet", TESTNET.rpcUrl, TESTNET.chainId, true),
