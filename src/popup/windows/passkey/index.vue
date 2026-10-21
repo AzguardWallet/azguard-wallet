@@ -18,6 +18,10 @@ import {
 } from "@/wallet/services/passkey/spec"
 import { getErrorMessage } from "@/wallet/utils/errors"
 
+// NOTE: the extension's own id as RP ID binds every passkey to this extension.
+// No web page and no other extension can assert it and read its PRF output.
+const RP_ID = chrome.runtime.id
+
 const route = useRoute()
 
 const passkey = new PasskeyServiceClient()
@@ -42,7 +46,7 @@ const handlePasskeyCreate = async (requestId: string, request: PasskeyRequest) =
 		challenge,
 		rp: {
 			name: "Azguard Wallet",
-			id: "azguardwallet.io"
+			id: RP_ID
 		},
 		user: {
 			id: userHandle,
@@ -89,7 +93,7 @@ const handlePasskeyGet = async (requestId: string, request: PasskeyRequest) => {
 	const prfInput = await crypto.subtle.digest("SHA-256", te.encode(PASSKEY_PRF_LABEL))
 	const publicKey: PublicKeyCredentialRequestOptions = {
 		challenge,
-		rpId: "azguardwallet.io",
+		rpId: RP_ID,
 		userVerification: "required",
 		timeout: PASSKEY_TIMEOUT,
 		extensions: { prf: { eval: { first: new Uint8Array(prfInput) } } },
