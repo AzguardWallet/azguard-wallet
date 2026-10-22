@@ -474,9 +474,14 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         }
     }
 
-    // TODO: `v6-network` map the v6 testnet and mainnet chain ids to their registry URLs.
-    private getRegistryUrl(_network: Network): string | undefined {
-        return undefined;
+    // TODO: `v6-network` map the v6 testnet chain id to its registry URL.
+    private getRegistryUrl(network: Network): string | undefined {
+        switch (network.chainId) {
+            case 2070860441: // alphanet (mainnet), 1 ^ 2070860440
+                return "https://mainnet.aztec-registry.xyz";
+            default:
+                return undefined;
+        }
     }
 
     private readonly onProfileDeleted = async (profile: ProfileInfo): Promise<void> => {
