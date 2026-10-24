@@ -16,13 +16,9 @@ const ALPHANET = {
     chainId: 2070860441, // 1 ^ 2070860440
 };
 
-// NOTE: the chain id is the one a testnet relaunched on this Aztec release gets from the
-// upgrade deploy script. A node on another release rejects every tx for its verification
-// key tree root, so the testnet works with this build only after that relaunch.
-// TODO: `v6-network` check the chain id against the relaunched testnet's rollup version.
 const TESTNET = {
     rpcUrl: "https://aztec-testnet.drpc.org",
-    chainId: 3285532346, // 11155111 ^ 3279882269
+    chainId: 685146337, // 11155111 ^ 679261766
 };
 
 export class NetworkService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
