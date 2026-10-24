@@ -1,4 +1,4 @@
-import type { AbiType } from "@aztec/stdlib/abi";
+import type { AbiType } from "@aztec-labs/stdlib/abi";
 
 // Canonical ABI path of aztec-nr's AztecAddress struct.
 export const AZTEC_ADDRESS_PATH = "aztec::protocol_types::address::aztec_address::AztecAddress";
@@ -14,6 +14,10 @@ export function isAztecAddressType(type: AbiType): boolean {
     return type.kind === "struct" && type.path.endsWith(AZTEC_ADDRESS_PATH);
 }
 
-export function isFieldCompressedStringType(type: AbiType): boolean {
-    return type.kind === "struct" && type.path.endsWith(FIELD_COMPRESSED_STRING_PATH);
+export function isFieldCompressedStringType(type: AbiType | undefined): boolean {
+    return type?.kind === "struct" && type.path.endsWith(FIELD_COMPRESSED_STRING_PATH);
+}
+
+export function isUnsignedIntegerType(type: AbiType | undefined, width: number): boolean {
+    return type?.kind === "integer" && type.sign === "unsigned" && type.width === width;
 }

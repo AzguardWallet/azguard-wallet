@@ -1,15 +1,15 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec/pxe/client/bundle";
-import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
-import { ContractArtifactSchema } from "@aztec/stdlib/abi";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec-labs/pxe/client/bundle";
+import type { ContractArtifact, EventSelector, FunctionCall } from "@aztec-labs/stdlib/abi";
+import { ContractArtifactSchema } from "@aztec-labs/stdlib/abi";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
 import {
     CompleteAddress,
     type ContractInstancePreimageWithAddress,
     type PartialAddress,
     ContractInstancePreimageWithAddressSchema,
-} from "@aztec/stdlib/contract";
-import { NoteDao } from "@aztec/stdlib/note";
+} from "@aztec-labs/stdlib/contract";
+import { NoteDao } from "@aztec-labs/stdlib/note";
 import type { NotesFilter } from "./spec";
 import {
     type TxExecutionRequest,
@@ -17,9 +17,9 @@ import {
     TxProvingResult,
     TxSimulationResult,
     UtilityExecutionResult,
-} from "@aztec/stdlib/tx";
-import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
-import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
+} from "@aztec-labs/stdlib/tx";
+import { PrivateEventFilter } from "@aztec-labs/aztec.js/wallet";
+import { PackedPrivateEvent } from "@aztec-labs/pxe/client/bundle";
 import z from "zod";
 import { ILogger } from "@/wallet/logger";
 import { ServiceSpec } from "@/wallet/base";
@@ -42,7 +42,7 @@ export class PxeServiceClient extends ServiceClient<Methods> implements ServiceS
     }
 
     /**
-     * Returns an `IPXE` for the given network — a `PXEProxy` around the raw `@aztec/pxe`
+     * Returns an `IPXE` for the given network — a `PXEProxy` around the raw `@aztec-labs/pxe`
      * PXE. The proxy differs from a raw PXE in two ways:
      *   - it bridges the service-worker ↔ offscreen boundary (the raw PXE lives in the
      *     offscreen document and is reached via message passing);

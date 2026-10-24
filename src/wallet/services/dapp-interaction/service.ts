@@ -1,6 +1,6 @@
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { ContractArtifactSchema } from "@aztec/stdlib/abi";
-import { getContractClassFromArtifact } from "@aztec/stdlib/contract";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { ContractArtifactSchema } from "@aztec-labs/stdlib/abi";
+import { getContractClassFromArtifact } from "@aztec-labs/stdlib/contract";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -13,7 +13,7 @@ import { OriginType } from "@/wallet/services/transaction/service";
 import { getRandomHex, Lock } from "@/wallet/utils";
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import type { AppCapabilities } from "@aztec/aztec.js/wallet";
+import type { AppCapabilities } from "@aztec-labs/aztec.js/wallet";
 import {
     DAPP_INTERACTION_SERVICE_NAME,
     type CapabilitiesPayload,

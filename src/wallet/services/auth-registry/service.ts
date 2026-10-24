@@ -1,4 +1,4 @@
-import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
+import { NoteStatus as _NoteStatus } from "@aztec-labs/stdlib/note";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -14,7 +14,7 @@ import { array_max, Lock } from "@/wallet/utils";
 import { getAuthRegistryAddress, isAuthRegistryEnabled, isAuthwitConsumable } from "@/wallet/utils/auth-registry";
 import { EventHandler } from "@/wallet/utils/event-handler";
 import { AUTH_REGISTRY_SERVICE_NAME, Authwit, Events, MAX_REVOKES_PER_TX, Methods } from "./spec";
-import { AztecNode } from "@aztec/stdlib/interfaces/client";
+import { AztecNode } from "@aztec-labs/stdlib/interfaces/client";
 
 export * from "./spec";
 

@@ -1,10 +1,10 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { FunctionSelector } from "@aztec/stdlib/abi";
-import type { AuthWitness } from "@aztec/stdlib/auth-witness";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { CompleteAddress } from "@aztec/stdlib/contract";
-import { AztecNode } from "@aztec/stdlib/interfaces/client";
-import type { Capsule, HashedValues, TxExecutionRequest } from "@aztec/stdlib/tx";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { FunctionSelector } from "@aztec-labs/stdlib/abi";
+import type { AuthWitness } from "@aztec-labs/stdlib/auth-witness";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import type { CompleteAddress } from "@aztec-labs/stdlib/contract";
+import { AztecNode } from "@aztec-labs/stdlib/interfaces/client";
+import type { Capsule, HashedValues, TxExecutionRequest } from "@aztec-labs/stdlib/tx";
 import type { IPXE } from "@/wallet/services/pxe/client";
 
 export * from "./azguard-v0";

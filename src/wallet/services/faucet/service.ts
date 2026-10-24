@@ -1,20 +1,20 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { TokenContract } from "@aztec/noir-contracts.js/Token";
-import { bufferAsFields } from "@aztec/stdlib/abi";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { TokenContract } from "@aztec-labs/noir-contracts.js/Token";
+import { bufferAsFields } from "@aztec-labs/stdlib/abi";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
 import {
     CONTRACT_CLASS_REGISTRY_CONTRACT_ADDRESS,
     CONTRACT_CLASS_REGISTRY_BYTECODE_CAPSULE_SLOT,
     CONTRACT_INSTANCE_REGISTRY_CONTRACT_ADDRESS,
     MAX_PACKED_PUBLIC_BYTECODE_SIZE_IN_FIELDS,
-} from "@aztec/constants";
+} from "@aztec-labs/constants";
 import {
     getContractInstanceFromInstantiationParams,
     getContractClassFromArtifact,
     type ContractInstanceWithAddress,
-} from "@aztec/stdlib/contract";
-import { computeSiloedPrivateInitializationNullifier } from "@aztec/stdlib/hash";
-import { PublicKeys } from "@aztec/stdlib/keys";
+} from "@aztec-labs/stdlib/contract";
+import { computeSiloedPrivateInitializationNullifier } from "@aztec-labs/stdlib/hash";
+import { PublicKeys } from "@aztec-labs/stdlib/keys";
 import BN from "bignumber.js";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";

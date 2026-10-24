@@ -1,31 +1,31 @@
-import { DomainSeparator } from '@aztec/constants';
-import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT } from '@aztec/stdlib/gas';
-import { Fr } from '@aztec/foundation/curves/bn254';
-import { GrumpkinScalar } from '@aztec/foundation/curves/grumpkin';
-import { poseidon2HashWithSeparator } from '@aztec/foundation/crypto/poseidon';
-import { Schnorr } from '@aztec/foundation/crypto/schnorr';
+import { DomainSeparator } from '@aztec-labs/constants';
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_DA_GAS_LIMIT, GAS_ESTIMATION_TEARDOWN_L2_GAS_LIMIT } from '@aztec-labs/stdlib/gas';
+import { Fr } from '@aztec-labs/foundation/curves/bn254';
+import { GrumpkinScalar } from '@aztec-labs/foundation/curves/grumpkin';
+import { poseidon2HashWithSeparator } from '@aztec-labs/foundation/crypto/poseidon';
+import { Schnorr } from '@aztec-labs/foundation/crypto/schnorr';
 import {
     ContractArtifact,
     encodeArguments,
     FunctionSelector,
-} from '@aztec/stdlib/abi';
-import { AuthWitness } from '@aztec/stdlib/auth-witness';
-import { AztecAddress } from '@aztec/stdlib/aztec-address';
+} from '@aztec-labs/stdlib/abi';
+import { AuthWitness } from '@aztec-labs/stdlib/auth-witness';
+import { AztecAddress } from '@aztec-labs/stdlib/aztec-address';
 import {
     CompleteAddress,
     computePartialAddress,
     ContractInstanceWithAddress,
-} from '@aztec/stdlib/contract';
-import { Gas, GasFees, GasSettings } from '@aztec/stdlib/gas';
-import { PublicKey } from '@aztec/stdlib/keys';
+} from '@aztec-labs/stdlib/contract';
+import { Gas, GasFees, GasSettings } from '@aztec-labs/stdlib/gas';
+import { PublicKey } from '@aztec-labs/stdlib/keys';
 import {
     Capsule,
     HashedValues,
     TxContext,
     TxExecutionRequest,
-} from '@aztec/stdlib/tx';
-import { computeSiloedPrivateInitializationNullifier } from '@aztec/stdlib/hash';
-import { AztecNode } from '@aztec/stdlib/interfaces/client';
+} from '@aztec-labs/stdlib/tx';
+import { computeSiloedPrivateInitializationNullifier } from '@aztec-labs/stdlib/hash';
+import { AztecNode } from '@aztec-labs/stdlib/interfaces/client';
 import { ILogger, LogLevel } from '@/wallet/logger';
 import type { IPXE } from "@/wallet/services/pxe/client";
 import {

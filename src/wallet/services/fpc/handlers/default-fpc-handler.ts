@@ -1,14 +1,14 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { ContractArtifact, FunctionSelector, StructType } from "@aztec/stdlib/abi";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
-import { HashedValues, TxContext, TxExecutionRequest } from "@aztec/stdlib/tx";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { ContractArtifact, FunctionSelector, getFunctionReturnType, StructType } from "@aztec-labs/stdlib/abi";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { Gas, GasFees, GasSettings } from "@aztec-labs/stdlib/gas";
+import { HashedValues, TxContext, TxExecutionRequest } from "@aztec-labs/stdlib/tx";
 import { Action } from "@/wallet/services/execution/spec";
 import { FpcInfo, FpcType } from "../spec";
 import { CanonicalFpc, IFpcHandler } from ".";
 import { IPXE } from "../../pxe/proxy";
-import { AztecNode } from "@aztec/stdlib/interfaces/client";
-import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec/stdlib/gas";
+import { AztecNode } from "@aztec-labs/stdlib/interfaces/client";
+import { GAS_ESTIMATION_DA_GAS_LIMIT, GAS_ESTIMATION_L2_GAS_LIMIT } from "@aztec-labs/stdlib/gas";
 
 export class DefaultFpcHandler implements IFpcHandler {
     // User-added FPCs have no canonical instance to seed.
@@ -64,8 +64,7 @@ export class DefaultFpcHandler implements IFpcHandler {
         }
         if (
             fn.parameters.length !== 0 ||
-            fn.returnTypes.length !== 1 ||
-            (fn.returnTypes[0] as StructType)?.path !== "aztec::protocol_types::address::aztec_address::AztecAddress"
+            (getFunctionReturnType(fn) as StructType | undefined)?.path !== "aztec::protocol_types::address::aztec_address::AztecAddress"
         ) {
             throw new Error("Function `get_accepted_asset` has unsupported signature");
         }
@@ -78,7 +77,7 @@ export class DefaultFpcHandler implements IFpcHandler {
             fn.parameters.length !== 2 ||
             fn.parameters[0].type.kind !== "integer" ||
             fn.parameters[1].type.kind !== "field" ||
-            fn.returnTypes.length !== 0
+            getFunctionReturnType(fn) !== undefined
         ) {
             throw new Error("Function `fee_entrypoint_private` has unsupported signature");
         }
@@ -91,7 +90,7 @@ export class DefaultFpcHandler implements IFpcHandler {
             fn.parameters.length !== 2 ||
             fn.parameters[0].type.kind !== "integer" ||
             fn.parameters[1].type.kind !== "field" ||
-            fn.returnTypes.length !== 0
+            getFunctionReturnType(fn) !== undefined
         ) {
             throw new Error("Function `fee_entrypoint_public` has unsupported signature");
         }

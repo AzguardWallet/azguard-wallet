@@ -4,22 +4,24 @@ import { test, openPopup, waitForHash, typeIntoInput } from "../fixtures/extensi
 test("mint token via faucet", { timeout: 360_000 }, async ({ registeredExtension }) => {
     const page = await openPopup(registeredExtension)
 
-    // 1. Verify initial state
+    // 1. Switch to the Sandbox.
+    // NOTE: a fresh profile may start on the public Testnet; this test may transact
+    // only on the local sandbox, so the "Aztec Sandbox" check guards every step after it.
     await waitForHash(page, "#/popup/general")
-    await page.waitForSelector("text/Account Value", { visible: true })
-    await page.waitForSelector("text/$0.00", { visible: true })
-    await page.waitForSelector("text/New token", { visible: true })
-
-    // 1a. Switch to the Sandbox network — a fresh profile defaults to Testnet,
-    // but this test targets a local sandbox on localhost:8080
     await page.evaluate(() => { window.location.hash = "#/popup/settings/general/networks" })
     await waitForHash(page, "#/popup/settings/general/networks")
-    const sandboxItem = await page.waitForSelector("text/Sandbox", { visible: true, timeout: 10_000 })
-    await sandboxItem!.click()
+    const sandboxItem = await page.waitForFunction(
+        () => [...document.querySelectorAll("*")].find((el) => el.textContent?.trim() === "Sandbox"),
+        { timeout: 10_000 }
+    )
+    await sandboxItem.evaluate((el) => (el as HTMLElement).click())
     await page.evaluate(() => { window.location.hash = "#/popup/general" })
     await waitForHash(page, "#/popup/general")
-    // Wait for the sandbox account to be ready (general page re-inits on network change)
+    await page.waitForSelector("text/Aztec Sandbox", { visible: true, timeout: 30_000 })
+
+    // 1a. Verify initial state
     await page.waitForSelector("text/Account Value", { visible: true, timeout: 30_000 })
+    await page.waitForSelector("text/$0.00", { visible: true })
     await page.waitForSelector("text/New token", { visible: true, timeout: 30_000 })
 
     // 2. Click Deposit → select method modal

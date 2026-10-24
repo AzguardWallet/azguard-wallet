@@ -1,7 +1,8 @@
 /**
  * E2E: SDK emoji verification window (anti-MITM check).
  *
- * Uses the adhoc test dapp (SDK-based, auto-connects on load, Testnet by default).
+ * Uses the adhoc test dapp (SDK-based). It auto-connects on load to its default network,
+ * so that network's node must be reachable and the wallet must hold a network for it.
  * The dApp establishes an encrypted channel via the Aztec Wallet SDK and shows a
  * 3x3 emoji grid derived from the ECDH verification hash; the wallet must show
  * the SAME grid in its verify window.
@@ -36,7 +37,7 @@ async function waitForWindowClosed(browser: Browser, urlFragment: string, timeou
     throw new Error(`Window matching "${urlFragment}" did not close within ${timeoutMs}ms`)
 }
 
-/** Opens the dApp; it auto-connects on load (Testnet is the default network). */
+/** Opens the dApp; it auto-connects on load. */
 async function openDapp(browser: Browser): Promise<Page> {
     const dappPage = await browser.newPage()
     await dappPage.goto(DAPP_URL, { waitUntil: "domcontentloaded" })

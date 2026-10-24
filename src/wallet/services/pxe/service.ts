@@ -1,20 +1,20 @@
-import { SPONSORED_FPC_SALT } from "@aztec/constants";
-import { getPXEConfig, type PXEConfig } from "@aztec/pxe/config";
-import { createPXE, PackedPrivateEvent, PXE } from "@aztec/pxe/client/bundle";
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { AuthRegistryArtifact } from "@aztec/standard-contracts/auth-registry";
-import { ContractClassRegistryArtifact } from "@aztec/protocol-contracts/class-registry";
-import { FeeJuiceArtifact } from "@aztec/protocol-contracts/fee-juice";
-import { ContractInstanceRegistryArtifact } from "@aztec/protocol-contracts/instance-registry";
-import { MultiCallEntrypointArtifact } from "@aztec/standard-contracts/multi-call-entrypoint";
-import { PublicChecksArtifact } from "@aztec/standard-contracts/public-checks";
-import { FPCContractArtifact } from "@aztec/noir-contracts.js/FPC";
-import { NFTContractArtifact } from "@aztec/noir-contracts.js/NFT";
-import { SponsoredFPCContractArtifact } from "@aztec/noir-contracts.js/SponsoredFPC";
-import { TokenContractArtifact } from "@aztec/noir-contracts.js/Token";
-import { type ContractArtifact, ContractArtifactSchema, EventSelector, FunctionCall } from "@aztec/stdlib/abi";
-import { AuthWitness } from "@aztec/stdlib/auth-witness";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { SPONSORED_FPC_SALT } from "@aztec-labs/constants";
+import { getPXEConfig, type PXEConfig } from "@aztec-labs/pxe/config";
+import { createPXE, PackedPrivateEvent, PXE } from "@aztec-labs/pxe/client/bundle";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { AuthRegistryArtifact } from "@aztec-labs/standard-contracts/auth-registry";
+import { ContractClassRegistryArtifact } from "@aztec-labs/protocol-contracts/class-registry";
+import { FeeJuiceArtifact } from "@aztec-labs/protocol-contracts/fee-juice";
+import { ContractInstanceRegistryArtifact } from "@aztec-labs/protocol-contracts/instance-registry";
+import { MultiCallEntrypointArtifact } from "@aztec-labs/standard-contracts/multi-call-entrypoint";
+import { PublicChecksArtifact } from "@aztec-labs/standard-contracts/public-checks";
+import { FPCContractArtifact } from "@aztec-labs/noir-contracts.js/FPC";
+import { NFTContractArtifact } from "@aztec-labs/noir-contracts.js/NFT";
+import { SponsoredFPCContractArtifact } from "@aztec-labs/noir-contracts.js/SponsoredFPC";
+import { TokenContractArtifact } from "@aztec-labs/noir-contracts.js/Token";
+import { type ContractArtifact, ContractArtifactSchema, EventSelector, FunctionCall } from "@aztec-labs/stdlib/abi";
+import { AuthWitness } from "@aztec-labs/stdlib/auth-witness";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
 import {
     type ContractInstanceWithAddress,
     type ContractInstancePreimageWithAddress,
@@ -23,10 +23,10 @@ import {
     getContractInstanceFromInstantiationParams,
     CompleteAddress,
     PartialAddress,
-} from "@aztec/stdlib/contract";
-import { deriveKeys } from "@aztec/stdlib/keys";
+} from "@aztec-labs/stdlib/contract";
+import { deriveKeys } from "@aztec-labs/stdlib/keys";
 import { type AztecNode, createBatchCappedAztecNodeClient } from "@/wallet/utils/aztec-node-client";
-import { NoteDao } from "@aztec/stdlib/note";
+import { NoteDao } from "@aztec-labs/stdlib/note";
 import type { NotesFilter } from "./spec";
 import {
     SimulationOverrides,
@@ -35,8 +35,8 @@ import {
     TxSimulationResult,
     UtilityExecutionResult,
     TxProfileResult,
-} from "@aztec/stdlib/tx";
-import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec/pxe/client/bundle";
+} from "@aztec-labs/stdlib/tx";
+import type { SimulateTxOpts, ExecuteUtilityOpts, ProfileTxOpts, ProveTxOpts } from "@aztec-labs/pxe/client/bundle";
 import z from "zod";
 
 const AccessScopesSchema = z.array(AztecAddress.schema);
@@ -50,7 +50,7 @@ import { Lock } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { Methods, PXE_SERVICE_NAME } from "./spec";
 import { deleteOrphanPxeStores, deletePxeStores, openPxeStore } from "./stores";
-import { PrivateEventFilter, PrivateEventFilterSchema } from "@aztec/aztec.js/wallet";
+import { PrivateEventFilter, PrivateEventFilterSchema } from "@aztec-labs/aztec.js/wallet";
 import { NotesFilterSchema } from "@/wallet/utils/schemas";
 
 export * from "./spec";
@@ -476,12 +476,10 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
 
     private getRegistryUrl(network: Network): string | undefined {
         switch (network.chainId) {
-            case 4248422646: // alphanet (mainnet), 1 ^ 4248422647
+            case 2070860441: // alphanet (mainnet), 1 ^ 2070860440
                 return "https://mainnet.aztec-registry.xyz";
-            case 1816023401: // 11155111 ^ 1821665230
+            case 685146337: // testnet, 11155111 ^ 679261766
                 return "https://testnet.aztec-registry.xyz";
-            case 604129785: // 11155111 ^ 615022430
-                return "https://devnet.aztec-registry.xyz";
             default:
                 return undefined;
         }

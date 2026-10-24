@@ -1,4 +1,4 @@
-import type { AppCapabilities, GrantedCapability } from "@aztec/aztec.js/wallet";
+import type { AppCapabilities, GrantedCapability } from "@aztec-labs/aztec.js/wallet";
 import type { DappSession, DappMetadata, DappPermissions } from "@/wallet/services/dapp-session/spec";
 import type {
     GetCompleteAddressOperation,
@@ -215,7 +215,7 @@ export type ExecutionResult = OperationResult[];
 
 /**
  * Payload for the emoji verification window shown when an SDK session is established.
- * The verificationHash is derived from the ECDH key exchange (see @aztec/wallet-sdk crypto)
+ * The verificationHash is derived from the ECDH key exchange (see @aztec-labs/wallet-sdk crypto)
  * and is rendered as an emoji grid for visual anti-MITM comparison with the dApp.
  */
 export type VerificationPayload = {

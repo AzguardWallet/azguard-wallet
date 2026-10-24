@@ -1,8 +1,8 @@
-import { TxExecutionResult as AztecTxExecutionResult, TxHash, TxStatus as AztecTxStatus } from "@aztec/stdlib/tx";
-import type { TxReceipt } from "@aztec/stdlib/tx";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import type { AztecNode } from "@aztec/stdlib/interfaces/client";
-import { FunctionSelector } from "@aztec/stdlib/abi";
+import { TxExecutionResult as AztecTxExecutionResult, TxHash, TxStatus as AztecTxStatus } from "@aztec-labs/stdlib/tx";
+import type { TxReceipt } from "@aztec-labs/stdlib/tx";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import type { AztecNode } from "@aztec-labs/stdlib/interfaces/client";
+import { FunctionSelector } from "@aztec-labs/stdlib/abi";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -16,14 +16,14 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { sleep } from "@/wallet/utils";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { EventHandler } from "@/wallet/utils/event-handler";
-import { PrivateEventFilter } from "@aztec/aztec.js/wallet";
-import { BlockNumber } from "@aztec/foundation/branded-types";
+import { PrivateEventFilter } from "@aztec-labs/aztec.js/wallet";
+import { BlockNumber } from "@aztec-labs/foundation/branded-types";
 import { Tx, SyncedTx, TxIndexerCursor, TRANSACTION_SERVICE_NAME, LocalTxOrigin, TxCall, SyncedTxCall, TxStatus, TxExecutionResult, Methods, Events, OriginType, isSyncedTx } from "./spec";
 import { AzguardFeePaymentMethod } from "../account/contracts";
 import { FUNCTION_CALL_LOG_EVENT_SELECTOR } from "../account/contracts/azguard-v0-persistent";
-import { PackedPrivateEvent } from "@aztec/pxe/client/bundle";
-import { Fr } from "@aztec/foundation/curves/bn254";
-import type { ContractInstancePreimageWithAddress } from "@aztec/stdlib/contract";
+import { PackedPrivateEvent } from "@aztec-labs/pxe/client/bundle";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import type { ContractInstancePreimageWithAddress } from "@aztec-labs/stdlib/contract";
 
 export * from "./spec";
 

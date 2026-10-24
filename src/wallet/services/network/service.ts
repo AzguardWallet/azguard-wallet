@@ -11,6 +11,16 @@ import { Events, Methods, Network, NETWORK_SERVICE_NAME, NodeStatus } from "./sp
 
 export * from "./spec";
 
+const ALPHANET = {
+    rpcUrl: "https://aztec-mainnet.drpc.org",
+    chainId: 2070860441, // 1 ^ 2070860440
+};
+
+const TESTNET = {
+    rpcUrl: "https://aztec-testnet.drpc.org",
+    chainId: 685146337, // 11155111 ^ 679261766
+};
+
 export class NetworkService extends Service<Methods, Events> implements ServiceSpec<Methods, Events> {
     public static name = NETWORK_SERVICE_NAME;
 
@@ -74,18 +84,16 @@ export class NetworkService extends Service<Methods, Events> implements ServiceS
             //     this.logError("Failed to add 'Azguard Node'", getErrorMessage(error));
             // }
             try {
-                const name = "Alphanet";
-                const rpcUrl = "https://aztec-mainnet.drpc.org";
-                const chainId = 4248422646; // 1 ^ 4248422647
-                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
+                defaultNetworks.push(
+                    await this._addNetwork(profile.id, "Alphanet", ALPHANET.rpcUrl, ALPHANET.chainId, true),
+                );
             } catch (error) {
                 this.logError("Failed to add 'Alphanet'", getErrorMessage(error));
             }
             try {
-                const name = "Testnet";
-                const rpcUrl = "https://v5.testnet.rpc.aztec-labs.com";
-                const chainId = 1816023401; // 11155111 ^ 1821665230
-                defaultNetworks.push(await this._addNetwork(profile.id, name, rpcUrl, chainId, true));
+                defaultNetworks.push(
+                    await this._addNetwork(profile.id, "Testnet", TESTNET.rpcUrl, TESTNET.chainId, true),
+                );
             } catch (error) {
                 this.logError("Failed to add 'Testnet'", getErrorMessage(error));
             }

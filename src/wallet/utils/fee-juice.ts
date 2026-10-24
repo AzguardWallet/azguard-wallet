@@ -1,5 +1,5 @@
-import { FEE_JUICE_ADDRESS } from "@aztec/constants";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { FEE_JUICE_ADDRESS } from "@aztec-labs/constants";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
 import { Action } from "@/wallet/services/execution/spec";
 
 export const feeJuiceAddress = AztecAddress.fromNumberUnsafe(FEE_JUICE_ADDRESS).toString();

@@ -1,5 +1,5 @@
 import "@/utils/console-sniffer";
-import { BarretenbergSync } from "@aztec/bb.js";
+import { BarretenbergSync } from "@aztec-foundation/bb.js";
 import { ServiceCollection } from "./base";
 import { ConfigStore } from "./config";
 import { consoleMethods, LoggerStore, LogLevel } from "./logger";

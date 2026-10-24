@@ -1,4 +1,4 @@
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
 
 /**
  * The accounts a dApp's transaction options ask the PXE to read besides the

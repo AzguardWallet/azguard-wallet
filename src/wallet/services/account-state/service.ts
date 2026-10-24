@@ -1,6 +1,6 @@
-import { type ContractArtifact } from "@aztec/stdlib/abi";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { NoteStatus as _NoteStatus } from "@aztec/stdlib/note";
+import { type ContractArtifact } from "@aztec-labs/stdlib/abi";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { NoteStatus as _NoteStatus } from "@aztec-labs/stdlib/note";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";

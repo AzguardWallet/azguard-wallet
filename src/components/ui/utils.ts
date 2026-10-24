@@ -5,14 +5,17 @@ export const colors = ["blue", "green", "mint", "neutral-mint", "orange", "yello
  * Computed as: l1ChainId ^ rollupVersion
  */
 export const CHAIN_IDS = {
-	ALPHANET: 4248422646,  // 1 ^ 4248422647
-	TESTNET: 1816023401,  // 11155111 ^ 1821665230
-	DEVNET: 604129785,    // 11155111 ^ 615022430
+	ALPHANET: 2070860441,  // 1 ^ 2070860440
+	TESTNET: 685146337,   // 11155111 ^ 679261766
 	SANDBOX: 0,           // localhost:8080
 } as const
 
+export function isMainnet(chainId: number): boolean {
+	return chainId === CHAIN_IDS.ALPHANET
+}
+
 export function isTestnet(chainId: number): boolean {
-	return chainId !== CHAIN_IDS.ALPHANET
+	return !isMainnet(chainId)
 }
 
 export function getColorFromAddress(address: string): string {
@@ -35,8 +38,6 @@ export function getChainPosition(chainId: number): number {
 			return 0
 		case CHAIN_IDS.TESTNET:
 			return 2
-		case CHAIN_IDS.DEVNET:
-			return 3
 		case CHAIN_IDS.SANDBOX:
 			return 4
 		default:
@@ -50,8 +51,6 @@ export function getChainColor(chainId: number): string {
 			return "purple"
 		case CHAIN_IDS.TESTNET:
 			return "neutral-mint"
-		case CHAIN_IDS.DEVNET:
-			return "blue"
 		case CHAIN_IDS.SANDBOX:
 			return "sand"
 		default:
@@ -65,8 +64,6 @@ export function getChainName(chainId: number): string {
 			return "Alphanet"
 		case CHAIN_IDS.TESTNET:
 			return "Testnet"
-		case CHAIN_IDS.DEVNET:
-			return "Devnet"
 		case CHAIN_IDS.SANDBOX:
 			return "Sandbox"
 		default:

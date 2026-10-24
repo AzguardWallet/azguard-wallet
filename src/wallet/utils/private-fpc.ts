@@ -2,8 +2,8 @@ export const privateFpcTokenName = "Private Fee Juice";
 
 export const privateFpcTokenSymbol = "pFJ";
 
-// Canonical PrivateFPC v5.0.1 (salt 0, deployer 0, no args), chain-independent. Deployed
+// PrivateFPC (salt 0, deployer 0, no args), chain-independent. Deployed
 // unpublished — the node can't serve the instance, so pin the class id and derive.
-export const CANONICAL_PRIVATE_FPC_ADDRESS = "0x1966fc6084e79aa92a5395d11149ee8cd87e8c43081e05294e7824f7b2927181";
+export const CANONICAL_PRIVATE_FPC_ADDRESS = "0x0b51d3763feeb55654cf5145d9a4562aba31384d10289e9f19fd68dcd2f59502";
 
-export const CANONICAL_PRIVATE_FPC_CLASS_ID = "0x032bc73c22b1d0ab26cce0c99d7ab71f0078962f9a92b060cc9c5cb87e4cfb08";
+export const CANONICAL_PRIVATE_FPC_CLASS_ID = "0x2288f65803e51d4b0be2242b33fd2ce79a73560128a2902b0a3be25f6d380c90";

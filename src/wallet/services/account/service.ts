@@ -1,5 +1,5 @@
-import type { Fr } from "@aztec/foundation/curves/bn254";
-import { poseidon2Hash } from "@aztec/foundation/crypto/poseidon";
+import type { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { poseidon2Hash } from "@aztec-labs/foundation/crypto/poseidon";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";

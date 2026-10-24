@@ -1,4 +1,4 @@
-import { FunctionType } from "@aztec/stdlib/abi";
+import { FunctionType } from "@aztec-labs/stdlib/abi";
 import { ILogger } from "@/wallet/logger";
 import { Restored, ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
@@ -333,7 +333,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                                 name: balanceOfPrivateFn.name,
                                 type: balanceOfPrivateFn.type,
                                 isStatic: balanceOfPrivateFn.isStatic,
-                                returnTypes: balanceOfPrivateFn.getReturnTypes(),
+                                returnTypes: [balanceOfPrivateFn.getReturnType()],
                             },
                             i,
                             true,
@@ -373,7 +373,7 @@ export class TokenBalanceService extends Service<Methods, Events> implements Ser
                                 name: balanceOfPublicFn.name,
                                 type: balanceOfPublicFn.type,
                                 isStatic: balanceOfPublicFn.isStatic,
-                                returnTypes: balanceOfPublicFn.getReturnTypes(),
+                                returnTypes: [balanceOfPublicFn.getReturnType()],
                             },
                             i,
                             false,

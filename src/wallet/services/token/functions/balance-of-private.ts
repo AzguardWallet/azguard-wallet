@@ -1,6 +1,6 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { ContractArtifact, FunctionAbi, FunctionType } from "@aztec/stdlib/abi";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { ContractArtifact, FunctionAbi, FunctionType, getFunctionReturnType } from "@aztec-labs/stdlib/abi";
 import { ViewFn } from "@/wallet/utils/fn";
 import { isAztecAddressType } from "./abi-types";
 
@@ -75,13 +75,11 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
                     visibility: "private",
                 },
             ],
-            returnTypes: [
-                {
-                    kind: "integer",
-                    sign: "unsigned",
-                    width: 128,
-                },
-            ],
+            returnType: {
+                kind: "integer",
+                sign: "unsigned",
+                width: 128,
+            },
             errorTypes: {},
         };
     }
@@ -100,8 +98,7 @@ export class DefaultBalanceOfPrivateFn extends BalanceOfPrivateFn {
                 fn.functionType === FunctionType.UTILITY &&
                 fn.parameters.length === 1 &&
                 isAztecAddressType(fn.parameters[0].type) &&
-                fn.returnTypes.length === 1 &&
-                fn.returnTypes[0].kind === "integer"
+                getFunctionReturnType(fn)?.kind === "integer"
             ) {
                 res.push(new DefaultBalanceOfPrivateFn(fn.name));
             }

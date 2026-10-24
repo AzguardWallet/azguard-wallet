@@ -1,8 +1,8 @@
-import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec/aztec.js/authorization";
-import { extractOffchainOutput, type InteractionWaitOptions, type SendReturn } from "@aztec/aztec.js/contracts";
-import { waitForTx } from "@aztec/aztec.js/node";
-import type { SimulateTxOpts, ProveTxOpts } from "@aztec/pxe/client/bundle";
-import { Fr } from "@aztec/foundation/curves/bn254";
+import { type IntentInnerHash, type CallIntent, computeAuthWitMessageHash } from "@aztec-labs/aztec.js/authorization";
+import { extractOffchainOutput, type InteractionWaitOptions, type SendReturn } from "@aztec-labs/aztec.js/contracts";
+import { waitForTx } from "@aztec-labs/aztec.js/node";
+import type { SimulateTxOpts, ProveTxOpts } from "@aztec-labs/pxe/client/bundle";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
 import {
     type AbiDecoded,
     type AbiType,
@@ -16,9 +16,10 @@ import {
     FunctionType,
     FunctionCall,
     decodeFromAbi,
-} from "@aztec/stdlib/abi";
-import { AuthWitness, computeInnerAuthWitHash } from "@aztec/stdlib/auth-witness";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
+    getFunctionReturnType,
+} from "@aztec-labs/stdlib/abi";
+import { AuthWitness, computeInnerAuthWitHash } from "@aztec-labs/stdlib/auth-witness";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
 import {
     type CompleteAddress,
     computeContractAddressFromInstance,
@@ -27,8 +28,8 @@ import {
     getContractClassFromArtifact,
     type NodeInfo,
     computePartialAddress,
-} from "@aztec/stdlib/contract";
-import { Gas, GasFees, GasSettings } from "@aztec/stdlib/gas";
+} from "@aztec-labs/stdlib/contract";
+import { Gas, GasFees, GasSettings } from "@aztec-labs/stdlib/gas";
 import {
     Capsule,
     ExecutionPayload,
@@ -38,9 +39,9 @@ import {
     TxSimulationResult,
     UtilityExecutionResult,
     type Tx as AztecTx,
-} from "@aztec/stdlib/tx";
+} from "@aztec-labs/stdlib/tx";
 import z from "zod";
-import { optional } from "@aztec/foundation/schemas";
+import { optional } from "@aztec-labs/foundation/schemas";
 import { NetworkService, Network } from "@/wallet/services/network/service";
 import { IPXE, PxeServiceClient } from "@/wallet/services/pxe/client";
 import { AccountService } from "@/wallet/services/account/service";
@@ -113,10 +114,10 @@ import {
     type FeeOptions,
     type FeePaymentMethod,
 } from "./spec";
-import { AztecNode } from "@aztec/stdlib/interfaces/client";
-import { ChainInfo } from "@aztec/entrypoints/interfaces";
-import { Aliased, ContractClassMetadata, ContractInitializationStatus, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec/aztec.js/wallet";
-import { computeSiloedPrivateInitializationNullifier, computeSiloedPublicInitializationNullifier } from "@aztec/stdlib/hash";
+import { AztecNode } from "@aztec-labs/stdlib/interfaces/client";
+import { ChainInfo } from "@aztec-labs/entrypoints/interfaces";
+import { Aliased, ContractClassMetadata, ContractInitializationStatus, ContractMetadata, ProfileOptions, SendOptions, SimulateOptions } from "@aztec-labs/aztec.js/wallet";
+import { computeSiloedPrivateInitializationNullifier, computeSiloedPublicInitializationNullifier } from "@aztec-labs/stdlib/hash";
 
 export * from "./spec";
 
@@ -615,7 +616,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             false,
             fn.isStatic,
             encodedArgs,
-            fn.returnTypes,
+            getFunctionReturnType(fn),
         );
 
         await account.ensureRegistered(pxe);
@@ -624,9 +625,9 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         });
 
         try {
-            return decodeFromAbi(fn.returnTypes, result);
+            return decodeFromAbi(call.returnType, result);
         } catch (error) {
-            this.logError("Failed to decode simulation results", fn.returnTypes, result, getErrorMessage(error));
+            this.logError("Failed to decode simulation results", call.returnType, result, getErrorMessage(error));
             return result as any;
         }
     }
@@ -666,8 +667,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         };
 
         const args: HashedValues[] = [];
-        const calls: [AzguardFunctionCall, number, number, AbiType[]][] = [];
-        const utility: [Promise<UtilityExecutionResult>, number, AbiType[]][] = [];
+        const calls: [AzguardFunctionCall, number, number, AbiType | undefined][] = [];
+        const utility: [Promise<UtilityExecutionResult>, number, AbiType | undefined][] = [];
         let privateCalls = 0;
         let publicCalls = 0;
 
@@ -704,12 +705,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                     false,
                                     fn.isStatic,
                                     encodedArgs,
-                                    fn.returnTypes,
+                                    getFunctionReturnType(fn),
                                 ),
                                 { scopes: [account.address] },
                             ),
                             i,
-                            fn.returnTypes,
+                            getFunctionReturnType(fn),
                         ]);
                     } else {
                         const packedArgs =
@@ -728,7 +729,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                             ),
                             i,
                             fn.functionType === FunctionType.PUBLIC ? publicCalls++ : privateCalls++,
-                            fn.returnTypes,
+                            getFunctionReturnType(fn),
                         ]);
                     }
                     this.logDebug("Call enqueued.");
@@ -775,12 +776,12 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                                     false,
                                     fn.isStatic,
                                     call.args.map(x => Fr.fromString(x)),
-                                    fn.returnTypes,
+                                    getFunctionReturnType(fn),
                                 ),
                                 { scopes: [account.address] },
                             ),
                             i,
-                            fn.returnTypes,
+                            getFunctionReturnType(fn),
                         ]);
                     } else {
                         const packedArgs =
@@ -802,7 +803,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                             ),
                             i,
                             fn.functionType === FunctionType.PUBLIC ? publicCalls++ : privateCalls++,
-                            fn.returnTypes,
+                            getFunctionReturnType(fn),
                         ]);
                     }
                     this.logDebug("EncodedCall enqueued.");
@@ -833,23 +834,23 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     ? simulatedTx.getPrivateReturnValues().nested
                     : simulatedTx.getPrivateReturnValues().nested[1].nested;
 
-            for (const [call, i, j, types] of calls) {
+            for (const [call, i, j, returnType] of calls) {
                 const values = (call.is_public ? publicReturn[j] : privateReturn[j]).values ?? [];
                 result.encoded[i] = values;
                 try {
-                    result.decoded[i] = decodeFromAbi(types, values);
+                    result.decoded[i] = decodeFromAbi(returnType, values);
                 } catch (error) {
-                    this.logError("Failed to decode simulation results", types, values, getErrorMessage(error));
+                    this.logError("Failed to decode simulation results", returnType, values, getErrorMessage(error));
                 }
             }
         }
 
-        for (const [promise, i, types] of utility) {
+        for (const [promise, i, returnType] of utility) {
             const { result: values } = await promise;
             try {
-                result.decoded[i] = decodeFromAbi(types, values);
+                result.decoded[i] = decodeFromAbi(returnType, values);
             } catch (error) {
-                this.logError("Failed to encode utility simulation results", types, values, getErrorMessage(error));
+                this.logError("Failed to encode utility simulation results", returnType, values, getErrorMessage(error));
             }
             result.encoded[i] = values;
         }
@@ -908,7 +909,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
         const network = await this.networkService.getNetwork(op.networkId);
         const packedEvents = await this.pxeService.getPrivateEvents(network, op.eventMetadata.eventSelector, op.eventFilter);
         return packedEvents.map((ev) => ({
-            event: decodeFromAbi([op.eventMetadata.abiType], ev.packedEvent),
+            event: decodeFromAbi(op.eventMetadata.abiType, ev.packedEvent),
             metadata: {
                 l2BlockNumber: ev.l2BlockNumber,
                 l2BlockHash: ev.l2BlockHash,
@@ -1152,7 +1153,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     call.hideMsgSender,
                     call.isStatic,
                     await z.array(Fr.schema).parseAsync(call.args),
-                    await z.array(AbiTypeSchema).parseAsync(call.returnTypes),
+                    await AbiTypeSchema.optional().parseAsync(call.returnType),
                 ),
             };
             messageHash = await computeAuthWitMessageHash(intentAction, metadata);
@@ -1238,7 +1239,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                 name: call.name,
                 type: call.type,
                 isStatic: call.isStatic,
-                returnTypes: call.returnTypes,
+                returnTypes: call.returnType ? [call.returnType] : [],
             } satisfies EncodedCallAction);
         }
 
@@ -1872,7 +1873,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     content.hideSender === true,
                     fn.isStatic,
                     encodeArguments(fn, content.args),
-                    fn.returnTypes,
+                    getFunctionReturnType(fn),
                 ),
             },
             {
@@ -1925,7 +1926,8 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
             content.name = fn.name;
             content.type = fn.functionType;
             content.isStatic = fn.isStatic;
-            content.returnTypes = fn.returnTypes;
+            const returnType = getFunctionReturnType(fn);
+            content.returnTypes = returnType ? [returnType] : [];
         }
         return await computeAuthWitMessageHash(
             {
@@ -1938,7 +1940,7 @@ export class ExecutionService extends Service<Methods> implements ServiceSpec<Me
                     content.hideMsgSender === true,
                     content.isStatic,
                     content.args.map(x => Fr.fromString(x)),
-                    await z.array(AbiTypeSchema).parseAsync(content.returnTypes),
+                    getFunctionReturnType({ returnTypes: await z.array(AbiTypeSchema).parseAsync(content.returnTypes) }),
                 ),
             },
             {

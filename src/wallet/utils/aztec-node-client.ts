@@ -1,4 +1,4 @@
-import { type AztecNode, createAztecNodeClient } from "@aztec/stdlib/interfaces/client";
+import { type AztecNode, createAztecNodeClient } from "@aztec-labs/stdlib/interfaces/client";
 
 export type { AztecNode };
 
@@ -9,5 +9,5 @@ export type { AztecNode };
 const MAX_BATCH_SIZE = 3;
 
 export function createBatchCappedAztecNodeClient(url: string): AztecNode {
-    return createAztecNodeClient(url, {}, undefined, 0, MAX_BATCH_SIZE);
+    return createAztecNodeClient(url, { maxBatchSize: MAX_BATCH_SIZE });
 }

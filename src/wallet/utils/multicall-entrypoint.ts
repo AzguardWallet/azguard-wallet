@@ -1,5 +1,5 @@
-import { STANDARD_MULTI_CALL_ENTRYPOINT_ADDRESS } from "@aztec/standard-contracts/multi-call-entrypoint/constants";
-import { FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
+import { STANDARD_MULTI_CALL_ENTRYPOINT_ADDRESS } from "@aztec-labs/standard-contracts/multi-call-entrypoint/constants";
+import { FunctionAbi, FunctionSelector, FunctionType } from "@aztec-labs/stdlib/abi";
 
 export const getMulticallEntrypointAddress = () => STANDARD_MULTI_CALL_ENTRYPOINT_ADDRESS;
 
@@ -61,7 +61,6 @@ export const getMulticallEntrypointFn = () =>
                 visibility: "public",
             },
         ],
-        returnTypes: [],
         errorTypes: {},
     } as FunctionAbi);
 

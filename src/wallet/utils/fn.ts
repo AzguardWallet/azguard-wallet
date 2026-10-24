@@ -1,9 +1,17 @@
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { HashedValues, NestedProcessReturnValues, PrivateCallExecutionResult } from "@aztec/stdlib/tx";
-import { AbiType, encodeArguments, FunctionAbi, FunctionCall, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { HashedValues, NestedProcessReturnValues, PrivateCallExecutionResult } from "@aztec-labs/stdlib/tx";
+import {
+    AbiType,
+    encodeArguments,
+    FunctionAbi,
+    FunctionCall,
+    FunctionSelector,
+    FunctionType,
+    getFunctionReturnType,
+} from "@aztec-labs/stdlib/abi";
 import { AzguardFeePaymentMethod, AzguardFunctionCall, IAccountContract } from "@/wallet/services/account/contracts";
-import { AztecNode } from "@aztec/stdlib/interfaces/client";
+import { AztecNode } from "@aztec-labs/stdlib/interfaces/client";
 import { IPXE } from "@/wallet/services/pxe/proxy";
 
 export class FnImpl {
@@ -35,8 +43,8 @@ export abstract class Fn extends FnImpl {
         return encodeArguments(this.abi(), args);
     }
 
-    public getReturnTypes(): AbiType[] {
-        return this.abi().returnTypes;
+    public getReturnType(): AbiType | undefined {
+        return getFunctionReturnType(this.abi());
     }
 
     public getImpl(): FnImpl {
@@ -69,7 +77,7 @@ export async function simulate(
             false,
             viewFn.isStatic,
             encodedArgs,
-            viewFn.getReturnTypes(),
+            viewFn.getReturnType(),
         );
         const { result } = await pxe.executeUtility(call, { scopes: [account.address] });
         return viewFn.unpackResult(result);

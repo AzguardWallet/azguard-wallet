@@ -13,7 +13,7 @@ import { getErrorData } from "@/wallet/utils/errors"
 import { capabilitiesToPermissions } from "@/wallet/services/aztec-sdk/adapter"
 
 /** Types */
-import type { Capability } from "@aztec/aztec.js/wallet"
+import type { Capability } from "@aztec-labs/aztec.js/wallet"
 
 
 /** Capability models */

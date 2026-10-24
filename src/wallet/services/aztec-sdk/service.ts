@@ -3,10 +3,10 @@ import {
     MessageOrigin,
     type ActiveSession,
     type PendingDiscovery,
-} from "@aztec/wallet-sdk/extension/handlers";
-import type { BatchedMethod } from "@aztec/aztec.js/wallet";
-import type { WalletMessage } from "@aztec/wallet-sdk/types";
-import { NOOP_LOGGER } from "@aztec/wallet-sdk/types";
+} from "@aztec-labs/wallet-sdk/extension/handlers";
+import type { BatchedMethod } from "@aztec-labs/aztec.js/wallet";
+import type { WalletMessage } from "@aztec-labs/wallet-sdk/types";
+import { NOOP_LOGGER } from "@aztec-labs/wallet-sdk/types";
 import { ServiceCollection, ServiceSpec } from "@/wallet/base";
 import { Service } from "@/wallet/base/background";
 import { ILogger } from "@/wallet/logger";
@@ -21,8 +21,8 @@ import { EntityStorage, StorageType } from "@/wallet/storage";
 import { getErrorMessage } from "@/wallet/utils/errors";
 import { migrateLegacyConnectedApps } from "./migration";
 import { AZTEC_SDK_SERVICE_NAME, CONNECTED_APPS_STORAGE_ROOT, getConnectedAppKey, type Methods, type Events } from "./spec";
-import { AppCapabilitiesSchema, type AppCapabilities, type WalletCapabilities } from "@aztec/aztec.js/wallet";
-import type { WalletResponse } from "@aztec/wallet-sdk/types";
+import { AppCapabilitiesSchema, type AppCapabilities, type WalletCapabilities } from "@aztec-labs/aztec.js/wallet";
+import type { WalletResponse } from "@aztec-labs/wallet-sdk/types";
 import type { OperationResult } from "@/wallet/services/execution/models";
 import { jsonSanitize } from "@/wallet/utils/serialization";
 import {

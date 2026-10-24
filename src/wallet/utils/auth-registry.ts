@@ -1,9 +1,9 @@
-import { STANDARD_AUTH_REGISTRY_ADDRESS } from "@aztec/standard-contracts/auth-registry/constants";
-import { Fr } from "@aztec/foundation/curves/bn254";
-import { FunctionAbi, FunctionSelector, FunctionType } from "@aztec/stdlib/abi";
-import { AztecAddress } from "@aztec/stdlib/aztec-address";
-import { deriveStorageSlotInMap } from "@aztec/stdlib/hash";
-import { AztecNode } from "@aztec/stdlib/interfaces/client";
+import { STANDARD_AUTH_REGISTRY_ADDRESS } from "@aztec-labs/standard-contracts/auth-registry/constants";
+import { Fr } from "@aztec-labs/foundation/curves/bn254";
+import { FunctionAbi, FunctionSelector, FunctionType } from "@aztec-labs/stdlib/abi";
+import { AztecAddress } from "@aztec-labs/stdlib/aztec-address";
+import { deriveStorageSlotInMap } from "@aztec-labs/stdlib/hash";
+import { AztecNode } from "@aztec-labs/stdlib/interfaces/client";
 
 // Auth Registry storage slots — hardcoded from the contract's storage layout, so NOT reliable:
 // a struct field reorder silently shifts them (it did on the v5 bump).
@@ -33,7 +33,6 @@ export const getSetAuthorizedFn = () =>
                 visibility: "private",
             },
         ],
-        returnTypes: [],
         errorTypes: {},
     } as FunctionAbi);
 
