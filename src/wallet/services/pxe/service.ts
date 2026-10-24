@@ -474,11 +474,12 @@ export class PxeService extends Service<Methods> implements ServiceSpec<Methods>
         }
     }
 
-    // TODO: `v6-network` map the v6 testnet chain id to its registry URL.
     private getRegistryUrl(network: Network): string | undefined {
         switch (network.chainId) {
             case 2070860441: // alphanet (mainnet), 1 ^ 2070860440
                 return "https://mainnet.aztec-registry.xyz";
+            case 685146337: // testnet, 11155111 ^ 679261766
+                return "https://testnet.aztec-registry.xyz";
             default:
                 return undefined;
         }
