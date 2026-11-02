@@ -1,3 +1,6 @@
+> [!CAUTION]
+> **Azguard Wallet is no longer maintained.** This repository is a public archive: it receives no updates, no bug fixes and no security fixes. The code has not been audited. It is provided as is, without warranty of any kind; anyone who uses, builds or forks it does so at their own risk.
+
 <p align="center">
   <img src="src/assets/logo_lg.png" alt="Azguard Wallet" width="96" />
 </p>
