@@ -102,13 +102,9 @@ yarn build && yarn test:e2e
 
 Beyond Aztec's private execution model, Azguard offers a stealth mode that disables every external service call: contract registry lookups, WalletConnect, remote images and external links. The wallet offers it when you create your first profile, and you can toggle it any time under **Settings → Security → Privacy Settings**.
 
-## Contributing
-
-Issues and pull requests are welcome. Before opening a PR, run `yarn typecheck` and `yarn test`.
-
 ## Security
 
-Azguard manages private keys and user funds, so please report suspected vulnerabilities privately rather than opening a public issue. Use GitHub's **Report a vulnerability** button on the repository's Security tab.
+Vulnerability reports are not accepted. See [SECURITY.md](SECURITY.md).
 
 ## License
 
